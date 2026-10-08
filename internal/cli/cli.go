@@ -64,7 +64,7 @@ Usage:
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
   roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
-  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--no-history] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5532,7 +5532,7 @@ explicit post-QA authority.
 	case "baseline":
 		return `Usage:
   roundfix baseline [--repo <path>] [--format <text|json>]
-  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--no-history] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5572,6 +5572,7 @@ embedded Baseline catalog.
                            [--yes | --confirm-plan <digest>]
                            [--adopt-suggested]
                            [--no-skills]
+                           [--no-history]
                            [--skills-source-dir <path>]
 
 Reads the repository's Setup Manifest, resolves its recorded Baseline Profile
@@ -5592,6 +5593,10 @@ stage. --skills-source-dir selects an explicit offline Git checkout or bare
 object store for external restoration. An unreachable immutable upstream is a
 per-skill warning and does not change the successful guidance-apply exit.
 
+The update also plans the Pending History, converts every selected unit on
+approval, and creates an annotated history-full tag when absent. Push that tag
+with git push origin history-full. --no-history skips history planning and conversion.
+
 JSON output uses roundfix/baseline-update-result/v1.
 
 Exit codes:
@@ -5608,6 +5613,7 @@ Options:
   --confirm-plan     Exact Plan Digest reviewed in a previous invocation
   --adopt-suggested  Adopt and report suggestions only for decisions absent from the manifest
   --no-skills        Skip the Repository Skill Set refresh
+  --no-history       Skip Pending History planning and conversion
   --skills-source-dir
                       Offline Git checkout or bare object store for external skill restoration
 `

@@ -147,6 +147,33 @@ func historyTagCoverage(ctx context.Context, root string, units []historyUnit) e
 	return nil
 }
 
+// planHistoryUnit shares conversion planning without selection or command output.
+func planHistoryUnit(ctx context.Context, repo, specRel, archive, archiveRel, revision string, u historyUnit) (historyUnit, error) {
+	if u.folder {
+		names, err := archivePlanFiles(filepath.Join(archive, u.name))
+		u.refusal = err
+		for _, name := range names {
+			u.files = append(u.files, archiveRel+"/"+u.name+"/"+name)
+		}
+	}
+	if u.refusal == nil {
+		if u.folder {
+			delivery, err := spec.FindLegacyDelivery(ctx, repo, specRel, archiveRel, u.name)
+			if err != nil {
+				return u, err
+			}
+			c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: delivery})
+			u.refusal = err
+			u.conversion = &c
+		} else {
+			k, err := spec.PlanHistoryKind(repo, revision, spec.ArchiveKind(u.name))
+			u.refusal = err
+			u.kind = &k
+		}
+	}
+	return u, nil
+}
+
 func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Writer, env commandEnvironment) int {
 	fail := func(err error) int { printPreflightFailure("history sanitize", err, stderr); return exitPreflight }
 	if len(args) == 0 || commandWantsHelp(args) {
@@ -213,27 +240,9 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		if req.batchSet && len(selected) == req.batch {
 			break
 		}
-		if u.folder {
-			names, err := archivePlanFiles(filepath.Join(archive, u.name))
-			u.refusal = err
-			for _, name := range names {
-				u.files = append(u.files, archiveRel+"/"+u.name+"/"+name)
-			}
-		}
-		if u.refusal == nil {
-			if u.folder {
-				delivery, err := spec.FindLegacyDelivery(ctx, repo, specRel, archiveRel, u.name)
-				if err != nil {
-					return fail(err)
-				}
-				c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: delivery})
-				u.refusal = err
-				u.conversion = &c
-			} else {
-				k, err := spec.PlanHistoryKind(repo, revision, spec.ArchiveKind(u.name))
-				u.refusal = err
-				u.kind = &k
-			}
+		u, err = planHistoryUnit(ctx, repo, specRel, archive, archiveRel, revision, u)
+		if err != nil {
+			return fail(err)
 		}
 		if u.refusal != nil {
 			if u.folder {

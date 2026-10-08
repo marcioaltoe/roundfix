@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0249-a-baseline-update-that-sanitizes-pending-history
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -170,3 +170,76 @@ verifiable on its own through command tests on synthetic adopted repositories.
 - `_prd.md` → Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 4; Goals; User Story 1; User Story 2; User Story 3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 6; Invariants 1-9; Invariant 12; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Build Order 3
 - ADR-0254; ADR-0248; ADR-0100
+
+## Result
+
+Implemented the Pending History section of `baseline update`. The update reuses
+`planHistoryUnit` with the History Sanitize Command, loads the target Git root's
+configuration through the command environment, and selects all convertible,
+committed units covered by an existing annotated ancestor tag or the planned
+new tag. Conversion refusals, dirty paths and tag coverage refusals stay in
+place; a blocked history section leaves the Baseline outcome intact. History
+status, units and refusals are always present in JSON with non-null arrays.
+
+Selected units join the Baseline Plan Digest through the domain-separated
+history digest. Confirmation is checked before any write; `ApplyPlan` receives
+its own Baseline Plan Digest. Apply then creates the annotated tag at the
+planned revision, converts the selected units and reaches the existing skills
+stage. History failures retain the Baseline result and name recovery commands.
+The text history block and `--no-history` usage follow the TechSpec contracts.
+Approval refusals keep the existing Baseline wording.
+Status uses Git's `--no-optional-locks` to keep preview index bytes unchanged.
+
+### Focused evidence by acceptance criterion
+
+- Preview: `TestBaselineUpdatePlansPendingHistoryWithoutWrites` checks the
+  Surface Transcript 1 history block line for line, the three selected units,
+  one Refused Unit and planned tag, exit 3, the combined digest, and identical
+  working-tree bytes, actual Git index bytes and refs. It deliberately changes
+  a tracked file's timestamp without changing its content to exercise index
+  refresh safety.
+- Confirmed update: `TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag`
+  checks both records, the reduced Finding, unchanged refused bytes, the tag
+  object type and planned commit, unchanged commit count and other refs, and a
+  second `current` update retaining its refusal. The `apply text` boundary
+  subtest checks Surface Transcript 2's history block. Dirty-unit, existing-tag,
+  stale-digest and tag-failure tests check the refusal and failure contracts.
+- No pending history and opt-out:
+  `TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest` compares
+  `baseline.BuildPlan`'s digest and checks silent history text and non-null JSON
+  arrays and unchanged approval-refusal wording.
+  `TestBaselineUpdateNoHistorySkipsTheSection` checks preview and apply,
+  unchanged history and refs, skipped status and help. The configuration-failure
+  boundary subtest also proves that opt-out succeeds with an unavailable home.
+
+Focused commands and outcomes:
+
+- Before implementation,
+  `rtk proxy go test ./internal/cli -run '^TestBaselineUpdatePlansPendingHistoryWithoutWrites$' -count=1`
+  failed to compile because `baselineUpdateResult.History` was absent.
+- After the final implementation edits,
+  `GOCACHE="$PWD/.gocache" rtk proxy go test ./internal/cli -run 'TestBaselineUpdate(PlansPending|AppliesPending|WithoutPending|NoHistory|RefusesUnits|HistoryHonors|RejectsAStaleHistory|ReportsATagFailure|HistoryPlanningBoundaries|RejectsDigestOtherThanCurrentPlanWithoutWrites)' -count=1`
+  exited 0. All eight required tests and the additional tag-name,
+  non-ancestor-tag, configuration-failure/opt-out, dirty-kind and apply-text
+  boundary cases passed. The existing stale-digest regression test also passed
+  unchanged.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestBaselineDocumentationContract$' -count=1`
+  exited 0. The initial invocation without the scoped cache was denied access
+  to the host Go cache; no repository configuration was changed. After the
+  final edits, the same documentation test also exited 0 using
+  `GOCACHE="$PWD/.gocache"`.
+- The first `rtk make verify-incremental` invocation failed only in
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion` and
+  `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner`: the sandbox
+  denied reading the host process table. Other reported packages passed. A
+  rerun with the required process-table permission exited 0, including the
+  complete CLI suite, vet, skills checks and build. The final rerun after the
+  approval-message compatibility refinement also exited 0, with the complete
+  CLI suite passing in 225.096 seconds.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The pre-existing Task status change was preserved. No existing test assertion,
+Task status, other Task file or Task Graph manifest was edited. The authored
+Verification commands were not run; their execution and settlement remain with
+the Daemon. No commit, push or Pull Request was made. No follow-up scope was
+added.
