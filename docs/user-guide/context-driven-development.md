@@ -258,8 +258,8 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Decision | Suggested value |
 | --- | --- |
 | Generated language | `English` |
-| Verification gate | `rtk make verify` |
-| Incremental Verification | `rtk make verify-incremental` |
+| Verification gate | `make verify` |
+| Incremental Verification | `make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `REST` |
 | Frontend layout | `systems` (applies while none is recorded) |
@@ -269,8 +269,8 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Domain layout | `single-context` |
 | External triage | No |
 | Autonomous work | Yes |
-| Backend runtime | `codex gpt-5.6-sol` |
-| Design runtime | `claude opus 5 xhigh` |
+| Backend runtime | `codex gpt-6.1-sol high` |
+| Design runtime | `claude opus high` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
 
@@ -627,7 +627,7 @@ Better Auth owner, unsupported or duplicate methods, or a conflict with
 names for Task checks. Updating a Setup Manifest that predates the incremental
 decision exits `3`, names `verification.incremental`, and writes nothing. After
 the repository declares the suggested command locally, rerun with
-`--adopt-suggested` to record `rtk make verify-incremental`; a later update uses
+`--adopt-suggested` to record `make verify-incremental`; a later update uses
 the recorded decision without that flag.
 
 Preservation adds one `readoption` object containing the current

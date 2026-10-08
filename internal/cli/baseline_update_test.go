@@ -850,8 +850,8 @@ var fleetStructuralClauses = []fleetStructuralClause{
 	},
 	{
 		path: "docs/agents/issue-tracker.md",
-		ids:  []string{"clause.spec.status-only-in-task"},
-		line: "- **mandatory**: Keep Task status only in the assigned Task file frontmatter. The Task Graph records topology and dependencies, not progress.",
+		ids:  []string{"clause.spec.tracker-artifacts"},
+		line: "- **mandatory**: Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file, and the local Task files are the published planning issues.",
 	},
 	{
 		path: "docs/agents/monorepo.md",

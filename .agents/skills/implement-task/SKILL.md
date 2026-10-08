@@ -4,10 +4,10 @@ description: Execute one task file from docs/specs/<slug>/ end-to-end — ground
 metadata:
   category: implementation
   tags: [workflow, coding, agents, testing]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Implement task
@@ -161,8 +161,11 @@ Never touch `_tasks.md` — it owns graph topology, not progress.
    context paths before editing.
 2. Implement only the assigned slice. Never edit `_tasks.md`, another Task
    file, or a path outside an authorized tooling allowlist.
-3. Run focused implementation checks while working when useful. Do not run any
-   command from the Task's `## Verification` section.
+3. Run focused implementation checks while working when useful, limited to the
+   packages the change touches. Do not run any command from the Task's
+   `## Verification` section, the repository's selected Verification, its
+   incremental Verification, or the full test suite: the Daemon runs the
+   declared Verification and the repository Verification at settlement.
 4. Append or update `## Result` with the implementation and focused-check
    evidence for every acceptance criterion. Do not use Daemon Verification
    evidence that has not run yet.

@@ -280,8 +280,8 @@ func TestHumanBaselineFirstAdoptionPromptSequenceCharacterization(t *testing.T) 
 		"Whether autonomous Supervisor and ACP Runtime delegation applies.",
 		"Whether read-only Secondbrain guidance is generated.",
 		"Whether Baseline may preserve and link non-empty Repository-Specific Normative Rules.",
-		"The default implementation ACP Runtime and model for backend Tasks. (runtime.backend)",
-		"The design, UI, UX, or frontend ACP Runtime and model. (runtime.design)",
+		"The backend ACP Runtime, model, and reasoning effort the repository prefers, named by generated guidance. (runtime.backend)",
+		"The design, UI, UX, or frontend ACP Runtime, model, and reasoning effort the repository prefers, named by generated guidance. (runtime.design)",
 	}
 	if labels := humanBaselinePromptLabels(prompts.String()); !reflect.DeepEqual(labels, want) {
 		t.Fatalf("first-adoption prompts = %#v, want %#v\n%s", labels, want, prompts.String())
@@ -338,10 +338,10 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 			name:    "invalid manifest value falls back to catalog",
 			id:      "verification.gate",
 			current: map[string]any{"verification.gate": "  "},
-			want:    "rtk make verify",
+			want:    "make verify",
 		},
 		{name: "language", id: "language.generated", want: "English"},
-		{name: "verification", id: "verification.gate", want: "rtk make verify"},
+		{name: "verification", id: "verification.gate", want: "make verify"},
 		{name: "frontend layout", id: "frontend.layout", want: "systems"},
 		{name: "HTTP contract", id: "http.contract", want: map[string]any{"mode": "REST"}},
 		{name: "spec scaffold", id: "spec.scaffold", want: true},
@@ -350,8 +350,8 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 		{name: "autonomous work", id: "autonomous.enabled", want: true},
 		{name: "Secondbrain", id: "secondbrain.enabled", want: true},
 		{name: "repository extension", id: "repository.extension.enabled", want: true},
-		{name: "backend runtime", id: "runtime.backend", want: "codex gpt-5.6-sol"},
-		{name: "design runtime", id: "runtime.design", want: "claude opus 5 xhigh"},
+		{name: "backend runtime", id: "runtime.backend", want: "codex gpt-6.1-sol high"},
+		{name: "design runtime", id: "runtime.design", want: "claude opus high"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

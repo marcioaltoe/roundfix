@@ -6,7 +6,7 @@
 
 - **mandatory**: Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces.
 
-- **mandatory**: Use Secondbrain for prior decisions, related project experience, and existing research. Follow the index-first and local query workflow defined in this guide.
+- **mandatory**: Use Secondbrain for prior decisions, related project experience, and existing research.
 
 - **mandatory**: Use Exa MCP to find and read relevant external sources that support or challenge the proposal. Prefer primary sources, assess their applicability, and distinguish published evidence from inference. This requirement complements the mandatory authoritative documentation workflow for external APIs and libraries.
 
@@ -42,8 +42,6 @@ resolved_to: <repository-relative-artifact-path>
 - **prohibited**: Do not create, edit, rename, move, or delete any Secondbrain file outside `inbox/**`. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check.
 
 - **mandatory**: Capture substantive external research and relevant findings or articles from Exa MCP as sourced digests in pending research Inbox Entries in the brain's own namespace, for later ingestion and reuse as reference material. Capture relevant articles on subjects important or foundational to the projects even when found outside a dedicated research session. Include each source's title and URL, a concise summary of the content read, the projects or topics it informs, and why it matters; distinguish published evidence from inference. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Follow the Inbox Entry contract. Capture is pending ingestion, which remains the brain's own contract.
-
-- **prohibited**: Do not use Exa or another external research tool to discover or infer local repository code or behavior. Use local code-search tools for that purpose. Never include credentials, private client records, or proprietary source code in external search queries.
 
 - **prohibited**: Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source.
 

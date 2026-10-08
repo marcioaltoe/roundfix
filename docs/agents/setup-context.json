@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df",
+  "catalogDigest": "sha256:09334010af8acf894e2464e3a50d8d2073d2da5b5cfeb6c0629e93cb896c5ca4",
   "modules": [
     "core",
     "context-workflow",
@@ -37,10 +37,10 @@
       "value": true
     },
     "runtime.backend": {
-      "value": "codex gpt-5.6-sol"
+      "value": "codex gpt-6.1-sol high"
     },
     "runtime.design": {
-      "value": "claude opus 5 xhigh"
+      "value": "claude opus high"
     },
     "secondbrain.enabled": {
       "value": true
@@ -52,10 +52,10 @@
       "value": false
     },
     "verification.gate": {
-      "value": "rtk make verify"
+      "value": "make verify"
     },
     "verification.incremental": {
-      "value": "rtk make verify-incremental"
+      "value": "make verify-changed"
     }
   },
   "managedArtifacts": [
@@ -93,7 +93,7 @@
       "module": "context-workflow",
       "template": "template.root.context-workflow",
       "version": "0.0.1",
-      "digest": "4001ce64061ffafedf2456ffd958e3fe700e1da954d7c42867f1aad6fa10e0a8"
+      "digest": "1de9a12f45489adb5326705a5cd2a2d351f6ae5ec0a30199d4a52c684cd9711e"
     },
     {
       "id": "guide.go",
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "cdcb04e7d10c0a433dd966f96e6d0ef03b1ef400ae04c159fb8c6856f328e26d"
+      "digest": "29d9eceb59fc3055e6b2a40d6ae0803b55341a867610557bfd38549a28c3da8b"
     },
     {
       "id": "root.cli-surface",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "48b7ebc8ea2a6accaa39bac1afd8a8449c103729031130da778cbdfaceb50c7e"
+      "digest": "2fb7d4934354757732e758f87c7b9ec6efd0f6e0b3bb8a9450a19f212c4637c3"
     },
     {
       "id": "guide.issue-tracker",
@@ -183,7 +183,7 @@
       "module": "spec-workflow",
       "template": "template.guide.issue-tracker",
       "version": "0.0.1",
-      "digest": "6de94546501df45cc5b9e997c08a13f7154ace22fe48d69ebe0e4ba5a0ea895a"
+      "digest": "818e4d1e44d73a208eba5a7d3aa2115c7420a062b898897a801d3cadd9bc9fd6"
     },
     {
       "id": "guide.spec-docs-layout",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "d3021fadc86c03e1f2c76072424efd8f368bc02296641c5188fc2b2dae5bbb53"
+      "digest": "3353e10311881fb8dcdfd60064730df3e8e54d26675718200f016e8b56b56231"
     },
     {
       "id": "root.secondbrain",
@@ -228,7 +228,7 @@
       "module": "secondbrain",
       "template": "template.root.secondbrain",
       "version": "0.0.1",
-      "digest": "56c84ad89f841a990d68316cd8fe91d9cdc0ee0d5317a15dec38cf3369199013"
+      "digest": "0047824759e04bf6df6eef189746f0c4274b533423559d6160f3b79ce21c298f"
     },
     {
       "id": "guide.secondbrain",
@@ -237,7 +237,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "b848ce0bef534a6e807aa0337a43c086b56450f8ce151b04c4409f143411dcc4"
+      "digest": "2c00c5160845ba6e36c0e0af1f1d0da97e4420e5f985993bdcd88829d3f8269a"
     },
     {
       "id": "root.repository-extension",
@@ -254,7 +254,7 @@
     {
       "id": "verification.gate",
       "role": "repository-gate",
-      "command": "rtk make verify",
+      "command": "make verify",
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
@@ -263,7 +263,7 @@
     {
       "id": "verification.incremental",
       "role": "incremental",
-      "command": "rtk make verify-incremental",
+      "command": "make verify-changed",
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",

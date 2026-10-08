@@ -15,7 +15,7 @@ import (
 
 const (
 	incrementalVerificationDecisionID = "verification.incremental"
-	incrementalVerificationSuggestion = "rtk make verify-incremental"
+	incrementalVerificationSuggestion = "make verify-incremental"
 )
 
 func TestIncrementalVerificationDecisionIsDeclaredWithoutADefault(t *testing.T) {

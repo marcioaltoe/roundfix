@@ -5,6 +5,14 @@
       {
         "version": 12,
         "digest": "sha256:37eb5c259b605bf0ca7f4591a72abb96908a9b6700906193868561969e0cc014"
+      },
+      {
+        "version": 13,
+        "digest": "sha256:f2745a94bde4995053aa72703bdbbbbc56cb37f2d329d025a6d6e45cfec9c5f6"
+      },
+      {
+        "version": 14,
+        "digest": "sha256:cbdc265b8e11d41779285653e5603d78d1ae54310cd762e5b5584fb38c336afd"
       }
     ],
     "backend": [
@@ -29,12 +37,24 @@
       {
         "version": 23,
         "digest": "sha256:3892c395cf3458496e7b364aebdccb7c41a14c9449c2cf7959ec8ebc4d116391"
+      },
+      {
+        "version": 24,
+        "digest": "sha256:81e32316ab0890da764a5e4a9ba3b30b7bbf569aa22bd8499c0cc953a92a5a3e"
       }
     ],
     "core": [
       {
         "version": 18,
         "digest": "sha256:bbc7233eda7001a2e259afb794f9703c327de1a63484831fc2be8b0b9660ab2c"
+      },
+      {
+        "version": 19,
+        "digest": "sha256:cfa4a04f7570d3985e18cffea32c5b1923dc1bd7e4f50f9db8030978a1d9fc61"
+      },
+      {
+        "version": 20,
+        "digest": "sha256:88b11b44088d41b2f25789ebbc881e3dcce782689e1ee57bb26c4589c82dc9f5"
       }
     ],
     "external-triage": [
@@ -77,12 +97,28 @@
       {
         "version": 10,
         "digest": "sha256:ff255a5d473f9a1731f191954b5629d63885438d826e049b6540976833b08783"
+      },
+      {
+        "version": 11,
+        "digest": "sha256:ac0843bd213a2b036873c44e7c221c91aa7aaf26216a0cc3fbd07ea112a5436c"
+      },
+      {
+        "version": 12,
+        "digest": "sha256:71cff35a1c62ff5353e3943f5848d8640ca813da8caf758a3e8151c8c075216d"
       }
     ],
     "spec-workflow": [
       {
         "version": 15,
         "digest": "sha256:c5d62e210f08fe2d4adde02d40e0de569621d831e0dfe2058ae3b22ecc715895"
+      },
+      {
+        "version": 16,
+        "digest": "sha256:de828613090f05e8943504302a02bbf3e8da5b134760d0926dea39bf04a2c51f"
+      },
+      {
+        "version": 17,
+        "digest": "sha256:72a289493e65e1acf97a8274f50ecca441865215692d24531b4cff04b868b7ae"
       }
     ],
     "tui-surface": [

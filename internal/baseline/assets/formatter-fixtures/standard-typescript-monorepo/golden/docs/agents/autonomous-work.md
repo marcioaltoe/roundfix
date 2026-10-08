@@ -2,9 +2,12 @@
 
 # Autonomous work
 
-Default backend work uses `codex gpt-5.5 xhigh`. Design, UI, UX, and
-frontend-dominant work uses `claude opus xhigh` when the Task Graph routes that
-surface.
+Agent Selection Profiles in Project Config choose each Agent Session's ACP
+Runtime, model, and reasoning effort (`roundfix profiles show`). The
+repository prefers `codex gpt-5.5 xhigh` for backend work and `claude opus xhigh`
+for design, UI, UX, and frontend-dominant work. A `complexity: low` Task that
+is not `qa` and changes no Governed Path runs on the Light Tier when it is
+available.
 
 - **mandatory**: The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. Delegate implementation to the selected ACP Runtime through a Roundfix Run.
 
@@ -22,7 +25,7 @@ surface.
 
 - **mandatory**: Write Verification that proves the class, not the case. When a finding is that nothing may do X, sweep every place that could, and put the detector where the risk is: a Task changing a contract with an external surface probes that surface rather than only compiling and unit-testing.
 
-- **mandatory**: Treat a terminal Clean and a resolved status as claims, not evidence. Read the diff after a Run reports Clean. When review is enabled, confirm that the selected provider completed review for the current candidate; silence or a provider-reported skip is not approval. With explicit `none`, record review as disabled by configuration and continue only when the other delivery gates pass; do not manufacture a reviewed verdict. Preserve historical Review Skipped and Clean Unverified meanings.
+- **mandatory**: Treat a terminal Clean and a resolved status as claims, not evidence: read the diff after a Run reports Clean and, when review is enabled, confirm that the selected provider reviewed the current candidate, because silence or a provider-reported skip is not approval. Preserve historical Review Skipped and Clean Unverified meanings.
 
 - **mandatory**: Never commit to a Run's branch or move the checkout away from it while that Run is Active. Roundfix integrates a Run Branch with a fast-forward merge and review Runs operate in the user checkout, so either action strands the Run or sends its commits to the wrong branch. Parallel work belongs in its own clone or waits.
 

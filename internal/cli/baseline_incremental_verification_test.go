@@ -30,7 +30,7 @@ func TestBaselineUpdateNamesTheMissingIncrementalDecision(t *testing.T) {
 	}
 	if result.State != "action_required" || result.Category != "decision" ||
 		len(result.NewDecisions) != 1 || result.NewDecisions[0].ID != "verification.incremental" ||
-		result.NewDecisions[0].SuggestedValue != "rtk make verify-incremental" {
+		result.NewDecisions[0].SuggestedValue != "make verify-incremental" {
 		t.Fatalf("single-gate update result = %+v", result)
 	}
 	if after := baselinePlanTestTree(t, repository); after != before {
@@ -75,7 +75,7 @@ func TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion(t *testing.T) {
 
 	manifest := ReadBaselineSetupManifest(t, repository)
 	decision, found := manifest.Decisions["verification.incremental"]
-	if !found || decision.Value != "rtk make verify-incremental" {
+	if !found || decision.Value != "make verify-incremental" {
 		t.Fatalf("incremental manifest decision = %#v, found=%v", decision, found)
 	}
 	projectionCount := 0
@@ -96,7 +96,7 @@ func TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(guidance), "The selected incremental Verification is `rtk make verify-incremental`.") {
+	if !strings.Contains(string(guidance), "The selected incremental Verification is `make verify-incremental`.") {
 		t.Fatalf("agent instructions do not publish incremental command:\n%s", guidance)
 	}
 

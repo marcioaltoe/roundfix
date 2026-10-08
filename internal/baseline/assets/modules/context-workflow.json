@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 23,
+  "version": 24,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -180,7 +180,7 @@
   "rootBlocks": [
     {
       "id": "root.context-workflow",
-      "version": 2,
+      "version": 3,
       "template": "template.root.context-workflow",
       "rules": [],
       "references": [

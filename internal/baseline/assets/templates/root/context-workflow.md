@@ -1,3 +1,3 @@
 ### CONTEXT-driven workflow
 
-- Domain and documentation rules are mandatory: {{reference.domain}} and {{reference.docs-layout}}.
+- Domain rules are mandatory: {{reference.domain}}. Read {{reference.docs-layout}}, whose rules then apply, before creating, changing, moving, or retiring `CONTEXT.md` or a document under `docs/`, and before a test or build step reads one.

@@ -55,7 +55,7 @@ func TestTheSpecAndTypeScriptGuidesStateThePromotedRules(t *testing.T) {
 			rules := []stackWordingRule{
 				{guide: "docs/agents/spec-routing.md", must: []string{
 					"- **mandatory**: When a Task answers a recorded finding, name that finding and its date in one of the Task's requirements.",
-					"- **mandatory**: Author each Task's Verification so every command fails on the tree before the Task's change, and run `roundfix spec check <slug> --run-verification` before a Run starts: the Daemon refuses a Task whose command already exits zero on the unchanged tree.",
+					"- **mandatory**: Author each Task's Verification so every command fails on the tree before the Task's change, and run `roundfix spec check <slug> --strict --run-verification` before a Run starts: strict mode also fails on gap findings, and the Daemon refuses a Task whose command already exits zero on the unchanged tree.",
 				}},
 				{guide: "docs/agents/docs-layout.md", must: []string{
 					"- **prohibited**: Do not make a test, fixture, or build step read a file under the Spec root or assume that a Spec is still active; Specs archive and may be deleted. A check whose subject is the Spec artifacts themselves is exempt.",

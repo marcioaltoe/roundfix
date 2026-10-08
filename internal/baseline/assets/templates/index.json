@@ -22,7 +22,7 @@
     },
     {
       "id": "template.root.context-workflow",
-      "version": 1,
+      "version": 2,
       "kind": "root-block",
       "path": "root/context-workflow.md",
       "tokens": ["reference.domain", "reference.docs-layout"]
@@ -120,7 +120,7 @@
     },
     {
       "id": "template.root.secondbrain",
-      "version": 1,
+      "version": 2,
       "kind": "root-block",
       "path": "root/secondbrain.md",
       "tokens": ["reference.secondbrain"]
@@ -246,7 +246,7 @@
     },
     {
       "id": "template.guide.autonomous-work",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/autonomous-work.md",
       "tokens": [
