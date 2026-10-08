@@ -464,6 +464,10 @@ func historyRefusalSuffix(count int) string {
 
 func printHistoryRefused(units []historyUnit, stdout io.Writer) {
 	for _, u := range units {
-		fmt.Fprintf(stdout, "refused %s: %v\n", u.name, u.refusal)
+		fmt.Fprintf(stdout, "refused %s: %s\n", u.name, historyRefusalLine(u.refusal))
 	}
+}
+
+func historyRefusalLine(err error) string {
+	return strings.Join(strings.Fields(err.Error()), " ")
 }

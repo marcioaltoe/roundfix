@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0249-a-baseline-update-that-sanitizes-pending-history
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -113,3 +113,50 @@ folders.
 - `_techspec.md` → API Contract 8; Invariant 11; Invariant 12; Build Order 2
 - ADR-0254; ADR-0251; ADR-0248
 - [Adopted Backlog Entry](references/2026-10-08-legacy-unproven-maps-refuse-a-folder.md)
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification:
+
+- Legacy `BuildArchiveRecord` reads `unproven` through YAML nodes, preserving
+  scalar spellings and scalar items. Maps render with the optional row prefix,
+  normalized claim and values, sorted extra keys, and comma-separated scalar
+  sequences. The converted text is decoded with the remaining PRD metadata;
+  the active path retains its original `[]string` decoding and error prefix.
+- `printHistoryRefused` uses `historyRefusalLine` to collapse error whitespace
+  for both preview and apply output.
+- Added the five requested tests without changing existing assertions.
+
+Focused evidence by acceptance criterion:
+
+1. `TestLegacyUnprovenMapsBecomeOneLineEach` checks both Fluxus key sets,
+   literal `03`, preserved string text, a multiline claim, sorted keys without
+   a claim, the planner's record round trip, the folder reader before apply,
+   and the record reader after apply. `TestHistorySanitizeConvertsLegacyUnprovenMaps`
+   checks a byte-preserving preview and conversion in a tagged temporary Git
+   repository, including the exact record lines.
+2. `TestLegacyUnprovenRefusesANestedMap` checks empty maps, nested map values
+   and sequences containing maps, exact builder and planner refusal messages
+   with the 1-based index, and unchanged folder bytes.
+   `TestActiveSpecStillRefusesUnprovenMaps` checks the original active decoder's
+   `parse archive PRD: yaml: unmarshal errors:` prefix and map-to-string cause.
+3. `TestHistorySanitizePrintsEachRefusalOnOneLine` first confirms that the
+   malformed PRD produces a multiline error, then checks the exact normalized
+   refusal line and preserved bytes in both preview and apply.
+
+Checks run:
+
+- Before implementation,
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -run 'Unproven|EachRefusalOnOneLine' ./internal/spec ./internal/cli`
+  exited 1: legacy maps failed string decoding, empty/nested maps lacked the
+  requested refusal, and the CLI printed multiline YAML reasons. The active
+  Spec characterization passed.
+- After the final code and test edits,
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -v -run 'Unproven|EachRefusalOnOneLine|^TestArchiveRecordRoundTrips$|^TestReadArchivedSpecReadsRecordAndLegacyFolder$|^TestHistorySanitizePlanListsEveryRefusedUnit$|^TestHistorySanitizeConvertsTheFourLegacyShapes$' ./internal/spec ./internal/cli`
+  exited 0. All five new tests and the selected existing record, legacy-reader
+  and CLI characterization tests passed.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The initial worktree already had the Daemon's `status: in_progress` change in
+this Task file. It was preserved. Declared Verification and Task settlement
+remain with the Daemon. No follow-up scope was added.

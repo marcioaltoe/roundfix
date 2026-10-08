@@ -23,6 +23,55 @@ func historyLegacyFolder(t *testing.T, h historyFixture, slug string) string {
 	return folder
 }
 
+func TestHistorySanitizeConvertsLegacyUnprovenMaps(t *testing.T) {
+	h := newHistoryFixture(t, false)
+	folder := historyLegacyFolder(t, h, "aaa")
+	historyWrite(t, filepath.Join(folder, "_prd.md"), "---\nspec: aaa\ncreated: 2026-09-01\nunproven:\n  - row: 03\n    goal: G2\n    claim: Catalog verification runs alone\n    satisfied-by: [task_04, task_05]\n  - row: 04\n    claim: Release is verified\n    reason: No standalone evidence\n---\n\n# Demo\n\nPreserved outcome.\n")
+	historyCommit(t, h.repo, "Legacy unproven maps")
+	historyTag(t, h)
+	before := historySnapshot(t, h.repo)
+	code, out, stderr := historyRun(t, h, "sanitize")
+	if code != 0 || stderr != "" || strings.Contains(out, "refused") || !strings.Contains(out, "folder docs/history/specs/aaa:") {
+		t.Fatalf("%d %s %s", code, out, stderr)
+	}
+	historyUnchanged(t, h, before, "")
+	code, out, stderr = historyRun(t, h, "sanitize", "--apply", "--batch", "1")
+	if code != 0 || stderr != "" || !strings.Contains(out, "wrote 1 Archive Record(s)") {
+		t.Fatalf("%d %s %s", code, out, stderr)
+	}
+	assertPathMissing(t, folder)
+	archived, err := spec.ReadArchivedSpec(filepath.Dir(folder), "aaa")
+	want := []string{"row 03: Catalog verification runs alone (goal: G2; satisfied-by: task_04, task_05)", "row 04: Release is verified (reason: No standalone evidence)"}
+	if err != nil || !reflect.DeepEqual(archived.Record.Unproven, want) {
+		t.Fatalf("archive=%+v err=%v", archived, err)
+	}
+}
+
+func TestHistorySanitizePrintsEachRefusalOnOneLine(t *testing.T) {
+	h := newHistoryFixture(t, false)
+	folder := historyLegacyFolder(t, h, "aaa")
+	historyWrite(t, filepath.Join(folder, "_prd.md"), "---\nspec: aaa\nunproven: {claim: malformed}\n---\n\n# Demo\n")
+	historyCommit(t, h.repo, "Malformed unproven")
+	historyTag(t, h)
+	before := historySnapshot(t, h.repo)
+	_, cause := spec.BuildArchiveRecord(spec.ArchiveRecordInput{SpecDir: folder, Legacy: true})
+	if cause == nil || !strings.Contains(cause.Error(), "\n") {
+		t.Fatalf("fixture needs a multiline error: %v", cause)
+	}
+	wantRefusal := "refused docs/history/specs/aaa: build legacy record: " + strings.Join(strings.Fields(cause.Error()), " ")
+	for _, args := range [][]string{{"sanitize"}, {"sanitize", "--apply", "--batch", "1"}} {
+		code, out, stderr := historyRun(t, h, args...)
+		wantCode := 0
+		if len(args) > 1 {
+			wantCode = 2
+		}
+		if code != wantCode || (wantCode == 0 && stderr != "") || strings.Count(out, "refused ") != 1 || !strings.Contains(out, wantRefusal+"\n") || !strings.Contains(wantRefusal, "cannot unmarshal !!map into") {
+			t.Fatalf("%d %s %s; want %q", code, out, stderr, wantRefusal)
+		}
+		historyUnchanged(t, h, before, "")
+	}
+}
+
 func TestHistorySanitizePlanListsEveryRefusedUnit(t *testing.T) {
 	h := newHistoryFixture(t, false)
 	for _, slug := range []string{"aaa", "bbb", "ccc", "ddd"} {
