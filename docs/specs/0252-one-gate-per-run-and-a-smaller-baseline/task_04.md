@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0252-one-gate-per-run-and-a-smaller-baseline
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -100,3 +100,113 @@ file.
 - [_prd.md](_prd.md) — Goal 5; User Story 5; Core Feature 5; Success Metric 5
 - [_techspec.md](_techspec.md) — API Contract 3; Template texts; Version changes; Derived files; Testing Approach; Build Order 4
 - ADR-0257; ADR-0250
+
+## Result
+
+Implemented the B07 root reading-set change from ADR-0257. The two source
+templates contain the exact whole TechSpec texts, each ending in one newline.
+Their template versions and root-block versions each rose by one, preserving
+the token lists. The Module Version Record step chose and recorded the changed
+`context-workflow` and `secondbrain` module versions; no clause, guide template,
+or other root template changed.
+
+### Acceptance evidence
+
+- Domain and docs-layout: `AGENTS.md` keeps the domain guide mandatory and
+  requires docs-layout before creating, changing, moving or retiring
+  `CONTEXT.md` or a document under `docs/`, and before a test or build reads
+  one. `TestTheRootNamesWhenToReadTheDocsLayoutGuide` reads the embedded
+  golden through `catalog.Asset`, requires the complete rendered sentence
+  exactly once, and rejects both old unconditional sentences.
+- Secondbrain: `AGENTS.md` names consultation, writing, and Idea/PRD/TechSpec
+  authoring as the triggers and explicitly says a Run session skips it.
+  `TestTheRootNamesWhenToReadTheSecondbrainGuide` applies the same exact-once
+  and old-sentence checks to the embedded golden.
+- Golden and no-op refresh: both roots carry the same sentences. The second
+  required text refresh exited 0 with `File changes: 0` and
+  `Idempotence: verified`. After both sabotages were restored and regenerated,
+  a final refresh again exited 0 with those same results. A comparison against
+  snapshots taken before edits confirmed every byte outside the two targeted
+  root blocks remains identical in both `AGENTS.md` files.
+
+### Focused checks and required regeneration
+
+- Initial `go test ./internal/baseline -run '^TestTheRootNamesWhenToRead'
+  -count=1`: exit 1; both newly added tests rejected the original golden's
+  missing conditional sentences and the two old unconditional sentences.
+- Required `go test ./internal/baseline -run
+  '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions
+  -count=1`: exit 0 using `GOCACHE=/tmp/roundfix-task04-gocache`. The first
+  attempt was blocked by shared Go-cache filesystem access; no assertion
+  failed on that attempt.
+- Required `make baseline-digests`: exit 0. It also regenerated each sabotage
+  and each restored source successfully. All generators ran with the same
+  task-local Go cache.
+- Required `go run -buildvcs=false ./cmd/roundfix baseline update --repo .
+  --no-skills --yes --format text`: the sandboxed attempt could not open
+  the Git worktree transaction lock. The authorized rerun with filesystem
+  escalation exited 0, applied two files and verified the approved postimages.
+  The next invocation exited 0 with zero file changes; a final invocation
+  after source restoration also exited 0 with zero file changes.
+- Final `go test ./internal/baseline -run '^TestTheRootNamesWhenToRead'
+  -count=1 -v`: exit 0; explicit PASS for both new tests.
+- `gofmt -d internal/baseline/root_reading_set_test.go`: no output, exit 0.
+- Changed-path postflight: all 19 changed/new paths belong to this Task's
+  declared Context, including this Task file and the new test. Only the Task
+  file was already modified on entry; its existing content was preserved.
+
+### Sabotage evidence
+
+1. In `templates/root/context-workflow.md`, changed `Domain rules are
+   mandatory` to `Domain rules are optional`, preserving all template tokens.
+   Ran `make baseline-digests` (exit 0), then
+   `go test ./internal/baseline -run
+   '^TestTheRootNamesWhenToReadTheDocsLayoutGuide$' -count=1` (exit 1):
+   `TestTheRootNamesWhenToReadTheDocsLayoutGuide` reported the required
+   sentence occurs 0 times. Restored the original source bytes and ran
+   `make baseline-digests` again (exit 0).
+2. In `templates/root/secondbrain.md`, replaced `a Run session, which cannot
+   reach it, skips it` with `a Run session reads it`, preserving the token.
+   Ran `make baseline-digests` (exit 0), then
+   `go test ./internal/baseline -run
+   '^TestTheRootNamesWhenToReadTheSecondbrainGuide$' -count=1` (exit 1):
+   `TestTheRootNamesWhenToReadTheSecondbrainGuide` reported the required
+   sentence occurs 0 times. Restored the original source bytes and ran
+   `make baseline-digests` again (exit 0). Both final focused tests passed.
+
+### Files rewritten by the required commands
+
+Module Version Record:
+
+- `internal/baseline/assets/modules/context-workflow.json`
+- `internal/baseline/assets/modules/secondbrain.json`
+- `internal/baseline/module-versions.json`
+
+`make baseline-digests`:
+
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md`
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+
+Managed Refresh:
+
+- `AGENTS.md`
+- `docs/agents/setup-context.json`
+
+The other edited sources are the two root templates and `templates/index.json`;
+the new test is `internal/baseline/root_reading_set_test.go`. This Result is the
+only agent-authored change to this Task file. Declared Task Verification,
+selected repository Verification and incremental Verification remain for the
+Daemon. Task status and graph were not edited; no commit, push or Pull Request
+was made. No follow-up implementation was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T180729Z_1c5cbdf685b778d0`
+- Source commit: `350e2993ae48a816927a2ec6d50d7b1e636ac169`

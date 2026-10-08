@@ -1,3 +1,3 @@
 ### Secondbrain
 
-- Optional cross-project knowledge follows {{reference.secondbrain}}.
+- Read {{reference.secondbrain}} before consulting or writing the Secondbrain or authoring an Idea, PRD, or TechSpec; a Run session, which cannot reach it, skips it.

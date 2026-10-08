@@ -21,7 +21,7 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 
 ### CONTEXT-driven workflow
 
-- Domain and documentation rules are mandatory: `docs/agents/domain.md` and `docs/agents/docs-layout.md`.
+- Domain rules are mandatory: `docs/agents/domain.md`. Read `docs/agents/docs-layout.md`, whose rules then apply, before creating, changing, moving, or retiring `CONTEXT.md` or a document under `docs/`, and before a test or build step reads one.
 
 <!-- setup-context-driven:end id=root.context-workflow -->
 <!-- setup-context-driven:begin id=root.spec-workflow version=0.0.1 -->
@@ -84,6 +84,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 
 ### Secondbrain
 
-- Optional cross-project knowledge follows `docs/agents/secondbrain.md`.
+- Read `docs/agents/secondbrain.md` before consulting or writing the Secondbrain or authoring an Idea, PRD, or TechSpec; a Run session, which cannot reach it, skips it.
 
 <!-- setup-context-driven:end id=root.secondbrain -->

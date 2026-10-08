@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 11,
+  "version": 12,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -16,7 +16,7 @@
   "rootBlocks": [
     {
       "id": "root.secondbrain",
-      "version": 2,
+      "version": 3,
       "template": "template.root.secondbrain",
       "rules": [],
       "references": [
