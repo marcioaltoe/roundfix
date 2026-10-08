@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.63.0] - 2026-10-08
+
+### One gate per Run and a smaller Baseline
+
+- **One gate per Run.** The Baseline no longer tells a Task agent to run the full repository suite inside a Run. Agents run focused tests, and the Daemon owns Verification, as the `implement-task` skill already said. In Specs 0225–0248 agents ran the full suite 74 times, about 231 s each, while the Daemon also verified every Task.
+- **Recorded verification values.** The Baseline no longer suggests `rtk`-prefixed commands. This repository records `make verify` and `make verify-changed`, the commands its CI runs.
+- **Current runtime defaults.** The `runtime.backend` and `runtime.design` decisions remain. Their defaults now follow the Project Config tuples, and the guides say that Agent Selection Profiles, including the Light Tier, choose the model.
+- **Smaller guides.** Rules that were stated in two to four places now live in one. A session that touches no docs reads about 45 KB of guides instead of 69 KB.
+- **Modules.** core, spec-workflow, autonomous-work, secondbrain and context-workflow move to new versions. A reworded clause keeps its ID (ADR-0257). Run `roundfix baseline update` to receive the changes.
+
 ## [0.62.0] - 2026-10-08
 
 ### Skills that keep up with the behavior they describe
