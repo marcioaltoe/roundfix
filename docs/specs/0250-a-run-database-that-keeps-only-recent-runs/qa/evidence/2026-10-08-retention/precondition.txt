@@ -1,0 +1,4 @@
+Command: ./bin/roundfix spec check 0250-a-run-database-that-keeps-only-recent-runs --strict
+Exit: 0
+No findings. Authored Verification commands were not executed.
+Skipped: SC-FINDING-LIFECYCLE (missing docs/findings Finding); SC-ROLLUP-MEMBER (missing docs/findings rollup); SC-BACKLOG-UNMOVED (missing docs/backlog); vocabulary documentation detector (missing Vocabulary Contract); SC-REF-UNRESOLVED (missing references/_index.md).

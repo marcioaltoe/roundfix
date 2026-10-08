@@ -1,0 +1,33 @@
+{
+  "command": "GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test -count=1 -v ./internal/store ./internal/config ./internal/cli -run ^(TestNewRunDatabaseUsesIncrementalAutoVacuum|TestRunRetentionSweepRecordRoundTrips|TestRemoveRetainedRunDeletesTheRunWhole|TestMigrateAddsRunRetentionSweeps|TestRunRetentionCandidatesCountEveryDependentRow|TestRemoveRetainedRunRefusesARunThatChanged|TestCompactIncrementallyShrinksTheFile|TestCompactConvertsADefaultModeDatabase|TestRunRetentionDaysDefaultsToThirty|TestRunRetentionDaysAcceptsOnlySevenFifteenOrThirty|TestRunRetentionDaysIsUserConfigOnly|TestInitUserConfigCarriesRunRetentionDays|TestGCDryRunReportsRunRetention|TestGCRemovesRunsPastRunRetention|TestGCKeepsProtectedRuns|TestGCKeepsARunUnderAnUnprovenArtifactRoot|TestGCCompactsAfterRunRetention|TestGCRefusesAnUnsupportedRunRetention|TestRunRetentionRunsOnceADayAtRunStart|TestRunRetentionStopsOnItsBudgetAndResumes|TestRunRetentionAtStartWarnsAndNeverBlocks|TestImplementStartRunsRunRetention|TestDeliverStartRunsRunRetention|TestDeliverStatusIsUnchangedByRunRetention|TestRunRetentionKeepsTheRunReconcileReads|TestUnknownRunNamesRunRetention|TestRunGCSkipsWhenJournalRetentionIsZero)$",
+  "exit": 0,
+  "tests": [
+    "TestNewRunDatabaseUsesIncrementalAutoVacuum",
+    "TestRunRetentionSweepRecordRoundTrips",
+    "TestRemoveRetainedRunDeletesTheRunWhole",
+    "TestMigrateAddsRunRetentionSweeps",
+    "TestRunRetentionCandidatesCountEveryDependentRow",
+    "TestRemoveRetainedRunRefusesARunThatChanged",
+    "TestCompactIncrementallyShrinksTheFile",
+    "TestCompactConvertsADefaultModeDatabase",
+    "TestRunRetentionDaysDefaultsToThirty",
+    "TestRunRetentionDaysAcceptsOnlySevenFifteenOrThirty",
+    "TestRunRetentionDaysIsUserConfigOnly",
+    "TestInitUserConfigCarriesRunRetentionDays",
+    "TestGCDryRunReportsRunRetention",
+    "TestGCRemovesRunsPastRunRetention",
+    "TestGCKeepsProtectedRuns",
+    "TestGCKeepsARunUnderAnUnprovenArtifactRoot",
+    "TestGCCompactsAfterRunRetention",
+    "TestGCRefusesAnUnsupportedRunRetention",
+    "TestRunRetentionRunsOnceADayAtRunStart",
+    "TestRunRetentionStopsOnItsBudgetAndResumes",
+    "TestRunRetentionAtStartWarnsAndNeverBlocks",
+    "TestImplementStartRunsRunRetention",
+    "TestDeliverStartRunsRunRetention",
+    "TestDeliverStatusIsUnchangedByRunRetention",
+    "TestRunRetentionKeepsTheRunReconcileReads",
+    "TestUnknownRunNamesRunRetention",
+    "TestRunGCSkipsWhenJournalRetentionIsZero"
+  ]
+}

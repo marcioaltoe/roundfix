@@ -1,0 +1,16 @@
+"""Run after fixture.py.txt --large-only; bind the overlay to fresh fixtures."""
+import json, pathlib, re, shutil, tempfile
+
+root = pathlib.Path.cwd()
+evidence = root / 'docs/specs/0250-a-run-database-that-keeps-only-recent-runs/qa/evidence/2026-10-08-retention'
+fixture = json.loads((evidence / 'large-fixtures.json').read_text())
+diagnostic = pathlib.Path(tempfile.mkdtemp(prefix='qa0250-diagnostic-', dir='/private/tmp'))
+(diagnostic / '.roundfix').mkdir()
+shutil.copyfile(pathlib.Path(fixture['start_home']) / '.roundfix/roundfix.db', diagnostic / '.roundfix/roundfix.db')
+(diagnostic / '.roundfix/config.yml').write_text('store:\n  journal_retention: 0\n')
+overlay_source = evidence / 'generated-start-overlay.go.txt'
+source = overlay_source.read_text()
+source = re.sub(r'home := "[^"]+"', 'home := "' + fixture['start_home'] + '"', source)
+source = re.sub(r'retentionStartStore\(t, "/private/tmp/qa0250-diagnostic-[^"]+"\)', 'retentionStartStore(t, "' + str(diagnostic) + '")', source)
+overlay_source.write_text(source)
+(evidence / 'overlay.json').write_text(json.dumps({'Replace': {str(root / 'internal/cli/run_retention_start_test.go'): str(overlay_source)}}))

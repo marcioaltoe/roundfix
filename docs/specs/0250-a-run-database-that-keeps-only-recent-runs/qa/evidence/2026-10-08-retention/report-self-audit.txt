@@ -1,0 +1,1 @@
+PASS: single frontmatter; preserved Daemon auditor identity; 19 rows, 18 pass / 1 environment-blocked; zero pending; typed inputs on every row; evidence links exist; five expected transcript exits; 27 passing declared tests; successful generated-fixture package result; no compiled evidence source.

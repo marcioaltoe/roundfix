@@ -1,0 +1,18 @@
+{
+  "events": 100000,
+  "runs": 200,
+  "payload_bytes": 1300,
+  "old_runs": 100,
+  "live_home": "/private/tmp/qa0250-large-live-o1449tgf/home",
+  "start_home": "/private/tmp/qa0250-large-start-q3iz18ym/home",
+  "start_repo": "/private/tmp/qa0250-large-start-q3iz18ym/repo",
+  "live_seconds": 0.5342021670076065,
+  "bytes_before": 211386368,
+  "bytes_after": 105807872,
+  "page_stats_after": {
+    "page_count": 25832,
+    "page_size": 4096,
+    "freelist_count": 0,
+    "auto_vacuum": 2
+  }
+}

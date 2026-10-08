@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0250-a-run-database-that-keeps-only-recent-runs
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

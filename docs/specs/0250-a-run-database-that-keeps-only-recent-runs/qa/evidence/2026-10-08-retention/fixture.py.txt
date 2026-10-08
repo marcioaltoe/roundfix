@@ -1,0 +1,116 @@
+import contextlib, sys
+import os, pathlib, tempfile, subprocess, sqlite3, datetime, json, hashlib, time, re
+
+ROOT = pathlib.Path.cwd()
+E = ROOT / 'docs/specs/0250-a-run-database-that-keeps-only-recent-runs/qa/evidence/2026-10-08-retention'
+BIN = ROOT / 'bin/roundfix'
+NOW = datetime.datetime.now(datetime.timezone.utc)
+def stamp(days):
+    return (NOW-datetime.timedelta(days=days)).strftime('%Y-%m-%dT%H:%M:%SZ')
+def command(home, repo, label, args):
+    env = dict(os.environ, HOME=str(home)); env.pop('NODE_OPTIONS', None)
+    start=time.perf_counter()
+    p=subprocess.run([str(BIN),*args], cwd=repo, env=env, capture_output=True,text=True)
+    record={'command':'./bin/roundfix '+' '.join(args),'home':str(home),'cwd':str(repo),'stdout':p.stdout,'stderr':p.stderr,'exit':p.returncode,'seconds':time.perf_counter()-start}
+    (E/(label+'.json')).write_text(json.dumps(record,indent=2))
+    return record
+def fresh(label):
+    base=pathlib.Path(tempfile.mkdtemp(prefix='qa0250-'+label+'-',dir='/private/tmp')); home=base/'home'; repo=base/'repo'
+    home.mkdir();repo.mkdir(); subprocess.run(['git','init','-q',str(repo)],check=True)
+    subprocess.run(['git','-C',str(repo),'-c','user.name=QA Fixture','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','commit','--allow-empty','-qm','fixture'],check=True)
+    cfg=home/'.roundfix';cfg.mkdir();(cfg/'config.yml').write_text('store:\n  journal_retention: 0\n')
+    result=command(home,repo,label+'-schema',['window','show'])
+    assert result['exit']==0,result
+    db=cfg/'roundfix.db'
+    with contextlib.closing(sqlite3.connect(db)) as c, c:
+        assert c.execute('PRAGMA auto_vacuum').fetchone()[0]==2
+        c.execute('DELETE FROM run_retention_sweeps')
+    return home,repo,db
+def insert(c,table,values):
+    c.execute('INSERT INTO '+table+' ('+','.join(values)+') VALUES ('+','.join('?' for _ in values)+')',list(values.values()))
+def seed(home,repo,db,large=False):
+    root=home/'.roundfix'/'qa-artifacts';root.mkdir()
+    with contextlib.closing(sqlite3.connect(db)) as c, c:
+        c.execute('PRAGMA foreign_keys=ON')
+        for i in range(200 if large else 5):
+            name= ('old' if i<100 else 'recent')+str(i) if large else ['removed','queued','worktree','recent','active'][i]
+            old=i<100 if large else i<3
+            rid='run_20260801T120000Z_'+format(i+1,'016x')
+            insert(c,'runs',dict(id=rid,kind='spec',state='Active' if name=='active' else 'Clean',git_root=str(repo),repository_root=str(repo),local_branch='fixture',head_repository='fixture/repo',artifact_dir=str(root),work_dir=str(repo) if name=='worktree' else '',created_at=stamp(40 if old else 1),updated_at=stamp(31 if old else 1),completed_at='' if name=='active' else stamp(31 if old else 1)))
+            for j in range(500 if large else 2):
+                insert(c,'run_events',dict(run_id=rid,cursor=j+1,source='fixture',kind='fixture',summary='fixture',payload='x'*(1300 if large else 65536),created_at=stamp(31 if old else 1)))
+            insert(c,'run_agent_selections',dict(run_id=rid,scope_kind='task',scope_id='fixture',category='backend',profile_source='project',attempt=1,selection_role='preferred',runtime='fixture',model='fixture',reasoning_effort='',status='closed',created_at=stamp(31)))
+            insert(c,'run_token_usage',dict(run_id=rid,scope_kind='task',scope_id='fixture',session='fixture',basis='unreported',created_at=stamp(31)))
+            d=root/'runs'/rid;d.mkdir(parents=True);(d/'artifact.txt').write_text(name)
+            if name=='queued':
+                insert(c,'delivery_queues',dict(git_root=str(repo)))
+                insert(c,'delivery_queue_items',dict(git_root=str(repo),spec_slug='fixture',position=1,stage='pending',run_id=rid))
+                insert(c,'delivery_queue_runs',dict(git_root=str(repo),spec_slug='fixture',run_id=rid))
+        insert(c,'interactive_defaults',dict(key='qa-fixture',value='preserved',updated_at=stamp(1)))
+        insert(c,'run_windows',dict(git_root=str(repo),cutoff_at=123,created_at=123))
+        c.commit(); c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+    return root
+TABLES=['runs','run_events','run_agent_selections','run_token_usage','active_run_locks']
+OTHER=['run_windows','interactive_defaults','delivery_queues','delivery_queue_items','delivery_queue_runs','delivery_action_intents','delivery_action_receipts']
+def rows(db):
+    with contextlib.closing(sqlite3.connect('file:'+str(db)+'?mode=ro',uri=True)) as c, c:
+        return {t:sorted(c.execute('SELECT * FROM '+t).fetchall(),key=repr) for t in TABLES+OTHER}
+def hashes(home):
+    return {str(p.relative_to(home)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(home.rglob('*')) if p.is_file()}
+def storage(db):
+    with contextlib.closing(sqlite3.connect(db)) as c, c:
+        return {k:c.execute('PRAGMA '+k).fetchone()[0] for k in ['page_count','page_size','freelist_count','auto_vacuum']}
+def transcript(n,record):
+    text=(ROOT/'docs/specs/0250-a-run-database-that-keeps-only-recent-runs/_techspec.md').read_text()
+    block=text.split('```transcript')[n].split('```')[0]
+    out=block.split('stdout:\n')[1].split('stderr:\n')[0]
+    err=block.split('stderr:\n')[1].split('exit:')[0]
+    # Strip only the Markdown nesting indent from the authored transcript.
+    def match(template,actual):
+        lines=[line[3:] if line.startswith('   ') else line for line in template.splitlines()]
+        while lines and not lines[-1].strip(): lines.pop()
+        pattern=''
+        for line in lines:
+            if line=='...':pattern+='(?:[^\n]*\n)*'
+            else:pattern+=re.sub(r'<[^>]+>',r'[^\n]+',re.escape(line))+'\n'
+        return re.fullmatch(pattern,actual) is not None
+    assert match(out,record['stdout']),(n,'stdout',out,record)
+    assert match(err,record['stderr']),(n,'stderr',err,record)
+    assert record['exit']==int(block.split('exit:')[1].strip())
+
+if '--large-only' not in sys.argv:
+    home,repo,db=fresh('transcripts');root=seed(home,repo,db)
+    before=rows(db);pages=storage(db);bytes_before=hashes(home)
+    dry=command(home,repo,'transcript-1',['gc','--dry-run']);transcript(1,dry)
+    assert hashes(home)==bytes_before, ('dry-run bytes changed',bytes_before,hashes(home))
+    assert rows(db)==before
+    live=command(home,repo,'transcript-2',['gc']);transcript(2,live)
+    after=rows(db);removed='run_20260801T120000Z_0000000000000001'
+    for t in TABLES:
+        col=0 if t in ['runs','run_events'] else 1 if t in ['run_agent_selections','run_token_usage'] else 2
+        assert after[t]==[r for r in before[t] if r[col]!=removed],t
+    for t in OTHER:assert before[t]==after[t],t
+    assert not (root/'runs'/removed).exists()
+    for i in range(2,6):assert (root/'runs'/('run_20260801T120000Z_'+format(i,'016x'))/'artifact.txt').exists()
+    assert storage(db)['page_count']<pages['page_count']
+    (E/'dry-live-confirmation.json').write_text(json.dumps({'checksums_before':bytes_before,'checksums_after_dry':bytes_before,'tables_before':{t:len(v) for t,v in before.items()},'tables_after':{t:len(v) for t,v in after.items()},'untouched_tables_equal':True,'kept_rows_equal':True,'pages_before':pages,'pages_after':storage(db)},indent=2))
+    second=command(home,repo,'second-live',['gc']); assert second['exit']==0 and 'Runs removed: 0' in second['stdout']
+    for n,args in [(4,['runs','show','run_20260801T120000Z_0123456789abcdef']),(5,['events','run_20260801T120000Z_0123456789abcdef'])]:
+        transcript(n,command(home,repo,'transcript-'+str(n),args))
+    (home/'.roundfix/config.yml').write_text('store:\n  journal_retention: 0\n  run_retention_days: 10\n')
+    transcript(3,command(home,repo,'transcript-3',['gc','--dry-run']))
+    home0,repo0,db0=fresh('mode0');seed(home0,repo0,db0)
+    with contextlib.closing(sqlite3.connect(db0)) as c, c:
+        c.execute("DELETE FROM runs WHERE state='Active'");c.commit(); c.execute('PRAGMA auto_vacuum=0');c.execute('VACUUM')
+    assert storage(db0)['auto_vacuum']==0
+    convert=command(home0,repo0,'mode0-conversion',['gc']);assert convert['exit']==0 and 'Compaction: full (converted to incremental)' in convert['stdout']
+    assert storage(db0)['auto_vacuum']==2
+
+
+# Large fixture's schema is created by the worktree binary; SQL supplies data only.
+lh,lr,ld=fresh('large-live');seed(lh,lr,ld,True)
+ah,ar,ad=fresh('large-start');seed(ah,ar,ad,True)
+before_size=ld.stat().st_size
+large=command(lh,lr,'large-live',['gc']);assert large['exit']==0 and 'Runs removed: 100' in large['stdout']
+(E/'large-fixtures.json').write_text(json.dumps({'events':100000,'runs':200,'payload_bytes':1300,'old_runs':100,'live_home':str(lh),'start_home':str(ah),'start_repo':str(ar),'live_seconds':large['seconds'],'bytes_before':before_size,'bytes_after':ld.stat().st_size,'page_stats_after':storage(ld)},indent=2))
+print('Generated large fixture live sweep',large['seconds'],'seconds')

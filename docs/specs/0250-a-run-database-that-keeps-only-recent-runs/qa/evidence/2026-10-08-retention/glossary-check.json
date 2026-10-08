@@ -1,0 +1,13 @@
+{
+  "terms_defined": [
+    "Run Retention",
+    "Run Retention Sweep",
+    "GC Command",
+    "Journal Retention"
+  ],
+  "ordered_after_journal_retention": true,
+  "old_gc_claim_absent": true,
+  "inner_outer_policy": true,
+  "additional_terms_needed": false,
+  "protected_runs": "explicitly declared non-term heading"
+}

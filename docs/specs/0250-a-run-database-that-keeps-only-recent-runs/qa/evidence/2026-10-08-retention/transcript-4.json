@@ -1,0 +1,9 @@
+{
+  "command": "./bin/roundfix runs show run_20260801T120000Z_0123456789abcdef",
+  "home": "/private/tmp/qa0250-transcripts-17zlul5o/home",
+  "cwd": "/private/tmp/qa0250-transcripts-17zlul5o/repo",
+  "stdout": "",
+  "stderr": "roundfix: runs show failed: Run \"run_20260801T120000Z_0123456789abcdef\" does not exist; Run Retention may have removed it, because it removes terminal Runs that completed more than 30 days ago\nRun 'roundfix runs show --help' for usage.\n",
+  "exit": 2,
+  "seconds": 0.009834833035711199
+}
