@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0252-one-gate-per-run-and-a-smaller-baseline
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -135,3 +135,158 @@ file.
 - [_prd.md](_prd.md) — Goal 1; User Story 1; Core Features 1 and 6; Success Metric 1
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 5; Exact clause texts; Skill and document texts; Version changes; Retention; Derived files; Testing Approach; Build Order 1
 - ADR-0257; ADR-0250; ADR-0244; ADR-0186
+
+
+## Result
+
+### Implementation handed back
+
+Reworded the four Verification clauses in place with the exact TechSpec texts,
+answering audit findings B01 and B15. Their identities, `mandatory`
+enforcement, and absence of `replaces` are preserved. No other clause changed.
+The rule and guide versions rose once from the starting commit:
+
+- `rule.core.verification-selected`: 7 → 8;
+  `guide.agent-instructions`: 13 → 14.
+- `rule.spec.routing`: 7 → 8; `guide.spec-routing`: 11 → 12.
+- The module recorder chose `core`: 18 → 19 and `spec-workflow`: 15 → 16.
+- The skill recorder raised both `implement-task` version fields: 0.0.3 → 0.0.4.
+
+Changed only §7 step 3 and the recorded version fields of `implement-task`.
+Revised **Incremental Verification** through `domain-modeling` to the exact
+TechSpec definition and preserved its `_Avoid_` line. Added the three required
+clause tests using the existing glossary-test pattern, with independent
+literal texts, forced golden bullets, and real temporary-adopter refreshes.
+Updated only the declared pinned sentence in the promoted-clause test.
+
+### Focused evidence by acceptance criterion
+
+| Acceptance criterion | Evidence from this Agent turn |
+| --- | --- |
+| Both generated guides scope the tiers outside a Run and name focused tests inside one | An exact-byte Python inspection required each of the four TechSpec texts exactly once as a mandatory bullet in its repository guide. `TestTheVerificationTierClausesCarryTheirText` and `TestTheVerificationTierClausesRenderInTheGuides` passed after sabotage restoration and regeneration. |
+| Spec routing names `--strict --run-verification` | Exact clause inspection passed; `TestTheSpecAndTypeScriptGuidesStateThePromotedRules` passed for both Standard TypeScript and Go profiles. |
+| Skill §7 forbids the selected commands and full suite; mirror matches | Exact-byte inspection proved only step 3 plus the two recorded version fields changed, and canonical/mirror bytes match. `TestAuthorialSkillSync` passed. |
+| Glossary carries the revised Incremental Verification | Exact-byte comparison to HEAD with only the authored definition substituted passed, including preservation of `_Avoid_`. |
+| Source Baseline adopter retains all four clauses; repository refresh is a no-op | `TestAnAdopterRetainsTheVerificationTierClauses` passed, requiring `ready`, all four `retained` dispositions and retention evidence, and no `unaccounted` disposition. A second repository refresh, and a final refresh after restoration, both reported `File changes: 0` and verified idempotence. |
+
+### Commands and outcomes
+
+Go and Make commands used
+`GOCACHE=/private/tmp/roundfix-0252-task01-go-cache`; command output was
+preserved with `rtk proxy`.
+
+- Starting focused check:
+  `go test ./internal/baseline -run '^TestTheVerificationTierClauses(CarryTheirText|RenderInTheGuides)$' -count=1`
+  exited 1 on all four original texts and their golden bullets.
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+  exited 0 and recorded the two module versions.
+- `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then `make skills-sync` each exited 0. The recorder had sandbox permission
+  to write the protected canonical skill.
+- `make baseline-digests` exited 0 after skill sync, and again after sabotage
+  restoration. Its final strict catalog validation passed. No generated
+  expectation or guide was edited by hand.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  applied and verified three generated files. Its approved Plan Digest was
+  `sha256:298dc0841edcc2c0a28b3fb36e98b997f0a1b18bd9c26765c3ed2f000e14d7a3`.
+  The second and final invocations exited 0 with `File changes: 0`; their
+  Plan Digest was
+  `sha256:b50dbef7060a80c7eee0f69411d7b9f33195ce7107f07bb91cc629c27c1e8136`.
+  These local refreshes reported zero semantic retention evidence; the
+  temporary Source Baseline adopter test supplies that criterion's evidence.
+- Final focused baseline check:
+  `go test ./internal/baseline -run '^(TestTheVerificationTierClausesCarryTheirText|TestTheVerificationTierClausesRenderInTheGuides|TestAnAdopterRetainsTheVerificationTierClauses|TestTheSpecAndTypeScriptGuidesStateThePromotedRules)$' -count=1 -v`
+  exited 0, with all four tests and their subtests passing.
+- `go test ./skills -run '^TestAuthorialSkillSync$' -count=1` exited 0.
+- Exact-byte source/guide/skill/glossary inspection passed. Changed-file
+  postflight and whitespace inspection are recorded below.
+
+### Sabotage evidence and restoration
+
+1. Temporarily changed `clause.core.run-selected-verification` from
+   “Outside a Run” to “Outside this Run” in `core.json`, then regenerated its
+   derived wording. The focused three-test command exited 1:
+   `TestTheVerificationTierClausesCarryTheirText` reported `force/text differs`,
+   and `TestTheVerificationTierClausesRenderInTheGuides` reported
+   `guide lacks exactly one forced clause`, both for that identity.
+2. Temporarily injected `mutateCatalogClause` after the retention test's
+   adopter creation, changing that clause's in-memory enforcement to
+   `stop-and-ask`. `TestAnAdopterRetainsTheVerificationTierClauses` failed:
+   the refresh was `action_required`, category `classification`, with
+   `retention transition has 1 unaccounted clause(s): clause.core.run-selected-verification`.
+
+Restored the module and new test file byte-for-byte from their pre-sabotage
+copies. No sabotage was recorded as a module or skill version. Ran
+`make baseline-digests` successfully after restoration, then reran the focused
+checks successfully and confirmed the repository refresh still changes no
+file. The test contains no sabotage injection.
+
+### Files rewritten by sanctioned commands
+
+The module-version recorder changed:
+
+- `internal/baseline/assets/modules/core.json` (module version line)
+- `internal/baseline/assets/modules/spec-workflow.json` (module version line)
+- `internal/baseline/module-versions.json`
+
+`make baseline-digests` changed these derived outputs across the successful
+regeneration runs:
+
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md`
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+
+The repository refresh changed:
+
+- `docs/agents/agent-instructions.md`
+- `docs/agents/spec-routing.md`
+- `docs/agents/setup-context.json`
+
+The skill-version recorder changed:
+
+- `.agents/skills/implement-task/SKILL.md` (both version fields)
+- `skills/implement-task/SKILL.md` (both version fields)
+- `skills/testdata/owned-skill-versions.json`
+
+`make skills-sync` recopied the Makefile's owned-skill trees; only
+`skills/implement-task/SKILL.md` has changed bytes. All other owned skill
+mirrors remain identical to their starting bytes.
+
+### Execution limits and recovered interruptions
+
+- The first Go attempt could not read the shared Go build cache; the
+  task-scoped cache resolved it.
+- The first digest attempt refused the unsynced skill mirror; syncing and
+  recording the skill resolved it before successful regeneration.
+- The first Baseline apply could not create its Git-private transaction
+  directory. The authorized retry with sandbox permission applied the same
+  plan successfully.
+- During sabotage setup, editing the new test while digest regeneration was
+  still running triggered suiteguard's repository-boundary guard. That run
+  was not counted as successful regeneration. After both sabotage edits were
+  restored, sequential regeneration and focused tests passed.
+- Refresh warnings identify the existing nested golden and Source Baseline
+  instruction carriers, which the command leaves unchanged.
+- The authored `## Verification` commands, selected repository Verification,
+  selected incremental Verification, and full test suite were not run.
+  Task status and settlement remain Daemon-owned; no commit, push, PR,
+  Task Graph edit, or other Task edit was made.
+
+Changed-file postflight: all 23 changed paths are declared in task_01 Context
+or are the assigned Task file. `git diff --check` passed. No Source Baseline
+asset, retention transition, force record, production Go file, other Task, or
+Task Graph changed. The pre-existing Daemon-written `status: in_progress`
+remains unchanged.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T180729Z_1c5cbdf685b778d0`
+- Source commit: `03c5992b0b6021250380fba480e9a44aa22c6421`

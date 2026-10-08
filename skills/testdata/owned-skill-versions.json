@@ -67,6 +67,10 @@
       {
         "version": "0.0.3",
         "digest": "b29715978c528200ea79bfd2a87ab0f6ecfab91e13f364407ead298c9c601553"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "fdb3e5a72048ca6dd4c7f01a4a3ec2b21fcbd336df1c4f77d702e827c82c9ce6"
       }
     ],
     "qa-gate": [

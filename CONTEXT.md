@@ -428,7 +428,7 @@ _Avoid_: test tags, impact map, test filter
 _Avoid_: full suite, nightly run, repo-test
 
 **Incremental Verification**:
-The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change while reusing safe local state. It is distinct from the complete repository Verification selected by `verification.gate`.
+The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change outside a Run while reusing safe local state. In a Daemon-assigned turn the Agent runs focused tests instead, because the Daemon runs the Task's Verification and the repository Verification at settlement (ADR-0257). It is distinct from the complete repository Verification selected by `verification.gate`.
 _Avoid_: Complete Verification, CI gate, optional check
 
 **Waiting for Verification**:
