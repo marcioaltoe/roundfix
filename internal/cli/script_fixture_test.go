@@ -60,6 +60,7 @@ func runScriptFixture() {
 }
 
 func TestScriptFixtureIsTheCompiledTestBinary(t *testing.T) {
+	// Sequential: sets the process-wide carry-forward hook marker environment variable.
 	t.Run("script arguments and environment", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "script")
 		writeScriptFixture(t, path, "printf '%s|%s|%s\\n' \"$1\" \"$2\" \"$FIXTURE_VALUE\"\nexit 7\n")

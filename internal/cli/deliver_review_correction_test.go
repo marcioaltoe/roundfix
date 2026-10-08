@@ -96,6 +96,7 @@ func assertReviewCorrectionRefused(t *testing.T, f *reviewCorrectionFixture, rea
 	}
 }
 func TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord(t *testing.T) {
+	t.Parallel()
 	f := newReviewCorrectionFixture(t)
 	if result := f.prove(t); !result.Accepted || result.Reason != "" {
 		t.Fatalf("proof=%+v", result)
@@ -108,6 +109,7 @@ func TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord(t *testing.T) {
 	}
 }
 func TestACorrectionOutsideTheArchivedSpecIsRefused(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"outside.txt", "docs/history/specs/0225-example-sibling/_prd.md", "docs/history/specs/another/_prd.md"} {
 		t.Run(name, func(t *testing.T) {
 			f := newReviewCorrectionFixture(t)
@@ -117,6 +119,7 @@ func TestACorrectionOutsideTheArchivedSpecIsRefused(t *testing.T) {
 	}
 }
 func TestACorrectionWithAnUndisposedFindingIsRefused(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name   string
 		change func(*testing.T, *reviewCorrectionFixture)
@@ -142,11 +145,13 @@ func TestACorrectionWithAnUndisposedFindingIsRefused(t *testing.T) {
 	}
 }
 func TestACorrectionThatDoesNotDescendIsRefused(t *testing.T) {
+	t.Parallel()
 	f := newReviewCorrectionFixture(t)
 	f.head = f.record.BaseCommit
 	assertReviewCorrectionRefused(t, f, "does not descend")
 }
 func TestReviewCorrectionRequiresTheParkedReviewRecord(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"head", "repository", "outcome"} {
 		t.Run(name, func(t *testing.T) {
 			f := newReviewCorrectionFixture(t)

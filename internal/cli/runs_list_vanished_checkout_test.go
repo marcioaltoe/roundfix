@@ -16,6 +16,7 @@ import (
 )
 
 func TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	linkedRoot := filepath.Join(t.TempDir(), "linked")
 	const linkedBranch = "feature/removed-linked-runs-list"

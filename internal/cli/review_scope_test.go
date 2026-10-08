@@ -21,6 +21,7 @@ import (
 )
 
 func TestReviewOmitsQAEvidenceAndUpstreamSkills(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	commitLineageFile(t, fixture, "skills-lock.json", `{"skills":{"external":{}}}`)
@@ -108,6 +109,7 @@ func commitScopeFile(t *testing.T, fixture reviewCommandFixture, path, content s
 }
 
 func TestReviewOmitsASkillTheLockDroppedAtTheHead(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	base := commitScopeFile(t, fixture, "skills-lock.json", `{"skills":{"dropped":{}}}`)
@@ -123,6 +125,7 @@ func TestReviewOmitsASkillTheLockDroppedAtTheHead(t *testing.T) {
 }
 
 func TestReviewKeepsTheQAReportInTheDiff(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	report := "docs/specs/example/qa/qa-report-2026-10-02.md"
@@ -143,6 +146,7 @@ func TestReviewKeepsTheQAReportInTheDiff(t *testing.T) {
 }
 
 func TestReviewBlocksOnAMalformedSkillsLock(t *testing.T) {
+	t.Parallel()
 	for _, lock := range []string{"{", `{"skills":[]}`, `{"skills":null}`, `null`} {
 		t.Run(lock, func(t *testing.T) {
 			runner := &reviewCommandRunner{}
@@ -158,6 +162,7 @@ func TestReviewBlocksOnAMalformedSkillsLock(t *testing.T) {
 }
 
 func TestReviewBlocksAboveTheBoundWithoutAProviderCall(t *testing.T) {
+	t.Parallel()
 	for _, round := range []int{1, 2} {
 		t.Run(fmt.Sprint(round), func(t *testing.T) {
 			runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: sessionReviewFinding}}}}
@@ -182,6 +187,7 @@ func TestReviewBlocksAboveTheBoundWithoutAProviderCall(t *testing.T) {
 }
 
 func TestReviewRecordsTheRuntimeStderrTail(t *testing.T) {
+	t.Parallel()
 	for _, width := range []int{10, 200} {
 		t.Run(fmt.Sprint(width), func(t *testing.T) {
 			lines := make([]string, 30)
@@ -210,6 +216,7 @@ func TestReviewRecordsTheRuntimeStderrTail(t *testing.T) {
 }
 
 func TestReviewReadsARecordWithoutTheNewFields(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "old.json")
 	mustWrite(t, path, `{"repository":"/repo","baseCommit":"base","headCommit":"head","provider":"codex","source":"built-in","outcome":"reviewed","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false}`)
 	record, err := readReviewRecord(path)
@@ -233,6 +240,7 @@ func TestReviewReadsARecordWithoutTheNewFields(t *testing.T) {
 }
 
 func TestReviewScopesRoundTwoDelta(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: sessionReviewFinding}}, {result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	commitScopeFile(t, fixture, "skills-lock.json", `{"skills":{"external":{}}}`)
@@ -251,6 +259,7 @@ func TestReviewScopesRoundTwoDelta(t *testing.T) {
 }
 
 func TestReviewScopesConfiguredSpecRoots(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	writeReviewCommandConfigWithSpecsRoot(t, fixture.repository, "codex", fixture.artifactDir, "planning")
@@ -268,6 +277,7 @@ func TestReviewScopesConfiguredSpecRoots(t *testing.T) {
 }
 
 func TestReviewBlocksOnAMalformedBaseLock(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	fixture.baseCommit = commitScopeFile(t, fixture, "skills-lock.json", "{")
@@ -289,6 +299,7 @@ func (runner unreadableReviewLockGit) RunGit(ctx context.Context, root string, a
 }
 
 func TestReviewBlocksOnAnUnreadableSkillsLock(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	commitScopeFile(t, fixture, "skills-lock.json", `{"skills":{}}`)
@@ -301,6 +312,7 @@ func TestReviewBlocksOnAnUnreadableSkillsLock(t *testing.T) {
 }
 
 func TestReviewAdmitsADiffExactlyAtTheBound(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	head := commitScopeFile(t, fixture, "bound.txt", "x\n")

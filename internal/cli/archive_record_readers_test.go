@@ -89,6 +89,7 @@ func newReaderRecordRepo(t *testing.T) string {
 }
 
 func TestInspectItemReadsTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			repo := newReaderRecordRepo(t)
@@ -107,6 +108,7 @@ func TestInspectItemReadsTheArchiveRecord(t *testing.T) {
 }
 
 func TestPrerequisitesCountAnArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			repo := newReaderRecordRepo(t)
@@ -133,6 +135,7 @@ func TestPrerequisitesCountAnArchiveRecord(t *testing.T) {
 }
 
 func TestReviewCorrectionAllowsTheArchiveRecordPath(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			f := newReviewCorrectionFixture(t)
@@ -172,6 +175,7 @@ func (f *archiveRecordReviewFlow) Review(context.Context, string, string, string
 }
 
 func TestReviewParksForACorrectiveSpecOnAnArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: correction needed", StopReason: "end_turn"}}}}
@@ -225,6 +229,7 @@ func TestReviewParksForACorrectiveSpecOnAnArchiveRecord(t *testing.T) {
 }
 
 func TestReviewOverrideConventionReadsTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			repo := newReaderRecordRepo(t)
@@ -239,6 +244,7 @@ func TestReviewOverrideConventionReadsTheArchiveRecord(t *testing.T) {
 }
 
 func TestReviewDiffOmitsTheRemovedSpecFolder(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			repo := newReaderRecordRepo(t)
@@ -264,6 +270,7 @@ func archivedCausesCLI(t *testing.T, missing bool) (commandEnvironment, spec.Arc
 }
 
 func TestRunCausesReadAnArchivedTaskGraphFromGit(t *testing.T) {
+	t.Parallel()
 	env, _ := archivedCausesCLI(t, false)
 	code, out, diag := runCausesCLI(t, env, "--format", "json")
 	var report runcause.Report
@@ -276,6 +283,7 @@ func TestRunCausesReadAnArchivedTaskGraphFromGit(t *testing.T) {
 }
 
 func TestRunCausesReportAnArchiveRecordWithoutItsRevision(t *testing.T) {
+	t.Parallel()
 	env, _ := archivedCausesCLI(t, true)
 	code, out, diag := runCausesCLI(t, env, "--format", "json")
 	var report runcause.Report

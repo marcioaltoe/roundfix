@@ -20,6 +20,7 @@ const (
 )
 
 func TestBaselinePlanPrintsRelocationCitationWarnings(t *testing.T) {
+	t.Parallel()
 	repository := newBaselineHistoryCitationRepository(t)
 	want := "Warning: baseline.history.citation: " + cliCitationPath + ": line 1 cites ../adr/0040-retired.md"
 
@@ -68,6 +69,7 @@ func TestBaselinePlanPrintsRelocationCitationWarnings(t *testing.T) {
 }
 
 func TestBaselineUpdateRefusesADigestWhoseCitationsChanged(t *testing.T) {
+	t.Parallel()
 	repository := newBaselineUpdateRepository(t)
 	writeBaselinePlanTestFile(t, repository, cliCitationSource, "---\nstatus: superseded\n---\n")
 	writeBaselinePlanTestFile(t, repository, cliCitationPath, "See [the retired decision](../adr/0040-retired.md).\n")

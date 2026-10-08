@@ -10,6 +10,7 @@ import (
 )
 
 func TestThisRepositoryHoldsEveryRequiredExternalSkill(t *testing.T) {
+	t.Parallel()
 	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
@@ -21,6 +22,7 @@ func TestThisRepositoryHoldsEveryRequiredExternalSkill(t *testing.T) {
 }
 
 func TestARepositoryMissingARequiredExternalSkillIsReported(t *testing.T) {
+	t.Parallel()
 	root := copyThisRepositorySkillSetFixture(t)
 	external, ok, err := resolveExternalSkillRequirement(root)
 	if err != nil {

@@ -45,6 +45,7 @@ func assertReviewRetry(t *testing.T, record reviewRecord, stderr, step, message 
 }
 
 func TestReviewRetriesASelectionFailureBeforeThePromptOnce(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner("No findings.")
 	r.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, nil}
 	fixture := retryReviewFixture(t, r)
@@ -62,6 +63,7 @@ func TestReviewRetriesASelectionFailureBeforeThePromptOnce(t *testing.T) {
 }
 
 func TestReviewRetriesAPromptProcessThatFailedBeforeSessionPrompt(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner("", "No findings.")
 	r.results[0].err = retryProtocolFailure(false)
 	fixture := retryReviewFixture(t, r)
@@ -76,6 +78,7 @@ func TestReviewRetriesAPromptProcessThatFailedBeforeSessionPrompt(t *testing.T) 
 }
 
 func TestReviewNeverRetriesAfterSessionPromptWasSent(t *testing.T) {
+	t.Parallel()
 	r := &reviewCommandRunner{results: []reviewCommandRunResult{{err: retryProtocolFailure(true)}}}
 	fixture := retryReviewFixture(t, r)
 	code, record, stderr := fixture.run(t)
@@ -86,6 +89,7 @@ func TestReviewNeverRetriesAfterSessionPromptWasSent(t *testing.T) {
 }
 
 func TestReviewActivatesTheFallbackAfterTheRetryFails(t *testing.T) {
+	t.Parallel()
 	for _, phase := range []string{"preparation", "prompt"} {
 		t.Run(phase, func(t *testing.T) {
 			r := newSessionReviewRunner("No findings.")
@@ -111,6 +115,7 @@ func TestReviewActivatesTheFallbackAfterTheRetryFails(t *testing.T) {
 }
 
 func TestReviewBlocksAfterTheRetryFailsWithoutFallback(t *testing.T) {
+	t.Parallel()
 	// Profiles require a fallback, so exercise the last selection with no fallback left.
 	for _, phase := range []string{"preparation", "prompt"} {
 		t.Run(phase, func(t *testing.T) {
@@ -141,6 +146,7 @@ func TestReviewBlocksAfterTheRetryFailsWithoutFallback(t *testing.T) {
 }
 
 func TestReviewDoesNotRetryAGenericPreparationError(t *testing.T) {
+	t.Parallel()
 	r := &reviewCommandRunner{prepareErrors: []error{errors.New("session filesystem unavailable")}}
 	fixture := retryReviewFixture(t, r)
 	code, record, stderr := fixture.run(t)
@@ -151,6 +157,7 @@ func TestReviewDoesNotRetryAGenericPreparationError(t *testing.T) {
 }
 
 func TestReviewRoundTwoRetriesAResumedPromptBeforeSessionPrompt(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "", "No findings.")
 	r.results[1].err = retryProtocolFailure(false)
 	fixture := retryReviewFixture(t, r)
@@ -167,6 +174,7 @@ func TestReviewRoundTwoRetriesAResumedPromptBeforeSessionPrompt(t *testing.T) {
 }
 
 func TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name string
 		err  error
@@ -197,6 +205,7 @@ func TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure(t *testi
 }
 
 func TestReviewSelectionRetryBudgetSpansPreparationAndPrompt(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner("", "No findings.")
 	r.prepareErrors = []error{retryProtocolFailure(false), nil}
 	r.results[0].err = retryProtocolFailure(false)
@@ -209,6 +218,7 @@ func TestReviewSelectionRetryBudgetSpansPreparationAndPrompt(t *testing.T) {
 }
 
 func TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt(t *testing.T) {
+	t.Parallel()
 	r := &reviewCommandRunner{results: []reviewCommandRunResult{{err: retryProtocolFailure(false)}, {err: retryProtocolFailure(true)}}}
 	fixture := retryReviewFixture(t, r)
 	code, record, stderr := fixture.run(t)
@@ -220,6 +230,7 @@ func TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt(t *testing.T)
 }
 
 func TestReviewPreviousSelectionRetryDoesNotSuffixUnretriedFallbackFailure(t *testing.T) {
+	t.Parallel()
 	r := &reviewCommandRunner{prepareErrors: []error{retryProtocolFailure(false), retryProtocolFailure(false)}, results: []reviewCommandRunResult{{err: retryProtocolFailure(true)}}}
 	fixture := retryReviewFixture(t, r)
 	code, record, stderr := fixture.run(t)

@@ -181,11 +181,11 @@ func detachFixtureEnded(t *testing.T, pid int, identity string) (bool, string) {
 }
 
 func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
+	t.Parallel()
 	// The other Unix fallback intentionally cannot distinguish zombies.
 	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
 		return
 	}
-	t.Parallel()
 	input, writer, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)

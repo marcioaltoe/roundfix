@@ -24,6 +24,7 @@ import (
 )
 
 func TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, _ := newReconcileWorkspace(t)
 	linkedRoot := filepath.Join(t.TempDir(), "linked")
 	const linkedBranch = "feature/linked-reconcile"
@@ -67,6 +68,7 @@ func TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout(t *testing.T) {
 }
 
 func TestReconcileFromMainAfterALinkedWorktreeIsRemoved(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name string
 		args func(store.Run) []string
@@ -149,6 +151,7 @@ func TestReconcileFromMainAfterALinkedWorktreeIsRemoved(t *testing.T) {
 }
 
 func TestReconcileRefusesAnotherRepositorysRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, _ := newReconcileWorkspace(t)
 	otherRepository := t.TempDir()
 	gitImplement(t, otherRepository, "init", "--initial-branch=main")
@@ -184,6 +187,7 @@ func TestReconcileRefusesAnotherRepositorysRun(t *testing.T) {
 }
 
 func TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, _ := newReconcileWorkspace(t)
 	otherRepository := t.TempDir()
 	gitImplement(t, otherRepository, "init", "--initial-branch=main")

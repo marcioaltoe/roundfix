@@ -108,6 +108,7 @@ func TestSplitReviewFindingsKeepsPreambleAndIndentedLines(t *testing.T) {
 }
 
 func TestReviewDisposeHelpPrintsUsage(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -127,6 +128,7 @@ func TestReviewDisposeHelpPrintsUsage(t *testing.T) {
 }
 
 func TestReviewDisposeDismissesAFindingWithEvidence(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	const findings = "- internal/cli/review.go:10: first\n- internal/cli/review.go:20: second"
 	writeDispositionFindingsRecord(t, fixture, findings, false)
@@ -148,6 +150,7 @@ func TestReviewDisposeDismissesAFindingWithEvidence(t *testing.T) {
 }
 
 func TestReviewDisposeRecordsAFixingCommit(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	const findings = "- internal/cli/review.go:10: first"
 	writeDispositionFindingsRecord(t, fixture, findings, true)
@@ -173,6 +176,7 @@ func TestReviewDisposeRecordsAFixingCommit(t *testing.T) {
 }
 
 func TestReviewDisposeRefusesWithoutAFindingsRecord(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		write func(*testing.T, reviewCommandFixture)
@@ -206,30 +210,35 @@ func TestReviewDisposeRefusesWithoutAFindingsRecord(t *testing.T) {
 }
 
 func TestReviewDisposeRefusesAnUnknownFinding(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	assertDisposeRefusedWithoutLedgerChange(t, fixture.artifactDir, "F9", "--dismiss", "--evidence", "evidence")
 }
 
 func TestReviewDisposeRefusesBothForms(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	assertDisposeRefusedWithoutLedgerChange(t, fixture.artifactDir, "F1", "--dismiss", "--evidence", "evidence", "--fixed-by", fixture.baseCommit)
 }
 
 func TestReviewDisposeRefusesNeitherForm(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	assertDisposeRefusedWithoutLedgerChange(t, fixture.artifactDir, "F1")
 }
 
 func TestReviewDisposeRefusesBlankEvidence(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	assertDisposeRefusedWithoutLedgerChange(t, fixture.artifactDir, "F1", "--dismiss", "--evidence", "  \t")
 }
 
 func TestReviewDisposeRefusesADismissalAtAMovedHead(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	mustWrite(t, filepath.Join(fixture.repository, "moved.txt"), "moved\n")
@@ -239,6 +248,7 @@ func TestReviewDisposeRefusesADismissalAtAMovedHead(t *testing.T) {
 }
 
 func TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		fixedBy func(*testing.T, reviewCommandFixture) string
@@ -270,6 +280,7 @@ func TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead(t *testin
 }
 
 func TestReviewDisposeRefusesASecondDisposition(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	code, _, stderr := runReviewDispose(t, "F1", "--dismiss", "--evidence", "evidence")

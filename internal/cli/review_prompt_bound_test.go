@@ -15,6 +15,7 @@ import (
 )
 
 func TestReviewCommandRefusesAClaudePromptOverHalfItsWindow(t *testing.T) {
+	t.Parallel()
 	for _, round := range []int{1, 2} {
 		t.Run(fmt.Sprint(round), func(t *testing.T) {
 			runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: sessionReviewFinding}}}}
@@ -49,6 +50,7 @@ func TestReviewCommandRefusesAClaudePromptOverHalfItsWindow(t *testing.T) {
 }
 
 func TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{Message: "No findings."}}}}
 	fixture := newReviewCommandFixture(t, "claude", runner)
 	writeReviewCommandProfileConfig(t, fixture.repository, "claude", fixture.artifactDir, "claude", "claude")
@@ -71,6 +73,7 @@ func TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound(t *testing.T) {
 }
 
 func TestReviewCommandKeepsTheCodexDiffByteBound(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	commitScopeFile(t, fixture, "large.txt", strings.Repeat("x", reviewDiffBound))
@@ -91,6 +94,7 @@ func TestReviewCommandKeepsTheCodexDiffByteBound(t *testing.T) {
 }
 
 func TestEstimateReviewPromptTokens(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		prompt string
 		want   int

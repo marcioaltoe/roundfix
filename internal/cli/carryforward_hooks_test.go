@@ -20,6 +20,7 @@ import (
 const carryForwardHookMarkerEnv = "ROUNDFIX_TEST_CARRY_FORWARD_HOOK_MARKER"
 
 func TestCarryForwardAppliesThroughRefusingCommitHooks(t *testing.T) {
+	// Sequential: sets process-wide TMPDIR and carry-forward hook marker environment variables.
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -43,6 +44,7 @@ func TestCarryForwardAppliesThroughRefusingCommitHooks(t *testing.T) {
 }
 
 func TestCarryForwardProofIgnoresRefusingCommitHooks(t *testing.T) {
+	// Sequential: sets process-wide TMPDIR and carry-forward hook marker environment variables.
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -70,6 +72,7 @@ func TestCarryForwardProofIgnoresRefusingCommitHooks(t *testing.T) {
 }
 
 func TestCarryForwardStagingRunsNoRepositoryHook(t *testing.T) {
+	// Sequential: sets process-wide TMPDIR and carry-forward hook marker environment variables.
 	hooks := writeCarryForwardHookFixtures(t, false)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -101,6 +104,7 @@ func TestCarryForwardStagingRunsNoRepositoryHook(t *testing.T) {
 }
 
 func TestCarryForwardLeavesTheCheckoutHooksPathUnchanged(t *testing.T) {
+	// Sequential: sets process-wide TMPDIR and carry-forward hook marker environment variables.
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -126,6 +130,7 @@ func TestCarryForwardLeavesTheCheckoutHooksPathUnchanged(t *testing.T) {
 }
 
 func TestCarryForwardRemovesItsEmptyHooksDirectory(t *testing.T) {
+	// Sequential: sets process-wide TMPDIR and carry-forward hook marker environment variables.
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)

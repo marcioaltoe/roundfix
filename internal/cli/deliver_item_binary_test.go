@@ -124,6 +124,7 @@ func (f *deliveryItemFixture) assertStarts(t *testing.T, args ...[]string) {
 }
 
 func TestDeliveryStepRunsTheItemBinary(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t)
 	executable, err := f.workflow.stepExecutable(t.Context(), f.repo, "widget", "implement")
 	if err != nil || executable != filepath.Join(f.repo, "bin/roundfix") {
@@ -136,6 +137,7 @@ func TestDeliveryStepRunsTheItemBinary(t *testing.T) {
 }
 
 func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t) // Compile once for all three steps.
 	for _, step := range []string{"implement", "archive", "review"} {
 		t.Run(step, func(t *testing.T) {
@@ -172,6 +174,7 @@ func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
 }
 
 func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t)
 	t.Setenv("DELIVERY_ITEM_PROBE_EXIT", "2")
 	t.Setenv(cliTestHelperEnv, "1")
@@ -207,6 +210,7 @@ func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
 }
 
 func TestDeliveryStepParksWhenTheItemBuildFails(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "printf 'build failed\\n' >&2; exit 7"
 	_, err := f.workflow.RunSpec(t.Context(), f.repo, "widget")
@@ -225,6 +229,7 @@ func TestDeliveryStepParksWhenTheItemBuildFails(t *testing.T) {
 }
 
 func TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Path = "unignored/roundfix"
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "touch build-started"
@@ -242,6 +247,7 @@ func TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored(t *testing.T) {
 }
 
 func TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{}
 	f.workflow.git = nil // Any Git access would panic.
@@ -265,6 +271,7 @@ func TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable(t *testing.T) {
 }
 
 func TestDeliveryItemBinaryThatCannotStartReturnsAParkError(t *testing.T) {
+	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "mkdir -p bin"
 	_, err := f.workflow.Archive(t.Context(), f.repo, "widget", f.head)

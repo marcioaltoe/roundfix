@@ -33,6 +33,7 @@ func overrideConventionRepository(t *testing.T, root, prd string) reviewReposito
 }
 
 func TestOverrideArchiveIsEligibleForConventionC5(t *testing.T) {
+	t.Parallel()
 	for _, root := range []string{"docs/history/specs", "specs/_archived"} {
 		t.Run(root, func(t *testing.T) {
 			repo := overrideConventionRepository(t, root, overrideConventionPRD)
@@ -54,6 +55,7 @@ func TestOverrideArchiveIsEligibleForConventionC5(t *testing.T) {
 }
 
 func TestArchiveWithoutOverrideIsNotEligibleForC5(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct{ name, root, prd string }{
 		{"missing PRD", "docs/history/specs", ""},
 		{"no override", "docs/history/specs", "---\nstatus: archived\n---\n"},
@@ -79,6 +81,7 @@ func TestArchiveWithoutOverrideIsNotEligibleForC5(t *testing.T) {
 }
 
 func TestReviewPromptCarriesConventionC5(t *testing.T) {
+	t.Parallel()
 	repo := overrideConventionRepository(t, "docs/history/specs", overrideConventionPRD)
 	prompt := buildReviewPrompt(repo.Base, repo.Head, "diff")
 	if !strings.Contains(prompt, "Delivery Conventions ("+deliveryConventionsVersion+")") {
@@ -95,6 +98,7 @@ func TestReviewPromptCarriesConventionC5(t *testing.T) {
 }
 
 func TestConventionC5MalformedRecordFailsClosed(t *testing.T) {
+	t.Parallel()
 	for _, prd := range []string{
 		"---\nqa_override: [\n---\n",
 		overrideConventionPRD[:len(overrideConventionPRD)-4] + "qa_override: false\n---\n",
@@ -110,6 +114,7 @@ func TestConventionC5MalformedRecordFailsClosed(t *testing.T) {
 }
 
 func TestConventionC5ValidatorHonorsEligibility(t *testing.T) {
+	t.Parallel()
 	const reportPath = "docs/history/specs/0001-example/qa/report.md"
 	for _, test := range []struct {
 		name, prd, reason string

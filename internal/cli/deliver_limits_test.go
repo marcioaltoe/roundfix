@@ -81,6 +81,7 @@ func TestDeliverStartRecordsNoneForOmittedLimits(t *testing.T) {
 }
 
 func TestDeliverStartRefusesANonPositiveMaxDuration(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		value string
@@ -96,10 +97,12 @@ func TestDeliverStartRefusesANonPositiveMaxDuration(t *testing.T) {
 }
 
 func TestDeliverStartRefusesAMalformedMaxDuration(t *testing.T) {
+	t.Parallel()
 	assertDeliverStartLimitsRefused(t, []string{"--max-duration", "not-a-duration"}, "invalid value")
 }
 
 func TestDeliverStartRefusesAMaxRetriesBelowOne(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		value string

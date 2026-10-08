@@ -17,6 +17,7 @@ import (
 )
 
 func TestArchiveConfirmationNamesPromotedFiles(t *testing.T) {
+	t.Parallel()
 	for _, override := range []bool{false, true} {
 		t.Run(fmt.Sprint(override), func(t *testing.T) {
 			home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
@@ -53,6 +54,7 @@ func TestArchiveConfirmationNamesPromotedFiles(t *testing.T) {
 }
 
 func TestArchivePlanWithoutAKeyPrintsNoAdvice(t *testing.T) {
+	// Sequential: clears process-wide provider API key environment variables.
 	questions, err := judge.Load()
 	if err != nil {
 		t.Fatal(err)

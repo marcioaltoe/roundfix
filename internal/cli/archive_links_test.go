@@ -12,6 +12,7 @@ import (
 )
 
 func TestArchiveCommandRefusesABrokenOutwardLink(t *testing.T) {
+	t.Parallel()
 	_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build", status: string(spec.StatusCompleted)}})
 	writeArchiveQAReport(t, repo, spec.VerdictPass)
 	dir := filepath.Join(repo, "docs", "specs", implementTestSlug)
@@ -34,6 +35,7 @@ func TestArchiveCommandRefusesABrokenOutwardLink(t *testing.T) {
 }
 
 func TestArchiveCommandReportsRewrittenLinks(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name              string
 		override, rewrite bool

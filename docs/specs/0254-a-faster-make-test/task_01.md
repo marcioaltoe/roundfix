@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0254-a-faster-make-test
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -134,3 +134,202 @@ bound.
 - [_prd.md](_prd.md) — Goals 1–2; User Stories 3–4; Core Features 1, 2 and 6; Success Metrics 3–4
 - [_techspec.md](_techspec.md) — Current behavior; Interfaces; API Contract 1; API Contract 2; Invariants 1–4; Testing Approach; Risks & Considerations; Build Order 1
 - ADR-0259; ADR-0089; ADR-0125; ADR-0126; ADR-0213; ADR-0244
+
+## Result
+
+Implemented the Parallel Test Package rule and the `internal/cli` conversion.
+Task status and the declared Verification remain Daemon-owned; no declared
+Verification, repository Verification, commit, push or pull request was run.
+
+### Implementation
+
+- The AST rule lists only `internal/cli`, with ceiling 48. It checks each
+  test's own `*testing.T` parameter and first statement, accepts leading or doc
+  Sequential reasons with at least two words, skips contract build constraints,
+  reports every violation with its file, line and test name, and logs the count.
+- The package has 1,409 top-level tests: 1,366 now have first-statement
+  `t.Parallel()`, and 43 have valid Sequential reasons. Added 549 parallel
+  calls and 29 Sequential comments across 106 CLI test files. All 14 existing
+  Sequential comments remain byte-identical.
+- `TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded` already called
+  `t.Parallel()` after its platform guard. Moved that existing call first
+  rather than leaving a duplicate. The existing single-line
+  `TestArchiveRefusesASpecWithAGlossaryGap` declaration was expanded only to
+  format its inserted parallel call. Assertions, fixture code and helper
+  behavior are preserved; neither production code nor another Task changed.
+- Added both glossary terms beside Repository Contract Test, with `_Avoid_`
+  lines and ADR-0259 references. The guide differs by exactly the requested
+  repository-rule bullet, outside setup markers.
+
+### State audit
+
+An AST helper-call graph and independent read-only audits traced direct and
+indirect environment, working-directory, signal and variable changes.
+
+- Six repository-profile tests stay sequential through
+  `newBaselineRepositoryProfileFixture`, which calls `t.Chdir`.
+- Environment callers stay sequential, including the carry-forward hook,
+  delivery-item binary, archive advice, script fixture and forge probe tests.
+- All six owner-staleness tests stay sequential through `setOwnerBuildCommit`,
+  which swaps and restores `app.BuildCommit`. Searches covered selector
+  assignments for all imported packages, not only `app`, `config` and `store`,
+  and assignments to this package's globals. No other test-time global swap
+  was found: the notifier/version hooks run in `init`, the script binary path
+  is set in `TestMain`, command override maps use `sync.Map`, and the shared
+  cold binary cache is initialized under `sync.Once`.
+- `TestCLIForceStopOwnerProcessHelper` keeps its SIGTERM reason.
+  `TestSupersedeAcceptsAnArchiveRecord` stays sequential because it invokes
+  the already parallel `TestSupersedeAcceptsASupersessionArchivedDeliverer`
+  with the same `testing.T`. Existing detached-child reasons are unchanged.
+  No current shared helper owns a `t.Parallel()` call that needs moving.
+
+### Focused checks
+
+These checks used `GOCACHE=/private/tmp/roundfix-0254-go-cache` after a host
+cache access was denied. Exact Go output was retained through `rtk proxy`.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Rule passes and CLI stays within ceiling | `go test ./internal/testfixture -run 'TestEveryTestInAParallelTestPackageRunsInParallel/repository$' -count=1 -v` exited 0 and logged `internal/cli: 43 Sequential Tests, ceiling 48`. Before conversion the same focused scan failed with 579 missing-form violations. |
+| Seeded violations name their sites | `go test ./internal/testfixture -run 'TestEveryTestInAParallelTestPackageRunsInParallel/' -race -count=1 -v` exited 0 (`1.868s`), including the repository scan and 16 seeded subtests. Negative cases assert file, line, test and cause; cases cover both comment positions, late calls, both forms, one-word reasons, both contract tags, legacy tags, ceilings, multiple violations, wrong receiver, late comments, helpers/TestMain and unlisted packages. |
+| CLI race and shuffled execution | Focused selector of 593 converted/newly annotated tests and existing stateful neighbors passed with `go test ./internal/cli -run "$selector" -race -short -count=1 -timeout 10m` (`102.215s`) and `go test ./internal/cli -run "$selector" -shuffle=on -count=1 -timeout 10m` (`64.028s`). The selector was retained in `/private/tmp/roundfix-cli-converted-selector.txt`; outputs in `/private/tmp/roundfix-cli-converted-race.log` and `/private/tmp/roundfix-cli-converted-shuffle.log`. Full-package acceptance remains for the Daemon's declared Verification. |
+| Glossary and guide state the rule | A focused Python check confirmed both terms have `_Avoid_` lines and ADR-0259 links, and removing the exact one-bullet addition restores the guide's HEAD bytes. |
+
+Additional checks: `gofmt -l internal/testfixture/parallel_tests_test.go
+internal/cli` printed no paths; `git -c core.fsmonitor=false diff --check`
+exited 0. A source comparison removing only parallel annotations and new
+Sequential comments, accounting for the single-line declaration's formatting,
+matched the original formatted code across all 106 changed CLI files.
+Changed-file postflight covered 110 paths, all within the Task's bound;
+the Daemon records the additional CLI test paths under Recorded paths.
+
+### Sabotage and restoration
+
+Removed the first `t.Parallel()` from
+`TestArchiveRefusesASpecAFileStillPins` without adding a reason. The focused
+repository rule exited 1 and printed:
+
+```text
+internal/cli/archive_active_spec_path_test.go:31: TestArchiveRefusesASpecAFileStillPins: missing first-statement Parallel() or Sequential: reason
+```
+
+Restored the file byte-for-byte in a `finally` block. The subsequent repository
+scan and race-detector run of the rule both passed; the sabotage output is in
+`/private/tmp/roundfix-parallel-sabotage.log`.
+
+### Diagnostics resolved during implementation
+
+The initial focused CLI race run exposed a duplicate `t.Parallel()` call in
+`TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded`. Its existing late call
+was moved first, and the same focused run then passed (`7.143s`), followed by
+the 593-test race and shuffled checks above. The panic occurred before this
+test's `cmd.Start()`, so it had started no fixture PID to reap. No broad process
+kill was used.
+
+### Remaining Daemon checks
+
+The two authored Verification commands, including full-package `-race -short`
+and `-shuffle=on`, were not run in this turn. No terminal Task verdict is
+claimed. No follow-up implementation was added to this diff.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/archive_active_spec_path_test.go`
+- `internal/cli/archive_glossary_test.go`
+- `internal/cli/archive_links_test.go`
+- `internal/cli/archive_plan_test.go`
+- `internal/cli/archive_record_readers_test.go`
+- `internal/cli/archive_test.go`
+- `internal/cli/baseline_branch_prefix_test.go`
+- `internal/cli/baseline_history_citation_test.go`
+- `internal/cli/baseline_update_history_test.go`
+- `internal/cli/baseline_update_outdated_skills_test.go`
+- `internal/cli/baseline_update_retired_skills_test.go`
+- `internal/cli/baseline_update_test.go`
+- `internal/cli/built_in_review_provider_test.go`
+- `internal/cli/carryforward_completed_target_test.go`
+- `internal/cli/carryforward_integration_order_test.go`
+- `internal/cli/carryforward_test.go`
+- `internal/cli/deliver_archive_links_test.go`
+- `internal/cli/deliver_archived_retry_test.go`
+- `internal/cli/deliver_conflict_test.go`
+- `internal/cli/deliver_derived_lines_test.go`
+- `internal/cli/deliver_derived_skill_layout_test.go`
+- `internal/cli/deliver_item_branch_test.go`
+- `internal/cli/deliver_limits_test.go`
+- `internal/cli/deliver_merged_outside_test.go`
+- `internal/cli/deliver_operator_archive_test.go`
+- `internal/cli/deliver_park_status_test.go`
+- `internal/cli/deliver_prerequisite_test.go`
+- `internal/cli/deliver_publication_scope_test.go`
+- `internal/cli/deliver_recovery_test.go`
+- `internal/cli/deliver_retry_amendment_test.go`
+- `internal/cli/deliver_retry_runs_test.go`
+- `internal/cli/deliver_revalidate_test.go`
+- `internal/cli/deliver_review_correction_test.go`
+- `internal/cli/deliver_runtime_infrastructure_test.go`
+- `internal/cli/deliver_start_readiness_test.go`
+- `internal/cli/deliver_test.go`
+- `internal/cli/deliver_token_ceiling_test.go`
+- `internal/cli/detach_test.go`
+- `internal/cli/doctor_characterization_test.go`
+- `internal/cli/doctor_storage_test.go`
+- `internal/cli/doctor_test.go`
+- `internal/cli/doctor_trailing_skills_test.go`
+- `internal/cli/events_usage_test.go`
+- `internal/cli/gc_run_retention_test.go`
+- `internal/cli/gc_sanitize_pre_key_root_test.go`
+- `internal/cli/history_refusal_test.go`
+- `internal/cli/history_test.go`
+- `internal/cli/implement_budget_renewal_test.go`
+- `internal/cli/implement_qa_format_test.go`
+- `internal/cli/implement_test.go`
+- `internal/cli/qa_partial_policy_test.go`
+- `internal/cli/qa_report_test.go`
+- `internal/cli/readiness_toolchain_test.go`
+- `internal/cli/reconcile_legacy_key_test.go`
+- `internal/cli/reconcile_staging_test.go`
+- `internal/cli/reconcile_test.go`
+- `internal/cli/releaseplan_checks_test.go`
+- `internal/cli/releaseplan_skill_coverage_test.go`
+- `internal/cli/reopen_late_dependency_test.go`
+- `internal/cli/review_archived_spec_test.go`
+- `internal/cli/review_convention_validator_test.go`
+- `internal/cli/review_dispose_lock_test.go`
+- `internal/cli/review_dispose_revision_test.go`
+- `internal/cli/review_disposition_test.go`
+- `internal/cli/review_final_message_test.go`
+- `internal/cli/review_head_bound_test.go`
+- `internal/cli/review_lineage_selection_test.go`
+- `internal/cli/review_lineage_test.go`
+- `internal/cli/review_merge_base_test.go`
+- `internal/cli/review_override_convention_test.go`
+- `internal/cli/review_permission_test.go`
+- `internal/cli/review_prompt_bound_test.go`
+- `internal/cli/review_provider_scope_test.go`
+- `internal/cli/review_record_checkout_test.go`
+- `internal/cli/review_scope_test.go`
+- `internal/cli/review_selection_retry_test.go`
+- `internal/cli/review_session_test.go`
+- `internal/cli/review_test.go`
+- `internal/cli/review_validation_test.go`
+- `internal/cli/run_retention_start_test.go`
+- `internal/cli/runs_list_vanished_checkout_test.go`
+- `internal/cli/runs_show_test.go`
+- `internal/cli/settle_test.go`
+- `internal/cli/setup_readiness_test.go`
+- `internal/cli/spec_audit_record_test.go`
+- `internal/cli/spec_check_provenance_test.go`
+- `internal/cli/spec_check_test.go`
+- `internal/cli/spec_judge_tier_test.go`
+- `internal/cli/supersede_test.go`
+- `internal/cli/this_repository_skill_set_test.go`
+- `internal/cli/version_freshness_isolation_test.go`
+- `internal/cli/window_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T215927Z_c26d3579de5392c8`
+- Source commit: `7ee2c53ddd783583fa7528e6808950ab7ec67d45`

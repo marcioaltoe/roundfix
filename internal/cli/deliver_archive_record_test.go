@@ -45,6 +45,7 @@ func retirementFixture(t *testing.T, promote bool) (*commandDeliveryWorkflow, st
 	return workflow, repo, parent, source, destination
 }
 func TestDeliveryAcceptsAnExactRetirement(t *testing.T) {
+	t.Parallel()
 	for _, promote := range []bool{false, true} {
 		t.Run(map[bool]string{false: "record", true: "promotion"}[promote], func(t *testing.T) {
 			w, repo, parent, source, destination := retirementFixture(t, promote)
@@ -67,6 +68,7 @@ func TestDeliveryAcceptsAnExactRetirement(t *testing.T) {
 	}
 }
 func TestDeliveryRefusesAnInexactRetirement(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"keeps file", "extra path", "other revision", "different promotion", "other title", "other created"} {
 		t.Run(kind, func(t *testing.T) {
 			w, repo, parent, source, destination := retirementFixture(t, true)
@@ -110,6 +112,7 @@ func TestDeliveryRefusesAnInexactRetirement(t *testing.T) {
 	}
 }
 func TestDeliveryKeepsTheLegacyExactMove(t *testing.T) {
+	t.Parallel()
 	repo, parent, head := commitLinkRewritingArchive(t, []string{"_prd.md", "task_01.md", "qa/links.md"}, nil)
 	w := retirementWorkflow(repo, "")
 	source, destination, err := w.archivePaths(repo, implementTestSlug)
@@ -122,6 +125,7 @@ func TestDeliveryKeepsTheLegacyExactMove(t *testing.T) {
 	}
 }
 func TestDeliveryArchiveStageCommitsTheArchiveRecord(t *testing.T) {
+	// Sequential: sets the process-wide ROUNDFIX_CLI_TEST_HELPER environment variable.
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	writeArchiveQAReport(t, repo, spec.VerdictPass)
 	commitArchiveFixture(t)

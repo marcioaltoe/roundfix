@@ -19,6 +19,7 @@ import (
 )
 
 func TestReviewDiffsTheCandidateFromItsMergeBase(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
@@ -47,6 +48,7 @@ func TestReviewDiffsTheCandidateFromItsMergeBase(t *testing.T) {
 }
 
 func TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged(t *testing.T) {
+	t.Parallel()
 	const (
 		baseSlug      = "0180-base-only-archive"
 		candidateSlug = "0181-candidate-archive"
@@ -77,6 +79,7 @@ func TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged(t *testing.T) {
 }
 
 func TestReviewReusesAFindingsVerdictAfterTheBaseBranchMoves(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: candidate finding", StopReason: "end_turn"},
@@ -104,6 +107,7 @@ func TestReviewReusesAFindingsVerdictAfterTheBaseBranchMoves(t *testing.T) {
 }
 
 func TestReviewRefusesABaseThatSharesNoHistory(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	tree := strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD^{tree}"))

@@ -419,6 +419,14 @@ _Avoid_: CI, smoke test, best-effort check
 A Go test under the `docscontract` or `repocontract` build tag that checks the repository itself — its documents, derived artifacts or test wiring — rather than one package's behavior. The Full Contract Run runs every one; `make verify-changed` runs the ones its Contract Relevance selects, and `make verify-docs` runs the `internal/docscontract` tests and the contracts its `repo-test` step lists (ADR-0252, ADR-0253).
 _Avoid_: docs test, integration test, CI-only test
 
+**Sequential Test**:
+A top-level test that cannot run in parallel because it changes process-wide state and carries a `// Sequential: <reason>` comment naming that state, with at least two words, in its doc comment or before its first statement ([ADR-0259](docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md)).
+_Avoid_: Unmarked test, serial test, parallel exception
+
+**Parallel Test Package**:
+A package whose top-level tests each call `t.Parallel()` as their first statement or are Sequential Tests, with a repository rule enforcing both the declaration and a ceiling on Sequential Tests that may only fall; files under a `docscontract` or `repocontract` build constraint are excluded ([ADR-0259](docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md)).
+_Avoid_: Parallel suite, concurrent package, fast package
+
 **Contract Relevance**:
 The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary`. The selector's summary line names each `relevant` contract it leaves out and each `boundary` contract. The Full Contract Run ignores Contract Relevance (ADR-0252, ADR-0253).
 _Avoid_: test tags, impact map, test filter

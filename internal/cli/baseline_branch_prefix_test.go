@@ -9,6 +9,7 @@ import (
 )
 
 func TestBaselineUpdateWithoutABranchPrefixAsksNothing(t *testing.T) {
+	t.Parallel()
 	repo := newBaselineUpdateRepository(t)
 	manifest := ReadBaselineSetupManifest(t, repo)
 	delete(manifest.Decisions, "branch.prefix")
@@ -35,6 +36,7 @@ func TestBaselineUpdateWithoutABranchPrefixAsksNothing(t *testing.T) {
 }
 
 func TestBaselineUpdateKeepsARecordedBranchPrefix(t *testing.T) {
+	t.Parallel()
 	repo := newBaselineUpdateRepository(t)
 	path := filepath.Join(repo, "docs/agents/agent-instructions.md")
 	before, err := os.ReadFile(path)

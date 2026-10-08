@@ -9,6 +9,7 @@ import (
 )
 
 func TestSpecAuditAcceptsAnArchiveRecordSlug(t *testing.T) {
+	t.Parallel()
 	for _, builtIn := range []bool{true, false} {
 		name := "custom root"
 		if builtIn {

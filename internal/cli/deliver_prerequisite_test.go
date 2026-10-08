@@ -28,6 +28,7 @@ func addFixtureRequires(t *testing.T, repo, slug, declaration string) {
 }
 
 func TestDeliverStartRefusesAPrerequisiteCycle(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	const second = "0205-second"
 	writeImplementSpec(t, repo, second, []implementSeed{{id: "task_01"}})
@@ -38,6 +39,7 @@ func TestDeliverStartRefusesAPrerequisiteCycle(t *testing.T) {
 }
 
 func TestDeliverStartRefusesAnUnknownPrerequisite(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	addFixtureRequires(t, repo, implementTestSlug, "[0205-unknown]")
 	assertPrerequisiteStartRefusal(t, home, repo, []string{implementTestSlug}, "Delivery Queue Spec "+implementTestSlug+" requires unknown Spec 0205-unknown")
@@ -71,6 +73,7 @@ func assertPrerequisiteStartRefusal(t *testing.T, home, repo string, slugs []str
 }
 
 func TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch(t *testing.T) {
+	t.Parallel()
 	for _, remote := range []string{"origin", "delivery"} {
 		t.Run(remote, func(t *testing.T) {
 			origin := filepath.Join(t.TempDir(), "origin")
@@ -147,6 +150,7 @@ func (runner *prerequisiteGitFailure) RunGit(_ context.Context, _ string, args .
 	return "", nil
 }
 func TestPrerequisiteGitFailuresRemainErrors(t *testing.T) {
+	t.Parallel()
 	for _, fail := range []string{"fetch", "show", "ls-tree"} {
 		_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 		runner := &prerequisiteGitFailure{fail: fail}
@@ -160,6 +164,7 @@ func TestPrerequisiteGitFailuresRemainErrors(t *testing.T) {
 }
 
 func TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs(t *testing.T) {
+	t.Parallel()
 	for _, builtIn := range []bool{false, true} {
 		root := roundconfig.SpecsRoot{Path: filepath.Join(t.TempDir(), "docs", "specs"), BuiltInRoot: builtIn}
 		archive := filepath.Join(root.Path, "_archived")
@@ -186,6 +191,7 @@ func TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs(t *testing.T)
 }
 
 func TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically(t *testing.T) {
+	t.Parallel()
 	root := roundconfig.SpecsRoot{Path: t.TempDir()}
 	var graphs []*spec.Graph
 	for index, slug := range []string{"first", "second", "third"} {
@@ -203,6 +209,7 @@ func TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically(t *tes
 }
 
 func TestPrerequisiteReaderWithoutRequiresSkipsArchiveRead(t *testing.T) {
+	t.Parallel()
 	_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	config := roundconfig.Config{}
 	config.Specs.Root = "docs/specs"

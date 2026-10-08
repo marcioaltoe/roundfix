@@ -15,6 +15,7 @@ import (
 )
 
 func TestReviewFindingAnchorParsesEachForm(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		text       string
 		path       string
@@ -48,6 +49,7 @@ func TestReviewFindingAnchorParsesEachForm(t *testing.T) {
 }
 
 func TestReviewDiffIndexHoldsHunkLinesAndWholeFiles(t *testing.T) {
+	t.Parallel()
 	diff := `diff --git a/hunk.go b/hunk.go
 --- a/hunk.go
 +++ b/hunk.go
@@ -105,6 +107,7 @@ new mode 100755
 }
 
 func TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar(t *testing.T) {
+	t.Parallel()
 	prompt := buildReviewPrompt("base", "head", "diff")
 	for _, text := range []string{
 		"Start each finding with its anchor, `path:line` or `path:start-end`, naming a line of the candidate diff, and state what breaks in a clause that starts with `Failure:`.",
@@ -132,6 +135,7 @@ func validationReviewFixture(t *testing.T, answer string) (reviewCommandFixture,
 }
 
 func TestReviewDismissesAnUnanchoredFindingAndKeepsTheAnchoredOne(t *testing.T) {
+	t.Parallel()
 	const findings = "- internal/untouched.go:10: outside. Failure: broken.\n- `review.txt:2` inside. Failure: broken."
 	fixture, _ := validationReviewFixture(t, "Findings:\n"+findings)
 	code, record, stderr := fixture.run(t)
@@ -162,6 +166,7 @@ func TestReviewDismissesAnUnanchoredFindingAndKeepsTheAnchoredOne(t *testing.T) 
 }
 
 func TestReviewFindingsAllDismissedByValidationExitZero(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validationReviewFixture(t, "Findings:\n- review.txt:80: outside\n- missing.go:2: outside")
 	code, record, stderr := fixture.run(t)
 	if code != exitOK || record.Outcome != reviewOutcomeFindingsDismissed || len(record.Dispositions) != 0 {
@@ -183,6 +188,7 @@ func TestReviewFindingsAllDismissedByValidationExitZero(t *testing.T) {
 }
 
 func TestReviewBlocksFindingsThatNameNoFileAndLine(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validationReviewFixture(t, "Findings:\n- missing anchor\n- review.txt:2a: malformed anchor")
 	code, record, stderr := fixture.run(t)
 	if code != exitPreflight || record.Outcome != reviewOutcomeBlocked || record.Reason != "findings name no file and line" || record.Findings != "" || len(record.FindingItems) != 0 || record.AnswerPath == "" {
@@ -197,6 +203,7 @@ func TestReviewBlocksFindingsThatNameNoFileAndLine(t *testing.T) {
 }
 
 func TestReviewReuseCountsValidationDismissalsAsDismissed(t *testing.T) {
+	t.Parallel()
 	fixture, runner := validationReviewFixture(t, "Findings:\n- missing.go:2: outside\n- review.txt:2: standing")
 	code, _, stderr := fixture.run(t)
 	if code != exitRunFailed {
@@ -218,6 +225,7 @@ func TestReviewReuseCountsValidationDismissalsAsDismissed(t *testing.T) {
 }
 
 func TestReviewDisposeRefusesAFindingDismissedByValidation(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validationReviewFixture(t, "Findings:\n- missing.go:2: outside\n- review.txt:2: standing")
 	if code, _, stderr := fixture.run(t); code != exitRunFailed {
 		t.Fatalf("exit=%d stderr=%q", code, stderr)
@@ -241,6 +249,7 @@ func TestReviewDisposeRefusesAFindingDismissedByValidation(t *testing.T) {
 }
 
 func TestReviewFindingFailureClauseRequiresContent(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		text string
 		want bool
@@ -256,6 +265,7 @@ func TestReviewFindingFailureClauseRequiresContent(t *testing.T) {
 }
 
 func TestReviewMissingAnchorIsRecordedWhenAnotherAnchorIsReadable(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validationReviewFixture(t, "Findings:\n- no anchor\n- review.txt:2: standing")
 	code, record, stderr := fixture.run(t)
 	if code != exitRunFailed || record.FindingItems[0].Anchor != nil || record.FindingItems[0].Validation.Reason != "finding has no path:line anchor" {
@@ -267,6 +277,7 @@ func TestReviewMissingAnchorIsRecordedWhenAnotherAnchorIsReadable(t *testing.T) 
 }
 
 func TestReviewDiffIndexDoesNotReadHunkContentAsFileHeaders(t *testing.T) {
+	t.Parallel()
 	index := indexReviewDiff("diff --git a/review.txt b/review.txt\n--- a/review.txt\n+++ b/review.txt\n@@ -1,2 +1,2 @@\n--- missing.go\n+++ missing.go\n context\n")
 	if !index.holds(reviewFindingAnchor{"review.txt", 2, 2}) || index.holds(reviewFindingAnchor{"missing.go", 2, 2}) {
 		t.Fatalf("index=%+v", index)
@@ -274,6 +285,7 @@ func TestReviewDiffIndexDoesNotReadHunkContentAsFileHeaders(t *testing.T) {
 }
 
 func TestReviewDiffIndexReadsGitQuotedPaths(t *testing.T) {
+	t.Parallel()
 	index := indexReviewDiff(`diff --git "a/caf\303\251.go" "b/caf\303\251.go"
 Binary files "a/caf\303\251.go" and "b/caf\303\251.go" differ
 `)
@@ -283,6 +295,7 @@ Binary files "a/caf\303\251.go" and "b/caf\303\251.go" differ
 }
 
 func TestReviewReuseListsOnlyStandingFindingsAsMissing(t *testing.T) {
+	t.Parallel()
 	fixture, runner := validationReviewFixture(t, "Findings:\n- missing.go:2: outside\n- review.txt:2: standing")
 	if code, _, stderr := fixture.run(t); code != exitRunFailed {
 		t.Fatalf("exit=%d stderr=%q", code, stderr)
@@ -299,6 +312,7 @@ func TestReviewReuseListsOnlyStandingFindingsAsMissing(t *testing.T) {
 }
 
 func TestReviewDiffIndexReadsAQuotedPathEndingInBackslash(t *testing.T) {
+	t.Parallel()
 	index := indexReviewDiff(`diff --git "a/name\\" "b/name\\"
 Binary files "a/name\\" and "b/name\\" differ
 `)

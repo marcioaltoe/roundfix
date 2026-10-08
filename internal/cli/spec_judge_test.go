@@ -145,6 +145,7 @@ func specJudgeRun(t *testing.T, env commandEnvironment, args []string, wantOut, 
 }
 
 func TestSpecJudgeReportsAdvisoryJudgments(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
 	if fake.calls != 5 {
@@ -157,6 +158,7 @@ func TestSpecJudgeReportsAdvisoryJudgments(t *testing.T) {
 }
 
 func TestSpecJudgeSkipsWithoutAKey(t *testing.T) {
+	t.Parallel()
 	env, _ := specJudgeFixture(t, "OPENROUTER_API_KEY")
 	specJudgeRun(t, env, []string{"0300-example"}, specJudgeNoKey, "", 0)
 }
@@ -170,6 +172,7 @@ func TestSpecJudgeReadsTheKeyFromItsOwnEnvironment(t *testing.T) {
 }
 
 func TestSpecJudgeSkipsAtTheMonthlyCeiling(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.host = ""
 	path := filepath.Join(env.homeDir, ".roundfix/judge/2026-10.jsonl")
@@ -181,12 +184,14 @@ func TestSpecJudgeSkipsAtTheMonthlyCeiling(t *testing.T) {
 }
 
 func TestSpecJudgeSkipsANonEnglishSpec(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.host = ""
 	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, fmt.Sprintf("skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
 }
 
 func TestSpecJudgeStopsWhenTheServiceFails(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.failSecond = true
 	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via typesafe on ROUNDFIX_TYPESAFE_API_KEY; stopped: service unavailable (HTTP 503)\n", specJudgeCeiling(t)), "", 0)
@@ -196,11 +201,13 @@ func TestSpecJudgeStopsWhenTheServiceFails(t *testing.T) {
 }
 
 func TestSpecJudgeRefusesAnUnknownSpec(t *testing.T) {
+	t.Parallel()
 	env, _ := specJudgeFixture(t, "")
 	specJudgeRun(t, env, []string{"0999-missing"}, "", "roundfix: spec judge failed: unknown active Spec slug \"0999-missing\"\nRun 'roundfix spec judge --help' for usage.\n", 2)
 }
 
 func TestSpecJudgeRefusesAnUnknownStageOrFormat(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		args    []string
@@ -221,6 +228,7 @@ func TestSpecJudgeRefusesAnUnknownStageOrFormat(t *testing.T) {
 }
 
 func TestSpecJudgePrintsJSON(t *testing.T) {
+	t.Parallel()
 	env, _ := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	var out, err bytes.Buffer
 	code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--format", "json"}, &out, &err, env)
@@ -263,6 +271,7 @@ func TestSpecJudgePrintsJSON(t *testing.T) {
 }
 
 func TestSpecJudgeHelp(t *testing.T) {
+	t.Parallel()
 	env, _ := specJudgeFixture(t, "")
 	specJudgeRun(t, env, []string{"--help"}, specJudgeUsage, "", 0)
 	for _, text := range []string{specJudgeUsage, specUsage, usage} {
@@ -278,6 +287,7 @@ func TestSpecJudgeHelp(t *testing.T) {
 }
 
 func TestSpecJudgeUsesConfiguredSpecRoot(t *testing.T) {
+	t.Parallel()
 	env, _ := specJudgeFixture(t, "OPENROUTER_API_KEY")
 	root := filepath.Join(t.TempDir(), "specs")
 	if err := os.Rename(filepath.Join(env.workDir, "docs/specs"), root); err != nil {
@@ -288,6 +298,7 @@ func TestSpecJudgeUsesConfiguredSpecRoot(t *testing.T) {
 }
 
 func TestSpecJudgeRequiresStageArtifacts(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"_prd.md", "_techspec.md"} {
 		t.Run(name, func(t *testing.T) {
 			env, _ := specJudgeFixture(t, "")
@@ -304,6 +315,7 @@ func TestSpecJudgeRequiresStageArtifacts(t *testing.T) {
 }
 
 func TestSpecJudgePrintsIndividualSkip(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.host = ""
 	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0999 keeps every Run Event for ninety days after the Run ends.\n")
@@ -311,6 +323,7 @@ func TestSpecJudgePrintsIndividualSkip(t *testing.T) {
 }
 
 func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
+	t.Parallel()
 	env, _ := specJudgeFixture(t, "OPENROUTER_API_KEY")
 	var out, stderr bytes.Buffer
 	code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--format=json"}, &out, &stderr, env)
@@ -393,6 +406,7 @@ func specJudgeGroupingFixture(t *testing.T, keyVariable string) (commandEnvironm
 }
 
 func TestSpecJudgePrintsAGroupingSuggestion(t *testing.T) {
+	t.Parallel()
 	for _, stage := range []string{"prd", "techspec", "both"} {
 		t.Run(stage, func(t *testing.T) {
 			env, fake := specJudgeGroupingFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
@@ -409,6 +423,7 @@ func TestSpecJudgePrintsAGroupingSuggestion(t *testing.T) {
 }
 
 func TestSpecJudgeSkipsANonEnglishSource(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeGroupingFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	mustWrite(t, filepath.Join(env.workDir, "docs/backlog/2026-09-30-cor-do-cabecalho.md"), "---\nstatus: open\n---\nA decisão é uma regra para os autores e não está na sua documentação.\n")
 	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, "skipped docs/backlog/2026-09-30-cor-do-cabecalho.md: not English\n"+specJudgeGroupingSuggestion+specJudgeGroupingSummary(t), "", 0)
@@ -418,6 +433,7 @@ func TestSpecJudgeSkipsANonEnglishSource(t *testing.T) {
 }
 
 func TestSpecJudgeCountsGroupingJudgmentsNotAsked(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeGroupingFixture(t, "OPENROUTER_API_KEY")
 	specJudgeRun(t, env, []string{"0300-example", "--stage", "prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
 	if fake.calls != 0 {
@@ -426,6 +442,7 @@ func TestSpecJudgeCountsGroupingJudgmentsNotAsked(t *testing.T) {
 }
 
 func TestSpecJudgePrintsGroupingJSON(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeGroupingFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	var out, stderr bytes.Buffer
 	code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--format=json"}, &out, &stderr, env)
@@ -480,6 +497,7 @@ func TestSpecJudgePrintsGroupingJSON(t *testing.T) {
 }
 
 func TestSpecJudgeHelpNamesTheGroupingQuestion(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeGroupingFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	var out, stderr bytes.Buffer
 	code := runWithContext(context.Background(), []string{"spec", "judge", "--help"}, &out, &stderr, env)
@@ -495,6 +513,7 @@ func TestSpecJudgeHelpNamesTheGroupingQuestion(t *testing.T) {
 }
 
 func TestSpecJudgePrintsSkippedGroupingPair(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeGroupingFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.model = "jev-1.14.0"
 	reason := "answered by jev-1.14.0, thresholds belong to jev-1.13"
@@ -533,6 +552,7 @@ func specJudgeUserCeiling(t *testing.T, env commandEnvironment, value string) st
 }
 
 func TestSpecJudgeSkipsAtTheUserConfigCeiling(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.host = ""
 	specJudgeUserCeiling(t, env, "50")
@@ -553,6 +573,7 @@ func TestSpecJudgeSkipsAtTheUserConfigCeiling(t *testing.T) {
 }
 
 func TestSpecJudgeIgnoresAProjectConfigCeiling(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.host = ""
 	mustWrite(t, filepath.Join(env.workDir, ".roundfixrc.yml"), "jev:\n  monthly_ceiling_usd: 50\n")
@@ -565,6 +586,7 @@ func TestSpecJudgeIgnoresAProjectConfigCeiling(t *testing.T) {
 }
 
 func TestSpecJudgeRefusesAnInvalidUserConfigCeiling(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.host = ""
 	path := specJudgeUserCeiling(t, env, "0")
@@ -575,6 +597,7 @@ func TestSpecJudgeRefusesAnInvalidUserConfigCeiling(t *testing.T) {
 }
 
 func TestSpecJudgeNamesTheKeyVariableItUsed(t *testing.T) {
+	t.Parallel()
 	for _, variable := range []string{openrouterkey.Judge, openrouterkey.Shared} {
 		t.Run(variable, func(t *testing.T) {
 			env, fake := specJudgeFixture(t, openrouterkey.Shared)
@@ -605,6 +628,7 @@ func TestSpecJudgeNamesTheKeyVariableItUsed(t *testing.T) {
 	}
 }
 func TestSpecJudgeSkipNamesTheJudgeKeyFirst(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "")
 	env.environ = []string{"OPENROUTER_API_KEY=ignored", "TYPESAFE_API_KEY=ignored", openrouterkey.Implement + "=ignored", openrouterkey.Judge + "="}
 	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0035 keeps every Run Event for ninety days after the Run ends.\n")

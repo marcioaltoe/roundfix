@@ -19,6 +19,7 @@ import (
 )
 
 func TestRevalidateReportsAnUnresolvedDeclarationOnlyAfterTheMergeRemovedIt(t *testing.T) {
+	t.Parallel()
 	fixture := newDeliveryRevalidationGitFixture(t)
 
 	before, err := fixture.workflow(fixture.before).Revalidate(t.Context(), fixture.before, "clean", nil)
@@ -40,6 +41,7 @@ func TestRevalidateReportsAnUnresolvedDeclarationOnlyAfterTheMergeRemovedIt(t *t
 }
 
 func TestRevalidateNamesADeclaredProductionFileAndTheMergeThatChangedIt(t *testing.T) {
+	t.Parallel()
 	fixture := newDeliveryRevalidationGitFixture(t)
 
 	result, err := fixture.workflow(fixture.after).Revalidate(
@@ -61,6 +63,7 @@ func TestRevalidateNamesADeclaredProductionFileAndTheMergeThatChangedIt(t *testi
 }
 
 func TestRevalidateIgnoresChangedTestsGuidesAndUndeclaredFiles(t *testing.T) {
+	t.Parallel()
 	fixture := newDeliveryRevalidationGitFixture(t)
 
 	result, err := fixture.workflow(fixture.after).Revalidate(
@@ -84,6 +87,7 @@ func TestRevalidateIgnoresChangedTestsGuidesAndUndeclaredFiles(t *testing.T) {
 }
 
 func TestRevalidateRefusesAnUnreadableMergeCommit(t *testing.T) {
+	t.Parallel()
 	fixture := newDeliveryRevalidationGitFixture(t)
 
 	_, err := fixture.workflow(fixture.after).Revalidate(

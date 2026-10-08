@@ -67,6 +67,7 @@ func itemBranchWithWork(t *testing.T, repo, suffix string, commits int) string {
 }
 
 func TestDeliverStartContinuesTheItemBranchThatHoldsWork(t *testing.T) {
+	t.Parallel()
 	for _, hasWorktree := range []bool{false, true} {
 		t.Run(fmt.Sprintf("existing worktree %v", hasWorktree), func(t *testing.T) {
 			home, repo := newItemBranchStartRepository(t)
@@ -123,6 +124,7 @@ func TestDeliverStartContinuesTheItemBranchThatHoldsWork(t *testing.T) {
 }
 
 func TestDeliverStartRefusesTwoItemBranchesWithWork(t *testing.T) {
+	t.Parallel()
 	home, repo := newItemBranchStartRepository(t)
 	second := itemBranchWithWork(t, repo, "2222222222222222", 1)
 	first := itemBranchWithWork(t, repo, "1111111111111111", 2)
@@ -147,6 +149,7 @@ func TestDeliverStartRefusesTwoItemBranchesWithWork(t *testing.T) {
 }
 
 func TestDeliverStartIgnoresAnItemBranchWithoutWork(t *testing.T) {
+	t.Parallel()
 	home, repo := newItemBranchStartRepository(t)
 	old := itemBranchWithWork(t, repo, "1111111111111111", 0)
 	updateCommandDependenciesForTest(t, func(deps *commandDependencies) {

@@ -21,6 +21,7 @@ import (
 )
 
 func TestReviewRecordsLiveInTheCheckoutsOwnDirectory(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{
 		{result: agent.ExecuteResult{Message: "No findings.", StopReason: "end_turn"}},
 		{result: agent.ExecuteResult{Message: "No findings.", StopReason: "end_turn"}},
@@ -66,6 +67,7 @@ func TestReviewRecordsLiveInTheCheckoutsOwnDirectory(t *testing.T) {
 }
 
 func TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{
 		{result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: checkout-local finding", StopReason: "end_turn"}},
 		{result: agent.ExecuteResult{Message: "No findings.", StopReason: "end_turn"}},
@@ -106,6 +108,7 @@ func TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord(t *testing.T) {
 }
 
 func TestReviewDisposeReadsOnlyItsCheckoutsRecord(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{
 		result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: checkout-local finding", StopReason: "end_turn"},
 	}}}
@@ -126,6 +129,7 @@ func TestReviewDisposeReadsOnlyItsCheckoutsRecord(t *testing.T) {
 }
 
 func TestReviewIgnoresARecordAtTheSharedLocation(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{
 		result: agent.ExecuteResult{Message: "No findings.", StopReason: "end_turn"},
 	}}}

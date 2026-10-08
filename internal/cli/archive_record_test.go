@@ -92,6 +92,7 @@ func archiveConfirmation(t *testing.T, repo, path string, override bool) string 
 	return fmt.Sprintf("archived %s%s -> %s; removed %d file(s) (%d bytes) kept in Git at %.12s\n", r.Spec, disposition, rel, len(files), size, r.SourceRevision)
 }
 func TestArchiveCommandLeavesTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, override := range []bool{false, true} {
 		t.Run(fmt.Sprint(override), func(t *testing.T) {
 			_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
@@ -122,6 +123,7 @@ func TestArchiveCommandLeavesTheArchiveRecord(t *testing.T) {
 	}
 }
 func TestArchiveCommandRefusesUncommittedSpecChanges(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"modified", "staged", "untracked", "deleted"} {
 		t.Run(kind, func(t *testing.T) {
 			_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
@@ -157,6 +159,7 @@ func TestArchiveCommandRefusesUncommittedSpecChanges(t *testing.T) {
 	}
 }
 func TestArchiveCommandRemovedBytesStayInGit(t *testing.T) {
+	t.Parallel()
 	_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	writeArchiveQAReport(t, repo, spec.VerdictPass)
 	dir := filepath.Join(repo, "docs/specs", implementTestSlug)
@@ -183,5 +186,6 @@ func TestArchiveCommandRemovedBytesStayInGit(t *testing.T) {
 	}
 }
 func TestSupersedeAcceptsAnArchiveRecord(t *testing.T) {
+	// Sequential: calls the already parallel TestSupersedeAcceptsASupersessionArchivedDeliverer on the same testing.T.
 	TestSupersedeAcceptsASupersessionArchivedDeliverer(t)
 }

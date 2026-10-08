@@ -48,6 +48,7 @@ func newSessionReviewRunner(answers ...string) *sessionReviewRunner {
 const sessionReviewFinding = "Findings:\n- review.txt:2 Failure: candidate defect"
 
 func TestReviewRoundOneWithFindingsLeavesItsSessionOpen(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding)
 	fixture := newReviewCommandFixture(t, "codex", r)
 	code, record, stderr := runLineageReview(t, fixture)
@@ -66,6 +67,7 @@ func TestReviewRoundOneWithFindingsLeavesItsSessionOpen(t *testing.T) {
 	}
 }
 func TestReviewRoundOneReviewedEndsItsSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner("No findings.")
 	fixture := newReviewCommandFixture(t, "codex", r)
 	code, record, _ := runLineageReview(t, fixture)
@@ -74,6 +76,7 @@ func TestReviewRoundOneReviewedEndsItsSession(t *testing.T) {
 	}
 }
 func TestReviewRoundOneBlockedEndsItsSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner("not a verdict")
 	fixture := newReviewCommandFixture(t, "codex", r)
 	code, record, _ := runLineageReview(t, fixture)
@@ -82,6 +85,7 @@ func TestReviewRoundOneBlockedEndsItsSession(t *testing.T) {
 	}
 }
 func TestReviewRoundOneValidationDismissedEndsItsSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner("Findings:\n- outside.txt:10 Failure: outside candidate")
 	fixture := newReviewCommandFixture(t, "codex", r)
 	code, record, _ := runLineageReview(t, fixture)
@@ -90,6 +94,7 @@ func TestReviewRoundOneValidationDismissedEndsItsSession(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoContinuesTheRecordedSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
 	fixture := newReviewCommandFixture(t, "codex", r)
 	_, first, _ := runLineageReview(t, fixture)
@@ -110,6 +115,7 @@ func TestReviewRoundTwoContinuesTheRecordedSession(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoDifferentIDsDoesNotReportContinued(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
 	r.results[1].result.ACPSessionID = "s-2"
 	fixture := newReviewCommandFixture(t, "codex", r)
@@ -121,6 +127,7 @@ func TestReviewRoundTwoDifferentIDsDoesNotReportContinued(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoEmptyIDsDoesNotReportContinued(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
 	r.results[0].result.ACPSessionID = ""
 	r.results[1].result.ACPSessionID = ""
@@ -133,6 +140,7 @@ func TestReviewRoundTwoEmptyIDsDoesNotReportContinued(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
 	r.prepareErrors = []error{nil, errors.New("cannot resume"), nil}
 	fixture := newReviewCommandFixture(t, "codex", r)
@@ -147,6 +155,7 @@ func TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails(t *testing.T
 	}
 }
 func TestReviewLineageChangeEndsTheOpenSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
 	fixture := newReviewCommandFixture(t, "codex", r)
 	_, first, _ := runLineageReview(t, fixture)
@@ -166,6 +175,7 @@ func TestReviewLineageChangeEndsTheOpenSession(t *testing.T) {
 	}
 }
 func TestReviewDismissedReuseEndsTheOpenSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding)
 	fixture := newReviewCommandFixture(t, "codex", r)
 	_, first, _ := runLineageReview(t, fixture)
@@ -180,6 +190,7 @@ func TestReviewDismissedReuseEndsTheOpenSession(t *testing.T) {
 	}
 }
 func TestReviewStandingReuseKeepsTheOpenSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding)
 	fixture := newReviewCommandFixture(t, "codex", r)
 	runLineageReview(t, fixture)
@@ -189,6 +200,7 @@ func TestReviewStandingReuseKeepsTheOpenSession(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoFindingsEndsItsSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, sessionReviewFinding)
 	fixture := newReviewCommandFixture(t, "codex", r)
 	runLineageReview(t, fixture)
@@ -200,6 +212,7 @@ func TestReviewRoundTwoFindingsEndsItsSession(t *testing.T) {
 }
 
 func TestReviewRoundTwoContinuesTheRecordedFallbackSelection(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
 	r.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, nil, nil}
 	fixture := newReviewCommandFixture(t, "codex", r)
@@ -214,6 +227,7 @@ func TestReviewRoundTwoContinuesTheRecordedFallbackSelection(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoPromptFailureEndsWithoutFallback(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding, "")
 	r.results[1].err = &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter stopped after prompt"}
 	fixture := newReviewCommandFixture(t, "codex", r)
@@ -225,6 +239,7 @@ func TestReviewRoundTwoPromptFailureEndsWithoutFallback(t *testing.T) {
 	}
 }
 func TestReviewProviderOmissionEndsTheOpenSession(t *testing.T) {
+	t.Parallel()
 	r := newSessionReviewRunner(sessionReviewFinding)
 	fixture := newReviewCommandFixture(t, "codex", r)
 	_, first, _ := runLineageReview(t, fixture)

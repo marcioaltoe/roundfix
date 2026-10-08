@@ -19,6 +19,7 @@ import (
 )
 
 func TestRevalidateWarnsWhenTheOwnerPredatesSourceOnMain(t *testing.T) {
+	// Sequential: swaps the process-wide app.BuildCommit value.
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.buildCommit[:8])
 
@@ -35,6 +36,7 @@ func TestRevalidateWarnsWhenTheOwnerPredatesSourceOnMain(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietForDocsOnlyMain(t *testing.T) {
+	// Sequential: swaps the process-wide app.BuildCommit value.
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("docs", "owner.md"))
 	setOwnerBuildCommit(t, fixture.buildCommit)
 
@@ -48,6 +50,7 @@ func TestRevalidateStaysQuietForDocsOnlyMain(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietForACurrentOwner(t *testing.T) {
+	// Sequential: swaps the process-wide app.BuildCommit value.
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.startingMain)
 
@@ -61,6 +64,7 @@ func TestRevalidateStaysQuietForACurrentOwner(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietWithoutTheBuildCommit(t *testing.T) {
+	// Sequential: swaps the process-wide app.BuildCommit value.
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, strings.Repeat("f", 40))
 
@@ -74,6 +78,7 @@ func TestRevalidateStaysQuietWithoutTheBuildCommit(t *testing.T) {
 }
 
 func TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry(t *testing.T) {
+	// Sequential: swaps the process-wide app.BuildCommit value.
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.buildCommit)
 
@@ -87,6 +92,7 @@ func TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietWhenTheOwnerSourceDiffFails(t *testing.T) {
+	// Sequential: swaps the process-wide app.BuildCommit value.
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.buildCommit)
 	fixture.workflow.git = ownerDiffFailingGitRunner{delegate: preflight.ExecGitRunner{}}

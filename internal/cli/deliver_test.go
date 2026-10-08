@@ -195,6 +195,7 @@ func TestDeliverCommandStopsAndResumesPersistedQueue(t *testing.T) {
 }
 
 func TestResumeReleasesAStaleOwner(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		proofErr       error
@@ -466,6 +467,7 @@ func TestResumeReusesTheRecordedItemBranch(t *testing.T) {
 }
 
 func TestDeliverNeverTouchesTheUserCheckout(t *testing.T) {
+	t.Parallel()
 	origin, checkout := newDeliveryBranchRepository(t)
 	gittest.Run(t, checkout, "switch", "-c", "user-work")
 	mustWrite(t, filepath.Join(checkout, ".gitignore"), "ignored.txt\n")
@@ -924,6 +926,7 @@ func newDeliveryLifecycleTestEngine(
 }
 
 func TestResumeAcceptsARealArchiveCommit(t *testing.T) {
+	t.Parallel()
 	repository, reviewedHead, archiveHead := commitRealArchive(t, nil)
 
 	item := resumeArchivedDelivery(t, repository, reviewedHead)
@@ -937,6 +940,7 @@ func TestResumeAcceptsARealArchiveCommit(t *testing.T) {
 }
 
 func TestResumeRefusesAnArchiveCommitWithExtraChanges(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		mutate func(*testing.T, string)

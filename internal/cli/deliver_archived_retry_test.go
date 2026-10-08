@@ -17,6 +17,7 @@ import (
 )
 
 func TestRunStartFindsAQueueStartedRunByItsRepository(t *testing.T) {
+	t.Parallel()
 	for _, legacy := range []bool{false, true} {
 		t.Run(fmt.Sprintf("legacy_repository_root=%v", legacy), func(t *testing.T) {
 			home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -42,6 +43,7 @@ func TestRunStartFindsAQueueStartedRunByItsRepository(t *testing.T) {
 }
 
 func TestRunStartRefusesARunOfAnotherRepository(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, home, repo)
 	worktree, branch := linkedArchivedRetryItem(t, repo)
@@ -65,10 +67,12 @@ func TestRunStartRefusesARunOfAnotherRepository(t *testing.T) {
 }
 
 func TestArchivedRetryOfAQueueStartedRunReturnsToReview(t *testing.T) {
+	t.Parallel()
 	testArchivedRetryOfAQueueStartedRunReturnsToReview(t, delivery.BlockerQAEnvironmentPartial)
 }
 
 func TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview(t *testing.T) {
+	t.Parallel()
 	testArchivedRetryOfAQueueStartedRunReturnsToReview(t, delivery.BlockerRunUnresolved)
 }
 

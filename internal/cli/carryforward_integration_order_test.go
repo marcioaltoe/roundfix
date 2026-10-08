@@ -22,6 +22,7 @@ import (
 )
 
 func TestCarryForwardProvesTasksInTheOrderTheRunIntegratedThem(t *testing.T) {
+	t.Parallel()
 	sharedInput := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md"))
 	fixture := newIntegrationOrderCarryForwardFixture(
 		t,
@@ -79,6 +80,7 @@ func TestCarryForwardProvesTasksInTheOrderTheRunIntegratedThem(t *testing.T) {
 }
 
 func TestCarryForwardStillRefusesAnInputMovedOnTheCheckout(t *testing.T) {
+	t.Parallel()
 	sharedInput := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md"))
 	fixture := newIntegrationOrderCarryForwardFixture(
 		t,
@@ -129,6 +131,7 @@ func TestCarryForwardStillRefusesAnInputMovedOnTheCheckout(t *testing.T) {
 }
 
 func TestCarryForwardUnevaluatedTasksFollowIntegrationOrder(t *testing.T) {
+	t.Parallel()
 	conflictPath := filepath.ToSlash(filepath.Join("src", "shared.txt"))
 	fixture := newIntegrationOrderCarryForwardFixture(
 		t,

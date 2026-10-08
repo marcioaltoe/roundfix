@@ -185,6 +185,7 @@ func TestRunsShowPrintsNoPromptsRecorded(t *testing.T) {
 }
 
 func TestTokenTotalsRenderReportedZeroAndCurrencies(t *testing.T) {
+	t.Parallel()
 	zero := int64(0)
 	tokens, cost := formatTokenTotals(store.TokenTotals{Prompts: 2, ReportedPrompts: 1, Tokens: &zero, Costs: []store.TokenCost{{Currency: "USD", Amount: 3.556}, {Currency: "EUR", Amount: 1.2}}, Sessions: 2, CostSessions: 1})
 	if tokens != "0 from 1 of 2 prompt(s)" || cost != "cost 3.56 USD + 1.20 EUR from 1 of 2 Agent Session(s)" {

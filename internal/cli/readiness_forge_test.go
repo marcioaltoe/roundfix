@@ -110,6 +110,7 @@ func doctorWithReadiness(t *testing.T, results []CheckResult) (int, string, stri
 }
 
 func TestForgeReadinessReportsEachDefiniteFailure(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		code, line, missing, key string
 		reply                    readinessReply
@@ -150,6 +151,7 @@ func TestForgeReadinessReportsEachDefiniteFailure(t *testing.T) {
 }
 
 func TestForgeReadinessWarnsWhenTheForgeDoesNotAnswer(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, key, code, line string
 		reply                 readinessReply
@@ -180,6 +182,7 @@ func TestForgeReadinessWarnsWhenTheForgeDoesNotAnswer(t *testing.T) {
 }
 
 func TestGitReadinessReportsVersionAndIdentity(t *testing.T) {
+	t.Parallel()
 	for _, key := range []string{"user.name", "user.email"} {
 		t.Run(key, func(t *testing.T) {
 			result := gitReadiness(context.Background(), scriptedReadiness(t, map[string]readinessReply{"git config --get " + key: {code: 1}}, ""), roundconfig.Loaded{GitRoot: "/fake/repo"})
@@ -197,6 +200,7 @@ func TestGitReadinessReportsVersionAndIdentity(t *testing.T) {
 }
 
 func TestDoctorPrintsForgeWarningsAndExitsZero(t *testing.T) {
+	t.Parallel()
 	deps := scriptedReadiness(t, map[string]readinessReply{
 		"gh auth status --active --hostname github.com --json hosts": {err: context.DeadlineExceeded},
 		"git ls-remote origin HEAD":                                  {code: 1},
@@ -217,6 +221,7 @@ func TestDoctorPrintsForgeWarningsAndExitsZero(t *testing.T) {
 }
 
 func TestReadinessFindingsFoldAndPrintNextActions(t *testing.T) {
+	t.Parallel()
 	for _, statuses := range [][]CheckStatus{{}, {CheckStatusWarn}, {CheckStatusWarn, CheckStatusFailed}, {CheckStatusFailed, CheckStatusWarn}} {
 		var findings []readinessFinding
 		want := CheckStatusOK
@@ -239,6 +244,7 @@ func TestReadinessFindingsFoldAndPrintNextActions(t *testing.T) {
 }
 
 func TestReadinessRemoteFormsAndDeliverySelection(t *testing.T) {
+	t.Parallel()
 	for _, raw := range []string{"https://github.com/owner/repository.git", "ssh://git@github.com/owner/repository.git", "git@github.com:owner/repository.git"} {
 		t.Run(raw, func(t *testing.T) {
 			deps := scriptedReadiness(t, map[string]readinessReply{"git remote get-url publish": {out: raw}, "git ls-remote publish HEAD": {out: "head"}}, "")
@@ -296,6 +302,7 @@ func enterpriseReadinessRunner(t *testing.T, run readinessRunner) readinessRunne
 }
 
 func TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken(t *testing.T) {
+	// Sequential: sets process-wide PATH and forge probe fixture environment variables.
 	dir := t.TempDir()
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("PROBE_LOG", filepath.Join(dir, "probes"))

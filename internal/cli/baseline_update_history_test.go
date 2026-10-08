@@ -104,6 +104,7 @@ func baselineHistoryUnchanged(t *testing.T, h historyFixture, before map[string]
 }
 
 func TestBaselineUpdatePlansPendingHistoryWithoutWrites(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	stamp := time.Unix(1, 0)
 	if err := os.Chtimes(filepath.Join(h.repo, "docs/history/specs/0002-plain/_prd.md"), stamp, stamp); err != nil {
@@ -133,6 +134,7 @@ func TestBaselineUpdatePlansPendingHistoryWithoutWrites(t *testing.T) {
 }
 
 func TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	broken := snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/0003-broken"))
 	refs, count := baselineHistoryGit(t, h, "for-each-ref"), baselineHistoryGit(t, h, "rev-list", "--count", "HEAD")
@@ -185,6 +187,7 @@ func TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag(t *testing.T) {
 }
 
 func TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	if err := os.RemoveAll(filepath.Join(h.repo, "docs/history")); err != nil {
 		t.Fatal(err)
@@ -208,6 +211,7 @@ func TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest(t *testing.T)
 }
 
 func TestBaselineUpdateNoHistorySkipsTheSection(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	before, refs := historySnapshot(t, h.repo), baselineHistoryGit(t, h, "for-each-ref")
 	for _, args := range [][]string{{"--no-history"}, {"--no-history", "--yes"}} {
@@ -230,6 +234,7 @@ func TestBaselineUpdateNoHistorySkipsTheSection(t *testing.T) {
 }
 
 func TestBaselineUpdateRefusesUnitsWithUncommittedChanges(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	for _, p := range []string{"docs/history/specs/0002-plain/_prd.md", "docs/history/specs/0001-maps-unproven/untracked.md"} {
 		f := filepath.Join(h.repo, p)
@@ -266,6 +271,7 @@ func TestBaselineUpdateRefusesUnitsWithUncommittedChanges(t *testing.T) {
 }
 
 func TestBaselineUpdateHistoryHonorsAnExistingTag(t *testing.T) {
+	t.Parallel()
 	t.Run("annotated", func(t *testing.T) {
 		h := baselineHistoryFixture(t)
 		historyTag(t, h)
@@ -293,6 +299,7 @@ func TestBaselineUpdateHistoryHonorsAnExistingTag(t *testing.T) {
 }
 
 func TestBaselineUpdateRejectsAStaleHistoryDigest(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	before, refs, index := historySnapshot(t, h.repo), baselineHistoryGit(t, h, "for-each-ref"), baselineHistoryIndex(t, h)
 	r, out, _, code := baselineHistoryRun(t, h, "json", "--confirm-plan", baselineHistoryDigest(t, h))
@@ -303,6 +310,7 @@ func TestBaselineUpdateRejectsAStaleHistoryDigest(t *testing.T) {
 }
 
 func TestBaselineUpdateReportsATagFailureBeforeAnyConversion(t *testing.T) {
+	t.Parallel()
 	h := baselineHistoryFixture(t)
 	before, refs := historySnapshot(t, h.repo), baselineHistoryGit(t, h, "for-each-ref")
 	baselineHistoryGit(t, h, "config", "tag.gpgSign", "true")
@@ -317,6 +325,7 @@ func TestBaselineUpdateReportsATagFailureBeforeAnyConversion(t *testing.T) {
 }
 
 func TestBaselineUpdateHistoryPlanningBoundaries(t *testing.T) {
+	t.Parallel()
 	t.Run("similarly named tag", func(t *testing.T) {
 		h := baselineHistoryFixture(t)
 		baselineHistoryGit(t, h, "tag", "-a", "history-full-backup", "-m", "backup")

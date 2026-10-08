@@ -2292,6 +2292,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 }
 
 func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
+	t.Parallel()
 	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryBackend)
 	preferred := profile.Preferred.Runtime + " / " + profile.Preferred.Model + " / " + profile.Preferred.ReasoningEffort
 	fallback := profile.Fallbacks[0].Runtime + " / " + profile.Fallbacks[0].Model + " / " + profile.Fallbacks[0].ReasoningEffort
@@ -2355,6 +2356,7 @@ func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
 }
 
 func TestDoctorNamesADegradedPolicy(t *testing.T) {
+	t.Parallel()
 	const degradedPolicy = agent.AccessPolicy("full-access (degraded: sandbox preset unavailable)")
 	tests := []struct {
 		name             string
@@ -9456,6 +9458,7 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 }
 
 func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withReviewGitWorkspace(t)
@@ -9539,6 +9542,7 @@ func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
 }
 
 func TestReviewCommandsRefuseWithoutCreatingArtifactDirectory(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		command            string
@@ -9644,6 +9648,7 @@ func TestReviewCommandsRefuseWithoutCreatingArtifactDirectory(t *testing.T) {
 }
 
 func TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			_, repoDir := withCLIWorkspace(t)

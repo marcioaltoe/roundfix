@@ -47,11 +47,16 @@ func testArchiveGlossaryRefusal(t *testing.T, override bool) {
 		t.Fatal("refusal changed repository files")
 	}
 }
-func TestArchiveRefusesASpecWithAGlossaryGap(t *testing.T) { testArchiveGlossaryRefusal(t, false) }
+func TestArchiveRefusesASpecWithAGlossaryGap(t *testing.T) {
+	t.Parallel()
+	testArchiveGlossaryRefusal(t, false)
+}
 func TestArchiveWithQAOverrideStillRefusesAGlossaryGap(t *testing.T) {
+	t.Parallel()
 	testArchiveGlossaryRefusal(t, true)
 }
 func TestArchiveAcceptsASpecWhoseGlossaryIsCurrent(t *testing.T) {
+	t.Parallel()
 	root, dir := glossaryArchiveWorkspace(t)
 	mustWrite(t, filepath.Join(root, "CONTEXT.md"), "**Missing Term**: definition\n")
 	var stdout, stderr bytes.Buffer

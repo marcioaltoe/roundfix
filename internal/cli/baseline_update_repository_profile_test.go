@@ -22,6 +22,7 @@ import (
 const baselineRepositoryProfileTestID = "repository-go-cli-tui"
 
 func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
+	// Sequential: changes the process working directory for repository profile discovery.
 	for _, copied := range []bool{true, false} {
 		t.Run(fmt.Sprintf("copied skills=%t", copied), func(t *testing.T) {
 			root := newBaselineRepositoryProfileFixture(t, copied)
@@ -47,6 +48,7 @@ func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
 }
 
 func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testing.T) {
+	// Sequential: changes the process working directory for repository profile discovery.
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	before := baselinePlanTestTree(t, root)
@@ -73,6 +75,7 @@ func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testi
 }
 
 func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testing.T) {
+	// Sequential: changes the process working directory for repository profile discovery.
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	// Force the real install to replace every owned skill, rather than just report them.
@@ -114,6 +117,7 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 }
 
 func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
+	// Sequential: changes the process working directory for repository profile discovery.
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	before := baselinePlanTestTree(t, root)
@@ -149,6 +153,7 @@ func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
 }
 
 func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
+	// Sequential: changes the process working directory for repository profile discovery.
 	root := newBaselineRepositoryProfileFixture(t, false)
 	before := baselinePlanTestTree(t, root)
 	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "skills", "restore", "--profile", "missing-profile", "--repo", root, "--format", "text")
@@ -164,6 +169,7 @@ func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
 }
 
 func TestBaselineSkillsRestoreAcceptsARepositoryProfile(t *testing.T) {
+	// Sequential: changes the process working directory for repository profile discovery.
 	root := newBaselineRepositoryProfileFixture(t, false)
 	source := filepath.Join(root, "missing-source")
 	before := baselinePlanTestTree(t, root)

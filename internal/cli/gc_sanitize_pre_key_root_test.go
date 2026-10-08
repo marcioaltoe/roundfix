@@ -18,6 +18,7 @@ import (
 )
 
 func TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newBareGCSanitationFixture(t)
 	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
@@ -48,6 +49,7 @@ func TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout(t *testing.T) {
 }
 
 func TestGCSanitizeStillPreservesARootEqualToNeitherDefault(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newBareGCSanitationFixture(t)
 	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
@@ -76,6 +78,7 @@ func TestGCSanitizeStillPreservesARootEqualToNeitherDefault(t *testing.T) {
 }
 
 func TestGCSanitizeKeepsAKeyDerivedRootClassification(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newBareGCSanitationFixture(t)
 	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
@@ -104,6 +107,7 @@ func TestGCSanitizeKeepsAKeyDerivedRootClassification(t *testing.T) {
 }
 
 func TestGCSanitizeAcceptsTheCheckoutDefaultWhenTheKeyDefaultCannotBeDerived(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	checkoutRoot := t.TempDir()
 	checkoutDefault, err := roundconfig.DefaultArtifactDirectoryForPath(checkoutRoot, homeDir)
@@ -131,6 +135,7 @@ func TestGCSanitizeAcceptsTheCheckoutDefaultWhenTheKeyDefaultCannotBeDerived(t *
 }
 
 func TestGCSanitizePreservesUnsafeWhenTheKeyDefaultCannotBeDerived(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	overriddenRoot := filepath.Join(homeDir, ".roundfix", "artifacts", "operator-override")
 	mustMkdir(t, filepath.Join(overriddenRoot, "runs"))

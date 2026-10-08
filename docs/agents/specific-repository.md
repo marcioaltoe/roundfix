@@ -11,6 +11,7 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 
 ## Repository rules
 
+- A top-level test in a Parallel Test Package calls `t.Parallel()` as its first statement or carries a `// Sequential: <reason>` comment naming the process-wide state it changes; the Parallel Test Package rule in `internal/testfixture` enforces it.
 - Keep the project KISS: prefer the smallest behavior that satisfies the
   documented product contract.
 - **NEVER** copy names, branding, package names, comments, examples, or

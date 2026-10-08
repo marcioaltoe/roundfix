@@ -16,6 +16,7 @@ import (
 )
 
 func TestReviewReportsFindingsDismissedWithoutAskingTheReviewer(t *testing.T) {
+	t.Parallel()
 	const findings = "- review.txt:2: first\n- review.txt:2: second"
 	fixture, runner := recordHeadBoundFindings(t, "codex", findings)
 	for _, findingID := range []string{"F1", "F2"} {
@@ -48,6 +49,7 @@ func TestReviewReportsFindingsDismissedWithoutAskingTheReviewer(t *testing.T) {
 }
 
 func TestReviewKeepsStandingFindingsWithoutAskingTheReviewer(t *testing.T) {
+	t.Parallel()
 	const findings = "- review.txt:2: dismissed\n- review.txt:2: standing"
 	fixture, runner := recordHeadBoundFindings(t, "codex", findings)
 	code, _, stderr := runReviewDispose(t, "F1", "--dismiss", "--evidence", "not reachable")
@@ -71,6 +73,7 @@ func TestReviewKeepsStandingFindingsWithoutAskingTheReviewer(t *testing.T) {
 }
 
 func TestReviewIgnoresADismissalOfDifferentText(t *testing.T) {
+	t.Parallel()
 	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original text")
 	code, _, stderr := runReviewDispose(t, "F1", "--dismiss", "--evidence", "applies only to the original text")
 	if code != exitOK || stderr != "" {
@@ -93,6 +96,7 @@ func TestReviewIgnoresADismissalOfDifferentText(t *testing.T) {
 }
 
 func TestReviewIgnoresAFixWhenClearingAHead(t *testing.T) {
+	t.Parallel()
 	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: fixed later")
 	mustWrite(t, fixture.repository+"/fix.txt", "fix\n")
 	gittest.Run(t, fixture.repository, "add", "fix.txt")
@@ -117,6 +121,7 @@ func TestReviewIgnoresAFixWhenClearingAHead(t *testing.T) {
 }
 
 func TestReviewAsksAgainAfterTheHeadMoves(t *testing.T) {
+	t.Parallel()
 	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original head")
 	mustWrite(t, fixture.repository+"/moved.txt", "moved\n")
 	gittest.Run(t, fixture.repository, "add", "moved.txt")
@@ -130,6 +135,7 @@ func TestReviewAsksAgainAfterTheHeadMoves(t *testing.T) {
 }
 
 func TestReviewAsksAgainForADifferentBase(t *testing.T) {
+	t.Parallel()
 	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original base")
 	fixture.baseCommit = fixture.headCommit
 	resetReviewCommandRunner(runner, agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"})
@@ -140,6 +146,7 @@ func TestReviewAsksAgainForADifferentBase(t *testing.T) {
 }
 
 func TestReviewAsksAgainForADifferentProvider(t *testing.T) {
+	t.Parallel()
 	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original provider")
 	fixture.provider = "claude"
 	writeReviewCommandProfileConfig(t, fixture.repository, "claude", fixture.artifactDir, "claude", "claude")
@@ -151,6 +158,7 @@ func TestReviewAsksAgainForADifferentProvider(t *testing.T) {
 }
 
 func TestReviewNeverReusesACleanVerdict(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{
 		result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
 	}}}
@@ -167,6 +175,7 @@ func TestReviewNeverReusesACleanVerdict(t *testing.T) {
 }
 
 func TestReviewNeverReusesABlockedVerdict(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{
 		result: agent.ExecuteResult{Message: "ambiguous answer", StopReason: "end_turn"},
 	}}}
@@ -183,6 +192,7 @@ func TestReviewNeverReusesABlockedVerdict(t *testing.T) {
 }
 
 func TestDeliveryReviewResultAdvancesDismissedFindings(t *testing.T) {
+	t.Parallel()
 	record := validDismissedReviewRecord()
 
 	result, err := deliveryReviewResult(record, record.HeadCommit)
@@ -196,6 +206,7 @@ func TestDeliveryReviewResultAdvancesDismissedFindings(t *testing.T) {
 }
 
 func TestDeliveryReviewResultParksStandingFindings(t *testing.T) {
+	t.Parallel()
 	record := newReviewRecord(
 		"/tmp/repository",
 		"base",
@@ -216,6 +227,7 @@ func TestDeliveryReviewResultParksStandingFindings(t *testing.T) {
 }
 
 func TestReviewRecordRefusesInvalidFindingsDismissed(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		mutate func(*reviewRecord)

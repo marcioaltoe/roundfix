@@ -31,6 +31,7 @@ func archiveTestRepositoryPath(repoRoot string, kind spec.ArchiveKind, elements 
 }
 
 func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
+	t.Parallel()
 	const supersession = "---\nsuperseded_by: 0002-delivered-widget\ndate: 2026-09-19\nreason: delivered elsewhere\n---\n\nSpec 0002 delivered this Spec's content.\n"
 
 	t.Run("no Task Graph with supersession archives byte-identically", func(t *testing.T) {

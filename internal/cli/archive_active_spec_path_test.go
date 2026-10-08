@@ -29,6 +29,7 @@ func archivePinWorkspace(t *testing.T) (string, string) {
 }
 
 func TestArchiveRefusesASpecAFileStillPins(t *testing.T) {
+	t.Parallel()
 	root, dir := archivePinWorkspace(t)
 	before := snapshotDirectoryFiles(t, dir)
 	mustWrite(t, filepath.Join(root, "pin_test.go"), "package pin\nvar path = \"docs/specs/"+implementTestSlug+"/_techspec.md\"\n")
@@ -58,6 +59,7 @@ func TestArchiveRefusesASpecAFileStillPins(t *testing.T) {
 }
 
 func TestArchiveIgnoresMarkdownThatNamesTheSpec(t *testing.T) {
+	t.Parallel()
 	root, dir := archivePinWorkspace(t)
 	mustWrite(t, filepath.Join(root, "notes.md"), "docs/specs/"+implementTestSlug+"/_techspec.md\n")
 	var stdout, stderr bytes.Buffer

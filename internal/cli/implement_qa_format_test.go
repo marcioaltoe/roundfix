@@ -13,6 +13,7 @@ import (
 )
 
 func TestImplementPassesVerificationFormatToTheQAStep(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		implementQAGateSeed("", "task_01"),

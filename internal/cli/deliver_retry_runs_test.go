@@ -20,6 +20,7 @@ import (
 )
 
 func TestItemRecoveryCarriesTheNewestRunWhenTheItemRecordsAnOlderOne(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}, {id: "task_02"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	older := createDeliveryRetryRun(t, workflow, repoDir, "ma/widget-flow", []implementSeed{{id: "task_01"}}, store.StateBudgetExceeded)
@@ -48,6 +49,7 @@ func TestItemRecoveryCarriesTheNewestRunWhenTheItemRecordsAnOlderOne(t *testing.
 }
 
 func TestItemRecoveryCarriesEveryRunNewestFirst(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}, {id: "task_02"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	older := createDeliveryRetryRun(t, workflow, repoDir, "ma/widget-flow", []implementSeed{{id: "task_01"}}, store.StateBudgetExceeded)
@@ -67,6 +69,7 @@ func TestItemRecoveryCarriesEveryRunNewestFirst(t *testing.T) {
 }
 
 func TestItemRecoverySkipsACompletedRunWithAGoneWorktree(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	completed := createDeliveryRetryRun(t, workflow, repoDir, "ma/widget-flow", []implementSeed{{id: "task_01"}}, store.StateBudgetExceeded)
@@ -83,6 +86,7 @@ func TestItemRecoverySkipsACompletedRunWithAGoneWorktree(t *testing.T) {
 }
 
 func TestItemRecoveryRefusalNamesTheRunsAlreadyCarried(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}, {id: "task_02"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	older := createDeliveryRetryRun(t, workflow, repoDir, "ma/widget-flow", []implementSeed{{id: "task_01"}}, store.StateBudgetExceeded)
@@ -110,6 +114,7 @@ func TestItemRecoveryRefusalNamesTheRunsAlreadyCarried(t *testing.T) {
 }
 
 func TestDeliverRetryPrintsOneLinePerCarriedRun(t *testing.T) {
+	t.Parallel()
 	var stdout strings.Builder
 	printDeliverRetryResult(&stdout, implementTestSlug, delivery.RetryResult{
 		Blocker: delivery.BlockerRunBudgetExceeded,

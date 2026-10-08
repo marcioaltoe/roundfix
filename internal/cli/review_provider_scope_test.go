@@ -13,6 +13,7 @@ import (
 )
 
 func TestReviewUnderCodexIgnoresCodeRabbitConfiguration(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
@@ -29,6 +30,7 @@ func TestReviewUnderCodexIgnoresCodeRabbitConfiguration(t *testing.T) {
 }
 
 func TestReviewUnderNoneIgnoresCodeRabbitConfiguration(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "none", runner)
 	writeIncoherentCodeRabbitReviewFixture(t, fixture)

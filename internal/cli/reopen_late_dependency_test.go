@@ -16,6 +16,7 @@ import (
 // Boundary IN: built CLI, working-tree graph and report-addition history.
 // Boundary OUT: QA evidence and non-gate Task bytes remain unchanged.
 func TestReopenReopensALateDependencyThroughTheBuiltBinary(t *testing.T) {
+	t.Parallel()
 	home, repo, report := lateDependencyWorkspace(t, true, true)
 	binary := filepath.Join(t.TempDir(), "roundfix")
 	root, err := filepath.Abs(filepath.Join("..", ".."))
@@ -51,6 +52,7 @@ func TestReopenReopensALateDependencyThroughTheBuiltBinary(t *testing.T) {
 }
 
 func TestReopenRefusesWhenTheNewestReportIsUncommitted(t *testing.T) {
+	t.Parallel()
 	_, repo, report := lateDependencyWorkspace(t, true, true)
 	newest := filepath.Join(filepath.Dir(report), "qa-report-2026-10-07.md")
 	mustWrite(t, newest, mustRead(t, report))
@@ -58,6 +60,7 @@ func TestReopenRefusesWhenTheNewestReportIsUncommitted(t *testing.T) {
 }
 
 func TestReopenRefusesWhenTheRecordedClosureMatches(t *testing.T) {
+	t.Parallel()
 	_, repo, report := lateDependencyWorkspace(t, false, true)
 	assertLateDependencyRefusal(t, repo, report)
 }
@@ -95,6 +98,7 @@ func assertLateDependencyRefusal(t *testing.T, repo, report string) {
 }
 
 func TestReopenRefusesWhenLateDependencyIDsChangeBeforeWrite(t *testing.T) {
+	t.Parallel()
 	_, repo, _ := lateDependencyWorkspace(t, true, true)
 	var preflightStderr bytes.Buffer
 	plan, err := preflightReopen(context.Background(), implementTestSlug, &preflightStderr, commandEnvironmentForTest(t))
@@ -119,6 +123,7 @@ func TestReopenRefusesWhenLateDependencyIDsChangeBeforeWrite(t *testing.T) {
 }
 
 func TestReopenUsesOldestReportAddition(t *testing.T) {
+	t.Parallel()
 	_, repo, report := lateDependencyWorkspace(t, true, true)
 	before := mustRead(t, report)
 	if err := os.Remove(report); err != nil {
@@ -140,6 +145,7 @@ func TestReopenUsesOldestReportAddition(t *testing.T) {
 }
 
 func TestReopenRefusesWithoutRecordedManifest(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name      string
 		malformed bool
@@ -165,6 +171,7 @@ func TestReopenRefusesWithoutRecordedManifest(t *testing.T) {
 }
 
 func TestReopenRefusesWhenReportResolvesOutsideGitRoot(t *testing.T) {
+	t.Parallel()
 	_, repo, report := lateDependencyWorkspace(t, true, true)
 	outside := filepath.Join(t.TempDir(), "qa-report-2026-10-06.md")
 	mustWrite(t, outside, mustRead(t, report))

@@ -18,6 +18,7 @@ import (
 )
 
 func TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{
 		{id: "task_01", title: "Build the core"},
 		{id: "task_02", title: "Wire the shell", needs: []string{"task_01"}},
@@ -61,6 +62,7 @@ func TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout(t *testing.T) {
 }
 
 func TestReconcileCarryForwardOfACarriedRunCarriesNothing(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
@@ -102,6 +104,7 @@ func TestReconcileCarryForwardOfACarriedRunCarriesNothing(t *testing.T) {
 }
 
 func TestCarryForwardStillRefusesTheRemainingSetOnAMovedInput(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{
 		{id: "task_01", title: "Build the core"},
 		{id: "task_02", title: "Wire the shell", needs: []string{"task_01"}},
@@ -146,6 +149,7 @@ func TestCarryForwardStillRefusesTheRemainingSetOnAMovedInput(t *testing.T) {
 }
 
 func TestCarryForwardCompletedTargetIsNotReportedAsUnstagedAfterConflict(t *testing.T) {
+	t.Parallel()
 	conflictPath := filepath.ToSlash(filepath.Join("src", "shared.txt"))
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{
 		{
@@ -192,6 +196,7 @@ func TestCarryForwardCompletedTargetIsNotReportedAsUnstagedAfterConflict(t *test
 }
 
 func TestImplementPreflightNamesOnlyTheTasksLeftToCarry(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{
 		{id: "task_01", title: "Build the core"},
 		{id: "task_02", title: "Wire the shell", needs: []string{"task_01"}},
@@ -225,6 +230,7 @@ func TestImplementPreflightNamesOnlyTheTasksLeftToCarry(t *testing.T) {
 }
 
 func TestImplementPreflightIsSilentForARunWithNothingToCarry(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	writeImplementSpec(t, fixture.repoDir, implementTestSlug, []implementSeed{
 		{id: "task_01", title: "Build the core", status: string(spec.StatusCompleted)},

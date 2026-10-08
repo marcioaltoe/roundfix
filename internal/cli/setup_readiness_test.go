@@ -15,6 +15,7 @@ import (
 )
 
 func TestSetupPrintsTheReadinessLinesAndOffersNothing(t *testing.T) {
+	t.Parallel()
 	for _, acpxReady := range []bool{true, false} {
 		for _, status := range []CheckStatus{CheckStatusOK, CheckStatusWarn, CheckStatusFailed} {
 			for _, flag := range []string{"", "--yes", "--no-input"} {

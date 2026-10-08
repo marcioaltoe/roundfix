@@ -14,6 +14,7 @@ import (
 // Boundary OUT: newest-report selection and derived-command rendering, owned by internal/spec/task_test.go.
 
 func TestRunQAReportAcceptCommandAcceptsAQualifyingPartial(t *testing.T) {
+	t.Parallel()
 	specDir := t.TempDir()
 	writeQAReportTestFile(t, filepath.Join(specDir, "_prd.md"), `# Test Spec
 
@@ -93,6 +94,7 @@ func TestQAReportAcceptRefusesAnEmptyFrontMatter(t *testing.T) {
 }
 
 func TestRunQAReportAcceptCommandFailsClosed(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		prepare   func(t *testing.T, specDir string) string

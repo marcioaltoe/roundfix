@@ -22,6 +22,7 @@ func writeReadinessManifest(t *testing.T, root string) {
 }
 
 func TestToolchainReadinessNamesEachMissingToolAndItsSource(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeReadinessManifest(t, root)
 	cfg := roundconfig.Builtin()
@@ -58,6 +59,7 @@ func TestToolchainReadinessNamesEachMissingToolAndItsSource(t *testing.T) {
 }
 
 func TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue(t *testing.T) {
+	t.Parallel()
 	deps := scriptedReadiness(t, nil, "")
 	deps.exists = func(path string) bool { return path == "/existing.cjs" }
 	deps.environ = []string{"NODE_OPTIONS=--require /ignored.cjs", `NODE_OPTIONS=--require "/missing path.cjs" -r /existing.cjs --import package`, "ROUNDFIX_OPENROUTER_API_KEY=key-sentinel", "OPENROUTER_API_KEY=generic-sentinel", "TYPESAFE_API_KEY=generic-sentinel", "ROUNDFIX_UNDECLARED_API_KEY=other-sentinel"}
@@ -89,6 +91,7 @@ func TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue(t *testing.T)
 }
 
 func TestEnvironmentReadinessListsEachStageKeyByName(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		environ []string
@@ -139,6 +142,7 @@ func TestEnvironmentReadinessListsEachStageKeyByName(t *testing.T) {
 }
 
 func TestDoctorPrintsTheFiveReadinessLines(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeReadinessManifest(t, root)
 	deps := scriptedReadiness(t, map[string]readinessReply{

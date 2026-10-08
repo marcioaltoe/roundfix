@@ -225,6 +225,7 @@ func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
 }
 
 func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
+	t.Parallel()
 	survivor := newDetachTestSurvivor(t)
 	t.Cleanup(func() {
 		if err := os.RemoveAll(survivor.root); err != nil {

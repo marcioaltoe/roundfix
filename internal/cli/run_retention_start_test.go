@@ -73,6 +73,7 @@ func seedOldStartRun(t *testing.T, home string, now time.Time, name string) stor
 }
 
 func TestRunRetentionRunsOnceADayAtRunStart(t *testing.T) {
+	t.Parallel()
 	for _, trigger := range []string{"24 hours", "window change"} {
 		t.Run(trigger, func(t *testing.T) {
 			f := seedGCRetention(t, false, 2)
@@ -120,6 +121,7 @@ func TestRunRetentionRunsOnceADayAtRunStart(t *testing.T) {
 }
 
 func TestRunRetentionStopsOnItsBudgetAndResumes(t *testing.T) {
+	t.Parallel()
 	home, _ := withCLIWorkspace(t)
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
 	var runs []store.Run
@@ -168,6 +170,7 @@ func TestRunRetentionStopsOnItsBudgetAndResumes(t *testing.T) {
 }
 
 func TestRunRetentionAtStartWarnsAndNeverBlocks(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	_, _ = retentionStartStore(t, home)
 	db := openGCRetentionDB(t, home)
@@ -186,6 +189,7 @@ func TestRunRetentionAtStartWarnsAndNeverBlocks(t *testing.T) {
 }
 
 func TestImplementStartRunsRunRetention(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
 	withGCNow(t, now)
@@ -206,6 +210,7 @@ func TestImplementStartRunsRunRetention(t *testing.T) {
 }
 
 func TestDeliverStartRunsRunRetention(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	setImplementFixtureAuthorizationOperations(t, repo, allDeliveryOperations...)
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
@@ -248,6 +253,7 @@ func TestDeliverStartRunsRunRetention(t *testing.T) {
 }
 
 func TestDeliverStatusIsUnchangedByRunRetention(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, false, 2)
 	repo := commandEnvironmentForTest(t).workDir
 	mustMkdir(t, filepath.Join(repo, "docs", "specs"))
@@ -280,6 +286,7 @@ func TestDeliverStatusIsUnchangedByRunRetention(t *testing.T) {
 }
 
 func TestRunRetentionKeepsTheRunReconcileReads(t *testing.T) {
+	t.Parallel()
 	home, repo, location := newReconcileWorkspace(t)
 	run, ref := createReconcileRun(t, home, repo, location, "ma/widget-flow", store.StateFailed)
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
@@ -298,6 +305,7 @@ func TestRunRetentionKeepsTheRunReconcileReads(t *testing.T) {
 }
 
 func TestUnknownRunNamesRunRetention(t *testing.T) {
+	t.Parallel()
 	home, _ := withCLIWorkspace(t)
 	_, _ = retentionStartStore(t, home)
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
@@ -327,6 +335,7 @@ func TestUnknownRunNamesRunRetention(t *testing.T) {
 }
 
 func TestRunRetentionKeepsTheArtifactsOfARunThatLeftTerminalBeforeRemoval(t *testing.T) {
+	t.Parallel()
 	home, _ := withCLIWorkspace(t)
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
 	run := seedOldStartRun(t, home, now, "reopened")

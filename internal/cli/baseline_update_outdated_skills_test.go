@@ -58,6 +58,7 @@ func lowerPreviewOwnedSkill(t *testing.T, repository, name string) (found, requi
 }
 
 func TestBaselineUpdatePreviewReportsAnOlderOwnedSkill(t *testing.T) {
+	t.Parallel()
 	for _, changed := range []bool{false, true} {
 		t.Run(fmt.Sprintf("guidance_changed=%t", changed), func(t *testing.T) {
 			repository := newBaselineUpdateRepository(t)
@@ -98,6 +99,7 @@ func TestBaselineUpdatePreviewReportsAnOlderOwnedSkill(t *testing.T) {
 }
 
 func TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch(t *testing.T) {
+	t.Parallel()
 	repository := newBaselineUpdateRepository(t)
 	_, absent, absentErr, absentCode := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", repository, "--format=json")
 	installPreviewOwnedSkills(t, repository)
@@ -127,6 +129,7 @@ func TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch(t *testing.T) {
 }
 
 func TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck(t *testing.T) {
+	t.Parallel()
 	repository := newBaselineUpdateRepository(t)
 	installPreviewOwnedSkills(t, repository)
 	_, before, beforeErr, beforeCode := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", repository, "--no-skills", "--format=json")
@@ -138,6 +141,7 @@ func TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck(t *testing.T) 
 }
 
 func TestDoctorFailsForAnOwnedSkillOlderThanTheBundle(t *testing.T) {
+	t.Parallel()
 	repository := newBaselineUpdateRepository(t)
 	installPreviewOwnedSkills(t, repository)
 	found, required := lowerPreviewOwnedSkill(t, repository, "qa-gate")

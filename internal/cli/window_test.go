@@ -19,6 +19,7 @@ import (
 )
 
 func TestRunWindowKeyedOnAWorktreeIsFound(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	linkedRoot := filepath.Join(t.TempDir(), "linked")
 	gitImplement(t, repoDir, "worktree", "add", "-b", "feature/window-linked", linkedRoot)
@@ -71,6 +72,7 @@ func TestRunWindowKeyedOnAWorktreeIsFound(t *testing.T) {
 }
 
 func TestWindowSetResolvesNextOccurrenceFromNestedWorktreePath(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	now := time.Date(2026, time.August, 26, 23, 0, 0, 0, location)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -108,6 +110,7 @@ func TestWindowSetResolvesNextOccurrenceFromNestedWorktreePath(t *testing.T) {
 }
 
 func TestWindowSetAcceptsSameDayAndFutureAbsoluteCutoffs(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	tests := []struct {
 		name   string
@@ -148,6 +151,7 @@ func TestWindowSetAcceptsSameDayAndFutureAbsoluteCutoffs(t *testing.T) {
 }
 
 func TestWindowSetRejectsPastAbsoluteCutoffWithoutStoring(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	now := time.Date(2026, time.August, 26, 23, 0, 0, 0, location)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -174,6 +178,7 @@ func TestWindowSetRejectsPastAbsoluteCutoffWithoutStoring(t *testing.T) {
 }
 
 func TestWindowSetPreservesExistingWindowUnlessForced(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	now := time.Date(2026, time.August, 26, 23, 0, 0, 0, location)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -211,6 +216,7 @@ func TestWindowSetPreservesExistingWindowUnlessForced(t *testing.T) {
 }
 
 func TestWindowShowReportsSetAndAbsentStates(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	now := time.Date(2026, time.August, 26, 23, 30, 0, 0, location)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -253,6 +259,7 @@ func TestWindowShowReportsSetAndAbsentStates(t *testing.T) {
 }
 
 func TestWindowClearReportsWhetherWindowExisted(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	now := time.Date(2026, time.August, 26, 23, 0, 0, 0, location)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -276,6 +283,7 @@ func TestWindowClearReportsWhetherWindowExisted(t *testing.T) {
 }
 
 func TestWindowHelpExplainsStartAndRunBounds(t *testing.T) {
+	t.Parallel()
 	_, _ = newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 
 	stdout := runWindowCommandForTest(t, []string{"window", "--help"}, exitOK)
@@ -291,6 +299,7 @@ func TestWindowHelpExplainsStartAndRunBounds(t *testing.T) {
 }
 
 func TestWindowRejectsMalformedInputAndUnknownSubcommand(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	now := time.Date(2026, time.August, 26, 23, 0, 0, 0, location)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})

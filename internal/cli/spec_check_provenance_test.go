@@ -30,6 +30,7 @@ func probeProvenanceCLI(t *testing.T, format string) (int, string, specCheckDocu
 }
 
 func TestSpecCheckReportsAMalformedCommand(t *testing.T) {
+	t.Parallel()
 	marker := filepath.Join(t.TempDir(), "ran")
 	_, _ = newSpecCheckVerificationWorkspace(t, []string{fmt.Sprintf("touch %q; if", marker)})
 	for _, format := range []string{"text", "json"} {
@@ -53,6 +54,7 @@ func TestSpecCheckReportsAMalformedCommand(t *testing.T) {
 }
 
 func TestSpecCheckNamesAnUncommittedVerificationSource(t *testing.T) {
+	t.Parallel()
 	_, repo := newSpecCheckVerificationWorkspace(t, []string{"test -f task-output.txt"})
 	dir := filepath.Join(repo, "docs/specs/clean")
 	manifest := filepath.Join(dir, "_tasks.md")
@@ -90,6 +92,7 @@ func TestSpecCheckNamesAnUncommittedVerificationSource(t *testing.T) {
 }
 
 func TestSpecCheckNamesNoSourceWhenCommitted(t *testing.T) {
+	t.Parallel()
 	_, _ = newSpecCheckVerificationWorkspace(t, []string{"test -f task-output.txt"})
 	for _, format := range []string{"text", "json"} {
 		t.Run(format, func(t *testing.T) {
