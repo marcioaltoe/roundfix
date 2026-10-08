@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0251-skills-keep-up-with-the-behavior-they-describe
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -84,3 +84,58 @@ through table tests.
 - `_prd.md` → Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 4; User Story 3
 - `_techspec.md` → Interfaces; Data Model 1; Data Model 2; API Contract 1; Invariant 6; Build Order 1
 - ADR-0256; ADR-0252
+
+## Result
+
+Implemented the pure `internal/skillcoverage` package with the TechSpec's
+exported constants, types and signatures. Its imports are standard-library
+only; it reads supplied bytes and runs no process or filesystem operation.
+The pre-change inspection found that the package directory did not exist.
+The only pre-existing modified path was this Task file, whose daemon-owned
+`status: in_progress` is preserved.
+
+Acceptance evidence:
+
+- Malformed map or record refusal: `TestParseMapRefusesEveryMalformedEntry`
+  exercises schemas, unknown fields, blank and duplicate ids, map ordering,
+  exclusive non-empty coverage, invalid relative paths and source patterns,
+  malformed fingerprints, missing/null surfaces and trailing JSON. Every
+  negative case asserts that the error names its id or offending field;
+  valid map and record cases parse.
+- Byte-identical record encoding: `TestRecordRoundTripsByteForByte` starts
+  with unsorted map keys and asserts exact two-space-indented output, sorted
+  keys, one final newline and identical parse/re-encode bytes. It also
+  checks SHA-256 against the known digest of `abc` and round-trips an empty
+  surfaces object.
+- Comparison and range-limited reviews:
+  `TestCompareJudgesEveryChangedSurface` checks added, changed and removed
+  records; target entries for additions/changes and base entries for
+  removals; outcome precedence; changed, new and unchanged reviews; missing
+  entries; sorted output; nil snapshots; and omission of unchanged surfaces.
+  `TestSurfacesForPathFollowTheSourceGrammar` checks recursive directory
+  prefixes, whole-path wildcards and exact sources, including misses and
+  one result when two sources match the same surface.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task01-skillcoverage-cache rtk proxy go test -count=1 -cover ./internal/skillcoverage`
+  exited 0; all four tests passed; statement coverage was 95.6%.
+- `GOCACHE=/private/tmp/roundfix-task01-skillcoverage-cache rtk proxy go test -count=1 -v ./internal/skillcoverage`
+  exited 0 and reported each of the four required tests passing.
+- `rtk proxy gofmt -l internal/skillcoverage/skillcoverage.go internal/skillcoverage/skillcoverage_test.go`
+  emitted no paths; `rtk proxy git -c core.fsmonitor=false diff --check`
+  exited 0.
+- Initial focused runs exposed a wrong test import prefix (corrected to the
+  module's `roundfix` prefix) and sandbox denial of the default Go build
+  cache. The task-specific writable cache resolved the latter.
+- `rtk make verify-incremental` initially exited 2: the sandbox denied
+  process-table access in two CLI process-owner tests, and suiteguard
+  detected implementation/Result edits made while that run was active.
+  The rerun with host process-table access and the worktree held unchanged
+  exited 0. Go analysis, the repository tests, skill synchronization and
+  skill checks, and the CLI build passed. The final package implementation
+  was unchanged throughout that successful run.
+
+The authored Verification command, including its Windows build, remains
+for the Daemon. No Task status, Task Graph, other Task file, commit, push or
+Pull Request was changed by this implementation turn.
