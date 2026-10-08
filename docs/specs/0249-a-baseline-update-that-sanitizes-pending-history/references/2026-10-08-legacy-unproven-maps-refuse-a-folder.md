@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-08
-spec: null
+spec: 0249-a-baseline-update-that-sanitizes-pending-history
 ---
 
 # A legacy `unproven` list of maps refuses its folder
