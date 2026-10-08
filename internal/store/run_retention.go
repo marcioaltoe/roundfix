@@ -205,3 +205,30 @@ func (store *Store) CompactIncrementally(ctx context.Context, maxPages int64) (I
 	}
 	return result, nil
 }
+
+// RunRetentionStorage reads logical database bytes, including pages still in WAL.
+func (store *Store) RunRetentionStorage(ctx context.Context) (bytes, freePages, mode int64, err error) {
+	pages, err := storagePragmaInt64(ctx, store.db, "page_count")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	size, err := storagePragmaInt64(ctx, store.db, "page_size")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	freePages, err = storagePragmaInt64(ctx, store.db, "freelist_count")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	mode, err = storagePragmaInt64(ctx, store.db, "auto_vacuum")
+	return pages * size, freePages, mode, err
+}
+
+// CheckpointRunRetention returns incremental compaction's WAL pages without
+// waiting for readers to release their snapshots.
+func (store *Store) CheckpointRunRetention(ctx context.Context) error {
+	if _, err := store.db.ExecContext(ctx, "PRAGMA wal_checkpoint(PASSIVE)"); err != nil {
+		return fmt.Errorf("checkpoint Run Retention: %w", err)
+	}
+	return nil
+}

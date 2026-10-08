@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0250-a-run-database-that-keeps-only-recent-runs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -125,3 +125,95 @@ is verifiable on its own through `roundfix gc` on fixture homes.
 - `_prd.md` → Core Feature 1; Core Feature 2; Core Feature 4; Core Feature 5; Core Feature 6; User Story 2; User Story 4; Success Metric 1; Success Metric 2; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 5; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Invariants 1-7; Build Order 2
 - ADR-0255; ADR-0171
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification. The Daemon-owned status,
+Subtasks and Acceptance Criteria checkboxes are unchanged. The initial worktree
+had only the Daemon's `pending` → `in_progress` status change; the configuration
+key, sweep engine and ten requested tests were absent at inspection.
+
+### Implementation and acceptance evidence
+
+- Configuration criterion: `Store.RunRetentionDays` defaults to 30 and accepts
+  only integer 7, 15 or 30. Invalid User Config values retain the exact
+  `parse config "<path>": store.run_retention_days must be 7, 15 or 30`
+  diagnostic. Project Config strips the key before decoding and emits the
+  exact ignored-setting warning once. Only the User Config template carries
+  the commented key. The four requested configuration tests exercise loading,
+  refusals (including `0`, `10`, `31`, `-7`, `30d` and `"30"`), warning and init
+  templates. Journal Retention's default, parser, validation and template line
+  remain unchanged.
+- Dry-run criterion: the Run Retention report follows Journal Retention's
+  existing lines and lists, includes the configured cutoff, removable IDs,
+  per-table counts, kept reasons and estimated event bytes. GC uses the
+  immutable storage reader when the database has no committed WAL frames and
+  the live event reader when committed WAL data must be read. The requested
+  dry-run test compares every file under the fixture Roundfix Home before and
+  after. `TestGCDryRunReadsCommittedWAL` additionally proves visibility of a
+  committed completion-time update in WAL and unchanged database, WAL and
+  artifact bytes. Invalid-window tests cover both dry and live commands,
+  empty stdout, the exact refusal, exit 2 and unchanged fixture Home.
+- Removal and compaction criterion: `sweepRunDatabase` uses the GC clock,
+  protects queue references, existing recorded Run Worktrees and existing
+  artifacts under unproven roots, counting every applicable reason. Recorded
+  Artifact Roots and repository-key or checkout-derived defaults require the
+  sanitation path proof plus physical containment in Roundfix Home. It
+  removes proven directories before calling the transactional store removal
+  and handles `RunRetentionKeptError` as kept. The CLI fixtures prove the
+  removed Run leaves all five dependent tables and its directory; every kept,
+  Active and recent Run preserves all its rows and artifacts, and all seven
+  unrelated durable tables preserve their rows. The sweep drains incremental
+  free pages, performs a passive checkpoint and records completion; default
+  mode uses guarded full compaction only without a budget. The compaction
+  test exercises all five report wordings, logical and file-byte shrinkage,
+  Active Run refusal with exit 0, and zero reclamation on repetition.
+- Budget evidence: `TestRunDatabaseSweepStopsAtBudgetBoundaries` advances the
+  existing dependency clock before removal and before a compaction slice,
+  proves each paused sweep records no completion, then resumes and records a
+  completed sweep. `TestRunDatabaseBudgetNeverConvertsDefaultMode` proves a
+  budgeted sweep retains mode 0 and its free pages without a full compaction.
+  Automatic start integration remains owned by Task 03.
+- GC's zero-Journal-Retention path now prints the normal header and
+  `No journal pruning performed.` and still runs Run Retention. The existing
+  zero-window test retains its assertions for the 400-hour-old journal and
+  directories. No other existing GC assertion changed. Help scopes the
+  retained no-Run-row-deletion wording to Journal Retention and describes
+  whole-Run removal and compaction. Both requested user guides document the
+  key, protection reasons and estimated versus measured bytes.
+- Two production store helpers were added in `internal/store/run_retention.go`
+  for page-count byte accounting and passive checkpointing, required by this
+  Task's sweep; existing candidate, cascade and compaction behavior is reused.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task02-cache rtk proxy go test ./internal/cli ./internal/config -run '^(TestRunGC|TestGC|TestRunDatabase|TestRunRetentionDays|TestInitUserConfigCarriesRunRetentionDays)' -count=1`
+  — exit 0 on the final code; CLI and config packages passed. Covers the ten
+  requested tests, existing GC tests, budget checks and committed-WAL check.
+- Earlier fixture failures exposed a missing fixture Home directory and a
+  retained fixture SQL connection that correctly blocked guarded compaction;
+  both setup errors were corrected. An earlier concurrent edit was correctly
+  rejected by the suite guard; final focused checks ran on a stable tree.
+- `GOCACHE=/tmp/roundfix-task02-cache rtk make verify-incremental`
+  — the first sandboxed run exited 2 because the two process-owner integration
+  tests could not enumerate the process table. All other reported packages,
+  including config and store, passed. The same check was rerun with the
+  required process access; see the recorded outcome below.
+- Incremental rerun with process access — exit 0; formatting, `go vet`, the
+  package tests, skill consistency checks and CLI build passed. Log:
+  `/tmp/roundfix-task02-incremental-elevated.log`. The config, store and other
+  unchanged package results were reused from the successful cache entries;
+  the modified CLI package and process-owner tests ran successfully.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0 after the
+  Result update. Changed-path inspection confirmed this slice's configuration,
+  GC implementation/tests, the two guides and this Task's Result, including
+  the supporting store helpers. No Task Graph or other Task file changed.
+
+The authored `## Verification` commands were not run. No commit, push or pull
+request was made. Daemon Verification and Task settlement remain pending.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/store/run_retention.go`

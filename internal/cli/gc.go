@@ -61,6 +61,7 @@ type gcReport struct {
 	OrphanIDs     []string
 	JournalRows   int
 	ArtifactBytes int64
+	RunRetention  runRetentionReport
 }
 
 type gcArtifactDir struct {
@@ -730,7 +731,26 @@ func gcSanitationRunEligible(run store.ArtifactRootRun, cutoff time.Time, retent
 	return retention > 0 && store.IsTerminalState(run.State) && run.CompletedAt != nil && run.CompletedAt.Before(cutoff)
 }
 
-func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
+func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (report gcReport, err error) {
+	report, err = runGCJournal(ctx, opts, loaded)
+	if err != nil {
+		return report, err
+	}
+	report.RunRetention = runRetentionReport{retentionDays: loaded.Config.Store.RunRetentionDays, cutoff: commandDependenciesForContext(ctx).gc.now().UTC().Add(-time.Duration(loaded.Config.Store.RunRetentionDays) * 24 * time.Hour), compaction: "not needed"}
+	exists, err := gcDatabaseExists(loaded.HomeDir)
+	if err != nil || !exists {
+		return report, err
+	}
+	runStore, err := openGCStore(ctx, opts.dryRun, loaded.HomeDir)
+	if err != nil {
+		return report, err
+	}
+	defer func() { err = errors.Join(err, runStore.Close()) }()
+	report.RunRetention, err = sweepRunDatabase(ctx, runStore, loaded, runRetentionOptions{dryRun: opts.dryRun})
+	return report, err
+}
+
+func runGCJournal(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
 	dependencies := commandDependenciesForContext(ctx).gc
 	retention := loaded.Config.Store.JournalRetention
 	report := gcReport{
@@ -835,6 +855,15 @@ func gcDatabaseExists(homeDir string) (bool, error) {
 func openGCStore(ctx context.Context, dryRun bool, homeDir string) (*store.Store, error) {
 	dependencies := commandDependenciesForContext(ctx).gc
 	if dryRun {
+		// An immutable reader preserves an idle database's directory. A live
+		// WAL needs the event reader so its committed frames remain visible.
+		info, err := os.Stat(store.DatabasePath(homeDir) + "-wal")
+		if errors.Is(err, os.ErrNotExist) || (err == nil && info.Size() <= 32) {
+			return dependencies.openStorageReader(ctx, homeDir)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("inspect Run Database WAL: %w", err)
+		}
 		return dependencies.openStoreReader(ctx, homeDir)
 	}
 	return dependencies.openStore(ctx, homeDir)
@@ -1049,10 +1078,15 @@ func gcFilterArtifactDirs(dirs []gcArtifactDir, runIDs []string) []gcArtifactDir
 }
 
 func printGCReport(stdout io.Writer, report gcReport) {
+	defer printRunRetentionReport(stdout, report.RunRetention, report.DryRun)
 	if report.Skipped {
-		fmt.Fprintln(stdout, "GC skipped")
+		if report.DryRun {
+			fmt.Fprintln(stdout, "GC dry-run")
+		} else {
+			fmt.Fprintln(stdout, "GC complete")
+		}
 		fmt.Fprintf(stdout, "  Journal Retention: %s\n", formatGCDuration(report.Retention))
-		fmt.Fprintln(stdout, "  No pruning performed.")
+		fmt.Fprintln(stdout, "  No journal pruning performed.")
 		return
 	}
 	if report.DryRun {

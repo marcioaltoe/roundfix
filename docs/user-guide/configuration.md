@@ -364,6 +364,8 @@ verification:
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: 336h
+  # Whole-Run retention, User Config only; accepts 7, 15 or 30 days.
+  run_retention_days: 30
 
 logs:
   # false keeps Agent payloads only in the lossless Run Event Journal.
@@ -435,7 +437,8 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
 | `logs.agent` | `false` | Writes no per-Batch Agent log files; the Run Event Journal remains lossless. |
-| `store.journal_retention` | `336h` | Keeps terminal Run journals and Run artifacts for 14 days. `0` disables pruning. |
+| `store.journal_retention` | `336h` | Keeps terminal Run journals and Run artifacts for 14 days. `0` disables journal pruning. |
+| `store.run_retention_days` | `30` | Removes terminal Runs older than 7, 15 or 30 days. User Config only; a Project Config value is ignored with a warning. |
 
 ## Agent selection profiles
 
@@ -689,11 +692,20 @@ while the Run Event Journal still records every Agent payload losslessly. Set
 it to `true` to write `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 files for debugging. The Detached Run console log is always written.
 
-`store.journal_retention` defaults to `336h` (14 days); `0` keeps everything.
-Terminal Runs older than the window become eligible for journal and run
-artifact pruning — by `roundfix gc` on demand and by a best-effort sweep at
-`implement`/`resolve`/`watch` startup. Active Runs, `runs` rows, active-run
-locks, and Review artifacts under the Spec Root are never pruned.
+`store.journal_retention` defaults to `336h` (14 days); `0` disables journal
+pruning. Terminal Runs older than this inner window become eligible for journal
+and run artifact pruning through `roundfix gc` and the best-effort sweep at
+`implement`/`resolve`/`watch` startup. Journal Retention keeps Run rows and locks.
+
+`store.run_retention_days` is the outer window: it defaults to `30` and accepts
+only the integers `7`, `15` and `30` in User Config. A Project Config value is
+ignored with a warning. `roundfix gc` removes older terminal Runs whole,
+including their journal, Agent Selections, token usage and locks, then compacts
+the database. Setting Journal Retention to `0` still runs Run Retention.
+Run Retention keeps Active Runs, queue-referenced Runs, Runs with an existing
+recorded Run Worktree, and Runs with artifacts under an unproven Artifact Root.
+Review artifacts under the Spec Root stay intact. Preview the removal and its
+estimated bytes with `roundfix gc --dry-run`; see [gc](commands/gc.md).
 See [Run Database lifecycle](run-database-lifecycle.md) for the owner and
 retention rule of every durable table.
 
