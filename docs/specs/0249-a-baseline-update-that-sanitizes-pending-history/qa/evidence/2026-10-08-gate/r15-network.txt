@@ -1,4 +1,0 @@
-Command: rtk curl-cffi get 'https://git-scm.com/docs/git-push' --impersonate chrome --timeout 30 --quiet --download --output source.html
-Working directory: /private/tmp
-Exit: 1
-Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403.

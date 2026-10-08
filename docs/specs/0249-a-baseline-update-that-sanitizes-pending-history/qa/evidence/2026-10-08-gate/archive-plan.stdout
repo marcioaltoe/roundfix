@@ -1,5 +1,0 @@
-archive plan for 0249-a-baseline-update-that-sanitizes-pending-history: removes 96 file(s) (1231748 bytes) and writes docs/history/specs/0249-a-baseline-update-that-sanitizes-pending-history.md
-core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-08.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 84 file(s) (1105874 bytes) under qa/evidence/
-candidate references/2026-10-08-legacy-unproven-maps-refuse-a-folder.md 1354 bytes: no advice (service unavailable (Post "https://openrouter.ai/api/v1/systemone": Forbidden))
-promote with: roundfix archive 0249-a-baseline-update-that-sanitizes-pending-history --promote <path>

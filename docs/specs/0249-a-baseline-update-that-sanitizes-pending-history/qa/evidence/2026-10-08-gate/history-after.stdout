@@ -1,3 +1,0 @@
-history sanitize plan: 0 unit(s) pending; 0 file(s) (0 bytes) leave docs/history; 1 unit(s) refused
-refused docs/history/specs/0002-refused: build legacy record: parse archive PRD: yaml: unmarshal errors: line 3: cannot unmarshal !!map into []yaml.Node
-apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
