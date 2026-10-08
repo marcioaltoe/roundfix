@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.64.0] - 2026-10-08
+
+### Authoring rules that stop QA reruns
+
+These are the second set of fixes from the Baseline audit.
+
+- **Reachable outside evidence.** A Spec must name outside evidence that the QA gate can check without network access before the Run starts. Evidence that exists only on the operator's machine cannot be cited. Four of the 11 Specs since ADR-0240 needed a QA override because their evidence could not be reached.
+- **Asserted transcripts.** One named test asserts each Surface Transcript in full, including the lines a reader might skip. Five QA failures came from transcript lines that no test asserted.
+- **Loop rules.** A corrective Task joins the QA Task's `needs`. A Spec authored alongside another is rechecked before it enters a Run or the Delivery Queue.
+- **Hermetic Go tests.** A new clause, `go`, says tests must not read the host's keys or depend on long socket paths.
+- **History written in reduced form.** A retired Finding or Backlog Entry keeps only its front matter, title, first paragraph and the commit that holds the full text. A finished review and a confirmed handoff are deleted and never enter `docs/history`.
+- **Modules.** spec-workflow, autonomous-work, go and context-workflow move to new versions. Run `roundfix baseline update` to receive them.
+
 ## [0.63.0] - 2026-10-08
 
 ### One gate per Run and a smaller Baseline
