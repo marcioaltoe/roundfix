@@ -115,7 +115,7 @@
         {
           "code": "catalog.profile.formatter.goldenDigest.mismatch",
           "subject": "standard-typescript-monorepo",
-          "detail": "got 20768d6eb95d3b77f01123bc540176baaf8c4d6c5c5a63abf4ec8f0ad823a71a, want 0c2dde528578f58ba3b87e31c74554c203e4c1c10a739cddce3779b1113a3a3a"
+          "detail": "got 95bffacf2a593a66ed552a7b5b5c0b2270e1913937378c2d083ede0aca626890, want d78fc9cbf2f4f1510beb414194afd18a544cec4a742a6896fda45ba1c1beeee8"
         }
       ]
     },

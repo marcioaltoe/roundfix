@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.11
+  version: 0.0.12
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.11
+version: 0.0.12
 ---
 
 # Write Tasks
@@ -180,7 +180,7 @@ Code for another operating system is verified by building its non-test code for 
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.
-- **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. A Task must prove its own effect with executable checks; the Run-level gate proves nothing else regressed. Do not add a whole-package suite command to each Task for regression coverage. Every Verification command must be able to fail when no work was done: a command that names a missing test or selects no cases is vacuous if it still exits zero. A Verification command passes only by exiting zero. For an assertion whose success is an empty result or an absent string, use a form that turns that condition into exit zero: `matches="$(find path -name '*.tmp' -print)" || exit 1; test -z "$matches"`, `test -d path && ! grep -rq 'forbidden' path`, or `find path -name '*.tmp' -print > /tmp/matches.txt 2>&1 || { cat /tmp/matches.txt; exit 1; }; test ! -s /tmp/matches.txt || { cat /tmp/matches.txt; exit 1; }` when failure must print the matches. Refuse the work-independent shape composed only of repository-wide gates plus working-tree cleanliness checks; those checks pass most easily when no Task work occurred. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
+- **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. A Task must prove its own effect with executable checks; the Run-level gate proves nothing else regressed. Do not add a whole-package suite command to each Task for regression coverage. Every Verification command must be able to fail when no work was done: a command that names a missing test or selects no cases is vacuous if it still exits zero. A Verification command passes only by exiting zero. A Verification command never contains a backtick: the inline-code span ends at the first one and cuts the command, so match with a regular-expression class such as `.` instead. For an assertion whose success is an empty result or an absent string, use a form that turns that condition into exit zero: `matches="$(find path -name '*.tmp' -print)" || exit 1; test -z "$matches"`, `test -d path && ! grep -rq 'forbidden' path`, or `find path -name '*.tmp' -print > /tmp/matches.txt 2>&1 || { cat /tmp/matches.txt; exit 1; }; test ! -s /tmp/matches.txt || { cat /tmp/matches.txt; exit 1; }` when failure must print the matches. Refuse the work-independent shape composed only of repository-wide gates plus working-tree cleanliness checks; those checks pass most easily when no Task work occurred. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
 - **A gated graph leaves the repository Verification green.** Every Task of a graph that includes the authored QA gate leaves the repository Verification green because the Daemon runs that command when each Task settles. `verification.repository_at_settlement` is the operator's switch for this settlement check; it is not an authoring choice.
 - **Task declarations are explicit.** A Task may declare `verification: independent` when its Verification commands are independent and every command must run after a failure; do not infer this from shell text. A red repository gate may admit only Tasks named in the frozen `_authorization.md` `precondition_repairs` list, and the list cannot be widened by the Task or Agent. A `creates: docs/adr/NNNN-...` declaration claims that ADR ordinal; a duplicate tree or active-Spec claim is refused with `SC-ORDINAL-CLAIMED`.
 - **Temporal prerequisites do not grant authority.** Represent a future release, external observation, generated ordinal, or other temporal prerequisite as a named prerequisite with its evidence owner. It never invents release authority or turns an expected future fact into completed Task work.
@@ -198,6 +198,18 @@ Code for another operating system is verified by building its non-test code for 
   without human interaction and records the row as blocked with its reason.
   The blocked row is carried into the QA gate, where it triggers a
   `rows_blocked_environment` entry on the report and blocks PR preparation.
+- Name a source the QA gate can check without the network: a document the
+  planning change commits under `docs/references/`, or published literature
+  whose cited passage the row quotes. Never cite an artifact that exists only
+  on the operator's machine, another repository's manifest, or a lookup the
+  Spec's authorization forbids; a criterion that needs the network or an open
+  Pull Request goes under Unreachable Acceptance when the row is authored.
+
+- **A cross-Spec prerequisite is declared.** When a Task's Verification or
+  premise depends on another Spec that has not merged, list that Spec in the
+  manifest's `requires` frontmatter and state the dependency in the TechSpec
+  Build Order; the Delivery Queue does not start the Spec until each
+  prerequisite has merged.
 - **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
 ### Author the QA gate decision
@@ -277,11 +289,16 @@ do not encode multiple values and do not defer the classification.
 ## Surface Transcripts in Tasks
 
 The implementing Task names each Surface Transcript it covers in its
-References and asserts the transcript's command, output, and exit text in a
-test. The QA Task names every transcript in a Requirement so the gate can
-reproduce it through the built product. A transcript is a coverage unit: keep
-its name traceable from the TechSpec to the implementing test and then to the
-gate.
+References and asserts the whole transcript in one named test: every line of
+its standard output and standard error, in order, and its exit code, copied
+from the TechSpec with only the transcript's declared controlled variations,
+and that Task's Verification runs the test by name. A line the reader might
+skip still counts: a final digest or summary line, a `Usage` block,
+indentation, and the `exit status <n>` line that `go run` writes to standard
+error when the program exits non-zero. The QA Task names every transcript in a
+Requirement so the gate can reproduce it through the built product. A
+transcript is a coverage unit: keep its name traceable from the TechSpec to
+the implementing test and then to the gate.
 
 ## Process
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 17,
+  "version": 18,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 13,
+      "version": 14,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -71,7 +71,7 @@
   "rules": [
     {
       "id": "rule.spec.routing",
-      "version": 8,
+      "version": 9,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -99,7 +99,7 @@
         {
           "id": "clause.spec.routing-05-task-graph",
           "enforcement": "mandatory",
-          "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph."
+          "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph. The Task that implements a Surface Transcript asserts the whole transcript in one named test: every line of its standard output and standard error, in order, and its exit code, copied from the transcript with only its declared controlled variations; the Task's Verification runs that test by name."
         },
         {
           "id": "clause.spec.verification-two-tiers",
@@ -114,7 +114,7 @@
         {
           "id": "clause.spec.sources-02-bound-the-group",
           "enforcement": "mandatory",
-          "guidance": "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec."
+          "guidance": "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec. When a Spec's Verification or premise depends on another Spec that has not merged, name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order."
         },
         {
           "id": "clause.spec.name-the-finding-a-task-answers",
@@ -152,7 +152,7 @@
     },
     {
       "id": "rule.spec.project-constraints",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -185,7 +185,7 @@
         {
           "id": "clause.spec.project-constraints-06-outside-evidence",
           "enforcement": "mandatory",
-          "guidance": "Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained during authoring, record the row as blocked with that reason and continue: decomposition never stalls and never asks a person. The QA gate then holds Pull Request preparation until the row is satisfied or carried forward on declared unmoved evidence. An outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`, is the exception: the report records that the source was not reached, the row never decides a qualifying `partial`, and whoever needs that proof declares it under Unreachable Acceptance."
+          "guidance": "Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. Name a source the QA gate can check without the network before the Run starts: a document the planning change commits under `docs/references/`, or published literature whose cited passage the row quotes. Never rest the row on an artifact that exists only on one machine, on another repository's manifest, or on a lookup the Spec's authorization forbids, and declare a criterion that needs the network or an open Pull Request under Unreachable Acceptance when the row is authored. When the outside source cannot be obtained during authoring, record the row as blocked with that reason and continue: decomposition never stalls and never asks a person. The QA gate then holds Pull Request preparation until the row is satisfied or carried forward on declared unmoved evidence. An outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`, is the exception: the report records that the source was not reached, the row never decides a qualifying `partial`, and whoever needs that proof declares it under Unreachable Acceptance."
         }
       ]
     },

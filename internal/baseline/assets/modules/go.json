@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "go",
-  "version": 5,
+  "version": 6,
   "kind": "language-runtime",
   "title": "Go repository guidance",
   "dependsOn": [
@@ -122,7 +122,7 @@
   "supportingGuides": [
     {
       "id": "guide.go",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/go.md",
       "template": "template.guide.go",
       "rules": [
@@ -163,7 +163,7 @@
     },
     {
       "id": "rule.go.observable-tests",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.go",
         "coverage.verification-integrity"
@@ -171,6 +171,7 @@
       "clauses": [
         {"id": "clause.go.build-every-constrained-platform", "enforcement": "mandatory", "guidance": "When a change touches a file with a build constraint, build the affected non-test packages for every operating system its constraints name, for example with `GOOS=windows go build ./...`; a build or test run on the host compiles only the host's files."},
         {"id": "clause.go.test-observable-behavior", "enforcement": "mandatory", "guidance": "Test observable package and command behavior through public entry points: stdout, stderr, files, exit codes, cancellation, and failure paths."},
+        {"id": "clause.go.keep-tests-hermetic", "enforcement": "mandatory", "guidance": "Keep tests hermetic: set or clear with `t.Setenv` every environment variable the code under test reads, and never read the host's credentials, home directory, or tool state. Create a Unix socket under a short directory from `os.MkdirTemp(\"\", ...)` rather than a deep `t.TempDir()`, because macOS refuses a socket path longer than 104 bytes, and never let a Verification depend on a test that can skip on the host."},
         {"id": "clause.go.test-through-go-test", "enforcement": "mandatory", "guidance": "Run Go tests through `go test` with the standard `testing` package as the harness. An assertion or mocking library is a third-party module and needs its recorded reason."}
       ]
     }

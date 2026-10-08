@@ -474,8 +474,12 @@ implement. Update `updated_at` for every lifecycle change or addendum and keep
 Move terminal Findings and Rollups (`done`, `deferred`, `deprecated`, `superseded`,
 `closed`, or `cancelled`) to `docs/history/findings/` in the same operation that
 records their disposition. Terminal Backlog Entries move to
-`docs/history/backlog/`. Preserve the reason and any valid absorption pointer,
-and update dependent references. A reference already adopted by a Spec stays in
+`docs/history/backlog/`. Write each as a reduced entry: its front matter, which
+keeps the reason and any valid absorption pointer, its title, its first
+paragraph, and a final line naming a
+commit that holds its full text. Delete a finished Review Artifact or a
+confirmed handoff instead of moving it into history; Git keeps it. Update
+dependent references. A reference already adopted by a Spec stays in
 that Spec's `references/` and archives with it. Unknown statuses require a
 declaration correction; they do not imply a terminal disposition.
 

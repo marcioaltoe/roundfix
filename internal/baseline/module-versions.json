@@ -13,6 +13,10 @@
       {
         "version": 14,
         "digest": "sha256:cbdc265b8e11d41779285653e5603d78d1ae54310cd762e5b5584fb38c336afd"
+      },
+      {
+        "version": 15,
+        "digest": "sha256:e476eb80b80244d964adb7addd96db2243daf93ec639102279f09ec2a221180d"
       }
     ],
     "backend": [
@@ -41,6 +45,10 @@
       {
         "version": 24,
         "digest": "sha256:81e32316ab0890da764a5e4a9ba3b30b7bbf569aa22bd8499c0cc953a92a5a3e"
+      },
+      {
+        "version": 25,
+        "digest": "sha256:01b5b981111c31f4dc346b8455db7e5f8d1ac16db9425d041413445ad86d6364"
       }
     ],
     "core": [
@@ -73,6 +81,10 @@
       {
         "version": 5,
         "digest": "sha256:0e731b8bcaf33e1dab6791dab9d2a85a983d1dbd3ac69a5b4b6fea229af6a16d"
+      },
+      {
+        "version": 6,
+        "digest": "sha256:3f377897f4c899eb3b2542e06f323e13da8538bdf331590fa2c6e389d8035b85"
       }
     ],
     "monorepo": [
@@ -119,6 +131,10 @@
       {
         "version": 17,
         "digest": "sha256:72a289493e65e1acf97a8274f50ecca441865215692d24531b4cff04b868b7ae"
+      },
+      {
+        "version": 18,
+        "digest": "sha256:9f2dce5fd1c8b737b25926a89699e5f945a2f7ce9a08887eb3ac1c22f91fe3a6"
       }
     ],
     "tui-surface": [
