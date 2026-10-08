@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -37,6 +38,107 @@ func prepareNoticeUpgrade(t *testing.T, outcome string) *upgradeFake {
 	}
 	withUpgradeFakeDeps(t, fake)
 	return fake
+}
+
+func TestUpgradeNoticeNamesPendingHistory(t *testing.T) {
+	t.Parallel()
+	for _, outcome := range []string{"current", "installed"} {
+		t.Run(outcome, func(t *testing.T) {
+			prepareNoticeUpgrade(t, outcome)
+			repo := commandEnvironmentForTest(t).workDir
+			mustMkdir(t, filepath.Join(repo, "docs/specs"))
+			for _, slug := range []string{"0001-first", "0002-second", "0003-third"} {
+				dir := filepath.Join(repo, "docs/history/specs", slug)
+				mustMkdir(t, dir)
+				mustWrite(t, filepath.Join(dir, "_prd.md"), "# Legacy Spec\n")
+			}
+			dir := filepath.Join(repo, "docs/history/findings")
+			mustMkdir(t, dir)
+			mustWrite(t, filepath.Join(dir, "retired.md"), "---\nstatus: closed\nreason: resolved\n---\n\n# Retired Finding\n\nFull detail.\n")
+			var stdout, stderr bytes.Buffer
+			code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
+			wantOut := "already current 1.0.0\n"
+			if outcome == "installed" {
+				wantOut = "upgraded 1.0.0 → 1.1.0\n"
+			}
+			wantErr := upgradeFixtureNotice() + "roundfix: history: 4 unit(s) pending sanitize (3 Legacy Archive Folder(s), findings); run roundfix baseline update to plan them\n"
+			if code != exitOK || stdout.String() != wantOut || stderr.String() != wantErr {
+				t.Fatalf("exit=%d stdout=%q stderr=%q; want stdout=%q stderr=%q", code, &stdout, &stderr, wantOut, wantErr)
+			}
+		})
+	}
+}
+
+func TestUpgradeNoticeOutsideARepositoryNamesBaselineUpdate(t *testing.T) {
+	t.Parallel()
+	prepareNoticeUpgrade(t, "current")
+	env := commandEnvironmentForTest(t)
+	setCommandEnvironmentForTest(t, env.homeDir, t.TempDir())
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
+	wantErr := upgradeFixtureNotice() + "roundfix: history: outside a repository; run roundfix baseline update in each adopted repository to plan its pending history\n"
+	if code != exitOK || stdout.String() != "already current 1.0.0\n" || stderr.String() != wantErr {
+		t.Fatalf("exit=%d stdout=%q stderr=%q; want stderr=%q", code, &stdout, &stderr, wantErr)
+	}
+}
+
+func TestUpgradeNoticeIsSilentWithoutPendingHistory(t *testing.T) {
+	t.Parallel()
+	prepareNoticeUpgrade(t, "current")
+	repo := commandEnvironmentForTest(t).workDir
+	mustMkdir(t, filepath.Join(repo, "docs/specs"))
+	for _, kind := range []string{"findings", "backlog"} {
+		dir := filepath.Join(repo, "docs/history", kind)
+		mustMkdir(t, dir)
+		mustWrite(t, filepath.Join(dir, "reduced.md"), "---\nstatus: closed\n---\n\n# Reduced entry\n\nFull text in Git at `"+strings.Repeat("a", 40)+"`: `docs/history/"+kind+"/reduced.md`.\n")
+	}
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
+	if code != exitOK || stdout.String() != "already current 1.0.0\n" || stderr.String() != upgradeFixtureNotice() {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, &stdout, &stderr)
+	}
+}
+
+func TestUpgradeNoticeHistoryInventoryFailures(t *testing.T) {
+	t.Parallel()
+	for _, failure := range []string{"archive", "kind"} {
+		t.Run(failure, func(t *testing.T) {
+			prepareNoticeUpgrade(t, "current")
+			repo := commandEnvironmentForTest(t).workDir
+			mustMkdir(t, filepath.Join(repo, "docs/specs"))
+			mustMkdir(t, filepath.Join(repo, "docs/history"))
+			if failure == "archive" {
+				mustWrite(t, filepath.Join(repo, "docs/history/specs"), "not a directory\n")
+			} else {
+				dir := filepath.Join(repo, "docs/history/findings")
+				mustMkdir(t, dir)
+				if err := os.Symlink("missing", filepath.Join(dir, "broken\nlink.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var stdout, stderr bytes.Buffer
+			code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
+			notice := strings.TrimPrefix(stderr.String(), upgradeFixtureNotice())
+			if code != exitOK || stdout.String() != "already current 1.0.0\n" || !strings.HasPrefix(stderr.String(), upgradeFixtureNotice()) || !strings.HasPrefix(notice, "roundfix: history not checked: ") || strings.Count(notice, "\n") != 1 {
+				t.Fatalf("exit=%d stdout=%q stderr=%q", code, &stdout, &stderr)
+			}
+		})
+	}
+}
+
+func TestUpgradeNoticeIsSilentWithExternalSpecRoot(t *testing.T) {
+	t.Parallel()
+	prepareNoticeUpgrade(t, "current")
+	repo := commandEnvironmentForTest(t).workDir
+	mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", t.TempDir()))
+	dir := filepath.Join(repo, "docs/history/findings")
+	mustMkdir(t, dir)
+	mustWrite(t, filepath.Join(dir, "retired.md"), "# Pending Finding\n")
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
+	if code != exitOK || stdout.String() != "already current 1.0.0\n" || stderr.String() != upgradeFixtureNotice() {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, &stdout, &stderr)
+	}
 }
 
 func TestUpgradeWritesTheNoticeOnEveryReleaseOutcome(t *testing.T) {

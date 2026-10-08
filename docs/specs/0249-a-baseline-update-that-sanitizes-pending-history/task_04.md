@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0249-a-baseline-update-that-sanitizes-pending-history
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -86,3 +86,57 @@ verifiable on its own through the existing upgrade notice fixtures.
 - `_prd.md` → Core Feature 5; Goals; User Story 4; Success Metric 5
 - `_techspec.md` → API Contract 7; Invariant 10; Build Order 4
 - ADR-0254
+
+## Result
+
+Implemented the filesystem-only Pending History notice at the end of
+`printUpgradeRecommendationNotice`, after either recommendation path and its
+failure diagnostic. Configuration load failures, unresolved or external Spec
+Roots, and inventories with no pending units add no line. Inventory failures,
+including errors retained on individual units, use `historyRefusalLine`.
+
+Acceptance evidence:
+
+- Inside a repository: `TestUpgradeNoticeNamesPendingHistory` checks both
+  `current` and `installed` outcomes with three Legacy Archive Folders and an
+  unreduced retired Finding. It asserts the exact four-unit notice as the
+  last stderr line, the existing stdout, and exit 0.
+- Outside a repository:
+  `TestUpgradeNoticeOutsideARepositoryNamesBaselineUpdate` asserts the exact
+  outside line after the recommendation notice, unchanged stdout, and exit 0.
+- Existing output: `TestUpgradeNoticeIsSilentWithoutPendingHistory` exercises
+  reduced Findings and Backlog Entries and asserts `upgradeFixtureNotice()`
+  exactly. Existing notice assertions remain byte-identical. Focused checks
+  also exercise every release outcome, the installed child, recommendation
+  failures, and help, usage errors and failed upgrades.
+- Additional checks: `TestUpgradeNoticeHistoryInventoryFailures` covers both
+  archive enumeration errors and per-kind symlink refusals, asserting one
+  diagnostic line and unchanged stdout/exit; the external Spec Root test
+  confirms silence even with pending repository history.
+- Inspection of the new notice and its configuration, root resolution and
+  inventory callees confirms filesystem reads only: no Git subprocess,
+  network request or write. Tests use the existing `.git` directory fixture,
+  which is not an initialized Git repository.
+
+Focused checks:
+
+- Before implementation,
+  `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test ./internal/cli -run 'TestUpgradeNotice' -count=1`
+  exited 1: pending-history and outside-repository tests reproduced the
+  missing lines; the reduced-history test already passed.
+- After the final Go edits,
+  `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test ./internal/cli -run 'TestUpgrade(Notice|Writes|Asks|Keeps)' -count=1`
+  exited 0 (`ok roundfix/internal/cli`).
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk make verify-incremental`
+  exited 0 with sandbox escalation: formatting, vet, package tests (including
+  the complete CLI suite), skill synchronization/checks and build passed.
+  The initial sandboxed attempt was interrupted by denied network access to
+  `cafe.github.com` and provided no passing result. Its two orphaned CLI test
+  fixtures were stopped. The successful rerun held the worktree steady;
+  no implementation edits followed it.
+
+Declared Task Verification is reserved for the Daemon. Status remains
+`in_progress`; no commit, push, Pull Request, Task Graph edit or other Task
+edit was performed. The only pre-existing worktree change was the
+Daemon-owned status in this file. No follow-up implementation was identified.
