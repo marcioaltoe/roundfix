@@ -7,8 +7,10 @@ package cli
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -321,5 +323,48 @@ func TestUnknownRunNamesRunRetention(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestRunRetentionKeepsTheArtifactsOfARunThatLeftTerminalBeforeRemoval(t *testing.T) {
+	home, _ := withCLIWorkspace(t)
+	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
+	run := seedOldStartRun(t, home, now, "reopened")
+	artifacts, err := gcRunArtifactPath(filepath.Join(home, ".roundfix", "retention-artifacts"), run.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(artifacts, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(artifacts, "journal.txt"), []byte("kept"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, loaded := retentionStartStore(t, home)
+	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	// The Run leaves its terminal state after the sweep listed it and before
+	// the removal transaction rechecks it.
+	calls := 0
+	updateCommandDependenciesForTest(t, func(deps *commandDependencies) {
+		deps.gc.now = func() time.Time {
+			calls++
+			// The first call sets the cutoff; the next is the budget check
+			// just before the removal.
+			if calls > 1 {
+				if _, err := db.Exec(`UPDATE runs SET state = ? WHERE id = ?`, store.StateActive, run.ID); err != nil {
+					t.Errorf("reopen Run: %v", err)
+				}
+			}
+			return now
+		}
+	})
+	retentionStartCall(t, s, loaded)
+	assertRetentionRun(t, s, run.ID, true)
+	if _, err := os.Stat(filepath.Join(artifacts, "journal.txt")); err != nil {
+		t.Fatalf("artifacts of a Run the recheck kept were removed: %v", err)
 	}
 }
