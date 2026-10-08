@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0250-a-run-database-that-keeps-only-recent-runs
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -99,3 +99,15 @@ and the markdown contracts.
 - `_prd.md` → Core Feature 6; Glossary
 - `_techspec.md` → Glossary; Data Models; Build Order 4
 - ADR-0255; ADR-0033
+
+## Result
+
+Implemented the glossary and lifecycle-policy prose for Daemon Verification.
+`CONTEXT.md` now defines Run Retention and Run Retention Sweep, revises GC
+Command and Journal Retention, and cites only ADRs in the new definitions.
+The lifecycle guide now describes Run Retention as the outer bound and Journal
+Retention as the inner bound, preserves the durable-table-lifecycle table, and
+records the 2026-10-08 ADR-0255 measurement. Focused checks after the edits
+confirmed the protected table hash is unchanged and the required glossary and
+lifecycle phrases are present; the declared Verification commands were not
+run, and Task status remains Daemon-owned.

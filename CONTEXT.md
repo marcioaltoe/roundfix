@@ -763,12 +763,20 @@ A citation in a tracked file that resolves before a Baseline Plan's History Relo
 _Avoid_: Broken link, dangling reference, link check
 
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, and reports what it freed. A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention (ADR-0255).
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:
-The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033. It is the inner window: Run Retention removes the whole Run past the outer window, so a Journal Retention longer than the Run Retention has no effect past it (ADR-0255).
 _Avoid_: Log rotation, TTL, expiry
+
+**Run Retention**:
+The User Config window, `store.run_retention_days` of 7, 15 or 30 days and 30 by default, after which a terminal Run leaves the Run Database whole: its row, its Run Event Journal, its Agent Selection records, its token usage and its artifact directory. A Run that is not terminal, that a Delivery Queue references, whose Run Worktree still exists, or whose artifact directory sits under an unproven root is kept (ADR-0255).
+_Avoid_: Journal Retention, TTL, purge
+
+**Run Retention Sweep**:
+The step that applies Run Retention and then returns freed pages to the filesystem by incremental compaction. It runs at most once a day at the start of a Run or a Delivery Queue under a two-second budget, continuing at the next start when the budget runs out, and without a budget in the GC Command (ADR-0255).
+_Avoid_: cleanup job, cron, vacuum
 
 **Worktree Bootstrap**:
 The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
