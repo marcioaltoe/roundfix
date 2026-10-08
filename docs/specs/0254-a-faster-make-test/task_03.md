@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0254-a-faster-make-test
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -105,3 +105,75 @@ this Task file.
 - [_prd.md](_prd.md) — Goals 3–4; User Stories 1–2; Core Feature 4; Success Metric 2
 - [_techspec.md](_techspec.md) — Current behavior; API Contract 2; Invariants 1–3; Testing Approach; Build Order 3
 - ADR-0259; ADR-0089; ADR-0090
+
+
+## Result
+
+The six repository-profile tests now call `t.Parallel()` first. Their shared
+fixture supplies `setCommandWorkDirForTest(t, root)` and their command helper
+uses `runCLIContext(t, t.Context(), ...)`, so profile discovery receives the
+per-test working directory. Searching `internal/cli` found no additional
+callers of that fixture. The CLI Sequential Test ceiling falls from 48 to 40;
+the other ceilings keep their original values.
+
+Both archived QA Report sweeps now request
+`":(glob)" + ArchiveDir(ArchiveKindSpec) + "/*/qa/qa-report-*.md"` from
+`gittest.PinnedHistory`. Their report discovery, assertions and empty-corpus
+refusals are unchanged. Tests that read whole archived Spec folders retain
+their whole-directory fixtures. No production file, expected value, golden,
+or `internal/gittest` file changed.
+
+### Focused evidence
+
+All Go checks used `GOCACHE=/private/tmp/roundfix-task03-gocache` on this
+machine with Go 1.26.5. The cache was warmed by
+`go test -run '^$' ./internal/spec` before the timing pair.
+
+| Acceptance criterion | Evidence in this turn |
+| --- | --- |
+| Six repository-profile tests are parallel and pass | `go test -count=1 -race -short -shuffle=on -v -run 'RepositoryProfile\|ProfilePath' ./internal/cli` exited 0 (`ok`, 5.742 s). The captured output contains `=== PAUSE` and `--- PASS` for each of the six named tests; an explicit output check confirmed all six. |
+| CLI rule stays within ceiling 40 | `go test -count=1 -v ./internal/testfixture` exited 0. The repository rule logged `internal/cli: 37 Sequential Tests, ceiling 40`. |
+| QA sweeps read only reports and check the same set | A read-only Python inspection of `git archive --format=tar` at `gittest.PinnedHistoryRevision` compared the whole archive and the new glob. Both contain the identical nonempty set of 352 QA Report paths across 202 Spec directories. Regular files materialized fall from 5,570 to 352. The sorted report-path set has SHA-256 `786ef852156223212383c5ad64b81c388b53b40c8ac9fc1fd3b5af94306aa19a` in both archives. Both `go test -count=1 ./internal/spec` runs passed, exercising both sweeps. |
+| CLI and Spec pass with race detection and short mode | Focused CLI check above and `go test -count=1 -race -short -shuffle=on -run 'Test(QAReportReaderAgreesWithTheDerivedVerification\|ArchivedQAReportCorpus)' ./internal/spec` exited 0; Spec reported `ok`, 8.011 s. These cover the changed tests. The full-package `-race -short` check remains Daemon-owned and was not run in this turn. |
+
+The task's two declared Verification commands, `make verify`, and
+`make verify-changed` were not run. Focused output was captured at
+`/private/tmp/roundfix-task03-profile-check.log`,
+`/private/tmp/roundfix-task03-rule-check.log`, and
+`/private/tmp/roundfix-task03-qa-check.log`.
+
+### Back-to-back Spec timing
+
+`/usr/bin/time -p go test -count=1 ./internal/spec` ran immediately before
+and immediately after changing only the two QA sweep pathspecs, with the same
+machine, cache, and environment. No other test command ran during the pair.
+
+| Fixture | Package test time | Wall | User CPU | System CPU | Outcome |
+| --- | --- | --- | --- | --- | --- |
+| Whole archive directory | 17.185 s | 17.34 s | 88.74 s | 43.84 s | exit 0 |
+| Archived QA Report glob | 10.341 s | 10.84 s | 31.75 s | 39.84 s | exit 0 |
+
+This is one local pair, not a claim about CI or the full repository suite.
+The pinned corpus available here has 352 reports; the authoring prototype's
+759-report count is not used as the current measurement.
+
+### Scope review
+
+Other Sequential Tests in the allowed CLI files keep their existing reason:
+carry-forward hooks, item-binary fixtures, and forge probes supply environment
+values that their child processes read; the TUI and color cases explicitly
+test process defaults under ADR-0089; the detached-child branch calls
+`os.Unsetenv` in production. None qualifies for an additional conversion
+without changing its contract or production code.
+
+`gofmt -l` reported no formatting changes for the four changed Go test files.
+`git diff --check` passed. The initial worktree change was the Daemon's
+`status: in_progress` in this Task file. The implementation changes only the
+four declared test paths and this Result section. Task status, checkboxes,
+the Task Graph, and other Task files remain Daemon-owned. No follow-up work
+was added to this diff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T215927Z_c26d3579de5392c8`
+- Source commit: `0fb78b66a0d1438979c4f104970bb9f03d657521`
