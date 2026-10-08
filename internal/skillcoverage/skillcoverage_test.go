@@ -28,6 +28,11 @@ func TestParseMapRefusesEveryMalformedEntry(t *testing.T) {
 		{"null skills", `{"id":"command run","skills":null}`, "command run"},
 		{"blank uncovered", `{"id":"command run","uncovered":"  "}`, "command run"},
 		{"wrong skills type", `{"id":"command run","skills":"skill.md"}`, "command run"},
+		{"blank review", `{"id":"command run","uncovered":"reason","review":"   "}`, "review"},
+		{"undated review", `{"id":"command run","uncovered":"reason","review":"looked at it"}`, "review"},
+		{"review without reason", `{"id":"command run","uncovered":"reason","review":"2026-10-08 — "}`, "review"},
+		{"review with impossible date", `{"id":"command run","uncovered":"reason","review":"2026-13-40 — renamed only"}`, "review"},
+		{"review with hyphen separator", `{"id":"command run","uncovered":"reason","review":"2026-10-08 - renamed only"}`, "review"},
 	}
 	for _, field := range []string{"skills", "sources"} {
 		for _, value := range []string{"", "/absolute.md", "../escape.md", "a/../b.md", "a/./b.md", "a//b.md", `a\b.md`, ".", "C:/absolute.md"} {

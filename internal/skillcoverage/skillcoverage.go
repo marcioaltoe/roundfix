@@ -11,6 +11,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 )
 
 const (
@@ -92,6 +93,9 @@ func ParseMap(data []byte) (Map, error) {
 		_, uncoveredPresent := fields["uncovered"]
 		if skillsPresent == uncoveredPresent || (skillsPresent && len(s.Skills) == 0) || (uncoveredPresent && strings.TrimSpace(s.Uncovered) == "") {
 			return Map{}, fmt.Errorf("surface %q: exactly one of non-empty skills or non-blank uncovered is required", s.ID)
+		}
+		if _, reviewPresent := fields["review"]; reviewPresent && !validCoverageReview(s.Review) {
+			return Map{}, fmt.Errorf("surface %q review: want %q, got %q", s.ID, "YYYY-MM-DD — <reason>", s.Review)
 		}
 		for _, skill := range s.Skills {
 			if !cleanPath(skill, false) {
@@ -302,4 +306,15 @@ func entries(m *Map) map[string]Surface {
 		}
 	}
 	return result
+}
+
+// validCoverageReview reports whether a Coverage Review reads
+// "YYYY-MM-DD — <reason>" with a real calendar date and a non-blank reason.
+func validCoverageReview(review string) bool {
+	date, reason, found := strings.Cut(review, " — ")
+	if !found || strings.TrimSpace(reason) == "" {
+		return false
+	}
+	_, err := time.Parse(time.DateOnly, date)
+	return err == nil
 }
