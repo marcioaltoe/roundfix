@@ -719,23 +719,27 @@ The support command that retires a Spec under the archive eligibility contract, 
 _Avoid_: Move command, retire run, cleanup command
 
 **History Sanitize Command**:
-The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag.
+The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag. `roundfix baseline update` runs the same planning for every convertible unit at once, while this command remains the path for reviewed batches (ADR-0254).
 _Avoid_: Archive Command, history deletion, cleanup command
+
+**Pending History**:
+The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan (ADR-0254).
+_Avoid_: Active history, current history, unplanned archive
 
 **Legacy Archive Folder**:
 A Spec folder the Archive Command left under the archive root before archives wrote Archive Records (ADR-0248).
 _Avoid_: Archive Record, active Spec, history root
 
 **Refused Unit**:
-A pending History Sanitize Command unit that cannot be converted. The plan and the batch name it with its reason, leave it untouched, and do not count it toward `--batch <n>` (ADR-0251).
+A pending History Sanitize Command unit that cannot be converted. The plan and the batch name it with its reason on one line, leave it untouched, and do not count it toward `--batch <n>`. The update lists one without blocking the Baseline Plan or changing its state; a unit with uncommitted changes is refused (ADR-0251, ADR-0254).
 _Avoid_: Converted unit, skipped silently, failed batch
 
 **Lenient Legacy Reading**:
-The reading of a Legacy Archive Folder's Task Graph that tolerates and names projection rows outside the graph and retired Task types. It is never applied to an active Spec (ADR-0251).
+The reading of a Legacy Archive Folder's Task Graph that tolerates and names projection rows outside the graph and retired Task types. It also accepts a legacy list of maps `unproven`, one text line per map. It is never applied to an active Spec (ADR-0251, ADR-0254).
 _Avoid_: Relaxed active reading, manifest rewrite, schema bypass
 
 **Sanitize Batch**:
-The next units one `--apply` can convert, delivered as one Pull Request with the repository gates green and revertible; Refused Units do not count toward the batch (ADR-0248, ADR-0251).
+The next units one `--apply` can convert, delivered as one Pull Request with the repository gates green and revertible; Refused Units do not count toward the batch. The update converts every convertible unit as one batch in its own change (ADR-0248, ADR-0251, ADR-0254).
 _Avoid_: Archive batch, migration wave, unreviewed cleanup
 
 **Reduced History Entry**:
@@ -743,7 +747,7 @@ A retired Finding or Backlog Entry cut to its front matter, title, first paragra
 _Avoid_: Summary, Archive Record, truncated history
 
 **History Full Tag**:
-The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable. The update creates it at `HEAD` when absent, never moves it, and the operator pushes it with `git push origin history-full` (ADR-0248, ADR-0254).
 _Avoid_: Lightweight tag, batch tag, archive stamp
 
 **History Root**:
@@ -863,7 +867,7 @@ The byte range one setup-owned marker pair delimits inside an instruction carrie
 _Avoid_: Managed file, generated block, setup section
 
 **Managed Refresh**:
-The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It also plans the Pending History, binds it into the Plan Digest and converts it on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change (ADR-0254).
 _Avoid_: Baseline Readoption, reapply, overwrite
 
 **Unrecorded Managed Region**:

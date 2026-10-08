@@ -125,6 +125,27 @@ even when managed guidance is current. Rerun with `--yes` or the preview's
 restore path. `--skills-source-dir` supplies an offline source commit as for
 other external restorations; `--no-skills` skips the comparison and restore.
 
+When Pending History exists, the managed refresh adds a `History` section to
+the plan. Text lists each planned history unit and its result, then prints
+`History: <status>`, `History units:`, `History applied:`, `History refused:`
+and `History tag:` lines when those values exist. Refusal reasons are one line.
+Uncommitted changes and paths outside the coverage of an existing History Full
+Tag are refused and left untouched; a refusal does not block the Baseline Plan
+or change the update's state. A repository-wide history precondition such as an
+invalid tag makes the history section `blocked` with a one-line result.
+
+JSON always includes a `history` object whose status is `skipped`, `current`,
+`pending`, `applied` or `blocked`. It reports selected units, refusals, tag
+action and apply counts when those values exist. Selected history is bound into
+the same Plan Digest as the Baseline Plan, so `--yes` or `--confirm-plan
+<digest>` approves both. Apply runs the Baseline Plan first, creates the
+annotated `history-full` tag at `HEAD` when absent, and converts every selected
+unit. The update never moves or pushes the tag; push it with
+`git push origin history-full`.
+
+Pass `--no-history` to leave the history section out and use the History
+Sanitize Command's reviewed-batch procedure separately.
+
 ### Retired skills
 
 A Retired Skill is a skill the Baseline no longer requires although the

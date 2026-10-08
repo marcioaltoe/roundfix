@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0249-a-baseline-update-that-sanitizes-pending-history
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -120,3 +120,50 @@ mirrors and the recorded skill version.
 - `_prd.md` → Core Feature 7; Goals; User Story 1; User Story 3; User Story 4
 - `_techspec.md` → API Contract 5; API Contract 6; API Contract 7; API Contract 8; Build Order 1
 - ADR-0254; ADR-0248; ADR-0251
+
+## Result
+
+Implemented the documentation slice for Pending History. `CONTEXT.md` now
+defines Pending History and revises the six requested glossary terms. The
+baseline, history and upgrade command references describe the history section,
+JSON statuses, Plan Digest and apply order, refusals, tag push, opt-out and
+upgrade notice. The Roundfix baseline and archive references carry the same
+behavior.
+
+Focused implementation evidence:
+
+- `make skills-sync` passed after the reference edits and after the version
+  recording step.
+- `GOCACHE=/private/tmp/roundfix-task-0249-gocache go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed and
+  raised both Roundfix Skill front-matter fields from `0.1.53` to `0.1.54`;
+  `skills/testdata/owned-skill-versions.json` records the new digest.
+- The first recorder attempt hit the shared Go build-cache permission error;
+  the task-scoped cache rerun reached the recorder and passed. The declared
+  Verification commands were not run in this daemon-assigned turn.
+- Canonical and distributed Roundfix Skill files match for `SKILL.md`,
+  `references/baseline.md` and `references/archive.md`.
+- Required phrase checks passed for the glossary and all three command
+  references; `git diff --check` passed.
+
+Acceptance evidence:
+
+1. Glossary: Pending History and the revised Managed Refresh, History Sanitize
+   Command, Refused Unit, Lenient Legacy Reading, Sanitize Batch and History
+   Full Tag entries are present with the requested behavior phrases.
+2. References: baseline and history docs name the History text lines, JSON
+   statuses, `--no-history`, one-line refusals, legacy `list of maps`, and
+   `git push origin history-full`; the upgrade reference documents notices
+   inside and outside repositories with `pending sanitize`.
+3. Skill mirrors and version: canonical and distributed files compare equal,
+   and the raised `0.1.54` version is recorded by the repository command.
+
+Verification feedback repair:
+
+- The Daemon diagnostic showed `TestEveryOwnedSkillVersionIsRecorded` refused
+  the final canonical content because the wording edit after the first record
+  left version `0.1.53` with an old digest.
+- Re-ran the required recorder with the task-scoped `GOCACHE`; it passed and
+  raised the canonical and recorded version to `0.1.54`.
+- Re-ran `make skills-sync` after recording. The declared Verification command
+  was not rerun in this repair turn.

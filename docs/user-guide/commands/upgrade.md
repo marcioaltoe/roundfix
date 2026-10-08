@@ -20,3 +20,8 @@ line, `roundfix: recommendations not checked: <reason>`. Help, usage errors
 and failed upgrades print no notice. An upgrade performed by an older
 executable prints none; the notice starts with a subsequent upgrade.
 
+Inside a repository with Pending History, the notice also says
+`roundfix: history: <n> unit(s) pending sanitize (<kinds>); run roundfix
+baseline update to plan them`. Outside a repository it says to run
+`roundfix baseline update` in each adopted repository. The notice reports the
+pending sanitize and does not apply it or change the upgrade result.

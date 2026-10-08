@@ -347,6 +347,14 @@
       {
         "version": "0.1.52",
         "digest": "02dd50025ef4f4d75901ccb688904ec2fdbbd19806381db20b8b49c36c17ba77"
+      },
+      {
+        "version": "0.1.53",
+        "digest": "78bf205901d9bb3331502d68fc5492affab86e49f3cf9e4e616586f51b206d01"
+      },
+      {
+        "version": "0.1.54",
+        "digest": "27f7dba619c93423d63519328a62dc484c485ef2e27af883cccea09d89e009d1"
       }
     ],
     "setup-context-driven": [
