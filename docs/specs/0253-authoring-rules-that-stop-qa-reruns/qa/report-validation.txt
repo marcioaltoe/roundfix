@@ -1,1 +1,0 @@
-PASS: sole frontmatter; auditor identity and mechanical sections preserved; 12 terminal rows; 10 pass, 1 environment block, 1 declared block; typed input declarations; all 16 cited evidence artifacts present/nonempty; git diff --exit-code and git diff --check exit 0.

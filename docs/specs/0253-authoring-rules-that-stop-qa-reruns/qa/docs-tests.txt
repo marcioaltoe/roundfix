@@ -1,6 +1,0 @@
-=== RUN   TestDocsLayoutGuideNamesEveryHistoryFamily
-=== PAUSE TestDocsLayoutGuideNamesEveryHistoryFamily
-=== CONT  TestDocsLayoutGuideNamesEveryHistoryFamily
---- PASS: TestDocsLayoutGuideNamesEveryHistoryFamily (0.00s)
-PASS
-ok  	roundfix/internal/docscontract	0.251s

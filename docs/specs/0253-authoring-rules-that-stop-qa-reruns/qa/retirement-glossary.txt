@@ -1,3 +1,0 @@
-PASS legacy history paths each occur only in sanitize-removes sentence.
-PASS deletion and reduced provenance rules, user guide paragraph, and revised glossary definition.
-Only changed domain term: Reduced History Entry; the other named concepts already exist.
