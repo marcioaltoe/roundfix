@@ -529,3 +529,32 @@ func TestPreviewCompactionOnIncrementalStorageReader(t *testing.T) {
 		t.Fatalf("preview=%+v result=%+v", preview, result)
 	}
 }
+
+func TestRemoveRetainedRunRunsItsArtifactStepAfterTheRecheckAndBeforeTheRow(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	s := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, s)
+	kept, _ := seedRetainedRun(t, s, StateActive, retentionFixtureCutoff.Add(-time.Hour))
+	called := false
+	if _, err := s.RemoveRetainedRun(ctx, kept.ID, retentionFixtureCutoff, func() error { called = true; return nil }); !errors.As(err, new(RunRetentionKeptError)) || called {
+		t.Fatalf("kept Run: err=%v artifact step called=%t", err, called)
+	}
+	old, _ := seedRetainedRun(t, s, StateClean, retentionFixtureCutoff.Add(-time.Hour))
+	failure := errors.New("artifact removal failed")
+	if _, err := s.RemoveRetainedRun(ctx, old.ID, retentionFixtureCutoff, func() error { return failure }); !errors.Is(err, failure) {
+		t.Fatalf("failed artifact step err=%v", err)
+	}
+	var rows int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM runs WHERE id = ?`, old.ID).Scan(&rows); err != nil || rows != 1 {
+		t.Fatalf("row after failed artifact step: rows=%d err=%v", rows, err)
+	}
+	inside := false
+	removed, err := s.RemoveRetainedRun(ctx, old.ID, retentionFixtureCutoff, func() error {
+		inside = true
+		return nil
+	})
+	if err != nil || !inside || removed.Runs != 1 {
+		t.Fatalf("removal=%+v err=%v artifact step called=%t", removed, err, inside)
+	}
+}

@@ -82,10 +82,22 @@ func sweepRunDatabase(ctx context.Context, runStore *store.Store, loaded roundco
 			report.paused = true
 			break
 		}
-		// The row goes first: its transaction rechecks the terminal state and
-		// queue references, and the artifacts follow only a removed row. An
-		// artifact folder left by a failed removal is an orphan gc reclaims.
-		rows, err := runStore.RemoveRetainedRun(ctx, candidate.RunID, report.cutoff)
+		// The artifact folder goes first, inside the removal transaction and
+		// after its recheck of the terminal state and queue references, so a
+		// Run that changed meanwhile keeps both its row and its artifacts.
+		artifactBytes := int64(0)
+		removeArtifacts := func() error {
+			if dir.path == "" {
+				return nil
+			}
+			if err := gcRemoveArtifactDirs([]gcArtifactDir{dir}); err != nil {
+				return err
+			}
+			artifactBytes = dir.bytes
+			return nil
+		}
+		rows, err := runStore.RemoveRetainedRun(ctx, candidate.RunID, report.cutoff, removeArtifacts)
+		report.artifactBytes += artifactBytes
 		if err != nil {
 			var kept store.RunRetentionKeptError
 			if errors.As(err, &kept) {
@@ -100,12 +112,6 @@ func sweepRunDatabase(ctx context.Context, runStore *store.Store, loaded roundco
 		if rows.Runs > 0 {
 			report.runIDs = append(report.runIDs, candidate.RunID)
 			addRunRetentionRows(&report.rows, rows)
-			if dir.path != "" {
-				if err := gcRemoveArtifactDirs([]gcArtifactDir{dir}); err != nil {
-					return report, err
-				}
-				report.artifactBytes += dir.bytes
-			}
 		}
 	}
 	if opts.dryRun {

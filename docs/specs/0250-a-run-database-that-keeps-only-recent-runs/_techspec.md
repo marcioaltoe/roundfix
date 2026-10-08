@@ -216,11 +216,13 @@ lifecycle policy gains a row for the new table, and the rows for `runs`,
    when that is empty, a default derived from the Run's repository key or
    recorded checkout, and it is a clean absolute physical directory inside
    Roundfix Home, the proof `roundfix gc sanitize` uses. For a removable Run
-   the sweep removes the directory first and then calls `RemoveRetainedRun`,
-   which in one write transaction re-reads the Run, refuses with
-   `RunRetentionKeptError` when it is no longer terminal, no longer before the
-   cutoff or now queue-referenced, counts its rows, deletes the `runs` row and
-   returns the counts the cascade removed. A Run absent at that point counts
+   the sweep calls `RemoveRetainedRun` with an artifact step. In one write
+   transaction it re-reads the Run, refuses with `RunRetentionKeptError` when
+   it is no longer terminal, no longer before the cutoff or now
+   queue-referenced, then runs the artifact step, which removes the directory
+   first, then counts its rows, deletes the `runs` row and returns the counts
+   the cascade removed. A state change or queue link made meanwhile waits for
+   the transaction, and a failed artifact step rolls the removal back. A Run absent at that point counts
    nothing and is not an error.
 3. API Contract: the sweep. It runs Run Retention, then compaction, then
    records completion. In incremental mode it calls `CompactIncrementally`

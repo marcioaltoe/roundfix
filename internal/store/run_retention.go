@@ -96,7 +96,12 @@ func (store *Store) RunRetentionCandidates(ctx context.Context, cutoff time.Time
 
 // RemoveRetainedRun rechecks eligibility and counts the cascade in the same
 // write transaction. Repeated removals of an absent Run reclaim nothing.
-func (store *Store) RemoveRetainedRun(ctx context.Context, runID string, cutoff time.Time) (RunRetentionRows, error) {
+// RemoveRetainedRun deletes one terminal Run past the cutoff in a write
+// transaction that first re-reads it. Each artifact step runs inside that
+// transaction after the recheck and before the row is deleted, so the Run's
+// artifacts go first and a state change or queue link made meanwhile waits for
+// the transaction; a failed step rolls the removal back.
+func (store *Store) RemoveRetainedRun(ctx context.Context, runID string, cutoff time.Time, artifactSteps ...func() error) (RunRetentionRows, error) {
 	var removed RunRetentionRows
 	err := store.withWriteTx(ctx, "Run Retention removal", func(tx *sql.Tx) error {
 		var state, completed string
@@ -124,6 +129,11 @@ func (store *Store) RemoveRetainedRun(ctx context.Context, runID string, cutoff 
 		}
 		if queueReferenced {
 			return RunRetentionKeptError{runID, "Run is queue-referenced"}
+		}
+		for _, step := range artifactSteps {
+			if err := step(); err != nil {
+				return err
+			}
 		}
 		if err := tx.QueryRowContext(ctx, `SELECT `+retentionRowCountsSQL+` FROM runs r WHERE r.id = ?`, runID).
 			Scan(&removed.RunEvents, &removed.AgentSelections, &removed.TokenUsage, &removed.ActiveRunLocks); err != nil {
