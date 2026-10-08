@@ -1,0 +1,32 @@
+command: wc -c AGENTS.md docs/agents/agent-instructions.md docs/agents/autonomous-work.md docs/agents/cli.md docs/agents/domain.md docs/agents/go.md docs/agents/issue-tracker.md docs/agents/skill-dispatch.md docs/agents/spec-routing.md docs/agents/specific-repository.md docs/agents/tui.md
+    2793 AGENTS.md
+   13424 docs/agents/agent-instructions.md
+    6542 docs/agents/autonomous-work.md
+     818 docs/agents/cli.md
+    1735 docs/agents/domain.md
+    1783 docs/agents/go.md
+     542 docs/agents/issue-tracker.md
+    7720 docs/agents/skill-dispatch.md
+    5967 docs/agents/spec-routing.md
+    3673 docs/agents/specific-repository.md
+     438 docs/agents/tui.md
+   45435 total
+
+full set:
+    2793 AGENTS.md
+   13424 docs/agents/agent-instructions.md
+    6542 docs/agents/autonomous-work.md
+     818 docs/agents/cli.md
+   16642 docs/agents/docs-layout.md
+    1735 docs/agents/domain.md
+    1783 docs/agents/go.md
+     542 docs/agents/issue-tracker.md
+    6689 docs/agents/secondbrain.md
+    7720 docs/agents/skill-dispatch.md
+    5967 docs/agents/spec-routing.md
+    3673 docs/agents/specific-repository.md
+     438 docs/agents/tui.md
+   68766 total
+
+starting full set at 55de2a73: 69330
+reading set: 45435; current full set: 68766; reduction vs 69,330: 23895; >=20,480: True

@@ -1,0 +1,38 @@
+{
+  "autonomous.enabled": {
+    "value": true
+  },
+  "branch.prefix": {
+    "value": "<type>/"
+  },
+  "domain.layout": {
+    "value": "single-context"
+  },
+  "language.generated": {
+    "value": "English"
+  },
+  "repository.extension.enabled": {
+    "value": true
+  },
+  "runtime.backend": {
+    "value": "codex gpt-6.1-sol high"
+  },
+  "runtime.design": {
+    "value": "claude opus high"
+  },
+  "secondbrain.enabled": {
+    "value": true
+  },
+  "spec.scaffold": {
+    "value": true
+  },
+  "triage.external": {
+    "value": false
+  },
+  "verification.gate": {
+    "value": "make verify"
+  },
+  "verification.incremental": {
+    "value": "make verify-changed"
+  }
+}

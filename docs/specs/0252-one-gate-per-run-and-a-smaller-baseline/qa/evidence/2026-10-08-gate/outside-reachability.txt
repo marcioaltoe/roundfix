@@ -1,0 +1,5 @@
+External-source reachability assessment:
+Requested sources: https://arxiv.org/abs/2602.11988; https://arxiv.org/abs/2601.20404; /Users/marcio/dev/secondbrain/wiki/concepts/arquitetura-de-instrucoes-e-progressive-disclosure.md.
+Operative authorization: "No test, Verification command or QA row opens a network connection". The Run sandbox also declares restricted network access. No network request was issued; no HTTP, DNS or TLS result is claimed.
+AGENTS.md Run rule: "a Run session, which cannot reach it, skips it". Secondbrain is outside this Run’s authorized evidence boundary; it was not read, and its contents are not validated.
+No committed copies of either paper or the Secondbrain concept are supplied by the Spec context bundle. Unblocking: operator supplies committed safe copies or explicitly authorizes the lookup outside the restricted gate; consult Secondbrain in an operator session under its access rules.

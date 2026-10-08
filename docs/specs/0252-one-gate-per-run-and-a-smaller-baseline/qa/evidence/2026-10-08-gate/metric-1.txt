@@ -1,0 +1,30 @@
+docs/agents/agent-instructions.md:7: The selected repository Verification is `make verify`.
+docs/agents/agent-instructions.md:8: The selected incremental Verification is `make verify-changed`.
+docs/agents/agent-instructions.md:29: - **mandatory**: Outside a Run, run the selected repository Verification before a completion claim, treat every failure as blocking, and report the command plus its actionable diagnostic. In a Daemon-assigned turn the Daemon owns that claim: it runs the Task's declared Verification and the repository Verification at settlement.
+docs/agents/agent-instructions.md:31: - **mandatory**: Outside a Run, use the selected incremental Verification named at the top of this guide for fast local checks; it answers whether the current change remains valid while reusing safe local state. In a Daemon-assigned turn, run focused tests of the changed packages and neither selected command, because the Daemon verifies the Task after handoff. CI must run the selected repository Verification from a fresh run; it answers whether the complete tree satisfies the repository contract. Baseline planning refuses until the repository selects and declares both commands, so neither tier is ever satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. A Run satisfies this by construction, because its Run Worktree is created from a commit. No other command checks it: `roundfix spec check --run-verification` executes the commands of the working-tree Spec in a checkout of `HEAD`, and `roundfix settle` reads the Task file of the directory it settles, so whoever runs them on an uncommitted or modified Spec first reads the commands they will execute. No approval record makes an untrusted source executable; commit the artifacts or do not execute them. Read-only checking remains available for any source.
+docs/agents/agent-instructions.md:39: - **mandatory**: A lint warning fails Verification. Every linter the repository Verification runs uses its option that turns a warning into a failure, such as `oxlint --deny-warnings`, `biome check --error-on-warnings`, `eslint --max-warnings 0`, or `cargo clippy -- -D warnings`, and every warning Verification reports blocks completion.
+docs/agents/spec-routing.md:23: - **mandatory**: Outside a Run, run the selected incremental Verification named in `docs/agents/agent-instructions.md` for each Task to answer whether the current slice remains valid before handoff; a Daemon-assigned Task hands back after focused tests. CI must run the selected repository Verification from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental selection is a Baseline decision to answer, never a license to skip the local tier or a waiver to repeat in each Spec.
+docs/agents/specific-repository.md:19:   `make verify` excludes the checks whose inputs are the repository itself —
+docs/agents/specific-repository.md:21:   ordinary commit does not re-run them. `make verify-changed`, the Verification
+docs/agents/specific-repository.md:23:   Contract Relevance selects (ADR-0252). `make verify-docs` runs the
+docs/agents/specific-repository.md:26:   `make verify-contracts`, runs every Repository Contract Test whatever its Contract
+
+implement-task §7:
+## 7. Daemon-assigned handoff
+
+1. Read the assigned Task, PRD, TechSpec, `CONTEXT.md`, active ADRs, and bounded
+   context paths before editing.
+2. Implement only the assigned slice. Never edit `_tasks.md`, another Task
+   file, or a path outside an authorized tooling allowlist.
+3. Run focused implementation checks while working when useful, limited to the
+   packages the change touches. Do not run any command from the Task's
+   `## Verification` section, the repository's selected Verification, its
+   incremental Verification, or the full test suite: the Daemon runs the
+   declared Verification and the repository Verification at settlement.
+4. Append or update `## Result` with the implementation and focused-check
+   evidence for every acceptance criterion. Do not use Daemon Verification
+   evidence that has not run yet.
+5. Hand back implementation-ready work without editing Task status or claiming
+   `completed`, `failed`, passing Verification, commit readiness, or delivery.
+6. Never commit, push, or open a pull request. The Daemon runs declared
+   Verification, writes terminal Task status, and owns the Task commit.

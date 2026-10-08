@@ -1,0 +1,13 @@
+<!-- setup-context-driven:begin id=guide.autonomous-work version=0.0.1 -->
+
+# Autonomous work
+
+Agent Selection Profiles in Project Config choose each Agent Session's ACP
+Runtime, model, and reasoning effort (`roundfix profiles show`). The
+repository prefers `codex gpt-6.1-sol high` for backend work and `claude opus high`
+for design, UI, UX, and frontend-dominant work. A `complexity: low` Task that
+is not `qa` and changes no Governed Path runs on the Light Tier when it is
+available.
+
+
+Models: ['gpt-6.1-sol', 'opus']; each is present in .roundfixrc.yml.

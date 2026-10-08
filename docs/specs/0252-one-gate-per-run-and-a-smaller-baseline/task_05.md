@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0252-one-gate-per-run-and-a-smaller-baseline
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

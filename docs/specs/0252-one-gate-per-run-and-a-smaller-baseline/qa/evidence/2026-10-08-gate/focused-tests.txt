@@ -1,0 +1,276 @@
+command: go test -count=1 -v -run ^(TestTheVerificationTierClausesCarryTheirText|TestTheVerificationTierClausesRenderInTheGuides|TestAnAdopterRetainsTheVerificationTierClauses|TestTheDecisionCatalogProposesNoRtkCommand|TestTheRuntimeDecisionsPreferTheProjectConfigTuples|TestTheAutonomousWorkGuideDefersToAgentSelectionProfiles|TestTheMergedClausesCarryTheirText|TestEveryRemovedClauseHasOneSuccessor|TestAnAdopterRecordsTheRemovedClausesReplaced|TestTheRootNamesWhenToReadTheDocsLayoutGuide|TestTheRootNamesWhenToReadTheSecondbrainGuide|TestTheSpecAndTypeScriptGuidesStateThePromotedRules|TestThePromotedSpecAndTypeScriptClausesCarryTheirForce|TestEveryPromotedClauseHasItsSourceBaselineRow|TestAMissingSourceBaselineRowIsReported|TestIncrementalVerificationDecisionIsDeclaredWithoutADefault|TestEveryBuiltInProfileRequiresTheIncrementalVerificationDecision|TestIncrementalVerificationDecisionProjectsLikeTheGate|TestUndeclaredIncrementalVerificationBlocksPlanning|TestPlanWithoutIncrementalVerificationNamesTheDecision|TestAgentInstructionsRenderTheSelectedIncrementalVerification|TestTwoTierClausesNameTheSelectedCommands|TestNoTwoBaselineClausesShareText|TestADuplicatedClauseTextIsReported|TestBaselineClauseForceIsCharacterized|TestAMissingBaselineClauseIsReported|TestAnUnlistedBaselineClauseIsReported|TestAChangedBaselineClauseForceIsReported|TestTheBackendBoundaryParagraphRendersOnce|TestBaselineUpdateNamesTheMissingIncrementalDecision|TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion|TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion|TestBaselinePlanWithoutIncrementalDecisionExitsThree|TestStandardTypeScriptStructuralClauseRetention|TestHumanBaselineDecisionDefaults|TestHumanBaselineFirstAdoptionPromptSequenceCharacterization|TestBaselineUpdateFleetSweep|TestLegacySpecConstraintExemption|TestAuthorialSkillSync)$ ./internal/baseline ./internal/cli ./skills
+=== RUN   TestNoTwoBaselineClausesShareText
+--- PASS: TestNoTwoBaselineClausesShareText (0.02s)
+=== RUN   TestADuplicatedClauseTextIsReported
+--- PASS: TestADuplicatedClauseTextIsReported (0.00s)
+=== RUN   TestBaselineClauseForceIsCharacterized
+--- PASS: TestBaselineClauseForceIsCharacterized (0.00s)
+=== RUN   TestAMissingBaselineClauseIsReported
+--- PASS: TestAMissingBaselineClauseIsReported (0.00s)
+=== RUN   TestAnUnlistedBaselineClauseIsReported
+--- PASS: TestAnUnlistedBaselineClauseIsReported (0.00s)
+=== RUN   TestAChangedBaselineClauseForceIsReported
+--- PASS: TestAChangedBaselineClauseForceIsReported (0.00s)
+=== RUN   TestTheBackendBoundaryParagraphRendersOnce
+--- PASS: TestTheBackendBoundaryParagraphRendersOnce (0.00s)
+=== RUN   TestTheMergedClausesCarryTheirText
+=== PAUSE TestTheMergedClausesCarryTheirText
+=== RUN   TestEveryRemovedClauseHasOneSuccessor
+=== PAUSE TestEveryRemovedClauseHasOneSuccessor
+=== RUN   TestAnAdopterRecordsTheRemovedClausesReplaced
+=== PAUSE TestAnAdopterRecordsTheRemovedClausesReplaced
+=== RUN   TestIncrementalVerificationDecisionIsDeclaredWithoutADefault
+=== PAUSE TestIncrementalVerificationDecisionIsDeclaredWithoutADefault
+=== RUN   TestEveryBuiltInProfileRequiresTheIncrementalVerificationDecision
+=== PAUSE TestEveryBuiltInProfileRequiresTheIncrementalVerificationDecision
+=== RUN   TestIncrementalVerificationDecisionProjectsLikeTheGate
+=== PAUSE TestIncrementalVerificationDecisionProjectsLikeTheGate
+=== RUN   TestUndeclaredIncrementalVerificationBlocksPlanning
+=== PAUSE TestUndeclaredIncrementalVerificationBlocksPlanning
+=== RUN   TestPlanWithoutIncrementalVerificationNamesTheDecision
+=== PAUSE TestPlanWithoutIncrementalVerificationNamesTheDecision
+=== RUN   TestAgentInstructionsRenderTheSelectedIncrementalVerification
+=== PAUSE TestAgentInstructionsRenderTheSelectedIncrementalVerification
+=== RUN   TestTwoTierClausesNameTheSelectedCommands
+=== PAUSE TestTwoTierClausesNameTheSelectedCommands
+=== RUN   TestStandardTypeScriptStructuralClauseRetention
+=== PAUSE TestStandardTypeScriptStructuralClauseRetention
+=== RUN   TestTheSpecAndTypeScriptGuidesStateThePromotedRules
+=== PAUSE TestTheSpecAndTypeScriptGuidesStateThePromotedRules
+=== RUN   TestThePromotedSpecAndTypeScriptClausesCarryTheirForce
+=== PAUSE TestThePromotedSpecAndTypeScriptClausesCarryTheirForce
+=== RUN   TestEveryPromotedClauseHasItsSourceBaselineRow
+=== PAUSE TestEveryPromotedClauseHasItsSourceBaselineRow
+=== RUN   TestAMissingSourceBaselineRowIsReported
+=== PAUSE TestAMissingSourceBaselineRowIsReported
+=== RUN   TestTheRootNamesWhenToReadTheDocsLayoutGuide
+=== PAUSE TestTheRootNamesWhenToReadTheDocsLayoutGuide
+=== RUN   TestTheRootNamesWhenToReadTheSecondbrainGuide
+=== PAUSE TestTheRootNamesWhenToReadTheSecondbrainGuide
+=== RUN   TestTheDecisionCatalogProposesNoRtkCommand
+--- PASS: TestTheDecisionCatalogProposesNoRtkCommand (0.00s)
+=== RUN   TestTheRuntimeDecisionsPreferTheProjectConfigTuples
+--- PASS: TestTheRuntimeDecisionsPreferTheProjectConfigTuples (0.00s)
+=== RUN   TestTheAutonomousWorkGuideDefersToAgentSelectionProfiles
+--- PASS: TestTheAutonomousWorkGuideDefersToAgentSelectionProfiles (0.00s)
+=== RUN   TestTheVerificationTierClausesCarryTheirText
+=== RUN   TestTheVerificationTierClausesCarryTheirText/clause.core.run-selected-verification
+=== RUN   TestTheVerificationTierClausesCarryTheirText/clause.core.verification-two-tiers
+=== RUN   TestTheVerificationTierClausesCarryTheirText/clause.spec.verification-two-tiers
+=== RUN   TestTheVerificationTierClausesCarryTheirText/clause.spec.verification-fails-before-the-change
+--- PASS: TestTheVerificationTierClausesCarryTheirText (0.00s)
+    --- PASS: TestTheVerificationTierClausesCarryTheirText/clause.core.run-selected-verification (0.00s)
+    --- PASS: TestTheVerificationTierClausesCarryTheirText/clause.core.verification-two-tiers (0.00s)
+    --- PASS: TestTheVerificationTierClausesCarryTheirText/clause.spec.verification-two-tiers (0.00s)
+    --- PASS: TestTheVerificationTierClausesCarryTheirText/clause.spec.verification-fails-before-the-change (0.00s)
+=== RUN   TestTheVerificationTierClausesRenderInTheGuides
+=== RUN   TestTheVerificationTierClausesRenderInTheGuides/clause.core.run-selected-verification
+=== RUN   TestTheVerificationTierClausesRenderInTheGuides/clause.core.verification-two-tiers
+=== RUN   TestTheVerificationTierClausesRenderInTheGuides/clause.spec.verification-two-tiers
+=== RUN   TestTheVerificationTierClausesRenderInTheGuides/clause.spec.verification-fails-before-the-change
+--- PASS: TestTheVerificationTierClausesRenderInTheGuides (0.00s)
+    --- PASS: TestTheVerificationTierClausesRenderInTheGuides/clause.core.run-selected-verification (0.00s)
+    --- PASS: TestTheVerificationTierClausesRenderInTheGuides/clause.core.verification-two-tiers (0.00s)
+    --- PASS: TestTheVerificationTierClausesRenderInTheGuides/clause.spec.verification-two-tiers (0.00s)
+    --- PASS: TestTheVerificationTierClausesRenderInTheGuides/clause.spec.verification-fails-before-the-change (0.00s)
+=== RUN   TestAnAdopterRetainsTheVerificationTierClauses
+=== RUN   TestAnAdopterRetainsTheVerificationTierClauses/clause.core.run-selected-verification
+=== RUN   TestAnAdopterRetainsTheVerificationTierClauses/clause.core.verification-two-tiers
+=== RUN   TestAnAdopterRetainsTheVerificationTierClauses/clause.spec.verification-two-tiers
+=== RUN   TestAnAdopterRetainsTheVerificationTierClauses/clause.spec.verification-fails-before-the-change
+--- PASS: TestAnAdopterRetainsTheVerificationTierClauses (0.71s)
+    --- PASS: TestAnAdopterRetainsTheVerificationTierClauses/clause.core.run-selected-verification (0.00s)
+    --- PASS: TestAnAdopterRetainsTheVerificationTierClauses/clause.core.verification-two-tiers (0.00s)
+    --- PASS: TestAnAdopterRetainsTheVerificationTierClauses/clause.spec.verification-two-tiers (0.00s)
+    --- PASS: TestAnAdopterRetainsTheVerificationTierClauses/clause.spec.verification-fails-before-the-change (0.00s)
+=== CONT  TestTheMergedClausesCarryTheirText
+=== CONT  TestTwoTierClausesNameTheSelectedCommands
+=== CONT  TestUndeclaredIncrementalVerificationBlocksPlanning
+=== CONT  TestIncrementalVerificationDecisionIsDeclaredWithoutADefault
+=== CONT  TestEveryBuiltInProfileRequiresTheIncrementalVerificationDecision
+=== CONT  TestAnAdopterRecordsTheRemovedClausesReplaced
+=== CONT  TestEveryPromotedClauseHasItsSourceBaselineRow
+--- PASS: TestIncrementalVerificationDecisionIsDeclaredWithoutADefault (0.00s)
+=== CONT  TestAgentInstructionsRenderTheSelectedIncrementalVerification
+=== CONT  TestIncrementalVerificationDecisionProjectsLikeTheGate
+=== CONT  TestTheRootNamesWhenToReadTheDocsLayoutGuide
+--- PASS: TestTwoTierClausesNameTheSelectedCommands (0.00s)
+=== CONT  TestTheRootNamesWhenToReadTheSecondbrainGuide
+--- PASS: TestTheRootNamesWhenToReadTheSecondbrainGuide (0.00s)
+=== CONT  TestTheSpecAndTypeScriptGuidesStateThePromotedRules
+=== CONT  TestPlanWithoutIncrementalVerificationNamesTheDecision
+=== CONT  TestEveryRemovedClauseHasOneSuccessor
+=== RUN   TestEveryRemovedClauseHasOneSuccessor/clause.core.request-pull-request-review
+=== RUN   TestTheMergedClausesCarryTheirText/clause.core.request-review-explicitly
+--- PASS: TestTheRootNamesWhenToReadTheDocsLayoutGuide (0.00s)
+--- PASS: TestEveryBuiltInProfileRequiresTheIncrementalVerificationDecision (0.00s)
+=== RUN   TestTheMergedClausesCarryTheirText/clause.core.prohibit-external-research-for-local-code
+=== CONT  TestThePromotedSpecAndTypeScriptClausesCarryTheirForce
+=== RUN   TestTheSpecAndTypeScriptGuidesStateThePromotedRules/standard-typescript-monorepo
+=== RUN   TestTheMergedClausesCarryTheirText/clause.autonomous.loop-05-clean-is-not-evidence
+=== RUN   TestTheMergedClausesCarryTheirText/clause.spec.project-constraints-05-legacy-and-ownership
+=== RUN   TestTheMergedClausesCarryTheirText/clause.secondbrain.03-decision-consultation
+--- PASS: TestTheMergedClausesCarryTheirText (0.01s)
+    --- PASS: TestTheMergedClausesCarryTheirText/clause.core.request-review-explicitly (0.00s)
+    --- PASS: TestTheMergedClausesCarryTheirText/clause.core.prohibit-external-research-for-local-code (0.00s)
+    --- PASS: TestTheMergedClausesCarryTheirText/clause.autonomous.loop-05-clean-is-not-evidence (0.00s)
+    --- PASS: TestTheMergedClausesCarryTheirText/clause.spec.project-constraints-05-legacy-and-ownership (0.00s)
+    --- PASS: TestTheMergedClausesCarryTheirText/clause.secondbrain.03-decision-consultation (0.00s)
+=== CONT  TestAMissingSourceBaselineRowIsReported
+=== RUN   TestAMissingSourceBaselineRowIsReported/missing
+=== RUN   TestAMissingSourceBaselineRowIsReported/wrong_force
+=== RUN   TestAMissingSourceBaselineRowIsReported/wrong_kind
+--- PASS: TestAMissingSourceBaselineRowIsReported (0.00s)
+    --- PASS: TestAMissingSourceBaselineRowIsReported/missing (0.00s)
+    --- PASS: TestAMissingSourceBaselineRowIsReported/wrong_force (0.00s)
+    --- PASS: TestAMissingSourceBaselineRowIsReported/wrong_kind (0.00s)
+=== CONT  TestStandardTypeScriptStructuralClauseRetention
+--- PASS: TestThePromotedSpecAndTypeScriptClausesCarryTheirForce (0.01s)
+--- PASS: TestIncrementalVerificationDecisionProjectsLikeTheGate (0.01s)
+=== RUN   TestEveryRemovedClauseHasOneSuccessor/clause.spec.status-only-in-task
+--- PASS: TestEveryPromotedClauseHasItsSourceBaselineRow (0.02s)
+=== RUN   TestEveryRemovedClauseHasOneSuccessor/clause.secondbrain.prohibit-external-local-discovery
+--- PASS: TestEveryRemovedClauseHasOneSuccessor (0.02s)
+    --- PASS: TestEveryRemovedClauseHasOneSuccessor/clause.core.request-pull-request-review (0.01s)
+    --- PASS: TestEveryRemovedClauseHasOneSuccessor/clause.spec.status-only-in-task (0.01s)
+    --- PASS: TestEveryRemovedClauseHasOneSuccessor/clause.secondbrain.prohibit-external-local-discovery (0.00s)
+--- PASS: TestStandardTypeScriptStructuralClauseRetention (0.01s)
+--- PASS: TestPlanWithoutIncrementalVerificationNamesTheDecision (0.11s)
+--- PASS: TestAgentInstructionsRenderTheSelectedIncrementalVerification (0.17s)
+--- PASS: TestUndeclaredIncrementalVerificationBlocksPlanning (0.17s)
+=== RUN   TestTheSpecAndTypeScriptGuidesStateThePromotedRules/go-cli-tui
+--- PASS: TestTheSpecAndTypeScriptGuidesStateThePromotedRules (0.32s)
+    --- PASS: TestTheSpecAndTypeScriptGuidesStateThePromotedRules/standard-typescript-monorepo (0.24s)
+    --- PASS: TestTheSpecAndTypeScriptGuidesStateThePromotedRules/go-cli-tui (0.08s)
+=== RUN   TestAnAdopterRecordsTheRemovedClausesReplaced/clause.core.request-pull-request-review
+=== RUN   TestAnAdopterRecordsTheRemovedClausesReplaced/clause.spec.status-only-in-task
+=== RUN   TestAnAdopterRecordsTheRemovedClausesReplaced/clause.secondbrain.prohibit-external-local-discovery
+--- PASS: TestAnAdopterRecordsTheRemovedClausesReplaced (1.13s)
+    --- PASS: TestAnAdopterRecordsTheRemovedClausesReplaced/clause.core.request-pull-request-review (0.00s)
+    --- PASS: TestAnAdopterRecordsTheRemovedClausesReplaced/clause.spec.status-only-in-task (0.00s)
+    --- PASS: TestAnAdopterRecordsTheRemovedClausesReplaced/clause.secondbrain.prohibit-external-local-discovery (0.00s)
+PASS
+suiteguard: guard cost: measured 2518 paths; fingerprint took 83.089459ms before and 83.971542ms after
+ok  	roundfix/internal/baseline	2.447s
+=== RUN   TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== PAUSE TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== RUN   TestHumanBaselineDecisionDefaults
+=== PAUSE TestHumanBaselineDecisionDefaults
+=== RUN   TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== PAUSE TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== RUN   TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== PAUSE TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== RUN   TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== PAUSE TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== RUN   TestBaselinePlanWithoutIncrementalDecisionExitsThree
+=== PAUSE TestBaselinePlanWithoutIncrementalDecisionExitsThree
+=== RUN   TestBaselineUpdateFleetSweep
+=== RUN   TestBaselineUpdateFleetSweep/manifest-predates-managed-regions
+=== RUN   TestBaselineUpdateFleetSweep/structural-clauses-missing
+=== RUN   TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve
+=== RUN   TestBaselineUpdateFleetSweep/already-current
+--- PASS: TestBaselineUpdateFleetSweep (3.08s)
+    --- PASS: TestBaselineUpdateFleetSweep/manifest-predates-managed-regions (0.86s)
+    --- PASS: TestBaselineUpdateFleetSweep/structural-clauses-missing (1.00s)
+    --- PASS: TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve (0.63s)
+    --- PASS: TestBaselineUpdateFleetSweep/already-current (0.57s)
+=== CONT  TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== CONT  TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== CONT  TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== CONT  TestBaselinePlanWithoutIncrementalDecisionExitsThree
+=== CONT  TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== CONT  TestHumanBaselineDecisionDefaults
+=== RUN   TestHumanBaselineDecisionDefaults/existing_manifest_value_wins
+=== RUN   TestHumanBaselineDecisionDefaults/invalid_manifest_value_falls_back_to_catalog
+=== RUN   TestHumanBaselineDecisionDefaults/language
+=== RUN   TestHumanBaselineDecisionDefaults/verification
+=== RUN   TestHumanBaselineDecisionDefaults/frontend_layout
+=== RUN   TestHumanBaselineDecisionDefaults/HTTP_contract
+=== RUN   TestHumanBaselineDecisionDefaults/spec_scaffold
+=== RUN   TestHumanBaselineDecisionDefaults/domain_layout
+=== RUN   TestHumanBaselineDecisionDefaults/external_triage
+=== RUN   TestHumanBaselineDecisionDefaults/autonomous_work
+=== RUN   TestHumanBaselineDecisionDefaults/Secondbrain
+=== RUN   TestHumanBaselineDecisionDefaults/repository_extension
+=== RUN   TestHumanBaselineDecisionDefaults/backend_runtime
+=== RUN   TestHumanBaselineDecisionDefaults/design_runtime
+--- PASS: TestHumanBaselineDecisionDefaults (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/existing_manifest_value_wins (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/invalid_manifest_value_falls_back_to_catalog (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/language (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/verification (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/frontend_layout (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/HTTP_contract (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/spec_scaffold (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/domain_layout (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/external_triage (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/autonomous_work (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/Secondbrain (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/repository_extension (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/backend_runtime (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/design_runtime (0.00s)
+--- PASS: TestBaselinePlanWithoutIncrementalDecisionExitsThree (0.09s)
+--- PASS: TestHumanBaselineFirstAdoptionPromptSequenceCharacterization (0.11s)
+--- PASS: TestBaselineUpdateNamesTheMissingIncrementalDecision (1.35s)
+--- PASS: TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion (1.37s)
+--- PASS: TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion (1.57s)
+PASS
+suiteguard: guard cost: measured 2518 paths; fingerprint took 91.250792ms before and 71.42675ms after
+suiteguard: repository boundary violated:
+suiteguard: created: docs/specs/0252-one-gate-per-run-and-a-smaller-baseline/qa/evidence/2026-10-08-gate/refresh-1.txt
+suiteguard: created: docs/specs/0252-one-gate-per-run-and-a-smaller-baseline/qa/evidence/2026-10-08-gate/refresh-2.txt
+suiteguard: created: docs/specs/0252-one-gate-per-run-and-a-smaller-baseline/qa/evidence/2026-10-08-gate/refresh-byte-check.txt
+FAIL	roundfix/internal/cli	5.481s
+=== RUN   TestAuthorialSkillSync
+=== PAUSE TestAuthorialSkillSync
+=== RUN   TestLegacySpecConstraintExemption
+=== PAUSE TestLegacySpecConstraintExemption
+=== CONT  TestAuthorialSkillSync
+=== CONT  TestLegacySpecConstraintExemption
+=== RUN   TestLegacySpecConstraintExemption/write-tasks
+=== RUN   TestAuthorialSkillSync/roundfix
+=== RUN   TestLegacySpecConstraintExemption/implement-task
+=== RUN   TestLegacySpecConstraintExemption/qa-gate
+--- PASS: TestLegacySpecConstraintExemption (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/write-tasks (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/implement-task (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/qa-gate (0.00s)
+=== RUN   TestAuthorialSkillSync/write-idea
+=== RUN   TestAuthorialSkillSync/write-prd
+=== RUN   TestAuthorialSkillSync/write-techspec
+=== RUN   TestAuthorialSkillSync/write-tasks
+=== RUN   TestAuthorialSkillSync/setup-context-driven
+=== RUN   TestAuthorialSkillSync/implement-task
+=== RUN   TestAuthorialSkillSync/implement-spec
+=== RUN   TestAuthorialSkillSync/brainstorming
+=== RUN   TestAuthorialSkillSync/business-analyst
+=== RUN   TestAuthorialSkillSync/archive-spec
+=== RUN   TestAuthorialSkillSync/qa-gate
+=== RUN   TestAuthorialSkillSync/evidence-gate
+=== RUN   TestAuthorialSkillSync/go-cli-typescript-bun.json
+=== RUN   TestAuthorialSkillSync/go.json
+=== RUN   TestAuthorialSkillSync/rust.json
+=== RUN   TestAuthorialSkillSync/typescript.json
+--- PASS: TestAuthorialSkillSync (0.02s)
+    --- PASS: TestAuthorialSkillSync/roundfix (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-idea (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-prd (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- PASS: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- PASS: TestAuthorialSkillSync/implement-task (0.00s)
+    --- PASS: TestAuthorialSkillSync/implement-spec (0.00s)
+    --- PASS: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- PASS: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- PASS: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- PASS: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/evidence-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/go-cli-typescript-bun.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/go.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/rust.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/typescript.json (0.00s)
+PASS
+ok  	roundfix/skills	0.185s
+FAIL
+
+exit: 1
