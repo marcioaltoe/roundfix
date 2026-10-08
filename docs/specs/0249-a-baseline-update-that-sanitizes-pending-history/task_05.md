@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0249-a-baseline-update-that-sanitizes-pending-history
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

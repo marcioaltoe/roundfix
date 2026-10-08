@@ -1,0 +1,23 @@
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df
+Current catalog: sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df
+File changes: 0
+Retention evidence: 0
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+History: applied
+History applied: 3 unit(s): wrote 2 Archive Record(s), reduced 1 file(s), removed 2 file(s) (351 bytes) kept in Git at 31b9f239dcbe and tag history-full
+History refused: 1
+- refused docs/history/specs/0003-broken: build legacy record: parse archive PRD: yaml: line 1: did not find expected ',' or ']'
+History tag: created annotated history-full at 31b9f239dcbe; push it with git push origin history-full
+Plan Digest: sha256:2a1bb3d17d2b31ac0db74d31c4b777982f962b8b5b6e5d0a9684544289ed3dde
+Approved Plan Digest: sha256:2a1bb3d17d2b31ac0db74d31c4b777982f962b8b5b6e5d0a9684544289ed3dde

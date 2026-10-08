@@ -1,0 +1,2 @@
+/Users/marcio/.roundfix/worktrees/roundfix-deliver-0249-a-baseline-update-that-sanitizes-pending-history-12d853a0e3e9b0ff-8dde61bf-19523883/run_20261008T104316Z_378fab9f81538d67/bin/roundfix baseline apply --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0249-xzz82sey/empty-repo --plan /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0249-xzz82sey/empty-repo-plan.json --confirm-plan sha256:a049a51df1ad8fc8a3b8f76389baf7c9b91d5ec3382a3638f7dc4645465adcb3 --format json
+exit: 0

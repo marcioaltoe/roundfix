@@ -1,0 +1,21 @@
+Baseline update: plan ready
+Category: approval
+Result: guidance matches the current Baseline catalog; 3 history unit(s) pending sanitize
+Prior catalog: sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df
+Current catalog: sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df
+File changes: 0
+Retention evidence: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+History: pending
+History units: 3 (3 file(s), 1078 bytes leave docs/history)
+- folder docs/history/specs/0001-maps-unproven: removes 1 file(s) (276 bytes) and writes docs/history/specs/0001-maps-unproven.md (no-qa)
+- folder docs/history/specs/0002-plain: removes 1 file(s) (75 bytes) and writes docs/history/specs/0002-plain.md (no-qa)
+- findings: reduces 1 file(s) from 727 to 164 bytes
+History refused: 1
+- refused docs/history/specs/0003-broken: build legacy record: parse archive PRD: yaml: line 1: did not find expected ',' or ']'
+History tag: creates annotated history-full at 31b9f239dcbe; push it with git push origin history-full
+Plan Digest: sha256:2a1bb3d17d2b31ac0db74d31c4b777982f962b8b5b6e5d0a9684544289ed3dde
+Next action: review the plan and rerun with --confirm-plan sha256:2a1bb3d17d2b31ac0db74d31c4b777982f962b8b5b6e5d0a9684544289ed3dde, or use --yes to approve the digest computed in one invocation

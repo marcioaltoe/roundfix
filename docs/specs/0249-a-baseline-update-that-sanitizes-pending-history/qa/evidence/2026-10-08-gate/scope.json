@@ -1,0 +1,96 @@
+{
+  "base": "55de2a730f965242a8de87295baf0e24a1c461ab",
+  "head": "9f104ee712624bacb6ff487416c40f1c8f8c401f",
+  "tasks": [
+    {
+      "task": "task_01.md",
+      "commit": "9b8fb0e0de6df026bbc0bba443b134f7be519f14",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        "CONTEXT.md",
+        "docs/specs/0249-a-baseline-update-that-sanitizes-pending-history/task_01.md",
+        "docs/user-guide/commands/baseline.md",
+        "docs/user-guide/commands/history.md",
+        "docs/user-guide/commands/upgrade.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/baseline.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "all_declared": true
+    },
+    {
+      "task": "task_02.md",
+      "commit": "29bc4c10e0ac7e2e5855acbefa4ee114d5bd5cf8",
+      "paths": [
+        "docs/specs/0249-a-baseline-update-that-sanitizes-pending-history/task_02.md",
+        "internal/cli/history.go",
+        "internal/cli/history_refusal_test.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/history_sanitize_unproven_test.go"
+      ],
+      "all_declared": true
+    },
+    {
+      "task": "task_03.md",
+      "commit": "a080ec368b71f53b47933974b1f7425bbba8e5ae",
+      "paths": [
+        "docs/specs/0249-a-baseline-update-that-sanitizes-pending-history/task_03.md",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go",
+        "internal/cli/baseline_update_history_test.go",
+        "internal/cli/cli.go",
+        "internal/cli/history.go"
+      ],
+      "all_declared": true
+    },
+    {
+      "task": "task_04.md",
+      "commit": "9f104ee712624bacb6ff487416c40f1c8f8c401f",
+      "paths": [
+        "docs/specs/0249-a-baseline-update-that-sanitizes-pending-history/task_04.md",
+        "internal/cli/upgrade.go",
+        "internal/cli/upgrade_notice_test.go"
+      ],
+      "all_declared": true
+    }
+  ],
+  "forbidden_changes": [],
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/archive.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "authorization_precedes_task": true,
+  "settlement_sections_unchanged": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/archive-spec/SKILL.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "existing_assertions": [
+    {
+      "file": "internal/cli/history_refusal_test.go",
+      "unchanged_existing_tests": 9
+    },
+    {
+      "file": "internal/cli/upgrade_notice_test.go",
+      "unchanged_existing_tests": 4
+    }
+  ],
+  "glossary": {
+    "Pending History": "The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan (ADR-0254).",
+    "Managed Refresh": "The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It also plans the Pending History, binds it into the Plan Digest and converts it on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change (ADR-0254).",
+    "History Sanitize Command": "The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag. `roundfix baseline update` runs the same planning for every convertible unit at once, while this command remains the path for reviewed batches (ADR-0254).",
+    "Refused Unit": "A pending History Sanitize Command unit that cannot be converted. The plan and the batch name it with its reason on one line, leave it untouched, and do not count it toward `--batch <n>`. The update lists one without blocking the Baseline Plan or changing its state; a unit with uncommitted changes is refused (ADR-0251, ADR-0254).",
+    "Lenient Legacy Reading": "The reading of a Legacy Archive Folder's Task Graph that tolerates and names projection rows outside the graph and retired Task types. It also accepts a legacy list of maps `unproven`, one text line per map. It is never applied to an active Spec (ADR-0251, ADR-0254).",
+    "Sanitize Batch": "The next units one `--apply` can convert, delivered as one Pull Request with the repository gates green and revertible; Refused Units do not count toward the batch. The update converts every convertible unit as one batch in its own change (ADR-0248, ADR-0251, ADR-0254).",
+    "History Full Tag": "The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable. The update creates it at `HEAD` when absent, never moves it, and the operator pushes it with `git push origin history-full` (ADR-0248, ADR-0254)."
+  },
+  "skill_mirrors_identical": true
+}

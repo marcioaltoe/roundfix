@@ -1,0 +1,4 @@
+history sanitize plan: 1 unit(s) pending; 1 file(s) (267 bytes) leave docs/history; 1 unit(s) refused
+folder docs/history/specs/0001-maps: removes 1 file(s) (267 bytes) and writes docs/history/specs/0001-maps.md (595 bytes, no-qa, delivery 981c556c8f91)
+refused docs/history/specs/0002-refused: build legacy record: parse archive PRD: yaml: unmarshal errors: line 3: cannot unmarshal !!map into []yaml.Node
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
