@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"roundfix/internal/config"
+	"roundfix/internal/skillcoverage"
 	"roundfix/internal/verifyselect"
 )
 
@@ -26,7 +27,7 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 		t.Fatal(err)
 	}
 	regeneration := []string{"internal/baseline/assets/", "internal/baseline/testdata/", ".agents/skills/", "skills/"}
-	declaredRegeneration := []string{".roundfixrc.yml", "internal/baseline/", ".agents/skills/", "skills/", "docs/agents/", "docs/references/coverage-record.json", "internal/spec/", "internal/cli/baseline_*", "cmd/roundfix/", "internal/suiteguard/", "internal/suiteguardcontract/"}
+	declaredRegeneration := []string{".roundfixrc.yml", "internal/baseline/", ".agents/skills/", "skills/", "docs/agents/", "docs/references/coverage-record.json", "internal/spec/", "internal/cli/baseline_*", "cmd/roundfix/", "internal/suiteguard/", "internal/suiteguardcontract/", skillcoverage.RecordPath, skillcoverage.MapPath}
 	relevant := map[string][]string{
 		"TestRegenerationIsDeclared":                            declaredRegeneration,
 		"TestMeasuredSanctionedOwnershipMatchesRecords":         regeneration,
@@ -76,7 +77,7 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 			foundPackage = true
 		}
 	}
-	if !foundInstallation || !foundPackage || len(docsFiles) != 8 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
+	if !foundInstallation || !foundPackage || len(docsFiles) != 9 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
 		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)
 	}
 	contents, err := os.ReadFile(filepath.Join(root, "Makefile"))

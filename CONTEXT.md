@@ -4,6 +4,22 @@ Roundfix picks up Work Items — Review Issues from pull request reviews today, 
 
 ## Language
 
+**Behavior Surface**:
+One user-visible unit of Roundfix behavior: a command's help, the set of configuration keys, the table of exit codes, or one user-guide page ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Source file, command family, feature
+
+**Skill Coverage Map**:
+The authored inventory of Behavior Surfaces and the owned skill files that describe each, or a reason no skill does, together with their sources and any Coverage Review ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Skill index, generated coverage, fingerprint map
+
+**Behavior Surface Record**:
+The generated inventory of one fingerprint per Behavior Surface, kept separate from the authored Skill Coverage Map ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Coverage map, authored snapshot, skill digest
+
+**Coverage Review**:
+A dated explanation in a Skill Coverage Map entry of why a behavior change needs no skill text; it applies only to the release range in which the explanation changed ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Permanent waiver, review approval, uncovered reason
+
 **Run**:
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job

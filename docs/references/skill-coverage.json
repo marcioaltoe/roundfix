@@ -1,0 +1,1124 @@
+{
+  "schemaVersion": "roundfix/skill-coverage/v1",
+  "surfaces": [
+    {
+      "id": "command archive",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/archive.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_reader.go"
+      ]
+    },
+    {
+      "id": "command attach",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/attach.md",
+        "internal/cli/attach.go"
+      ]
+    },
+    {
+      "id": "command baseline apply",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline assets sync",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline capabilities check",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline plan",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline profile init",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline profile show",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline profile validate",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline skills reconcile",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline skills restore",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline update",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command deliver plan",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
+      "id": "command deliver resume",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
+      "id": "command deliver retry",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
+      "id": "command deliver start",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
+      "id": "command deliver status",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
+      "id": "command deliver stop",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
+      "id": "command doctor",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/doctor.md",
+        "internal/cli/doctor.go",
+        "internal/cli/doctor_storage.go"
+      ]
+    },
+    {
+      "id": "command events",
+      "skills": [
+        ".agents/skills/roundfix/references/events.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/events.md",
+        "internal/cli/events.go"
+      ]
+    },
+    {
+      "id": "command fetch",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/fetch.md"
+      ]
+    },
+    {
+      "id": "command gc",
+      "skills": [
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/gc.md",
+        "internal/cli/gc.go"
+      ]
+    },
+    {
+      "id": "command history sanitize",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/history.md",
+        "internal/cli/history.go"
+      ]
+    },
+    {
+      "id": "command implement",
+      "skills": [
+        ".agents/skills/roundfix/references/implement.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/implement.md",
+        "internal/cli/implement.go"
+      ]
+    },
+    {
+      "id": "command init",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/init.md"
+      ]
+    },
+    {
+      "id": "command migrate",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/migrate.md",
+        "internal/cli/migrate.go"
+      ]
+    },
+    {
+      "id": "command profiles check",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/profiles.md",
+        "internal/cli/profiles.go",
+        "internal/cli/profiles_check.go",
+        "internal/cli/profiles_check_apply.go",
+        "internal/cli/profiles_configure.go",
+        "internal/cli/profiles_validate.go"
+      ]
+    },
+    {
+      "id": "command profiles configure",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/profiles.md",
+        "internal/cli/profiles.go",
+        "internal/cli/profiles_check.go",
+        "internal/cli/profiles_check_apply.go",
+        "internal/cli/profiles_configure.go",
+        "internal/cli/profiles_validate.go"
+      ]
+    },
+    {
+      "id": "command profiles show",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/profiles.md",
+        "internal/cli/profiles.go",
+        "internal/cli/profiles_check.go",
+        "internal/cli/profiles_check_apply.go",
+        "internal/cli/profiles_configure.go",
+        "internal/cli/profiles_validate.go"
+      ]
+    },
+    {
+      "id": "command profiles validate",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/profiles.md",
+        "internal/cli/profiles.go",
+        "internal/cli/profiles_check.go",
+        "internal/cli/profiles_check_apply.go",
+        "internal/cli/profiles_configure.go",
+        "internal/cli/profiles_validate.go"
+      ]
+    },
+    {
+      "id": "command qa-report accept",
+      "skills": [
+        ".agents/skills/roundfix/references/settle.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/qa-report.md",
+        "internal/cli/qa_report.go"
+      ]
+    },
+    {
+      "id": "command reconcile",
+      "skills": [
+        ".agents/skills/roundfix/references/reconcile.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/reconcile.md",
+        "internal/cli/reconcile.go"
+      ]
+    },
+    {
+      "id": "command release plan",
+      "skills": [
+        ".agents/skills/roundfix/references/release.md"
+      ],
+      "sources": [
+        "docs/user-guide/release-runbook.md"
+      ]
+    },
+    {
+      "id": "command reopen",
+      "skills": [
+        ".agents/skills/roundfix/references/settle.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/reopen.md",
+        "internal/cli/reopen.go"
+      ]
+    },
+    {
+      "id": "command resolve",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/resolve.md",
+        "internal/cli/detach.go"
+      ]
+    },
+    {
+      "id": "command review",
+      "skills": [
+        ".agents/skills/roundfix/references/review.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/review.md",
+        "internal/cli/review.go",
+        "internal/cli/review_convention_validator.go",
+        "internal/cli/review_conventions.go",
+        "internal/cli/review_dispose_lock.go",
+        "internal/cli/review_dispose_lock_unix.go",
+        "internal/cli/review_dispose_lock_windows.go",
+        "internal/cli/review_lineage.go",
+        "internal/cli/review_validation.go"
+      ]
+    },
+    {
+      "id": "command review dispose",
+      "skills": [
+        ".agents/skills/roundfix/references/review.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/review.md",
+        "internal/cli/review.go",
+        "internal/cli/review_convention_validator.go",
+        "internal/cli/review_conventions.go",
+        "internal/cli/review_dispose_lock.go",
+        "internal/cli/review_dispose_lock_unix.go",
+        "internal/cli/review_dispose_lock_windows.go",
+        "internal/cli/review_lineage.go",
+        "internal/cli/review_validation.go"
+      ]
+    },
+    {
+      "id": "command runs",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/runs.md",
+        "internal/cli/runs.go",
+        "internal/cli/runs_causes.go",
+        "internal/cli/runs_show.go"
+      ]
+    },
+    {
+      "id": "command runs causes",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/runs.md",
+        "internal/cli/runs.go",
+        "internal/cli/runs_causes.go",
+        "internal/cli/runs_show.go"
+      ]
+    },
+    {
+      "id": "command runs list",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/runs.md",
+        "internal/cli/runs.go",
+        "internal/cli/runs_causes.go",
+        "internal/cli/runs_show.go"
+      ]
+    },
+    {
+      "id": "command runs show",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/runs.md",
+        "internal/cli/runs.go",
+        "internal/cli/runs_causes.go",
+        "internal/cli/runs_show.go"
+      ]
+    },
+    {
+      "id": "command settle",
+      "skills": [
+        ".agents/skills/roundfix/references/settle.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/settle.md",
+        "internal/cli/settle.go"
+      ]
+    },
+    {
+      "id": "command setup",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/setup.md",
+        "internal/cli/setup.go"
+      ]
+    },
+    {
+      "id": "command skills check",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/skills.md"
+      ]
+    },
+    {
+      "id": "command skills install",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/skills.md"
+      ]
+    },
+    {
+      "id": "command spec audit",
+      "skills": [
+        ".agents/skills/roundfix/references/spec.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_judge.go"
+      ]
+    },
+    {
+      "id": "command spec check",
+      "skills": [
+        ".agents/skills/roundfix/references/spec.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_judge.go"
+      ]
+    },
+    {
+      "id": "command spec judge",
+      "skills": [
+        ".agents/skills/roundfix/references/spec.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_judge.go"
+      ]
+    },
+    {
+      "id": "command stop",
+      "skills": [
+        ".agents/skills/roundfix/references/stop.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/stop.md"
+      ]
+    },
+    {
+      "id": "command storage report",
+      "skills": [
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/storage-report.md",
+        "internal/cli/gc.go"
+      ]
+    },
+    {
+      "id": "command supersede",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/supersede.md",
+        "internal/cli/supersede.go"
+      ]
+    },
+    {
+      "id": "command upgrade",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/upgrade.md",
+        "internal/cli/upgrade.go"
+      ]
+    },
+    {
+      "id": "command watch",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/watch.md",
+        "internal/cli/detach.go"
+      ]
+    },
+    {
+      "id": "command window clear",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/window.md",
+        "internal/cli/window.go"
+      ]
+    },
+    {
+      "id": "command window set",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/window.md",
+        "internal/cli/window.go"
+      ]
+    },
+    {
+      "id": "command window show",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/window.md",
+        "internal/cli/window.go"
+      ]
+    },
+    {
+      "id": "config keys",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/storage.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/stop.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "internal/config/*.go",
+        "docs/user-guide/configuration.md"
+      ]
+    },
+    {
+      "id": "exit codes",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/release.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/references/settle.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/stop.md",
+        ".agents/skills/roundfix/references/review-runs.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands.md",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/events.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/profiles.md",
+        ".agents/skills/roundfix/references/reconcile.md",
+        ".agents/skills/roundfix/references/release.md",
+        ".agents/skills/roundfix/references/review-runs.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/settle.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/references/stop.md",
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/archive.md",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/archive.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/attach.md",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/attach.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/baseline.md",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/deliver.md",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/detached-runs.md",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/detached-runs.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/doctor.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/doctor.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/events.md",
+      "skills": [
+        ".agents/skills/roundfix/references/events.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/events.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/fetch.md",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/fetch.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/gc.md",
+      "skills": [
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/gc.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/history.md",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/history.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/implement.md",
+      "skills": [
+        ".agents/skills/roundfix/references/implement.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/implement.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/init.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/init.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/migrate.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/migrate.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/profiles.md",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/profiles.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/qa-report.md",
+      "skills": [
+        ".agents/skills/roundfix/references/settle.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/qa-report.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/reconcile.md",
+      "skills": [
+        ".agents/skills/roundfix/references/reconcile.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/reconcile.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/reopen.md",
+      "skills": [
+        ".agents/skills/roundfix/references/settle.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/reopen.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/resolve.md",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/resolve.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/review-report-shape.md",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/review-report-shape.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/review.md",
+      "skills": [
+        ".agents/skills/roundfix/references/review.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/review.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/runs.md",
+      "skills": [
+        ".agents/skills/roundfix/references/runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/runs.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/settle.md",
+      "skills": [
+        ".agents/skills/roundfix/references/settle.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/settle.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/setup.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/setup.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/skills.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/skills.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/spec-audit.md",
+      "skills": [
+        ".agents/skills/roundfix/references/spec.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/spec-audit.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/spec.md",
+      "skills": [
+        ".agents/skills/roundfix/references/spec.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/spec.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/stop.md",
+      "skills": [
+        ".agents/skills/roundfix/references/stop.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/stop.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/storage-report.md",
+      "skills": [
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/storage-report.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/supersede.md",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/supersede.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/upgrade.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/upgrade.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/watch.md",
+      "skills": [
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/watch.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/window.md",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/window.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/configuration.md",
+      "skills": [
+        ".agents/skills/roundfix/references/profiles.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/storage.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/stop.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/review-runs.md"
+      ],
+      "sources": [
+        "docs/user-guide/configuration.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/context-driven-development.md",
+      "skills": [
+        ".agents/skills/setup-context-driven/SKILL.md",
+        ".agents/skills/write-prd/SKILL.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/implement-task/SKILL.md",
+        ".agents/skills/qa-gate/SKILL.md",
+        ".agents/skills/archive-spec/SKILL.md"
+      ],
+      "sources": [
+        "docs/user-guide/context-driven-development.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/release-runbook.md",
+      "skills": [
+        ".agents/skills/roundfix/references/release.md"
+      ],
+      "sources": [
+        "docs/user-guide/release-runbook.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/run-database-lifecycle.md",
+      "skills": [
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/run-database-lifecycle.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/usage.md",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/events.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/profiles.md",
+        ".agents/skills/roundfix/references/reconcile.md",
+        ".agents/skills/roundfix/references/release.md",
+        ".agents/skills/roundfix/references/review-runs.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/settle.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/references/stop.md",
+        ".agents/skills/roundfix/references/storage.md"
+      ],
+      "sources": [
+        "docs/user-guide/usage.md"
+      ]
+    }
+  ]
+}
