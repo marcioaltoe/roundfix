@@ -19,6 +19,8 @@ tests. Code in another language follows its own guide.
 
 - **mandatory**: When a change touches a file with a build constraint, build the affected non-test packages for every operating system its constraints name, for example with `GOOS=windows go build ./...`; a build or test run on the host compiles only the host's files.
 
+- **mandatory**: Keep tests hermetic: set or clear with `t.Setenv` every environment variable the code under test reads, and never read the host's credentials, home directory, or tool state. Create a Unix socket under a short directory from `os.MkdirTemp("", ...)` rather than a deep `t.TempDir()`, because macOS refuses a socket path longer than 104 bytes, and never let a Verification depend on a test that can skip on the host.
+
 - **mandatory**: Test observable package and command behavior through public entry points: stdout, stderr, files, exit codes, cancellation, and failure paths.
 
 - **mandatory**: Run Go tests through `go test` with the standard `testing` package as the harness. An assertion or mocking library is a third-party module and needs its recorded reason.

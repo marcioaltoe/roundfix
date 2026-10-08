@@ -160,6 +160,7 @@ func characterizedBaselineForce() map[string]string {
 		"clause.go.wrap-errors-with-the-operation":                    "mandatory",
 		"clause.go.build-every-constrained-platform":                  "mandatory",
 		"clause.go.test-observable-behavior":                          "mandatory",
+		"clause.go.keep-tests-hermetic":                               "mandatory",
 		"clause.go.test-through-go-test":                              "mandatory",
 		"clause.cli.public-command-contract":                          "mandatory",
 		"clause.cli.separate-output-streams":                          "mandatory",

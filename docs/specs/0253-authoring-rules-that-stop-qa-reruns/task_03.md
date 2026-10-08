@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0253-authoring-rules-that-stop-qa-reruns
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -126,3 +126,128 @@ file.
 - [_prd.md](_prd.md) — Goal 4; User Story 4; Core Feature 4; Success Metric 2; Acceptance evidence
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 2; API Contract 3; Clause changes; Version changes; Retention; Derived files; Invariants 1-6 and 8; Testing Approach; Build Order 3
 - ADR-0258; ADR-0257; ADR-0250; ADR-0186
+
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. Task status, checkboxes,
+the Task Graph and other Task files are unchanged by this Agent. No commit,
+push or Pull Request was made; authored Verification and repository
+Verification were not run.
+
+### Implementation and acceptance evidence
+
+- The two autonomous loop clauses retain their identities, mandatory force
+  and absence of `replaces`. Their additions match the TechSpec literals:
+  parallel-Spec revalidation, the corrective `needs` edge before reopening,
+  the wording sweep and characterization before change. A structural comparison
+  against `HEAD` confirms loop-01's first sentence and network-denied sentence
+  are byte-identical and every unrelated clause is unchanged.
+- The new `clause.go.keep-tests-hermetic` is mandatory and follows
+  `clause.go.test-observable-behavior` on one JSON line. The force
+  characterization file gains exactly its one declared row.
+- Version changes from this Task's starting commit: `rule.autonomous.loop`
+  6 → 7, `guide.autonomous-work` 14 → 15, `rule.go.observable-tests` 3 → 4,
+  and `guide.go` 4 → 5. The Module Version Record command chose module
+  versions autonomous-work 14 → 15 and go 5 → 6; those module version lines
+  and the record were not edited by hand.
+- `TestTheLoopClausesCarryTheirText` checks each authored addition exactly
+  once, mandatory enforcement, no `replaces`, and absence of the obsolete
+  corrective instruction. `TestTheLoopClausesRenderInTheGuides` checks each
+  literal exactly once after whitespace normalization in the Standard
+  TypeScript golden and this repository's autonomous-work guide. Together
+  they provide focused evidence for the first acceptance criterion.
+- `TestTheHermeticGoClauseRendersInTheGoGuide` checks the catalog's mandatory
+  clause, exact text and placement, and its mandatory bullet exactly once
+  both in the Go adopter plan postimage and this repository's Go guide. It
+  provides focused evidence for the second acceptance criterion.
+- `TestAnAdopterRetainsTheLoopClauses` uses a temporary Source Baseline
+  adopter with autonomous work enabled, applies that guide and ages its
+  managed artifact digests. It requires a ready Managed Refresh, both loop
+  clauses `retained` in the delta and retention evidence, and no
+  `unaccounted` clause. The shared adopter starts with autonomous work
+  disabled; the test explicitly enables it and supplies its two required
+  runtime decisions before exercising retention.
+- The second managed refresh and the refresh after sabotage restoration both
+  exited 0 with `File changes: 0` and idempotence verified. Combined with the
+  adopter test, this provides focused evidence for the third acceptance
+  criterion.
+
+### Commands and focused checks
+
+All Go commands and regeneration used
+`GOCACHE=/tmp/roundfix-task03-go-cache` with `rtk proxy`. The initial default
+cache attempt was denied by the sandbox before compilation; the task-scoped
+cache removed that environment blocker.
+
+1. Before changing the modules,
+   `go test ./internal/baseline -run '^(TestTheLoopClausesCarryTheirText|TestTheHermeticGoClauseRendersInTheGoGuide)$' -count=1`
+   exited 1: the three loop additions were absent, the obsolete corrective
+   instruction remained, and the Go clause was missing.
+2. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+   exited 0, then `make baseline-digests` exited 0 and reported regeneration.
+3. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+   initially could not create its Git-private transaction journal because
+   that directory is outside the writable workspace. The same command with
+   approved sandbox escalation exited 0, applied and verified three files.
+   Its second invocation exited 0 with `File changes: 0`.
+4. After the sabotages below, `make baseline-digests` exited 0 and reported
+   `changed:false`; the restored sources already matched every derived file.
+   The same managed-refresh command then exited 0 with `File changes: 0`.
+5. Final focused command:
+   `go test ./internal/baseline -run '^(TestTheLoopClausesCarryTheirText|TestTheLoopClausesRenderInTheGuides|TestTheHermeticGoClauseRendersInTheGoGuide|TestAnAdopterRetainsTheLoopClauses|TestBaselineClauseForceIsCharacterized|TestNoTwoBaselineClausesShareText)$' -count=1 -v`
+   exited 0 with all six named tests passing, after restoration and regeneration.
+6. Changed-path postflight inspected tracked and untracked paths: 18 paths,
+   all in this Task's declared Context or this Task file. A comparison of the
+   module objects against `HEAD` confirmed each required rule/guide version
+   rose by one, the unrelated clauses are unchanged, and the Go clause is
+   the only added identity. Source Baseline assets, the retention transition
+   and all production Go files remain outside the diff.
+
+### Sabotage evidence
+
+Each sabotage changed only a declared module source, ran its focused test
+with `-count=1 -v`, and restored the source byte-identically in a `finally`
+block. No sabotage was recorded as a module version or left in the diff.
+
+| Sabotage | Focused command | Observed failure |
+| --- | --- | --- |
+| Replaced loop-04's `Characterize current behavior before changing it, and declare each break:` with `SABOTAGED characterization:` | `go test ./internal/baseline -run '^TestTheLoopClausesCarryTheirText$' -count=1 -v` | Exit 1; loop-04 force/text differs. |
+| Changed the Go hermetic clause's enforcement from mandatory to prohibited | `go test ./internal/baseline -run '^TestTheHermeticGoClauseRendersInTheGoGuide$' -count=1 -v` | Exit 1; catalog force/text differs and the Go adopter postimage lacks the mandatory bullet. |
+| Changed loop-01's enforcement from mandatory to prohibited | `go test ./internal/baseline -run '^TestAnAdopterRetainsTheLoopClauses$' -count=1 -v` | Exit 1; refresh is `action_required`, with one unaccounted clause: loop-01. |
+
+All three sources were restored, then regenerated and refreshed as recorded
+above. Logs were inspected from `/tmp/task03-sabotage-loop-text.log`,
+`/tmp/task03-sabotage-go-force.log` and `/tmp/task03-sabotage-retention.log`;
+these are local working evidence, not durable dependencies of any test.
+
+### Files rewritten by the sanctioned commands
+
+Module Version Record:
+
+- `internal/baseline/assets/modules/autonomous-work.json` (module version line)
+- `internal/baseline/assets/modules/go.json` (module version line)
+- `internal/baseline/module-versions.json`
+
+`make baseline-digests`:
+
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md`
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+
+Managed Refresh:
+
+- `docs/agents/autonomous-work.md`
+- `docs/agents/go.md`
+- `docs/agents/setup-context.json`
+
+No module version, pin, golden, snapshot or generated guide was hand-edited.
+The refresh reported its existing nested-carrier warnings for the formatter
+fixture and Source Baseline corpus AGENTS files; it preserved those carriers.
+No follow-up work was added to this slice.
