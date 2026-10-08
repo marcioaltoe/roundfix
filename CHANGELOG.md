@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.61.0] - 2026-10-08
+
+### A Run Database that keeps only recent Runs
+
+- **Run Retention.** The new User Config key `store.run_retention_days` accepts 7, 15 or 30 and defaults to 30. A terminal Run older than the window is removed whole: its Run row, events, agent selections, token usage, locks and safe artifact folder. Running Runs, Runs a Delivery Queue names, and Runs whose worktree still exists are kept. `store.journal_retention` stays the shorter window for journal rows.
+- **Automatic, once a day.** `implement`, `resolve`, `watch` and `deliver start` run the sweep at most once a day, within 2 seconds, and the next start resumes it. `roundfix gc` runs it in full, and `gc --dry-run` reports the Runs, rows and bytes it would remove.
+- **Safe removal.** The artifact folder is removed inside the transaction that rechecks the Run, before the row is deleted. A Run that changed meanwhile keeps both, and a failed removal rolls back.
+- **Compaction.** New databases use incremental vacuum and shrink as the sweep frees pages. An existing database converts on an explicit `roundfix gc compact --apply`.
+- **Pruned Runs.** `runs show` and `events` explain when an unknown, old Run ID was removed by retention.
+- **Schema v23.** Older binaries refuse a database this version has opened. Upgrade every machine that shares the Roundfix Home.
+- **Glossary.** Adds Run Retention and Run Retention Sweep, and changes GC Command and Journal Retention.
+
 ## [0.60.0] - 2026-10-08
 
 ### A baseline update that sanitizes pending history
