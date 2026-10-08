@@ -122,8 +122,12 @@ removes retired Review Artifacts and handoffs. A folder without a QA Report,
 override or supersession receives the `no-qa` disposition. A failed QA without
 an override is recorded as `failed-qa`, keeping its verdict and report name.
 A Legacy Archive Folder is read with Lenient Legacy Reading: tolerated rows are
-named, while an active Spec is read strictly. A Refused Unit is listed with its
-reason and skipped, so it remains untouched and does not consume a batch slot.
+named, while an active Spec is read strictly. Lenient Legacy Reading accepts a
+legacy list of maps in `unproven`, with one stable text line per map. A Refused
+Unit is listed with its one-line reason and skipped, so it remains untouched and
+does not consume a batch slot. `roundfix baseline update` plans these same units
+at once; pass `roundfix baseline update --no-history` to keep this command's
+reviewed-batch path.
 Apply requires the annotated `history-full` tag on an ancestor of `HEAD` and
 holding every path the batch rewrites or removes, so the full history remains
 reachable in Git.

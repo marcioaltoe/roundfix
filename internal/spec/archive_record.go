@@ -79,8 +79,15 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 		TaskStatus                          string   `yaml:"qa_override_qa_task_status"`
 		Revision                            string   `yaml:"qa_override_revision"`
 	}
-	if err := yaml.Unmarshal(fm, &meta); err != nil {
-		return ArchiveRecord{}, fmt.Errorf("parse archive PRD: %w", err)
+	if in.Legacy {
+		err = readLegacyArchivePRD(fm, &meta)
+	} else {
+		if err = yaml.Unmarshal(fm, &meta); err != nil {
+			err = fmt.Errorf("parse archive PRD: %w", err)
+		}
+	}
+	if err != nil {
+		return ArchiveRecord{}, err
 	}
 	r := ArchiveRecord{Spec: in.Slug, Created: meta.Created, Archived: in.Archived, Source: in.Source, SourceRevision: in.SourceRevision, Unproven: in.Unproven, QAOverride: in.QAOverride, Promoted: in.Promoted}
 	if r.Spec == "" {
@@ -196,6 +203,109 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	}
 	return r, nil
 }
+
+// Decode legacy unproven separately so scalar spellings survive YAML typing.
+// The remaining PRD metadata uses the same decoder as active Specs.
+func readLegacyArchivePRD(fm []byte, meta any) error {
+	var document yaml.Node
+	if err := yaml.Unmarshal(fm, &document); err != nil {
+		return fmt.Errorf("parse archive PRD: %w", err)
+	}
+	if len(document.Content) > 0 && document.Content[0].Kind == yaml.MappingNode {
+		mapping := document.Content[0]
+		for i := 0; i < len(mapping.Content); i += 2 {
+			if mapping.Content[i].Value == "unproven" {
+				value := mapping.Content[i+1]
+				var items []yaml.Node
+				if err := value.Decode(&items); err != nil {
+					return fmt.Errorf("parse archive PRD: %w", err)
+				}
+				var lines []string
+				if items != nil {
+					lines = make([]string, len(items))
+				}
+				for j := range items {
+					line, ok := legacyUnprovenLine(&items[j])
+					if !ok {
+						return fmt.Errorf("legacy unproven item %d cannot be read as text", j+1)
+					}
+					lines[j] = line
+				}
+				if err := value.Encode(lines); err != nil {
+					return fmt.Errorf("encode legacy unproven text: %w", err)
+				}
+			}
+		}
+	}
+	if err := document.Decode(meta); err != nil {
+		return fmt.Errorf("parse archive PRD: %w", err)
+	}
+	return nil
+}
+
+func legacyUnprovenLine(item *yaml.Node) (string, bool) {
+	if item.Kind == yaml.ScalarNode {
+		return item.Value, true
+	}
+	if item.Kind != yaml.MappingNode || len(item.Content) == 0 {
+		return "", false
+	}
+	values := make(map[string]string)
+	var keys []string
+	for i := 0; i < len(item.Content); i += 2 {
+		key := item.Content[i]
+		value, ok := legacyUnprovenValue(item.Content[i+1])
+		if key.Kind != yaml.ScalarNode || !ok {
+			return "", false
+		}
+		// A Node keeps duplicate keys that decoding into a map would refuse;
+		// refuse them too rather than keep only the last value.
+		if _, duplicate := values[key.Value]; duplicate {
+			return "", false
+		}
+		values[key.Value] = value
+		if key.Value != "row" && key.Value != "claim" {
+			keys = append(keys, key.Value)
+		}
+	}
+	sort.Strings(keys)
+	var parts []string
+	for _, key := range keys {
+		parts = append(parts, key+": "+values[key])
+	}
+	line := values["claim"]
+	if len(parts) > 0 {
+		other := strings.Join(parts, "; ")
+		if line != "" {
+			line += " (" + other + ")"
+		} else {
+			line = other
+		}
+	}
+	if row, exists := values["row"]; exists {
+		line = "row " + row + ": " + line
+	}
+	return line, true
+}
+
+func legacyUnprovenValue(value *yaml.Node) (string, bool) {
+	switch value.Kind {
+	case yaml.ScalarNode:
+		return strings.Join(strings.Fields(value.Value), " "), true
+	case yaml.SequenceNode:
+		var parts []string
+		for _, scalar := range value.Content {
+			if scalar.Kind != yaml.ScalarNode {
+				return "", false
+			}
+			parts = append(parts, strings.Join(strings.Fields(scalar.Value), " "))
+		}
+		return strings.Join(parts, ", "), true
+	default:
+		return "", false
+	}
+}
+
 func archiveSection(body, heading string) string {
 	lines := strings.Split(body, "\n")
 	start := -1

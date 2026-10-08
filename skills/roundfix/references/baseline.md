@@ -69,6 +69,28 @@ lists, and `baseline.history.citation.unscanned` when a tracked file could not
 be scanned. The Plan Digest covers these warnings. Planning never rewrites a
 citation, and apply writes the same files.
 
+When Pending History exists, the managed refresh adds a `History` section to
+the plan. Text output lists the history units and their planned records or
+reductions, with `History: <status>`, `History units:`, `History applied:`,
+`History refused:` and `History tag:` lines when those values exist. Each reason
+is one line; uncommitted changes and paths outside the coverage of an existing
+History Full Tag are refused and left untouched. A refused unit does not block
+the Baseline Plan or change the update's state. A repository-wide history
+precondition such as an invalid tag can make the history section `blocked` with
+its one-line result while the Baseline Plan keeps its existing behavior.
+
+JSON always includes a `history` object. Its status is `skipped`, `current`,
+`pending`, `applied` or `blocked`; it carries the selected units, Refused Units,
+tag action and apply result when those values exist. When units are selected,
+the history section is part of the same Plan Digest as the Baseline Plan, and
+`--yes` or `--confirm-plan <digest>` approves both. Apply runs the Baseline Plan
+first, creates the annotated `history-full` tag at `HEAD` when absent, then
+converts every selected unit. The tag is never moved or pushed by the update;
+push it with `git push origin history-full`.
+
+Pass `--no-history` to leave the history section out and keep the reviewed
+batch procedure under `roundfix history sanitize`.
+
 Automation and Agents use the non-interactive plan/apply pair for first
 adoption or a Profile change:
 

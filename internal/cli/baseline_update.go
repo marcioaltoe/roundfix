@@ -34,6 +34,7 @@ type baselineUpdateRequest struct {
 	yes             bool
 	adoptSuggested  bool
 	skipSkills      bool
+	skipHistory     bool
 	skillsSourceDir string
 }
 
@@ -80,6 +81,7 @@ type baselineUpdateSkillsDependencies struct {
 }
 
 type baselineUpdateResult struct {
+	History                  baselineUpdateHistory                `json:"history"`
 	SchemaVersion            string                               `json:"schemaVersion"`
 	Operation                string                               `json:"operation"`
 	OK                       bool                                 `json:"ok"`
@@ -158,6 +160,9 @@ func runBaselineUpdateCommandWithSkillsStage(
 		)
 	}
 	result := newBaselineUpdateResult()
+	if request.skipHistory {
+		result.History = newBaselineUpdateHistory("skipped")
+	}
 	result.CurrentCatalog = baseline.CatalogIdentity{
 		SchemaVersion: baseline.CatalogSchemaVersion(),
 		Digest:        catalog.Digest(),
@@ -241,7 +246,15 @@ func runBaselineUpdateCommandWithSkillsStage(
 	}
 
 	plan := *outcome.Plan
-	result.PlanDigest = plan.PlanDigest
+	historyPlan := baselineUpdateHistoryPlan{Report: newBaselineUpdateHistory("skipped")}
+	if !request.skipHistory {
+		historyPlan = planBaselineUpdateHistory(ctx, request.repo, environment)
+	}
+	result.History = historyPlan.Report
+	result.PlanDigest, err = historyPlan.digest(plan.PlanDigest)
+	if err != nil {
+		return writeBaselineUpdateOperationFailure(result, err, jsonOutput, stdout, stderr)
+	}
 	result.CurrentCatalog = plan.Catalog
 	result.FileChanges = append(result.FileChanges, plan.FileChanges...)
 	result.UnrecordedManagedRegions = append(
@@ -292,6 +305,13 @@ func runBaselineUpdateCommandWithSkillsStage(
 			}
 		}
 		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
+			if len(historyPlan.selected) != 0 {
+				result.State = "plan_ready"
+				result.Category = "approval"
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d history unit(s) pending sanitize", len(historyPlan.selected))
+				result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
+				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
+			}
 			if len(result.Skills.Drifted) != 0 {
 				result.State = "plan_ready"
 				result.Category = "approval"
@@ -313,24 +333,33 @@ func runBaselineUpdateCommandWithSkillsStage(
 		result.State = "plan_ready"
 		result.Category = "approval"
 		result.Message = "managed-refresh plan is ready; repository bytes are unchanged"
-		result.NextAction = "review the plan and rerun with --confirm-plan " + plan.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
+		result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
 		return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
 	}
 
 	confirmation := request.confirmation
 	if request.yes {
-		confirmation = plan.PlanDigest
+		confirmation = result.PlanDigest
 	}
-	applyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, confirmation)
+	if confirmation != result.PlanDigest {
+		result.State = "action_required"
+		return writeBaselineUpdateFailure(result, fmt.Errorf("confirmed Plan Digest %q does not match supplied plan %q", confirmation, result.PlanDigest), "approval", "review the supplied plan and rerun with --confirm-plan "+result.PlanDigest, exitUnverified, jsonOutput, stdout, stderr)
+	}
+	applyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)
 	if err != nil {
 		return writeBaselineUpdateApplyFailure(result, err, jsonOutput, stdout, stderr)
 	}
 	result.State = applyResult.State
 	result.Message = applyResult.Message
 	result.NextAction = applyResult.NextAction
-	result.ApprovedPlanDigest = applyResult.PlanDigest
+	result.ApprovedPlanDigest = result.PlanDigest
 	result.VerifiedHistoryMoves = append(result.VerifiedHistoryMoves, applyResult.VerifiedHistoryMoves...)
 	result.StatusMatrix = applyResult.StatusMatrix
+	result.History, err = applyBaselineUpdateHistory(ctx, request.repo, historyPlan)
+	if err != nil {
+		result.State = "failed"
+		return writeBaselineUpdateFailure(result, err, "history", "restore the History Root with git restore --staged --worktree -- "+historyPlan.historyRoot+" and git clean -fd -- "+historyPlan.historyRoot+", then rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+	}
 	if request.skipSkills {
 		result.Skills.Status = baselineUpdateSkillsSkipped
 	} else {
@@ -373,6 +402,7 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 	flags.StringVar(&request.confirmation, "confirm-plan", "", "Exact Plan Digest reviewed in a previous invocation")
 	flags.BoolVar(&request.yes, "yes", false, "Approve the Plan Digest computed in this invocation")
 	flags.BoolVar(&request.adoptSuggested, "adopt-suggested", false, "Adopt catalog suggestions for decisions absent from the Setup Manifest")
+	flags.BoolVar(&request.skipHistory, "no-history", false, "Skip Pending History planning and conversion")
 	flags.BoolVar(&request.skipSkills, "no-skills", false, "Skip the Repository Skill Set refresh")
 	flags.StringVar(&request.skillsSourceDir, "skills-source-dir", "", "Offline Git checkout or bare object store for external skill restoration")
 	if err := flags.Parse(args); err != nil {
@@ -412,6 +442,7 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 
 func newBaselineUpdateResult() baselineUpdateResult {
 	return baselineUpdateResult{
+		History:            newBaselineUpdateHistory("current"),
 		SchemaVersion:      baselineUpdateResultSchema,
 		Operation:          "update",
 		FileChanges:        []baseline.FileChange{},
@@ -817,6 +848,7 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 		}
 	}
 	if result.PlanDigest != "" {
+		printBaselineUpdateHistory(stdout, result.History)
 		fmt.Fprintf(stdout, "Plan Digest: %s\n", result.PlanDigest)
 	}
 	if result.ApprovedPlanDigest != "" {
@@ -827,6 +859,9 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 		for _, move := range result.VerifiedHistoryMoves {
 			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n", move.From, move.To, move.ContentIdentity)
 		}
+	}
+	if result.PlanDigest == "" {
+		printBaselineUpdateHistory(stdout, result.History)
 	}
 	if result.NextAction != "" {
 		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)

@@ -20,6 +20,7 @@ import (
 
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/spec"
 )
 
 const (
@@ -141,6 +142,47 @@ func printUpgradeRecommendationNotice(ctx context.Context, installedPath string,
 	if err != nil {
 		fmt.Fprintf(stderr, "roundfix: recommendations not checked: %s\n", strings.Join(strings.Fields(err.Error()), " "))
 	}
+	printHistoryNotice(environment, stderr)
+}
+
+func printHistoryNotice(environment commandEnvironment, stderr io.Writer) {
+	loaded, err := loadCommandConfig(environment, io.Discard)
+	if err != nil {
+		return
+	}
+	if loaded.GitRoot == "" {
+		fmt.Fprintln(stderr, "roundfix: history: outside a repository; run roundfix baseline update in each adopted repository to plan its pending history")
+		return
+	}
+	root, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	if err != nil || root.External {
+		return
+	}
+	units, err := historyInventory(loaded.GitRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	if err != nil {
+		fmt.Fprintf(stderr, "roundfix: history not checked: %s\n", historyRefusalLine(err))
+		return
+	}
+	var folders int
+	var parts []string
+	for _, unit := range units {
+		if unit.refusal != nil {
+			fmt.Fprintf(stderr, "roundfix: history not checked: %s\n", historyRefusalLine(unit.refusal))
+			return
+		}
+		if unit.folder {
+			folders++
+		} else {
+			parts = append(parts, unit.name)
+		}
+	}
+	if len(units) == 0 {
+		return
+	}
+	if folders > 0 {
+		parts = append([]string{fmt.Sprintf("%d Legacy Archive Folder(s)", folders)}, parts...)
+	}
+	fmt.Fprintf(stderr, "roundfix: history: %d unit(s) pending sanitize (%s); run roundfix baseline update to plan them\n", len(units), strings.Join(parts, ", "))
 }
 
 func parseUpgradeCommand(args []string) (upgradeRequest, error) {

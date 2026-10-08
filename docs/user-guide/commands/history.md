@@ -24,6 +24,17 @@ Refused Units do not count toward `n`. Without it the plan shows all pending
 units. A later batch starts from the next remaining unit. Already reduced
 entries are skipped.
 
+Lenient Legacy Reading also accepts a legacy list of maps in `unproven`. Each
+map becomes one stable text line in the Archive Record; active Specs continue to
+require the string-only list. A Refused Unit is listed as `refused <unit>:
+<reason>`, with the reason on one line, and remains untouched.
+
+`roundfix baseline update` plans these same units at once as Pending History and
+binds the selected units into its Baseline Plan Digest. Use
+`roundfix baseline update --no-history` when the operator wants the History
+Sanitize Command's reviewed-batch path. The History Sanitize Command remains the
+path for applying `--batch <n>` batches.
+
 The plan writes nothing under the repository. Its first line is:
 
 ```text
