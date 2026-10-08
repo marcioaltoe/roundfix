@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.62.0] - 2026-10-08
+
+### Skills that keep up with the behavior they describe
+
+- **Behavior Surfaces and the Skill Coverage Map.** Each command's help, configuration key, exit code and user guide is a Behavior Surface. `docs/references/skill-coverage.json` maps each surface to the owned skill files that describe it, or says why none does. A generated Behavior Surface Record holds a fingerprint of every surface.
+- **A release waits for its skills.** `roundfix release plan` has a new `skill-coverage` check. It blocks with exit 3 when a surface changed since the previous release and neither a covering skill nor the surface's Coverage Review changed. A Coverage Review reads `YYYY-MM-DD — <reason>`. The first release after this one compares against a tag that has no map, so this one reports `introduced`.
+- **Specs plan their skills.** `roundfix spec check` reports `SC-SKILLS-UNTASKED` when a Spec changes a covered surface without a skills Task. A PRD can declare that a surface is unchanged under `## Skills`.
+- **Glossary.** Adds Behavior Surface, Skill Coverage Map, Behavior Surface Record, Coverage Review, Lagging Surface and Skills Declaration. Changes Release Plan.
+
 ## [0.61.0] - 2026-10-08
 
 ### A Run Database that keeps only recent Runs
