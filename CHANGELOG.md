@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.60.0] - 2026-10-08
+
+### A baseline update that sanitizes pending history
+
+- **Pending History in the Baseline update.** After `roundfix upgrade`, run `roundfix baseline update` in a repository. When the repository has legacy history, the update plans the conversion together with the Baseline changes under one Plan Digest. On apply it converts every unit it can, in the same change the operator reviews. With nothing pending, the digest is unchanged.
+- **History Full Tag.** When the annotated `history-full` tag is absent, the update creates it at `HEAD` and never moves it. The plan tells you to run `git push origin history-full`.
+- **Refused Units.** Each one is listed on one line and never blocks the Baseline apply. `--no-history` skips the history step. For batches, `roundfix history sanitize --apply --batch <n>` still works.
+- **Upgrade notice.** `roundfix upgrade` names the Pending History when it runs inside a repository.
+- **Legacy `unproven` maps.** An archived PRD whose `unproven` field is a list of maps now converts each map to one line, `row N: claim (key: value; …)`. A map with a duplicate key is refused instead of keeping the last value.
+- **Glossary.** Adds Pending History. Revises Managed Refresh, History Sanitize Command, Refused Unit, Lenient Legacy Reading, Sanitize Batch and History Full Tag.
+
 ## [0.59.0] - 2026-10-07
 
 ### The regeneration contract runs when its inputs change
