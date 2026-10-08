@@ -1,6 +1,6 @@
 //go:build docscontract
 
-//verify:relevant .roundfixrc.yml internal/baseline/ .agents/skills/ skills/ docs/agents/ docs/references/coverage-record.json internal/spec/ internal/cli/baseline_* cmd/roundfix/ internal/suiteguard/ internal/suiteguardcontract/
+//verify:relevant .roundfixrc.yml internal/baseline/ .agents/skills/ skills/ docs/agents/ docs/references/coverage-record.json internal/spec/ internal/cli/baseline_* cmd/roundfix/ internal/suiteguard/ internal/suiteguardcontract/ docs/references/behavior-surfaces.json docs/references/skill-coverage.json
 
 package config
 

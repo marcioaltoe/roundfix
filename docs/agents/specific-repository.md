@@ -27,9 +27,13 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   Relevance, and CI runs it on every push to main and before every release (ADR-0253).
   Platform-only failures stay a known limit because CI is the
   Linux gate. Nothing under `docs/history/` is ever validated as live work.
-- **HARD RULE — roundfix skill sync**: before opening any PR, confirm the
-  roundfix skill still matches the shipped CLI behavior; a PR that changes CLI
-  behavior ships the skill update too.
+- **HARD RULE — roundfix skill sync**: the Skill Coverage Map names the owned
+  skills that describe each Behavior Surface. Before opening any PR, update a
+  covering skill for each changed covered surface or record a Coverage Review
+  in the map. The release plan's `skill-coverage` check blocks lagging surfaces;
+  `SC-SKILLS-UNTASKED` requires a non-QA skills Task for a declared source
+  change, or a PRD `- unchanged:` entry with a non-QA map Task that records
+  the Coverage Review.
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may be
   adapted locally; every other skill is upstream-managed and **MUST NOT** be
   modified here.

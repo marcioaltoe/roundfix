@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/skillcoverage"
 )
 
 func TestVerificationToolsAreBareExecutableNames(t *testing.T) {
@@ -62,6 +64,7 @@ func TestThisRepositoryDeclaresItsToolsAndDerivedPaths(t *testing.T) {
 		{Paths: []string{"docs/agents/setup-context.json", "docs/agents/"}, Regenerate: "go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text"},
 		{Paths: []string{"skills/testdata/owned-skill-versions.json"}, Lines: &DerivedLineDeclaration{Paths: []string{".agents/skills/*/SKILL.md", "skills/*/SKILL.md"}, Match: "^ *version: "}, Regenerate: "go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions"},
 		{Paths: []string{"docs/references/coverage-record.json"}, Regenerate: "go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1"},
+		{Paths: []string{skillcoverage.RecordPath}, Regenerate: "go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage"},
 	}
 	if !reflect.DeepEqual(cfg.Delivery.DerivedPaths, want) {
 		t.Fatalf("derived declarations = %#v", cfg.Delivery.DerivedPaths)

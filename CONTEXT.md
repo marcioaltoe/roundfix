@@ -4,6 +4,26 @@ Roundfix picks up Work Items — Review Issues from pull request reviews today, 
 
 ## Language
 
+**Behavior Surface**:
+One user-visible unit of Roundfix behavior: a command's help, the set of configuration keys, the table of exit codes, or one user-guide page ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Source file, command family, feature
+
+**Skill Coverage Map**:
+The authored inventory of Behavior Surfaces and the owned skill files that describe each, or a reason no skill does, together with their sources and any Coverage Review ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Skill index, generated coverage, fingerprint map
+
+**Behavior Surface Record**:
+The generated inventory of one fingerprint per Behavior Surface, kept separate from the authored Skill Coverage Map ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Coverage map, authored snapshot, skill digest
+
+**Coverage Review**:
+A dated explanation in a Skill Coverage Map entry of why a behavior change needs no skill text; it applies only to the release range in which the explanation changed ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Permanent waiver, review approval, uncovered reason
+
+**Skills Declaration**:
+A Spec's optional declaration of the covered Behavior Surfaces whose changes need no skill text, each with a reason and a planned Coverage Review ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Skills inventory, permanent waiver, Coverage Review
+
 **Run**:
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job
@@ -666,8 +686,12 @@ _Avoid_: Package list, publish targets, artifact set
 A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible.
 _Avoid_: Publish dry run, identity check, release plan
 
+**Lagging Surface**:
+A Behavior Surface that changed, appeared or disappeared since the base release without a covering skill change, an applicable changed Coverage Review or an uncovered declaration. It blocks a Release Plan that proposes a version ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Stale skill, undocumented commit
+
 **Release Plan**:
-A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required.
+A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required. A Lagging Surface blocks a plan that proposes a version without changing its decision state or proposed version ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
 _Avoid_: Release execution, automatic release, version guess
 
 **Release Plan Command**:

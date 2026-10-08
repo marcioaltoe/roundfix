@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.10
+  version: 0.0.11
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.10
+version: 0.0.11
 ---
 
 # Write Tasks
@@ -118,6 +118,23 @@ The Daemon records a path a Task changed without declaring it under
 `## Recorded paths` at commit. The QA scope audit counts that recorded path as
 declared, and recording discloses a change and reserves nothing. Declaring
 every foreseeable path stays the rule.
+
+## Skills Tasks for changed Behavior Surfaces
+
+Read the repository's Skill Coverage Map at
+`docs/references/skill-coverage.json` when it exists. For every covered
+Behavior Surface whose source a non-QA Task declares under `interface:`,
+`creates:` or `deletes:`, include a non-QA skills Task that declares one of
+its covering skill files under `interface:` or `creates:`.
+`SC-SKILLS-UNTASKED` reports a surface with no such Task.
+
+When the change needs no skill text, record
+`- unchanged: <surface id> — <reason>` in the PRD's optional `## Skills`
+section and include a non-QA Task declaring the map under `interface:` or
+`creates:` to record the Coverage Review. The entry alone does not excuse
+the surface. `SC-SKILLS-MALFORMED` reports an entry of another shape, an
+unknown surface or a blank reason. Both rules begin at the commit that
+added the map; repositories without one skip them.
 
 ## Decomposition rules
 

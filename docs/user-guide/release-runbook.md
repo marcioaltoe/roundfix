@@ -250,7 +250,14 @@ Request.
    and `go test -count=1 ./internal/delivery -run '^TestTheLoopClauseOrderMatchesTheDeliveryQueue$'`.
 4. Run `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide)$'`.
 5. Run `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --format text` and confirm it reports `current`.
-6. For each user-visible change in the release range, confirm in a reading pass
+6. Run `roundfix release plan` and resolve a `behind` or `failed`
+   `skill-coverage` check before any release mutation. It names each Lagging
+   Surface. Update a covering skill or change its Coverage Review in
+   `docs/references/skill-coverage.json` and rerun the plan. A review clears
+   only the range in which it changes; removing a surface needs a skill edit.
+   A repository without a map, a base without one and a `no_release` range
+   never block.
+7. For each user-visible change in the release range, confirm in a reading pass
    that the Roundfix skill, the user guide and the Baseline clause that describe
    it say what the release does. Fix a mismatch before the release Pull
    Request, or record a Backlog Entry when the fix needs a Spec.
@@ -260,7 +267,11 @@ Request.
 1. Run `roundfix release plan` from a clean checkout and satisfy the decision
    boundary described above. The plan reports the skills and baseline checks
    read-only in its `skills:` and `baseline:` lines; they never change its
-   decision. Use the proposed version as `<version>` only after the plan is
+   decision state or proposed version. The `skill-coverage` check reads committed
+   maps and records, reports each Lagging Surface, and blocks a proposed
+   release with exit 3 and `Release blocked: skill-coverage` when `behind` or
+   `failed`. Resolve the blocking check even after version approval.
+   Use the proposed version as `<version>` only after the plan is
    `ready` or the required human approval has been given.
 2. Land all release content on `main` and confirm `make verify` is green
    locally. The workflow re-runs the full gate and refuses to publish if it

@@ -82,7 +82,7 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 		return exitPreflight
 	}
 
-	checks := collectReleasePlanChecks(ctx, source, environment)
+	checks := collectReleasePlanChecks(ctx, source, environment, plan)
 
 	switch req.outputFormat {
 	case releasePlanFormatText:
@@ -96,7 +96,11 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 		printReleasePlanFailure(validationError{message: fmt.Sprintf("unsupported --format %q; use text or json", req.outputFormat)}, stderr)
 		return exitPreflight
 	}
-	return releasePlanExitCode(plan.State)
+	code := releasePlanExitCode(plan.State)
+	if code == exitOK && checks.SkillCoverage.Blocking {
+		return exitUnverified
+	}
+	return code
 }
 
 func runReleaseResetPlanCommand(ctx context.Context, req releasePlanCommandRequest, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -218,17 +222,28 @@ func printReleasePlanText(plan releaseplan.Plan, checks releasePlanChecks, stdou
 	switch plan.State {
 	case releaseplan.StateReady:
 		fmt.Fprintln(stdout, "Approval required: no")
-		fmt.Fprintf(stdout, "Next action: release may proceed for %s after independent release verification.\n", plan.ProposedVersion)
 	case releaseplan.StateNoRelease:
 		fmt.Fprintln(stdout, "Approval required: no")
-		fmt.Fprintln(stdout, "Next action: no release is required for the committed range.")
 	case releaseplan.StateApprovalRequired:
 		fmt.Fprintln(stdout, "Approval required: yes")
 		fmt.Fprintf(stdout, "Approval question: %s\n", plan.Approval.Question)
-		fmt.Fprintln(stdout, "Next action: answer the approval question before any release mutation.")
 	case releaseplan.StateManualClassificationRequired:
 		fmt.Fprintln(stdout, "Approval required: no")
-		fmt.Fprintf(stdout, "Next action: rerun roundfix release plan --from %s --to %s --impact <none|patch|minor|major> --reason <text>\n", plan.Base.Tag, plan.Target.Name)
+	}
+	if checks.SkillCoverage.Blocking {
+		fmt.Fprintln(stdout, "Release blocked: skill-coverage")
+		fmt.Fprintln(stdout, "Next action: "+releasePlanBlockedNextAction)
+	} else {
+		switch plan.State {
+		case releaseplan.StateReady:
+			fmt.Fprintf(stdout, "Next action: release may proceed for %s after independent release verification.\n", plan.ProposedVersion)
+		case releaseplan.StateNoRelease:
+			fmt.Fprintln(stdout, "Next action: no release is required for the committed range.")
+		case releaseplan.StateApprovalRequired:
+			fmt.Fprintln(stdout, "Next action: answer the approval question before any release mutation.")
+		case releaseplan.StateManualClassificationRequired:
+			fmt.Fprintf(stdout, "Next action: rerun roundfix release plan --from %s --to %s --impact <none|patch|minor|major> --reason <text>\n", plan.Base.Tag, plan.Target.Name)
+		}
 	}
 
 	printReleasePlanChecksText(checks, stdout)

@@ -83,6 +83,15 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
 
 <!-- Use `adds: **<term>**`, `changes: **<term>**`, or `not a term: **<phrase>** — <reason>`. Write `None.` when there are no entries. -->
 
+## Skills
+
+<!-- Optional Skills Declaration. Omit this section when no covered Behavior Surface
+     is excused. Every entry must name an id in the repository's Skill Coverage Map
+     and give a non-blank reason. An excuse also needs a non-QA Task declaring
+     docs/references/skill-coverage.json to record the Coverage Review. -->
+
+- unchanged: <surface id> — <reason no skill text changes>
+
 ## Decisions
 
 <!-- Product decisions made during clarification, one line each.

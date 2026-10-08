@@ -789,6 +789,7 @@ func TestWriteTasksSkillStatesTheDeclaredPathRules(t *testing.T) {
 		"Task naming a CLI surface",
 		"skill or guide itself or through a Task it depends on",
 		"SC-CLI-UNDOCUMENTED",
+		"SC-SKILLS-UNTASKED",
 	} {
 		if !strings.Contains(content, required) {
 			t.Errorf("write-tasks skill missing %q", required)
@@ -1739,15 +1740,60 @@ func baselineSetupDigest(
 	return hex.EncodeToString(sum[:])
 }
 
+func TestRepositoryCopyIncludesNewSourceFiles(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	gittest.InitRepo(t, root, "-b", "main")
+	write := func(relative, content string) {
+		t.Helper()
+		path := filepath.Join(root, relative)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(".gitignore", "ignored.go\n")
+	write("internal/check/existing.go", "package check\n")
+	gittest.Run(t, root, "add", ".")
+	gittest.Run(t, root, "commit", "-m", "fixture")
+	write("internal/check/new.go", "package check\nconst New = true\n")
+	write("internal/check/existing.go", "package check\nconst Existing = true\n")
+	write("ignored.go", "ignored\n")
+
+	copied := copyTrackedRepository(t, root)
+	for _, relative := range []string{".gitignore", "internal/check/existing.go", "internal/check/new.go"} {
+		want, err := os.ReadFile(filepath.Join(root, relative))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(filepath.Join(copied, relative))
+		if err != nil {
+			t.Fatalf("read copied %s: %v", relative, err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("copied %s differs from working-tree content", relative)
+		}
+	}
+	for _, relative := range []string{"ignored.go", ".git"} {
+		if _, err := os.Lstat(filepath.Join(copied, relative)); !os.IsNotExist(err) {
+			t.Errorf("copy included excluded %s: %v", relative, err)
+		}
+	}
+}
+
+// copyTrackedRepository includes non-ignored new files so pre-commit checks
+// compile the complete implementation under review.
 func copyTrackedRepository(t *testing.T, repoRoot string) string {
 	t.Helper()
 
-	command := exec.Command("git", append(gittest.ConfigArgs(), "ls-files", "-z", "--cached")...)
+	command := exec.Command("git", append(gittest.ConfigArgs(), "ls-files", "-z", "--cached", "--others", "--exclude-standard")...)
 	command.Dir = repoRoot
 	command.Env = gittest.IsolatedEnv()
 	output, err := command.Output()
 	if err != nil {
-		t.Fatalf("list tracked repository files: %v", err)
+		t.Fatalf("list repository files: %v", err)
 	}
 	targetRoot := filepath.Join(t.TempDir(), "repository")
 	for _, rawRelative := range bytes.Split(output, []byte{0}) {
@@ -1759,27 +1805,27 @@ func copyTrackedRepository(t *testing.T, repoRoot string) string {
 		target := filepath.Join(targetRoot, relative)
 		info, err := os.Lstat(source)
 		if err != nil {
-			t.Fatalf("inspect tracked file %s: %v", relative, err)
+			t.Fatalf("inspect repository file %s: %v", relative, err)
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			t.Fatalf("create tracked file parent %s: %v", relative, err)
+			t.Fatalf("create repository file parent %s: %v", relative, err)
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
 			destination, err := os.Readlink(source)
 			if err != nil {
-				t.Fatalf("read tracked symlink %s: %v", relative, err)
+				t.Fatalf("read repository symlink %s: %v", relative, err)
 			}
 			if err := os.Symlink(destination, target); err != nil {
-				t.Fatalf("copy tracked symlink %s: %v", relative, err)
+				t.Fatalf("copy repository symlink %s: %v", relative, err)
 			}
 			continue
 		}
 		data, err := os.ReadFile(source)
 		if err != nil {
-			t.Fatalf("read tracked file %s: %v", relative, err)
+			t.Fatalf("read repository file %s: %v", relative, err)
 		}
 		if err := os.WriteFile(target, data, info.Mode().Perm()); err != nil {
-			t.Fatalf("copy tracked file %s: %v", relative, err)
+			t.Fatalf("copy repository file %s: %v", relative, err)
 		}
 	}
 	return targetRoot

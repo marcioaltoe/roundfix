@@ -23,6 +23,21 @@ term, `SC-GLOSSARY-UNPLANNED` for a declared term without a binding Task or a
 changed term missing from the glossary, and `SC-GLOSSARY-MISSING` for a declared
 term still absent after its binding Tasks complete.
 
+The optional Skills Declaration lives under the PRD's `## Skills` section.
+Each entry is `- unchanged: <surface id> — <reason>` with a known id and a
+non-blank reason. A non-QA Task changing a covered Behavior Surface's source
+needs a non-QA skills Task declaring a covering skill file under `interface:`
+or `creates:`, or an unchanged entry plus a non-QA Task declaring the Skill
+Coverage Map to record the Coverage Review. Both detectors skip a repository
+without `docs/references/skill-coverage.json` and a PRD committed before the
+oldest commit that added it; an uncommitted PRD is held.
+
+- `SC-SKILLS-MALFORMED` — a Skills Declaration line has another shape, names
+  an unknown surface or gives a blank reason. Runs from the PRD stage.
+- `SC-SKILLS-UNTASKED` — a non-QA Task declares a covered surface's source
+  without a skills Task or an unchanged entry with its map Task. Runs from
+  the Tasks stage.
+
 - `SC-RECEIPT-UNPROVEN`: a written Claim Receipt has an unresolved source, fewer than three words, or a quote absent from its source.
 - `SC-RECEIPT-MISSING`: a held Spec attributes a claim to an accepted ADR without a receipt for that record in the same paragraph.
 - `SC-TRANSCRIPT-UNDECLARED`: a held TechSpec has no Surface Transcripts declaration.
