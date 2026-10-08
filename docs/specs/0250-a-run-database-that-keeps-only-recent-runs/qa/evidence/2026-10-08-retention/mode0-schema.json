@@ -1,9 +1,0 @@
-{
-  "command": "./bin/roundfix window show",
-  "home": "/private/tmp/qa0250-mode0-0j4aovim/home",
-  "cwd": "/private/tmp/qa0250-mode0-0j4aovim/repo",
-  "stdout": "No Run Window is set for /private/tmp/qa0250-mode0-0j4aovim/repo.\nThe Run Window bounds when a Run may start; budget.max_run_duration bounds how long one may run.\n",
-  "stderr": "",
-  "exit": 0,
-  "seconds": 0.03358299995306879
-}

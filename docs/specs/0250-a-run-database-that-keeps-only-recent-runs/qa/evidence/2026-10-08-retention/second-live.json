@@ -1,9 +1,0 @@
-{
-  "command": "./bin/roundfix gc",
-  "home": "/private/tmp/qa0250-transcripts-17zlul5o/home",
-  "cwd": "/private/tmp/qa0250-transcripts-17zlul5o/repo",
-  "stdout": "GC complete\n  Journal Retention: 0\n  No journal pruning performed.\n  Run Retention: 30 days\n  Run Retention cutoff: 2026-09-08T14:39:15.576698Z\n  Runs removed: 0\n  Runs kept past the cutoff: 2 (queue-referenced 1, worktree present 1, artifact root unproven 0)\n  Rows removed: runs=0 run_events=0 run_agent_selections=0 run_token_usage=0 active_run_locks=0\n  Run artifact bytes reclaimed: 0\n  Compaction: not needed\n  Database bytes before: 667648\n  Database bytes after: 667648\n",
-  "stderr": "",
-  "exit": 0,
-  "seconds": 0.010761832993011922
-}

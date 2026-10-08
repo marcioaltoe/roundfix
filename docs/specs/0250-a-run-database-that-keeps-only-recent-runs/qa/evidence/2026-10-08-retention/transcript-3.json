@@ -1,9 +1,0 @@
-{
-  "command": "./bin/roundfix gc --dry-run",
-  "home": "/private/tmp/qa0250-transcripts-17zlul5o/home",
-  "cwd": "/private/tmp/qa0250-transcripts-17zlul5o/repo",
-  "stdout": "",
-  "stderr": "Preflight failed\n\nReason:\n  parse config \"/private/tmp/qa0250-transcripts-17zlul5o/home/.roundfix/config.yml\": store.run_retention_days must be 7, 15 or 30\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix gc --help' for usage.\n",
-  "exit": 2,
-  "seconds": 0.008820542017929256
-}

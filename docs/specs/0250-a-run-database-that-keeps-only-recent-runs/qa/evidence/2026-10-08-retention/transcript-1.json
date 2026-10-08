@@ -1,9 +1,0 @@
-{
-  "command": "./bin/roundfix gc --dry-run",
-  "home": "/private/tmp/qa0250-transcripts-17zlul5o/home",
-  "cwd": "/private/tmp/qa0250-transcripts-17zlul5o/repo",
-  "stdout": "GC dry-run\n  Journal Retention: 0\n  No journal pruning performed.\n  Run Retention: 30 days\n  Run Retention cutoff: 2026-09-08T14:39:15.548162Z\n  Runs removable: 1\n  Runs kept past the cutoff: 2 (queue-referenced 1, worktree present 1, artifact root unproven 0)\n  Rows removable: runs=1 run_events=2 run_agent_selections=1 run_token_usage=1 active_run_locks=0\n  Database bytes reclaimable (estimated): 131086\n  Removable Runs:\n    run_20260801T120000Z_0000000000000001\n",
-  "stderr": "",
-  "exit": 0,
-  "seconds": 0.01026133302366361
-}
