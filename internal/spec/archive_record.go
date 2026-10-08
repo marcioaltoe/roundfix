@@ -258,6 +258,11 @@ func legacyUnprovenLine(item *yaml.Node) (string, bool) {
 		if key.Kind != yaml.ScalarNode || !ok {
 			return "", false
 		}
+		// A Node keeps duplicate keys that decoding into a map would refuse;
+		// refuse them too rather than keep only the last value.
+		if _, duplicate := values[key.Value]; duplicate {
+			return "", false
+		}
 		values[key.Value] = value
 		if key.Value != "row" && key.Value != "claim" {
 			keys = append(keys, key.Value)

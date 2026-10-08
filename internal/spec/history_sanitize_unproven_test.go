@@ -69,6 +69,7 @@ func TestLegacyUnprovenRefusesANestedMap(t *testing.T) {
 		{"empty", "{}"},
 		{"nested", "{claim: {text: unsupported}}"},
 		{"sequence holds map", "{claim: [plain, {text: unsupported}]}"},
+		{"duplicate key", "{claim: first, claim: second}"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			req := legacyUnprovenFixture(t, "unproven:\n  - Preserved string\n  - "+tc.item+"\n")
