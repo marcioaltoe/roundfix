@@ -211,7 +211,9 @@ worktree:
   bootstrap_timeout: 10m
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
-  journal_retention: 336h
+  # 7 days since 2026-10-08 (maintainer decision): run_events grew about 77 MB a day,
+  # and 14 days held 1.08 GB of the 1.1 GB Run Database.
+  journal_retention: 168h
 review_source:
   name: coderabbit
   # Roundfix publishes the review request after a Round's Final Push. Required
