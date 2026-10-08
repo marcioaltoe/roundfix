@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 16,
+  "version": 17,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 12,
+      "version": 13,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -49,7 +49,7 @@
     },
     {
       "id": "guide.issue-tracker",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/issue-tracker.md",
       "template": "template.guide.issue-tracker",
       "rules": [
@@ -130,7 +130,7 @@
     },
     {
       "id": "rule.spec.artifacts",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -141,20 +141,18 @@
           "guidance": "Use the local Spec folder, Task Graph, and Task files as the implementation issue tracker. Do not introduce external triage labels or external issue status as Task state."
         },
         {
-          "id": "clause.spec.status-only-in-task",
-          "enforcement": "mandatory",
-          "guidance": "Keep Task status only in the assigned Task file frontmatter. The Task Graph records topology and dependencies, not progress."
-        },
-        {
           "id": "clause.spec.tracker-artifacts",
           "enforcement": "mandatory",
+          "replaces": [
+            "clause.spec.status-only-in-task"
+          ],
           "guidance": "Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file, and the local Task files are the published planning issues."
         }
       ]
     },
     {
       "id": "rule.spec.project-constraints",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -182,7 +180,7 @@
         {
           "id": "clause.spec.project-constraints-05-legacy-and-ownership",
           "enforcement": "mandatory",
-          "guidance": "Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file."
+          "guidance": "Keep completed or archived legacy Specs byte-identical."
         },
         {
           "id": "clause.spec.project-constraints-06-outside-evidence",

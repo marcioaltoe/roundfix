@@ -3043,6 +3043,7 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 		return raw
 	}
 	replacements := map[string]string{
+		"clause.spec.status-only-in-task":        "clause.spec.tracker-artifacts",
 		"rule.backend.boundary-contracts":        "clause.backend.boundary-contracts",
 		"clause.backend.prohibit-generic-layers": "clause.backend.prohibit-generic-buckets",
 	}

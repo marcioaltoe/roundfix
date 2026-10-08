@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0252-one-gate-per-run-and-a-smaller-baseline
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -143,3 +143,116 @@ file.
 - [_prd.md](_prd.md) — Goal 4; User Story 4; Core Feature 4; Success Metric 4
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 4; Exact clause texts; Skill and document texts; Version changes; Retention; Derived files; Invariants 1 to 4; Testing Approach; Build Order 3
 - ADR-0257; ADR-0222; ADR-0186; ADR-0250
+
+## Result
+
+Implemented only task_03's clause consolidation. The five authored texts
+replace their previous guidance in place; the three removed identities have
+one same-enforcement successor each. The tracker successor keeps its existing
+text. The declared rule and guide versions each rose by one; the Module
+Version Record command selected and recorded the four module versions.
+Only the declared characterization, structural-retention, fleet fixture and
+legacy-Spec assertions changed. No production Go, Source Baseline, retention
+transition, Go-module clause, loop-01 or loop-04 changed.
+
+### Acceptance evidence
+
+- Pre-PR review: the generated `docs/agents/agent-instructions.md` carries
+  the authored merged review text exactly once. The two previous review
+  texts are absent. `TestTheMergedClausesCarryTheirText` checks all five
+  literal texts and their enforcement.
+- Tracker, ownership and research: direct inspection of the five regenerated
+  guides found each authored replacement once and the retired tracker,
+  ownership, query-order, local-discovery and autonomous review sentences
+  absent. `TestEveryRemovedClauseHasOneSuccessor` sweeps every module for
+  removed identities and successor declarations, checks same enforcement,
+  and rejects retired text restored under another identity.
+- Repository rule: a byte comparison against the starting revision with only
+  the whole skill-sync bullet removed matched `specific-repository.md`.
+- Adopter: `TestAnAdopterRecordsTheRemovedClausesReplaced` uses
+  `newClauseReplacementAdopter`, enables and records its optional Secondbrain
+  guide in a temporary repository, ages managed digests, and requires a ready
+  Managed Refresh. All three removed identities are `replaced` with exactly
+  their named successor and explanatory evidence; none is `unaccounted`.
+  `TestNoTwoBaselineClausesShareText` also passed.
+
+### Focused checks and regeneration
+
+The three new tests were run before the module edits and failed on all five
+old texts, the three present removed identities, missing successors and
+missing replacement accounting. After implementation and the sabotage
+restorations, this focused command exited zero with all six tests passing:
+
+```sh
+GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/baseline -run '^(TestTheMergedClausesCarryTheirText|TestEveryRemovedClauseHasOneSuccessor|TestAnAdopterRecordsTheRemovedClausesReplaced|TestStandardTypeScriptStructuralClauseRetention|TestNoTwoBaselineClausesShareText|TestBaselineClauseForceIsCharacterized)$' -count=1 -v
+```
+
+This separate focused command also exited zero:
+
+```sh
+GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/cli ./skills -run '^(TestBaselineUpdateFleetSweep|TestLegacySpecConstraintExemption)$' -count=1
+```
+
+The required Module Version Record command, `make baseline-digests`, and
+`go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+each exited zero. The second confirmed refresh reported `File changes: 0`
+and idempotence verified. Regeneration after each sabotage exited zero.
+The shared Go cache denied access during focused work; subsequent commands
+used the task-local `GOCACHE` above. Baseline apply initially could not write
+its Git-private transaction lock; the authorized refresh succeeded with
+sandbox escalation. Existing nested-carrier warnings remained advisory.
+
+Every file rewritten by those commands:
+
+- `internal/baseline/assets/modules/core.json`
+- `internal/baseline/assets/modules/autonomous-work.json`
+- `internal/baseline/assets/modules/spec-workflow.json`
+- `internal/baseline/assets/modules/secondbrain.json`
+- `internal/baseline/module-versions.json`
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/issue-tracker.md`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+- `docs/agents/agent-instructions.md`
+- `docs/agents/autonomous-work.md`
+- `docs/agents/issue-tracker.md`
+- `docs/agents/secondbrain.md`
+- `docs/agents/spec-routing.md`
+- `docs/agents/setup-context.json`
+
+### Sabotage evidence
+
+1. Removed the review successor's `replaces` list in `core.json`.
+   `TestEveryRemovedClauseHasOneSuccessor` failed with successor count zero.
+   `TestAnAdopterRecordsTheRemovedClausesReplaced` independently failed when
+   planning reported `action_required`, classification, with the removed
+   review identity `unaccounted`. Restored the exact source and regenerated.
+2. Restored the retired status clause's literal text under the unrelated
+   `clause.core.fix-root-causes` identity. `TestEveryRemovedClauseHasOneSuccessor`
+   failed with `removed text restored in clause.core.fix-root-causes`.
+   Restored the exact source and regenerated.
+3. Changed the merged review guidance prefix in `core.json`.
+   `TestTheMergedClausesCarryTheirText` failed on the literal text assertion
+   for `clause.core.request-review-explicitly`. Restored the exact source and
+   regenerated.
+
+`git diff --check` passed. The changed-file postflight accounted for all
+31 changed or new paths against this Task's Context and the Task file,
+including the pre-existing Daemon status edit. No follow-up or implementation
+blocker was found. Declared Task Verification, repository Verification and
+incremental Verification were not run; the Daemon owns them. Task status and
+other Task files remain untouched, and no commit, push or PR was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T180729Z_1c5cbdf685b778d0`
+- Source commit: `43213026fbebe2037374a8888876758aba47e000`

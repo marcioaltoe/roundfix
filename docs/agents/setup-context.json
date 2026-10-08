@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:c16f36eac32136b909da9baaa8d50bd24b2f8163a545413adf5090827c9c23af",
+  "catalogDigest": "sha256:b2cdf3f3d6e97e3fb85a8151495de4b5cd8bc2ac65f639f82f870e50f6040a90",
   "modules": [
     "core",
     "context-workflow",
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "3371766a9ab6504db59b69ae82133ac9d3c5c1548ecda5636353ecd454f5ff6f"
+      "digest": "29d9eceb59fc3055e6b2a40d6ae0803b55341a867610557bfd38549a28c3da8b"
     },
     {
       "id": "root.cli-surface",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "af1293351ad61ec5bbc7c716a96e24ced4f8c72cd6ebd5b63867be6e56816f88"
+      "digest": "2fb7d4934354757732e758f87c7b9ec6efd0f6e0b3bb8a9450a19f212c4637c3"
     },
     {
       "id": "guide.issue-tracker",
@@ -183,7 +183,7 @@
       "module": "spec-workflow",
       "template": "template.guide.issue-tracker",
       "version": "0.0.1",
-      "digest": "6de94546501df45cc5b9e997c08a13f7154ace22fe48d69ebe0e4ba5a0ea895a"
+      "digest": "818e4d1e44d73a208eba5a7d3aa2115c7420a062b898897a801d3cadd9bc9fd6"
     },
     {
       "id": "guide.spec-docs-layout",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "5d2be9bd972afee54f1b88d0602bf8785d234f0ea930bf46d55cc8a93830830a"
+      "digest": "3353e10311881fb8dcdfd60064730df3e8e54d26675718200f016e8b56b56231"
     },
     {
       "id": "root.secondbrain",
@@ -237,7 +237,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "b848ce0bef534a6e807aa0337a43c086b56450f8ce151b04c4409f143411dcc4"
+      "digest": "2c00c5160845ba6e36c0e0af1f1d0da97e4420e5f985993bdcd88829d3f8269a"
     },
     {
       "id": "root.repository-extension",

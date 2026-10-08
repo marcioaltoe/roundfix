@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 10,
+  "version": 11,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 10,
+      "version": 11,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -48,7 +48,7 @@
   "rules": [
     {
       "id": "rule.secondbrain.index-first",
-      "version": 6,
+      "version": 7,
       "coverage": [
         "coverage.secondbrain",
         "coverage.research"
@@ -67,7 +67,7 @@
         {
           "id": "clause.secondbrain.03-decision-consultation",
           "enforcement": "mandatory",
-          "guidance": "Use Secondbrain for prior decisions, related project experience, and existing research. Follow the index-first and local query workflow defined in this guide."
+          "guidance": "Use Secondbrain for prior decisions, related project experience, and existing research."
         },
         {
           "id": "clause.secondbrain.04-external-research",
@@ -138,7 +138,7 @@
     },
     {
       "id": "rule.secondbrain.secret-safety",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.secondbrain",
         "coverage.security-configuration"
@@ -148,11 +148,6 @@
           "id": "clause.secondbrain.prohibit-secret-access",
           "enforcement": "prohibited",
           "guidance": "Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source."
-        },
-        {
-          "id": "clause.secondbrain.prohibit-external-local-discovery",
-          "enforcement": "prohibited",
-          "guidance": "Do not use Exa or another external research tool to discover or infer local repository code or behavior. Use local code-search tools for that purpose. Never include credentials, private client records, or proprietary source code in external search queries."
         }
       ]
     },

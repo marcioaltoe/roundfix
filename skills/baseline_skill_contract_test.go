@@ -1177,9 +1177,7 @@ func TestLegacySpecConstraintExemption(t *testing.T) {
 		"express maintainer authorization",
 		"bounded repository-relative files",
 		"actual changed-file scope",
-		"completed or archived legacy Specs byte-identical",
-		"Dependencies remain owned only by the Task Graph",
-		"status remains owned only by each Task file",
+		"Keep completed or archived legacy Specs byte-identical.",
 	} {
 		if !strings.Contains(module, required) {
 			t.Errorf("spec-workflow module missing %q", required)

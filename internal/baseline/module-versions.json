@@ -9,6 +9,10 @@
       {
         "version": 13,
         "digest": "sha256:f2745a94bde4995053aa72703bdbbbbc56cb37f2d329d025a6d6e45cfec9c5f6"
+      },
+      {
+        "version": 14,
+        "digest": "sha256:cbdc265b8e11d41779285653e5603d78d1ae54310cd762e5b5584fb38c336afd"
       }
     ],
     "backend": [
@@ -43,6 +47,10 @@
       {
         "version": 19,
         "digest": "sha256:cfa4a04f7570d3985e18cffea32c5b1923dc1bd7e4f50f9db8030978a1d9fc61"
+      },
+      {
+        "version": 20,
+        "digest": "sha256:88b11b44088d41b2f25789ebbc881e3dcce782689e1ee57bb26c4589c82dc9f5"
       }
     ],
     "external-triage": [
@@ -85,6 +93,10 @@
       {
         "version": 10,
         "digest": "sha256:ff255a5d473f9a1731f191954b5629d63885438d826e049b6540976833b08783"
+      },
+      {
+        "version": 11,
+        "digest": "sha256:ac0843bd213a2b036873c44e7c221c91aa7aaf26216a0cc3fbd07ea112a5436c"
       }
     ],
     "spec-workflow": [
@@ -95,6 +107,10 @@
       {
         "version": 16,
         "digest": "sha256:de828613090f05e8943504302a02bbf3e8da5b134760d0926dea39bf04a2c51f"
+      },
+      {
+        "version": 17,
+        "digest": "sha256:72a289493e65e1acf97a8274f50ecca441865215692d24531b4cff04b868b7ae"
       }
     ],
     "tui-surface": [

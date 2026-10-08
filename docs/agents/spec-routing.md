@@ -30,7 +30,7 @@
 
 - **mandatory**: Final QA verifies Project Constraint applicability, operative source paths, tooling authorization, and actual changed-file scope from Git evidence; missing authorization, untraceable scope, or out-of-scope tooling changes fails the gate.
 
-- **mandatory**: Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file.
+- **mandatory**: Keep completed or archived legacy Specs byte-identical.
 
 - **mandatory**: Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained during authoring, record the row as blocked with that reason and continue: decomposition never stalls and never asks a person. The QA gate then holds Pull Request preparation until the row is satisfied or carried forward on declared unmoved evidence. An outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`, is the exception: the report records that the source was not reached, the row never decides a qualifying `partial`, and whoever needs that proof declares it under Unreachable Acceptance.
 
