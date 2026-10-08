@@ -4,8 +4,8 @@
 
 This setup-owned guide defines the portable baseline. Repository authors own
 project-specific extensions outside setup markers and may add stricter rules.
-The selected repository Verification is `rtk make verify`.
-The selected incremental Verification is `rtk make verify-incremental`.
+The selected repository Verification is `make verify`.
+The selected incremental Verification is `make verify-changed`.
 The branch-prefix pattern is `<type>/`; `<type>` is replaced by the
 work's purpose, never used literally. Use `<type>/` as the portable decision
 value. Legacy personal-prefix values must be revised through Baseline and do

@@ -2,9 +2,12 @@
 
 # Autonomous work
 
-Default backend work uses `codex gpt-5.6-sol`. Design, UI, UX, and
-frontend-dominant work uses `claude opus 5 xhigh` when the Task Graph routes that
-surface.
+Agent Selection Profiles in Project Config choose each Agent Session's ACP
+Runtime, model, and reasoning effort (`roundfix profiles show`). The
+repository prefers `codex gpt-6.1-sol high` for backend work and `claude opus high`
+for design, UI, UX, and frontend-dominant work. A `complexity: low` Task that
+is not `qa` and changes no Governed Path runs on the Light Tier when it is
+available.
 
 - **mandatory**: The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. Delegate implementation to the selected ACP Runtime through a Roundfix Run.
 

@@ -5,10 +5,10 @@ disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Setup Context-Driven
@@ -107,7 +107,7 @@ Repositories select their fast local command through
 `verification.incremental`, separately from the complete
 `verification.gate`. A single-gate Setup Manifest exits `3`, names the missing
 incremental decision, and writes nothing. After the repository declares the
-suggested `rtk make verify-incremental` command locally, rerun update with
+suggested `make verify-incremental` command locally, rerun update with
 `--adopt-suggested`; later updates use the recorded decision without that flag.
 
 ## Human adoption or profile change
@@ -128,8 +128,8 @@ Digest are visible.
 Decision and preservation prompts mark one visible default; Enter confirms it.
 A valid stored Setup Manifest value wins even when a changed Profile Digest
 requires adoption again. Otherwise the CLI uses its embedded catalog
-suggestions, including `codex gpt-5.6-sol` for backend work and
-`claude opus 5 xhigh` for design work. Existing root instructions default to
+suggestions, including `codex gpt-6.1-sol high` for backend work and
+`claude opus high` for design work. Existing root instructions default to
 Preservation, an empty instruction inventory defaults to Greenfield, and a
 recoverable existing profile is preferred. Classification, Plan approval, and
 apply still require an explicit non-empty choice.

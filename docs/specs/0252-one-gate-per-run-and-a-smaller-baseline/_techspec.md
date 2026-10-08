@@ -339,12 +339,11 @@ The selected fast local check recorded by the `verification.incremental` Baselin
 
 Its `_Avoid_` line is unchanged.
 
-task_02, `.agents/skills/setup-context-driven/SKILL.md`: "suggested
-`rtk make verify-incremental` command locally" becomes "suggested
-`make verify-incremental` command locally", and "including `codex gpt-5.6-sol`
-for backend work and `claude opus 5 xhigh` for design work" becomes "including
-`codex gpt-6.1-sol high` for backend work and `claude opus high` for design
-work".
+task_02 changes two sentences in `.agents/skills/setup-context-driven/SKILL.md`.
+The suggested incremental command changes from `rtk make verify-incremental`
+to `make verify-incremental`. The backend and design suggestions change from
+`codex gpt-5.6-sol` and `claude opus 5 xhigh` to `codex gpt-6.1-sol high`
+and `claude opus high`, respectively.
 
 task_02, `docs/user-guide/context-driven-development.md`: the suggestion table
 rows become `make verify`, `make verify-incremental`,

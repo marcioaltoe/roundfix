@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:cc93e8ecb9ebecf6ab8a16508aee74636ad4c8c8d0a32b62cac328c4e3b34641",
+  "catalogDigest": "sha256:c16f36eac32136b909da9baaa8d50bd24b2f8163a545413adf5090827c9c23af",
   "modules": [
     "core",
     "context-workflow",
@@ -37,10 +37,10 @@
       "value": true
     },
     "runtime.backend": {
-      "value": "codex gpt-5.6-sol"
+      "value": "codex gpt-6.1-sol high"
     },
     "runtime.design": {
-      "value": "claude opus 5 xhigh"
+      "value": "claude opus high"
     },
     "secondbrain.enabled": {
       "value": true
@@ -52,10 +52,10 @@
       "value": false
     },
     "verification.gate": {
-      "value": "rtk make verify"
+      "value": "make verify"
     },
     "verification.incremental": {
-      "value": "rtk make verify-incremental"
+      "value": "make verify-changed"
     }
   },
   "managedArtifacts": [
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "2531c8f905627a36e56f3e98d7cc71a8f3eca5ebb16a304eff60de66e8cb0e9a"
+      "digest": "3371766a9ab6504db59b69ae82133ac9d3c5c1548ecda5636353ecd454f5ff6f"
     },
     {
       "id": "root.cli-surface",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "d3021fadc86c03e1f2c76072424efd8f368bc02296641c5188fc2b2dae5bbb53"
+      "digest": "5d2be9bd972afee54f1b88d0602bf8785d234f0ea930bf46d55cc8a93830830a"
     },
     {
       "id": "root.secondbrain",
@@ -254,7 +254,7 @@
     {
       "id": "verification.gate",
       "role": "repository-gate",
-      "command": "rtk make verify",
+      "command": "make verify",
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
@@ -263,7 +263,7 @@
     {
       "id": "verification.incremental",
       "role": "incremental",
-      "command": "rtk make verify-incremental",
+      "command": "make verify-changed",
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",

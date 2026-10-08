@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "autonomous-work",
-  "version": 12,
+  "version": 13,
   "kind": "workflow",
   "title": "Autonomous Supervisor and ACP Runtime model",
   "dependsOn": [
@@ -44,7 +44,7 @@
   "supportingGuides": [
     {
       "id": "guide.autonomous-work",
-      "version": 12,
+      "version": 13,
       "path": "docs/agents/autonomous-work.md",
       "template": "template.guide.autonomous-work",
       "rules": [

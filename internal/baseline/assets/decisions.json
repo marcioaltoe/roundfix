@@ -114,9 +114,9 @@
     },
     {
       "id": "verification.gate",
-      "version": 1,
+      "version": 2,
       "type": "string",
-      "default": "rtk make verify",
+      "default": "make verify",
       "summary": "The repository verification command named by generated guidance.",
       "effects": [
         {
@@ -133,9 +133,9 @@
     },
     {
       "id": "verification.incremental",
-      "version": 1,
+      "version": 2,
       "type": "string",
-      "suggestion": "rtk make verify-incremental",
+      "suggestion": "make verify-incremental",
       "summary": "The repository incremental verification command named by generated guidance.",
       "effects": [
         {
@@ -256,10 +256,10 @@
     },
     {
       "id": "runtime.backend",
-      "version": 1,
+      "version": 2,
       "type": "string",
-      "default": "codex gpt-5.6-sol",
-      "summary": "The default implementation ACP Runtime and model for backend Tasks.",
+      "default": "codex gpt-6.1-sol high",
+      "summary": "The backend ACP Runtime, model, and reasoning effort the repository prefers, named by generated guidance.",
       "effects": [
         {
           "when": {"present": true},
@@ -275,10 +275,10 @@
     },
     {
       "id": "runtime.design",
-      "version": 1,
+      "version": 2,
       "type": "string",
-      "default": "claude opus 5 xhigh",
-      "summary": "The design, UI, UX, or frontend ACP Runtime and model.",
+      "default": "claude opus high",
+      "summary": "The design, UI, UX, or frontend ACP Runtime, model, and reasoning effort the repository prefers, named by generated guidance.",
       "effects": [
         {
           "when": {"present": true},

@@ -385,6 +385,10 @@
       {
         "version": "0.0.3",
         "digest": "64d01187ae21fd55a7031dfcf0b2ea0064cb0c1216d3ab2fd8244d785207bae0"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "5221305da8faae1b6f1f7b2bb77a29a9f3674d017e27f3962c33a54c573786b4"
       }
     ],
     "write-idea": [

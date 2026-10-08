@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0252-one-gate-per-run-and-a-smaller-baseline
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -140,3 +140,165 @@ file.
 - [_prd.md](_prd.md) — Goals 2 and 3; User Stories 2 and 3; Core Features 2 and 3; Success Metrics 2 and 3
 - [_techspec.md](_techspec.md) — API Contract 2; API Contract 3; Data Models; Template texts; Skill and document texts; Version changes; Derived files; Testing Approach; Build Order 2
 - ADR-0257; ADR-0238; ADR-0250
+
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification. Task status remains
+Daemon-owned; no declared Verification command, selected repository or
+incremental Verification, full suite, commit, push, or PR was run.
+
+### Implementation
+
+- The gate default is `make verify`; the incremental suggestion is
+  `make verify-incremental`. Runtime defaults are `codex gpt-6.1-sol high`
+  and `claude opus high`, with the two authored preference summaries.
+  Each decision rose from version 1 to 2; IDs, types and effects are unchanged.
+  Both runtime decisions remain required by `autonomous-work`.
+- The autonomous-work template now contains the whole authored text, with
+  its original token list. Its template version rose from 1 to 2 and its
+  supporting-guide version from 12 to 13. The Module Version Record step
+  chose module version 13 and recorded it.
+- Updated only the two specified skill sentences and five specified user-guide
+  substitutions. The skill recorder raised both version fields from 0.0.3
+  to 0.0.4. The explicit decision-document example is byte-identical to HEAD.
+- Added the three authored decision/guide tests with literal expectations.
+  Updated only pinned suggestions, defaults and the two runtime prompt-summary
+  expectations in the three existing test files. RTK parser cases elsewhere
+  were not changed.
+
+### Regeneration and recorded decisions
+
+Commands below used `GOCACHE=/private/tmp/roundfix-task02-gocache` for Go
+builds and raw output through `rtk proxy`.
+
+1. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+   exited 0.
+2. `make skills-sync`,
+   `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+   then `make skills-sync` exited 0. The recorder required sandbox escalation
+   to write the protected canonical `.agents` skill.
+3. `make baseline-digests` exited 0 and regenerated the declared catalog,
+   profile, formatter and plan-characterization artifacts. An earlier attempt
+   stopped on skill-mirror drift before the synchronization above; no assertion
+   was weakened. Regeneration succeeded after synchronization.
+4. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+   exited 0 and verified the refresh. It changed
+   `docs/agents/autonomous-work.md` and `docs/agents/setup-context.json`.
+   Sandbox escalation was required for the Git-private transaction lock.
+5. Planned with `go run -buildvcs=false ./cmd/roundfix baseline plan --profile go-cli-tui --decision preservation.mode=preservation`,
+   one `--decision` for all twelve recorded decisions, and `--format json`.
+   Every value was preserved except the four authored changes. The plan was
+   saved outside the repository at `/private/tmp/roundfix-task02-plan.json`.
+   Reviewed digest:
+   `sha256:fce89c15830bf52dfc3a70c280c8983f97a2615aec71a494c3f339ecfc667725`.
+6. `go run -buildvcs=false ./cmd/roundfix baseline apply --plan /private/tmp/roundfix-task02-plan.json --confirm-plan sha256:fce89c15830bf52dfc3a70c280c8983f97a2615aec71a494c3f339ecfc667725`
+   exited 0, verified fourteen postimages and wrote exactly these three changed
+   files: `docs/agents/agent-instructions.md`,
+   `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`.
+   The other eleven postimages already matched and were not replaced.
+   No manifest or generated guide was hand-edited.
+
+### Focused checks and acceptance evidence
+
+- `go test ./internal/baseline -run '^TestThe(DecisionCatalog|RuntimeDecisions|AutonomousWorkGuide)' -count=1`
+  initially exited 1 with all three tests failing on the original commands,
+  runtimes and guide header.
+- After restoration and final regeneration,
+  `go test ./internal/baseline -run '^(TestTheDecisionCatalogProposesNoRtkCommand|TestTheRuntimeDecisionsPreferTheProjectConfigTuples|TestTheAutonomousWorkGuideDefersToAgentSelectionProfiles|TestIncrementalVerificationDecisionIsDeclaredWithoutADefault)$' -count=1 -v`
+  exited 0 and named all four passing tests.
+- `go test ./internal/cli -run '^(TestHumanBaselineDecisionDefaults|TestHumanBaselineFirstAdoptionPromptSequenceCharacterization|TestBaselineUpdateNamesTheMissingIncrementalDecision|TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion)$' -count=1`
+  exited 0.
+- Acceptance criterion 1: parsed the generated manifest and confirmed exactly
+  `make verify`, `make verify-changed`, `codex gpt-6.1-sol high`, and
+  `claude opus high`. Compared all eight other decision values with HEAD;
+  every value is unchanged.
+- Acceptance criterion 2: inspected the generated agent-instructions header;
+  it names `make verify` and `make verify-changed`.
+- Acceptance criterion 3: normalized and inspected the generated autonomous-work
+  header; it carries both authored profile-selection and Light Tier phrases.
+  The rendered golden test also passes.
+- Acceptance criterion 4: inspected catalog values, every repository guide,
+  both setup-context-driven skill copies, and the user guide; none contains
+  `rtk make`. The catalog test rejects any string default or suggestion
+  beginning with `rtk `. The skill copies are byte-identical.
+- Acceptance criterion 5: ran
+  `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --format text`
+  twice after restoration. Both exited 0, reported `current` and zero file
+  changes, and preserved every tracked file's bytes. Logs are
+  `/private/tmp/roundfix-task02-refresh-1.log` and
+  `/private/tmp/roundfix-task02-refresh-2.log`.
+- Final scope inspection found 26 changed paths, all declared by Task 02,
+  including the pre-existing Daemon status change in this Task file.
+  `git diff --check` exited 0. No other module, task file, Task Graph,
+  production Go file, Project Config, Makefile or CI workflow changed.
+
+### Sabotage evidence
+
+Each test below exited 1 and named the expected failed test. Each source was
+restored; `make baseline-digests` then regenerated the final artifacts and
+exited 0. All three new tests subsequently passed together.
+
+- Catalog: temporarily restored the gate default to `rtk make verify`.
+  `go test ./internal/baseline -run '^TestTheDecisionCatalogProposesNoRtkCommand$' -count=1`
+  failed on the local-filter prefix and wrong literal default. Evidence:
+  `/private/tmp/roundfix-task02-sabotage-catalog.log`.
+- Runtime: temporarily restored the backend default to `codex gpt-5.6-sol`.
+  `go test ./internal/baseline -run '^TestTheRuntimeDecisionsPreferTheProjectConfigTuples$' -count=1`
+  failed on the backend tuple. Evidence:
+  `/private/tmp/roundfix-task02-sabotage-runtime.log`.
+- Template: temporarily replaced `runs on the Light Tier` with
+  `runs on the Standard Tier` in the template and ran `make baseline-digests`
+  to render that regression.
+  `go test ./internal/baseline -run '^TestTheAutonomousWorkGuideDefersToAgentSelectionProfiles$' -count=1`
+  failed on the missing Light Tier phrase. Evidence:
+  `/private/tmp/roundfix-task02-sabotage-template.log`.
+
+Baseline retained its existing two nested-carrier warnings for the formatter
+fixture and Source Baseline corpus. No blocking implementation issue remains;
+terminal Verification and settlement belong to the Daemon.
+
+
+### Verification Feedback repair — attempt 1
+
+Inspected both Daemon diagnostic artifacts. The changed skill made the
+TechSpec's before/after description look like an unproven receipt of its
+current contents (`SC-RECEIPT-UNPROVEN`). The changed user guide also invalidated
+its generated Behavior Surface fingerprint. These caused the corpus and
+skill-coverage checks to fail in the Daemon's attempt.
+
+- Reworded only the Task 02 skill-change paragraph in `_techspec.md` as a
+  change description, preserving both old and new values. It no longer
+  presents the old sentence as a receipt of the current skill.
+- Regenerated `docs/references/behavior-surfaces.json` with Project Config's
+  declared command:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+  It exited 0 and changed only the context-driven-development guide's
+  fingerprint. No generated digest was hand-edited, and no corpus golden,
+  test assertion, production code or configuration changed.
+- Focused repair check:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors|TestTheSkillCoverageMapIsCurrent)$'`
+  exited 0. The corpus checks exercise the real active Spec through
+  `speccheck.Check`, including receipt consistency, and the coverage check
+  validates the regenerated record without its record flag.
+- These checks used `GOCACHE=/private/tmp/roundfix-task02-gocache` and raw
+  output through `rtk proxy`. `git diff --check` exited 0 after the repair.
+  The repair adds only the Task 02 paragraph correction in the bundled
+  TechSpec and the sanctioned derived Behavior Surface record to the prior
+  diff. Task status, the Task's authored requirements and Verification,
+  other task files, and the Task Graph remain unchanged.
+
+The full `make verify-changed` and settlement checks were not rerun by the
+Agent. Their next attempt and terminal verdict remain Daemon-owned.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/references/behavior-surfaces.json`
+- `docs/specs/0252-one-gate-per-run-and-a-smaller-baseline/_techspec.md`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T180729Z_1c5cbdf685b778d0`
+- Source commit: `7521a8403846ffc489d02fc8fc0c3e999b1f99fb`
