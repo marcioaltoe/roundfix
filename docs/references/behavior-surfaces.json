@@ -85,7 +85,7 @@
     "guide docs/user-guide/commands/setup.md": "sha256:73fcdeef8a20c910798f4cd33967a5548545f6dea538e2d48692a02b244530ac",
     "guide docs/user-guide/commands/skills.md": "sha256:eb0eda892558629856bb84b78b212ffa1f3dcd75a541d179ee4e3bea3f4154df",
     "guide docs/user-guide/commands/spec-audit.md": "sha256:bf0a7bac7acfca7c69fcabe0756db5452e9d2bb77026903535814422bb9dd80c",
-    "guide docs/user-guide/commands/spec.md": "sha256:08735fc51182606444356cb0aa5a9cc141d87dac99e52749b9e534c3f6c7727e",
+    "guide docs/user-guide/commands/spec.md": "sha256:278371dff6106945b945e23c2c954486d3630fdc114a425c29a74ec30bdc86d9",
     "guide docs/user-guide/commands/stop.md": "sha256:cdf8a45559631f338114a2ea570e7b9c60f38508ba9946f8760524d312e24ac1",
     "guide docs/user-guide/commands/storage-report.md": "sha256:6f05c4ec595c8a67582c88011ac7995629ad58665f2f2c90a6146557ca291433",
     "guide docs/user-guide/commands/supersede.md": "sha256:e582a51c031dd1f93eb7c9456ccb0cdb1cf83eade4496e7a1ceb5ad810333072",

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0251-skills-keep-up-with-the-behavior-they-describe
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -133,3 +133,111 @@ state the rule. The slice is verifiable on its own through fixture Specs.
 - `_prd.md` → Core Feature 5; Core Feature 6; User Story 2; Success Metric 5; Success Metric 6; Glossary
 - `_techspec.md` → API Contract 7; API Contract 8; Invariant 7; Surface Transcript 4; Build Order 4
 - ADR-0256; ADR-0222; ADR-0187
+
+## Result
+
+Implemented this Task's authoring-rule slice. Task status and authored Verification
+remain Daemon-owned; no terminal Task verdict is recorded here.
+
+### Implementation and acceptance evidence
+
+1. **Covered source declarations require a skills Task or a reviewed excuse.**
+   Added the error detectors in `internal/speccheck/skills_declaration.go`,
+   registered malformed declarations at the PRD stage and untasked surfaces at
+   the Tasks stage, and wired the full and authoring checks. Source matching
+   uses `skillcoverage.Map.SurfacesForPath`, including prefixes and globs.
+   Non-QA `interface:`, `creates:` and `deletes:` source declarations bind a
+   surface; only `interface:` or `creates:` skill/map declarations excuse it.
+   `TestSkillsTaskIsRequiredForAChangedSurface` exercises the finding, its
+   surface/Task/path/covering-file summary, the transcript's error prefix,
+   skill updates and uncovered sources. `TestAnUnchangedDeclarationExcusesASurface`
+   exercises the excuse's required map Task. Additional QA exclusion fixtures
+   prove that a QA Task cannot bind a source, update a skill or record a review.
+2. **Malformed declarations identify their PRD line.**
+   `TestAMalformedSkillsDeclarationIsReported` exercises another line shape,
+   an unknown surface and an empty reason at PRD line 7 through PRD, TechSpec,
+   Tasks and full checks. An absent optional section has no malformed finding.
+3. **The map horizon preserves historical Specs.**
+   `TestTheSkillsRuleStartsAtTheMapHorizon` exercises absent-map skips,
+   pre-map PRD skips, held uncommitted PRDs and absent-PRD skips.
+   `TestSkillsDeclarationUsesOldestMapAddition` proves deleting and re-adding
+   the map does not move its introduction horizon. Missing Task Graphs list
+   both codes as skipped with the graph path.
+4. **The corpus characterization gains only two zero counts.**
+   Added both codes to the corpus code list, golden and archive-layout pin,
+   with the same appended update sentence. A focused Python comparison against
+   `HEAD` confirmed every existing count is unchanged, the only added keys are
+   the two new codes at 0, and the pin agrees on every count and update text.
+   Focused current-corpus checks found no errors.
+5. **Authoring skills, guide, repository rule and glossary state the rule.**
+   Added the write-tasks heading, optional PRD template section, Roundfix spec
+   reference and command-guide code rows. Updated only the repository's skill
+   sync rule and added **Skills Declaration** to `CONTEXT.md`, citing ADR-0256.
+   Synchronized the skills and used the owned-skill recorder to choose the
+   next versions. Re-recorded the Behavior Surface Record after the guide
+   change; only the spec-guide fingerprint changed. Focused byte comparisons
+   confirmed matching edited mirrors, unchanged QA settlement sections and
+   unchanged repository rules outside the skill sync clause.
+
+### Focused checks and required generators
+
+- Initial focused check:
+  `rtk proxy go test ./internal/speccheck -run TestSkillsTaskIsRequiredForAChangedSurface -count=1`
+  exited 1 before implementation because the two new exported codes were absent.
+- `rtk proxy go test ./internal/speccheck -run 'Test(Skills|AnUnchanged|AMalformedSkills|TheSkills)' -count=1`
+  exited 0 after the detector implementation.
+- `rtk proxy go test ./internal/speccheck -count=1` exited 0 after all detector
+  and fixture edits, including the added QA and oldest-addition cases.
+- `rtk make skills-sync` exited 0.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0; the recorder chose the versions and updated both skill copies.
+- `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and regenerated the record. The first sandbox attempt was denied a
+  Go build-cache read; the authorized retry succeeded.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run 'TestCheckActiveCorpusHasNoErrors|TestCheckCorpusBudget' -count=1`
+  exited 0.
+- `rtk proxy go test ./skills -run 'TestAuthorialSkillSync|TestEmbeddedSkillsMatchCanonical|TestOwned' -count=1`
+  exited 0.
+- Focused Python artifact comparisons exited 0 for corpus/pin equality,
+  preserved counts, repository-rule preservation, edited skill mirrors,
+  QA settlement preservation, the ADR-backed glossary term and unchanged
+  authored Task content/status.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The declared `## Verification` command and repository-wide delivery gates were
+not run in this Agent turn. The Daemon owns Verification and settlement.
+No commit, push, Pull Request, Task Graph edit or other Task edit was made.
+
+### Verification Feedback repair — Attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261008T154220Z_960340e21200b0bc/verification/batch-004-attempt-1.log`.
+The configured gate reached the owned-skill regeneration contract, whose
+repository-copy helper omitted untracked source files. Its copied checker
+therefore referenced Task 04's new detector without containing its source.
+This was a fixture-copy defect at the pre-commit boundary, rather than a
+stale derived record or a detector failure.
+
+Repaired only the already-declared `skills/baseline_skill_contract_test.go`:
+`copyTrackedRepository` now copies tracked files and non-ignored new files
+using `git ls-files --cached --others --exclude-standard`. Added
+`TestRepositoryCopyIncludesNewSourceFiles` to prove new sources and modified
+tracked bytes reach the copy while ignored files and Git metadata stay out.
+The existing regeneration assertions remain intact.
+
+Focused repair evidence:
+
+- `rtk proxy go test ./skills -run '^TestRepositoryCopyIncludesNewSourceFiles$' -count=1`
+  exited 1 before the helper repair because the copied new source was absent,
+  then exited 0 after the repair.
+- `rtk proxy go test -tags repocontract ./skills -run '^TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical$' -count=1`
+  exited 0 after the repair, exercising the exact contract identified by the
+  Daemon feedback. The first sandbox invocation was denied a Go cache read;
+  the authorized retry succeeded.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Only the declared test file and this Result addendum changed during the
+repair turn. Task status, other Tasks and the Task Graph remain untouched.
+The Task's declared Verification command and `make verify-changed` were not
+rerun. Full configured Verification and settlement remain with the Daemon;
+no commit, push or Pull Request was made.

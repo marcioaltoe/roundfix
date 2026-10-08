@@ -135,8 +135,17 @@ or `GLOSSARY-MAP.md`. Definitions begin a line with `**Term**:`. Matching folds
 case and collapses whitespace; bold phrases also match a defined term followed
 by `s` or `es`.
 
+The skills rule reads `docs/references/skill-coverage.json`, the Skill Coverage
+Map. Both skills detectors skip repositories without that map and PRDs whose
+adding commit does not descend from the oldest commit that added the map.
+An uncommitted PRD is held. The Skills Declaration is optional; omit it when
+no surface is excused. Every excuse needs a non-QA Task declaring the map
+under `interface:` or `creates:` to record its Coverage Review.
+
 | Code | Reported when |
 | --- | --- |
+| `SC-SKILLS-MALFORMED` | A non-blank line in the PRD's optional `## Skills` section is not `- unchanged: <surface id> — <reason>`, names an unknown map surface, or has a blank reason. Runs from the PRD stage. |
+| `SC-SKILLS-UNTASKED` | A non-QA Task declares a covered Behavior Surface's source under `interface:`, `creates:` or `deletes:` without a non-QA skills Task declaring a covering file under `interface:` or `creates:`, or an unchanged entry plus a non-QA Task declaring the map to record the Coverage Review. Runs from the Tasks stage. |
 | `SC-GLOSSARY-UNDECLARED` | A required declaration is absent, a declaration line is malformed, or a bold candidate is neither defined nor declared. Runs from the PRD stage, reading only the PRD at `--stage prd` and both artifacts after it. |
 | `SC-GLOSSARY-UNPLANNED` | An added or changed term has no binding Task, or a changed term is not defined (declare it as added). Runs from the Tasks stage with a Task Graph. |
 | `SC-GLOSSARY-MISSING` | Every binding Task has completed but the glossary still lacks the declared term. Runs from the Tasks stage with a Task Graph. |

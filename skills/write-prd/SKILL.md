@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Write PRD

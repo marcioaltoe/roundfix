@@ -20,6 +20,10 @@ _Avoid_: Coverage map, authored snapshot, skill digest
 A dated explanation in a Skill Coverage Map entry of why a behavior change needs no skill text; it applies only to the release range in which the explanation changed ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
 _Avoid_: Permanent waiver, review approval, uncovered reason
 
+**Skills Declaration**:
+A Spec's optional declaration of the covered Behavior Surfaces whose changes need no skill text, each with a reason and a planned Coverage Review ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Skills inventory, permanent waiver, Coverage Review
+
 **Run**:
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job
