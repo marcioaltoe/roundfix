@@ -52,6 +52,7 @@ type parallelRunScenario struct {
 }
 
 func TestParallelRuns(t *testing.T) {
+	t.Parallel()
 	t.Run("six concurrent Runs append events at the pre-raise timeout", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()

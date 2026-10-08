@@ -76,6 +76,7 @@ func assertPriorImportedFilesAndSkips(t *testing.T, f *taskCycleFixture, wantFil
 }
 
 func TestPriorQAPassSkipsCompiledSourceEvidence(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	prior := recordPriorSourceEvidence(t, f, p, []string{"replay_test.go", "ledger.txt", "replay_test.go.txt"})
 	pass, imported, err := e.importPriorQAPass(context.Background(), p, 1)
@@ -105,6 +106,7 @@ func TestPriorQAPassSkipsCompiledSourceEvidence(t *testing.T) {
 }
 
 func TestPriorQAPassSkipsEveryCompiledExtension(t *testing.T) {
+	t.Parallel()
 	for _, extension := range []string{".go", ".rs", ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"} {
 		t.Run(extension, func(t *testing.T) {
 			f, p, e := priorFixture(t)
@@ -123,6 +125,7 @@ func TestPriorQAPassSkipsEveryCompiledExtension(t *testing.T) {
 }
 
 func TestPriorQAPassSkipNeverReportsPathDiffers(t *testing.T) {
+	t.Parallel()
 	for _, extension := range []string{".go", ".rs", ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"} {
 		t.Run(extension, func(t *testing.T) {
 			f, p, e := priorFixture(t)
@@ -147,6 +150,7 @@ func TestPriorQAPassSkipNeverReportsPathDiffers(t *testing.T) {
 }
 
 func TestPriorQAPassWithoutRecordedPassPreservesNullFiles(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	_, imported, err := e.importPriorQAPass(context.Background(), p, 1)
 	if err != nil || imported {

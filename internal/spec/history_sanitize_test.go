@@ -69,6 +69,7 @@ func legacyAssertWhole(t *testing.T, req LegacyConversionRequest, before map[str
 	}
 }
 func TestLegacyArchiveFoldersSkipRecords(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\n", "")
 	writeFile(t, filepath.Join(req.ArchiveRoot, "record.md"), "a record")
 	writeFile(t, filepath.Join(req.ArchiveRoot, "empty/notes.md"), "no PRD")
@@ -83,6 +84,7 @@ func TestLegacyArchiveFoldersSkipRecords(t *testing.T) {
 	}
 }
 func TestLegacyDeliveryNamesTheCommitThatRetiredTheSpec(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"removed from Spec Root", "added directly", "merge retirement", "newest retirement"} {
 		t.Run(kind, func(t *testing.T) {
 			root := t.TempDir()
@@ -127,6 +129,7 @@ func TestLegacyDeliveryNamesTheCommitThatRetiredTheSpec(t *testing.T) {
 	}
 }
 func TestLegacyDeliveryIgnoresARelocation(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	gittest.InitRepo(t, root, "-b", "main")
 	old := filepath.Join(root, "old/archive/demo/_prd.md")
@@ -148,6 +151,7 @@ func TestLegacyDeliveryIgnoresARelocation(t *testing.T) {
 	}
 }
 func TestLegacyConversionWritesARecordGitStillHolds(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\narchived: 2026-09-02\n", "---\nverdict: pass\nrows_total: 1\nrows_passed: 1\nrows_blocked: 0\n---\n\n# QA\n")
 	req.Delivery = LegacyDelivery{Commit: req.SourceRevision, PullRequest: "42", Date: "2026-09-03"}
 	req.Promote = []string{"docs/history/specs/demo/notes.md"}
@@ -192,6 +196,7 @@ func TestLegacyConversionWritesARecordGitStillHolds(t *testing.T) {
 	}
 }
 func TestLegacyConversionOfAFolderWithoutQAIsNoQA(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\n", "")
 	c := legacyPlan(t, req)
 	if c.Record.Disposition != ArchiveNoQA || c.Record.QAVerdict != "" || c.Record.QAReport != "" {
@@ -199,6 +204,7 @@ func TestLegacyConversionOfAFolderWithoutQAIsNoQA(t *testing.T) {
 	}
 }
 func TestLegacyConversionKeepsEveryOverrideField(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\nqa_override: true\nqa_override_approval: maintainer\nqa_override_reason: Missing QA accepted\nqa_override_qa_outcome: absent\nqa_override_qa_task_status: pending\nqa_override_revision: "+strings.Repeat("a", 40)+"\n", "")
 	c := legacyPlan(t, req)
 	want := &QAArchiveOverrideRecord{Approval: "maintainer", Reason: "Missing QA accepted", QAOutcome: "absent", QATaskStatus: "pending", Revision: strings.Repeat("a", 40)}
@@ -207,6 +213,7 @@ func TestLegacyConversionKeepsEveryOverrideField(t *testing.T) {
 	}
 }
 func TestLegacyConversionAcceptsAPreStampFolder(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: active\n", "")
 	req.Delivery = LegacyDelivery{Commit: req.SourceRevision, Date: "2026-09-02"}
 	c := legacyPlan(t, req)
@@ -215,6 +222,7 @@ func TestLegacyConversionAcceptsAPreStampFolder(t *testing.T) {
 	}
 }
 func TestLegacyConversionPromotionRefusals(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"outside", "absolute", "traversal", "directory", "missing", "symlink", "symlink parent", "core", "task", "report", "duplicate", "occupied", "destination symlink"} {
 		t.Run(kind, func(t *testing.T) {
 			req := legacyFixture(t, "status: archived\n", "")
@@ -272,6 +280,7 @@ func TestLegacyConversionPromotionRefusals(t *testing.T) {
 	}
 }
 func TestLegacyConversionLeavesTheFolderWholeOnFailure(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\n", "")
 	writeFile(t, filepath.Join(req.ArchiveRoot, req.Slug, "a.md"), "first copy")
 	req.Promote = []string{"docs/history/specs/demo/a.md", "docs/history/specs/demo/notes.md"}
@@ -291,6 +300,7 @@ func TestLegacyConversionLeavesTheFolderWholeOnFailure(t *testing.T) {
 	}
 }
 func TestNoQARecordRoundTrips(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\n", "")
 	c := legacyPlan(t, req)
 	rendered, err := RenderArchiveRecord(c.Record)
@@ -307,6 +317,7 @@ func TestNoQARecordRoundTrips(t *testing.T) {
 }
 
 func TestLegacyConversionRefusesMetadataThatDoesNotRoundTrip(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\nqa_override: true\nqa_override_approval: maintainer\n", "")
 	writeFile(t, filepath.Join(req.ArchiveRoot, req.Slug, SupersessionFilename), "---\nsuperseded_by: successor\ndate: 2026-09-02\nreason: Delivered elsewhere\n---\n\nDelivered elsewhere.\n")
 	// Both independent metadata branches exist, but the parser cannot retain
@@ -319,6 +330,7 @@ func TestLegacyConversionRefusesMetadataThatDoesNotRoundTrip(t *testing.T) {
 }
 
 func TestLegacyConversionPreservesTheRendererOutcomeBudget(t *testing.T) {
+	t.Parallel()
 	req := legacyFixture(t, "status: archived\n", "")
 	prd := filepath.Join(req.ArchiveRoot, req.Slug, "_prd.md")
 	writeFile(t, prd, "---\nspec: demo\nstatus: archived\n---\n\n# Demo\n\n"+strings.Repeat("Measured outcome. ", 300)+"\n")

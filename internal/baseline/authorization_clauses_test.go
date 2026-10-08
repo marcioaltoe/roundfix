@@ -9,6 +9,7 @@ import (
 )
 
 func TestAuthorizationClausesStateTodaysRefusals(t *testing.T) {
+	t.Parallel()
 	clauses := embeddedBaselineClauses(t)
 	for _, tt := range []struct{ id, guide, sentence string }{
 		{"clause.core.verification-two-tiers", "agent-instructions.md", "A Run satisfies this by construction, because its Run Worktree is created from a commit. No other command checks it: `roundfix spec check --run-verification` executes the commands of the working-tree Spec in a checkout of `HEAD`, and `roundfix settle` reads the Task file of the directory it settles, so whoever runs them on an uncommitted or modified Spec first reads the commands they will execute. No approval record makes an untrusted source executable; commit the artifacts or do not execute them."},
@@ -51,6 +52,7 @@ func TestAuthorizationClausesStateTodaysRefusals(t *testing.T) {
 }
 
 func TestAuthorizationClausesDropTheRemovedPhrases(t *testing.T) {
+	t.Parallel()
 	var modules, goldens int
 	for _, root := range []string{"assets/modules", "assets/formatter-fixtures", "../../docs/agents"} {
 		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {

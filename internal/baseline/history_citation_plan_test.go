@@ -19,6 +19,7 @@ const (
 )
 
 func TestBaselinePlanReportsRelocationCitations(t *testing.T) {
+	t.Parallel()
 	repository := newPlanRepository(t)
 	writeInspectionFile(t, repository, planCitationSource, "---\nstatus: superseded\n---\n\n# Retired decision\n")
 	writeInspectionFile(t, repository, planCitationPath, "See [the retired decision](../adr/0040-retired.md).\n")
@@ -44,6 +45,7 @@ func TestBaselinePlanReportsRelocationCitations(t *testing.T) {
 }
 
 func TestRelocationCitationsBindThePlanDigestOnly(t *testing.T) {
+	t.Parallel()
 	repository := newPlanRepository(t)
 	writeInspectionFile(t, repository, planCitationSource, "---\nstatus: superseded\n---\n")
 	writeInspectionFile(t, repository, planCitationPath, "docs/adr/0040-retired.md\n")
@@ -78,6 +80,7 @@ func TestRelocationCitationsBindThePlanDigestOnly(t *testing.T) {
 }
 
 func TestRelocationCitationsLeaveApplyUnchanged(t *testing.T) {
+	t.Parallel()
 	withCitationRepository := newPlanRepository(t)
 	writeInspectionFile(t, withCitationRepository, planCitationSource, "---\nstatus: superseded\n---\n")
 	writeInspectionFile(t, withCitationRepository, planCitationPath, "docs/adr/0040-retired.md\n")

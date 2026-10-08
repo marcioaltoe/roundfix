@@ -9,6 +9,7 @@ import (
 )
 
 func TestRecordEvidenceSnapshotsRefusesASymlinkedReport(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	outside := filepath.Join(t.TempDir(), "victim.txt")
 	if err := os.WriteFile(outside, []byte("untouched\n"), 0o644); err != nil {
@@ -33,6 +34,7 @@ func TestRecordEvidenceSnapshotsRefusesASymlinkedReport(t *testing.T) {
 }
 
 func TestRecordEvidenceSnapshotsRefusesAReportUnderASymlinkedDirectory(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	outsideDir := t.TempDir()
 	victim := filepath.Join(outsideDir, "qa-report-2026-10-01.md")

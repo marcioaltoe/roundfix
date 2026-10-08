@@ -18,6 +18,7 @@ import (
 )
 
 func TestReconcileSkillsLockPlansFromTheLockPresentAfterTheFetch(t *testing.T) {
+	// Sequential: installFetchTimeSkillsLockRewrite sets process-wide PATH.
 	repo, source, revision, dependencies := newSkillsReconcileFixture(t, map[string]string{
 		"skills/present/SKILL.md": "# present\n",
 	})
@@ -66,6 +67,7 @@ func TestReconcileSkillsLockPlansFromTheLockPresentAfterTheFetch(t *testing.T) {
 }
 
 func TestReconcileSkillsLockConfirmedApplyKeepsAFetchTimeRewrite(t *testing.T) {
+	// Sequential: installFetchTimeSkillsLockRewrite sets process-wide PATH.
 	repo, source, revision, dependencies := newSkillsReconcileFixture(t, map[string]string{
 		"skills/present/SKILL.md": "# present\n",
 	})
@@ -111,6 +113,7 @@ func TestReconcileSkillsLockConfirmedApplyKeepsAFetchTimeRewrite(t *testing.T) {
 }
 
 func TestSkillsRestorePlansFromTheLockPresentAfterTheFetch(t *testing.T) {
+	// Sequential: installFetchTimeSkillsLockRewrite sets process-wide PATH.
 	repo, source, dependencies := newSkillsRestoreFixture(t, map[string]map[string]string{
 		"agentic-cli-design": {"SKILL.md": "# restored\n"},
 	})
@@ -147,6 +150,7 @@ func TestSkillsRestorePlansFromTheLockPresentAfterTheFetch(t *testing.T) {
 }
 
 func TestSkillsRestoreConfirmedApplyKeepsAFetchTimeRewrite(t *testing.T) {
+	// Sequential: installFetchTimeSkillsLockRewrite sets process-wide PATH.
 	repo, source, dependencies := newSkillsRestoreFixture(t, map[string]map[string]string{
 		"agentic-cli-design": {"SKILL.md": "# restored\n"},
 	})
@@ -178,6 +182,7 @@ func TestSkillsRestoreConfirmedApplyKeepsAFetchTimeRewrite(t *testing.T) {
 }
 
 func TestReconcileTransactionDocumentRefusesAChangedLock(t *testing.T) {
+	t.Parallel()
 	repo, identity := newTransactionDocumentRepository(t, []byte("disk lock\n"))
 	document, err := buildSkillsReconcileTransactionDocument(
 		repo, identity, "digest", []byte("planned lock\n"), []byte("postimage\n"),
@@ -186,6 +191,7 @@ func TestReconcileTransactionDocumentRefusesAChangedLock(t *testing.T) {
 }
 
 func TestRestoreTransactionDocumentRefusesAChangedLock(t *testing.T) {
+	t.Parallel()
 	repo, identity := newTransactionDocumentRepository(t, []byte("disk lock\n"))
 	document, err := buildRestoreTransactionDocument(
 		repo,
@@ -200,6 +206,7 @@ func TestRestoreTransactionDocumentRefusesAChangedLock(t *testing.T) {
 }
 
 func TestReconcileTransactionDocumentAcceptsTheLockItPlanned(t *testing.T) {
+	t.Parallel()
 	planned := []byte("planned lock\n")
 	repo, identity := newTransactionDocumentRepository(t, planned)
 	document, err := buildSkillsReconcileTransactionDocument(
@@ -212,6 +219,7 @@ func TestReconcileTransactionDocumentAcceptsTheLockItPlanned(t *testing.T) {
 }
 
 func TestRestoreTransactionDocumentAcceptsTheLockItPlanned(t *testing.T) {
+	t.Parallel()
 	planned := []byte("planned lock\n")
 	repo, identity := newTransactionDocumentRepository(t, planned)
 	document, err := buildRestoreTransactionDocument(

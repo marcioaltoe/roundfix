@@ -18,6 +18,7 @@ var loopClauses = []struct{ id, guidance, module, rule, guide string }{
 const hermeticGoGuidance = "Keep tests hermetic: set or clear with `t.Setenv` every environment variable the code under test reads, and never read the host's credentials, home directory, or tool state. Create a Unix socket under a short directory from `os.MkdirTemp(\"\", ...)` rather than a deep `t.TempDir()`, because macOS refuses a socket path longer than 104 bytes, and never let a Verification depend on a test that can skip on the host."
 
 func TestTheLoopClausesCarryTheirText(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	for _, want := range loopClauses {
 		t.Run(want.id, func(t *testing.T) {
@@ -58,6 +59,7 @@ func TestTheLoopClausesCarryTheirText(t *testing.T) {
 }
 
 func TestTheLoopClausesRenderInTheGuides(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	for _, want := range loopClauses {
 		t.Run(want.id, func(t *testing.T) {
@@ -83,6 +85,7 @@ func TestTheLoopClausesRenderInTheGuides(t *testing.T) {
 }
 
 func TestAnAdopterRetainsTheLoopClauses(t *testing.T) {
+	t.Parallel()
 	request, catalog := newClauseReplacementAdopter(t)
 	// The shared adopter disables autonomous work. Enable it and apply its
 	// guide before aging the manifest, so the refresh accounts for loop clauses.
@@ -153,6 +156,7 @@ func TestAnAdopterRetainsTheLoopClauses(t *testing.T) {
 }
 
 func TestTheHermeticGoClauseRendersInTheGoGuide(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	asset, ok := catalog.Module("go")
 	if !ok {

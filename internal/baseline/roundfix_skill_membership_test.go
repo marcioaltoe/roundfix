@@ -28,6 +28,7 @@ func setupsWithoutRoundfix(catalog *Catalog) []string {
 }
 
 func TestEverySetupListsTheRoundfixSkill(t *testing.T) {
+	t.Parallel()
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatal(err)
@@ -38,6 +39,7 @@ func TestEverySetupListsTheRoundfixSkill(t *testing.T) {
 }
 
 func TestASetupWithoutTheRoundfixSkillIsReported(t *testing.T) {
+	t.Parallel()
 	catalog := &Catalog{setups: map[string]document{
 		"missing-roundfix": {"skills": []any{map[string]any{"name": "qa-gate"}}},
 		"has-roundfix":     {"skills": []any{map[string]any{"name": "roundfix"}}},
@@ -48,6 +50,7 @@ func TestASetupWithoutTheRoundfixSkillIsReported(t *testing.T) {
 }
 
 func TestEveryProfileDispatchesTheRoundfixSkill(t *testing.T) {
+	t.Parallel()
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatal(err)

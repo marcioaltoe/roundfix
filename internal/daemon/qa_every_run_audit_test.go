@@ -142,6 +142,7 @@ func resultHasAuthorizationFinding(result speccheck.MechanicalResult, commit str
 }
 
 func TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	fixture.commitTask("task_01", "feat: first work commit", filepath.Join("internal", "ordinary.go"), "package internal\n\nconst first = true\n")
 	fixture.commitTask("task_02", "chore: second work commit", "Makefile", "verify:\n\t@true\nsecond:\n\t@true\n")
@@ -156,6 +157,7 @@ func TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch(t *testing.T) {
 }
 
 func TestQADeliveryBasePrefersTheRemoteTrackingBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	runGitForTest(t, fixture.repoRoot, "switch", "-q", "main")
 	mustWriteForTest(t, filepath.Join(fixture.repoRoot, "default.txt"), "remote default\n")
@@ -178,6 +180,7 @@ func TestQADeliveryBasePrefersTheRemoteTrackingBranch(t *testing.T) {
 }
 
 func TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, false)
 
 	base, resolved, err := qaDeliveryBase(context.Background(), fixture.plan)
@@ -190,6 +193,7 @@ func TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch(t *testing.T) {
 }
 
 func TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	earlierCommit := fixture.commitTask("task_01", "chore: earlier ungranted tooling", ".golangci.yml", "linters: {}\n")
 	fixture.commitTask("task_02", "chore: current authorized tooling", "Makefile", "verify:\n\t@true\ncurrent:\n\t@true\n")
@@ -201,6 +205,7 @@ func TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun(t *testing.T) {
 }
 
 func TestQAMechanicalRequestAuditsEveryCommitOfATask(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	olderCommit := fixture.commitTask("task_01", "chore: older ungranted tooling", ".golangci.yml", "linters: {}\n")
 	newerCommit := fixture.commitTask("task_01", "chore: newer authorized tooling", "Makefile", "verify:\n\t@true\nnewer:\n\t@true\n")
@@ -212,6 +217,7 @@ func TestQAMechanicalRequestAuditsEveryCommitOfATask(t *testing.T) {
 }
 
 func TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	runGitForTest(t, fixture.repoRoot, "switch", "-q", "main")
 	defaultCommit := fixture.commitTask("task_01", "chore: default branch tooling", ".golangci.yml", "linters: {}\n")
@@ -230,6 +236,7 @@ func TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited(t *testing.T) {
 }
 
 func TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	fixture.commitGrant("chore: widen grant on work branch", "Makefile", ".golangci.yml")
 	taskCommit := fixture.commitTask("task_02", "chore: use work-branch grant", ".golangci.yml", "linters: {}\n")
@@ -241,6 +248,7 @@ func TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch(t *testing.T) {
 }
 
 func TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, true)
 	fixture.commitTask("task_01", "feat: work before default merge", filepath.Join("internal", "ordinary.go"), "package internal\n\nconst beforeMerge = true\n")
 	runGitForTest(t, fixture.repoRoot, "switch", "-q", "main")
@@ -257,6 +265,7 @@ func TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch(t *testing.T) 
 }
 
 func TestQAMechanicalRequestFallsBackToTheRunStartHeadWithASkip(t *testing.T) {
+	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, false)
 	runStart := fixture.commitTask("task_01", "chore: earlier ungranted tooling", ".golangci.yml", "linters: {}\n")
 	currentCommit := fixture.commitTask("task_02", "chore: current authorized tooling", "Makefile", "verify:\n\t@true\ncurrent:\n\t@true\n")

@@ -33,6 +33,7 @@ func pathPinRepository(t *testing.T, specRoot string, status string, contextPath
 }
 
 func TestActiveSpecPathPinIsAnError(t *testing.T) {
+	t.Parallel()
 	for _, status := range []string{"pending", "in_progress", "completed"} {
 		t.Run(status, func(t *testing.T) {
 			root := pathPinRepository(t, "docs/specs", status, "")
@@ -54,6 +55,7 @@ func TestActiveSpecPathPinIsAnError(t *testing.T) {
 }
 
 func TestActiveSpecPathPinSkipsMarkdownSpecRootsAndIgnoredFiles(t *testing.T) {
+	t.Parallel()
 	root := pathPinRepository(t, "docs/specs", "pending", "")
 	pin := "docs/specs/" + pathPinSlug + "/_techspec.md\n"
 	for _, path := range []string{"notes.md", "notes.MD", "docs/specs/other/fixture.go", "docs/history/specs/other/fixture.go", "docs/history/fixture.go", "ignored.go"} {
@@ -74,6 +76,7 @@ func TestActiveSpecPathPinSkipsMarkdownSpecRootsAndIgnoredFiles(t *testing.T) {
 }
 
 func TestActiveSpecPathPinsOutsideWorkTree(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	pin := "planning/" + pathPinSlug + "/file\n"
 	for _, path := range []string{"notes.md", "planning/_archived/other/fixture.go", "docs/history/fixture.go", ".git/fixture.go"} {
@@ -91,6 +94,7 @@ func TestActiveSpecPathPinsOutsideWorkTree(t *testing.T) {
 }
 
 func TestTaskContextResolvesThroughTheArchive(t *testing.T) {
+	t.Parallel()
 	for _, specRoot := range []string{"docs/specs", "planning"} {
 		t.Run(specRoot, func(t *testing.T) {
 			ref := specRoot + "/0002-other/_techspec.md"
@@ -121,6 +125,7 @@ func TestTaskContextResolvesThroughTheArchive(t *testing.T) {
 }
 
 func TestTaskContextMissingInBothPlacesIsUnresolved(t *testing.T) {
+	t.Parallel()
 	root := pathPinRepository(t, "docs/specs", "pending", "docs/specs/0002-other/missing.md")
 	writeCitationFixtureFile(t, root, "docs/history/specs/0002-other/unrelated.md", "# Unrelated\n")
 	result, err := speccheck.Check(filepath.Join(root, "docs/specs"), root, pathPinSlug)

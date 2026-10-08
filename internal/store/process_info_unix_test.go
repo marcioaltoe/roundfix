@@ -9,6 +9,7 @@ import (
 )
 
 func TestParsePSOwnedProcess(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		output      string

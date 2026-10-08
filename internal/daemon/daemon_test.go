@@ -321,6 +321,7 @@ func TestGitCommitterExcludesProjectConfigFromBatchCommit(t *testing.T) {
 }
 
 func TestGitCommitterStagesSelectedTrackedPathMatchedByGlobalIgnore(t *testing.T) {
+	// Sequential: sets XDG_CONFIG_HOME for Git global ignore configuration.
 	repoDir := t.TempDir()
 	globalConfigDir := t.TempDir()
 	globalIgnore := filepath.Join(globalConfigDir, "git", "ignore")
@@ -565,6 +566,7 @@ func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
 }
 
 func TestRunGitForTestIgnoresForcedSigningConfig(t *testing.T) {
+	// Sequential: sets GIT_CONFIG_COUNT and GIT_CONFIG_KEY/VALUE variables for signing configuration.
 	t.Setenv("GIT_CONFIG_COUNT", "2")
 	t.Setenv("GIT_CONFIG_KEY_0", "commit.gpgsign")
 	t.Setenv("GIT_CONFIG_VALUE_0", "true")

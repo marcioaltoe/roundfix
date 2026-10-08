@@ -244,14 +244,17 @@ func (f settlementVerifierFunc) Verify(ctx context.Context, req VerifyRequest) (
 }
 
 func TestSettlementChecksSkipAnUnobservedCommand(t *testing.T) {
+	t.Parallel()
 	testSettlementChecksSkip(t, &VerificationUnknownError{Command: "check", Err: errors.New("unobserved")})
 }
 
 func TestSettlementChecksSkipAnInfrastructureError(t *testing.T) {
+	t.Parallel()
 	testSettlementChecksSkip(t, errors.New("cannot start verifier"))
 }
 
 func TestSettlementChecksSkipAStopRequest(t *testing.T) {
+	t.Parallel()
 	testSettlementChecksSkip(t, ErrStopRequested)
 }
 

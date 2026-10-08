@@ -11,6 +11,7 @@ import (
 )
 
 func TestTrailingSetupSkillsComparesTheInstalledTreeWithTheSnapshot(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	if _, err := skills.Install(t.Context(), skills.InstallRequest{Target: "project", ProjectDir: root}); err != nil {
 		t.Fatal(err)

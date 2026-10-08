@@ -4570,6 +4570,7 @@ func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T
 }
 
 func TestRepeatedFailure(t *testing.T) {
+	t.Parallel()
 	const (
 		command    = "verify-task_01"
 		diagnostic = "2026-08-16T12:34:56Z assertion failed: got 1, want 2\n"
@@ -5429,14 +5430,17 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 }
 
 func TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses(t *testing.T) {
+	// Sequential: testPreWorkProbePublishesEveryOffendingCommand already calls t.Parallel on this test.
 	testPreWorkProbePublishesEveryOffendingCommand(t)
 }
 
 func TestPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
+	// Sequential: testPreWorkProbePublishesEveryOffendingCommand already calls t.Parallel on this test.
 	testPreWorkProbePublishesEveryOffendingCommand(t)
 }
 
 func TestVacuousPreWorkEvent(t *testing.T) {
+	t.Parallel()
 	t.Run("summary names offending commands", func(t *testing.T) {
 		fixture := captureVacuousPreWorkEvent(t)
 		for _, command := range fixture.offenders {
@@ -5670,10 +5674,12 @@ func TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask(t *testing.T) {
 }
 
 func TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath(t *testing.T) {
+	// Sequential: testPreWorkProbePublishesNothingForAClearedTask already calls t.Parallel on this test.
 	testPreWorkProbePublishesNothingForAClearedTask(t)
 }
 
 func TestPreWorkProbePublishesNothingForAClearedTask(t *testing.T) {
+	// Sequential: testPreWorkProbePublishesNothingForAClearedTask already calls t.Parallel on this test.
 	testPreWorkProbePublishesNothingForAClearedTask(t)
 }
 
@@ -5720,10 +5726,12 @@ func testPreWorkProbePublishesNothingForAClearedTask(t *testing.T) {
 }
 
 func TestPreWorkProbeRecordsUnobservableVerdictAsUnknown(t *testing.T) {
+	// Sequential: testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath already calls t.Parallel on this test.
 	testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t)
 }
 
 func TestPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T) {
+	// Sequential: testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath already calls t.Parallel on this test.
 	testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t)
 }
 
@@ -5788,10 +5796,12 @@ func testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T
 }
 
 func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testing.T) {
+	// Sequential: testUnnamedTaskStaysBlockedByRedPrecondition already calls t.Parallel on this test.
 	testUnnamedTaskStaysBlockedByRedPrecondition(t)
 }
 
 func TestUnnamedTaskStaysBlockedByRedPrecondition(t *testing.T) {
+	// Sequential: testUnnamedTaskStaysBlockedByRedPrecondition already calls t.Parallel on this test.
 	testUnnamedTaskStaysBlockedByRedPrecondition(t)
 }
 
@@ -7631,6 +7641,7 @@ func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
 }
 
 func TestTaskCycleRefusesToStartWorkPastItsBudget(t *testing.T) {
+	t.Parallel()
 	// The deadline is already spent when the cycle begins, so no wall-clock
 	// margin decides the outcome: the first checkpoint ends the Run.
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}, {id: "task_02"}})
@@ -7662,6 +7673,7 @@ func TestTaskCycleRefusesToStartWorkPastItsBudget(t *testing.T) {
 }
 
 func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name      string
 		cancelErr error
@@ -7707,6 +7719,7 @@ func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
 }
 
 func TestBudgetExceededRunRecordsItsReason(t *testing.T) {
+	// Sequential: shares process-wide wall-clock scheduling with Git work inside a fixed 500 ms Run budget.
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02", needs: []string{"task_01"}},
@@ -7809,6 +7822,7 @@ func TestTaskCycleFinishesBeforeBudgetDeadline(t *testing.T) {
 // Owning layer: daemon Task-cycle integration.
 // Existing canonical suite: TestTaskCycleEndsRunAtBudgetDeadline.
 func TestTaskCycleSettlesBudgetOutcomeWithoutError(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 	startedAt := time.Now()
@@ -8103,6 +8117,7 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 }
 
 func TestTaskCycleLostOutputRefusesCompletion(t *testing.T) {
+	t.Parallel()
 	t.Run("lost output fails with path and reason", func(t *testing.T) {
 		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 		const executablePath = "bin/generated-helper"
@@ -8710,6 +8725,7 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 }
 
 func TestTaskCycleSettlesAQualifyingPartial(t *testing.T) {
+	// Sequential: sets PATH for the task-cycle verifier.
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	runner := &taskFakeRunner{
 		calls:    fixture.calls,

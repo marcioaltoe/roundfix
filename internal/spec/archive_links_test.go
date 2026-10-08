@@ -19,6 +19,7 @@ func archiveLinksFixture(t *testing.T, builtIn bool, body string) (ArchiveReques
 }
 
 func TestArchiveRewritesRelativeLinksThatLeaveTheSpec(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, true, "\n[ADR](../../adr/decision.md#choice)\n![image](<../../adr/a%20b.png?raw=1#view> \"title\")\n[ref]: ../../adr/decision.md 'title'\n")
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "decision.md"), "decision")
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "a b.png"), "image")
@@ -42,6 +43,7 @@ func TestArchiveRewritesRelativeLinksThatLeaveTheSpec(t *testing.T) {
 }
 
 func TestArchiveKeepsLinksInsideTheSpecAndNonRelativeLinks(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, true, "")
 	body := "[inside](missing.md) [fragment](#a) [url](https://example.com/a) [absolute](/missing)\n`[code](../../missing)`\n```md\n[x](../../missing)\n```\n~~~\n[x](../../missing)\n~~~\n<a href=\"../../missing\">HTML</a>\n"
 	writeFile(t, filepath.Join(dir, "notes.md"), body)
@@ -65,6 +67,7 @@ func TestArchiveKeepsLinksInsideTheSpecAndNonRelativeLinks(t *testing.T) {
 }
 
 func TestArchiveRefusesALinkThatWouldStayBroken(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, true, "\n[broken](../../adr/missing.md)\n")
 	writeFile(t, filepath.Join(dir, "nested", "notes.md"), "[other](../../../findings/missing.md)\n")
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "decision.md"), "target")
@@ -89,6 +92,7 @@ func TestArchiveRefusesALinkThatWouldStayBroken(t *testing.T) {
 }
 
 func TestArchiveRewritesLinksUnderAConfiguredSpecRoot(t *testing.T) {
+	t.Parallel()
 	req, _ := archiveLinksFixture(t, false, "\n[target](../target.md)\n")
 	writeFile(t, filepath.Join(req.SpecsRoot, "target.md"), "target")
 	result, err := legacyLinkArchive(t, req)
@@ -101,6 +105,7 @@ func TestArchiveRewritesLinksUnderAConfiguredSpecRoot(t *testing.T) {
 }
 
 func TestArchiveRewritesLinksInASupersededSpec(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, true, "\n[target](../../adr/decision.md)\n")
 	if err := os.Remove(filepath.Join(dir, "_tasks.md")); err != nil {
 		t.Fatal(err)
@@ -119,6 +124,7 @@ func TestArchiveRewritesLinksInASupersededSpec(t *testing.T) {
 }
 
 func TestArchiveKeepsALinkWhoseTargetWasAlreadyArchived(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, true, "")
 	body := "[archived](../../adr/decision.md)\n"
 	writeFile(t, filepath.Join(dir, "notes.md"), body)
@@ -133,6 +139,7 @@ func TestArchiveKeepsALinkWhoseTargetWasAlreadyArchived(t *testing.T) {
 }
 
 func TestArchiveLinksMatch(t *testing.T) {
+	t.Parallel()
 	activeDir := "/repo/docs/specs/demo"
 	archivedDir := "/repo/docs/history/specs/demo"
 	active := []byte("[ADR](../../adr/a.md?raw=1#choice)\n")
@@ -161,6 +168,7 @@ func TestArchiveLinksMatch(t *testing.T) {
 }
 
 func TestArchiveRestoresRewrittenBytesWhenRenameFails(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, false, "\n[target](../target.md)\n")
 	writeFile(t, filepath.Join(req.SpecsRoot, "target.md"), "target")
 	notes := "[target](../target.md)\n"
@@ -211,6 +219,7 @@ func archiveLinksTree(t *testing.T, dir string) map[string]string {
 }
 
 func TestArchiveLinksMarkdownForms(t *testing.T) {
+	t.Parallel()
 	req, dir := archiveLinksFixture(t, true, "")
 	target := filepath.Join(req.SpecsRoot, "..", "adr", "a(b).md")
 	writeFile(t, target, "target")

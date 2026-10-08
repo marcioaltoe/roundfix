@@ -50,6 +50,7 @@ func usageReport(t *testing.T, s *Store, id string) TokenUsageReport {
 }
 
 func TestMigrationAddsTokenUsageTablesToThePreviousSchema(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	home := t.TempDir()
 	s := openTestStore(t, ctx, home)
@@ -101,6 +102,7 @@ func TestMigrationAddsTokenUsageTablesToThePreviousSchema(t *testing.T) {
 }
 
 func TestAppendTokenUsageWritesTheRowAndItsRunEvent(t *testing.T) {
+	t.Parallel()
 	s, run := usageStore(t)
 	ctx := context.Background()
 	r := usageRecord(run.ID, "task_01", "session", usageInt(12))
@@ -163,6 +165,7 @@ func TestAppendTokenUsageWritesTheRowAndItsRunEvent(t *testing.T) {
 }
 
 func TestRunTokenUsageSumsScopesAndTheRun(t *testing.T) {
+	t.Parallel()
 	s, run := usageStore(t)
 	r := usageRecord(run.ID, "second", "s1", usageInt(10))
 	r.InputTokens = usageInt(7)
@@ -190,6 +193,7 @@ func TestRunTokenUsageSumsScopesAndTheRun(t *testing.T) {
 }
 
 func TestRunTokenUsageKeepsUnreportedPromptsOutOfTheTotal(t *testing.T) {
+	t.Parallel()
 	s, run := usageStore(t)
 	if r := usageReport(t, s, run.ID); r.Total.Tokens != nil || r.Total.Prompts != 0 {
 		t.Fatalf("empty=%+v", r)
@@ -209,6 +213,7 @@ func TestRunTokenUsageKeepsUnreportedPromptsOutOfTheTotal(t *testing.T) {
 }
 
 func TestSessionSpendSumsIncreasesAndRestartsOnADrop(t *testing.T) {
+	t.Parallel()
 	s, run := usageStore(t)
 	for _, entry := range []struct {
 		session, currency string
@@ -229,6 +234,7 @@ func TestSessionSpendSumsIncreasesAndRestartsOnADrop(t *testing.T) {
 }
 
 func TestDeliveryQueueRunsLinkEveryRecordedRunID(t *testing.T) {
+	t.Parallel()
 	s, _ := usageStore(t)
 	ctx := context.Background()
 	q, err := s.CreateDeliveryQueue(ctx, "/repo", []string{"spec"})
@@ -267,6 +273,7 @@ func TestDeliveryQueueRunsLinkEveryRecordedRunID(t *testing.T) {
 }
 
 func TestDeliveryQueueTokenUsageSumsLinkedRuns(t *testing.T) {
+	t.Parallel()
 	s, first := usageStore(t)
 	ctx := context.Background()
 	secondRequest := sampleImplementCreateRunRequest()
@@ -325,6 +332,7 @@ func linkUsageTestRun(ctx context.Context, s *Store, root, run string) error {
 }
 
 func TestDeliveryQueueLimitsRoundTripMaxTokens(t *testing.T) {
+	t.Parallel()
 	s, _ := usageStore(t)
 	ctx := context.Background()
 	want := DeliveryQueueLimits{MaxTokens: 5000000, MaxRetries: 2, Deadline: time.Date(2026, 10, 1, 20, 0, 0, 0, time.UTC)}
@@ -338,6 +346,7 @@ func TestDeliveryQueueLimitsRoundTripMaxTokens(t *testing.T) {
 }
 
 func TestRetentionLeavesTokenUsageTables(t *testing.T) {
+	t.Parallel()
 	s, run := usageStore(t)
 	ctx := context.Background()
 	appendUsage(t, s, usageRecord(run.ID, "task_01", "s", usageInt(12)))
@@ -367,6 +376,7 @@ func TestRetentionLeavesTokenUsageTables(t *testing.T) {
 }
 
 func TestDeliveryQueueUsageLinkFailureRollsBackTheItem(t *testing.T) {
+	t.Parallel()
 	s, _ := usageStore(t)
 	ctx := context.Background()
 	q, err := s.CreateDeliveryQueue(ctx, "/repo", []string{"spec"})

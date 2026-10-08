@@ -45,12 +45,14 @@ func requireReceiptProof(t *testing.T, root, content string, proven bool, reason
 }
 
 func TestAVerbatimReceiptIsProven(t *testing.T) {
+	t.Parallel()
 	text := `ADR-0116: "reads the cited record"`
 	root := receiptProofFixture(t, text)
 	requireReceiptProof(t, root, text, true, "")
 }
 
 func TestAReceiptThatWrapsAcrossLinesIsProven(t *testing.T) {
+	t.Parallel()
 	for _, text := range []string{"ADR-0116:\n  \"reads the cited record\"", "ADR-0116: \"reads the\n  cited record\""} {
 		t.Run(text, func(t *testing.T) {
 			root := receiptProofFixture(t, text)
@@ -61,18 +63,21 @@ func TestAReceiptThatWrapsAcrossLinesIsProven(t *testing.T) {
 }
 
 func TestAReceiptWithOneChangedWordIsUnproven(t *testing.T) {
+	t.Parallel()
 	text := `ADR-0116: "reads the cited records"`
 	root := receiptProofFixture(t, text)
 	requireReceiptProof(t, root, text, false, "does not contain that text")
 }
 
 func TestAReceiptWithAnUnresolvedSourceIsUnproven(t *testing.T) {
+	t.Parallel()
 	text := `ADR-0999: "reads the cited record"`
 	root := receiptProofFixture(t, text)
 	requireReceiptProof(t, root, text, false, "does not resolve to a file")
 }
 
 func TestAReceiptThroughASymbolicLinkDoesNotResolve(t *testing.T) {
+	t.Parallel()
 	for _, outside := range []bool{false, true} {
 		for _, directory := range []bool{false, true} {
 			name := "inside/file"
@@ -110,12 +115,14 @@ func TestAReceiptThroughASymbolicLinkDoesNotResolve(t *testing.T) {
 }
 
 func TestAReceiptShorterThanThreeWordsIsUnproven(t *testing.T) {
+	t.Parallel()
 	text := `ADR-0116: "cited record"`
 	root := receiptProofFixture(t, text)
 	requireReceiptProof(t, root, text, false, "a receipt needs at least three words")
 }
 
 func TestAFileReceiptIsProvedAgainstTheFile(t *testing.T) {
+	t.Parallel()
 	text := "`internal/example.go`: \"CitationClaims parses subject attributions\""
 	root := receiptProofFixture(t, text)
 	writeReceiptFixture(t, root, "internal/example.go", "// CitationClaims parses subject attributions\n")
@@ -123,6 +130,7 @@ func TestAFileReceiptIsProvedAgainstTheFile(t *testing.T) {
 }
 
 func TestAReceiptInsideAFencedBlockIsNotRead(t *testing.T) {
+	t.Parallel()
 	text := "```text\nADR-0116: \"words that do not exist\"\nADR-0116 requires a receipt.\n```\n"
 	root := receiptProofFixture(t, text)
 	if got := Receipts(receiptFixturePRD, []byte(text)); len(got) != 0 {
@@ -146,6 +154,7 @@ func heldReceiptFixture(t *testing.T, text string) string {
 }
 
 func TestAHeldAttributionWithoutAReceiptIsAGap(t *testing.T) {
+	t.Parallel()
 	root := heldReceiptFixture(t, receiptFixtureClaim)
 	result := receiptStage(t, root, StagePRD)
 	findings := receiptCodeFindings(result, CodeReceiptMissing)
@@ -155,6 +164,7 @@ func TestAHeldAttributionWithoutAReceiptIsAGap(t *testing.T) {
 }
 
 func TestAReceiptForAnotherRecordDoesNotCoverTheClaim(t *testing.T) {
+	t.Parallel()
 	root := heldReceiptFixture(t, receiptFixtureClaim+` ADR-0117: "another valid passage"`)
 	writeReceiptFixture(t, root, "docs/adr/0117-another.md", "# Another\nanother valid passage\n")
 	result := receiptStage(t, root, StagePRD)
@@ -167,6 +177,7 @@ func TestAReceiptForAnotherRecordDoesNotCoverTheClaim(t *testing.T) {
 }
 
 func TestAHeldAttributionWithItsReceiptHasNoGap(t *testing.T) {
+	t.Parallel()
 	root := heldReceiptFixture(t, receiptFixtureClaim+` ADR-0116: "reads the cited record"`)
 	result := receiptStage(t, root, StagePRD)
 	for _, code := range []string{CodeReceiptMissing, CodeReceiptUnproven} {
@@ -177,6 +188,7 @@ func TestAHeldAttributionWithItsReceiptHasNoGap(t *testing.T) {
 }
 
 func TestAReceiptInAnotherParagraphDoesNotCoverTheClaim(t *testing.T) {
+	t.Parallel()
 	for _, separator := range []string{"\n\n", "\n- "} {
 		t.Run(separator, func(t *testing.T) {
 			root := heldReceiptFixture(t, receiptFixtureClaim+separator+`ADR-0116: "reads the cited record"`)
@@ -188,6 +200,7 @@ func TestAReceiptInAnotherParagraphDoesNotCoverTheClaim(t *testing.T) {
 }
 
 func TestASpecThatIsNotHeldStillProvesItsReceipts(t *testing.T) {
+	t.Parallel()
 	text := receiptFixtureClaim + ` ADR-0116: "reads the cited records"`
 	root := receiptProofFixture(t, text)
 	requireReceiptProof(t, root, text, false, "does not contain that text")
@@ -197,6 +210,7 @@ func TestASpecThatIsNotHeldStillProvesItsReceipts(t *testing.T) {
 }
 
 func TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo(t *testing.T) {
+	t.Parallel()
 	t.Run("one", func(t *testing.T) {
 		root := heldReceiptFixture(t, `ADR-0116: "reads the cited records"`)
 		report := RenderText(receiptStage(t, root, StagePRD), VerificationCoverage{})
@@ -222,6 +236,7 @@ func TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo(t *testing.T) {
 }
 
 func TestReceiptPairingPreservesClaimsAndSourceLines(t *testing.T) {
+	t.Parallel()
 	text := "\n- " + receiptFixtureClaim + "\n  ADR-0116: \"reads the cited record\"\n  ADR-0116: \"when an artifact makes\"\n"
 	claims := CitationClaims("artifact", []byte(text))
 	paired := ReceiptedClaims("artifact", []byte(text))
@@ -235,6 +250,7 @@ func TestReceiptPairingPreservesClaimsAndSourceLines(t *testing.T) {
 }
 
 func TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup(t *testing.T) {
+	t.Parallel()
 	for _, quote := range []string{"Reads the cited record", "reads cited record", "reads the **cited** record"} {
 		t.Run(quote, func(t *testing.T) {
 			text := `ADR-0116: "` + quote + `"`
@@ -245,6 +261,7 @@ func TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup(t *testing.T) {
 }
 
 func TestReceiptPathsMustBeCleanRelativeRegularFiles(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{"../outside.md", "/etc/passwd", "internal/../source.md", "./source.md", "directory", "absent.md"} {
 		t.Run(source, func(t *testing.T) {
 			root := t.TempDir()
@@ -261,6 +278,7 @@ func TestReceiptPathsMustBeCleanRelativeRegularFiles(t *testing.T) {
 }
 
 func TestReceiptsResolveArchivedAndInactiveRecords(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeReceiptFixture(t, root, "docs/history/adr/0116-archived.md", "---\nstatus: superseded\n---\nthree exact words\n")
 	path, proven, reason, err := ProveReceipt(root, Receipt{Source: "ADR-0116", Quote: "three exact words"})
@@ -270,6 +288,7 @@ func TestReceiptsResolveArchivedAndInactiveRecords(t *testing.T) {
 }
 
 func TestMissingReceiptsIgnoreUnresolvedAndInactiveClaims(t *testing.T) {
+	t.Parallel()
 	root := heldReceiptFixture(t, "ADR-0999 requires another rule. ADR-0116 requires the cited record.")
 	writeReceiptFixture(t, root, receiptFixtureADR, "---\nstatus: proposed\n---\n# A citation\nreads the cited record\n")
 	if got := receiptCodeFindings(receiptStage(t, root, StagePRD), CodeReceiptMissing); len(got) != 0 {
@@ -278,6 +297,7 @@ func TestMissingReceiptsIgnoreUnresolvedAndInactiveClaims(t *testing.T) {
 }
 
 func TestReceiptStagesReadOnlyAvailableAuthoringArtifacts(t *testing.T) {
+	t.Parallel()
 	root := heldReceiptFixture(t, "No attribution.")
 	writeReceiptFixture(t, root, "docs/specs/0200-example/_techspec.md", receiptFixtureClaim+` ADR-0116: "reads the cited records"`)
 	if got := receiptCodeFindings(receiptStage(t, root, StagePRD), CodeReceiptUnproven); len(got) != 0 {
@@ -293,6 +313,7 @@ func TestReceiptStagesReadOnlyAvailableAuthoringArtifacts(t *testing.T) {
 }
 
 func TestNoPRDSkipsBothReceiptDetectors(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "docs/specs/0200-example"), 0755); err != nil {
 		t.Fatal(err)
@@ -314,6 +335,7 @@ func TestNoPRDSkipsBothReceiptDetectors(t *testing.T) {
 }
 
 func TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak(t *testing.T) {
+	t.Parallel()
 	for _, text := range []string{
 		"`field`: \"three exact words\"",
 		"ADR-0116: \"three\nexact\nwords\"",
@@ -327,6 +349,7 @@ func TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak(t *testing.T) {
 }
 
 func TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks(t *testing.T) {
+	t.Parallel()
 	t.Run("ambiguous record", func(t *testing.T) {
 		root := receiptProofFixture(t, `ADR-0116: "reads the cited record"`)
 		writeReceiptFixture(t, root, "docs/adr/0116-duplicate.md", "reads the cited record")
@@ -352,6 +375,7 @@ func TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks(t *testing.T) 
 }
 
 func TestShortReceiptIsRefusedBeforeReadingItsSource(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	_, proven, reason, err := ProveReceipt(root, Receipt{Source: "missing.md", Quote: "two words"})
 	if err != nil || proven || reason != "a receipt needs at least three words" {
@@ -360,6 +384,7 @@ func TestShortReceiptIsRefusedBeforeReadingItsSource(t *testing.T) {
 }
 
 func TestAFileInAReceiptDirectoryPositionDoesNotResolve(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeReceiptFixture(t, root, "file.md", "reads the cited record")
 	_, proven, reason, err := ProveReceipt(root, Receipt{Source: "file.md/source.md", Quote: "reads the cited record"})
@@ -369,18 +394,21 @@ func TestAFileInAReceiptDirectoryPositionDoesNotResolve(t *testing.T) {
 }
 
 func TestABacktickedDecisionIdentifierIsNotAPathReceipt(t *testing.T) {
+	t.Parallel()
 	if got := Receipts("artifact", []byte("`ADR-0116`: \"reads the cited record\"")); len(got) != 0 {
 		t.Fatalf("receipts = %#v, want no path receipt", got)
 	}
 }
 
 func TestAReceiptSourceTokenCannotContainUnicodeWhitespace(t *testing.T) {
+	t.Parallel()
 	if got := Receipts("artifact", []byte("`docs/a\u00a0b.md`: \"reads the cited record\"")); len(got) != 0 {
 		t.Fatalf("receipts = %#v", got)
 	}
 }
 
 func TestAReceiptAllowsUnicodeWhitespaceAfterItsColon(t *testing.T) {
+	t.Parallel()
 	got := Receipts("artifact", []byte("ADR-0116:\u00a0\"reads the cited record\""))
 	if len(got) != 1 || got[0].Quote != "reads the cited record" {
 		t.Fatalf("receipts = %#v", got)

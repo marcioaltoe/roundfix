@@ -7,6 +7,7 @@ import (
 )
 
 func TestTaskGraphReadsRequiredSpecs(t *testing.T) {
+	t.Parallel()
 	for _, declaration := range []string{"", "requires: []\n", "requires: [first, second]\n"} {
 		t.Run(declaration, func(t *testing.T) {
 			root := t.TempDir()
@@ -29,6 +30,7 @@ func TestTaskGraphReadsRequiredSpecs(t *testing.T) {
 }
 
 func TestTaskGraphRefusesAMalformedRequiresList(t *testing.T) {
+	t.Parallel()
 	for _, value := range []string{"null", "first", "{first: true}", "[42]", "[true]", "[null]", "[{}]", "['']", "['  ']", "[first, first]", "[first, ' first ']", "[demo]"} {
 		t.Run(value, func(t *testing.T) {
 			root := t.TempDir()
@@ -44,6 +46,7 @@ func TestTaskGraphRefusesAMalformedRequiresList(t *testing.T) {
 }
 
 func TestTaskGraphRefusesARequiresEntryThatIsAPath(t *testing.T) {
+	t.Parallel()
 	for _, value := range []string{"['../../outside']", "['nested/spec']", "['..']", "['.']", "['back\\\\slash']"} {
 		t.Run(value, func(t *testing.T) {
 			root := t.TempDir()

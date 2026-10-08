@@ -19,6 +19,7 @@ import (
 const authorizationHistoryRevision = "6b8ea48725cbca13974eee0b400b3482202874f6"
 
 func TestAuthorizationReaderClassifiesGrantState(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		content    string
@@ -146,6 +147,7 @@ The asking-spec slug appears here only in prose.
 }
 
 func TestAuthorizationReaderTypesPermittedOperations(t *testing.T) {
+	t.Parallel()
 	wantVocabulary := []AuthorizationOperation{
 		AuthorizationOperationImplement,
 		AuthorizationOperationCommit,
@@ -249,6 +251,7 @@ func TestAuthorizationReaderRefusesEmptyPaths(t *testing.T) {
 }
 
 func TestAuthorizationReaderRefusesEscapingPaths(t *testing.T) {
+	t.Parallel()
 	symlinkRoot := t.TempDir()
 	outside := t.TempDir()
 	if err := os.Symlink(outside, filepath.Join(symlinkRoot, "linked")); err != nil {
@@ -289,6 +292,7 @@ func TestAuthorizationReaderRefusesEscapingPaths(t *testing.T) {
 }
 
 func TestAuthorizationReaderResolvesPreservedHistoricalRecords(t *testing.T) {
+	t.Parallel()
 	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatalf("resolve repository root: %v", err)
@@ -376,6 +380,7 @@ func TestAuthorizationReaderResolvesPreservedHistoricalRecords(t *testing.T) {
 }
 
 func TestOperationAuthorityResolvesExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	const specSlug = "asking-spec"
 	projectRoot := newAuthorizationGitRepository(t)
 	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed project")
@@ -415,6 +420,7 @@ func TestOperationAuthorityResolvesExternalSpecRoot(t *testing.T) {
 }
 
 func TestOperationAuthorityDefaultRootUnchanged(t *testing.T) {
+	t.Parallel()
 	const specSlug = "asking-spec"
 	projectRoot := newAuthorizationGitRepository(t)
 	writeAuthorizationRecordAt(t, projectRoot, authorizationDocument(
@@ -446,6 +452,7 @@ func TestOperationAuthorityDefaultRootUnchanged(t *testing.T) {
 }
 
 func TestUnresolvedRecordNamesAPathUnderTheSpecRoot(t *testing.T) {
+	t.Parallel()
 	const (
 		specSlug            = "asking-spec"
 		unavailableRevision = "refs/heads/unavailable"
@@ -506,6 +513,7 @@ func TestUnresolvedRecordNamesAPathUnderTheSpecRoot(t *testing.T) {
 }
 
 func TestSpecAuthorizationNamesUnavailableRevision(t *testing.T) {
+	t.Parallel()
 	const (
 		specSlug            = "asking-spec"
 		unavailableRevision = "refs/heads/unavailable"
@@ -542,6 +550,7 @@ func TestSpecAuthorizationNamesUnavailableRevision(t *testing.T) {
 }
 
 func TestOperationAuthorityReportsUnresolvableSpecRoot(t *testing.T) {
+	t.Parallel()
 	projectRoot := newAuthorizationGitRepository(t)
 	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed project")
 	unresolvableRoot := filepath.Join(t.TempDir(), "not-a-git-repository")

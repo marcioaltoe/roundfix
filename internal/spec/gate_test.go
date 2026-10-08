@@ -17,6 +17,7 @@ import (
 const gateFixtureModule = "example.com/roundfix-gate-fixture"
 
 func TestAuthoritativeGateReportsFailure(t *testing.T) {
+	t.Parallel()
 	repositoryRoot := filepath.Clean(filepath.Join("..", ".."))
 	makefileBytes, err := os.ReadFile(filepath.Join(repositoryRoot, "Makefile"))
 	if err != nil {
@@ -39,6 +40,7 @@ func TestAuthoritativeGateReportsFailure(t *testing.T) {
 import "testing"
 
 func TestFailsWithHighOutput(t *testing.T) {
+	t.Parallel()
 	for line := range 300 {
 		t.Logf("concealment output line %03d", line)
 	}
@@ -55,6 +57,7 @@ func TestFailsWithHighOutput(t *testing.T) {
 import "testing"
 
 func TestFailsWithShortOutput(t *testing.T) {
+	t.Parallel()
 	t.Fatal("deliberate short failure")
 }
 `,

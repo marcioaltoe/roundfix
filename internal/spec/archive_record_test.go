@@ -43,6 +43,7 @@ func readRecordResult(t *testing.T, result ArchiveResult) ArchiveRecord {
 	return record
 }
 func TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	before := archiveLinksTree(t, dir)
 	var size int64
@@ -59,6 +60,7 @@ func TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder(t *testing.T) {
 	}
 }
 func TestArchiveRecordKeepsEveryOverrideField(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	writeFile(t, filepath.Join(dir, "task_qa.md"), taskFixture("task_qa", "QA", "failed", "qa", defaultVerificationSection))
 	writeFile(t, filepath.Join(dir, "qa", "qa-report-2026-10-04.md"), "---\nverdict: fail\n---\n\n# QA\n")
@@ -74,6 +76,7 @@ func TestArchiveRecordKeepsEveryOverrideField(t *testing.T) {
 	}
 }
 func TestArchiveRecordOfASupersededSpec(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	if err := os.Remove(filepath.Join(dir, "_tasks.md")); err != nil {
 		t.Fatal(err)
@@ -91,6 +94,7 @@ func TestArchiveRecordOfASupersededSpec(t *testing.T) {
 	}
 }
 func TestArchiveRecordStaysWithinTheTargetSize(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	writeFile(t, filepath.Join(dir, "qa", "qa-report-2026-10-04.md"), "---\nverdict: pass\nrows_total: 1\nrows_passed: 1\nrows_blocked: 0\n---\n\n# QA\n\n## Outcome\n\n"+strings.Repeat("é", 2500)+"\n")
 	result, err := Archive(req)
@@ -103,6 +107,7 @@ func TestArchiveRecordStaysWithinTheTargetSize(t *testing.T) {
 	}
 }
 func TestArchiveRecordRoundTrips(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	r, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: dir, Slug: req.Slug, Source: "docs/specs/demo", SourceRevision: req.SourceRevision, Archived: "2026-10-06"})
 	if err != nil {
@@ -137,6 +142,7 @@ func TestArchiveRecordRoundTrips(t *testing.T) {
 	}
 }
 func TestArchiveRefusesBeforeAnyFileChanges(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"empty revision", "invalid revision", "record exists", "folder exists", "outside", "directory", "symlink", "core", "task", "report", "occupied promotion"} {
 		t.Run(kind, func(t *testing.T) {
 			req, dir := recordFixture(t)
@@ -179,6 +185,7 @@ func TestArchiveRefusesBeforeAnyFileChanges(t *testing.T) {
 	}
 }
 func TestReadArchivedSpecReadsRecordAndLegacyFolder(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	root := ArchiveSpecRoot(req.SpecsRoot, true)
 	if _, err := ReadArchivedSpec(root, "demo"); !errors.Is(err, ErrNotArchived) {
@@ -246,6 +253,7 @@ func assertArchiveEvidenceInGit(t *testing.T, specsRoot string, result ArchiveRe
 	}
 }
 func TestArchiveRollsBackTheRecordWhenPromotionCannotBeWritten(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	req.Promote = []string{"references/adopted.md"}
 	if err := os.Symlink(filepath.Join(req.RepositoryRoot, "missing-directory"), filepath.Join(req.RepositoryRoot, "docs", "references")); err != nil {
@@ -264,6 +272,7 @@ func TestArchiveRollsBackTheRecordWhenPromotionCannotBeWritten(t *testing.T) {
 }
 
 func TestArchiveRecordRefusesAnOverrideDispositionWithoutATrueOverride(t *testing.T) {
+	t.Parallel()
 	req, dir := recordFixture(t)
 	writeFile(t, filepath.Join(dir, "task_qa.md"), taskFixture("task_qa", "QA", "failed", "qa", defaultVerificationSection))
 	writeFile(t, filepath.Join(dir, "qa", "qa-report-2026-10-04.md"), "---\nverdict: fail\n---\n\n# QA\n")

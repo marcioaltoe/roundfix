@@ -19,10 +19,12 @@ import (
 )
 
 func TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead(t *testing.T) {
+	t.Parallel()
 	testQAEvidenceSnapshot(t, true)
 }
 
 func TestQAGateStripsAnAgentWrittenSnapshotWhenNoRowQualifies(t *testing.T) {
+	t.Parallel()
 	testQAEvidenceSnapshot(t, false)
 }
 
@@ -77,6 +79,7 @@ func testQAEvidenceSnapshot(t *testing.T, qualifies bool) {
 }
 
 func TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	plan := fixture.qaPlan()
 	path := qaReportRelPathForTest()
@@ -103,6 +106,7 @@ func TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement(t *testing.T) {
 }
 
 func TestQAEvidenceSnapshotSkipsAnExternalReport(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	plan := fixture.qaPlan()
 	path := t.TempDir() + "/report.md"
@@ -123,6 +127,7 @@ func TestQAEvidenceSnapshotSkipsAnExternalReport(t *testing.T) {
 }
 
 func TestQAEvidenceSnapshotFileErrorIsInfrastructure(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, GitCommitter{}, GitWorktreeSnapshotter{})
 	path := qaReportRelPathForTest()
@@ -140,6 +145,7 @@ func TestQAEvidenceSnapshotFileErrorIsInfrastructure(t *testing.T) {
 }
 
 func TestQAEvidenceSnapshotCancellationPublishesStop(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, GitCommitter{}, GitWorktreeSnapshotter{})
 	ctx, cancel := context.WithCancel(context.Background())

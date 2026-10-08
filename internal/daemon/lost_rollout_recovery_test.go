@@ -153,6 +153,7 @@ func runLostRolloutTask(t *testing.T, fallbacks bool, turns []error, repair bool
 	return runner, result, fixture.sink
 }
 func TestLostRolloutBeforeFirstHandoffActivatesTheFallback(t *testing.T) {
+	t.Parallel()
 	runner, result, sink := runLostRolloutTask(t, true, []error{lostRolloutErrorForTest()}, false)
 	if result.Completed != 1 || len(runner.seen) != 2 {
 		t.Fatalf("result=%+v requests=%v", result, runner.seen)
@@ -168,6 +169,7 @@ func TestLostRolloutBeforeFirstHandoffActivatesTheFallback(t *testing.T) {
 	}
 }
 func TestLostRolloutAfterFirstHandoffResumesInANewSession(t *testing.T) {
+	t.Parallel()
 	runner, result, sink := runLostRolloutTask(t, true, []error{nil, lostRolloutErrorForTest()}, true)
 	if result.Completed != 1 || len(runner.seen) != 3 {
 		t.Fatalf("result=%+v turns=%d", result, len(runner.seen))
@@ -179,6 +181,7 @@ func TestLostRolloutAfterFirstHandoffResumesInANewSession(t *testing.T) {
 	assertLostRolloutEvents(t, sink, "new_session")
 }
 func TestLostRolloutWithoutFallbackResumesTheSameSelection(t *testing.T) {
+	t.Parallel()
 	runner, result, sink := runLostRolloutTask(t, false, []error{lostRolloutErrorForTest()}, false)
 	if result.Completed != 1 || len(runner.seen) != 2 || runner.seen[1].Runtime.Model != "preferred-model" || !strings.HasSuffix(runner.seen[1].Session.Name, "-rollout-01") {
 		t.Fatalf("result=%+v turns=%v", result, runner.seen)
@@ -186,6 +189,7 @@ func TestLostRolloutWithoutFallbackResumesTheSameSelection(t *testing.T) {
 	assertLostRolloutEvents(t, sink, "new_session")
 }
 func TestThirdLostRolloutSettlesRuntimeInfrastructure(t *testing.T) {
+	t.Parallel()
 	runner, result, sink := runLostRolloutTask(t, true, []error{lostRolloutErrorForTest(), lostRolloutErrorForTest(), lostRolloutErrorForTest()}, false)
 	if result.Failed != 1 || len(runner.seen) != 3 || !strings.HasPrefix(result.Outcomes[0].Reason, "runtime infrastructure: lost rollout") {
 		t.Fatalf("result=%+v turns=%d", result, len(runner.seen))
@@ -196,6 +200,7 @@ func TestThirdLostRolloutSettlesRuntimeInfrastructure(t *testing.T) {
 	assertLostRolloutEvents(t, sink, "fallback", "new_session", "exhausted")
 }
 func TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	runner := &lostRolloutRunner{taskFakeRunner: &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}, turns: []error{lostRolloutErrorForTest()}}
 	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
@@ -228,6 +233,7 @@ func TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt(t *testing.T) {
 }
 
 func TestQALostRolloutExhaustionSettlesInsteadOfHalting(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	runner := &lostRolloutRunner{taskFakeRunner: &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, turns: []error{lostRolloutErrorForTest(), lostRolloutErrorForTest(), lostRolloutErrorForTest()}}
 	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)

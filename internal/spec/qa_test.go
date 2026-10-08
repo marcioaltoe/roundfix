@@ -848,6 +848,7 @@ func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
 }
 
 func TestPreconditionRefusalReportNamesItsAuditor(t *testing.T) {
+	// Sequential: swaps app.Version, app.BuildCommit and app.BuildTime.
 	oldVersion, oldCommit, oldTime := app.Version, app.BuildCommit, app.BuildTime
 	t.Cleanup(func() {
 		app.Version, app.BuildCommit, app.BuildTime = oldVersion, oldCommit, oldTime

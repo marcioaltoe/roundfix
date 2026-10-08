@@ -317,6 +317,7 @@ func TestReplayCorpusBatchClockMatchesFullEvents(t *testing.T) {
 // with Go overlays, so the characterization crosses the real consumer seams
 // without adding test hooks to production code or rewriting the fixture.
 func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("consumer corpus replay runs a nested go test; run without -short")
 	}

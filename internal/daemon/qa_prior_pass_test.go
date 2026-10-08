@@ -91,6 +91,7 @@ func assertPriorOutcome(t *testing.T, f *taskCycleFixture, outcome, reason strin
 }
 
 func TestAPriorPassIsImportedOnlyFromARecordedRunCommit(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), false)
 	runGitForTest(t, f.gitRoot, "branch", "-m", store.RunBranchPrefix+f.run.ID, "test/fabricated-qa")
@@ -105,6 +106,7 @@ func TestAPriorPassIsImportedOnlyFromARecordedRunCommit(t *testing.T) {
 }
 
 func TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte(t *testing.T) {
+	// Sequential: sets GIT_COMMITTER_DATE for report commit ordering.
 	f, p, e := priorFixture(t)
 	recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("fail"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	// Commit dates, rather than report names or Run creation order, select the pass.
@@ -135,6 +137,7 @@ func TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte(t *testing.T) 
 }
 
 func TestPriorQAPassIgnoresReportsAlreadyInHistory(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "pass"), true)
 	runGitForTest(t, f.gitRoot, "checkout", "--detach", pass.Commit)
@@ -146,6 +149,7 @@ func TestPriorQAPassIgnoresReportsAlreadyInHistory(t *testing.T) {
 }
 
 func TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs(t *testing.T) {
+	t.Parallel()
 	for _, message := range []string{"feat: task\n\nRoundfix-Spec: " + taskCycleSlug + "\nRoundfix-Task: task_01", QACommitMessage("another-spec", "fail")} {
 		t.Run(strings.Split(message, "\n")[0], func(t *testing.T) {
 			f, p, e := priorFixture(t)
@@ -160,6 +164,7 @@ func TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs(t *testing.T) {
 }
 
 func TestPriorQAPassRefusesADifferingPath(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(f.gitRoot, pass.Files[0])), 0o755); err != nil {
@@ -181,6 +186,7 @@ func TestPriorQAPassRefusesADifferingPath(t *testing.T) {
 }
 
 func TestPriorQAPassRefusesAReportOlderThanTheTreesNewest(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	newest := filepath.Join(p.Spec.Dir, "qa", priorReportName(2))
@@ -199,6 +205,7 @@ func TestPriorQAPassRefusesAReportOlderThanTheTreesNewest(t *testing.T) {
 }
 
 func TestPriorQAPassRefusesAReportTheShapeDetectorRefuses(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pending"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	_, imported, err := e.importPriorQAPass(context.Background(), p, 1)
@@ -217,6 +224,7 @@ func TestPriorQAPassRefusesAReportTheShapeDetectorRefuses(t *testing.T) {
 }
 
 func TestPriorQAPassRefusesAReportDatedAfterToday(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, "qa-report-2099-01-01.md", priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	_, imported, err := e.importPriorQAPass(context.Background(), p, 1)
@@ -230,6 +238,7 @@ func TestPriorQAPassRefusesAReportDatedAfterToday(t *testing.T) {
 }
 
 func TestQAPromptNamesTheImportedPassHead(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	prior := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	runGitForTest(t, f.gitRoot, "commit", "--allow-empty", "-m", "test: later task")
@@ -245,6 +254,7 @@ func TestQAPromptNamesTheImportedPassHead(t *testing.T) {
 }
 
 func TestQAGateCarriesARowFromAnUnintegratedFailedPass(t *testing.T) {
+	t.Parallel()
 	f, p, _ := priorFixture(t)
 	base := strings.TrimSpace(runGitForTest(t, f.gitRoot, "rev-parse", "HEAD"))
 	// The failed pass audits a Task that the next head independently re-commits.
@@ -309,6 +319,7 @@ func TestQAGateCarriesARowFromAnUnintegratedFailedPass(t *testing.T) {
 }
 
 func TestPriorQAPassKeepsIdenticalExistingEvidence(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	path := filepath.Join(f.gitRoot, pass.Files[0])
@@ -333,6 +344,7 @@ func TestPriorQAPassKeepsIdenticalExistingEvidence(t *testing.T) {
 }
 
 func TestPriorQAPassSkipsAPrunedRunBranch(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	pass := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	branch := store.RunBranchPrefix + f.run.ID
@@ -347,6 +359,7 @@ func TestPriorQAPassSkipsAPrunedRunBranch(t *testing.T) {
 }
 
 func TestPriorQAPassCancellationPublishesStop(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -360,6 +373,7 @@ func TestPriorQAPassCancellationPublishesStop(t *testing.T) {
 }
 
 func TestPriorQAPassGitErrorIsInfrastructure(t *testing.T) {
+	t.Parallel()
 	f, p, e := priorFixture(t)
 	recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	if err := os.Rename(filepath.Join(f.gitRoot, ".git"), filepath.Join(f.gitRoot, "unavailable-git")); err != nil {

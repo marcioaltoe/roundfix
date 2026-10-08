@@ -63,6 +63,7 @@ func usageEngine(t *testing.T, runner agent.Runner) (*Engine, *store.Store, agen
 }
 
 func TestEachPromptRecordsItsUsageWithTheOwnerScope(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"task", "qa", "review"} {
 		t.Run(kind, func(t *testing.T) {
 			for _, prepared := range []bool{false, true} {
@@ -104,6 +105,7 @@ func TestEachPromptRecordsItsUsageWithTheOwnerScope(t *testing.T) {
 }
 
 func TestAFailedAndAStoppedPromptStillRecordUsage(t *testing.T) {
+	t.Parallel()
 	for _, cause := range []error{errors.New("agent failed"), ErrStopRequested, context.Canceled} {
 		t.Run(cause.Error(), func(t *testing.T) {
 			runner := &usagePromptRunner{err: cause, result: agent.ExecuteResult{Output: "partial", Usage: agent.TurnUsage{Basis: agent.UsageBasisTurn, TotalTokens: 42}}}
@@ -128,6 +130,7 @@ func TestAFailedAndAStoppedPromptStillRecordUsage(t *testing.T) {
 }
 
 func TestAPromptWithoutAnOwnerRecordsASessionScope(t *testing.T) {
+	t.Parallel()
 	runner := &usagePromptRunner{}
 	engine, s, req := usageEngine(t, runner)
 	_, err := engine.runAgentSession(context.Background(), nil, req)
@@ -147,6 +150,7 @@ func (s rejectingUsageStore) AppendTokenUsage(context.Context, store.TokenUsageR
 }
 
 func TestAFailedUsageWriteLeavesTheOutcomeUnchanged(t *testing.T) {
+	t.Parallel()
 	for _, owned := range []bool{false, true} {
 		t.Run(map[bool]string{false: "session", true: "owner"}[owned], func(t *testing.T) {
 			for _, cause := range []error{nil, errors.New("prompt failed"), ErrStopRequested} {
@@ -214,6 +218,7 @@ func (r *usageFallbackRunner) RunPrepared(_ context.Context, req agent.ExecuteRe
 }
 
 func TestUsageRecordsPreferredAndFallbackPrompts(t *testing.T) {
+	t.Parallel()
 	runner := &usageFallbackRunner{}
 	engine, s, req := usageEngine(t, runner)
 	owner, err := engine.agentSessionOwner(agentSelectionOwnerConfig{

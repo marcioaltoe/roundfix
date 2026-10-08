@@ -46,6 +46,7 @@ func budgetedPlan(plan TaskPlan, startedAt time.Time, maximum time.Duration) Tas
 }
 
 func TestTaskBudgetRenewsAtEachTaskSettlement(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02", needs: []string{"task_01"}},
@@ -80,6 +81,7 @@ func TestTaskBudgetRenewsAtEachTaskSettlement(t *testing.T) {
 }
 
 func TestTaskBudgetStartsTheQAGateWithARenewedAllowance(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	startedAt := time.Now()
 	const maximum = time.Hour
@@ -110,6 +112,7 @@ func TestTaskBudgetStartsTheQAGateWithARenewedAllowance(t *testing.T) {
 }
 
 func TestTaskBudgetSettlementAfterTheDeadlineDoesNotRenew(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02", needs: []string{"task_01"}},
@@ -177,6 +180,7 @@ func (*settleThenStallRunner) EndSession(context.Context, agent.RuntimeSpec, age
 }
 
 func TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02"},
@@ -232,6 +236,7 @@ func (*failedSettlementRunner) EndSession(context.Context, agent.RuntimeSpec, ag
 }
 
 func TestTaskBudgetAFailedSettlementRenewsTheAllowance(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	startedAt := time.Now()
 	const maximum = time.Hour
@@ -254,6 +259,7 @@ func TestTaskBudgetAFailedSettlementRenewsTheAllowance(t *testing.T) {
 }
 
 func TestTaskCycleReportsTheRenewedBudgetDeadline(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	startedAt := time.Now()
 	const maximum = time.Hour
@@ -274,6 +280,7 @@ func TestTaskCycleReportsTheRenewedBudgetDeadline(t *testing.T) {
 }
 
 func TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 
@@ -288,6 +295,7 @@ func TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled(t *testing.T) {
 }
 
 func TestTaskBudgetReasonNamesTheSettlementThatRenewedIt(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02"},
@@ -331,6 +339,7 @@ func budgetWatchdogGoroutines() int {
 }
 
 func TestTaskBudgetWatchdogStopsWhenTheCycleReturns(t *testing.T) {
+	t.Parallel()
 	before := budgetWatchdogGoroutines()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)

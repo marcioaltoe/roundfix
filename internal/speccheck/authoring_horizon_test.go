@@ -91,6 +91,7 @@ func requireReceiptHorizon(t *testing.T, root string, held bool, missing string)
 }
 
 func TestASpecCommittedBeforeTheGuideIsNotHeld(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, receiptFixturePRD, receiptFixtureClaim)
 	receiptCommit(t, root)
@@ -100,6 +101,7 @@ func TestASpecCommittedBeforeTheGuideIsNotHeld(t *testing.T) {
 }
 
 func TestASpecCommittedWithOrAfterTheGuideIsHeld(t *testing.T) {
+	t.Parallel()
 	for _, when := range []string{"with", "after"} {
 		t.Run(when, func(t *testing.T) {
 			root := receiptHorizonRepo(t)
@@ -115,6 +117,7 @@ func TestASpecCommittedWithOrAfterTheGuideIsHeld(t *testing.T) {
 }
 
 func TestAnUncommittedSpecIsHeldOnceTheGuideIsCommitted(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, ConcreteContractGuidePath, "guide")
 	receiptCommit(t, root)
@@ -123,12 +126,14 @@ func TestAnUncommittedSpecIsHeldOnceTheGuideIsCommitted(t *testing.T) {
 }
 
 func TestARepositoryWithoutTheGuideHoldsNoSpec(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, receiptFixturePRD, receiptFixtureClaim)
 	requireReceiptHorizon(t, root, false, ConcreteContractGuidePath)
 }
 
 func TestAnUncommittedGuideHoldsNoSpec(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, receiptFixturePRD, receiptFixtureClaim)
 	receiptCommit(t, root)
@@ -137,6 +142,7 @@ func TestAnUncommittedGuideHoldsNoSpec(t *testing.T) {
 }
 
 func TestAGuideWithUnreadableHistoryHoldsEverySpec(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeReceiptFixture(t, root, ConcreteContractGuidePath, "guide")
 	writeReceiptFixture(t, root, receiptFixtureADR, "# A citation\n\nreads the cited record\n")
@@ -145,6 +151,7 @@ func TestAGuideWithUnreadableHistoryHoldsEverySpec(t *testing.T) {
 }
 
 func TestARevisedOldPRDKeepsItsContractHorizon(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, receiptFixturePRD, receiptFixtureClaim)
 	receiptCommit(t, root)
@@ -156,6 +163,7 @@ func TestARevisedOldPRDKeepsItsContractHorizon(t *testing.T) {
 }
 
 func TestAReadoptedGuideKeepsItsOldestAddingCommit(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, ConcreteContractGuidePath, "guide")
 	receiptCommit(t, root)
@@ -171,6 +179,7 @@ func TestAReadoptedGuideKeepsItsOldestAddingCommit(t *testing.T) {
 }
 
 func TestContractHorizonFailsClosedForShallowOrMismatchedRoots(t *testing.T) {
+	t.Parallel()
 	source := receiptHorizonRepo(t)
 	writeReceiptFixture(t, source, ConcreteContractGuidePath, "guide")
 	writeReceiptFixture(t, source, receiptFixturePRD, receiptFixtureClaim)
@@ -199,6 +208,7 @@ func TestContractHorizonFailsClosedForShallowOrMismatchedRoots(t *testing.T) {
 }
 
 func TestANonFileGuideHoldsNoSpec(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"directory", "symlink"} {
 		t.Run(kind, func(t *testing.T) {
 			root := receiptHorizonRepo(t)
@@ -223,6 +233,7 @@ func TestANonFileGuideHoldsNoSpec(t *testing.T) {
 }
 
 func TestAGuideOnADivergentBranchDoesNotHoldTheSpec(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	gittest.Run(t, root, "branch", "spec")
 	writeReceiptFixture(t, root, ConcreteContractGuidePath, "guide")
@@ -235,6 +246,7 @@ func TestAGuideOnADivergentBranchDoesNotHoldTheSpec(t *testing.T) {
 }
 
 func TestAnUnreadableGuidePathDoesNotProveTheContractAbsent(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeReceiptFixture(t, root, ConcreteContractGuidePath, "guide")
 	writeReceiptFixture(t, root, receiptFixturePRD, receiptFixtureClaim)

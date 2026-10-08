@@ -12,6 +12,7 @@ import (
 )
 
 func TestAnUnrecordedFrontendLayoutStatesTheSuggestionAndKeepsTheSystemsClauses(t *testing.T) {
+	t.Parallel()
 	assertFrontendLayoutPlan(t, "", "No frontend layout is recorded. The suggested `systems` layout applies until the repository records one.", true)
 	// A repository-owned profile need not select the new optional decision.
 	catalog := mustEmbeddedCatalog(t)
@@ -42,10 +43,12 @@ func TestAnUnrecordedFrontendLayoutStatesTheSuggestionAndKeepsTheSystemsClauses(
 }
 
 func TestARecordedSystemsLayoutKeepsTheSystemsClauses(t *testing.T) {
+	t.Parallel()
 	assertFrontendLayoutPlan(t, "systems", "The repository records the `systems` frontend layout.", true)
 }
 
 func TestARecordedRepositoryDefinedLayoutRendersOnlyItsOwnClause(t *testing.T) {
+	t.Parallel()
 	assertFrontendLayoutPlan(t, "repository-defined", "The repository records its own frontend layout, stated in its repository-owned rules.", false)
 }
 
@@ -95,6 +98,7 @@ func assertFrontendLayoutPlan(t *testing.T, layout, sentence string, systems boo
 }
 
 func TestAnUnrecordedOptionalDecisionIsNotMissing(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
 	if err != nil {
@@ -126,6 +130,7 @@ func TestAnUnrecordedOptionalDecisionIsNotMissing(t *testing.T) {
 }
 
 func TestAnOptionalDecisionWithoutADefaultIsRefused(t *testing.T) {
+	t.Parallel()
 	assets := cloneEmbeddedAssets(t)
 	replaceAsset(t, assets, "decisions.json", "\"default\": \"systems\",", "")
 	_, err := LoadCatalog(assets)
@@ -133,6 +138,7 @@ func TestAnOptionalDecisionWithoutADefaultIsRefused(t *testing.T) {
 }
 
 func TestAClauseGateOnARequiredDecisionIsRefused(t *testing.T) {
+	t.Parallel()
 	assets := cloneEmbeddedAssets(t)
 	replaceAsset(t, assets, "modules/frontend.json", `"id": "clause.frontend.organize-by-system",
           "enforcement": "mandatory",
@@ -158,6 +164,7 @@ func assertFrontendDiagnostic(t *testing.T, err error, code string) {
 }
 
 func TestAClauseARecordedLayoutTurnsOffIsAReasonedRejection(t *testing.T) {
+	t.Parallel()
 	repository, prior := frontendLayoutManagedRepository(t)
 	decisions := append(standardTypeScriptDecisions("make verify"), DecisionValue{ID: frontendLayoutDecisionID, Value: "repository-defined"})
 	// Preserve both prior systems clauses' artifacts while recording the new value.
@@ -194,6 +201,7 @@ func TestAClauseARecordedLayoutTurnsOffIsAReasonedRejection(t *testing.T) {
 }
 
 func TestAClauseMissingWithoutARecordedDecisionIsStillUnaccounted(t *testing.T) {
+	t.Parallel()
 	repository, _ := frontendLayoutManagedRepository(t)
 	catalog, err := LoadCatalog(cloneEmbeddedAssets(t))
 	if err != nil {
@@ -243,6 +251,7 @@ func frontendLayoutManagedRepository(t *testing.T) (string, SetupManifest) {
 }
 
 func TestTheProfileStatesTheLayoutSuggestionTheCatalogDefaults(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	architecture, _ := objectValue(catalog.profiles["standard-typescript-monorepo"]["architecture"])
 	frontend, _ := objectValue(architecture["frontend"])

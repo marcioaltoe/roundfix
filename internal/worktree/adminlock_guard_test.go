@@ -19,6 +19,7 @@ import (
 )
 
 func TestNoProductionWorktreeAdministrationBypassesTheAdminLock(t *testing.T) {
+	t.Parallel()
 	repository := repositoryRootForAdminLockGuard(t)
 	var findings []string
 	for _, directory := range []string{"internal", "cmd"} {
@@ -60,6 +61,7 @@ func TestNoProductionWorktreeAdministrationBypassesTheAdminLock(t *testing.T) {
 }
 
 func TestAdminLockGuardReportsADirectWorktreeCall(t *testing.T) {
+	t.Parallel()
 	source := `package synthetic
 func bypass(run func(...string)) {
 	run("-C", ".", "worktree", "remove", "path")

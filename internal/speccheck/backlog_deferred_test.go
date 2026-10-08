@@ -8,12 +8,14 @@ import (
 )
 
 func TestADeferredBacklogEntryIsTerminal(t *testing.T) {
+	t.Parallel()
 	if !terminalBacklogStatus("deferred") {
 		t.Fatal("deferred Backlog status is not terminal")
 	}
 }
 
 func TestADeferredBacklogEntryLeftActiveIsReported(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	const path = "docs/backlog/2026-09-30-deferred.md"
 	if err := os.MkdirAll(filepath.Join(repo, "docs/backlog"), 0o755); err != nil {

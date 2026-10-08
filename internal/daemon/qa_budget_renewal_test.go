@@ -15,6 +15,7 @@ import (
 )
 
 func TestQASettlementRenewsTheBudgetBeforeTheReportCommit(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	startedAt := time.Now()
 	const maximum = time.Hour

@@ -6,6 +6,7 @@ import (
 )
 
 func TestContextAcceptsADeletesEntry(t *testing.T) {
+	t.Parallel()
 	refs, err := parseTaskContextRefs([]byte("## Context\n\n- deletes: `old/file.txt`\n"))
 	if err != nil || len(refs) != 1 || refs[0].Kind != ContextKindDeletes || refs[0].Path != "old/file.txt" {
 		t.Fatalf("Context = %#v, %v", refs, err)
@@ -20,6 +21,7 @@ func TestContextAcceptsADeletesEntry(t *testing.T) {
 }
 
 func TestContextRefusesAPathUnderTwoKinds(t *testing.T) {
+	t.Parallel()
 	for _, pair := range [][2]string{{"interface", "deletes"}, {"deletes", "interface"}, {"creates", "deletes"}, {"deletes", "creates"}, {"deletes", "deletes"}} {
 		t.Run(pair[0]+"/"+pair[1], func(t *testing.T) {
 			_, err := parseTaskContextRefs([]byte("## Context\n- " + pair[0] + ": old/file.txt\n- " + pair[1] + ": old/file.txt\n"))
@@ -31,6 +33,7 @@ func TestContextRefusesAPathUnderTwoKinds(t *testing.T) {
 }
 
 func TestUndeclaredTaskPathsCountsADeletesPath(t *testing.T) {
+	t.Parallel()
 	task := Task{Context: []TaskContextRef{{Kind: ContextKindDeletes, Path: "old/file.txt"}}}
 	paths := UndeclaredTaskPaths(task, "task_01.md", []string{"old/file.txt", "other.txt"}, nil)
 	if len(paths) != 1 || paths[0] != "other.txt" {
@@ -39,6 +42,7 @@ func TestUndeclaredTaskPathsCountsADeletesPath(t *testing.T) {
 }
 
 func TestWaveCollisionCountsADeletesPath(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeCollisionFile(t, root, "old/file.txt", "old")
 	graph := &Graph{Tasks: []Task{

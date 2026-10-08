@@ -645,6 +645,7 @@ func equalStrings(left, right []string) bool {
 }
 
 func TestCoverageRecordCountsNoPackageUnderDocs(t *testing.T) {
+	t.Parallel()
 	record, err := readCoverageRecord(filepath.Join("..", "..", coverageRecordPath))
 	if err != nil {
 		t.Fatal(err)

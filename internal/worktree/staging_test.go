@@ -19,6 +19,7 @@ import (
 )
 
 func TestCarryForwardStagingRecordsItsOwner(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	staging, err := AddCarryForwardStaging(t.Context(), repoDir, head, t.TempDir())
 	if err != nil {
@@ -40,6 +41,7 @@ func TestCarryForwardStagingRecordsItsOwner(t *testing.T) {
 }
 
 func TestCarryForwardStagingWaitsForTheAdminLock(t *testing.T) {
+	t.Parallel()
 	commonDir := t.TempDir()
 	started := make(chan struct{}, 1)
 	release := make(chan struct{})
@@ -90,6 +92,7 @@ func TestCarryForwardStagingWaitsForTheAdminLock(t *testing.T) {
 }
 
 func TestCarryForwardStagingSweepReleasesADeadOwnersWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	staging, err := AddCarryForwardStaging(t.Context(), repoDir, head, t.TempDir())
 	if err != nil {
@@ -113,6 +116,7 @@ func TestCarryForwardStagingSweepReleasesADeadOwnersWorktree(t *testing.T) {
 }
 
 func TestCarryForwardStagingSweepKeepsALiveOwnersWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	staging, err := AddCarryForwardStaging(t.Context(), repoDir, head, t.TempDir())
 	if err != nil {
@@ -130,6 +134,7 @@ func TestCarryForwardStagingSweepKeepsALiveOwnersWorktree(t *testing.T) {
 }
 
 func TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	worktreePath := addLegacyStagingForTest(t, repoDir, head, true)
 
@@ -144,6 +149,7 @@ func TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree(t *te
 }
 
 func TestCarryForwardStagingSweepKeepsAnUnlockedLegacyWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	worktreePath := addLegacyStagingForTest(t, repoDir, head, false)
 	t.Cleanup(func() {
@@ -160,6 +166,7 @@ func TestCarryForwardStagingSweepKeepsAnUnlockedLegacyWorktree(t *testing.T) {
 }
 
 func TestCarryForwardStagingOwnerHelperProcess(t *testing.T) {
+	t.Parallel()
 	if os.Getenv("ROUNDFIX_STAGING_OWNER_HELPER") != "1" {
 		return
 	}

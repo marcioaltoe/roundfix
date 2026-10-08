@@ -61,7 +61,7 @@ func TestCarryForwardAcceptsBudgetExceededRun(t *testing.T) {
 }
 
 func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
-	t.Parallel()
+	// Sequential: captureStderr swaps process-wide os.Stderr.
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	location := filepath.Join(homeDir, "configured-worktrees")

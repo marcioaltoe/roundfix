@@ -18,7 +18,13 @@ import (
 )
 
 var parallelTestPackages = map[string]int{
-	"internal/cli": 48,
+	"internal/cli":       48,
+	"internal/daemon":    16,
+	"internal/baseline":  12,
+	"internal/store":     3,
+	"internal/spec":      2,
+	"internal/speccheck": 2,
+	"internal/worktree":  2,
 }
 
 type sequentialTest struct {

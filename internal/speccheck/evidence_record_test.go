@@ -74,6 +74,7 @@ func recordedRows(t *testing.T, content string) map[string]struct {
 }
 
 func TestEvidenceRecordSnapshotsEveryQualifyingPassRow(t *testing.T) {
+	t.Parallel()
 	root, head, report := recordFixture(t)
 	writeMechanicalFile(t, root, "src/z.txt", "z\n")
 	writeMechanicalFile(t, root, "src/a.txt", "a\n")
@@ -108,6 +109,7 @@ func TestEvidenceRecordSnapshotsEveryQualifyingPassRow(t *testing.T) {
 }
 
 func TestEvidenceRecordSkipsRowsThatCannotCarry(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ name, from, to string }{
 		{"failed", "| pass |", "| fail |"},
 		{"blocked", "| pass |", "| blocked (environment: offline) |"},
@@ -139,6 +141,7 @@ func TestEvidenceRecordSkipsRowsThatCannotCarry(t *testing.T) {
 }
 
 func TestEvidenceRecordReplacesAnAgentWrittenKey(t *testing.T) {
+	t.Parallel()
 	for _, qualifies := range []bool{true, false} {
 		t.Run(fmt.Sprint(qualifies), func(t *testing.T) {
 			root, head, report := recordFixture(t)
@@ -158,6 +161,7 @@ func TestEvidenceRecordReplacesAnAgentWrittenKey(t *testing.T) {
 }
 
 func TestEvidenceRecordKeepsEveryOtherByte(t *testing.T) {
+	t.Parallel()
 	for _, newline := range []string{"\n", "\r\n"} {
 		t.Run(fmt.Sprintf("newline %q", newline), func(t *testing.T) {
 			root, head, report := recordFixture(t)
@@ -186,6 +190,7 @@ func TestEvidenceRecordKeepsEveryOtherByte(t *testing.T) {
 }
 
 func TestEvidenceRecordRoundTripsThroughTheMechanicalStage(t *testing.T) {
+	t.Parallel()
 	root, head, report := recordFixture(t)
 	recordRun(t, root, head, report)
 	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: root, ReportPath: recordReportPath})
@@ -195,6 +200,7 @@ func TestEvidenceRecordRoundTripsThroughTheMechanicalStage(t *testing.T) {
 }
 
 func TestAlwaysObservedNamesItsReason(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		provenance string
 		inputs     []speccheck.EvidenceInput
@@ -214,6 +220,7 @@ func TestAlwaysObservedNamesItsReason(t *testing.T) {
 }
 
 func TestEvidenceRecordStripsTheKeyOnGitReadError(t *testing.T) {
+	t.Parallel()
 	root, _, report := recordFixture(t)
 	report = strings.Replace(report, "verdict: pass", "evidence_snapshots: fabricated\nverdict: pass", 1)
 	writeMechanicalFile(t, root, recordReportPath, report)

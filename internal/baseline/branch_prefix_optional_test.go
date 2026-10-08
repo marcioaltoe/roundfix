@@ -7,6 +7,7 @@ import (
 )
 
 func TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule(t *testing.T) {
+	t.Parallel()
 	decisions := standardTypeScriptDecisions("make verify")
 	decisions = slices.DeleteFunc(decisions, func(d DecisionValue) bool { return d.ID == "branch.prefix" })
 	plan := buildProjectDecisionPlan(t, newProjectDecisionPlanRepository(t), decisions)
@@ -23,6 +24,7 @@ func TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule(t *testing.T) {
 }
 
 func TestARecordedBranchPrefixKeepsItsSentence(t *testing.T) {
+	t.Parallel()
 	for _, value := range []string{"<type>/", "ma/"} {
 		t.Run(value, func(t *testing.T) {
 			decisions := standardTypeScriptDecisions("make verify")
@@ -42,6 +44,7 @@ func TestARecordedBranchPrefixKeepsItsSentence(t *testing.T) {
 }
 
 func TestBranchPrefixIsAnOptionalDecision(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	if !decisionOptional(catalog.decisions["branch.prefix"]) {
 		t.Fatal("branch.prefix is required")

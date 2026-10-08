@@ -14,6 +14,7 @@ import (
 )
 
 func TestOpenKeysALegacyRunFromItsRunWorktree(t *testing.T) {
+	t.Parallel()
 	fixture := newLegacyRepositoryKeyFixture(t)
 
 	runStore := openTestStore(t, context.Background(), fixture.homeDir)
@@ -36,6 +37,7 @@ func TestOpenKeysALegacyRunFromItsRunWorktree(t *testing.T) {
 }
 
 func TestOpenLeavesALegacyRunUnkeyedWhenItsWorktreeIsGone(t *testing.T) {
+	t.Parallel()
 	fixture := newLegacyRepositoryKeyFixture(t)
 	gittest.Run(t, fixture.mainRoot, "worktree", "remove", fixture.workDir)
 
@@ -49,6 +51,7 @@ func TestOpenLeavesALegacyRunUnkeyedWhenItsWorktreeIsGone(t *testing.T) {
 }
 
 func TestOpenRejectsAWorktreeKeyWithoutACommonDirectory(t *testing.T) {
+	t.Parallel()
 	fixture := newLegacyRepositoryKeyFixture(t)
 	gittest.Run(t, fixture.mainRoot, "worktree", "remove", fixture.workDir)
 	if err := os.MkdirAll(fixture.workDir, 0o755); err != nil {
@@ -76,6 +79,7 @@ func TestOpenRejectsAWorktreeKeyWithoutACommonDirectory(t *testing.T) {
 }
 
 func TestOpenKeysALegacyRunToItsOwnRepository(t *testing.T) {
+	t.Parallel()
 	fixture := newLegacyRepositoryKeyFixture(t)
 	gittest.Run(t, fixture.mainRoot, "worktree", "remove", fixture.workDir)
 	otherRoot := filepath.Join(t.TempDir(), "other-main")
@@ -107,6 +111,7 @@ func TestOpenKeysALegacyRunToItsOwnRepository(t *testing.T) {
 }
 
 func TestOpenRepositoryKeyBackfillIsIdempotent(t *testing.T) {
+	t.Parallel()
 	fixture := newLegacyRepositoryKeyFixture(t)
 
 	first := openTestStore(t, context.Background(), fixture.homeDir)
@@ -128,6 +133,7 @@ func TestOpenRepositoryKeyBackfillIsIdempotent(t *testing.T) {
 }
 
 func TestOpenReaderDoesNotBackfillRepositoryKeys(t *testing.T) {
+	t.Parallel()
 	fixture := newLegacyRepositoryKeyFixture(t)
 
 	reader, err := OpenReader(context.Background(), fixture.homeDir)

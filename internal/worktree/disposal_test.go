@@ -15,6 +15,7 @@ import (
 )
 
 func TestRemoveRegisteredWorktreeWaitsForTheAdminLock(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	worktreePath := filepath.Join(t.TempDir(), "registered")
 	gitWorktreeTest(t, repoDir, "worktree", "add", "--detach", worktreePath, head)
@@ -33,6 +34,7 @@ func TestRemoveRegisteredWorktreeWaitsForTheAdminLock(t *testing.T) {
 }
 
 func TestAddDetachedWorktreeWaitsForTheAdminLock(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	worktreePath := filepath.Join(t.TempDir(), "detached")
 	release := holdDisposalAdminLock(t, repoDir)
@@ -50,6 +52,7 @@ func TestAddDetachedWorktreeWaitsForTheAdminLock(t *testing.T) {
 }
 
 func TestRemoveRegisteredWorktreeKeepsADirtyWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, head := newStagingRepository(t)
 	worktreePath := filepath.Join(t.TempDir(), "dirty")
 	gitWorktreeTest(t, repoDir, "worktree", "add", "--detach", worktreePath, head)

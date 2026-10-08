@@ -57,6 +57,7 @@ func assertDigestStage(t *testing.T, root, reason string) {
 }
 
 func TestEvidenceRecordWritesOneLinePerInputWhateverItMatches(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/a.txt": "a\n"}
 	for i := 1; i < 2500; i++ {
 		contents[fmt.Sprintf("src/file-%04d.txt", i)] = fmt.Sprint(i)
@@ -75,6 +76,7 @@ func TestEvidenceRecordWritesOneLinePerInputWhateverItMatches(t *testing.T) {
 }
 
 func TestEvidenceInputDigestFollowsTheSortedSummary(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/z.txt": "z\n", "src/a.txt": "a\n", "src/m.txt": "m\n"}
 	root, head, report := recordFixture(t)
 	for _, path := range []string{"src/z.txt", "src/a.txt", "src/m.txt"} {
@@ -100,6 +102,7 @@ func TestEvidenceInputDigestFollowsTheSortedSummary(t *testing.T) {
 }
 
 func TestCarryRefusesANewlinePathAddedAfterTheSnapshotAsMoved(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/a.txt": "a\n", "src/z.txt": "z\n"}
 	root, head, report := digestFixture(t, contents)
 	recordRun(t, root, head, report)
@@ -110,6 +113,7 @@ func TestCarryRefusesANewlinePathAddedAfterTheSnapshotAsMoved(t *testing.T) {
 }
 
 func TestCarryComparesTheRecordedDigestPerInput(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/a.txt": "a\n", "src/z.txt": "z\n"}
 	for _, name := range []string{"equal", "count", "digest"} {
 		t.Run(name, func(t *testing.T) {
@@ -131,6 +135,7 @@ func TestCarryComparesTheRecordedDigestPerInput(t *testing.T) {
 }
 
 func TestCarryNamesTheMovedRefNotItsFiles(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/a.txt": "a\n", "src/b.txt": "b\n", "src/z.txt": "z\n"}
 	root, head, report := digestFixture(t, contents)
 	recordRun(t, root, head, report)
@@ -154,6 +159,7 @@ func TestCarryNamesTheMovedRefNotItsFiles(t *testing.T) {
 }
 
 func TestCarryReadsAPerFileSnapshotAsItsDigest(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/a.txt": "a\n", "src/z.txt": "z\n"}
 	// The independent summary also pins the expected pair used by the new form.
 	digest := inputSummaryDigest(contents)
@@ -196,6 +202,7 @@ func TestCarryReadsAPerFileSnapshotAsItsDigest(t *testing.T) {
 }
 
 func TestCarriableAcceptsARecordedDigestAgainstTheCurrentFiles(t *testing.T) {
+	t.Parallel()
 	contents := map[string]string{"src/a.txt": "a\n"}
 	prior := speccheck.ReportRow{Status: "pass", EstablishedBy: recordReportPath, EstablishedHead: "prior", AncestryVerified: true, Inputs: []speccheck.EvidenceInput{{Kind: speccheck.EvidenceRepositoryPath, Ref: "src/**"}}, EvidencePaths: []string{"src/a.txt"}}
 	established := []speccheck.EvidenceSnapshot{{Ref: "src/**", Count: 1, SHA256: inputSummaryDigest(contents)}}

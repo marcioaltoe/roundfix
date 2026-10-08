@@ -70,10 +70,12 @@ func twoPassRowInputs(id, input string) string {
 }
 
 func TestTwoGatePassesCarryAnUnmovedRowIntoTheCommittedReport(t *testing.T) {
+	t.Parallel()
 	testTwoGatePasses(t, false)
 }
 
 func TestTwoGatePassesReRunARowWhoseInputMoved(t *testing.T) {
+	t.Parallel()
 	testTwoGatePasses(t, true)
 }
 

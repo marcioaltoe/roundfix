@@ -9,6 +9,7 @@ import (
 )
 
 func TestHistorySanitizeClauseIsAppended(t *testing.T) {
+	t.Parallel()
 	const sentence = "When the runtime offers a history sanitize, such as `roundfix history sanitize --apply --batch <n>`, it replaces each Spec folder an earlier archive left under the history root with its Archive Record, reduces each retired Finding and Backlog Entry to its front matter, title, first paragraph and the revision that holds its full text, and removes retired Review Artifacts and handoffs, one reviewed batch at a time after a tag marks the full history; retired ADRs stay whole."
 
 	catalog, err := LoadEmbeddedCatalog()

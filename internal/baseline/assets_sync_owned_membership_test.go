@@ -37,6 +37,7 @@ func buildOmittedSkillSnapshot(t *testing.T, recorded []assetsSyncSkill) *assets
 }
 
 func TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits(t *testing.T) {
+	t.Parallel()
 	qa := assetsSyncSkill{Name: "qa-gate", Path: "skills/00-setup/qa-gate", Source: assetsSyncSource{Type: "repo", Name: "roundfix"}, MinimumVersion: "0.0.2"}
 	roundfix := assetsSyncSkill{Name: "roundfix", Path: "skills/06-review-repair/roundfix", Source: qa.Source, MinimumVersion: "0.0.2"}
 	other := assetsSyncSkill{Name: "custom-owned", Path: "skills/custom-owned", Source: qa.Source, MinimumVersion: "0.1.0"}
@@ -47,6 +48,7 @@ func TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits(t *testing.T) {
 }
 
 func TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits(t *testing.T) {
+	t.Parallel()
 	qa := assetsSyncSkill{Name: "qa-gate", Path: "skills/00-setup/qa-gate", Source: assetsSyncSource{Type: "repo", Name: "roundfix"}, MinimumVersion: "0.0.2"}
 	for _, sourceType := range []string{"github", "local"} {
 		t.Run(sourceType, func(t *testing.T) {

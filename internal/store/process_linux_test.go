@@ -31,6 +31,7 @@ func TestParseProcStatStartTimeRejectsMissingField(t *testing.T) {
 }
 
 func TestProcessVanishedAcceptsBothProcfsAnswers(t *testing.T) {
+	t.Parallel()
 	// A task reaped mid-scan is reported as ENOENT or, while it is still being
 	// reaped, as ESRCH. Guarding only the first made a whole process-table
 	// enumeration fail on a process that simply exited.
