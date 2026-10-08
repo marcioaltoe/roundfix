@@ -760,6 +760,9 @@ func (store *Store) Compact(ctx context.Context, preview CompactionPreview) (res
 		return CompactionResult{}, err
 	}
 
+	if _, err := conn.ExecContext(ctx, `PRAGMA auto_vacuum = INCREMENTAL`); err != nil {
+		return CompactionResult{}, fmt.Errorf("compact Run Database: enable incremental compaction: %w", err)
+	}
 	if _, err := conn.ExecContext(ctx, `VACUUM`); err != nil {
 		return CompactionResult{}, fmt.Errorf("compact Run Database: rebuild database: %w", err)
 	}
@@ -879,6 +882,17 @@ func vacuumIntoSize(ctx context.Context, conn *sql.Conn, databasePath string) (s
 	}()
 	if err := temporary.Close(); err != nil {
 		return 0, fmt.Errorf("close empty compact snapshot %q: %w", temporaryPath, err)
+	}
+	mode, err := storagePragmaInt64(ctx, conn, "auto_vacuum")
+	if err != nil {
+		return 0, err
+	}
+	// Setting even the current mode writes metadata on an incremental
+	// database. Immutable readers already produce the requested layout.
+	if mode != 2 {
+		if _, err := conn.ExecContext(ctx, `PRAGMA auto_vacuum = INCREMENTAL`); err != nil {
+			return 0, fmt.Errorf("enable incremental compact snapshot: %w", err)
+		}
 	}
 	if _, err := conn.ExecContext(ctx, `VACUUM INTO ?`, temporaryPath); err != nil {
 		return 0, fmt.Errorf("build compact snapshot: %w", err)

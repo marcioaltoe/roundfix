@@ -9,18 +9,19 @@ decision.
 <!-- durable-table-lifecycle:begin -->
 | Table | Lifecycle owner | Retention rule |
 | --- | --- | --- |
-| `runs` | Run lifecycle | Preserve as the compact Run index. Journal Retention never deletes these rows. Any future bound requires measured justification and an explicit policy change. |
-| `active_run_locks` | Active Run lifecycle | Keep while the owning Run is Active and release when that Run reaches a terminal outcome. Journal Retention never deletes these locks. |
+| `runs` | Run lifecycle | Run Retention removes a terminal Run past its configured window (ADR-0255). Journal Retention never deletes these rows. |
+| `active_run_locks` | Active Run lifecycle | Keep while the owning Run is Active and release at its terminal outcome. Run Retention removes any remaining lock with its terminal Run past the window (ADR-0255). Journal Retention never deletes these locks. |
 | `interactive_defaults` | Interactive Input | Keep one current value per key, replacing it when Interactive Input records a newer value. No age-based retention applies. |
-| `run_events` | Run Event Journal | Journal Retention may delete events only for terminal Runs older than its configured window. Active Run events are never eligible, and a zero window keeps everything. |
-| `run_token_usage` | Run lifecycle | Keep prompt usage with its owning Run, deleting only through that Run's foreign-key lifecycle. Journal Retention never deletes these rows. |
-| `run_agent_selections` | Agent Selection lifecycle | Keep as evidence with the owning Run. Delete only with that Run through the existing foreign-key lifecycle, unless a future explicit evidence-retention rule records measured justification. Journal Retention never deletes these rows. |
+| `run_events` | Run Event Journal | Journal Retention may delete events only for terminal Runs older than its configured window. Active Run events are never eligible, and a zero window keeps everything. Run Retention removes remaining events with their terminal Run past the window (ADR-0255). |
+| `run_token_usage` | Run lifecycle | Run Retention removes usage with its terminal Run past the window (ADR-0255). Journal Retention never deletes these rows. |
+| `run_agent_selections` | Agent Selection lifecycle | Run Retention removes selections with their terminal Run past the window (ADR-0255). Journal Retention never deletes these rows. |
 | `run_windows` | Run Window lifecycle | Keep one current window per repository. Replace it only through an explicit forced set and delete it only through an explicit clear. No age-based retention applies. |
 | `delivery_queues` | Delivery Queue lifecycle | Keep one current queue per repository until an explicit Delivery Queue operation removes it. No age-based retention applies. |
 | `delivery_queue_runs` | Delivery Queue lifecycle | Keep every Run link, including retries, with the owning queue and delete only through its foreign-key lifecycle. Journal Retention never deletes these rows. |
 | `delivery_queue_items` | Delivery Queue lifecycle | Keep ordered items with their owning Delivery Queue and delete them only through that queue's foreign-key lifecycle. |
 | `delivery_action_intents` | Delivery Queue lifecycle | Keep every external-action intent with its owning Delivery Queue item so an intent without a receipt remains observable. |
 | `delivery_action_receipts` | Delivery Queue lifecycle | Keep each receipt with its intent and delete it only through that intent's foreign-key lifecycle. |
+| `run_retention_sweeps` | Run Retention lifecycle | Keep one row recording the last completed sweep and its window, replacing it after each completed sweep (ADR-0255). |
 <!-- durable-table-lifecycle:end -->
 
 The policy keeps the existing deletion boundary unchanged: the GC Command can

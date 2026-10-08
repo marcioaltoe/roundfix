@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -257,5 +258,38 @@ func TestSchemaVersionErrorNamesNoOperationalCommand(t *testing.T) {
 		if strings.Contains(err.Error(), "resolve, watch, or implement") {
 			t.Fatalf("SchemaVersionError still names operational commands: %q", err.Error())
 		}
+	}
+}
+
+func TestMigrateAddsRunRetentionSweeps(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	home := t.TempDir()
+	s := openDefaultRetentionFixture(t, home)
+	run, _ := seedRetainedRun(t, s, StateClean, retentionFixtureCutoff)
+	seedRetentionQueue(t, s, run.ID, "link")
+	tables := append(append([]string{}, retentionDependentTables...), retentionUnchangedTables...)
+	before := retentionSnapshot(t, s.db, tables, "")
+	retentionExec(t, s.db, `DROP TABLE run_retention_sweeps`)
+	retentionExec(t, s.db, `PRAGMA user_version = 22`)
+	closeStore(t, s)
+	result, err := Migrate(ctx, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.From != 22 || result.To != schemaVersion || !result.Exists {
+		t.Fatalf("migration = %+v", result)
+	}
+	s = openTestStore(t, ctx, home)
+	defer closeStore(t, s)
+	after := retentionSnapshot(t, s.db, tables, "")
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("migration changed existing rows")
+	}
+	if _, found, err := s.LastRunRetentionSweep(ctx); err != nil || found {
+		t.Fatalf("new sweep record: %v %v", found, err)
+	}
+	if retentionPragma(t, s, "auto_vacuum") != 0 {
+		t.Fatal("migration changed existing vacuum mode")
 	}
 }

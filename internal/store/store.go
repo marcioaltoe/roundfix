@@ -316,23 +316,44 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 		return nil, fmt.Errorf("create Roundfix Home %q: %w", filepath.Dir(path), err)
 	}
 
-	db, err := sql.Open("sqlite", writerDSN(path))
+	writeLockFile, err := openWriteLockFile(path)
 	if err != nil {
+		return nil, err
+	}
+	if err := acquireWriteLock(ctx, writeLockFile); err != nil {
+		_ = writeLockFile.Close()
+		return nil, fmt.Errorf("initialize Run Database: %w", err)
+	}
+	dsn := writerDSN(path)
+	info, statErr := os.Stat(path)
+	if errors.Is(statErr, os.ErrNotExist) || (statErr == nil && info.Size() == 0) {
+		// SQLite must receive this before WAL materializes the new file.
+		dsn = strings.Replace(dsn, "&_pragma=journal_mode(WAL)",
+			"&_pragma=auto_vacuum(INCREMENTAL)&_pragma=journal_mode(WAL)", 1)
+	} else if statErr != nil {
+		_ = releaseWriteLock(writeLockFile)
+		_ = writeLockFile.Close()
+		return nil, fmt.Errorf("stat Run Database %q: %w", path, statErr)
+	}
+	db, err := sql.Open("sqlite", dsn)
+	if err == nil {
+		db.SetMaxOpenConns(1)
+		err = db.PingContext(ctx)
+	}
+	err = errors.Join(err, releaseWriteLock(writeLockFile))
+	if err != nil {
+		_ = writeLockFile.Close()
+		if db != nil {
+			_ = db.Close()
+		}
 		return nil, fmt.Errorf("open Run Database %q: %w", path, err)
 	}
-	db.SetMaxOpenConns(1)
-
 	store := &Store{
 		db:                db,
 		now:               func() time.Time { return time.Now().UTC() },
 		temporaryCapacity: availableTemporaryCapacity,
+		writeLockFile:     writeLockFile,
 	}
-	writeLockFile, err := openWriteLockFile(path)
-	if err != nil {
-		_ = db.Close()
-		return nil, err
-	}
-	store.writeLockFile = writeLockFile
 	if _, err := store.migrate(ctx, path); err != nil {
 		_ = writeLockFile.Close()
 		_ = db.Close()
@@ -1537,7 +1558,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 22
+const schemaVersion = 23
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1751,7 +1772,9 @@ func (store *Store) migrationStatements(ctx context.Context, tx *sql.Tx, version
 	case 20:
 		statements = v21Statements
 	case 21:
-		// Token usage is the only change from the previous schema.
+		// Token usage and Run Retention are added below.
+	case 22:
+		return []string{runRetentionSweepsSchema}, nil
 	default:
 		return nil, fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1760,6 +1783,7 @@ func (store *Store) migrationStatements(ctx context.Context, tx *sql.Tx, version
 		return nil, err
 	}
 	statements = append(statements, usageStatements...)
+	statements = append(statements, runRetentionSweepsSchema)
 	return statements, nil
 }
 
@@ -1907,6 +1931,7 @@ func createSchemaStatements() []string {
 	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
 	statements = append(statements, deliveryLimitColumnStatements(false, false, false, false)...)
 	statements = append(statements, tokenUsageSchemaStatements(false)...)
+	statements = append(statements, runRetentionSweepsSchema)
 	return append(statements, fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion))
 }
 
