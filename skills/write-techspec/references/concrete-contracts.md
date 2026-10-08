@@ -45,6 +45,12 @@ brackets matches one or more characters within the same line. Everything else
 matches exactly, including the exit code; standard output and standard error
 are compared separately.
 
+Copy each line from a run of the real command, not from memory. Keep the lines
+a reader might skip: a final digest or summary line, a `Usage` block, leading
+indentation and, for a `go run` command that exits non-zero, the `exit status
+<n>` line that `go run` adds to standard error. The implementing Task's test
+asserts every line, so a line left out here becomes a QA rerun later.
+
 This is an illustrative block, so it is fenced and is not read by the check:
 
 ```transcript

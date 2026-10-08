@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0253-authoring-rules-that-stop-qa-reruns
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -86,3 +86,34 @@ deletes one bullet of `docs/agents/specific-repository.md`.
 - [_prd.md](_prd.md) — Goals 1-3 and 5; User Stories 1-3 and 5; Core Features 3 and 5; Success Metric 3
 - [_techspec.md](_techspec.md) — API Contract 5; Skill and document texts; Version changes; Invariant 9; Testing Approach; Build Order 2
 - ADR-0258
+
+## Result
+
+Implemented the authoring guidance for whole Surface Transcript assertions,
+reachable outside evidence, cross-Spec `requires`, and backtick-free
+Verification commands in `write-tasks`. Added the real-run copy rule to the
+concrete contracts guide while keeping its single parsed Claim Receipt and
+single parsed transcript, and inserted the seven Roundfix repository rules
+before the release-plan rule.
+
+Focused implementation evidence:
+
+- `make skills-sync` ran before and after version recording.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed after the host Go cache failed with a permission error. It raised `write-tasks` to `0.0.12` and `write-techspec` to `0.0.9`, and recorded both digests.
+- `git diff --check` passed.
+- The changed path inspection showed only the authorized canonical skills, mirrors, owned-skill record, repository guide, and this Task file. No Baseline module or production Go file changed.
+
+Acceptance evidence:
+
+- `write-tasks` now names one whole-transcript test, every output and error
+  line, the exit code, the `exit status <n>` line, reachable outside evidence,
+  `requires`, and the backtick rule.
+- The concrete contracts guide now tells authors to copy every line from a
+  real command run and retains exactly one receipt and one transcript example.
+- `docs/agents/specific-repository.md` contains the seven requested rules in
+  the required position.
+- Both owned skills have raised versions in canonical and mirror copies, and
+  `skills/testdata/owned-skill-versions.json` contains the new records.
+
+The Task's authored Verification commands were not run; the Daemon owns that
+gate and will run it after handoff.

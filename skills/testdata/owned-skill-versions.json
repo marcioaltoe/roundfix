@@ -483,6 +483,10 @@
       {
         "version": "0.0.11",
         "digest": "2de03cf0ad19db092e84aa56622d2d399657f748b835d232fc7c1ad29916ced9"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "164589d61de58671b28b5ac3d01fad4feb8ef5d114ba4fac81a4a04ac5cbd5d2"
       }
     ],
     "write-techspec": [
@@ -513,6 +517,10 @@
       {
         "version": "0.0.8",
         "digest": "33336b760d67bb18ccc1131052474b304a98e035d6789749f942ec02765f8b00"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "8b14101c9e72148e5c3455b32c76c422a74e8535cc946a15dd9045214afa0401"
       }
     ]
   }

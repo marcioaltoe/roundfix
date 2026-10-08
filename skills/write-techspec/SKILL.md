@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.8
+  version: 0.0.9
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.8
+version: 0.0.9
 ---
 
 # Write TechSpec
