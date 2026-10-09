@@ -1,5 +1,0 @@
-{
-  "owned_go_pid": 16066,
-  "launcher_pid": 13744,
-  "reason": "Unix socket bind operation not permitted in sandbox; restart with fixture access"
-}

@@ -1,7 +1,0 @@
-{
-  "commit_range": "2ce5abe8..3af9f686",
-  "prohibited_paths_changed": [
-    "internal/app/version.go"
-  ],
-  "paths_total": 266
-}

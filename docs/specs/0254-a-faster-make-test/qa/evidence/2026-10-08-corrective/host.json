@@ -1,6 +1,0 @@
-{
-  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
-  "cpus": 10,
-  "go_version": "go version go1.26.5 darwin/arm64",
-  "head": "84a095f9152b55ecd880eef20f74473facc86b30"
-}

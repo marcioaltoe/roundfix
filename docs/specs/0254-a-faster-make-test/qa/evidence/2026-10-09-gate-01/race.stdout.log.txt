@@ -1,7 +1,0 @@
-ok  	roundfix/internal/cli	286.885s
-ok  	roundfix/internal/daemon	143.057s
-ok  	roundfix/internal/spec	72.336s
-ok  	roundfix/internal/speccheck	54.333s
-ok  	roundfix/internal/worktree	110.854s
-ok  	roundfix/internal/store	63.505s
-ok  	roundfix/internal/baseline	200.514s

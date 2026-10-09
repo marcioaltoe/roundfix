@@ -1,1 +1,0 @@
-HEAD is now at 3af9f686 docs: 0254's QA Requirement 9 allows moving an existing t.Parallel call first

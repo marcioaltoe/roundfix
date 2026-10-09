@@ -1,5 +1,0 @@
-Command: make build
-Observed exit: 0
-Build from this Run Worktree at 84a095f9152b55ecd880eef20f74473facc86b30.
-Go invocation: go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=84a095f9-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-08 22:19:24 -0300'" -o bin/roundfix ./cmd/roundfix
-Independent binary identity: version.stdout.log.txt.

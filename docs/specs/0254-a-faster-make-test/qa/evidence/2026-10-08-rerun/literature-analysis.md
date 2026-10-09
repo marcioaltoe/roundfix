@@ -1,2 +1,0 @@
-Source: https://damorim.github.io/publications/candido-etal-ase17.pdf
-Read via public web reader; PDF page index 7, text lines 878-886. Fresh retrieval succeeded after local curl-cffi CONNECT denial. The independently observed attribution is 97.5% null dereference, 1.6% concurrent access to unsynchronized structures, 0.8% likely broken dependencies. This supports race detection and shuffled ordering checks, without extrapolating Java-study frequencies to Go.

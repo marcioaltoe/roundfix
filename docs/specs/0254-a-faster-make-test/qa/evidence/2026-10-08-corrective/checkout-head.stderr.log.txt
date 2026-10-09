@@ -1,1 +1,0 @@
-HEAD is now at 84a095f9 test: internal/cli's sequential tests stop sharing process-global state

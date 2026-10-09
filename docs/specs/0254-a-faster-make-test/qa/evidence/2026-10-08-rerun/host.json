@@ -1,7 +1,0 @@
-{
-  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
-  "architecture": "arm64",
-  "logical_cpus": 10,
-  "Go": "go1.26.5 darwin/arm64",
-  "scope": "both clones on this same host; separate warmed GOCACHE; no Go result-cache reuse (-count=1)"
-}

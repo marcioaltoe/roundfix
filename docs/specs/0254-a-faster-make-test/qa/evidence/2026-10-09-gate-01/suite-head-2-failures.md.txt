@@ -1,5 +1,0 @@
-=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate
-=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout
-    deliver_item_binary_test.go:205: log="roundfix: notice: Delivery Queue item widget: review runs the owner's binary; the item binary's migrate --check exited -1: \n" want="roundfix: notice: Delivery Queue item widget: review runs the owner's binary; the item binary's migrate --check exited 2: stdout reason\n"
---- FAIL: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout (0.06s)
---- FAIL: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate (0.92s)

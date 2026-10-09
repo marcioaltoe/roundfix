@@ -1,1 +1,0 @@
-HEAD is now at 93c4dac1 docs: 0254's wall-time target is at most 70 % of the start

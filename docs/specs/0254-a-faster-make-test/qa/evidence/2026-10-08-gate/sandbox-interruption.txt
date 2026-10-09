@@ -1,5 +1,0 @@
-Execution tool stopped measurement session 72496 during suite-start-1:
-write_stdin failed: Unified exec process failed: Network access to "cafe.github.com" was blocked: domain is not on the allowlist for the current sandbox mode.
-Subsequent session read: Unknown process id 72496.
-Process enumeration attempt: pgrep -f measure.py.txt|roundfix-0254-qa-jgb05qxo; exit 3, sysmon request failed with error: sysmond service not found; pgrep: Cannot get process list.
-The baseline JSON stream ends mid-package, with no CLI package terminal event; no completion, exit or wall/CPU metric is inferred. The tool removed the session. Fixture cleanup cannot be independently confirmed because process enumeration is unavailable; no broad kill was used.
