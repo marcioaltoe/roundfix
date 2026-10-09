@@ -71,8 +71,7 @@ tests can call `t.Parallel()`.
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run '^TestEveryTestInAParallelTestPackageRunsInParallel$' ./internal/testfixture 2>&1)" || { printf '%s\n' "$out"; exit 1; }; grep -qE '"internal/cli": *([0-9]|1[0-2]),' internal/testfixture/parallel_tests_test.go || { printf 'internal/cli cap is above 12\n' >&2; exit 1; }; test "$(grep -rh '// Sequential:' internal/cli/*_test.go | wc -l | tr -d ' ')" -le 12 || { printf 'more than 12 Sequential tests remain\n' >&2; exit 1; }`
-- `go test -count=1 -race -short ./internal/cli && go test -count=1 -shuffle=on ./internal/cli`
+- `out="$(go test -count=1 -v -run '^TestEveryTestInAParallelTestPackageRunsInParallel$' ./internal/testfixture 2>&1)" || { printf '%s\n' "$out"; exit 1; }; grep -qE '"internal/cli": *([0-9]|1[0-2]),' internal/testfixture/parallel_tests_test.go || { printf 'internal/cli cap is above 12\n' >&2; exit 1; }; test "$(grep -rh '// Sequential:' internal/cli/*_test.go | wc -l | tr -d ' ')" -le 12 || { printf 'more than 12 Sequential tests remain\n' >&2; exit 1; }; go test -count=1 -race -short ./internal/cli && go test -count=1 -shuffle=on ./internal/cli`
 
 ## References
 
