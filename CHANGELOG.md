@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.65.0] - 2026-10-09
+
+### A faster make test
+
+- **Parallel by default.** In seven packages, every top-level test calls `t.Parallel()` first or carries a `// Sequential:` reason. A repository test enforces this with a cap for each package, and a cap can only fall. In `internal/cli`, 1,409 tests had 592 that never called `t.Parallel()`; 11 sequential tests remain.
+- **No shared process state.** `internal/cli` reads environment variables and the build commit through `commandDependencies`. Tests now inject their values instead of changing the process, so they can run in parallel. Production behavior is unchanged.
+- **Measured.** A full `go test -count=1 ./...` runs in about 62–69 % of the earlier wall time (roughly 300 s to 200 s on a 10-core Mac under load). The `internal/cli` sequential phase fell from about 250 s to under 1 s. Both repository contract tags run in one `go test`, and `make verify-contracts` takes about 70 % of its earlier time.
+- **Test fixes found on the way.** A store reader test now joins its writer goroutine before the store closes, which removes a data race. The forge-probe test checks its 250 ms bound and the cancellation of the child it started as two separate steps.
+- **Known issue.** In the full suite, the child process of one `internal/cli` delivery test is sometimes killed by an external signal (exit -1). The sender is not identified yet, and a follow-up tracks it.
+- **Glossary.** Adds Parallel Test Package and Sequential Test.
+
 ## [0.64.0] - 2026-10-08
 
 ### Authoring rules that stop QA reruns
