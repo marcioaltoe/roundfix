@@ -34,7 +34,7 @@ or writes the real `~/.roundfix`.
    CPU, the load average before and after, every package's elapsed time, and
    the sequential phase of `internal/cli` (the summed elapsed time of its
    top-level tests that never paused). Success Metric 1 holds when the head's
-   wall time is at most 65 % of the start's; Success Metric 2 holds when the
+   wall time is at most 70 % of the start's; Success Metric 2 holds when the
    head's `internal/cli` sequential phase is at most 25 % of the start's. When
    the load average differs by more than half between the two runs, it
    repeats the pair and records both.

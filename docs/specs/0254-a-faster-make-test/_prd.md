@@ -142,7 +142,7 @@ any 0253 added, and its ceiling leaves room for them.
 
 1. Success Metric: on the same machine, back to back, a full
    `go test -count=1 -parallel 16 ./...` at the audited head takes at most
-   65 % of the wall time it takes at the starting commit `2ce5abe8`.
+   70 % of the wall time it takes at the starting commit `2ce5abe8`.
    Prototype: 227 s against 384 s, 59 %, before the residue work.
 2. Success Metric: in the same pair of runs, the sequential phase of
    `internal/cli` (the summed durations of its top-level tests that never

@@ -68,6 +68,14 @@ and every other test file the conversions change.
 
 None. No Task runs a generator, and no derived file changes.
 
+## Revised target
+
+On 2026-10-09 the maintainer approved lowering Success Metric 1 from 65 % to
+70 % of the starting wall time ("Aceitar ≤ 70% e publicar"), after QA measured
+67 % and 69 % under variable host load and task_06 brought the `internal/cli`
+sequential phase from 43 % to 0.2 %. The remaining distance to 60 s, mainly
+the volume of git processes per run, is a later Spec.
+
 ## Limits
 
 - No change to the Makefile, the CI workflows, `go.mod`, `go.sum`,
