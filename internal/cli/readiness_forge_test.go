@@ -364,25 +364,27 @@ exec sleep 30
 		t.Fatal(err)
 	}
 	deps.environ = commandEnvironmentForTest(t).dependencies.environ()
+	// The production bound: a probe whose child never answers ends with the
+	// deadline, well inside three seconds, whether or not the child started.
 	deps.timeout = 250 * time.Millisecond
-	// Under load the shell can need longer than the bound to record its PID, so
-	// each attempt must still time out and cancel, and the liveness check below
-	// runs on the first attempt whose child started.
-	var pid []byte
-	for attempt := 0; attempt < 5 && pid == nil; attempt++ {
-		if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
-			t.Fatal(err)
-		}
-		started := time.Now()
-		_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
-		if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
-			t.Fatalf("sleeping child did not cancel: %v", err)
-		}
-		if recorded, readErr := os.ReadFile(filepath.Join(dir, "pid")); readErr == nil && len(strings.TrimSpace(string(recorded))) > 0 {
-			pid = recorded
-		}
+	started := time.Now()
+	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
+	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
+		t.Fatalf("sleeping child did not cancel: %v", err)
 	}
-	if pid == nil {
+	// Cancellation kills the child: a longer bound lets the child record its
+	// PID even under load, and the deadline still ends the probe.
+	if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	deps.timeout = 2 * time.Second
+	started = time.Now()
+	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
+	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 5*time.Second {
+		t.Fatalf("sleeping child did not cancel: %v", err)
+	}
+	pid, err := os.ReadFile(filepath.Join(dir, "pid"))
+	if err != nil || len(strings.TrimSpace(string(pid))) == 0 {
 		t.Fatal("sleeping child never started")
 	}
 	// kill -0 is a read-only liveness probe, through the same bounded exec runner.

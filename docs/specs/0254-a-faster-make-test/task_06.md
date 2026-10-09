@@ -95,6 +95,7 @@ tests can call `t.Parallel()`.
 - interface: `docs/references/skill-coverage.json`
 - interface: `internal/cli/deliver_item_binary_test.go`
 - interface: `internal/store/journal_test.go`
+- interface: `internal/daemon/task_engine_test.go`
 
 ## Result
 

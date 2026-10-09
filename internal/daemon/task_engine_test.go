@@ -4772,7 +4772,7 @@ func assertVerificationFeedbackJournaled(t *testing.T, events []runevent.RunEven
 }
 
 func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement(t *testing.T) {
-	t.Parallel()
+	// Sequential: it failed after 5 s only when seven packages ran together under the race detector while it ran in parallel (0254 verification).
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
