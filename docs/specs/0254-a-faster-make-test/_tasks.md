@@ -18,7 +18,10 @@ graph:
       needs: [task_01]
     - id: task_05
       file: task_05.md
-      needs: [task_03, task_04]
+      needs: [task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_03]
 ---
 
 # Tasks — A faster make test
@@ -29,9 +32,10 @@ graph:
 | task_02 | Six more packages run their tests in parallel                                 | test | high       | task_01          |
 | task_03 | The sequential residue in internal/cli shrinks and pinned history reads less  | test | medium     | task_02          |
 | task_04 | One go test runs every selected Repository Contract Test                      | infra | medium    | task_01          |
-| task_05 | Run the final QA gate                                                         | qa   | high       | task_03, task_04 |
+| task_05 | Run the final QA gate                                                         | qa   | high       | task_03, task_04, task_06 |
+| task_06 | internal/cli's sequential tests stop sharing process-global state             | test | high       | task_03          |
 
-Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03 · 4 → task_05
+Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03 · 4 → task_06 · 5 → task_05
 
 task_01, task_02 and task_03 share
 `internal/testfixture/parallel_tests_test.go`, and task_01 and task_03 both
