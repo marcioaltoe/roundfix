@@ -54,7 +54,7 @@ func TestArchiveConfirmationNamesPromotedFiles(t *testing.T) {
 }
 
 func TestArchivePlanWithoutAKeyPrintsNoAdvice(t *testing.T) {
-	// Sequential: clears process-wide provider API key environment variables.
+	t.Parallel()
 	questions, err := judge.Load()
 	if err != nil {
 		t.Fatal(err)
@@ -62,9 +62,6 @@ func TestArchivePlanWithoutAKeyPrintsNoAdvice(t *testing.T) {
 	keys := questions.KeyVariables()
 	if len(keys) == 0 {
 		t.Fatal("judge has no key variables")
-	}
-	for _, key := range keys {
-		t.Setenv(key, "")
 	}
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	const content = "# Knowledge\nA reusable lesson.\n"

@@ -68,7 +68,7 @@ func (workflow *commandDeliveryWorkflow) deliveryOwnerWarning(ctx context.Contex
 		return ""
 	}
 	startingMain = strings.TrimSpace(startingMain)
-	binary := app.Auditor()
+	binary := commandDependenciesForContext(ctx).auditor()
 	evidence := spec.ResolveAuditorEvidence(ctx, workDir, startingMain, binary)
 	if !evidence.SelfAudit || evidence.Ancestry != app.AncestryOlder {
 		return ""

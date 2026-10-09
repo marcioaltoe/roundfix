@@ -1398,7 +1398,7 @@ func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, wor
 func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, executable, workDir string, args ...string) (roundfixCommandResult, error) {
 	command := exec.CommandContext(ctx, executable, args...)
 	command.Dir = workDir
-	command.Env = deliveryCommandEnvironment(os.Environ(), workflow.loaded.HomeDir)
+	command.Env = deliveryCommandEnvironment(commandDependenciesForContext(ctx).environ(), workflow.loaded.HomeDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	command.Stdout = &stdout

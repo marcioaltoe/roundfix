@@ -238,6 +238,10 @@ type commandEnvironment struct {
 }
 
 type commandDependencies struct {
+	getenv                          func(string) string
+	environ                         func() []string
+	tempDir                         func() string
+	auditor                         func() app.AuditingBinary
 	deliveryReadiness               func(context.Context, roundconfig.Loaded) []CheckResult
 	judgeTransport                  http.RoundTripper
 	judgeNow                        func() time.Time
@@ -306,8 +310,12 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
+		getenv:  os.Getenv,
+		environ: os.Environ,
+		tempDir: os.TempDir,
+		auditor: app.Auditor,
 		deliveryReadiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
-			return forgeReadiness(ctx, defaultReadinessDependencies(), loaded)
+			return forgeReadiness(ctx, readinessDependenciesForCommand(commandDependenciesForContext(ctx)), loaded)
 		},
 		judgeTransport:                  http.DefaultTransport,
 		judgeNow:                        time.Now,
@@ -387,11 +395,15 @@ func contextWithCommandDependencies(ctx context.Context, dependencies commandDep
 }
 
 func commandEnvironmentFromProcess() commandEnvironment {
+	return commandEnvironmentWithDependencies(defaultCommandDependencies())
+}
+
+func commandEnvironmentWithDependencies(dependencies commandDependencies) commandEnvironment {
 	homeDir, homeDirErr := os.UserHomeDir()
 	workDir, workDirErr := os.Getwd()
 	branchActor := ""
 	for _, key := range []string{"GITHUB_ACTOR", "GIT_AUTHOR_NAME", "USER", "USERNAME"} {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		if value := strings.TrimSpace(dependencies.getenv(key)); value != "" {
 			branchActor = value
 			break
 		}
@@ -401,18 +413,18 @@ func commandEnvironmentFromProcess() commandEnvironment {
 		homeDirErr:     homeDirErr,
 		workDir:        workDir,
 		workDirErr:     workDirErr,
-		environ:        os.Environ(),
-		detachFD:       os.Getenv(detachHandshakeFDEnv),
-		detachTempPath: os.Getenv(detachConsoleTempEnv),
-		tuiMode:        os.Getenv("ROUNDFIX_TUI"),
-		term:           os.Getenv("TERM"),
-		columns:        os.Getenv("COLUMNS"),
-		colorMode:      os.Getenv("ROUNDFIX_COLOR"),
-		noColor:        os.Getenv("NO_COLOR"),
-		codexPath:      os.Getenv("CODEX_PATH"),
-		executablePath: os.Getenv("PATH"),
+		environ:        dependencies.environ(),
+		detachFD:       dependencies.getenv(detachHandshakeFDEnv),
+		detachTempPath: dependencies.getenv(detachConsoleTempEnv),
+		tuiMode:        dependencies.getenv("ROUNDFIX_TUI"),
+		term:           dependencies.getenv("TERM"),
+		columns:        dependencies.getenv("COLUMNS"),
+		colorMode:      dependencies.getenv("ROUNDFIX_COLOR"),
+		noColor:        dependencies.getenv("NO_COLOR"),
+		codexPath:      dependencies.getenv("CODEX_PATH"),
+		executablePath: dependencies.getenv("PATH"),
 		branchActor:    branchActor,
-		dependencies:   defaultCommandDependencies(),
+		dependencies:   dependencies,
 	}
 }
 

@@ -125,17 +125,17 @@ func TestDeliveryKeepsTheLegacyExactMove(t *testing.T) {
 	}
 }
 func TestDeliveryArchiveStageCommitsTheArchiveRecord(t *testing.T) {
-	// Sequential: sets the process-wide ROUNDFIX_CLI_TEST_HELPER environment variable.
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	writeArchiveQAReport(t, repo, spec.VerdictPass)
 	commitArchiveFixture(t)
 	parent := strings.TrimSpace(gittest.Run(t, repo, "rev-parse", "HEAD"))
 	gittest.PersistIdentity(t, repo)
-	t.Setenv(cliTestHelperEnv, "1")
+	setCommandEnvForTest(t, cliTestHelperEnv, "1")
 	w := retirementWorkflow(repo, home)
 	var log bytes.Buffer
 	w.log = &log
-	result, err := w.Archive(t.Context(), repo, implementTestSlug, parent)
+	result, err := w.Archive(commandContextForTest(t, t.Context()), repo, implementTestSlug, parent)
 	if err != nil || !result.ExactSpecMove || result.Parent != parent || result.Head == parent {
 		t.Fatalf("archive stage=%+v err=%v", result, err)
 	}
@@ -148,7 +148,7 @@ func TestDeliveryArchiveStageCommitsTheArchiveRecord(t *testing.T) {
 	if status := strings.TrimSpace(gittest.Run(t, repo, "status", "--porcelain")); status != "" {
 		t.Fatalf("dirty archive: %s", status)
 	}
-	again, err := w.Archive(t.Context(), repo, implementTestSlug, result.Head)
+	again, err := w.Archive(commandContextForTest(t, t.Context()), repo, implementTestSlug, result.Head)
 	if err != nil || !again.AlreadyArchived {
 		t.Fatalf("already archived=%+v err=%v", again, err)
 	}

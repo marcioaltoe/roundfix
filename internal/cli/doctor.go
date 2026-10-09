@@ -37,7 +37,7 @@ func defaultDoctorDependencies() doctorDependencies {
 	return doctorDependencies{
 		loadConfig: roundconfig.Load,
 		readiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
-			return machineReadiness(ctx, defaultReadinessDependencies(), loaded)
+			return machineReadiness(ctx, readinessDependenciesForCommand(commandDependenciesForContext(ctx)), loaded)
 		},
 		healthChecker: func(_ roundconfig.Loaded, codexPath string) HealthChecker {
 			return defaultSetupDependencies().healthChecker(codexPath)

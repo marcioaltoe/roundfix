@@ -302,10 +302,10 @@ func enterpriseReadinessRunner(t *testing.T, run readinessRunner) readinessRunne
 }
 
 func TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken(t *testing.T) {
-	// Sequential: sets process-wide PATH and forge probe fixture environment variables.
+	t.Parallel()
 	dir := t.TempDir()
-	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	t.Setenv("PROBE_LOG", filepath.Join(dir, "probes"))
+	setCommandEnvForTest(t, "PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setCommandEnvForTest(t, "PROBE_LOG", filepath.Join(dir, "probes"))
 	script := `#!/bin/sh
 {
  printf 'argv:%s\n' "$*"
@@ -325,12 +325,15 @@ case "$*" in
  *) exit 90;;
 esac
 `
-	t.Setenv("GH_TEST_VERSION", readinessGHMinimumVersion)
-	t.Setenv("GIT_TEST_VERSION", readinessGitMinimumVersion)
+	setCommandEnvForTest(t, "GH_TEST_VERSION", readinessGHMinimumVersion)
+	setCommandEnvForTest(t, "GIT_TEST_VERSION", readinessGitMinimumVersion)
 	for _, name := range []string{"gh", "git"} {
 		writeScriptFixture(t, filepath.Join(dir, name), script)
 	}
-	deps := defaultReadinessDependencies()
+	deps := readinessDependenciesForCommand(commandEnvironmentForTest(t).dependencies)
+	deps.run = func(ctx context.Context, workDir string, env []string, name string, args ...string) (string, string, int, error) {
+		return execReadinessRunner(ctx, workDir, env, filepath.Join(dir, name), args...)
+	}
 	results := machineReadiness(context.Background(), deps, roundconfig.Loaded{GitRoot: dir})
 	var out bytes.Buffer
 	for _, result := range results {
@@ -356,11 +359,11 @@ esac
 printf '%s\n' "$$" > "$SLEEP_PID"
 exec sleep 30
 `
-	t.Setenv("SLEEP_PID", filepath.Join(dir, "pid"))
+	setCommandEnvForTest(t, "SLEEP_PID", filepath.Join(dir, "pid"))
 	if err := os.WriteFile(filepath.Join(dir, "gh")+scriptFixtureSuffix, []byte(sleeper), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	deps = defaultReadinessDependencies()
+	deps.environ = commandEnvironmentForTest(t).dependencies.environ()
 	deps.timeout = 250 * time.Millisecond
 	started := time.Now()
 	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")

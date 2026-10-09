@@ -76,10 +76,10 @@ func newDeliveryItemFixture(t *testing.T) *deliveryItemFixture {
 	f.workflow.loaded.Config.Specs.Root = "docs/specs"
 	f.workflow.loaded.Config.Defaults.ArtifactDir = filepath.Join(root, "artifacts")
 	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{Path: "bin/roundfix", Build: "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix"}
-	t.Setenv("DELIVERY_ITEM_RECORD", f.record)
-	t.Setenv("DELIVERY_ITEM_PROBE_EXIT", "0")
-	t.Setenv("DELIVERY_ITEM_STDERR", "")
-	t.Setenv("DELIVERY_ITEM_STDOUT", "")
+	setCommandEnvForTest(t, "DELIVERY_ITEM_RECORD", f.record)
+	setCommandEnvForTest(t, "DELIVERY_ITEM_PROBE_EXIT", "0")
+	setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "")
+	setCommandEnvForTest(t, "DELIVERY_ITEM_STDOUT", "")
 	return f
 }
 
@@ -124,9 +124,9 @@ func (f *deliveryItemFixture) assertStarts(t *testing.T, args ...[]string) {
 }
 
 func TestDeliveryStepRunsTheItemBinary(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
-	executable, err := f.workflow.stepExecutable(t.Context(), f.repo, "widget", "implement")
+	executable, err := f.workflow.stepExecutable(commandContextForTest(t, t.Context()), f.repo, "widget", "implement")
 	if err != nil || executable != filepath.Join(f.repo, "bin/roundfix") {
 		t.Fatalf("executable=%q err=%v", executable, err)
 	}
@@ -137,7 +137,7 @@ func TestDeliveryStepRunsTheItemBinary(t *testing.T) {
 }
 
 func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t) // Compile once for all three steps.
 	for _, step := range []string{"implement", "archive", "review"} {
 		t.Run(step, func(t *testing.T) {
@@ -153,13 +153,13 @@ func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
 			var args []string
 			switch step {
 			case "implement":
-				_, err = f.workflow.RunSpec(t.Context(), f.repo, "widget")
+				_, err = f.workflow.RunSpec(commandContextForTest(t, t.Context()), f.repo, "widget")
 				args = []string{"implement", "--spec", "widget"}
 			case "archive":
-				_, err = f.workflow.Archive(t.Context(), f.repo, "widget", f.head)
+				_, err = f.workflow.Archive(commandContextForTest(t, t.Context()), f.repo, "widget", f.head)
 				args = []string{"archive", "widget"}
 			case "review":
-				_, err = f.workflow.Review(t.Context(), f.repo, "widget", f.head)
+				_, err = f.workflow.Review(commandContextForTest(t, t.Context()), f.repo, "widget", f.head)
 				args = []string{"review"}
 			}
 			if err == nil || !strings.Contains(err.Error(), "fixture step stopped after recording") {
@@ -174,29 +174,29 @@ func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
 }
 
 func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
-	t.Setenv("DELIVERY_ITEM_PROBE_EXIT", "2")
-	t.Setenv(cliTestHelperEnv, "1")
+	setCommandEnvForTest(t, "DELIVERY_ITEM_PROBE_EXIT", "2")
+	setCommandEnvForTest(t, cliTestHelperEnv, "1")
 	for _, stream := range []string{"stderr", "stdout"} {
 		t.Run(stream, func(t *testing.T) {
 			if err := os.Remove(f.record); err != nil && !os.IsNotExist(err) {
 				t.Fatal(err)
 			}
 			f.log.Reset()
-			t.Setenv("DELIVERY_ITEM_STDERR", "\n  \n")
-			t.Setenv("DELIVERY_ITEM_STDOUT", "\nstdout reason\nlater\n")
+			setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "\n  \n")
+			setCommandEnvForTest(t, "DELIVERY_ITEM_STDOUT", "\nstdout reason\nlater\n")
 			detail := "stdout reason"
 			if stream == "stderr" {
-				t.Setenv("DELIVERY_ITEM_STDERR", "\nprobe schema differs\nsecond line\n")
+				setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "\nprobe schema differs\nsecond line\n")
 				detail = "probe schema differs"
 			}
-			executable, err := f.workflow.stepExecutable(t.Context(), f.repo, "widget", "review")
+			executable, err := f.workflow.stepExecutable(commandContextForTest(t, t.Context()), f.repo, "widget", "review")
 			owner, ownerErr := os.Executable()
 			if err != nil || ownerErr != nil || executable != owner {
 				t.Fatalf("executable=%q err=%v ownerErr=%v", executable, err, ownerErr)
 			}
-			result, err := f.workflow.runRoundfix(t.Context(), executable, f.repo, "--version")
+			result, err := f.workflow.runRoundfix(commandContextForTest(t, t.Context()), executable, f.repo, "--version")
 			if err != nil || result.exitCode != 0 || result.stdout == "" {
 				t.Fatalf("owner result=%+v err=%v", result, err)
 			}
@@ -210,10 +210,10 @@ func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
 }
 
 func TestDeliveryStepParksWhenTheItemBuildFails(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "printf 'build failed\\n' >&2; exit 7"
-	_, err := f.workflow.RunSpec(t.Context(), f.repo, "widget")
+	_, err := f.workflow.RunSpec(commandContextForTest(t, t.Context()), f.repo, "widget")
 	logPath := filepath.Join(f.workflow.loaded.Config.Defaults.ArtifactDir, "delivery", "widget", "item-binary-build.log")
 	if err == nil || !strings.HasPrefix(err.Error(), "build item binary: ") || !strings.Contains(err.Error(), "exit status 7") || !strings.Contains(err.Error(), logPath) {
 		t.Fatalf("error=%v", err)
@@ -229,11 +229,11 @@ func TestDeliveryStepParksWhenTheItemBuildFails(t *testing.T) {
 }
 
 func TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Path = "unignored/roundfix"
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "touch build-started"
-	_, err := f.workflow.Review(t.Context(), f.repo, "widget", f.head)
+	_, err := f.workflow.Review(commandContextForTest(t, t.Context()), f.repo, "widget", f.head)
 	if err == nil || err.Error() != `item binary path "unignored/roundfix" is not ignored by Git` {
 		t.Fatalf("error=%v", err)
 	}
@@ -247,17 +247,17 @@ func TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored(t *testing.T) {
 }
 
 func TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{}
 	f.workflow.git = nil // Any Git access would panic.
-	t.Setenv(cliTestHelperEnv, "1")
-	executable, err := f.workflow.stepExecutable(t.Context(), f.repo, "widget", "implement")
+	setCommandEnvForTest(t, cliTestHelperEnv, "1")
+	executable, err := f.workflow.stepExecutable(commandContextForTest(t, t.Context()), f.repo, "widget", "implement")
 	owner, ownerErr := os.Executable()
 	if err != nil || ownerErr != nil || executable != owner {
 		t.Fatalf("executable=%q err=%v ownerErr=%v", executable, err, ownerErr)
 	}
-	result, err := f.workflow.runRoundfix(t.Context(), executable, f.repo, "--version")
+	result, err := f.workflow.runRoundfix(commandContextForTest(t, t.Context()), executable, f.repo, "--version")
 	if err != nil || result.exitCode != 0 || result.stdout == "" {
 		t.Fatalf("owner result=%+v err=%v", result, err)
 	}
@@ -271,10 +271,10 @@ func TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable(t *testing.T) {
 }
 
 func TestDeliveryItemBinaryThatCannotStartReturnsAParkError(t *testing.T) {
-	// Sequential: sets process-wide DELIVERY_ITEM_* and ROUNDFIX_CLI_TEST_HELPER environment variables.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "mkdir -p bin"
-	_, err := f.workflow.Archive(t.Context(), f.repo, "widget", f.head)
+	_, err := f.workflow.Archive(commandContextForTest(t, t.Context()), f.repo, "widget", f.head)
 	if err == nil || !strings.HasPrefix(err.Error(), fmt.Sprintf("run item binary %q: ", filepath.Join(f.repo, "bin/roundfix"))) {
 		t.Fatalf("error=%v", err)
 	}

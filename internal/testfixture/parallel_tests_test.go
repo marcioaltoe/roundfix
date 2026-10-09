@@ -18,7 +18,7 @@ import (
 )
 
 var parallelTestPackages = map[string]int{
-	"internal/cli":       40,
+	"internal/cli":       8,
 	"internal/daemon":    16,
 	"internal/baseline":  12,
 	"internal/store":     3,

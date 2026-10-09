@@ -19,11 +19,11 @@ import (
 )
 
 func TestRevalidateWarnsWhenTheOwnerPredatesSourceOnMain(t *testing.T) {
-	// Sequential: swaps the process-wide app.BuildCommit value.
+	t.Parallel()
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.buildCommit[:8])
 
-	result, err := fixture.workflow.Revalidate(t.Context(), fixture.repository, "clean", []string{})
+	result, err := fixture.workflow.Revalidate(commandContextForTest(t, t.Context()), fixture.repository, "clean", []string{})
 	if err != nil {
 		t.Fatalf("revalidate item start: %v", err)
 	}
@@ -36,11 +36,11 @@ func TestRevalidateWarnsWhenTheOwnerPredatesSourceOnMain(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietForDocsOnlyMain(t *testing.T) {
-	// Sequential: swaps the process-wide app.BuildCommit value.
+	t.Parallel()
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("docs", "owner.md"))
 	setOwnerBuildCommit(t, fixture.buildCommit)
 
-	result, err := fixture.workflow.Revalidate(t.Context(), fixture.repository, "clean", []string{})
+	result, err := fixture.workflow.Revalidate(commandContextForTest(t, t.Context()), fixture.repository, "clean", []string{})
 	if err != nil {
 		t.Fatalf("revalidate docs-only item start: %v", err)
 	}
@@ -50,11 +50,11 @@ func TestRevalidateStaysQuietForDocsOnlyMain(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietForACurrentOwner(t *testing.T) {
-	// Sequential: swaps the process-wide app.BuildCommit value.
+	t.Parallel()
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.startingMain)
 
-	result, err := fixture.workflow.Revalidate(t.Context(), fixture.repository, "clean", []string{})
+	result, err := fixture.workflow.Revalidate(commandContextForTest(t, t.Context()), fixture.repository, "clean", []string{})
 	if err != nil {
 		t.Fatalf("revalidate current-owner item start: %v", err)
 	}
@@ -64,11 +64,11 @@ func TestRevalidateStaysQuietForACurrentOwner(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietWithoutTheBuildCommit(t *testing.T) {
-	// Sequential: swaps the process-wide app.BuildCommit value.
+	t.Parallel()
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, strings.Repeat("f", 40))
 
-	result, err := fixture.workflow.Revalidate(t.Context(), fixture.repository, "clean", []string{})
+	result, err := fixture.workflow.Revalidate(commandContextForTest(t, t.Context()), fixture.repository, "clean", []string{})
 	if err != nil {
 		t.Fatalf("revalidate item start without owner commit: %v", err)
 	}
@@ -78,11 +78,11 @@ func TestRevalidateStaysQuietWithoutTheBuildCommit(t *testing.T) {
 }
 
 func TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry(t *testing.T) {
-	// Sequential: swaps the process-wide app.BuildCommit value.
+	t.Parallel()
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.buildCommit)
 
-	result, err := fixture.workflow.Revalidate(t.Context(), fixture.repository, "clean", nil)
+	result, err := fixture.workflow.Revalidate(commandContextForTest(t, t.Context()), fixture.repository, "clean", nil)
 	if err != nil {
 		t.Fatalf("revalidate retry: %v", err)
 	}
@@ -92,12 +92,12 @@ func TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry(t *testing.T) {
 }
 
 func TestRevalidateStaysQuietWhenTheOwnerSourceDiffFails(t *testing.T) {
-	// Sequential: swaps the process-wide app.BuildCommit value.
+	t.Parallel()
 	fixture := newDeliveryOwnerStalenessFixture(t, filepath.Join("internal", "owner.go"))
 	setOwnerBuildCommit(t, fixture.buildCommit)
 	fixture.workflow.git = ownerDiffFailingGitRunner{delegate: preflight.ExecGitRunner{}}
 
-	result, err := fixture.workflow.Revalidate(t.Context(), fixture.repository, "clean", []string{})
+	result, err := fixture.workflow.Revalidate(commandContextForTest(t, t.Context()), fixture.repository, "clean", []string{})
 	if err != nil {
 		t.Fatalf("revalidate item start with unreadable owner diff: %v", err)
 	}
@@ -142,10 +142,13 @@ func newDeliveryOwnerStalenessFixture(t *testing.T, changedPath string) delivery
 
 func setOwnerBuildCommit(t *testing.T, commit string) {
 	t.Helper()
-	previous := app.BuildCommit
-	app.BuildCommit = commit
-	t.Cleanup(func() {
-		app.BuildCommit = previous
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		auditor := dependencies.auditor
+		dependencies.auditor = func() app.AuditingBinary {
+			binary := auditor()
+			binary.Commit = commit
+			return binary
+		}
 	})
 }
 
