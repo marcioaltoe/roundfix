@@ -25,14 +25,18 @@ const (
 )
 
 func defaultReadinessDependencies() readinessDependencies {
+	return readinessDependenciesForCommand(defaultCommandDependencies())
+}
+
+func readinessDependenciesForCommand(dependencies commandDependencies) readinessDependencies {
 	return readinessDependencies{
 		run: execReadinessRunner, resolve: func(name string) (string, error) {
-			path, reason := baseline.ResolveExecutable(name, filepath.SplitList(os.Getenv("PATH")))
+			path, reason := baseline.ResolveExecutable(name, filepath.SplitList(dependencies.getenv("PATH")))
 			if reason != "" {
 				return "", errors.New(reason)
 			}
 			return path, nil
-		}, environ: os.Environ(),
+		}, environ: dependencies.environ(),
 		exists:  func(path string) bool { _, err := os.Stat(path); return err == nil },
 		timeout: readinessProbeTimeout,
 	}

@@ -20,6 +20,7 @@ import (
 )
 
 func TestDoctorStorageReportsReclaimableRunsAndNamesGC(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	artifactRoot := t.TempDir()
 	now := time.Now().UTC()
@@ -58,6 +59,7 @@ func TestDoctorStorageReportsReclaimableRunsAndNamesGC(t *testing.T) {
 }
 
 func TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold(t *testing.T) {
+	t.Parallel()
 	result := doctorStorageResult(0, doctorStorageFreeBytesThreshold, 24*time.Hour, true)
 
 	if result.Status != CheckStatusFound {
@@ -70,6 +72,7 @@ func TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold(t *testing.T) {
 }
 
 func TestDoctorStorageIsOKWhenNothingIsLeftToReclaim(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	runStore, err := store.Open(t.Context(), homeDir)
 	if err != nil {
@@ -91,6 +94,7 @@ func TestDoctorStorageIsOKWhenNothingIsLeftToReclaim(t *testing.T) {
 }
 
 func TestDoctorStorageDoesNotCreateAMissingRunDatabase(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	databasePath := store.DatabasePath(homeDir)
 	loaded := doctorStorageLoaded(homeDir, t.TempDir(), 24*time.Hour)
@@ -112,6 +116,7 @@ func TestDoctorStorageDoesNotCreateAMissingRunDatabase(t *testing.T) {
 }
 
 func TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	databasePath := store.DatabasePath(homeDir)
 	runStore, err := store.Open(t.Context(), homeDir)
@@ -152,6 +157,7 @@ func TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead(t *testing.T) {
 }
 
 func TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	runStore, err := store.Open(t.Context(), homeDir)
 	if err != nil {
@@ -181,6 +187,7 @@ func TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged(t *testing.T) {
 }
 
 func TestDoctorStorageZeroRetentionKeepsEveryRun(t *testing.T) {
+	t.Parallel()
 	result := doctorStorageResult(0, 0, 0, true)
 
 	want := "nothing to reclaim; Journal Retention 0 keeps every Run; Run Database free bytes: 0"
@@ -190,6 +197,7 @@ func TestDoctorStorageZeroRetentionKeepsEveryRun(t *testing.T) {
 }
 
 func TestDoctorStorageDoesNotInspectArtifactDirectoriesOutsideGit(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	artifactRoot := t.TempDir()
 	now := time.Now().UTC()

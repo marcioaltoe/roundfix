@@ -13,6 +13,7 @@ import (
 )
 
 func TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved(t *testing.T) {
+	t.Parallel()
 	fixture := newTerminalRunFixture(t, "prune-removed-checkout")
 	userRoot := canonicalPath(fixture.repoDir)
 	fixture.run.GitRoot = filepath.Join(t.TempDir(), "removed-checkout")
@@ -39,6 +40,7 @@ func TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved(t *testing.T) {
 }
 
 func TestPruneTerminalReportSkipsARunKeyedToAnotherRepository(t *testing.T) {
+	t.Parallel()
 	fixture := newTerminalRunFixture(t, "prune-other-repository")
 	fixture.run.RepositoryRoot = canonicalPath(initWorktreeRepo(t))
 	location := filepath.Dir(filepath.Dir(fixture.ref.Path))

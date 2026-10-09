@@ -16,6 +16,7 @@ import (
 )
 
 func TestRetryRefusalNamesTheAmendingCommitAndTheRecovery(t *testing.T) {
+	t.Parallel()
 	homeDir, originalRepo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	repository := filepath.Join(t.TempDir(), "item worktree's $queue")
 	if err := os.Rename(originalRepo, repository); err != nil {
@@ -79,6 +80,7 @@ func TestRetryRefusalNamesTheAmendingCommitAndTheRecovery(t *testing.T) {
 }
 
 func TestRetryRefusalByATaskCommitKeepsTodaysText(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateBudgetExceeded, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 	prdPath := filepath.Join(fixture.repoDir, "docs", "specs", implementTestSlug, "_prd.md")
@@ -114,6 +116,7 @@ func TestRetryRefusalByATaskCommitKeepsTodaysText(t *testing.T) {
 }
 
 func TestRetryRefusalWithoutMovedInputsKeepsTodaysText(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateBudgetExceeded, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 	gitImplement(t, fixture.repoDir, "worktree", "remove", "--force", fixture.ref.Path)

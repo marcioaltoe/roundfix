@@ -11,6 +11,7 @@ import (
 )
 
 func TestDeliveryRunResultReadsAnExhaustedLostRollout(t *testing.T) {
+	t.Parallel()
 	for _, recovery := range []string{"fallback", "new_session", "exhausted"} {
 		t.Run(recovery, func(t *testing.T) {
 			ctx := t.Context()

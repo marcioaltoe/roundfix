@@ -17,6 +17,7 @@ import (
 )
 
 func TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape(t *testing.T) {
+	t.Parallel()
 	for _, shape := range qaPartialShapes() {
 		t.Run(shape.name, func(t *testing.T) {
 			for _, command := range []string{"qa-report", "archive", "settle"} {
@@ -76,6 +77,7 @@ func TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape(t *testing.T) {
 }
 
 func TestSettleNamesTheReportItRefused(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{implementQAGateSeed(string(spec.StatusFailed))})
 	location := configureSettleWorktreeLocation(t, repo, filepath.Join(home, "worktrees"))
 	_, _, taskRef := createImplementRunWorktreeFixture(t, home, repo, location, implementTestSlug, "task_qa", store.StateUnresolved)
@@ -99,6 +101,7 @@ func TestSettleNamesTheReportItRefused(t *testing.T) {
 }
 
 func TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly(t *testing.T) {
+	t.Parallel()
 	const pullRequestRows = `
 ## Results
 

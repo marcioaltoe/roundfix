@@ -79,6 +79,7 @@ func newRealSkillConflictFixture(t *testing.T, authorConflict bool) (conflictFix
 }
 
 func TestARealSkillVersionHunkIsMergedAndRegeneratedOnePatchAboveMain(t *testing.T) {
+	t.Parallel()
 	fixture, invocations := newRealSkillConflictFixture(t, false)
 	// Prove Git puts both version fields and the shared source line in one hunk.
 	if _, err := fixture.workflow.git.RunGit(t.Context(), fixture.repo, "-c", "merge.conflictStyle=merge", "merge", "--no-ff", "--no-commit", "origin/main"); err == nil {
@@ -128,6 +129,7 @@ func TestARealSkillVersionHunkIsMergedAndRegeneratedOnePatchAboveMain(t *testing
 }
 
 func TestAVersionHunkWhoseInterveningLineDiffersAbortsTheMerge(t *testing.T) {
+	t.Parallel()
 	fixture, invocations := newRealSkillConflictFixture(t, true)
 	result := resolveFixture(t, fixture)
 	if !reflect.DeepEqual(result.SourcePaths, realSkillConflictPaths) || len(result.Regenerated) != 0 {

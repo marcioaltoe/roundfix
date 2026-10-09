@@ -37,6 +37,7 @@ func legacyUnprovenFixture(t *testing.T, unproven string) LegacyConversionReques
 }
 
 func TestLegacyUnprovenMapsBecomeOneLineEach(t *testing.T) {
+	t.Parallel()
 	req := legacyUnprovenFixture(t, legacyUnprovenMaps)
 	want := []string{
 		"row 03: Catalog verification runs alone (goal: G2; satisfied-by: task_04, task_05)",
@@ -65,6 +66,7 @@ func TestLegacyUnprovenMapsBecomeOneLineEach(t *testing.T) {
 }
 
 func TestLegacyUnprovenRefusesANestedMap(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, item string }{
 		{"empty", "{}"},
 		{"nested", "{claim: {text: unsupported}}"},
@@ -88,6 +90,7 @@ func TestLegacyUnprovenRefusesANestedMap(t *testing.T) {
 }
 
 func TestActiveSpecStillRefusesUnprovenMaps(t *testing.T) {
+	t.Parallel()
 	req := legacyUnprovenFixture(t, legacyUnprovenMaps)
 	folder := filepath.Join(req.ArchiveRoot, req.Slug)
 	writeFile(t, filepath.Join(folder, "_prd.md"), "---\nspec: demo\nstatus: active\n"+legacyUnprovenMaps+"---\n\n# Demo\n")

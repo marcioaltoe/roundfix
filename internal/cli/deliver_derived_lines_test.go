@@ -78,6 +78,7 @@ func updateLineFixtureDefault(t *testing.T, fixture conflictFixture, name, conte
 }
 
 func TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated(t *testing.T) {
+	t.Parallel()
 	for _, recordConflict := range []bool{true, false} {
 		t.Run(map[bool]string{true: "record and version conflicts", false: "only version conflicts"}[recordConflict], func(t *testing.T) {
 			// Check the merge takes the default versions before the shell raises both fields.
@@ -126,6 +127,7 @@ func assertLineConflictAborted(t *testing.T, fixture conflictFixture) {
 }
 
 func TestAConflictHunkOutsideDeclaredLinesAbortsTheMerge(t *testing.T) {
+	t.Parallel()
 	fixture := newLineConflictFixture(t, true, "touch forbidden.txt")
 	result := resolveFixture(t, fixture)
 	if !reflect.DeepEqual(result.SourcePaths, []string{"SKILL.md"}) || len(result.Regenerated) != 0 {
@@ -135,6 +137,7 @@ func TestAConflictHunkOutsideDeclaredLinesAbortsTheMerge(t *testing.T) {
 }
 
 func TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, command string }{
 		{"body", "sed 's/Item body/Unexpected body/' SKILL.md > skill.tmp; mv skill.tmp SKILL.md"},
 		{"added matching line", "printf 'version: 9.0.0\\n' >> SKILL.md"},
@@ -154,6 +157,7 @@ func TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge(t *testing.T) {
 }
 
 func TestWholeFileDerivedPathsTakePrecedenceOverDeclaredLines(t *testing.T) {
+	t.Parallel()
 	fixture := newLineConflictFixture(t, true, "printf 'regenerated\\n' > derived.txt")
 	// Whole-file precedence also applies across separate declarations.
 	updateLineFixtureDefault(t, fixture, ".roundfixrc.yml", "delivery:\n  derived_paths:\n    - paths: [SKILL.md, derived.txt]\n      regenerate: printf 'regenerated\\n' > derived.txt\n    - paths: [unused.txt]\n      lines: {paths: [SKILL.md], match: '^ *version: '}\n      regenerate: touch forbidden.txt\n")

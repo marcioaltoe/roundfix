@@ -16,6 +16,7 @@ import (
 )
 
 func TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch(t *testing.T) {
+	t.Parallel()
 	const prePRRow = "\n## Results\n\n| ID | Provenance | Status |\n| --- | --- | --- |\n| PR | Pull Request row | blocked (environment: no open Pull Request) |\n"
 	tests := []struct {
 		name, content string
@@ -58,6 +59,7 @@ func TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch(t *testing.T) {
 }
 
 func TestInspectItemReadsTheQAOverrideOfTheArchivedSpec(t *testing.T) {
+	t.Parallel()
 	for _, override := range []bool{true, false} {
 		t.Run(map[bool]string{true: "override", false: "normal archive"}[override], func(t *testing.T) {
 			repo, _, _ := commitLinkRewritingArchive(t, nil, nil)
@@ -83,6 +85,7 @@ func TestInspectItemReadsTheQAOverrideOfTheArchivedSpec(t *testing.T) {
 }
 
 func TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit(t *testing.T) {
+	t.Parallel()
 	for _, postArchive := range []bool{false, true} {
 		t.Run(map[bool]string{false: "archive head", true: "operator commit after archive"}[postArchive], func(t *testing.T) {
 			repo, _, _ := commitLinkRewritingArchive(t, nil, nil)
@@ -116,6 +119,7 @@ func TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit(t *testing.T) {
 }
 
 func TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead(t *testing.T) {
+	t.Parallel()
 	repo, _, head := commitRealArchive(t, nil)
 	workflow := newItemRecoveryWorkflowForRepository(t, t.TempDir(), repo)
 	result, err := workflow.Archive(t.Context(), repo, implementTestSlug, head)
@@ -131,6 +135,7 @@ func TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead(t *testing.T) {
 }
 
 func TestOperatorArchiveHistoryReadsTheRunStartAndAncestry(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	workflow := newItemRecoveryWorkflowForRepository(t, home, repo)
 	start := itemRecoveryHead(t, repo)

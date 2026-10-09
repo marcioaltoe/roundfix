@@ -73,6 +73,7 @@ func skillsCount(t *testing.T, result Result, code string, want int) []Finding {
 }
 
 func TestSkillsTaskIsRequiredForAChangedSurface(t *testing.T) {
+	t.Parallel()
 	root := skillsRepo(t, "", true)
 	for _, kind := range []string{"interface", "creates", "deletes"} {
 		for _, source := range []string{"internal/cli/example.go", "internal/cli/sub/other.go", "internal/cli/example_more.go"} {
@@ -104,6 +105,7 @@ func TestSkillsTaskIsRequiredForAChangedSurface(t *testing.T) {
 }
 
 func TestAnUnchangedDeclarationExcusesASurface(t *testing.T) {
+	t.Parallel()
 	root := skillsRepo(t, "## Skills\n\n- unchanged: "+skillsFixtureSurface+" — help is unchanged\n", true)
 	skillsCount(t, skillsCheck(t, root, StageAll), CodeSkillsUntasked, 1)
 	for _, kind := range []string{"interface", "creates"} {
@@ -115,6 +117,7 @@ func TestAnUnchangedDeclarationExcusesASurface(t *testing.T) {
 }
 
 func TestAMalformedSkillsDeclarationIsReported(t *testing.T) {
+	t.Parallel()
 	for _, entry := range []string{"- changed: command: example — reason", "- unchanged: unknown — reason", "- unchanged: command: example — "} {
 		t.Run(entry, func(t *testing.T) {
 			root := skillsRepo(t, "## Skills\n\n"+entry+"\n", true)
@@ -134,6 +137,7 @@ func TestAMalformedSkillsDeclarationIsReported(t *testing.T) {
 }
 
 func TestTheSkillsRuleStartsAtTheMapHorizon(t *testing.T) {
+	t.Parallel()
 	assertSkip := func(t *testing.T, root, reason string) {
 		t.Helper()
 		result := skillsCheck(t, root, StageAll)
@@ -175,6 +179,7 @@ func TestTheSkillsRuleStartsAtTheMapHorizon(t *testing.T) {
 }
 
 func TestSkillsDeclarationIgnoresQATasks(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, source, covering string
 		want                   int
@@ -204,6 +209,7 @@ func TestSkillsDeclarationIgnoresQATasks(t *testing.T) {
 }
 
 func TestSkillsDeclarationUsesOldestMapAddition(t *testing.T) {
+	t.Parallel()
 	root := skillsRepo(t, "", true)
 	if err := os.Remove(filepath.Join(root, skillcoverage.MapPath)); err != nil {
 		t.Fatal(err)
@@ -216,6 +222,7 @@ func TestSkillsDeclarationUsesOldestMapAddition(t *testing.T) {
 }
 
 func TestSkillsDeclarationMissingGraphSkipsBothCodes(t *testing.T) {
+	t.Parallel()
 	root := skillsRepo(t, "", true)
 	if err := os.Remove(filepath.Join(root, skillsFixtureDir, "_tasks.md")); err != nil {
 		t.Fatal(err)

@@ -601,6 +601,7 @@ func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
 }
 
 func TestOwnerProcessIdentityDoesNotSpawnPS(t *testing.T) {
+	// Sequential: sets PATH to detect unwanted ps execution.
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skip("owner process identity is unsupported on this Unix platform")
 	}
@@ -617,6 +618,7 @@ func TestOwnerProcessIdentityDoesNotSpawnPS(t *testing.T) {
 }
 
 func TestOwnerProcessIdentityIgnoresCallerTimezone(t *testing.T) {
+	// Sequential: sets TZ to exercise process identity across timezones.
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skip("owner process identity is unsupported on this Unix platform")
 	}
@@ -663,6 +665,7 @@ func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
 }
 
 func TestOwnerProcessHelperIgnoreModeStaysAlive(t *testing.T) {
+	t.Parallel()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
 	cmd.Env = append(os.Environ(), "ROUNDFIX_OWNER_PROCESS_HELPER=ignore")
 	stdout, err := cmd.StdoutPipe()

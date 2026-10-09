@@ -6,6 +6,7 @@ import (
 )
 
 func TestBuiltinReviewProfileStaysOnTheReviewProvidersRuntime(t *testing.T) {
+	t.Parallel()
 	profile, err := roundconfig.ResolveProfile(roundconfig.Builtin(), roundconfig.CategoryReview, nil)
 	if err != nil {
 		t.Fatal(err)

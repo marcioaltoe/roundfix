@@ -48,6 +48,7 @@ func configureImplementBudget(t *testing.T, repoDir string, maximum time.Duratio
 }
 
 func TestImplementSerialRunLongerThanItsBudgetEndsClean(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Settle the first slice"},
 		{id: "task_02", title: "Settle the second slice", needs: []string{"task_01"}},
@@ -92,6 +93,7 @@ func TestImplementSerialRunLongerThanItsBudgetEndsClean(t *testing.T) {
 }
 
 func TestImplementIntegrationRunsUnderTheRenewedDeadline(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Renew before integration"}})
 	const maximum = time.Hour
 	configureImplementBudget(t, repoDir, maximum)
@@ -131,6 +133,7 @@ func TestImplementIntegrationRunsUnderTheRenewedDeadline(t *testing.T) {
 }
 
 func TestImplementEndsBudgetExceededWhenTheRenewedDeadlinePasses(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Renew before integration"}})
 	const maximum = time.Hour
 	configureImplementBudget(t, repoDir, maximum)

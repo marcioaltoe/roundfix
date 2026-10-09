@@ -20,6 +20,7 @@ var retirementClauses = []struct{ id, guidance, module, rule, guide string }{
 }
 
 func TestTheRetirementClausesCarryTheirText(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	asset, ok := catalog.Module("context-workflow")
 	if !ok {
@@ -71,6 +72,7 @@ func TestTheRetirementClausesCarryTheirText(t *testing.T) {
 }
 
 func TestTheRetirementClausesRenderInTheDocsLayoutGuide(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	for _, want := range retirementClauses {
 		t.Run(want.id, func(t *testing.T) {
@@ -96,6 +98,7 @@ func TestTheRetirementClausesRenderInTheDocsLayoutGuide(t *testing.T) {
 }
 
 func TestAFindingInTheGuideReducedFormNeedsNoSanitize(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	asset, ok := catalog.Module("context-workflow")
 	if !ok {
@@ -163,6 +166,7 @@ func TestAFindingInTheGuideReducedFormNeedsNoSanitize(t *testing.T) {
 }
 
 func TestAnAdopterRetainsTheRetirementClauses(t *testing.T) {
+	t.Parallel()
 	request, catalog := newClauseReplacementAdopter(t)
 	outcome, err := buildPlanWithCatalog(context.Background(), request, catalog)
 	if err != nil {

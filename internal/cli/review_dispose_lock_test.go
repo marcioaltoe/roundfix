@@ -51,6 +51,7 @@ type reviewDisposeProcessResult struct {
 }
 
 func TestConcurrentDisposeOfOneFindingAppendsOnce(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 
@@ -111,6 +112,7 @@ func TestConcurrentDisposeOfOneFindingAppendsOnce(t *testing.T) {
 }
 
 func TestConcurrentDisposeOfTwoFindingsBothSucceed(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(
 		t,

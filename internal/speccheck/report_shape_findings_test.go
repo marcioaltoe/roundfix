@@ -22,6 +22,7 @@ func shapeReportForTest(t *testing.T, status string) (string, string) {
 }
 
 func TestReportShapeFindingsNamesAPendingRow(t *testing.T) {
+	t.Parallel()
 	root, path := shapeReportForTest(t, "pending")
 	findings, err := ReportShapeFindings(root, path)
 	if err != nil || len(findings) != 1 || findings[0].Code != CodeMechanicalReportShape {
@@ -30,6 +31,7 @@ func TestReportShapeFindingsNamesAPendingRow(t *testing.T) {
 }
 
 func TestReportShapeFindingsAcceptsAClosedReport(t *testing.T) {
+	t.Parallel()
 	root, path := shapeReportForTest(t, "pass")
 	findings, err := ReportShapeFindings(root, path)
 	if err != nil || len(findings) != 0 {

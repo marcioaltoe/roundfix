@@ -17,6 +17,7 @@ import (
 // Boundary OUT: CLI refusal presentation, owned by internal/cli tests.
 
 func TestQASettlementRefusesAnEmptyFrontMatter(t *testing.T) {
+	t.Parallel()
 	result, fixture, runner, reason := runSeededQAFrontmatterSettlementTest(t, func(seed string) string {
 		return strings.Replace(seed, "---\n", "---\n---\n", 1)
 	})
@@ -36,6 +37,7 @@ func TestQASettlementRefusesAnEmptyFrontMatter(t *testing.T) {
 }
 
 func TestQASettlementAcceptsAFilledSeededFrontMatter(t *testing.T) {
+	t.Parallel()
 	result, fixture, _, reason := runSeededQAFrontmatterSettlementTest(t, func(seed string) string {
 		seed = strings.Replace(seed, "verdict: pending", "verdict: pass", 1)
 		return strings.Replace(seed, "\n## Mechanical skips", "| R01 | pass | observed CLI output |\n\n## Mechanical skips", 1)

@@ -24,6 +24,7 @@ import (
 )
 
 func TestBaselineUpdateAppliesManifestPlanAndReportsJSON(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	before := baselinePlanTestTree(t, repository)
 
@@ -59,6 +60,7 @@ func TestBaselineUpdateAppliesManifestPlanAndReportsJSON(t *testing.T) {
 }
 
 func TestBaselineUpdateTextReportsHistoryMoves(t *testing.T) {
+	t.Parallel()
 	move := baseline.HistoryMove{
 		Ordinal:         0,
 		From:            "docs/specs/_archived/0001-widget/_prd.md",
@@ -86,6 +88,7 @@ func TestBaselineUpdateTextReportsHistoryMoves(t *testing.T) {
 }
 
 func TestBaselineUpdateUnrecordedManagedRegionTextOutput(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		approval  []string
@@ -136,6 +139,7 @@ func TestBaselineUpdateUnrecordedManagedRegionTextOutput(t *testing.T) {
 }
 
 func TestBaselineUpdateUnrecordedManagedRegionJSONOutput(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		approval  []string
@@ -190,6 +194,7 @@ func TestBaselineUpdateUnrecordedManagedRegionJSONOutput(t *testing.T) {
 }
 
 func TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput(t *testing.T) {
+	t.Parallel()
 	repository := unrecordedBaselineUpdateRepository(t, nil)
 
 	_, stdout, stderr, code := runBaselineUpdateTestCommand(
@@ -206,6 +211,7 @@ func TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput(t *t
 }
 
 func TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs(t *testing.T) {
+	t.Parallel()
 	repository := newBaselineUpdateRepository(t)
 
 	_, textOutput, textError, textCode := runBaselineUpdateTestCommand(
@@ -237,6 +243,7 @@ func TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs(t *testing.T) {
 }
 
 func TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	var gotRequest baselineUpdateSkillsRequest
 	stage := func(_ context.Context, request baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
@@ -271,6 +278,7 @@ func TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills(t *testing.T)
 }
 
 func TestBaselineUpdateSkillWarningKeepsApplyAxisVerified(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	stage := func(_ context.Context, _ baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
 		return baselineUpdateSkillsResult{
@@ -306,6 +314,7 @@ func TestBaselineUpdateSkillWarningKeepsApplyAxisVerified(t *testing.T) {
 }
 
 func TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	sentinel := filepath.Join(repository, ".agents", "skills", "maintainer", "SKILL.md")
 	if err := os.MkdirAll(filepath.Dir(sentinel), 0o755); err != nil {
@@ -339,6 +348,7 @@ func TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory(t *testing.T) {
 }
 
 func TestBaselineUpdatePassesOfflineSourceToSkillStage(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	source := t.TempDir()
 	var gotSource string
@@ -367,6 +377,7 @@ func TestBaselineUpdatePassesOfflineSourceToSkillStage(t *testing.T) {
 }
 
 func TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation(t *testing.T) {
+	t.Parallel()
 	const externalSkill = "context7"
 	const planDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	var restoreRequests []baseline.SkillsRestoreRequest
@@ -434,6 +445,7 @@ func TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation(t *testing.T) {
 }
 
 func TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill(t *testing.T) {
+	t.Parallel()
 	const unreachableSkill = "context7"
 	const restorableSkill = "testing-boss"
 	const planDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -499,6 +511,7 @@ func TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill(t *testing.T
 }
 
 func TestBaselineUpdateIdempotenceReportsZeroFileChanges(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 
 	first, firstOut, firstErr, firstCode := runBaselineUpdateTestCommand(
@@ -531,6 +544,7 @@ func TestBaselineUpdateIdempotenceReportsZeroFileChanges(t *testing.T) {
 }
 
 func TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites(t *testing.T) {
+	t.Parallel()
 	repository := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repository, "README.md", "unadopted repository\n")
 	commitBaselinePlanTestRepository(t, repository)
@@ -555,6 +569,7 @@ func TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites(t *testing.T) {
 }
 
 func TestBaselineUpdateUnresolvedProfileDiagnosis(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		profileID     string
@@ -633,6 +648,7 @@ func TestBaselineUpdateUnresolvedProfileDiagnosis(t *testing.T) {
 }
 
 func TestBaselineUpdateFleetSweep(t *testing.T) {
+	t.Parallel()
 	// Recorded fleet pattern: roundfix and fiscus had Setup Manifests whose
 	// recorded digests predated their otherwise untouched Managed Regions.
 	const manifestPredatesRegions = "roundfix and fiscus: manifest predates managed regions"
@@ -985,6 +1001,7 @@ func assertFleetStructuralClausesPresent(t *testing.T, repository string) {
 }
 
 func TestBaselineUpdateNewDecisionRequiresActionWithoutWrites(t *testing.T) {
+	t.Parallel()
 	repository := incompleteBaselineUpdateRepository(t, "secondbrain.enabled")
 	before := baselinePlanTestTree(t, repository)
 
@@ -1007,6 +1024,7 @@ func TestBaselineUpdateNewDecisionRequiresActionWithoutWrites(t *testing.T) {
 }
 
 func TestBaselineUpdateAdoptsEverySuggestedDecision(t *testing.T) {
+	t.Parallel()
 	repository := incompleteBaselineUpdateRepository(t, "secondbrain.enabled")
 
 	result, stdout, stderr, code := runBaselineUpdateTestCommand(
@@ -1026,6 +1044,7 @@ func TestBaselineUpdateAdoptsEverySuggestedDecision(t *testing.T) {
 }
 
 func TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	before := baselinePlanTestTree(t, repository)
 
@@ -1069,6 +1088,7 @@ func TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest(t *testing.T) {
 }
 
 func TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms(t *testing.T) {
+	t.Parallel()
 	result, stdout, stderr, code := runBaselineUpdateTestCommand(
 		t,
 		context.Background(),
@@ -1083,6 +1103,7 @@ func TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms(t *testing.T) {
 }
 
 func TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites(t *testing.T) {
+	t.Parallel()
 	repository := staleBaselineUpdateRepository(t)
 	before := baselinePlanTestTree(t, repository)
 	const staleDigest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
@@ -1106,6 +1127,7 @@ func TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites(t *testing
 }
 
 func TestBaselineUpdateHelpNamesNonInteractiveContract(t *testing.T) {
+	t.Parallel()
 	_, stdout, stderr, code := runBaselineUpdateTestCommand(
 		t,
 		context.Background(),
@@ -1130,6 +1152,7 @@ func TestBaselineUpdateHelpNamesNonInteractiveContract(t *testing.T) {
 }
 
 func TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency(t *testing.T) {
+	t.Parallel()
 	repository := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repository, "README.md", "unadopted repository\n")
 	commitBaselinePlanTestRepository(t, repository)

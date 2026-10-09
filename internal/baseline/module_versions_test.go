@@ -259,6 +259,7 @@ func updateModuleVersionRecordFile(recordPath, modulesDir string, recording bool
 }
 
 func TestEveryBaselineModuleVersionIsRecorded(t *testing.T) {
+	// Sequential: can rewrite shared module version records and assets when the record flag is enabled.
 	if *recordModuleVersions {
 		suiteguard.DeclareSanctionedRegeneration(recordModuleVersionsCommand)
 	}
@@ -319,6 +320,7 @@ func requireModuleVersionRefusal(t *testing.T, err error, message string) {
 }
 
 func TestModuleContentDigestIgnoresVersionAndLayout(t *testing.T) {
+	t.Parallel()
 	modulesDir, recordPath, data, _ := moduleVersionFixture(t, 1)
 	original, err := moduleContent(data)
 	if err != nil {
@@ -363,18 +365,21 @@ func TestModuleContentDigestIgnoresVersionAndLayout(t *testing.T) {
 }
 
 func TestAModuleChangedUnderARecordedVersionIsRefused(t *testing.T) {
+	t.Parallel()
 	modulesDir, recordPath, data, _ := moduleVersionFixture(t, 1)
 	writeModuleVersionFixture(t, filepath.Join(modulesDir, "example.json"), bytes.Replace(data, []byte("original"), []byte("changed"), 1))
 	requireModuleVersionRefusal(t, updateModuleVersionRecordFile(recordPath, modulesDir, false), "example: content changed under version 1")
 }
 
 func TestAnUnrecordedModuleVersionIsRefused(t *testing.T) {
+	t.Parallel()
 	modulesDir, recordPath, data, _ := moduleVersionFixture(t, 1)
 	writeModuleVersionFixture(t, filepath.Join(modulesDir, "example.json"), bytes.Replace(data, []byte(`"version": 1,`), []byte(`"version": 2,`), 1))
 	requireModuleVersionRefusal(t, updateModuleVersionRecordFile(recordPath, modulesDir, false), "example: version 2 is not recorded")
 }
 
 func TestRecordingRaisesAModuleAboveTheHighestRecordedVersion(t *testing.T) {
+	t.Parallel()
 	for _, version := range []int64{1, 2} {
 		t.Run(fmt.Sprintf("current-%d", version), func(t *testing.T) {
 			modulesDir, recordPath, data, record := moduleVersionFixture(t, version)
@@ -403,6 +408,7 @@ func TestRecordingRaisesAModuleAboveTheHighestRecordedVersion(t *testing.T) {
 }
 
 func TestRecordingKeepsAHigherModuleVersion(t *testing.T) {
+	t.Parallel()
 	modulesDir, recordPath, data, record := moduleVersionFixture(t, 9)
 	record.Modules["example"] = []moduleVersionEntry{{Version: 7, Digest: "old"}}
 	writeModuleVersionFixtureRecord(t, recordPath, record)
@@ -425,6 +431,7 @@ func TestRecordingKeepsAHigherModuleVersion(t *testing.T) {
 }
 
 func TestRecordingNeverRewritesARecordedModuleEntry(t *testing.T) {
+	t.Parallel()
 	modulesDir, recordPath, data, record := moduleVersionFixture(t, 1)
 	original := readModuleVersionFixture(t, recordPath)
 	if err := updateModuleVersionRecordFile(recordPath, modulesDir, true); err != nil {
@@ -450,6 +457,7 @@ func TestRecordingNeverRewritesARecordedModuleEntry(t *testing.T) {
 }
 
 func TestAModuleVersionNotOnItsOwnLineIsRefused(t *testing.T) {
+	t.Parallel()
 	for name, invalid := range map[string]string{
 		"inline":       `{"id":"example", "version":1,"rules":[]}`,
 		"wrong-indent": "{\n \"version\": 1,\n \"id\": \"example\"\n}",
@@ -470,6 +478,7 @@ func TestAModuleVersionNotOnItsOwnLineIsRefused(t *testing.T) {
 }
 
 func TestRecordingRewritesOnlyTheTopLevelVersionLine(t *testing.T) {
+	t.Parallel()
 	modulesDir, recordPath, _, _ := moduleVersionFixture(t, 1)
 	data := []byte("{\n  \"id\": \"example\",\n  \"version\": 1,\n  \"rules\": [{\n    \"version\": 3,\n    \"text\": \"changed\"\n  }],\n  \"guides\": [{\n    \"version\": 4,\n    \"text\": \"guide\"\n  }]\n}\n")
 	writeModuleVersionFixture(t, filepath.Join(modulesDir, "example.json"), data)
@@ -483,6 +492,7 @@ func TestRecordingRewritesOnlyTheTopLevelVersionLine(t *testing.T) {
 }
 
 func TestRecordingWritesNothingWhenAModuleIsRefused(t *testing.T) {
+	t.Parallel()
 	for _, refusal := range []string{"layout", "history", "schema", "overflow", "invalid-version", "malformed-json"} {
 		t.Run(refusal, func(t *testing.T) {
 			modulesDir, recordPath, data, record := moduleVersionFixture(t, 1)
@@ -520,6 +530,7 @@ func TestRecordingWritesNothingWhenAModuleIsRefused(t *testing.T) {
 }
 
 func TestModuleVersionRecordHistoryRefusals(t *testing.T) {
+	t.Parallel()
 	for _, refusal := range []string{"missing", "schema", "ascending", "removed"} {
 		t.Run(refusal, func(t *testing.T) {
 			modulesDir, recordPath, _, record := moduleVersionFixture(t, 1)

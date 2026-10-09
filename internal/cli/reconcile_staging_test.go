@@ -19,6 +19,7 @@ import (
 )
 
 func TestReconcileDryRunReportsStaleStagingWithoutRemovingIt(t *testing.T) {
+	t.Parallel()
 	_, repoDir, _ := newReconcileWorkspace(t)
 	worktreePath := addLockedInitializingStagingForReconcileTest(t, repoDir)
 	t.Cleanup(func() { removeReconcileStagingForTest(t, repoDir, worktreePath) })
@@ -45,6 +46,7 @@ func TestReconcileDryRunReportsStaleStagingWithoutRemovingIt(t *testing.T) {
 }
 
 func TestReconcileApplyReleasesStaleStaging(t *testing.T) {
+	t.Parallel()
 	_, repoDir, _ := newReconcileWorkspace(t)
 	worktreePath := addLockedInitializingStagingForReconcileTest(t, repoDir)
 
@@ -59,6 +61,7 @@ func TestReconcileApplyReleasesStaleStaging(t *testing.T) {
 }
 
 func TestReconcileCarryForwardReleasesStaleStagingFirst(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	worktreePath := addLockedInitializingStagingForReconcileTest(t, fixture.repoDir)
 
@@ -76,6 +79,7 @@ func TestReconcileCarryForwardReleasesStaleStagingFirst(t *testing.T) {
 }
 
 func TestReconcileKeepsALiveStagingAsPreserved(t *testing.T) {
+	t.Parallel()
 	_, repoDir, _ := newReconcileWorkspace(t)
 	head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
 	staging, err := runworktree.AddCarryForwardStaging(t.Context(), repoDir, head, t.TempDir())

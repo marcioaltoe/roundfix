@@ -8,6 +8,7 @@ import (
 )
 
 func TestTaskCarriesComplexity(t *testing.T) {
+	t.Parallel()
 	for _, raw := range []string{"low", "  medium  ", "", "custom"} {
 		t.Run(raw, func(t *testing.T) {
 			root := t.TempDir()

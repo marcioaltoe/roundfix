@@ -17,6 +17,7 @@ import (
 // Boundary IN: release plan CLI and real local repositories.
 // Boundary OUT: release decisions, repository writes, and external services.
 func TestReleasePlanReportsTheSkillsAndBaselineChecks(t *testing.T) {
+	t.Parallel()
 	repo := newReleasePlanCommandRepo(t, "v0.4.0", releasePlanCommandCommit{subject: "fix: correct output", paths: []string{"internal/cli/output.go"}})
 	code, output, stderr := runReleasePlanCommandInRepo(t, repo)
 	if code != exitOK || stderr != "" {
@@ -55,6 +56,7 @@ func TestReleasePlanReportsTheSkillsAndBaselineChecks(t *testing.T) {
 }
 
 func TestReleasePlanChecksNeverChangeTheDecision(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		subject, path, base, state, version string
 		code                                int
@@ -84,6 +86,7 @@ func TestReleasePlanChecksNeverChangeTheDecision(t *testing.T) {
 }
 
 func TestReleasePlanChecksOnAnAdoptedRepository(t *testing.T) {
+	t.Parallel()
 	for _, stale := range []bool{false, true} {
 		t.Run(fmt.Sprint(stale), func(t *testing.T) {
 			repo := newBaselineUpdateRepository(t)
@@ -123,6 +126,7 @@ func TestReleasePlanChecksOnAnAdoptedRepository(t *testing.T) {
 }
 
 func TestReleasePlanChecksWriteNothing(t *testing.T) {
+	t.Parallel()
 	repo := staleBaselineUpdateRepository(t)
 	copyReleaseCheckSkills(t, repo)
 	commitBaselinePlanTestRepository(t, repo)

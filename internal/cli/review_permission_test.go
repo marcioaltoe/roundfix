@@ -19,6 +19,7 @@ import (
 )
 
 func TestReviewCommandClassifiesFindingsAfterARefusedPermission(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{
 		Message:    "Findings:\n- review.txt:2: Failure: first regression\n- review.txt:2: Failure: second regression",
 		StopReason: "end_turn", PermissionRefused: true,
@@ -65,6 +66,7 @@ func TestReviewCommandClassifiesFindingsAfterARefusedPermission(t *testing.T) {
 }
 
 func TestReviewCommandPassesNoFindingsAfterARefusedPermission(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{
 		Message:    "The requested command was refused.\n\nNo findings.",
 		Messages:   []string{"The requested command was refused.", "No findings."},
@@ -79,6 +81,7 @@ func TestReviewCommandPassesNoFindingsAfterARefusedPermission(t *testing.T) {
 }
 
 func TestReviewCommandNamesTheRefusalWhenTheAnswerHasNoVerdict(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct{ name, answer, reason string }{
 		{"no verdict", "I could not finish checking.", "unclassifiable agent output: neither a no-findings nor findings verdict is present"},
 		{"no anchor", "Findings:\n- Failure: a regression without an anchor", "findings name no file and line"},
@@ -100,6 +103,7 @@ func TestReviewCommandNamesTheRefusalWhenTheAnswerHasNoVerdict(t *testing.T) {
 }
 
 func TestReviewCommandNamesAPromptThatIsTooLong(t *testing.T) {
+	t.Parallel()
 	const line = "Prompt is too long · the request is ~1294791 tokens (limit 1000000) · reduce the prompt"
 	const prefix = "Prompt is too long "
 	longPrefix := prefix + strings.Repeat("a", reviewPromptTooLongLineLimit-len(prefix)-1)
@@ -135,6 +139,7 @@ func TestReviewCommandNamesAPromptThatIsTooLong(t *testing.T) {
 }
 
 func TestReviewPermissionFlagIsOptionalAndPromptOverflowUsesFinalAnswer(t *testing.T) {
+	t.Parallel()
 	const progress = "Prompt is too long in a previous attempt."
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{result: agent.ExecuteResult{
 		Message: progress + "\n\nNo findings.", Messages: []string{progress, "No findings."}, StopReason: "end_turn",
@@ -159,6 +164,7 @@ func TestReviewPermissionFlagIsOptionalAndPromptOverflowUsesFinalAnswer(t *testi
 }
 
 func TestReviewPromptTooLongKeepsFailurePrecedence(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name string
 		err  error

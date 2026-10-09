@@ -601,7 +601,7 @@ func reconcileGitRawInput(ctx context.Context, workDir string, input []byte, arg
 	commandArgs := append([]string{"-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false"}, args...)
 	command := exec.CommandContext(ctx, "git", commandArgs...)
 	command.Dir = workDir
-	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	command.Env = append(commandDependenciesForContext(ctx).environ(), "GIT_TERMINAL_PROMPT=0")
 	if input != nil {
 		command.Stdin = strings.NewReader(string(input))
 	}

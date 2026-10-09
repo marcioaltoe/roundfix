@@ -20,6 +20,7 @@ import (
 // Boundary IN: public CLI parsing, configured Spec roots, filesystem writes, streams, and exit codes.
 // Boundary OUT: archive eligibility, which is owned by archive_test.go.
 func TestSupersede(t *testing.T) {
+	t.Parallel()
 	const (
 		supersededSlug  = implementTestSlug
 		supersedingSlug = "0002-delivered-widget"
@@ -180,6 +181,7 @@ func TestSupersede(t *testing.T) {
 }
 
 func TestSupersedeRejectsANonActiveDeliverer(t *testing.T) {
+	t.Parallel()
 	const (
 		supersededSlug  = implementTestSlug
 		supersedingSlug = "0002-delivered-widget"
@@ -264,6 +266,7 @@ func TestSupersedeRejectsANonActiveDeliverer(t *testing.T) {
 }
 
 func TestSupersedeAcceptsAnActiveDeliverer(t *testing.T) {
+	t.Parallel()
 	const (
 		supersededSlug  = implementTestSlug
 		supersedingSlug = "0002-delivered-widget"
@@ -292,6 +295,7 @@ func TestSupersedeAcceptsAnActiveDeliverer(t *testing.T) {
 }
 
 func TestSupersedeAcceptsASupersessionArchivedDeliverer(t *testing.T) {
+	t.Parallel()
 	const (
 		supersededSlug = implementTestSlug
 		delivererSlug  = "0002-delivered-widget"
@@ -350,6 +354,7 @@ func TestSupersedeAcceptsASupersessionArchivedDeliverer(t *testing.T) {
 }
 
 func TestSupersedeRejectsAnUnmarkedArchivedDeliverer(t *testing.T) {
+	t.Parallel()
 	const (
 		supersededSlug = implementTestSlug
 		delivererSlug  = "0002-delivered-widget"

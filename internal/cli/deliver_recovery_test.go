@@ -22,6 +22,7 @@ import (
 )
 
 func TestItemRecoveryCarriesAnUnresolvedRunIntoTheItemWorktree(t *testing.T) {
+	t.Parallel()
 	fixture := newIntegrationOrderCarryForwardFixture(t, []implementSeed{
 		{id: "task_01", title: "Finish the first Task"},
 		{id: "task_02", title: "Keep the failed Task pending", needs: []string{"task_01"}},
@@ -47,6 +48,7 @@ func TestItemRecoveryCarriesAnUnresolvedRunIntoTheItemWorktree(t *testing.T) {
 }
 
 func TestItemRecoveryFindsTheRunByItemBranchWhenNoneIsRecorded(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 
@@ -60,6 +62,7 @@ func TestItemRecoveryFindsTheRunByItemBranchWhenNoneIsRecorded(t *testing.T) {
 }
 
 func TestItemRecoveryCarriesNothingWithoutAnImplementRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	beforeHead := itemRecoveryHead(t, repoDir)
@@ -77,6 +80,7 @@ func TestItemRecoveryCarriesNothingWithoutAnImplementRun(t *testing.T) {
 }
 
 func TestItemRecoveryCarriesNothingForARunAlreadyCarried(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 	if _, err := workflow.CarryForward(t.Context(), fixture.repoDir, implementTestSlug, fixture.run.LocalBranch, fixture.run.ID); err != nil {
@@ -97,6 +101,7 @@ func TestItemRecoveryCarriesNothingForARunAlreadyCarried(t *testing.T) {
 }
 
 func TestItemRecoveryRefusesACarryForwardWithAMovedInput(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 	prdPath := filepath.Join(fixture.repoDir, "docs", "specs", implementTestSlug, "_prd.md")
@@ -114,6 +119,7 @@ func TestItemRecoveryRefusesACarryForwardWithAMovedInput(t *testing.T) {
 }
 
 func TestItemRecoveryRefusesAGoneRunWorktree(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 	gitImplement(t, fixture.repoDir, "worktree", "remove", "--force", fixture.ref.Path)
@@ -130,6 +136,7 @@ func TestItemRecoveryRefusesAGoneRunWorktree(t *testing.T) {
 }
 
 func TestInspectItemListsUnfinishedTasks(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", status: string(spec.StatusCompleted)},
 		{id: "task_02", status: string(spec.StatusPending), needs: []string{"task_01"}},
@@ -147,6 +154,7 @@ func TestInspectItemListsUnfinishedTasks(t *testing.T) {
 }
 
 func TestInspectItemReportsAnArchivedSpec(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	source, destination, err := workflow.archivePaths(repoDir, implementTestSlug)
@@ -169,6 +177,7 @@ func TestInspectItemReportsAnArchivedSpec(t *testing.T) {
 }
 
 func TestRetriedItemRunsWithItsCompletedTasksCarried(t *testing.T) {
+	t.Parallel()
 	fixture := newIntegrationOrderCarryForwardFixture(t, []implementSeed{
 		{id: "task_01"},
 		{id: "task_02", needs: []string{"task_01"}},
@@ -228,6 +237,7 @@ func TestRetriedItemRunsWithItsCompletedTasksCarried(t *testing.T) {
 }
 
 func TestItemRecoveryRefusesAnUnknownRecordedRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 
@@ -238,6 +248,7 @@ func TestItemRecoveryRefusesAnUnknownRecordedRun(t *testing.T) {
 }
 
 func TestItemRecoveryCarriesNothingForAnUnacceptedRunOutcome(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateClean, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)
 	beforeHead := itemRecoveryHead(t, fixture.repoDir)
@@ -252,6 +263,7 @@ func TestItemRecoveryCarriesNothingForAnUnacceptedRunOutcome(t *testing.T) {
 }
 
 func TestItemRecoveryCarriesNothingWithoutCompletedTaskEvidence(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflowForRepository(t, homeDir, repoDir)
 	head := itemRecoveryHead(t, repoDir)
@@ -281,6 +293,7 @@ func TestItemRecoveryCarriesNothingWithoutCompletedTaskEvidence(t *testing.T) {
 }
 
 func TestItemRecoveryRefusesAnExternalSpecsRoot(t *testing.T) {
+	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01"}})
 	_, externalSpecsRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{{id: "task_01"}})
 	workflow := newItemRecoveryWorkflow(t, fixture)

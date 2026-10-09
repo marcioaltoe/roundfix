@@ -46,6 +46,7 @@ func TestRunSpecCheckCleanText(t *testing.T) {
 }
 
 func TestSpecCheckRunVerification(t *testing.T) {
+	t.Parallel()
 	t.Run("executes commands for every requested Spec", func(t *testing.T) {
 		_, _ = newSpecCheckWorkspace(t, "coverage-range", "coverage-untasked")
 		var stdout bytes.Buffer
@@ -359,6 +360,7 @@ func TestRunSpecCheckGapStrictPromotion(t *testing.T) {
 }
 
 func TestSpecCheckClassifiesTheGateBoundary(t *testing.T) {
+	t.Parallel()
 	t.Run("authoring stage keeps a declared term as an error", func(t *testing.T) {
 		_, _ = newSpecCheckWorkspace(t, "vocabulary-missing")
 		var stdout bytes.Buffer

@@ -333,6 +333,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 }
 
 func TestDoctorReportsPrePRReviewPolicy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		provider   string
@@ -420,6 +421,7 @@ func TestDoctorReportsPrePRReviewPolicy(t *testing.T) {
 var doctorResidueTestNow = time.Date(2026, time.August, 14, 21, 0, 0, 0, time.UTC)
 
 func TestDoctorReportsProcessResidueReported(t *testing.T) {
+	t.Parallel()
 	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
 		runs: []store.Run{doctorTerminalRun()},
 		readLineage: func(_ context.Context, _ ProcessLineage) ([]store.OwnedProcess, error) {
@@ -436,6 +438,7 @@ func TestDoctorReportsProcessResidueReported(t *testing.T) {
 }
 
 func TestDoctorReportsProcessResidueExcludesLiveRun(t *testing.T) {
+	t.Parallel()
 	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
 		runs:           []store.Run{doctorLiveRun()},
 		readLineage:    func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) { return nil, nil },
@@ -446,6 +449,7 @@ func TestDoctorReportsProcessResidueExcludesLiveRun(t *testing.T) {
 }
 
 func TestDoctorReportsProcessResidueEmpty(t *testing.T) {
+	t.Parallel()
 	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
 		runs: []store.Run{doctorTerminalRun()},
 		readLineage: func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) {
@@ -457,6 +461,7 @@ func TestDoctorReportsProcessResidueEmpty(t *testing.T) {
 }
 
 func TestDoctorReportsProcessResidueUnreadable(t *testing.T) {
+	t.Parallel()
 	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
 		runs: []store.Run{doctorTerminalRun()},
 		readLineage: func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) {
@@ -474,6 +479,7 @@ func TestDoctorReportsProcessResidueUnreadable(t *testing.T) {
 }
 
 func TestDoctorReportsProcessResidueDoesNotWriteRunRecord(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	ctx := t.Context()
 	writer, err := store.Open(ctx, homeDir)

@@ -193,6 +193,7 @@ func TestReviewPromptCarriesTheCandidateDiff(t *testing.T) {
 }
 
 func TestReviewPromptCarriesSpecDecisions(t *testing.T) {
+	t.Parallel()
 	const slug = "0160-spec-aware-review"
 	const specsRoot = "planning/specs"
 	runner := &reviewCommandRunner{
@@ -259,6 +260,7 @@ An extra command-line argument was rejected.
 }
 
 func TestReviewSkipsASpecWithoutDecisions(t *testing.T) {
+	t.Parallel()
 	const slug = "0159-no-decisions"
 	const missingTechSpecSlug = "0158-missing-techspec"
 	const specsRoot = "planning/specs"
@@ -304,6 +306,7 @@ func TestReviewSkipsASpecWithoutDecisions(t *testing.T) {
 }
 
 func TestReviewReadsAnArchivedSpecFromTheCandidate(t *testing.T) {
+	t.Parallel()
 	const slug = "0158-archived-with-candidate"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -342,6 +345,7 @@ func TestReviewReadsAnArchivedSpecFromTheCandidate(t *testing.T) {
 }
 
 func TestReviewBoundsSpecContext(t *testing.T) {
+	t.Parallel()
 	const slug = "0160-oversized-context"
 	const specsRoot = "planning/specs"
 	runner := &reviewCommandRunner{
@@ -408,6 +412,7 @@ func TestReviewBoundsSpecContext(t *testing.T) {
 }
 
 func TestReviewRecordsDroppedSpecs(t *testing.T) {
+	t.Parallel()
 	const specsRoot = "planning/specs"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -446,6 +451,7 @@ func TestReviewRecordsDroppedSpecs(t *testing.T) {
 }
 
 func TestReviewReportsSpecReadingFailureDistinctly(t *testing.T) {
+	t.Parallel()
 	const slug = "0160-unreadable-context"
 	const specsRoot = "planning/specs"
 	runner := &reviewCommandRunner{}
@@ -474,6 +480,7 @@ func TestReviewReportsSpecReadingFailureDistinctly(t *testing.T) {
 }
 
 func TestReviewPromptWithoutSpecIsUnchanged(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
@@ -538,6 +545,7 @@ func TestReviewSessionRefIsUniquePerInvocation(t *testing.T) {
 }
 
 func TestReviewCommandExitsZeroOnExplicitClean(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{
@@ -561,6 +569,7 @@ func TestReviewCommandExitsZeroOnExplicitClean(t *testing.T) {
 }
 
 func TestReviewCommandDefaultsBaseToMain(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
@@ -585,6 +594,7 @@ func TestReviewCommandDefaultsBaseToMain(t *testing.T) {
 }
 
 func TestReviewCommandExitsOneAndRecordsFindings(t *testing.T) {
+	t.Parallel()
 	const findings = "review.txt:2: blocked result can be lost"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -605,6 +615,7 @@ func TestReviewCommandExitsOneAndRecordsFindings(t *testing.T) {
 }
 
 func TestReviewClassifiesVerdictVariants(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		answer       string
@@ -667,6 +678,7 @@ func TestReviewClassifiesVerdictVariants(t *testing.T) {
 }
 
 func TestReviewPassesOnlyAWholeAnswerVerdict(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		answer string
@@ -695,6 +707,7 @@ func TestReviewPassesOnlyAWholeAnswerVerdict(t *testing.T) {
 }
 
 func TestReviewBlocksEveryPreambleBesideNoFindings(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		answer string
@@ -754,6 +767,7 @@ func TestReviewBlocksEveryPreambleBesideNoFindings(t *testing.T) {
 }
 
 func TestReviewRecognisesAColonlessFindingsHeader(t *testing.T) {
+	t.Parallel()
 	const finding = "review.txt:2: classifier accepts a hidden finding"
 	tests := []struct {
 		name   string
@@ -783,6 +797,7 @@ func TestReviewRecognisesAColonlessFindingsHeader(t *testing.T) {
 }
 
 func TestReviewRecognisesEmphasizedFindingsHeader(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		answer       string
@@ -819,6 +834,7 @@ func TestReviewRecognisesEmphasizedFindingsHeader(t *testing.T) {
 }
 
 func TestReviewBlocksEmphasizedFindingsBesideNoFindings(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		answer string
@@ -844,6 +860,7 @@ func TestReviewBlocksEmphasizedFindingsBesideNoFindings(t *testing.T) {
 }
 
 func TestReviewBlocksAmbiguousVerdict(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		answer     string
@@ -878,6 +895,7 @@ func TestReviewBlocksAmbiguousVerdict(t *testing.T) {
 }
 
 func TestReviewBlocksContentBesideANoFindingsVerdict(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		answer string
@@ -913,6 +931,7 @@ func TestReviewBlocksContentBesideANoFindingsVerdict(t *testing.T) {
 }
 
 func TestReviewReadsFindingsNoneAsNoFindings(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		answer      string
@@ -946,6 +965,7 @@ func TestReviewReadsFindingsNoneAsNoFindings(t *testing.T) {
 }
 
 func TestReviewIgnoresAQuotedVerdictInsideFindings(t *testing.T) {
+	t.Parallel()
 	const answer = "Findings:\nreview.txt:2: the findings body quoted the clean verdict\nNo findings"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -965,6 +985,7 @@ func TestReviewIgnoresAQuotedVerdictInsideFindings(t *testing.T) {
 }
 
 func TestReviewKeepsTheRawAnswer(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		answer      string
@@ -1005,6 +1026,7 @@ func TestReviewKeepsTheRawAnswer(t *testing.T) {
 }
 
 func TestReviewCommandBlocksOnRuntimeFailure(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{err: errors.New("runtime unavailable")}},
 	}
@@ -1019,6 +1041,7 @@ func TestReviewCommandBlocksOnRuntimeFailure(t *testing.T) {
 }
 
 func TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		prepareErrors: []error{errors.New("prepare review session")},
 	}
@@ -1040,6 +1063,7 @@ func TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached(t *testing.T) {
 }
 
 func TestReviewRemovesAStaleAnswerFile(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		prepareErrors: []error{errors.New("prepare review session")},
 	}
@@ -1059,6 +1083,7 @@ func TestReviewRemovesAStaleAnswerFile(t *testing.T) {
 }
 
 func TestReviewRecordsEmptySkippedSpecsAsAList(t *testing.T) {
+	t.Parallel()
 	const slug = "0160-unreadable-skipped-specs"
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "codex", runner)
@@ -1093,6 +1118,7 @@ func TestReviewRecordsEmptySkippedSpecsAsAList(t *testing.T) {
 }
 
 func TestReviewCommandDoesNotFallbackAfterPromptFailure(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			err: &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter ended after prompt"},
@@ -1109,6 +1135,7 @@ func TestReviewCommandDoesNotFallbackAfterPromptFailure(t *testing.T) {
 }
 
 func TestReviewCommandKeepsATimeoutBlocked(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "No findings"},
@@ -1126,6 +1153,7 @@ func TestReviewCommandKeepsATimeoutBlocked(t *testing.T) {
 }
 
 func TestReviewCommandBlocksOnTransportAnomaly(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{
@@ -1143,6 +1171,7 @@ func TestReviewCommandBlocksOnTransportAnomaly(t *testing.T) {
 }
 
 func TestReviewCommandBlocksOnEmptyAgentOutput(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{result: agent.ExecuteResult{Output: "raw protocol only", StopReason: "end_turn"}}},
 	}
@@ -1154,6 +1183,7 @@ func TestReviewCommandBlocksOnEmptyAgentOutput(t *testing.T) {
 }
 
 func TestReviewCommandClassifiesAgentMessageNotProtocolStream(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{
@@ -1171,6 +1201,7 @@ func TestReviewCommandClassifiesAgentMessageNotProtocolStream(t *testing.T) {
 }
 
 func TestReviewCommandNoneRecordsOmissionWithoutAgentActivity(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "none", runner)
 
@@ -1188,6 +1219,7 @@ func TestReviewCommandNoneRecordsOmissionWithoutAgentActivity(t *testing.T) {
 }
 
 func TestReviewRunsTheClaudeProvider(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
@@ -1218,6 +1250,7 @@ func TestReviewRunsTheClaudeProvider(t *testing.T) {
 }
 
 func TestReviewRefusesCodeRabbitNamingTheMissingSurface(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{}
 	fixture := newReviewCommandFixture(t, "coderabbit", runner)
 
@@ -1233,6 +1266,7 @@ func TestReviewRefusesCodeRabbitNamingTheMissingSurface(t *testing.T) {
 }
 
 func TestReviewCommandRefusesProviderProfileMismatch(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		provider          string
@@ -1292,6 +1326,7 @@ func TestReviewCommandRefusesProviderProfileMismatch(t *testing.T) {
 }
 
 func TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt(t *testing.T) {
+	t.Parallel()
 	runner := &reviewCommandRunner{
 		prepareErrors: []error{
 			&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"},
@@ -1318,6 +1353,7 @@ func TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt(t *testing.
 }
 
 func TestReviewCommandProvesArtifactDirectoryWritableBeforeAgentActivity(t *testing.T) {
+	t.Parallel()
 	homeDir, repository, baseCommit, headCommit := newReviewCommandRepository(t)
 	artifactPath := filepath.Join(t.TempDir(), "not-a-directory")
 	if err := os.WriteFile(artifactPath, []byte("file"), 0o644); err != nil {
@@ -1347,6 +1383,7 @@ func TestReviewCommandProvesArtifactDirectoryWritableBeforeAgentActivity(t *test
 }
 
 func TestReviewCommandRefusesUnknownFlags(t *testing.T) {
+	t.Parallel()
 	homeDir, repository, _, _ := newReviewCommandRepository(t)
 	setCommandEnvironmentForTest(t, homeDir, repository)
 	var stdout bytes.Buffer

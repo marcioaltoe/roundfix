@@ -13,6 +13,7 @@ import (
 )
 
 func TestReviewClassifiesTheFinalMessageAfterProgressText(t *testing.T) {
+	t.Parallel()
 	const progress = "I am checking the candidate."
 	const answer = "Findings:\n- review.txt:2: preserve the final message"
 	runner := &reviewCommandRunner{
@@ -40,6 +41,7 @@ func TestReviewClassifiesTheFinalMessageAfterProgressText(t *testing.T) {
 }
 
 func TestReviewAcceptsNoFindingsAsTheFinalMessage(t *testing.T) {
+	t.Parallel()
 	const progress = "I am checking the candidate."
 	const answer = "No findings."
 	runner := &reviewCommandRunner{
@@ -61,6 +63,7 @@ func TestReviewAcceptsNoFindingsAsTheFinalMessage(t *testing.T) {
 }
 
 func TestReviewStillBlocksBothVerdictsInTheFinalMessage(t *testing.T) {
+	t.Parallel()
 	const progress = "I am checking the candidate."
 	const answer = "No findings.\nFindings:\n- internal/cli/review.go:42: conflicting verdict"
 	runner := &reviewCommandRunner{
@@ -80,6 +83,7 @@ func TestReviewStillBlocksBothVerdictsInTheFinalMessage(t *testing.T) {
 }
 
 func TestReviewAnswerFileKeepsEveryMessage(t *testing.T) {
+	t.Parallel()
 	const progress = "I am checking the candidate."
 	const answer = "No findings."
 	const transcript = progress + "\n\n" + answer

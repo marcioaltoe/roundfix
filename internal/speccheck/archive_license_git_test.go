@@ -11,6 +11,7 @@ import (
 )
 
 func TestArchiveLicenseResolvesThroughTheRecordOrGit(t *testing.T) {
+	t.Parallel()
 	root := writeBacklogCarrier(t)
 	gittest.InitRepo(t, root, "-b", "main")
 	writeFindingsArtifact(t, root, "docs/history/specs/0003-legacy/_prd.md", "# Legacy Spec\n")

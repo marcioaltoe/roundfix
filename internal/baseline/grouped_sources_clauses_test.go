@@ -15,6 +15,7 @@ var groupingClauses = []struct{ id, guidance, module, rule, guide string }{
 }
 
 func TestTheGroupingClausesCarryTheirForceAndText(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	for _, want := range groupingClauses {
 		t.Run(want.id, func(t *testing.T) {
@@ -52,6 +53,7 @@ func TestTheGroupingClausesCarryTheirForceAndText(t *testing.T) {
 }
 
 func TestTheGroupingClausesRenderInTheGuides(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	for _, want := range groupingClauses {
 		t.Run(want.id, func(t *testing.T) {
@@ -68,6 +70,7 @@ func TestTheGroupingClausesRenderInTheGuides(t *testing.T) {
 }
 
 func TestTheGroupingClausesHaveSourceBaselineRows(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
 	if err != nil {
@@ -93,6 +96,7 @@ func TestTheGroupingClausesHaveSourceBaselineRows(t *testing.T) {
 }
 
 func TestAnAdopterRetainsTheGroupingClauses(t *testing.T) {
+	t.Parallel()
 	request, catalog := newClauseReplacementAdopter(t)
 	outcome, err := buildPlanWithCatalog(context.Background(), request, catalog)
 	if err != nil {

@@ -181,6 +181,7 @@ func (*batchObjectWriteCloser) Close() error {
 }
 
 func TestBatchObjectReaderProcessHelper(t *testing.T) {
+	t.Parallel()
 	if os.Getenv("ROUNDFIX_BATCH_OBJECT_HELPER") != "die-mid-stream" {
 		return
 	}

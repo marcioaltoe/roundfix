@@ -9,6 +9,7 @@ import (
 )
 
 func TestArchiveRecordClausesAreAppended(t *testing.T) {
+	t.Parallel()
 	const specSentence = "A runtime whose archive leaves an Archive Record, such as `roundfix archive <slug>`, writes `<archive-root>/<slug>.md` and removes the Spec folder in the same change; the folder stays in Git at the record's `source_revision`, so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary, an agent guide or the Secondbrain inbox before or at archive."
 	const contextSentence = "When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder."
 	catalog, err := LoadEmbeddedCatalog()

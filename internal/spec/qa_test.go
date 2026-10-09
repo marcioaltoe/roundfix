@@ -553,7 +553,7 @@ func TestArchivedQAReportCorpusRemainsReadable(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	pattern := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec)), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
+	pattern := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ":(glob)"+ArchiveDir(ArchiveKindSpec)+"/*/qa/qa-report-*.md"), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
 	reports, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("find archived QA Reports: %v", err)
@@ -848,6 +848,7 @@ func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
 }
 
 func TestPreconditionRefusalReportNamesItsAuditor(t *testing.T) {
+	// Sequential: swaps app.Version, app.BuildCommit and app.BuildTime.
 	oldVersion, oldCommit, oldTime := app.Version, app.BuildCommit, app.BuildTime
 	t.Cleanup(func() {
 		app.Version, app.BuildCommit, app.BuildTime = oldVersion, oldCommit, oldTime

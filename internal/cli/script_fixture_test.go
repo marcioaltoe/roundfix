@@ -60,6 +60,7 @@ func runScriptFixture() {
 }
 
 func TestScriptFixtureIsTheCompiledTestBinary(t *testing.T) {
+	t.Parallel()
 	t.Run("script arguments and environment", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "script")
 		writeScriptFixture(t, path, "printf '%s|%s|%s\\n' \"$1\" \"$2\" \"$FIXTURE_VALUE\"\nexit 7\n")
@@ -105,7 +106,7 @@ func TestScriptFixtureIsTheCompiledTestBinary(t *testing.T) {
 				if name == "pre-commit" || name == "commit-msg" {
 					wantExit = 1
 				}
-				assertScriptFixture(t, filepath.Join(hooks.directory, name), nil, "", wantExit, nil)
+				assertScriptFixture(t, filepath.Join(hooks.directory, name), nil, "", wantExit, []string{carryForwardHookMarkerEnv + "=" + hooks.marker})
 				assertCarryForwardHookMarkers(t, hooks.marker, []string{name, name, name})
 				if err := os.Remove(hooks.marker); err != nil {
 					t.Fatalf("clear hook markers: %v", err)

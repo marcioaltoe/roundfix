@@ -17,12 +17,14 @@ type characterizedBaselineClause struct {
 }
 
 func TestNoTwoBaselineClausesShareText(t *testing.T) {
+	t.Parallel()
 	if pairs := repeatedBaselineGuidance(embeddedBaselineClauses(t)); len(pairs) != 0 {
 		t.Fatalf("repeated Baseline guidance: %v", pairs)
 	}
 }
 
 func TestADuplicatedClauseTextIsReported(t *testing.T) {
+	t.Parallel()
 	clauses := embeddedBaselineClauses(t)
 	// Change a copy, including case and whitespace, without mutating the catalog.
 	clauses[1].Guidance = " \n" + strings.ToUpper(strings.ReplaceAll(clauses[0].Guidance, " ", "\t  ")) + " \n"
@@ -33,12 +35,14 @@ func TestADuplicatedClauseTextIsReported(t *testing.T) {
 }
 
 func TestBaselineClauseForceIsCharacterized(t *testing.T) {
+	t.Parallel()
 	if issues := baselineClauseForceDifferences(embeddedBaselineClauses(t), characterizedBaselineForce()); len(issues) != 0 {
 		t.Fatalf("Baseline clause force changed: %v", issues)
 	}
 }
 
 func TestAMissingBaselineClauseIsReported(t *testing.T) {
+	t.Parallel()
 	clauses := embeddedBaselineClauses(t)
 	want := []string{"missing clause " + clauses[0].ID}
 	if got := baselineClauseForceDifferences(clauses[1:], characterizedBaselineForce()); !reflect.DeepEqual(got, want) {
@@ -47,6 +51,7 @@ func TestAMissingBaselineClauseIsReported(t *testing.T) {
 }
 
 func TestAnUnlistedBaselineClauseIsReported(t *testing.T) {
+	t.Parallel()
 	clauses := append(embeddedBaselineClauses(t), characterizedBaselineClause{ID: "clause.test.unlisted", Enforcement: "mandatory"})
 	want := []string{"unlisted clause clause.test.unlisted"}
 	if got := baselineClauseForceDifferences(clauses, characterizedBaselineForce()); !reflect.DeepEqual(got, want) {
@@ -55,6 +60,7 @@ func TestAnUnlistedBaselineClauseIsReported(t *testing.T) {
 }
 
 func TestAChangedBaselineClauseForceIsReported(t *testing.T) {
+	t.Parallel()
 	clauses := embeddedBaselineClauses(t)
 	prior := clauses[0].Enforcement
 	clauses[0].Enforcement = "prohibited"
@@ -68,6 +74,7 @@ func TestAChangedBaselineClauseForceIsReported(t *testing.T) {
 }
 
 func TestTheBackendBoundaryParagraphRendersOnce(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	const assetPath = "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
 	asset, ok := catalog.Asset(assetPath)

@@ -12,6 +12,7 @@ import (
 )
 
 func TestReceiptCharacterizationKeepsEveryParsedClaim(t *testing.T) {
+	t.Parallel()
 	pinned := gittest.PinnedHistory(t, "../..", "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on", "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands")
 	var got []Claim
 	for _, item := range []struct{ name, slug, artifact string }{

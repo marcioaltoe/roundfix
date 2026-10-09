@@ -42,6 +42,7 @@ func TestDeliverStartRecordsAndPrintsTheTokenCeiling(t *testing.T) {
 }
 
 func TestDeliverStartRefusesAMaxTokensBelowOne(t *testing.T) {
+	t.Parallel()
 	for _, value := range []string{"0", "-1"} {
 		t.Run(value, func(t *testing.T) {
 			assertDeliverStartLimitsRefused(t, []string{"--max-tokens", value}, "max-tokens must be at least 1")
@@ -50,6 +51,7 @@ func TestDeliverStartRefusesAMaxTokensBelowOne(t *testing.T) {
 }
 
 func TestDeliverStartRefusesANonIntegerMaxTokens(t *testing.T) {
+	t.Parallel()
 	for _, value := range []string{"1.5", "not-a-number", "9223372036854775808"} {
 		t.Run(value, func(t *testing.T) {
 			assertDeliverStartLimitsRefused(t, []string{"--max-tokens", value}, "invalid value")

@@ -266,6 +266,7 @@ func TestRunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances(t *testi
 }
 
 func TestRunGCCompactRefusalsNameCause(t *testing.T) {
+	t.Parallel()
 	t.Run("Active Run", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
@@ -485,6 +486,7 @@ func TestRunGCSanitizeClassifiesEveryRecordedRootAndMutatesOnlyProvenDirectories
 }
 
 func TestGCSanitizeKeepsTheSharedRootAfterWorktreeRemoval(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	linkedRoot := filepath.Join(t.TempDir(), "linked")

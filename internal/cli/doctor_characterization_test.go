@@ -24,6 +24,7 @@ import (
 // registered. Readiness now covers every Agent Work Category the effective
 // configuration defines.
 func TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory(t *testing.T) {
+	t.Parallel()
 	stdout, runner := runDoctorWithConfiguredDataProfile(t)
 
 	proven := false
@@ -48,6 +49,7 @@ func TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory(t *
 // derives the five required profiles from RecommendedProfile: four distinct
 // tuples and ten references, with no optional category added.
 func TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories(t *testing.T) {
+	t.Parallel()
 	stdout, runner := runDoctorWithConfig(t, roundconfig.Builtin())
 
 	if len(runner.exactRequests) != 4 {
@@ -65,6 +67,7 @@ func TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategor
 // category that only inherits general out of readiness, because it contributes
 // no distinct Agent Selection tuple.
 func TestCharacterizationInvariantInheritedCategoryAddsNoTuple(t *testing.T) {
+	t.Parallel()
 	config := roundconfig.Builtin()
 	if _, defined := config.Profiles[roundconfig.CategoryDocs]; defined {
 		t.Fatal("the built-in configuration must not define an optional category")
@@ -142,6 +145,7 @@ func runDoctorWithConfig(t *testing.T, config roundconfig.Config) (string, *prof
 // the widened scope exists for: a readiness command never reports ok while a
 // configured Agent Selection Profile is failing.
 func TestDoctorProfileReadinessFailsOnAConfiguredOptionalCategory(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 
 	config := roundconfig.Builtin()

@@ -110,6 +110,7 @@ func doctorWithReadiness(t *testing.T, results []CheckResult) (int, string, stri
 }
 
 func TestForgeReadinessReportsEachDefiniteFailure(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		code, line, missing, key string
 		reply                    readinessReply
@@ -150,6 +151,7 @@ func TestForgeReadinessReportsEachDefiniteFailure(t *testing.T) {
 }
 
 func TestForgeReadinessWarnsWhenTheForgeDoesNotAnswer(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, key, code, line string
 		reply                 readinessReply
@@ -180,6 +182,7 @@ func TestForgeReadinessWarnsWhenTheForgeDoesNotAnswer(t *testing.T) {
 }
 
 func TestGitReadinessReportsVersionAndIdentity(t *testing.T) {
+	t.Parallel()
 	for _, key := range []string{"user.name", "user.email"} {
 		t.Run(key, func(t *testing.T) {
 			result := gitReadiness(context.Background(), scriptedReadiness(t, map[string]readinessReply{"git config --get " + key: {code: 1}}, ""), roundconfig.Loaded{GitRoot: "/fake/repo"})
@@ -197,6 +200,7 @@ func TestGitReadinessReportsVersionAndIdentity(t *testing.T) {
 }
 
 func TestDoctorPrintsForgeWarningsAndExitsZero(t *testing.T) {
+	t.Parallel()
 	deps := scriptedReadiness(t, map[string]readinessReply{
 		"gh auth status --active --hostname github.com --json hosts": {err: context.DeadlineExceeded},
 		"git ls-remote origin HEAD":                                  {code: 1},
@@ -217,6 +221,7 @@ func TestDoctorPrintsForgeWarningsAndExitsZero(t *testing.T) {
 }
 
 func TestReadinessFindingsFoldAndPrintNextActions(t *testing.T) {
+	t.Parallel()
 	for _, statuses := range [][]CheckStatus{{}, {CheckStatusWarn}, {CheckStatusWarn, CheckStatusFailed}, {CheckStatusFailed, CheckStatusWarn}} {
 		var findings []readinessFinding
 		want := CheckStatusOK
@@ -239,6 +244,7 @@ func TestReadinessFindingsFoldAndPrintNextActions(t *testing.T) {
 }
 
 func TestReadinessRemoteFormsAndDeliverySelection(t *testing.T) {
+	t.Parallel()
 	for _, raw := range []string{"https://github.com/owner/repository.git", "ssh://git@github.com/owner/repository.git", "git@github.com:owner/repository.git"} {
 		t.Run(raw, func(t *testing.T) {
 			deps := scriptedReadiness(t, map[string]readinessReply{"git remote get-url publish": {out: raw}, "git ls-remote publish HEAD": {out: "head"}}, "")
@@ -296,9 +302,10 @@ func enterpriseReadinessRunner(t *testing.T, run readinessRunner) readinessRunne
 }
 
 func TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken(t *testing.T) {
+	// Sequential: the probe's 250 ms bound is the behavior under test, and the child missed it under the race detector while it ran in parallel (0254 QA F4).
 	dir := t.TempDir()
-	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	t.Setenv("PROBE_LOG", filepath.Join(dir, "probes"))
+	setCommandEnvForTest(t, "PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setCommandEnvForTest(t, "PROBE_LOG", filepath.Join(dir, "probes"))
 	script := `#!/bin/sh
 {
  printf 'argv:%s\n' "$*"
@@ -318,12 +325,15 @@ case "$*" in
  *) exit 90;;
 esac
 `
-	t.Setenv("GH_TEST_VERSION", readinessGHMinimumVersion)
-	t.Setenv("GIT_TEST_VERSION", readinessGitMinimumVersion)
+	setCommandEnvForTest(t, "GH_TEST_VERSION", readinessGHMinimumVersion)
+	setCommandEnvForTest(t, "GIT_TEST_VERSION", readinessGitMinimumVersion)
 	for _, name := range []string{"gh", "git"} {
 		writeScriptFixture(t, filepath.Join(dir, name), script)
 	}
-	deps := defaultReadinessDependencies()
+	deps := readinessDependenciesForCommand(commandEnvironmentForTest(t).dependencies)
+	deps.run = func(ctx context.Context, workDir string, env []string, name string, args ...string) (string, string, int, error) {
+		return execReadinessRunner(ctx, workDir, env, filepath.Join(dir, name), args...)
+	}
 	results := machineReadiness(context.Background(), deps, roundconfig.Loaded{GitRoot: dir})
 	var out bytes.Buffer
 	for _, result := range results {
@@ -349,19 +359,32 @@ esac
 printf '%s\n' "$$" > "$SLEEP_PID"
 exec sleep 30
 `
-	t.Setenv("SLEEP_PID", filepath.Join(dir, "pid"))
+	setCommandEnvForTest(t, "SLEEP_PID", filepath.Join(dir, "pid"))
 	if err := os.WriteFile(filepath.Join(dir, "gh")+scriptFixtureSuffix, []byte(sleeper), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	deps = defaultReadinessDependencies()
+	deps.environ = commandEnvironmentForTest(t).dependencies.environ()
+	// The production bound: a probe whose child never answers ends with the
+	// deadline, well inside three seconds, whether or not the child started.
 	deps.timeout = 250 * time.Millisecond
 	started := time.Now()
 	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
 	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
 		t.Fatalf("sleeping child did not cancel: %v", err)
 	}
+	// Cancellation kills the child: a longer bound lets the child record its
+	// PID even under load, and the deadline still ends the probe.
+	if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	deps.timeout = 2 * time.Second
+	started = time.Now()
+	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
+	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 5*time.Second {
+		t.Fatalf("sleeping child did not cancel: %v", err)
+	}
 	pid, err := os.ReadFile(filepath.Join(dir, "pid"))
-	if err != nil {
+	if err != nil || len(strings.TrimSpace(string(pid))) == 0 {
 		t.Fatal("sleeping child never started")
 	}
 	// kill -0 is a read-only liveness probe, through the same bounded exec runner.

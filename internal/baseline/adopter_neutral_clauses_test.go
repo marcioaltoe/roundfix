@@ -20,12 +20,14 @@ func repositoryRecordCitations(clauses []characterizedBaselineClause) [][2]strin
 }
 
 func TestShippedGuidanceCitesNoRepositoryRecord(t *testing.T) {
+	t.Parallel()
 	if citations := repositoryRecordCitations(embeddedBaselineClauses(t)); len(citations) != 0 {
 		t.Fatalf("shipped guidance cites repository records: %v", citations)
 	}
 }
 
 func TestARepositoryRecordCitationIsReported(t *testing.T) {
+	t.Parallel()
 	clauses := []characterizedBaselineClause{{ID: "clause.test.citation", Guidance: "Follow ADR-0186."}}
 	want := [][2]string{{"clause.test.citation", "ADR-0186"}}
 	if got := repositoryRecordCitations(clauses); !reflect.DeepEqual(got, want) {
@@ -34,6 +36,7 @@ func TestARepositoryRecordCitationIsReported(t *testing.T) {
 }
 
 func TestASpecCitationInRuleGuidanceIsReported(t *testing.T) {
+	t.Parallel()
 	clauses := []characterizedBaselineClause{{ID: "rule.test.citation", RuleLevel: true, Guidance: "Follow Spec 0193."}}
 	want := [][2]string{{"rule.test.citation", "Spec 0193"}}
 	if got := repositoryRecordCitations(clauses); !reflect.DeepEqual(got, want) {
@@ -42,6 +45,7 @@ func TestASpecCitationInRuleGuidanceIsReported(t *testing.T) {
 }
 
 func TestLifecycleClausesCarryTheScopedWording(t *testing.T) {
+	t.Parallel()
 	want := map[string][]string{
 		"clause.context.adr-02-active-status": {"For an ADR that carries lifecycle frontmatter, only `accepted` is active."},
 		"clause.context.backlog-01-operational-contract": {

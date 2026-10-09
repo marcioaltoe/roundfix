@@ -198,6 +198,7 @@ func TestWorktreeAdministrationOfDifferentRepositoriesRunsConcurrently(t *testin
 }
 
 func TestWorktreeAdministrationLockHelperProcess(t *testing.T) {
+	t.Parallel()
 	if os.Getenv("ROUNDFIX_WORKTREE_ADMIN_LOCK_HELPER") != "1" {
 		return
 	}

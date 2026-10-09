@@ -22,6 +22,7 @@ import (
 const citationSource = "docs/adr/old.md"
 
 func TestRelocationCitationsReportEachCitationForm(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	files := map[string]string{
@@ -47,6 +48,7 @@ func TestRelocationCitationsReportEachCitationForm(t *testing.T) {
 }
 
 func TestRelocationCitationsReportARelocatedFilesOutwardLink(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "[current](current.md)\n")
 	trackCitationTestFile(t, repo, "docs/adr/current.md", "current\n")
@@ -62,6 +64,7 @@ func TestRelocationCitationsReportARelocatedFilesOutwardLink(t *testing.T) {
 }
 
 func TestRelocationCitationsSkipCoRelocatedLinks(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "[peer](peer.md)\n")
 	trackCitationTestFile(t, repo, "docs/adr/peer.md", "peer\n")
@@ -76,6 +79,7 @@ func TestRelocationCitationsSkipCoRelocatedLinks(t *testing.T) {
 }
 
 func TestRelocationCitationsSkipAlreadyBrokenCitations(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "guide.md", "[missing](docs/adr/missing.md)\n")
@@ -86,6 +90,7 @@ func TestRelocationCitationsSkipAlreadyBrokenCitations(t *testing.T) {
 }
 
 func TestRelocationCitationsSkipCodeFencesAndURLs(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "docs/guide.md", "```markdown\n[old](../adr/old.md)\n```\n[url](https://example.test/docs/adr/old.md)\n")
@@ -96,6 +101,7 @@ func TestRelocationCitationsSkipCodeFencesAndURLs(t *testing.T) {
 }
 
 func TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, ".gitignore", "ignored.md\n")
@@ -115,6 +121,7 @@ func TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles(t *testing.T) {
 }
 
 func TestRelocationCitationsNeverFollowSymbolicLinks(t *testing.T) {
+	t.Parallel()
 	if runtime.GOOS == "windows" {
 		t.Skip("symbolic-link replacement requires Unix permissions")
 	}
@@ -143,6 +150,7 @@ func TestRelocationCitationsNeverFollowSymbolicLinks(t *testing.T) {
 }
 
 func TestRelocationCitationsSummarizeUnscannedFiles(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "binary.dat", "\x00docs/adr/old.md\n")
@@ -160,6 +168,7 @@ func TestRelocationCitationsSummarizeUnscannedFiles(t *testing.T) {
 }
 
 func TestRelocationCitationsCapEachFileAndThePlan(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	for index := 0; index < 201; index++ {
@@ -188,6 +197,7 @@ func TestRelocationCitationsCapEachFileAndThePlan(t *testing.T) {
 }
 
 func TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	from := "docs/specs/_archived/0012-old/_prd.md"
 	reviewFrom := "docs/specs/_reviews/pr-12/report.md"
@@ -211,6 +221,7 @@ func TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots(t *testing.T) {
 }
 
 func TestRelocationCitationsDoNothingWithoutMoves(t *testing.T) {
+	t.Parallel()
 	findings, err := relocationCitationFindings(t.Context(), filepath.Join(t.TempDir(), "does-not-exist"), nil, nil)
 	if err != nil || findings != nil {
 		t.Fatalf("relocationCitationFindings() = (%#v, %v), want (nil, nil)", findings, err)
@@ -218,6 +229,7 @@ func TestRelocationCitationsDoNothingWithoutMoves(t *testing.T) {
 }
 
 func TestRelocationCitationsAreDeterministic(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "b.txt", "docs/adr/old.md\n")
@@ -238,6 +250,7 @@ func TestRelocationCitationsAreDeterministic(t *testing.T) {
 }
 
 func TestRelocationCitationsNeverPrintAControlCharacter(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "control\nname.md", "docs/adr/old.md\n")
@@ -250,6 +263,7 @@ func TestRelocationCitationsNeverPrintAControlCharacter(t *testing.T) {
 }
 
 func TestRelocationCitationsIgnoreAMoveApplyWouldRefuse(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "guide.md", "docs/adr/old.md\n")
@@ -262,6 +276,7 @@ func TestRelocationCitationsIgnoreAMoveApplyWouldRefuse(t *testing.T) {
 }
 
 func TestRelocationCitationsNeverBlockOnAFIFO(t *testing.T) {
+	t.Parallel()
 	if runtime.GOOS == "windows" {
 		t.Skip("FIFO replacement requires Unix")
 	}

@@ -11,10 +11,12 @@ import (
 )
 
 func TestATaskThatLeavesItsDeletesPathDoesNotSettle(t *testing.T) {
+	t.Parallel()
 	testDeletesTaskCycle(t, false)
 }
 
 func TestATaskThatRemovesItsDeletesPathSettles(t *testing.T) {
+	t.Parallel()
 	testDeletesTaskCycle(t, true)
 }
 
@@ -76,6 +78,7 @@ func testDeletesTaskCycle(t *testing.T, repairRemoves bool) {
 }
 
 func TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	if err := os.Mkdir(filepath.Join(root, "directory"), 0755); err != nil {
 		t.Fatal(err)

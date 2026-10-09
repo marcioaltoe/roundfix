@@ -71,6 +71,7 @@ func assertCoverageText(t *testing.T, output, line string) {
 	}
 }
 func TestReleasePlanBlocksALaggingSurface(t *testing.T) {
+	t.Parallel()
 	for _, subject := range []string{"fix: correct output", "feat: add output"} {
 		t.Run(subject, func(t *testing.T) {
 			repo := newCoverageFixture(t, "", false, true)
@@ -108,6 +109,7 @@ func TestReleasePlanBlocksALaggingSurface(t *testing.T) {
 	}
 }
 func TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, beforeReview, afterReview, fingerprint, outcome string
 		skill, uncovered                                      bool
@@ -163,6 +165,7 @@ func TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges(t *testing.T) {
 	}
 }
 func TestReleasePlanSkillCoverageNeverBlocksWithoutAMap(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, subject, status string
 		baseMap, targetMap    bool
@@ -205,6 +208,7 @@ func TestReleasePlanSkillCoverageNeverBlocksWithoutAMap(t *testing.T) {
 	}
 }
 func TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap(t *testing.T) {
+	t.Parallel()
 	for _, malformed := range []bool{true, false} {
 		t.Run(map[bool]string{true: "malformed map", false: "missing record"}[malformed], func(t *testing.T) {
 			repo := newCoverageFixture(t, "", false, true)

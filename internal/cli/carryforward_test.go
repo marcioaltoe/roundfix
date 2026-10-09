@@ -132,6 +132,7 @@ func TestInspectSpecCarryForwards(t *testing.T) {
 }
 
 func TestCarryForwardInputsResolveAgainstStagedCarries(t *testing.T) {
+	t.Parallel()
 	sharedInput := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md"))
 	seeds := []implementSeed{
 		{
@@ -284,6 +285,7 @@ func addCarryForwardDistractors(t *testing.T, fixture carryForwardFixture) {
 }
 
 func TestCarryForwardConflictRefusesInsteadOfFailingTheInspection(t *testing.T) {
+	t.Parallel()
 	// The conflicting path is deliberately not a declared input, so the inputs
 	// proof passes and staging is actually attempted. A commit that will not
 	// apply must be reported as this Task's refusal, with the rest of the set

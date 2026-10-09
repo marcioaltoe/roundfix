@@ -179,6 +179,7 @@ func TestOutputsForBaselineDigestsUnchangedBySkillOwnership(t *testing.T) {
 }
 
 func TestCleanupRegenerationOwnershipParity(t *testing.T) {
+	t.Parallel()
 	t.Run("repository ownership matches the suite guard reader", func(t *testing.T) {
 		repository := filepath.Clean(filepath.Join("..", ".."))
 		want, err := OutputsFor(repository, sanctionedBaselineDigestCommand)

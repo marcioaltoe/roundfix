@@ -231,7 +231,7 @@ func TestContractInvocationsSortAndDeduplicate(t *testing.T) {
 		{Name: "TestA", Tag: "repocontract", Package: "a"},
 		{Name: "Test.+", Tag: "docscontract", Package: "docs"},
 	}
-	want := []string{`docscontract ^(Test\.\+)$ ./docs`, "repocontract ^(TestA|TestZ)$ ./a ./z"}
+	want := []string{`docscontract,repocontract ^(TestA|TestZ|Test\.\+)$ ./a ./docs ./z`}
 	if got := verifyselect.ContractInvocations(selected); !reflect.DeepEqual(got, want) {
 		t.Fatalf("invocations = %q, want %q", got, want)
 	}
@@ -258,7 +258,7 @@ func TestBoundary(t *testing.T) {}`))
 	args := []string{"-repo", repo, "-contracts", "-base", base}
 	var stdout, stderr bytes.Buffer
 	code := verifyselect.Run(t.Context(), args, &stdout, &stderr)
-	wantOut := "docscontract ^(TestDocs)$ ./docs\nrepocontract ^(TestAlways|TestPackage)$ ./pkg\n"
+	wantOut := "docscontract,repocontract ^(TestAlways|TestDocs|TestPackage)$ ./docs ./pkg\n"
 	wantErr := "verify-select: contracts: 3 selected (2 always, 1 by change), 2 not selected, 1 boundary; boundary: TestBoundary (pkg)\n"
 	if code != 0 || stdout.String() != wantOut || stderr.String() != wantErr {
 		t.Fatalf("Run() = %d, stdout %q, stderr %q; want 0, %q, %q", code, stdout.String(), stderr.String(), wantOut, wantErr)
@@ -311,7 +311,7 @@ func TestRelevant(t *testing.T) {}`))
 			}
 			var stdout, stderr bytes.Buffer
 			code := verifyselect.Run(t.Context(), []string{"-repo", repo, "-contracts", "-all"}, &stdout, &stderr)
-			wantOut := "docscontract ^(TestAlways|TestBoundary)$ ./docs\nrepocontract ^(TestPackage|TestRelevant)$ ./pkg\n"
+			wantOut := "docscontract,repocontract ^(TestAlways|TestBoundary|TestPackage|TestRelevant)$ ./docs ./pkg\n"
 			wantErr := "verify-select: contracts: 4 selected (every Repository Contract Test), 0 not selected\n"
 			if code != 0 || stdout.String() != wantOut || stderr.String() != wantErr {
 				t.Fatalf("Run() = %d, stdout %q, stderr %q; want 0, %q, %q", code, stdout.String(), stderr.String(), wantOut, wantErr)

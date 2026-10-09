@@ -7,6 +7,7 @@ import (
 )
 
 func TestTheGuidesExemptANetworkDeniedOutsideEvidenceRow(t *testing.T) {
+	t.Parallel()
 	const outsideEvidenceSentence = "An outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`, is the exception: the report records that the source was not reached, the row never decides a qualifying `partial`, and whoever needs that proof declares it under Unreachable Acceptance."
 	const deliveryOrderSentence = "Neither does an outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`."
 

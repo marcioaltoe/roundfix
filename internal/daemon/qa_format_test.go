@@ -81,6 +81,7 @@ func qaCommittedBytes(t *testing.T, p TaskPlan, path string) string {
 }
 
 func TestQAFormatCommitsTheFormattedReport(t *testing.T) {
+	t.Parallel()
 	script := qaFormatterScript(t, "for path do printf '\\nformatted\\n' >> \"$path\"; done\n")
 	f, p, _, report, evidence := qaFormatCommitFixture(t, script)
 	if got := qaCommittedBytes(t, p, report); got != priorReportContent("fail")+"\nformatted\n" {
@@ -100,6 +101,7 @@ func TestQAFormatCommitsTheFormattedReport(t *testing.T) {
 }
 
 func TestQAFormatFormatsAnImportedPassBeforeThePrecondition(t *testing.T) {
+	t.Parallel()
 	f, p, _ := priorFixture(t)
 	prior := recordPriorCommit(t, f, p, priorReportName(1), priorReportContent("fail"), QACommitMessage(p.Spec.Slug, "fail"), true)
 	p.FormatCommand = qaFormatterScript(t, "for path do printf '\\nformatted\\n' >> \"$path\"; done\n")
@@ -132,6 +134,7 @@ func TestQAFormatFormatsAnImportedPassBeforeThePrecondition(t *testing.T) {
 }
 
 func TestQAFormatRevertsAFailingFormatter(t *testing.T) {
+	t.Parallel()
 	script := qaFormatterScript(t, "for path do printf 'broken' > \"$path\"; chmod 700 \"$path\"; done\nprintf 'formatter error' >&2\nexit 1\n")
 	f, p, _, report, evidence := qaFormatCommitFixture(t, script)
 	if got := qaCommittedBytes(t, p, report); got != priorReportContent("fail") {
@@ -153,6 +156,7 @@ func TestQAFormatRevertsAFailingFormatter(t *testing.T) {
 }
 
 func TestQAFormatRevertsAVerdictChange(t *testing.T) {
+	t.Parallel()
 	script := qaFormatterScript(t, "for path do sed 's/verdict: fail/verdict: pass/' \"$path\" > \"$path.tmp\"; mv \"$path.tmp\" \"$path\"; printf '\\nchanged\\n' >> \"$path\"; done\n")
 	f, p, _, report, evidence := qaFormatCommitFixture(t, script)
 	if got := qaCommittedBytes(t, p, report); got != priorReportContent("fail") {
@@ -165,6 +169,7 @@ func TestQAFormatRevertsAVerdictChange(t *testing.T) {
 }
 
 func TestQAFormatLeavesFilesOutsideTheQADirectory(t *testing.T) {
+	t.Parallel()
 	log := filepath.Join(t.TempDir(), "arguments")
 	script := qaFormatterScript(t, "printf '%s\\n' \"$@\" > '"+log+"'\n")
 	f, p, e := priorFixture(t)
@@ -197,6 +202,7 @@ func TestQAFormatLeavesFilesOutsideTheQADirectory(t *testing.T) {
 }
 
 func TestQAFormatEmptyCommandRunsNothing(t *testing.T) {
+	t.Parallel()
 	f, p, _, report, evidence := qaFormatCommitFixture(t, "")
 	if qaCommittedBytes(t, p, report) != priorReportContent("fail") || qaCommittedBytes(t, p, evidence) != "original evidence\n" {
 		t.Fatal("empty formatter changed bytes")
@@ -208,6 +214,7 @@ func TestQAFormatEmptyCommandRunsNothing(t *testing.T) {
 }
 
 func TestQAFormatCancellationRestoresFiles(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"context", "stop request"} {
 		t.Run(name, func(t *testing.T) {
 			f, p, e := priorFixture(t)
@@ -267,6 +274,7 @@ func TestQAFormatCancellationRestoresFiles(t *testing.T) {
 }
 
 func TestQAFormatStartFailureRestoresFiles(t *testing.T) {
+	// Sequential: sets PATH to prevent starting the QA format shell.
 	f, p, e := priorFixture(t)
 	report := filepath.Join(p.Spec.Dir, "qa", priorReportName(1))
 	if err := os.MkdirAll(filepath.Dir(report), 0o755); err != nil {
@@ -286,6 +294,7 @@ func TestQAFormatStartFailureRestoresFiles(t *testing.T) {
 }
 
 func TestQAFormatBoundsDiagnostics(t *testing.T) {
+	t.Parallel()
 	script := qaFormatterScript(t, "i=0; while [ \"$i\" -lt 3000 ]; do printf x; i=$((i+1)); done; printf tail >&2; exit 1\n")
 	f, _, _, _, _ := qaFormatCommitFixture(t, script)
 	payload := assertQAFormatOutcome(t, f, "commit", "failed", 1)

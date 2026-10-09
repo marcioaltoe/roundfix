@@ -55,6 +55,7 @@ func TestDeliverStatusPrintsAParkLinePerParkedItem(t *testing.T) {
 }
 
 func TestDeliverStatusReproducesSurfaceTranscriptOne(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runStore, err := store.Open(t.Context(), home)
 	if err != nil {

@@ -16,6 +16,7 @@ import (
 )
 
 func TestResumeAcceptsAnArchiveCommitWithRewrittenLinks(t *testing.T) {
+	t.Parallel()
 	for _, files := range [][]string{{"_prd.md"}, {"task_01.md"}, {"qa/links.md"}, {"_prd.md", "task_01.md", "qa/links.md"}} {
 		t.Run(strings.Join(files, "+"), func(t *testing.T) {
 			repository, reviewedHead, archiveHead := commitLinkRewritingArchive(t, files, nil)
@@ -31,6 +32,7 @@ func TestResumeAcceptsAnArchiveCommitWithRewrittenLinks(t *testing.T) {
 }
 
 func TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		mutate func(*testing.T, string)

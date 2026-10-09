@@ -12,6 +12,7 @@ import (
 )
 
 func TestARoundRecordNamesItsSelectionEvenWhenItIsThePreferred(t *testing.T) {
+	t.Parallel()
 	runner := newLineageRunner("No findings.", "No findings.")
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	for round := 1; round <= 2; round++ {
@@ -39,6 +40,7 @@ func TestARoundRecordNamesItsSelectionEvenWhenItIsThePreferred(t *testing.T) {
 }
 
 func TestACeilingRecordNamesNoSelection(t *testing.T) {
+	t.Parallel()
 	fixture, runner, second := roundTwoLineageFixture(t)
 	fix := commitLineageFile(t, fixture, "fix.txt", "final correction\n")
 	for _, outcome := range []reviewOutcome{reviewOutcomeBlocked, reviewOutcomeCeilingClosed} {

@@ -19,6 +19,7 @@ import (
 )
 
 func TestReviewRecordsTheSpecsACandidateArchives(t *testing.T) {
+	t.Parallel()
 	const (
 		carriedSlug = "0177-carried-archive"
 		skippedSlug = "0176-skipped-archive"
@@ -62,6 +63,7 @@ func TestReviewRecordsTheSpecsACandidateArchives(t *testing.T) {
 }
 
 func TestReviewRecordsNoArchivedSpecForAnActiveSpec(t *testing.T) {
+	t.Parallel()
 	const slug = "0178-active-spec"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -101,6 +103,7 @@ func TestReviewRecordsNoArchivedSpecForAnActiveSpec(t *testing.T) {
 }
 
 func TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive(t *testing.T) {
+	t.Parallel()
 	const slug = "0176-corrective-source"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -126,6 +129,7 @@ func TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive(t *testing.T) {
 }
 
 func TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec(t *testing.T) {
+	t.Parallel()
 	const slug = "0176-no-correction-needed"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -149,6 +153,7 @@ func TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec(t *testing.T) {
 }
 
 func TestDeliveryReviewResultCarriesArchivedSpecs(t *testing.T) {
+	t.Parallel()
 	record := newReviewRecord(
 		"/repo",
 		"base",

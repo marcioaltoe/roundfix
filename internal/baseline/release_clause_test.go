@@ -7,6 +7,7 @@ import (
 )
 
 func TestTheReleaseClauseNamesTheSkillsAndGuidesCheck(t *testing.T) {
+	t.Parallel()
 	const sentence = "Before the release Pull Request, confirm that the skills and guides the repository ships describe the behavior being released; the repository's release runbook owns that check."
 	catalog := mustEmbeddedCatalog(t)
 	module, ok := catalog.Module("core")

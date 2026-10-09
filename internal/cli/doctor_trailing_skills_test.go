@@ -18,6 +18,7 @@ import (
 )
 
 func TestDoctorWarnsOnASkillThatTrailsItsSnapshot(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeDoctorReadyRepositoryFixture(t, root)
 	manifestPath := filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath))
@@ -53,6 +54,7 @@ func TestDoctorWarnsOnASkillThatTrailsItsSnapshot(t *testing.T) {
 }
 
 func TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name           string
 		readiness      skills.RepositoryReadiness
@@ -99,6 +101,7 @@ func TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills(t *testing.T
 }
 
 func TestBaselineUpdatePreviewListsATrailingSkill(t *testing.T) {
+	t.Parallel()
 	root := newBaselineUpdateRepository(t)
 	source, err := filepath.Abs("../..")
 	if err != nil {
@@ -157,6 +160,7 @@ func TestBaselineUpdatePreviewListsATrailingSkill(t *testing.T) {
 }
 
 func TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest(t *testing.T) {
+	t.Parallel()
 	var requests []baseline.SkillsRestoreRequest
 	deps := baselineUpdateSkillsDependencies{
 		resolveProjectRoot: func(context.Context, string) (string, error) { return "/repo", nil },

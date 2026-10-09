@@ -67,6 +67,7 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 }
 
 func TestSettleAppliesEligibilityToAQATask(t *testing.T) {
+	t.Parallel()
 	t.Run("refuses an ineligible report after Verification", func(t *testing.T) {
 		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 			implementQAGateSeed(string(spec.StatusFailed)),

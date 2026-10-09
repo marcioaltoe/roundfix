@@ -18,6 +18,7 @@ import (
 )
 
 func TestDisposeFixedByOptionLikeValueIsRefusedAndWritesNothing(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	outputPath := filepath.Join(t.TempDir(), "git-output")
@@ -43,6 +44,7 @@ func TestDisposeFixedByOptionLikeValueIsRefusedAndWritesNothing(t *testing.T) {
 }
 
 func TestReviewBaseOptionLikeValueIsRefusedAndWritesNothing(t *testing.T) {
+	t.Parallel()
 	newReviewCommandFixture(t, "codex", &reviewCommandRunner{})
 	outputPath := filepath.Join(t.TempDir(), "git-output")
 	optionLikeRevision := "--output=" + outputPath
@@ -64,6 +66,7 @@ func TestReviewBaseOptionLikeValueIsRefusedAndWritesNothing(t *testing.T) {
 }
 
 func TestDisposeFixedByValidCommitIsStillRecorded(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewDispositionFixture(t)
 	writeDispositionFindingsRecord(t, fixture, "- internal/cli/review.go:10: finding", true)
 	mustWrite(t, filepath.Join(fixture.repository, "fix.txt"), "fixed\n")

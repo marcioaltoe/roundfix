@@ -56,6 +56,7 @@ type journalHarnessWriteSample struct {
 }
 
 func TestJournalMeasurementHarness(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("journal measurement harness seeds large journals; run without -short")
 	}
@@ -120,6 +121,7 @@ func TestJournalMeasurementHarness(t *testing.T) {
 }
 
 func TestJournalMeasurementHarnessRejectsInvalidParameters(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		params journalHarnessParameters

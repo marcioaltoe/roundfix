@@ -13,6 +13,7 @@ const (
 )
 
 func TestSpecDocsLayoutClauseRoutesTheOverrideThroughTheCommand(t *testing.T) {
+	t.Parallel()
 	guidance := specDocsLayoutClauseGuidance(t)
 
 	for _, required := range []string{
@@ -27,6 +28,7 @@ func TestSpecDocsLayoutClauseRoutesTheOverrideThroughTheCommand(t *testing.T) {
 }
 
 func TestSpecDocsLayoutClauseNoLongerAsksForAHandStamp(t *testing.T) {
+	t.Parallel()
 	const obsoleteHandStamp = "preserve any supplied reason"
 
 	if guidance := specDocsLayoutClauseGuidance(t); strings.Contains(guidance, obsoleteHandStamp) {
@@ -38,6 +40,7 @@ func TestSpecDocsLayoutClauseNoLongerAsksForAHandStamp(t *testing.T) {
 }
 
 func TestFormatterGoldenDocsLayoutCarriesTheOverrideCommand(t *testing.T) {
+	t.Parallel()
 	golden := formatterGoldenDocsLayout(t)
 
 	for _, required := range []string{

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,6 +21,7 @@ import (
 const carryForwardHookMarkerEnv = "ROUNDFIX_TEST_CARRY_FORWARD_HOOK_MARKER"
 
 func TestCarryForwardAppliesThroughRefusingCommitHooks(t *testing.T) {
+	t.Parallel()
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -43,6 +45,7 @@ func TestCarryForwardAppliesThroughRefusingCommitHooks(t *testing.T) {
 }
 
 func TestCarryForwardProofIgnoresRefusingCommitHooks(t *testing.T) {
+	t.Parallel()
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -70,13 +73,19 @@ func TestCarryForwardProofIgnoresRefusingCommitHooks(t *testing.T) {
 }
 
 func TestCarryForwardStagingRunsNoRepositoryHook(t *testing.T) {
+	t.Parallel()
 	hooks := writeCarryForwardHookFixtures(t, false)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
 
 	// Prove that every fixture hook is active before clearing its marker. The
 	// carry-forward that follows must not add the marker back.
-	gitImplement(t, fixture.repoDir, "commit", "--allow-empty", "-m", "exercise repository hooks")
+	command := exec.Command("git", append(gitConfigArgsForTest(), "commit", "--allow-empty", "-m", "exercise repository hooks")...)
+	command.Dir = fixture.repoDir
+	command.Env = withEnvValue(isolatedGitEnvForTest(), carryForwardHookMarkerEnv, hooks.marker)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("exercise repository hooks: %v\n%s", err, output)
+	}
 	assertCarryForwardHookMarkers(t, hooks.marker, []string{"pre-commit", "prepare-commit-msg", "commit-msg", "post-commit"})
 	if err := os.Remove(hooks.marker); err != nil {
 		t.Fatalf("clear hook marker: %v", err)
@@ -101,6 +110,7 @@ func TestCarryForwardStagingRunsNoRepositoryHook(t *testing.T) {
 }
 
 func TestCarryForwardLeavesTheCheckoutHooksPathUnchanged(t *testing.T) {
+	t.Parallel()
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
@@ -126,11 +136,14 @@ func TestCarryForwardLeavesTheCheckoutHooksPathUnchanged(t *testing.T) {
 }
 
 func TestCarryForwardRemovesItsEmptyHooksDirectory(t *testing.T) {
+	t.Parallel()
 	hooks := writeCarryForwardHookFixtures(t, true)
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	configureCarryForwardHooks(t, fixture.repoDir, hooks.directory)
 	tempRoot := t.TempDir()
-	t.Setenv("TMPDIR", tempRoot)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.tempDir = func() string { return tempRoot }
+	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -167,7 +180,7 @@ func writeCarryForwardHookFixtures(t *testing.T, refuseCommits bool) carryForwar
 		t.Fatalf("create carry-forward hook fixtures: %v", err)
 	}
 	marker := filepath.Join(root, "hook-markers.txt")
-	t.Setenv(carryForwardHookMarkerEnv, marker)
+	setCommandEnvForTest(t, carryForwardHookMarkerEnv, marker)
 	for _, name := range []string{"pre-commit", "prepare-commit-msg", "commit-msg", "post-commit"} {
 		exit := "exit 0\n"
 		if refuseCommits && (name == "pre-commit" || name == "commit-msg") {

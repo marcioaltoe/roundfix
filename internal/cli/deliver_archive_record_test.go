@@ -45,6 +45,7 @@ func retirementFixture(t *testing.T, promote bool) (*commandDeliveryWorkflow, st
 	return workflow, repo, parent, source, destination
 }
 func TestDeliveryAcceptsAnExactRetirement(t *testing.T) {
+	t.Parallel()
 	for _, promote := range []bool{false, true} {
 		t.Run(map[bool]string{false: "record", true: "promotion"}[promote], func(t *testing.T) {
 			w, repo, parent, source, destination := retirementFixture(t, promote)
@@ -67,6 +68,7 @@ func TestDeliveryAcceptsAnExactRetirement(t *testing.T) {
 	}
 }
 func TestDeliveryRefusesAnInexactRetirement(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"keeps file", "extra path", "other revision", "different promotion", "other title", "other created"} {
 		t.Run(kind, func(t *testing.T) {
 			w, repo, parent, source, destination := retirementFixture(t, true)
@@ -110,6 +112,7 @@ func TestDeliveryRefusesAnInexactRetirement(t *testing.T) {
 	}
 }
 func TestDeliveryKeepsTheLegacyExactMove(t *testing.T) {
+	t.Parallel()
 	repo, parent, head := commitLinkRewritingArchive(t, []string{"_prd.md", "task_01.md", "qa/links.md"}, nil)
 	w := retirementWorkflow(repo, "")
 	source, destination, err := w.archivePaths(repo, implementTestSlug)
@@ -122,16 +125,17 @@ func TestDeliveryKeepsTheLegacyExactMove(t *testing.T) {
 	}
 }
 func TestDeliveryArchiveStageCommitsTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	writeArchiveQAReport(t, repo, spec.VerdictPass)
 	commitArchiveFixture(t)
 	parent := strings.TrimSpace(gittest.Run(t, repo, "rev-parse", "HEAD"))
 	gittest.PersistIdentity(t, repo)
-	t.Setenv(cliTestHelperEnv, "1")
+	setCommandEnvForTest(t, cliTestHelperEnv, "1")
 	w := retirementWorkflow(repo, home)
 	var log bytes.Buffer
 	w.log = &log
-	result, err := w.Archive(t.Context(), repo, implementTestSlug, parent)
+	result, err := w.Archive(commandContextForTest(t, t.Context()), repo, implementTestSlug, parent)
 	if err != nil || !result.ExactSpecMove || result.Parent != parent || result.Head == parent {
 		t.Fatalf("archive stage=%+v err=%v", result, err)
 	}
@@ -144,7 +148,7 @@ func TestDeliveryArchiveStageCommitsTheArchiveRecord(t *testing.T) {
 	if status := strings.TrimSpace(gittest.Run(t, repo, "status", "--porcelain")); status != "" {
 		t.Fatalf("dirty archive: %s", status)
 	}
-	again, err := w.Archive(t.Context(), repo, implementTestSlug, result.Head)
+	again, err := w.Archive(commandContextForTest(t, t.Context()), repo, implementTestSlug, result.Head)
 	if err != nil || !again.AlreadyArchived {
 		t.Fatalf("already archived=%+v err=%v", again, err)
 	}

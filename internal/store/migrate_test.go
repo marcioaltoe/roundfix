@@ -95,6 +95,7 @@ func TestOpenRefusesANewerDatabaseWithTheTypedError(t *testing.T) {
 }
 
 func TestConcurrentOpensMigrateAnOlderDatabaseOnce(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV9Fixture(t, homeDir)

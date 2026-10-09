@@ -14,6 +14,7 @@ import (
 )
 
 func TestInstalledRetiredSkillsListsTreesLinksAndLockEntries(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		paths []string
@@ -85,6 +86,7 @@ func TestInstalledRetiredSkillsListsTreesLinksAndLockEntries(t *testing.T) {
 }
 
 func TestInstalledRetiredSkillsIsEmptyWithoutRetiredCopies(t *testing.T) {
+	t.Parallel()
 	for _, lock := range []string{"", `{"version":1,"skills":{"autoresearch":{}}}`} {
 		repo := t.TempDir()
 		if lock != "" {
@@ -100,6 +102,7 @@ func TestInstalledRetiredSkillsIsEmptyWithoutRetiredCopies(t *testing.T) {
 }
 
 func TestInstalledRetiredSkillsReportsFilesystemErrors(t *testing.T) {
+	t.Parallel()
 	t.Run("lock is not a regular file", func(t *testing.T) {
 		repo := t.TempDir()
 		if err := os.Mkdir(filepath.Join(repo, "skills-lock.json"), 0o755); err != nil {
@@ -121,6 +124,7 @@ func TestInstalledRetiredSkillsReportsFilesystemErrors(t *testing.T) {
 }
 
 func TestInstalledRetiredSkillsRefusesAMalformedLock(t *testing.T) {
+	t.Parallel()
 	for _, lock := range []string{`{`, `{"version":1,"skills":[]}`} {
 		repo := t.TempDir()
 		if err := os.WriteFile(filepath.Join(repo, "skills-lock.json"), []byte(lock), 0o644); err != nil {

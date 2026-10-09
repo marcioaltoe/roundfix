@@ -18,12 +18,12 @@ import (
 )
 
 func TestCapabilityRecheck(t *testing.T) {
-	// Sequential: mutates the process-wide PATH required by capability detection.
+	t.Parallel()
 	t.Run("requires no decisions and writes nothing", func(t *testing.T) {
 		repository := newHumanBaselineRepository(t)
 		writeBaselinePlanTestFile(t, repository, ".roundfix/run-journal.jsonl", "existing journal entry\n")
-		// This case verifies the process-level PATH default used by capability checks.
-		t.Setenv("PATH", t.TempDir())
+		// Supply the executable search path at the public command boundary.
+		setCommandEnvForTest(t, "PATH", t.TempDir())
 		before := baselinePlanTestTree(t, repository)
 
 		var stdout bytes.Buffer
@@ -144,15 +144,15 @@ func TestCapabilityRecheck(t *testing.T) {
 }
 
 func TestCapabilityTextRendersProbe(t *testing.T) {
-	// Sequential: mutates the process-wide PATH required by capability detection.
+	t.Parallel()
 	repository := newHumanBaselineRepository(t)
 	bin := t.TempDir()
 	candidate := filepath.Join(bin, "rtk")
 	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
 		t.Fatalf("create broken rtk candidate: %v", err)
 	}
-	// This case verifies the process-level PATH default used by capability checks.
-	t.Setenv("PATH", bin)
+	// Supply the executable search path at the public command boundary.
+	setCommandEnvForTest(t, "PATH", bin)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

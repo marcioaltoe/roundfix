@@ -8,6 +8,7 @@ import (
 )
 
 func TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs(t *testing.T) {
+	t.Parallel()
 	for source, clauses := range loopClauseSurfaces(t) {
 		t.Run(source, func(t *testing.T) {
 			for _, phrase := range []string{
@@ -25,6 +26,7 @@ func TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs(t *testing.T) {
 }
 
 func TestLoopClauseCitesNoSpecOrDecisionNumber(t *testing.T) {
+	t.Parallel()
 	citation := regexp.MustCompile(`ADR-[0-9]+|Spec [0-9]{4}`)
 	for source, clauses := range loopClauseSurfaces(t) {
 		t.Run(source, func(t *testing.T) {

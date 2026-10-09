@@ -29,6 +29,7 @@ func snapshotProfileFixture(t *testing.T) (string, *Catalog, string) {
 }
 
 func TestRestoreSkillsAcceptsARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root, _, id := snapshotProfileFixture(t)
 	runApplyGit(t, root, "init")
 	nested := filepath.Join(root, "nested")
@@ -47,6 +48,7 @@ func TestRestoreSkillsAcceptsARepositoryProfile(t *testing.T) {
 }
 
 func TestReconcileSkillsLockAcceptsARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root, catalog, id := snapshotProfileFixture(t)
 	runApplyGit(t, root, "init")
 	nested := filepath.Join(root, "nested")
@@ -70,6 +72,7 @@ func TestReconcileSkillsLockAcceptsARepositoryProfile(t *testing.T) {
 }
 
 func TestSkillSnapshotProfileKeepsEveryBuiltInProfile(t *testing.T) {
+	t.Parallel()
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatal(err)
@@ -89,6 +92,7 @@ func TestSkillSnapshotProfileKeepsEveryBuiltInProfile(t *testing.T) {
 }
 
 func TestSkillSnapshotProfileResolvesARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root, catalog, id := snapshotProfileFixture(t)
 	resolved, err := ResolveProfile(root, id, catalog)
 	if err != nil {
@@ -131,6 +135,7 @@ func TestSkillSnapshotProfileResolvesARepositoryProfile(t *testing.T) {
 }
 
 func TestSkillSnapshotProfileNamesTheRepositoryPath(t *testing.T) {
+	t.Parallel()
 	root, catalog, _ := snapshotProfileFixture(t)
 	_, err := loadSkillSnapshotProfile(root, "missing-profile", catalog)
 	var finding *SkillsRestoreError
@@ -151,6 +156,7 @@ func TestSkillSnapshotProfileNamesTheRepositoryPath(t *testing.T) {
 }
 
 func TestRepositorySnapshotContractsRefusesDisagreement(t *testing.T) {
+	t.Parallel()
 	contract := restoreSkillContract{Name: "alpha", Source: RestoreSource{Provider: "github", Repository: "owner/repo", Ref: "commit", Path: "skills/alpha"}, TreeDigest: "digest"}
 	only := restoreSkillContract{Name: "only", Source: contract.Source, TreeDigest: contract.TreeDigest}
 	required := map[string]struct{}{"alpha": {}, "zeta": {}, "only": {}, "owned": {}}
@@ -190,6 +196,7 @@ func TestRepositorySnapshotContractsRefusesDisagreement(t *testing.T) {
 }
 
 func TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill(t *testing.T) {
+	t.Parallel()
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatal(err)
@@ -210,6 +217,7 @@ func TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill(t *testing.T) {
 }
 
 func TestTrailingSetupSkillsComparesARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root, catalog, id := snapshotProfileFixture(t)
 	profile, err := loadSkillSnapshotProfile(root, id, catalog)
 	if err != nil {

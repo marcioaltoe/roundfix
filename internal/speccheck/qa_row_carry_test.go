@@ -55,6 +55,7 @@ func rowCarryRefusal(t *testing.T, result speccheck.MechanicalResult, reason str
 }
 
 func TestRowCarryAcceptsAHeadItsQAReportCommitRecorded(t *testing.T) {
+	t.Parallel()
 	root, head := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	result := rowCarryResult(t, root)
 	if len(result.Carried) != 1 || result.Carried[0].EstablishedHead != head || result.Carried[0].EstablishedBy != rowCarryReportPath || len(result.Dispositions) != 1 || !result.Dispositions[0].Carried || result.Dispositions[0].Reason != "" {
@@ -62,20 +63,24 @@ func TestRowCarryAcceptsAHeadItsQAReportCommitRecorded(t *testing.T) {
 	}
 }
 func TestRowCarryRefusesAHeadOnlyATaskCommitRecorded(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical\nRoundfix-Task: task_01")
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingHeadUnproven)
 }
 func TestRowCarryRefusesAnUnprovenHead(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "")
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingHeadUnproven)
 }
 func TestRowCarryNamesTheMovedInput(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	writeMechanicalFile(t, root, "evidence.txt", "moved\n")
 	commitMechanicalFiles(t, root, "move evidence", "evidence.txt")
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonInputMoved+"evidence.txt")
 }
 func TestRowCarryNeverCarriesAlwaysObservedRows(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ provenance, kind, reason string }{
 		{"repository Verification", "repository_path", speccheck.CarryReasonRepositoryVerification},
 		{"Pull Request row", "repository_path", speccheck.CarryReasonPullRequestRow},
@@ -97,6 +102,7 @@ func TestRowCarryNeverCarriesAlwaysObservedRows(t *testing.T) {
 	}
 }
 func TestRowCarryKeepsTheEstablishingProvenance(t *testing.T) {
+	t.Parallel()
 	root, head := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	report := mechanicalCarryReport(head, "stable evidence\n")
 	report = strings.ReplaceAll(report, "| Evidence |", "| Evidence | Provenance |")
@@ -121,6 +127,7 @@ func TestRowCarryKeepsTheEstablishingProvenance(t *testing.T) {
 	}
 }
 func TestRowCarryRecordsOneDispositionPerPriorRow(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	path := root + "/" + rowCarryReportPath
 	report := readRowCarryFile(t, path)
@@ -142,6 +149,7 @@ func TestRowCarryRecordsOneDispositionPerPriorRow(t *testing.T) {
 	}
 }
 func TestRowCarryWithoutDispositionsRendersTodaysBytes(t *testing.T) {
+	t.Parallel()
 	_ = newMechanicalGitRepo(t)
 	var out bytes.Buffer
 	result := speccheck.MechanicalResult{Carried: []speccheck.CarriedRow{{ID: "R01", EstablishedBy: "report.md", EstablishedHead: "abc"}}}
@@ -164,16 +172,19 @@ func readRowCarryFile(t *testing.T, path string) string {
 }
 
 func TestRowCarryRefusesARecordingCommitForAnotherSpec(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: another-spec")
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingHeadUnproven)
 }
 func TestRowCarryRefusesDifferentRecordedBytes(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	report := readRowCarryFile(t, root+"/"+rowCarryReportPath)
 	writeMechanicalFile(t, root, rowCarryReportPath, report+"\nChanged report bytes.\n")
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingHeadUnproven)
 }
 func TestRowCarryRefusesARecordingCommitWithADifferentFirstParent(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "")
 	report := readRowCarryFile(t, root+"/"+rowCarryReportPath)
 	runMechanicalGit(t, root, "checkout", "-q", "qa-side")
@@ -185,22 +196,26 @@ func TestRowCarryRefusesARecordingCommitWithADifferentFirstParent(t *testing.T) 
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingHeadUnproven)
 }
 func TestRowCarryRefusesAnUnreachableRecordingCommit(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	runMechanicalGit(t, root, "branch", "-D", "qa-side")
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingHeadUnproven)
 }
 func TestRowCarryRefusesANonRepositoryInput(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	report := readRowCarryFile(t, root+"/"+rowCarryReportPath)
 	writeMechanicalFile(t, root, rowCarryReportPath, strings.ReplaceAll(report, "kind: repository_path", "kind: live_service"))
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonNonRepositoryInput)
 }
 func TestRowCarryRefusesAnUnavailableEstablishingReport(t *testing.T) {
+	t.Parallel()
 	root, head := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	writeMechanicalFile(t, root, rowCarryReportPath, mechanicalCarriedReport("docs/specs/mechanical/qa/missing.md", head))
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonEstablishingReportUnavailable)
 }
 func TestRowCarryRefusesAMissingSnapshot(t *testing.T) {
+	t.Parallel()
 	root, head := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	report := mechanicalCarryReport(head, "stable evidence\n")
 	start := strings.Index(report, "evidence_snapshots:")
@@ -209,6 +224,7 @@ func TestRowCarryRefusesAMissingSnapshot(t *testing.T) {
 	rowCarryRefusal(t, rowCarryResult(t, root), speccheck.CarryReasonNoEvidenceSnapshot)
 }
 func TestRowCarryNamesADeletedInput(t *testing.T) {
+	t.Parallel()
 	root, _ := rowCarrySidePass(t, "Roundfix-Spec: mechanical")
 	runMechanicalGit(t, root, "rm", "evidence.txt")
 	commitMechanicalFiles(t, root, "delete input")

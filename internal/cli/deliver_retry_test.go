@@ -22,6 +22,7 @@ import (
 )
 
 func TestDeliverRetryStartsAnOwnerWhenNoneIsRunning(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newParkedDeliveryQueueForRetry(t, 0, "")
 	engine := &retryCommandDeliveryEngine{
 		retryResult: delivery.RetryResult{
@@ -77,6 +78,7 @@ func TestDeliverRetryStartsAnOwnerWhenNoneIsRunning(t *testing.T) {
 }
 
 func TestDeliverRetryHandsTheItemToALiveOwner(t *testing.T) {
+	t.Parallel()
 	ownerPID := os.Getpid()
 	const ownerIdentity = "recorded-owner"
 	_, _ = newParkedDeliveryQueueForRetry(t, ownerPID, ownerIdentity)
@@ -125,6 +127,7 @@ func TestDeliverRetryHandsTheItemToALiveOwner(t *testing.T) {
 }
 
 func TestDeliverRetryReclaimsAStaleOwnerAndStartsOne(t *testing.T) {
+	t.Parallel()
 	ownerPID := os.Getpid()
 	const ownerIdentity = "stale-owner"
 	homeDir, repoDir := newParkedDeliveryQueueForRetry(t, ownerPID, ownerIdentity)
@@ -166,22 +169,27 @@ func TestDeliverRetryReclaimsAStaleOwnerAndStartsOne(t *testing.T) {
 }
 
 func TestDeliverRetryRequiresOneSlug(t *testing.T) {
+	t.Parallel()
 	assertDeliverRetryArgumentsRefused(t, []string{"deliver", "retry"}, "missing required Spec slug")
 }
 
 func TestDeliverRetryRefusesAnEmptySlug(t *testing.T) {
+	t.Parallel()
 	assertDeliverRetryArgumentsRefused(t, []string{"deliver", "retry", "  "}, "Spec slug cannot be empty")
 }
 
 func TestDeliverRetryRefusesAnExtraArgument(t *testing.T) {
+	t.Parallel()
 	assertDeliverRetryArgumentsRefused(t, []string{"deliver", "retry", implementTestSlug, "extra"}, "unexpected argument")
 }
 
 func TestDeliverRetryRefusesUnknownFlag(t *testing.T) {
+	t.Parallel()
 	assertDeliverRetryArgumentsRefused(t, []string{"deliver", "retry", "--unknown", implementTestSlug}, "flag provided but not defined")
 }
 
 func TestDeliverRetryRefusalStartsNoOwner(t *testing.T) {
+	t.Parallel()
 	_, _ = newParkedDeliveryQueueForRetry(t, 0, "")
 	engine := &retryCommandDeliveryEngine{retryErr: errors.New("item is not parked")}
 	started := 0
@@ -463,6 +471,7 @@ func (engine *retryCommandDeliveryEngine) Retry(_ context.Context, gitRoot, spec
 }
 
 func TestDeliverRetryPrintsARefusalWithoutUsage(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newParkedDeliveryQueueForRetry(t, 0, "")
 	runStore, err := store.Open(t.Context(), homeDir)
 	if err != nil {
@@ -503,6 +512,7 @@ func TestDeliverRetryPrintsARefusalWithoutUsage(t *testing.T) {
 }
 
 func TestDeliverRetryKeepsUsageForAnArgumentError(t *testing.T) {
+	t.Parallel()
 	_, _ = newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"deliver", "retry", implementTestSlug, "extra"}, &stdout, &stderr)

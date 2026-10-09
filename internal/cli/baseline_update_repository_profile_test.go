@@ -22,6 +22,7 @@ import (
 const baselineRepositoryProfileTestID = "repository-go-cli-tui"
 
 func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	for _, copied := range []bool{true, false} {
 		t.Run(fmt.Sprintf("copied skills=%t", copied), func(t *testing.T) {
 			root := newBaselineRepositoryProfileFixture(t, copied)
@@ -47,6 +48,7 @@ func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
 }
 
 func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	before := baselinePlanTestTree(t, root)
@@ -73,6 +75,7 @@ func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testi
 }
 
 func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	// Force the real install to replace every owned skill, rather than just report them.
@@ -114,6 +117,7 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 }
 
 func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
+	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	before := baselinePlanTestTree(t, root)
@@ -149,6 +153,7 @@ func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
 }
 
 func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
+	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, false)
 	before := baselinePlanTestTree(t, root)
 	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "skills", "restore", "--profile", "missing-profile", "--repo", root, "--format", "text")
@@ -164,6 +169,7 @@ func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
 }
 
 func TestBaselineSkillsRestoreAcceptsARepositoryProfile(t *testing.T) {
+	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, false)
 	source := filepath.Join(root, "missing-source")
 	before := baselinePlanTestTree(t, root)
@@ -187,7 +193,7 @@ func newBaselineRepositoryProfileFixture(t *testing.T, copySkills bool) string {
 		t.Fatal(err)
 	}
 	root := newBaselineApplyTestRepository(t)
-	t.Chdir(root) // profile init intentionally resolves the process working directory.
+	setCommandWorkDirForTest(t, root)
 	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "profile", "init", "--id", baselineRepositoryProfileTestID, "--from", "go-cli-tui")
 	if code != exitOK || stderr != "" {
 		t.Fatalf("profile init exit=%d stdout=%s stderr=%s", code, out, stderr)
@@ -233,7 +239,7 @@ func newBaselineRepositoryProfileFixture(t *testing.T, copySkills bool) string {
 func runRepositoryProfileCommand(t *testing.T, args ...string) (string, string, int) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
-	code := RunContext(t.Context(), args, &stdout, &stderr)
+	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
 	return stdout.String(), stderr.String(), code
 }
 

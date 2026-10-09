@@ -55,6 +55,7 @@ func newArchiveRecordRun(t *testing.T, missing bool, overrideStatus string) (ter
 }
 
 func TestMergeEvidenceFromTheArchiveRecordAfterASquash(t *testing.T) {
+	t.Parallel()
 	for _, missing := range []bool{false, true} {
 		t.Run(map[bool]string{false: "source present", true: "source absent"}[missing], func(t *testing.T) {
 			f, _, delivered := newArchiveRecordRun(t, missing, "none")
@@ -82,6 +83,7 @@ func TestMergeEvidenceFromTheArchiveRecordAfterASquash(t *testing.T) {
 }
 
 func TestTaskCompletionFollowsTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, status := range []string{"none", "", "pending", "failed"} {
 		t.Run("override status "+status, func(t *testing.T) {
 			for _, missing := range []bool{false, true} {
@@ -100,6 +102,7 @@ func TestTaskCompletionFollowsTheArchiveRecord(t *testing.T) {
 }
 
 func TestLeftoversReadTaskContextAtTheSourceRevision(t *testing.T) {
+	t.Parallel()
 	for _, file := range []string{"declared.txt", "recorded.txt", "instruction.txt", "outside.txt"} {
 		t.Run(file, func(t *testing.T) {
 			f, _, _ := newArchiveRecordRun(t, false, "none")
@@ -120,6 +123,7 @@ func TestLeftoversReadTaskContextAtTheSourceRevision(t *testing.T) {
 }
 
 func TestLeftoversKeepTheWorktreeWithoutTheSourceRevision(t *testing.T) {
+	t.Parallel()
 	for _, file := range []string{"declared.txt", "docs/specs/" + mergedHeadTestSlug + "/leftover.md"} {
 		t.Run(file, func(t *testing.T) {
 			f, _, _ := newArchiveRecordRun(t, true, "none")
@@ -138,6 +142,7 @@ func TestLeftoversKeepTheWorktreeWithoutTheSourceRevision(t *testing.T) {
 }
 
 func TestQASupersessionReadsTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		missing bool

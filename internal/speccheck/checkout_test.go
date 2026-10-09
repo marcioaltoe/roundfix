@@ -18,6 +18,7 @@ import (
 )
 
 func TestDisposableCheckoutIsolatesOperatorTreeAndIndex(t *testing.T) {
+	t.Parallel()
 	repoRoot := newDisposableCheckoutRepository(t)
 
 	if err := os.WriteFile(filepath.Join(repoRoot, "tracked.txt"), []byte("operator staged\n"), 0o644); err != nil {
@@ -85,6 +86,7 @@ func TestDisposableCheckoutIsolatesOperatorTreeAndIndex(t *testing.T) {
 }
 
 func TestDisposableCheckoutCleanupRunsWhenCallerFailsOrPanics(t *testing.T) {
+	t.Parallel()
 	repoRoot := newDisposableCheckoutRepository(t)
 
 	t.Run("caller returns error", func(t *testing.T) {
@@ -141,6 +143,7 @@ func TestDisposableCheckoutCleanupRunsWhenCallerFailsOrPanics(t *testing.T) {
 }
 
 func TestDisposableCheckoutCreationRefusalHasNamedReason(t *testing.T) {
+	t.Parallel()
 	_, cleanup, err := speccheck.DisposableCheckout(context.Background(), t.TempDir())
 	if err == nil {
 		if cleanup != nil {

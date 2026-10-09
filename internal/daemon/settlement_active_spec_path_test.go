@@ -12,6 +12,7 @@ import (
 )
 
 func TestSettlementRefusesATaskThatPinsItsSpecPath(t *testing.T) {
+	t.Parallel()
 	fixture, plan, _, _, _ := settlementRepositoryFixture(t, []string{"declared check"})
 	checker := SpecCheckSettlementChecker{}
 	before, err := checker.RefusingFindings(plan.SpecsRoot, plan.WorkDir, plan.Spec.Slug)

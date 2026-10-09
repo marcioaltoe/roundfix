@@ -479,7 +479,7 @@ func carryForwardStagingGitRaw(
 	stagingWorktree string,
 	args ...string,
 ) (output []byte, returnErr error) {
-	hooksDirectory, err := os.MkdirTemp("", carryForwardHooksDirectoryPrefix)
+	hooksDirectory, err := os.MkdirTemp(commandDependenciesForContext(ctx).tempDir(), carryForwardHooksDirectoryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("create empty carry-forward hooks directory: %w", err)
 	}
@@ -766,7 +766,7 @@ func reconcileGitRawDiff(ctx context.Context, workDir string, args ...string) (b
 	commandArgs := append([]string{"-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false"}, args...)
 	command := exec.CommandContext(ctx, "git", commandArgs...)
 	command.Dir = workDir
-	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	command.Env = append(commandDependenciesForContext(ctx).environ(), "GIT_TERMINAL_PROMPT=0")
 	output, err := command.CombinedOutput()
 	if err == nil {
 		return false, nil

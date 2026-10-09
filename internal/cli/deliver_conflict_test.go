@@ -95,6 +95,7 @@ func assertConflictAborted(t *testing.T, fixture conflictFixture) {
 	}
 }
 func TestADerivedConflictIsMergedAndRegenerated(t *testing.T) {
+	t.Parallel()
 	fixture := newConflictFixture(t, false, "printf 'regenerated\\n' > derived.txt", "")
 	result := resolveFixture(t, fixture)
 	if result.Head == "" || result.Head == fixture.head || len(result.SourcePaths) != 0 {
@@ -119,6 +120,7 @@ func TestADerivedConflictIsMergedAndRegenerated(t *testing.T) {
 	}
 }
 func TestASourceConflictAbortsTheMerge(t *testing.T) {
+	t.Parallel()
 	fixture := newConflictFixture(t, true, "printf 'regenerated\\n' > derived.txt", "")
 	result := resolveFixture(t, fixture)
 	if !reflect.DeepEqual(result.SourcePaths, []string{"source.txt"}) || len(result.Regenerated) != 0 {
@@ -127,6 +129,7 @@ func TestASourceConflictAbortsTheMerge(t *testing.T) {
 	assertConflictAborted(t, fixture)
 }
 func TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge(t *testing.T) {
+	t.Parallel()
 	for _, path := range []string{"source.txt", "new.txt"} {
 		t.Run(path, func(t *testing.T) {
 			fixture := newConflictFixture(t, false, "printf 'regenerated\\n' > derived.txt; printf 'unexpected\\n' > "+path, "")
@@ -139,6 +142,7 @@ func TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge(t *testing.T) {
 	}
 }
 func TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch(t *testing.T) {
+	t.Parallel()
 	for _, itemCommand := range []string{"printf 'item-command\\n' > derived.txt", "printf 'item-command\\n' > derived.txt; touch forbidden.txt"} {
 		t.Run(itemCommand, func(t *testing.T) {
 			fixture := newConflictFixture(t, false, "printf 'trusted\\n' > derived.txt", "delivery:\n  derived_paths:\n    - paths: [derived.txt, forbidden.txt]\n      regenerate: "+itemCommand+"\n")
@@ -158,6 +162,7 @@ func TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch(t *testing.T) {
 }
 
 func TestConflictRecoveryRequiresTheCleanCandidate(t *testing.T) {
+	t.Parallel()
 	for _, dirty := range []bool{false, true} {
 		t.Run(map[bool]string{false: "wrong head", true: "dirty worktree"}[dirty], func(t *testing.T) {
 			fixture := newConflictFixture(t, false, "printf 'regenerated\\n' > derived.txt", "")
@@ -178,6 +183,7 @@ func TestConflictRecoveryRequiresTheCleanCandidate(t *testing.T) {
 }
 
 func TestConflictRecoveryAbortsAFailedRegeneration(t *testing.T) {
+	t.Parallel()
 	fixture := newConflictFixture(t, false, "printf 'partial\\n' > derived.txt; touch undeclared.txt; exit 1", "")
 	_, err := fixture.workflow.ResolveConflict(t.Context(), fixture.repo, "example", fixture.head)
 	if err == nil || !strings.Contains(err.Error(), "regenerate derived paths") {
@@ -187,6 +193,7 @@ func TestConflictRecoveryAbortsAFailedRegeneration(t *testing.T) {
 }
 
 func TestConflictRecoveryDoesNotHideIgnoredNewPaths(t *testing.T) {
+	t.Parallel()
 	fixture := newConflictFixture(t, false, "printf 'regenerated\\n' > derived.txt; touch hidden.txt", "")
 	if err := os.WriteFile(filepath.Join(fixture.repo, ".git", "info", "exclude"), []byte("hidden.txt\nexisting.txt\n"), 0600); err != nil {
 		t.Fatal(err)
@@ -208,6 +215,7 @@ func TestConflictRecoveryDoesNotHideIgnoredNewPaths(t *testing.T) {
 }
 
 func TestConflictRecoveryRunsMatchedDeclarationsInOrder(t *testing.T) {
+	t.Parallel()
 	fixture := newConflictFixture(t, false, "printf initial > derived.txt", "")
 	gittest.Run(t, fixture.repo, "checkout", "main")
 	declaration := "delivery:\n  derived_paths:\n    - paths: [derived.txt, order.txt]\n      regenerate: printf first > order.txt; printf first > derived.txt\n    - paths: [derived.txt, order.txt]\n      regenerate: printf second >> order.txt; printf final > derived.txt\n    - paths: [unmatched.txt]\n      regenerate: touch unmatched.txt\n"

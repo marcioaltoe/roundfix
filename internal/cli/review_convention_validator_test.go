@@ -109,6 +109,7 @@ func validatorQuestions(t *testing.T, runner *conventionValidatorRunner) []valid
 }
 
 func TestReviewValidatorDismissesADaemonSettlementAsC2(t *testing.T) {
+	t.Parallel()
 	finding := "`" + validatorTaskPath + ":4` — The Task is `completed` while its Result says status is Daemon-owned. Failure: an invalid Task state transition."
 	fixture, runner := validatorFixture(t, "- "+finding, validatorAnswer(validatorVerdict{"F1", "dismiss", "convention:C2", "restates the Daemon settlement"}))
 	code, record, stderr := fixture.run(t)
@@ -133,6 +134,7 @@ func TestReviewValidatorDismissesADaemonSettlementAsC2(t *testing.T) {
 }
 
 func TestReviewValidatorCannotDismissOutsideTheConventionRegion(t *testing.T) {
+	t.Parallel()
 	t.Run("requirements with failure never asked", func(t *testing.T) {
 		fixture, runner := validatorFixture(t, "- "+validatorTaskPath+":8 Failure: broken requirement", nil)
 		code, record, _ := fixture.run(t)
@@ -166,6 +168,7 @@ func TestReviewValidatorCannotDismissOutsideTheConventionRegion(t *testing.T) {
 }
 
 func TestReviewValidatorNeverAsksNoFailureForAFindingWithAFailureClause(t *testing.T) {
+	t.Parallel()
 	fixture, runner := validatorFixture(t, "- "+validatorTaskPath+":4 fAiLuRe: invalid state", validatorAnswer(validatorVerdict{"F1", "stands", "", "a real state defect"}))
 	code, record, _ := fixture.run(t)
 	if code != exitRunFailed || record.FindingItems[0].Validation.Reason != "a real state defect" || record.Validation.Validator != "ran" {
@@ -178,6 +181,7 @@ func TestReviewValidatorNeverAsksNoFailureForAFindingWithAFailureClause(t *testi
 }
 
 func TestReviewValidatorFailureLeavesEveryAskedFindingStanding(t *testing.T) {
+	t.Parallel()
 	good := validatorVerdict{"F1", "dismiss", "convention:C2", "designed settlement"}
 	second := validatorVerdict{"F2", "stands", "", "defect"}
 	tests := []struct {
@@ -239,6 +243,7 @@ func TestReviewValidatorFailureLeavesEveryAskedFindingStanding(t *testing.T) {
 }
 
 func TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validatorFixture(t, "- review.txt:2 Failure: test", nil)
 	archived := "docs/history/specs/0002-archived"
 	validatorWrite(t, fixture.repository, archived+"/qa/report.md", "QA\n")
@@ -315,6 +320,7 @@ func TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges(t *testing.T) {
 }
 
 func TestReviewDisposeRefusesAConventionDismissal(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validatorFixture(t, "- "+validatorTaskPath+":4 Failure: invalid status", validatorAnswer(validatorVerdict{"F1", "dismiss", "convention:C2", "restates settlement"}))
 	if code, record, stderr := fixture.run(t); code != exitOK {
 		t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
@@ -329,6 +335,7 @@ func TestReviewDisposeRefusesAConventionDismissal(t *testing.T) {
 }
 
 func TestReviewValidatorUsesTheSuccessfulFallbackSelection(t *testing.T) {
+	t.Parallel()
 	fixture, runner := validatorFixture(t, "- "+validatorTaskPath+":4 Failure: invalid status", validatorAnswer(validatorVerdict{"F1", "dismiss", "convention:C2", "restates settlement"}))
 	writeReviewCommandProfileConfig(t, fixture.repository, "codex", fixture.artifactDir, "codex", "codex")
 	runner.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}}
@@ -343,6 +350,7 @@ func TestReviewValidatorUsesTheSuccessfulFallbackSelection(t *testing.T) {
 }
 
 func TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers(t *testing.T) {
+	t.Parallel()
 	for _, answer := range []string{"No findings.", "Findings:\n- no anchor", "malformed verdict"} {
 		t.Run(answer, func(t *testing.T) {
 			fixture, runner := validatorFixture(t, "unused", nil)
@@ -359,6 +367,7 @@ func TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers(t *testing.T) {
 }
 
 func TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validatorFixture(t, "unused", nil)
 	var body strings.Builder
 	for i := 0; i < 100; i++ {
@@ -396,6 +405,7 @@ func TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles(t *t
 }
 
 func TestReviewConventionC2IncludesEverySettlementSection(t *testing.T) {
+	t.Parallel()
 	fixture, _ := validatorFixture(t, "unused", nil)
 	body := "---\nstatus: completed\n---\n## Recorded paths\nfile.go\n## Carry-forward provenance\nsource\n## Result\nevidence\n## Requirements\nrequirement\n"
 	validatorWrite(t, fixture.repository, validatorTaskPath, body)
@@ -423,6 +433,7 @@ func TestReviewConventionC2IncludesEverySettlementSection(t *testing.T) {
 }
 
 func TestReviewValidatorCanDismissNoFailureOnlyWhenEligible(t *testing.T) {
+	t.Parallel()
 	fixture, runner := validatorFixture(t, "- review.txt:2 A concern without a failure", validatorAnswer(validatorVerdict{"F1", "dismiss", "no-failure", "states no failure"}))
 	code, record, stderr := fixture.run(t)
 	if code != exitOK || record.Outcome != reviewOutcomeFindingsDismissed || record.FindingItems[0].Validation.Rule != "no-failure" || stderr != "roundfix: review finding F1 dismissed by validation (no-failure): states no failure\n" {
@@ -435,6 +446,7 @@ func TestReviewValidatorCanDismissNoFailureOnlyWhenEligible(t *testing.T) {
 }
 
 func TestReviewValidatorRejectsOversizedInputBeforeCallingTheRunner(t *testing.T) {
+	t.Parallel()
 	fixture, runner := validatorFixture(t, "unused", nil)
 	workDir := t.TempDir()
 	if err := os.Chmod(workDir, 0700); err != nil {

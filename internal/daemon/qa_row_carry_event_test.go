@@ -13,6 +13,7 @@ import (
 )
 
 func TestQAMechanicalEventCountsCarriedAndRerunRows(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 	engine.deps.MechanicalStage = &fakeQAMechanicalStage{result: speccheck.MechanicalResult{

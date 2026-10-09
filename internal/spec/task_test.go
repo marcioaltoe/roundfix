@@ -260,6 +260,7 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 }
 
 func TestDerivedQAVerificationProvesNewestVerdictReadable(t *testing.T) {
+	t.Parallel()
 	const slug = "derived-qa-verification"
 
 	tests := []struct {
@@ -389,6 +390,7 @@ func TestDerivedQAVerificationProvesNewestVerdictReadable(t *testing.T) {
 }
 
 func TestDerivedQAVerificationInvokesNoRoundfixBinary(t *testing.T) {
+	t.Parallel()
 	const slug = "derived-qa-verification"
 	commands := DerivedQAVerification(slug)
 	if strings.Contains(commands[0], "roundfix") {
@@ -443,6 +445,7 @@ func derivedQAReportFixture(verdict string, extraFrontmatter ...string) string {
 }
 
 func TestDerivedQAVerificationPassesTheChecker(t *testing.T) {
+	t.Parallel()
 	_, testFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")

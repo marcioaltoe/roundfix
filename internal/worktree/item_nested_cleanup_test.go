@@ -13,6 +13,7 @@ import (
 )
 
 func TestCleanupItemRefusesAHalfRemovedItemHoldingARegisteredWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, ref, head := newHalfRemovedItemForNestedCleanupTest(t, "nested")
 	nestedPath := filepath.Join(ref.Path, "nested-worktree")
 	gitWorktreeTest(t, repoDir, "worktree", "add", "--detach", nestedPath, head)
@@ -34,6 +35,7 @@ func TestCleanupItemRefusesAHalfRemovedItemHoldingARegisteredWorktree(t *testing
 }
 
 func TestCleanupItemRemovesAHalfRemovedItemWithoutANestedWorktree(t *testing.T) {
+	t.Parallel()
 	repoDir, ref, _ := newHalfRemovedItemForNestedCleanupTest(t, "plain")
 
 	if err := CleanupItem(t.Context(), ref); err != nil {

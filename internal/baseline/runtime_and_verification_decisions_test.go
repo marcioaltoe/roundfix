@@ -13,6 +13,7 @@ import (
 )
 
 func TestTheDecisionCatalogProposesNoRtkCommand(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	asset, ok := catalog.Asset("decisions.json")
 	if !ok {
@@ -43,6 +44,7 @@ func TestTheDecisionCatalogProposesNoRtkCommand(t *testing.T) {
 }
 
 func TestTheRuntimeDecisionsPreferTheProjectConfigTuples(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	entry, found := catalog.Module("autonomous-work")
 	module := incrementalVerificationEntry(t, entry, found)
@@ -62,6 +64,7 @@ func TestTheRuntimeDecisionsPreferTheProjectConfigTuples(t *testing.T) {
 }
 
 func TestTheAutonomousWorkGuideDefersToAgentSelectionProfiles(t *testing.T) {
+	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	asset, ok := catalog.Asset("formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md")
 	if !ok {

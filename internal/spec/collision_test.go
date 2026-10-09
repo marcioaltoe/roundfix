@@ -191,6 +191,7 @@ func TestTaskVerificationFilesReadsExistingOperands(t *testing.T) {
 }
 
 func TestCollisionsLearnsPathFromPackedPriorRunSettlementCommits(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
 	writeCollisionFile(t, repoRoot, "internal/spec/prior.go", "package spec\n\nconst prior = 0\n")
@@ -265,6 +266,7 @@ func commitCollisionTask(t *testing.T, repoRoot, slug, taskID, content string) {
 }
 
 func TestCollisionsUsesOnlyTheNewestSettlementPerTask(t *testing.T) {
+	t.Parallel()
 	// A Task that settled in more than one Run is the ordinary shape once a Run
 	// ends Unresolved and the next re-executes it. Unioning an older settlement
 	// into current evidence would refuse a Wave that is safe.
@@ -299,6 +301,7 @@ func TestCollisionsUsesOnlyTheNewestSettlementPerTask(t *testing.T) {
 }
 
 func TestCollisionsReadsTrailersNotTheMessageBody(t *testing.T) {
+	t.Parallel()
 	// A body that mentions another Spec must not combine with the terminal
 	// Roundfix-Task trailer. git knows where the trailer block starts; a scan
 	// of every line does not.
@@ -330,6 +333,7 @@ func TestCollisionsReadsTrailersNotTheMessageBody(t *testing.T) {
 }
 
 func TestCollisionsIgnoresPathsHistoryNamesButTheTreeNoLongerCarries(t *testing.T) {
+	t.Parallel()
 	// History names deleted files. Two Tasks that both touched a file since
 	// removed do not share a file now, and reporting them would refuse a Wave
 	// over a path that does not exist.
@@ -359,6 +363,7 @@ func TestCollisionsIgnoresPathsHistoryNamesButTheTreeNoLongerCarries(t *testing.
 }
 
 func TestCollisionsReadsSettlementsOnRunBranchesNotOnlyHead(t *testing.T) {
+	t.Parallel()
 	// A settlement commit lives on its Run Branch until integration moves it,
 	// and a Run that ended Unresolved leaves it there. Reading HEAD alone would
 	// miss the prior Run this source exists to read.
@@ -393,6 +398,7 @@ func TestCollisionsReadsSettlementsOnRunBranchesNotOnlyHead(t *testing.T) {
 }
 
 func TestCollisionsReadsHistoricalPathsGitReportsVerbatim(t *testing.T) {
+	t.Parallel()
 	// A filename can contain a character that is a shell metacharacter and an
 	// ordinary letter in a path. Verification candidates are tokens from a
 	// command line and are filtered for those; a path Git reports is the path,
@@ -429,10 +435,10 @@ func TestCollisionsReadsHistoricalPathsGitReportsVerbatim(t *testing.T) {
 }
 
 func TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence(t *testing.T) {
+	t.Parallel()
 	// A Spec can be checked outside a working repository, and a repository can
 	// have no commits yet. Neither is a read failure, and neither may fail the
 	// check: prior-Run history is one of three sources.
-	t.Parallel()
 	graph := &Graph{
 		Spec:  Spec{Slug: "0097-collision"},
 		Tasks: []Task{{ID: "task_01"}, {ID: "task_02"}},
@@ -462,6 +468,7 @@ func TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence(t *testing.T) {
 }
 
 func TestCollisionsReportsAnInspectionFailureOnAPriorRunPath(t *testing.T) {
+	t.Parallel()
 	// A path history names can be unreadable for a reason that is not
 	// not-exists — here a symlink loop. Excluding it the way a missing path is
 	// excluded would drop the collision evidence silently, so it is reported

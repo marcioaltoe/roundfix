@@ -22,6 +22,7 @@ const retiredSkillsTranscript = "Skills retired: 2\n" +
 	"- retired the-fool: no longer required by the Baseline; delete .agents/skills/the-fool and its skills-lock.json entry\n"
 
 func TestBaselineUpdateRetiredSkillDeletionTargets(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name  string
 		paths []string
@@ -47,6 +48,7 @@ func TestBaselineUpdateRetiredSkillDeletionTargets(t *testing.T) {
 }
 
 func TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState(t *testing.T) {
+	t.Parallel()
 	repo := adoptedRepositoryWithRetiredSkills(t)
 	before := baselinePlanTestTree(t, repo)
 	_, stdout, stderr, code := runBaselineUpdateTestCommand(t, context.Background(),
@@ -78,6 +80,7 @@ func TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState(t *testing.T) {
 }
 
 func TestBaselineUpdateWithoutSkillsOmitsRetiredSkills(t *testing.T) {
+	t.Parallel()
 	for _, approval := range []string{"", "--yes"} {
 		for _, format := range []string{"text", "json"} {
 			repo := adoptedRepositoryWithRetiredSkills(t)
@@ -102,6 +105,7 @@ func TestBaselineUpdateWithoutSkillsOmitsRetiredSkills(t *testing.T) {
 }
 
 func TestBaselineUpdateAppliesAndListsRetiredSkills(t *testing.T) {
+	t.Parallel()
 	for _, format := range []string{"text", "json"} {
 		repo := adoptedRepositoryWithRetiredSkills(t)
 		beforeSkills := baselinePlanTestTree(t, filepath.Join(repo, ".agents/skills"))
@@ -129,6 +133,7 @@ func TestBaselineUpdateAppliesAndListsRetiredSkills(t *testing.T) {
 }
 
 func TestBaselineUpdateReportsRetiredSkillInspectionFailure(t *testing.T) {
+	t.Parallel()
 	repo := newBaselineUpdateRepository(t)
 	mustWrite(t, filepath.Join(repo, "skills-lock.json"), "{")
 	commitBaselinePlanTestRepository(t, repo)

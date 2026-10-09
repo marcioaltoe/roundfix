@@ -14,6 +14,7 @@ import (
 )
 
 func TestRelocationCitationsNeverReadThroughASwappedDirectory(t *testing.T) {
+	// Sequential: swaps citationBeforeOpen and citationOpenResult package hooks.
 	if runtime.GOOS == "windows" {
 		t.Skip("symbolic-link replacement requires Unix permissions")
 	}
@@ -68,6 +69,7 @@ func TestRelocationCitationsNeverReadThroughASwappedDirectory(t *testing.T) {
 }
 
 func TestRelocationCitationsReadThroughTheRepositoryRoot(t *testing.T) {
+	t.Parallel()
 	repo := newCitationTestRepository(t)
 	trackCitationTestFile(t, repo, citationSource, "retired\n")
 	trackCitationTestFile(t, repo, "guide.md", citationSource+"\n")

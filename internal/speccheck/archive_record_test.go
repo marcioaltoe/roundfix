@@ -24,6 +24,7 @@ func writeCheckArchiveRecord(t *testing.T, root, archiveRoot, source, slug, revi
 }
 
 func TestArchivedSlugsIncludeArchiveRecords(t *testing.T) {
+	t.Parallel()
 	root := writeBacklogCarrier(t)
 	const slug = "0002-record-only"
 	recordPath := "docs/history/specs/" + slug + ".md"
@@ -41,6 +42,7 @@ func TestArchivedSlugsIncludeArchiveRecords(t *testing.T) {
 }
 
 func TestTaskContextResolvesThroughTheArchiveRecord(t *testing.T) {
+	t.Parallel()
 	for _, specRoot := range []string{"docs/specs", "planning"} {
 		t.Run(specRoot, func(t *testing.T) {
 			for _, spelling := range []string{"active", "archived"} {

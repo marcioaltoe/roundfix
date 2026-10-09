@@ -54,6 +54,7 @@ func specJudgeTierSnapshot(t *testing.T, dir string) map[string]string {
 }
 
 func TestSpecJudgeSuggestsModelTier(t *testing.T) {
+	t.Parallel()
 	for _, format := range []string{"text", "json"} {
 		t.Run(format, func(t *testing.T) {
 			env, fake := specJudgeTierFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
@@ -117,6 +118,7 @@ func TestSpecJudgeSuggestsModelTier(t *testing.T) {
 }
 
 func TestSpecJudgeTasksSkipsWithoutKey(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeTierFixture(t, "")
 	specJudgeRun(t, env, []string{"0300-example", "--stage=tasks"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
 	if fake.calls != 0 {
@@ -128,6 +130,7 @@ func TestSpecJudgeTasksSkipsWithoutKey(t *testing.T) {
 }
 
 func TestSpecJudgeTasksRequiresGraph(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	var out, stderr bytes.Buffer
 	code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--stage=tasks"}, &out, &stderr, env)
@@ -137,6 +140,7 @@ func TestSpecJudgeTasksRequiresGraph(t *testing.T) {
 }
 
 func TestSpecJudgeDefaultIgnoresTasks(t *testing.T) {
+	t.Parallel()
 	baseline, baseFake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	withTasks, taskFake := specJudgeTierFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	invoke := func(env commandEnvironment) string {
@@ -155,6 +159,7 @@ func TestSpecJudgeDefaultIgnoresTasks(t *testing.T) {
 }
 
 func TestSpecJudgeTasksHonorsCeiling(t *testing.T) {
+	t.Parallel()
 	env, fake := specJudgeTierFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	dir := filepath.Join(env.homeDir, ".roundfix/judge")
 	if err := os.MkdirAll(dir, 0700); err != nil {

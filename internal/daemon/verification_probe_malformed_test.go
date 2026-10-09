@@ -71,6 +71,7 @@ func TestPreWorkProbeRefusesAMalformedCommand(t *testing.T) {
 }
 
 func TestProbeParserUnavailableRunsVerifier(t *testing.T) {
+	// Sequential: sets PATH to make the probe parser unavailable.
 	t.Setenv("PATH", t.TempDir())
 	verifier := &probeScriptVerifier{}
 	verdicts, err := ProbeCommands(context.Background(), verifier, t.TempDir(), []string{"if"}, func(int) string { return "unused" })

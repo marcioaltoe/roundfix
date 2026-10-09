@@ -45,6 +45,7 @@ func seedFreshVersionCache(t *testing.T, homeDir string) {
 }
 
 func TestSuiteDefaultReleaseLookupStaysOffline(t *testing.T) {
+	t.Parallel()
 	deps := defaultCommandDependencies().versionFreshness
 
 	tag, assets, err := deps.latestRelease(context.Background())
@@ -64,6 +65,7 @@ func TestSuiteDefaultReleaseLookupStaysOffline(t *testing.T) {
 }
 
 func TestOperationalCommandsRecordTheOfflineLookup(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -90,6 +92,7 @@ func TestOperationalCommandsRecordTheOfflineLookup(t *testing.T) {
 }
 
 func TestHelperProcessRecordsTheOfflineLookup(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 
 	stdout, stderr, code := runCLIHelper(t, repoDir, "", nil, "implement", "--offline-probe")
@@ -101,6 +104,7 @@ func TestHelperProcessRecordsTheOfflineLookup(t *testing.T) {
 }
 
 func TestBuiltBinaryLeavesTheSeededVersionCacheUntouched(t *testing.T) {
+	t.Parallel()
 	binary := buildRoundfixBinaryForMacro(t)
 	homeDir, repoDir := withCLIWorkspace(t)
 	seedFreshVersionCache(t, homeDir)
@@ -135,6 +139,7 @@ func TestBuiltBinaryLeavesTheSeededVersionCacheUntouched(t *testing.T) {
 }
 
 func TestPerTestReleaseLookupOverridesTheSuiteDefault(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{
 		now:            time.Now,

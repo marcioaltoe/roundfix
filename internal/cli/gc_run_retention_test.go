@@ -209,6 +209,7 @@ func gcRetentionFileSnapshot(t *testing.T, root string) map[string][]byte {
 }
 
 func TestGCDryRunReportsRunRetention(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, false, 2)
 	counts := gcRetentionRows(t, f.home, gcRetentionTables, f.removed.ID)
 	before := gcRetentionFileSnapshot(t, filepath.Join(f.home, ".roundfix"))
@@ -234,6 +235,7 @@ func TestGCDryRunReportsRunRetention(t *testing.T) {
 }
 
 func TestGCRemovesRunsPastRunRetention(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, false, 2)
 	kept := map[string]map[string][]string{}
 	for _, run := range []store.Run{f.queued, f.worktree, f.recent} {
@@ -272,6 +274,7 @@ func TestGCRemovesRunsPastRunRetention(t *testing.T) {
 }
 
 func TestGCKeepsProtectedRuns(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, true, 2)
 	protected := []store.Run{f.queued, f.worktree, f.active, f.unproven, f.recent}
 	before := map[string]map[string][]string{}
@@ -289,6 +292,7 @@ func TestGCKeepsProtectedRuns(t *testing.T) {
 }
 
 func TestGCKeepsARunUnderAnUnprovenArtifactRoot(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, true, 2)
 	path := filepath.Join(f.unproven.ArtifactDir, "runs", f.unproven.ID)
 	before := gcRetentionFileSnapshot(t, path)
@@ -301,6 +305,7 @@ func TestGCKeepsARunUnderAnUnprovenArtifactRoot(t *testing.T) {
 }
 
 func TestGCCompactsAfterRunRetention(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		mode    int
@@ -336,6 +341,7 @@ func TestGCCompactsAfterRunRetention(t *testing.T) {
 }
 
 func TestGCRefusesAnUnsupportedRunRetention(t *testing.T) {
+	t.Parallel()
 	home, repo := withCLIWorkspace(t)
 	mustMkdir(t, filepath.Join(home, ".roundfix"))
 	mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "store:\n  run_retention_days: 10\n")
@@ -355,6 +361,7 @@ func TestGCRefusesAnUnsupportedRunRetention(t *testing.T) {
 }
 
 func TestRunDatabaseSweepStopsAtBudgetBoundaries(t *testing.T) {
+	t.Parallel()
 	for _, phase := range []string{"removal", "compaction"} {
 		t.Run(phase, func(t *testing.T) {
 			f := seedGCRetention(t, false, 2)
@@ -420,6 +427,7 @@ func TestRunDatabaseSweepStopsAtBudgetBoundaries(t *testing.T) {
 }
 
 func TestRunDatabaseBudgetNeverConvertsDefaultMode(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, false, 0)
 	ctx := commandContextForTest(t, context.Background())
 	loaded, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: f.home, WorkDir: t.TempDir()})
@@ -449,6 +457,7 @@ func TestRunDatabaseBudgetNeverConvertsDefaultMode(t *testing.T) {
 }
 
 func TestGCDryRunReadsCommittedWAL(t *testing.T) {
+	t.Parallel()
 	f := seedGCRetention(t, false, 2)
 	db := openGCRetentionDB(t, f.home)
 	gcRetentionExec(t, db, "UPDATE runs SET completed_at = ? WHERE id = ?", f.now.Add(-31*24*time.Hour).Format(time.RFC3339), f.recent.ID)

@@ -10,6 +10,7 @@ import (
 )
 
 func TestResolveExecutableNeverRunsTheCandidate(t *testing.T) {
+	t.Parallel()
 	marker := filepath.Join(t.TempDir(), "executed")
 	candidate := testfixture.FixtureBinary(t, "tool", fmt.Sprintf(`package main
 import "os"

@@ -14,6 +14,7 @@ func causeGraphFixture(t *testing.T, file string) CauseGraph {
 }
 
 func TestCauseTaskTextReadsOnlyAPlainFileInTheSpecDirectory(t *testing.T) {
+	t.Parallel()
 	outside := filepath.Join(t.TempDir(), "secret.md")
 	if err := os.WriteFile(outside, []byte("# Outside\n\n## Overview\n\nsecret\n"), 0o600); err != nil {
 		t.Fatal(err)
@@ -66,6 +67,7 @@ func TestCauseTaskTextReadsOnlyAPlainFileInTheSpecDirectory(t *testing.T) {
 }
 
 func TestCauseTaskTextReadsABoundedPrefixOfALargeFile(t *testing.T) {
+	t.Parallel()
 	graph := causeGraphFixture(t, "task_01.md")
 	content := "# Big\n\n## Overview\n\n" + strings.Repeat("x", causeTaskReadLimit*4) + "\n"
 	if err := os.WriteFile(filepath.Join(graph.Dir, "task_01.md"), []byte(content), 0o600); err != nil {

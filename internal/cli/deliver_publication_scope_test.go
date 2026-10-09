@@ -13,6 +13,7 @@ import (
 )
 
 func TestDeliveryPublicationRequestsNoCodeRabbitReview(t *testing.T) {
+	t.Parallel()
 	for _, provider := range []string{"codex", "claude", "coderabbit", "none"} {
 		provider := provider
 		t.Run(provider, func(t *testing.T) {

@@ -22,6 +22,7 @@ import (
 )
 
 func TestReviewLineageDecidesEachRound(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewCommandFixture(t, "codex", &reviewCommandRunner{})
 	prior := newReviewRecord(fixture.repository, fixture.baseCommit, fixture.headCommit, reviewPolicyForLineage(), reviewOutcomeReviewed)
 	candidate := prior
@@ -142,6 +143,7 @@ func disposeLineageFinding(t *testing.T, args ...string) {
 	}
 }
 func TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings(t *testing.T) {
+	t.Parallel()
 	runner := newLineageRunner("Findings:\n- review.txt:2 Failure: the first defect remains\n- review.txt:1 Failure: the second defect remains\n- review.txt:2 Failure: unresolved defect\n- outside.txt:10 Failure: unanchored defect", "No findings.")
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	code, first, _ := runLineageReview(t, fixture)
@@ -176,6 +178,7 @@ func TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings(t *testing.T) {
 	}
 }
 func TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff(t *testing.T) {
+	t.Parallel()
 	runner := newLineageRunner("No findings.", "Findings:\n- review.txt:2 Failure: original defect remains")
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	runLineageReview(t, fixture)
@@ -201,6 +204,7 @@ func roundTwoLineageFixture(t *testing.T) (reviewCommandFixture, *lineageReviewR
 	return fixture, runner, record
 }
 func TestReviewCeilingBlocksWithoutCallingTheReviewer(t *testing.T) {
+	t.Parallel()
 	fixture, runner, second := roundTwoLineageFixture(t)
 	head := commitLineageFile(t, fixture, "fix.txt", "fix candidate\n")
 	dir := reviewCheckoutDir(fixture.artifactDir, fixture.repository)
@@ -226,6 +230,7 @@ func TestReviewCeilingBlocksWithoutCallingTheReviewer(t *testing.T) {
 	}
 }
 func TestReviewCeilingClosesOnDispositions(t *testing.T) {
+	t.Parallel()
 	t.Run("fixed by contained commit", func(t *testing.T) {
 		fixture, runner, second := roundTwoLineageFixture(t)
 		fix := commitLineageFile(t, fixture, "fix.txt", "fix\n")
@@ -287,6 +292,7 @@ func assertLineageCeilingClosed(t *testing.T, fixture reviewCommandFixture, runn
 	}
 }
 func TestDeliveryReviewResultAdvancesACeilingClosedRecord(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		outcome reviewOutcome
 		want    delivery.ReviewOutcome
@@ -305,6 +311,7 @@ func TestDeliveryReviewResultAdvancesACeilingClosedRecord(t *testing.T) {
 }
 
 func TestReviewBlockedRoundTwoRepeatsItsOriginalDelta(t *testing.T) {
+	t.Parallel()
 	runner := newLineageRunner("Findings:\n- review.txt:2 Failure: unresolved", "invalid reviewer verdict", "No findings.")
 	fixture := newReviewCommandFixture(t, "codex", runner)
 	_, first, _ := runLineageReview(t, fixture)
@@ -327,6 +334,7 @@ func TestReviewBlockedRoundTwoRepeatsItsOriginalDelta(t *testing.T) {
 }
 
 func TestReviewCeilingClosedRecordRequiresDispositionEvidence(t *testing.T) {
+	t.Parallel()
 	fixture := newReviewCommandFixture(t, "codex", &reviewCommandRunner{})
 	head := commitLineageFile(t, fixture, "fix.txt", "fix\n")
 	base := newReviewRecord(fixture.repository, fixture.baseCommit, head, reviewPolicyForLineage(), reviewOutcomeCeilingClosed)

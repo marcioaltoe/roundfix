@@ -24,6 +24,7 @@ func historyLegacyFolder(t *testing.T, h historyFixture, slug string) string {
 }
 
 func TestHistorySanitizeConvertsLegacyUnprovenMaps(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	folder := historyLegacyFolder(t, h, "aaa")
 	historyWrite(t, filepath.Join(folder, "_prd.md"), "---\nspec: aaa\ncreated: 2026-09-01\nunproven:\n  - row: 03\n    goal: G2\n    claim: Catalog verification runs alone\n    satisfied-by: [task_04, task_05]\n  - row: 04\n    claim: Release is verified\n    reason: No standalone evidence\n---\n\n# Demo\n\nPreserved outcome.\n")
@@ -48,6 +49,7 @@ func TestHistorySanitizeConvertsLegacyUnprovenMaps(t *testing.T) {
 }
 
 func TestHistorySanitizePrintsEachRefusalOnOneLine(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	folder := historyLegacyFolder(t, h, "aaa")
 	historyWrite(t, filepath.Join(folder, "_prd.md"), "---\nspec: aaa\nunproven: {claim: malformed}\n---\n\n# Demo\n")
@@ -73,6 +75,7 @@ func TestHistorySanitizePrintsEachRefusalOnOneLine(t *testing.T) {
 }
 
 func TestHistorySanitizePlanListsEveryRefusedUnit(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	for _, slug := range []string{"aaa", "bbb", "ccc", "ddd"} {
 		folder := historyLegacyFolder(t, h, slug)
@@ -99,6 +102,7 @@ func TestHistorySanitizePlanListsEveryRefusedUnit(t *testing.T) {
 }
 
 func TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	for _, slug := range []string{"aaa", "bbb", "ccc"} {
 		historyLegacyFolder(t, h, slug)
@@ -127,6 +131,7 @@ func TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch(t *testing.T) {
 }
 
 func TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	for _, slug := range []string{"aaa", "bbb"} {
 		folder := historyLegacyFolder(t, h, slug)
@@ -143,6 +148,7 @@ func TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused(t *testing.T)
 }
 
 func TestHistorySanitizeRefusesAPromotionInARefusedUnit(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	historyWrite(t, filepath.Join(h.repo, "docs/history/specs/aaa/_prd.md"), "invalid PRD")
 	historyCommit(t, h.repo, "Refused promotion folder")
@@ -157,6 +163,7 @@ func TestHistorySanitizeRefusesAPromotionInARefusedUnit(t *testing.T) {
 }
 
 func TestHistorySanitizeRefusesAKindUnitAndPlansTheRest(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	historyWrite(t, filepath.Join(h.repo, "docs/history/findings/entry.md"), "# Retired\n\nMissing front matter.\n")
 	historyCommit(t, h.repo, "Malformed Finding")
@@ -169,6 +176,7 @@ func TestHistorySanitizeRefusesAKindUnitAndPlansTheRest(t *testing.T) {
 }
 
 func TestHistorySanitizeConvertsTheFourLegacyShapes(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	// The synthetic manifest uses the public persisted schema, not adopter files.
 	const graph = `---
@@ -245,6 +253,7 @@ graph:
 }
 
 func TestHistorySanitizeInventoryRefusalsAndBatchBoundary(t *testing.T) {
+	t.Parallel()
 	for _, location := range []string{"docs/history/specs/aaa/link", "docs/history/findings/link"} {
 		t.Run(location, func(t *testing.T) {
 			h := newHistoryFixture(t, false)
@@ -274,6 +283,7 @@ func TestHistorySanitizeInventoryRefusalsAndBatchBoundary(t *testing.T) {
 }
 
 func TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	historyLegacyFolder(t, h, "bbb")
 	historyCommit(t, h.repo, "Covered folder")
@@ -292,6 +302,7 @@ func TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits(t *testing.T) {
 }
 
 func TestHistorySanitizePromotionSeparatesFolderFromKind(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	folder := historyLegacyFolder(t, h, "findings")
 	historyWrite(t, filepath.Join(folder, "references/lesson.md"), "Reusable knowledge.\n")

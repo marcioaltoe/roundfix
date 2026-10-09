@@ -99,8 +99,12 @@ func setDetachChildEnvironmentForTest(t *testing.T, fd, tempPath string) {
 
 func commandEnvironmentForTest(t *testing.T) commandEnvironment {
 	t.Helper()
-	environment := commandEnvironmentFromProcess()
 	overrides := commandEnvironmentOverridesForTest(t)
+	dependencies := defaultCommandDependencies()
+	if overrides.dependenciesSet {
+		dependencies = overrides.dependencies
+	}
+	environment := commandEnvironmentWithDependencies(dependencies)
 	if overrides.homeDirSet {
 		environment.homeDir = overrides.homeDir
 		environment.homeDirErr = nil
@@ -118,6 +122,21 @@ func commandEnvironmentForTest(t *testing.T) commandEnvironment {
 		environment.dependencies = overrides.dependencies
 	}
 	return environment
+}
+
+// setCommandEnvForTest supplies a private environment to command reads and child processes.
+func setCommandEnvForTest(t *testing.T, key, value string) {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		getenv, environ := dependencies.getenv, dependencies.environ
+		dependencies.getenv = func(name string) string {
+			if name == key {
+				return value
+			}
+			return getenv(name)
+		}
+		dependencies.environ = func() []string { return withEnvValue(environ(), key, value) }
+	})
 }
 
 func updateCommandDependenciesForTest(t *testing.T, mutate func(*commandDependencies)) {
@@ -2292,6 +2311,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 }
 
 func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
+	t.Parallel()
 	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryBackend)
 	preferred := profile.Preferred.Runtime + " / " + profile.Preferred.Model + " / " + profile.Preferred.ReasoningEffort
 	fallback := profile.Fallbacks[0].Runtime + " / " + profile.Fallbacks[0].Model + " / " + profile.Fallbacks[0].ReasoningEffort
@@ -2355,6 +2375,7 @@ func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
 }
 
 func TestDoctorNamesADegradedPolicy(t *testing.T) {
+	t.Parallel()
 	const degradedPolicy = agent.AccessPolicy("full-access (degraded: sandbox preset unavailable)")
 	tests := []struct {
 		name             string
@@ -3571,7 +3592,7 @@ func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
 }
 
 func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
-	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
+	t.Parallel()
 	t.Run("non-interactive exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, false)
@@ -3593,8 +3614,8 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 	t.Run("interactive stdin without a TTY exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
-		// This case verifies the process-level default when no TUI override is set.
-		t.Setenv("ROUNDFIX_TUI", "")
+		// This case verifies the command environment default when no TUI override is set.
+		setCommandEnvForTest(t, "ROUNDFIX_TUI", "")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
@@ -3634,7 +3655,7 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 		})
 		withRunsInteractiveInput(t, true)
 		// This case verifies that the process-level TUI override opens the Run Browser.
-		t.Setenv("ROUNDFIX_TUI", "always")
+		setCommandEnvForTest(t, "ROUNDFIX_TUI", "always")
 		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
@@ -3662,7 +3683,7 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
 		// This case verifies that the process-level TUI override opens the empty Run Browser.
-		t.Setenv("ROUNDFIX_TUI", "always")
+		setCommandEnvForTest(t, "ROUNDFIX_TUI", "always")
 		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
@@ -9456,6 +9477,7 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 }
 
 func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withReviewGitWorkspace(t)
@@ -9539,6 +9561,7 @@ func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
 }
 
 func TestReviewCommandsRefuseWithoutCreatingArtifactDirectory(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		command            string
@@ -9644,6 +9667,7 @@ func TestReviewCommandsRefuseWithoutCreatingArtifactDirectory(t *testing.T) {
 }
 
 func TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			_, repoDir := withCLIWorkspace(t)
@@ -9678,7 +9702,7 @@ func TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses(t *testing.T)
 }
 
 func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
-	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -9700,8 +9724,8 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, _ := withCLIWorkspace(t)
-			// This case verifies the process-level TUI override conflict with --no-agent-console.
-			t.Setenv("ROUNDFIX_TUI", "always")
+			// This case verifies the command environment TUI override conflict with --no-agent-console.
+			setCommandEnvForTest(t, "ROUNDFIX_TUI", "always")
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
@@ -11832,9 +11856,9 @@ reviews:
 }
 
 func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
-	// Sequential: mutates the process-wide ROUNDFIX_COLOR setting required by rendering.
-	// This case verifies the process-level color override at the public command boundary.
-	t.Setenv("ROUNDFIX_COLOR", "always")
+	t.Parallel()
+	// Supply the color override at the public command boundary.
+	setCommandEnvForTest(t, "ROUNDFIX_COLOR", "always")
 	withCLIWorkspace(t)
 	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
 		return preflight.Result{}, errors.New("colored preflight failure")
@@ -15065,7 +15089,7 @@ func assertCLIContainsInOrder(t *testing.T, haystack string, needles ...string) 
 }
 
 func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
-	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -15098,8 +15122,8 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	})
 	terminalRun, activeRun, otherRepoRun := runs[0], runs[1], runs[2]
 	withAttachInteractiveInput(t, true)
-	// This case verifies the process-level TUI override for the Attach browser loop.
-	t.Setenv("ROUNDFIX_TUI", "always")
+	// This case verifies the command environment TUI override for the Attach browser loop.
+	setCommandEnvForTest(t, "ROUNDFIX_TUI", "always")
 	var createdBehindCockpit store.Run
 	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, capacities attachCapacities) int {
 		// Mutating the store while the cockpit is open proves the next
@@ -15160,14 +15184,14 @@ func TestBrowserAttachCockpitIsTheExplicitAttachCockpit(t *testing.T) {
 }
 
 func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
-	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
 	assertRunCount(t, dbPath, 1)
 	withAttachInteractiveInput(t, true)
-	// This case verifies the process-level TUI override for Attach cancellation.
-	t.Setenv("ROUNDFIX_TUI", "always")
+	// This case verifies the command environment TUI override for Attach cancellation.
+	setCommandEnvForTest(t, "ROUNDFIX_TUI", "always")
 	cockpitCalls := withBrowserAttachCockpit(t, nil)
 	withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 	var stdout bytes.Buffer

@@ -41,6 +41,7 @@ func assertTranscriptCount(t *testing.T, result Result, code string, count int) 
 	return found
 }
 func TestAHeldTechSpecWithoutSurfaceTranscriptsIsAGap(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, true, "")
 	found := assertTranscriptCount(t, receiptStage(t, root, StageTechSpec), CodeTranscriptUndeclared, 1)
 	if found[0].Severity != SeverityGap {
@@ -48,12 +49,14 @@ func TestAHeldTechSpecWithoutSurfaceTranscriptsIsAGap(t *testing.T) {
 	}
 }
 func TestSurfaceTranscriptsNoneWithAReasonIsAccepted(t *testing.T) {
+	t.Parallel()
 	for _, heading := range []string{"##", "###"} {
 		root := transcriptFixture(t, true, heading+" Surface Transcripts\n\nNone. No command surface changes.\n")
 		assertTranscriptCount(t, receiptStage(t, root, StageTechSpec), CodeTranscriptUndeclared, 0)
 	}
 }
 func TestAWellFormedSurfaceTranscriptReportsNothing(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, true, transcriptSection(transcriptBlock))
 	result := receiptStage(t, root, StageTechSpec)
 	assertTranscriptCount(t, result, CodeTranscriptUndeclared, 0)
@@ -64,6 +67,7 @@ func TestAWellFormedSurfaceTranscriptReportsNothing(t *testing.T) {
 	}
 }
 func TestEachMalformedSurfaceTranscriptNamesItsReason(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ reason, block string }{
 		{"without a transcript block", ""},
 		{"with more than one transcript block", transcriptBlock + transcriptBlock},
@@ -87,6 +91,7 @@ func TestEachMalformedSurfaceTranscriptNamesItsReason(t *testing.T) {
 
 }
 func TestNumberedOutputInsideATranscriptIsNotAnItem(t *testing.T) {
+	t.Parallel()
 	block := strings.Replace(transcriptBlock, "hello", "2. Surface Transcript: output\n## Surface Transcripts", 1)
 	parsed := SurfaceTranscripts([]byte(transcriptSection(block)))
 	if len(parsed) != 1 || parsed[0].Malformed != "" {
@@ -111,6 +116,7 @@ func transcriptGraph(t *testing.T, root, workRefs, qaRefs, qaReq, status string,
 	}
 }
 func TestASurfaceTranscriptNamedOnlyByTheQATaskIsUntasked(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "", "Surface Transcript 1", "Reproduce Surface Transcript 1.", "pending", false)
 	findings := assertTranscriptCount(t, receiptStage(t, root, StageTasks), CodeCoverageUntasked, 1)
@@ -119,26 +125,31 @@ func TestASurfaceTranscriptNamedOnlyByTheQATaskIsUntasked(t *testing.T) {
 	}
 }
 func TestASurfaceTranscriptNamedByANonQATaskIsTasked(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "Surface Transcripts 1-3", "", "Reproduce Surface Transcript 1.", "pending", false)
 	assertTranscriptCount(t, receiptStage(t, root, StageTasks), CodeCoverageUntasked, 0)
 }
 func TestASurfaceTranscriptTheQATaskDoesNotNameIsUngated(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "Surface Transcript 1", "Surface Transcript 1", "Reproduce output.", "pending", false)
 	assertTranscriptCount(t, receiptStage(t, root, StageTasks), CodeTranscriptUngated, 1)
 }
 func TestASurfaceTranscriptNamedInAQARequirementIsGated(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "Surface Transcript 1", "", "Reproduce Surface Transcripts 1-3.", "pending", false)
 	assertTranscriptCount(t, receiptStage(t, root, StageTasks), CodeTranscriptUngated, 0)
 }
 func TestADeclinedGateRaisesNoUngatedTranscript(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "Surface Transcript 1", "", "", "pending", true)
 	assertTranscriptCount(t, receiptStage(t, root, StageTasks), CodeTranscriptUngated, 0)
 }
 func TestASpecThatIsNotHeldSkipsTheTranscriptDeclarationGap(t *testing.T) {
+	t.Parallel()
 	root := receiptHorizonRepo(t)
 	writeReceiptFixture(t, root, receiptFixturePRD, "# Example\n")
 	receiptCommit(t, root)
@@ -152,10 +163,12 @@ func TestASpecThatIsNotHeldSkipsTheTranscriptDeclarationGap(t *testing.T) {
 	}
 }
 func TestAMalformedTranscriptIsReportedInASpecThatIsNotHeld(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(""))
 	assertTranscriptCount(t, receiptStage(t, root, StageTechSpec), CodeTranscriptMalformed, 1)
 }
 func TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(strings.Replace(transcriptBlock, "exit: 0\n", "", 1))+"\n2. Surface Transcript: second\n\n"+transcriptBlock)
 	transcriptGraph(t, root, "Surface Transcripts 1-2", "", "Reproduce Surface Transcript 1.", "pending", false)
 	text := RenderText(receiptStage(t, root, StageTasks), VerificationCoverage{})
@@ -171,6 +184,7 @@ func TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour(t *testing.T) {
 	}
 }
 func TestCompletedQATaskIsHistoricalTranscriptEvidence(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, false, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "Surface Transcript 1", "", "Historical.", "pending", false)
 	// Use the detector seam: full graph loading also validates completed QA reports.
@@ -191,6 +205,7 @@ func TestCompletedQATaskIsHistoricalTranscriptEvidence(t *testing.T) {
 	assertTranscriptCount(t, result, CodeTranscriptUngated, 0)
 }
 func TestThisSpecsSurfaceTranscriptsAreWellFormed(t *testing.T) {
+	t.Parallel()
 	content, err := os.ReadFile(filepath.Join(thisSpecDir(t), "_techspec.md"))
 	if err != nil {
 		t.Fatal(err)
@@ -207,6 +222,7 @@ func TestThisSpecsSurfaceTranscriptsAreWellFormed(t *testing.T) {
 }
 
 func TestTranscriptDeclarationRejectsMissingReasonsAndWrongShapes(t *testing.T) {
+	t.Parallel()
 	for _, section := range []string{
 		"## Surface Transcripts\n\nNone.\n",
 		"## Surface Transcripts\n\nNone. Reason.\n\n1. Other entry.\n",
@@ -220,6 +236,7 @@ func TestTranscriptDeclarationRejectsMissingReasonsAndWrongShapes(t *testing.T) 
 }
 
 func TestTranscriptBlockBoundariesAndExactStreams(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ name, body, reason string }{
 		{"empty streams", "$ command\nstdout:\nstderr:\nexit: 255", ""},
 		{"first stderr ends stdout", "$ command\nstdout:\n...\n<line>\nstderr:\nstderr:\nexit: 1", ""},
@@ -252,6 +269,7 @@ func TestTranscriptBlockBoundariesAndExactStreams(t *testing.T) {
 }
 
 func TestTranscriptDetectorStagesAndMissingArtifacts(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, true, transcriptSection(""))
 	result := receiptStage(t, root, StagePRD)
 	assertTranscriptCount(t, result, CodeTranscriptMalformed, 0)
@@ -280,12 +298,14 @@ func TestTranscriptDetectorStagesAndMissingArtifacts(t *testing.T) {
 }
 
 func TestSurfaceTranscriptsNeedNoCoverageMap(t *testing.T) {
+	t.Parallel()
 	root := transcriptFixture(t, true, transcriptSection(transcriptBlock))
 	transcriptGraph(t, root, "Surface Transcript 1", "", "Reproduce Surface Transcript 1.", "pending", false)
 	assertTranscriptCount(t, receiptStage(t, root, StageTasks), CodeCoverageUnmapped, 0)
 }
 
 func TestThisSpecsTranscriptsHaveImplementationAndGateReferences(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	slug := "0191-claims-with-receipts-and-contracts-as-they-ship"
 	for _, name := range []string{"_prd.md", "_techspec.md", "_tasks.md", "task_01.md", "task_02.md", "task_03.md", "task_04.md"} {

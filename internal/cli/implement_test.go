@@ -780,6 +780,7 @@ func removeImplementFixtureAuthorization(t *testing.T, repoDir string) {
 }
 
 func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
+	t.Parallel()
 	const authoredQACommand = "test -f authored-qa-report"
 
 	tests := []struct {
@@ -4298,6 +4299,7 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 }
 
 func TestImplementRunWindow(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 
 	t.Run("closed window refuses before mutating preflight work", func(t *testing.T) {
@@ -4383,6 +4385,7 @@ func TestImplementRunWindow(t *testing.T) {
 }
 
 func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
+	t.Parallel()
 	t.Run("a real prior Run refuses before another Run or Task Agent turn exists", func(t *testing.T) {
 		fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 		runner := &implementFakeRunner{gitRoot: fixture.repoDir}
@@ -4531,6 +4534,7 @@ func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
 }
 
 func TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the core"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4568,6 +4572,7 @@ func TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry(t *testing.T) {
 }
 
 func TestImplementProceedsWhenNothingIsCarriable(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		inspect    func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error)
@@ -4627,6 +4632,7 @@ func TestImplementProceedsWhenNothingIsCarriable(t *testing.T) {
 }
 
 func TestImplementRunWindowCrossing(t *testing.T) {
+	t.Parallel()
 	location := time.FixedZone("BRT", -3*60*60)
 	tests := []struct {
 		name       string
@@ -6053,6 +6059,7 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 // Owning layer: CLI test diagnostics parsing.
 // Existing canonical suite: TestBudgetClockCrossesAfterTheSettledTask.
 func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
+	t.Parallel()
 	const runID = "run_20260924T120000Z_budget"
 	stderr := "Implement Run " + runID + " reached BudgetExceeded.\n"
 
@@ -6067,6 +6074,7 @@ func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
 func TestBudgetClockCrossesAfterTheSettledTask(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Complete before the Run Budget"},
 		{id: "task_02", title: "Reach the Run Budget", needs: []string{"task_01"}},
@@ -6171,6 +6179,7 @@ func TestBudgetClockCrossesAfterTheSettledTask(t *testing.T) {
 // Owning layer: daemon Task-cycle integration through the Implement fixture.
 // Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
 func TestBudgetExceededKeepsWorkSettledBeforeTheBudget(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Complete before the Run Budget"},
 		{id: "task_02", title: "Remain pending after the Run Budget", needs: []string{"task_01"}},
@@ -6280,6 +6289,7 @@ func TestBudgetExceededKeepsWorkSettledBeforeTheBudget(t *testing.T) {
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
 func TestImplementRunBudgetBoundsSetupAndIntegration(t *testing.T) {
+	t.Parallel()
 	t.Run("bootstrap", func(t *testing.T) {
 		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Never reaches Agent work"}})
 		const maximum = 250 * time.Millisecond

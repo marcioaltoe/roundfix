@@ -153,6 +153,7 @@ func (fixture *outsideMergeFixture) retry(t *testing.T) (int, string, string) {
 }
 
 func TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone(t *testing.T) {
+	t.Parallel()
 	fixture := newOutsideMergeFixture(t, true)
 	mustWrite(t, filepath.Join(fixture.item.Worktree, "ci-fix.txt"), "fixed CI\n")
 	gitImplement(t, fixture.item.Worktree, "add", "ci-fix.txt")
@@ -184,6 +185,7 @@ func TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone(t *
 }
 
 func TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest(t *testing.T) {
+	t.Parallel()
 	fixture := newOutsideMergeFixture(t, false)
 	gitImplement(t, fixture.repo, "merge", "--squash", fixture.item.Branch)
 	gitImplement(t, fixture.repo, "commit", "-m", "squash delivery by hand")
@@ -200,6 +202,7 @@ func TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullR
 }
 
 func TestDeliverRetryRefusesAPullRequestClosedWithoutMerging(t *testing.T) {
+	t.Parallel()
 	fixture := newOutsideMergeFixture(t, true)
 	fixture.runner.payload["state"] = "CLOSED"
 	code, stdout, stderr := fixture.retry(t)
@@ -213,6 +216,7 @@ func TestDeliverRetryRefusesAPullRequestClosedWithoutMerging(t *testing.T) {
 }
 
 func TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore(t *testing.T) {
+	t.Parallel()
 	fixture := newOutsideMergeFixture(t, true)
 	code, stdout, stderr := fixture.retry(t)
 	want := "Retried " + implementTestSlug + ": checks-failed -> checking\nDelivery Owner: test-owner\n"
@@ -226,6 +230,7 @@ func TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore(t *t
 }
 
 func TestObserveMergeIgnoresAMergedPullRequestFromAnotherBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newOutsideMergeFixture(t, true)
 	fixture.runner.payload["state"], fixture.runner.payload["headRefName"] = "MERGED", "fix/another-spec"
 	fixture.runner.payload["mergeCommit"] = map[string]string{"oid": fixture.candidate}
@@ -236,6 +241,7 @@ func TestObserveMergeIgnoresAMergedPullRequestFromAnotherBranch(t *testing.T) {
 }
 
 func TestObserveMergeEvidenceFallbacks(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                                                                             string
 		recordedPR, closed, readFailure, removeBranch, noCandidate, itemContainsDelivery bool
@@ -280,6 +286,7 @@ func TestObserveMergeEvidenceFallbacks(t *testing.T) {
 }
 
 func TestObserveMergeRequiresCompletePullRequestEvidence(t *testing.T) {
+	t.Parallel()
 	for _, field := range []string{"headRefOid", "mergeCommit"} {
 		t.Run(field, func(t *testing.T) {
 			fixture := newOutsideMergeFixture(t, true)

@@ -144,6 +144,7 @@ func historyRefusal(t *testing.T, h historyFixture, args ...string) {
 }
 
 func TestHistorySanitizePlanWritesNothing(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	before := historySnapshot(t, h.repo)
 	status := gittest.Run(t, h.repo, "status", "--porcelain", "--untracked-files=all")
@@ -190,6 +191,7 @@ func TestHistorySanitizePlanWritesNothing(t *testing.T) {
 	historyUnchanged(t, h, before, status)
 }
 func TestHistorySanitizeAppliesTheNextBatch(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	historyTag(t, h)
 	original := snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/ccc"))
@@ -250,6 +252,7 @@ func TestHistorySanitizeAppliesTheNextBatch(t *testing.T) {
 	}
 }
 func TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"missing", "lightweight", "not ancestor"} {
 		t.Run(kind, func(t *testing.T) {
 			h := newHistoryFixture(t, true)
@@ -268,6 +271,7 @@ func TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag(t *testing.T) {
 	}
 }
 func TestHistorySanitizeRefusesATagWithoutTheBatchPaths(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	historyTag(t, h)
 	historyWrite(t, filepath.Join(h.repo, "docs/history/reviews/pr-1/r.md"), "review")
@@ -275,6 +279,7 @@ func TestHistorySanitizeRefusesATagWithoutTheBatchPaths(t *testing.T) {
 	historyRefusal(t, h, "sanitize", "--apply", "--batch", "1")
 }
 func TestHistorySanitizeRefusesADirtyTree(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"tracked", "untracked", "staged"} {
 		t.Run(kind, func(t *testing.T) {
 			h := newHistoryFixture(t, true)
@@ -292,6 +297,7 @@ func TestHistorySanitizeRefusesADirtyTree(t *testing.T) {
 	}
 }
 func TestHistorySanitizeAdviseFailsOpenWithoutAKey(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	before := historySnapshot(t, h.repo)
 	status := gittest.Run(t, h.repo, "status", "--porcelain", "--untracked-files=all")
@@ -306,6 +312,7 @@ func TestHistorySanitizeAdviseFailsOpenWithoutAKey(t *testing.T) {
 	historyUnchanged(t, h, before, status)
 }
 func TestHistorySanitizeAdviseWithAFakeJudge(t *testing.T) {
+	t.Parallel()
 	for _, choice := range []string{"reusable_knowledge", "repository_record", "transient_evidence"} {
 		t.Run(choice, func(t *testing.T) {
 			h := newHistoryFixture(t, true)
@@ -348,6 +355,7 @@ func TestHistorySanitizeAdviseWithAFakeJudge(t *testing.T) {
 	}
 }
 func TestHistorySanitizePromotesIntoReferences(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	historyTag(t, h)
 	historyRefusal(t, h, "sanitize", "--apply", "--batch", "1", "--promote", "docs/history/specs/bbb/references/lesson.md")
@@ -373,6 +381,7 @@ func TestHistorySanitizePromotesIntoReferences(t *testing.T) {
 	}
 }
 func TestHistorySanitizeUsageErrors(t *testing.T) {
+	t.Parallel()
 	for _, args := range [][]string{{"sanitize", "--apply"}, {"sanitize", "--advise"}, {"sanitize", "--advise", "--apply", "--batch", "1"}, {"sanitize", "--promote", "x"}, {"sanitize", "--batch", "0"}, {"sanitize", "--batch", "-1"}, {"sanitize", "--batch", "x"}, {"sanitize", "--batch"}, {"sanitize", "--unknown"}, {"sanitize", "extra"}, {"unknown"}} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) { h := newHistoryFixture(t, true); historyRefusal(t, h, args...) })
 	}
@@ -385,6 +394,7 @@ func TestHistorySanitizeUsageErrors(t *testing.T) {
 	}
 }
 func TestHistorySanitizeRefusesAnExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	external := t.TempDir()
 	gittest.InitRepo(t, external, "-b", "main")
@@ -393,6 +403,7 @@ func TestHistorySanitizeRefusesAnExternalSpecRoot(t *testing.T) {
 	historyRefusal(t, h, "sanitize")
 }
 func TestHistorySanitizeWithNothingPending(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	before := historySnapshot(t, h.repo)
 	for _, args := range [][]string{{"sanitize"}, {"sanitize", "--apply", "--batch", "2"}} {
@@ -405,6 +416,7 @@ func TestHistorySanitizeWithNothingPending(t *testing.T) {
 }
 
 func TestHistorySanitizePreflightsWholeBatch(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, true)
 	historyWrite(t, filepath.Join(h.repo, "docs/history/specs/bbb/_prd.md"), "invalid PRD")
 	historyCommit(t, h.repo, "Malformed second unit")
@@ -434,6 +446,7 @@ func TestHistorySanitizePreflightsWholeBatch(t *testing.T) {
 
 }
 func TestHistorySanitizeFolderCitationsAndKindNamedSlugs(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	historyWrite(t, filepath.Join(h.repo, "docs/history/specs/findings/_prd.md"), "---\nspec: findings\ncreated: 2026-09-01\n---\n\n# Findings\n\nA result.\n")
 	historyWrite(t, filepath.Join(h.repo, "docs/history/findings/entry.md"), "---\nstatus: closed\n---\n\n# Retired\n\nResult.\n")
@@ -450,6 +463,7 @@ func TestHistorySanitizeFolderCitationsAndKindNamedSlugs(t *testing.T) {
 	}
 }
 func TestHistorySanitizeAdviceIsAdvisory(t *testing.T) {
+	t.Parallel()
 	for _, mode := range []string{"service failure", "monthly ceiling"} {
 		t.Run(mode, func(t *testing.T) {
 			h := newHistoryFixture(t, true)
@@ -480,6 +494,7 @@ func TestHistorySanitizeAdviceIsAdvisory(t *testing.T) {
 }
 
 func TestHistorySanitizeAdviceWithoutAKnownDelivery(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	prd := "---\nspec: demo\ncreated: 2026-09-01\n---\n\n# Demo\n\nOutcome.\n"
 	historyWrite(t, filepath.Join(h.repo, "docs/old/demo/_prd.md"), prd)
@@ -499,6 +514,7 @@ func TestHistorySanitizeAdviceWithoutAKnownDelivery(t *testing.T) {
 }
 
 func TestHistorySnapshotSkipsGitMetadataBeforeReading(t *testing.T) {
+	t.Parallel()
 	h := newHistoryFixture(t, false)
 	// Like the fsmonitor socket, this metadata node cannot be read as a file.
 	// A dangling symlink exercises the boundary without requiring socket privileges.

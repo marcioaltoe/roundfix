@@ -20,6 +20,7 @@ func readyDeliveryReadiness(context.Context, roundconfig.Loaded) []CheckResult {
 }
 
 func TestDeliverStartRefusesWhenThisMachineCannotPublish(t *testing.T) {
+	t.Parallel()
 	for _, multiple := range []bool{false, true} {
 		t.Run(map[bool]string{false: "transcript", true: "multiple failures"}[multiple], func(t *testing.T) {
 			home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -69,6 +70,7 @@ func TestDeliverStartRefusesWhenThisMachineCannotPublish(t *testing.T) {
 }
 
 func TestDeliverStartProceedsOnAForgeWarning(t *testing.T) {
+	t.Parallel()
 	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	setImplementFixtureAuthorizationOperations(t, repo, "implement", "commit", "push", "pull_request", "merge")
 	started := false

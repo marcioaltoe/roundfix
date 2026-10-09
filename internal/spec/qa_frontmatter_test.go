@@ -18,22 +18,27 @@ import (
 // Boundary OUT: verdict eligibility after parsing, owned by qa_test.go and archive_test.go.
 
 func TestReadQAReportRefusesAnEmptyFrontMatter(t *testing.T) {
+	t.Parallel()
 	assertQAReportFrontmatterError(t, "---\n---\nverdict: pass\n---\n", "QA Report front matter is empty")
 }
 
 func TestReadQAReportRefusesAMissingOpeningLine(t *testing.T) {
+	t.Parallel()
 	assertQAReportFrontmatterError(t, "verdict: pass\n---\n", `QA Report front matter must open with a "---" first line`)
 }
 
 func TestReadQAReportRefusesAnUnclosedFrontMatter(t *testing.T) {
+	t.Parallel()
 	assertQAReportFrontmatterError(t, "---\nverdict: pass\n", `QA Report front matter has no closing "---" line`)
 }
 
 func TestReadQAReportRefusesADuplicatedVerdictLine(t *testing.T) {
+	t.Parallel()
 	assertQAReportFrontmatterError(t, "---\nverdict: pass\nverdict: fail\n---\n", `QA Report front matter has 2 "verdict:" lines; expected exactly 1`)
 }
 
 func TestReadQAReportReadsAWellFormedFrontMatter(t *testing.T) {
+	t.Parallel()
 	const body = "\n# QA Report\n\n## Results\n\n| # | Status | Evidence |\n| - | --- | --- |\n| R01 | pass | observed |\n"
 	content := []byte("---\nverdict: pass\nrows_blocked_environment: 0\n---\n" + body)
 	path := filepath.Join(t.TempDir(), "qa-report-2026-09-28.md")
@@ -58,6 +63,7 @@ func TestReadQAReportReadsAWellFormedFrontMatter(t *testing.T) {
 }
 
 func TestQAReportReaderAgreesWithTheDerivedVerification(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		report string
@@ -81,11 +87,12 @@ func TestQAReportReaderAgreesWithTheDerivedVerification(t *testing.T) {
 }
 
 func TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive(t *testing.T) {
+	t.Parallel()
 	_, testFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	repoRoot := gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec))
+	repoRoot := gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ":(glob)"+ArchiveDir(ArchiveKindSpec)+"/*/qa/qa-report-*.md")
 	pattern := filepath.Join(repoRoot, filepath.FromSlash("docs/history/specs/*/qa/qa-report-*.md"))
 	reportPaths, err := filepath.Glob(pattern)
 	if err != nil {

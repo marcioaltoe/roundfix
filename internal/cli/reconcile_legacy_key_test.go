@@ -18,6 +18,7 @@ import (
 )
 
 func TestReconcileReportsALegacyRunKeyedFromItsRunWorktree(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	repoDir, err := filepath.EvalSymlinks(repoDir)

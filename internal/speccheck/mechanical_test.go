@@ -910,6 +910,7 @@ func TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration(t *testing.T) 
 }
 
 func TestAuditJudgesTheGrant(t *testing.T) {
+	t.Parallel()
 	t.Run("historical regeneration resolves outputs absent from the grant", func(t *testing.T) {
 		repoRoot := newMechanicalGitRepo(t)
 		writeMechanicalResolverFixture(t, repoRoot)
@@ -1007,6 +1008,7 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 }
 
 func TestAuditRefusesAGrantWidenedAfterItsConsumingCommit(t *testing.T) {
+	t.Parallel()
 	const (
 		authorizationPath = "docs/specs/late-widening/_authorization.md"
 		consumingSpec     = "late-widening"
@@ -1065,6 +1067,7 @@ func TestAuditRefusesAGrantWidenedAfterItsConsumingCommit(t *testing.T) {
 }
 
 func TestAuditReadsTheAuthorizingAncestor(t *testing.T) {
+	t.Parallel()
 	t.Run("grant already in delivery target", func(t *testing.T) {
 		repoRoot := newMechanicalGitRepo(t)
 		const authorizationPath = "docs/specs/audit-target/_authorization.md"
@@ -1101,6 +1104,7 @@ func TestAuditReadsTheAuthorizingAncestor(t *testing.T) {
 }
 
 func TestAuditRefusesSelfApprovalAndRetroactiveGrants(t *testing.T) {
+	t.Parallel()
 	t.Run("same commit creates its grant", func(t *testing.T) {
 		repoRoot := newMechanicalGitRepo(t)
 		target := strings.TrimSpace(runMechanicalGit(t, repoRoot, "rev-parse", "HEAD"))
@@ -1207,6 +1211,7 @@ func TestAuditRefusesSelfApprovalAndRetroactiveGrants(t *testing.T) {
 }
 
 func TestAuditDiscoversRecordsInEveryLocation(t *testing.T) {
+	t.Parallel()
 	locations := []struct {
 		name          string
 		requestedPath string

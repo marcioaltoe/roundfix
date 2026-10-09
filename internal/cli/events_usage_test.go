@@ -17,6 +17,7 @@ import (
 )
 
 func TestEventsHelpNamesTheUsageCategory(t *testing.T) {
+	t.Parallel()
 	var stdout, stderr bytes.Buffer
 	code := runCLIContext(t, context.Background(), []string{"events", "--help"}, &stdout, &stderr)
 	if code != 0 || stderr.Len() != 0 || !strings.Contains(stdout.String(), "task-status,batch,verification,outcome,agent-selection,usage") {

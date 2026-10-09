@@ -14,6 +14,7 @@ import (
 )
 
 func TestWrapFragileRemediationQuotesAHostilePhrase(t *testing.T) {
+	t.Parallel()
 	directory := t.TempDir()
 	substitutionMarker := filepath.Join(directory, "substitution-ran")
 	backtickMarker := filepath.Join(directory, "backtick-ran")
@@ -46,6 +47,7 @@ func TestWrapFragileRemediationQuotesAHostilePhrase(t *testing.T) {
 }
 
 func TestWrapFragileRemediationQuotesAPathWithASpace(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "guide with space.md")
 	if err := os.WriteFile(path, []byte(wrapFragilePhrase+"\n"), 0o644); err != nil {
 		t.Fatalf("write spaced-path fixture: %v", err)

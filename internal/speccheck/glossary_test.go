@@ -62,12 +62,14 @@ func glossaryTask(t *testing.T, root, status, context, verification string) {
 }
 
 func TestGlossaryDeclarationIsRequiredAfterTheHorizon(t *testing.T) {
+	t.Parallel()
 	root := glossaryRepo(t, "# Example\n")
 	glossaryAssert(t, glossaryCheck(t, root, StagePRD), CodeGlossaryUndeclared, 1)
 	receiptCommit(t, root)
 	glossaryAssert(t, glossaryCheck(t, root, StagePRD), CodeGlossaryUndeclared, 1)
 }
 func TestGlossaryMalformedEntryIsReported(t *testing.T) {
+	t.Parallel()
 	for _, entry := range []string{"- adds: New Term", "- not a term: **New Term**", "None.\n- adds: **New Term**", "- changes: ****", "- adds: **New Term** — "} {
 		t.Run(entry, func(t *testing.T) {
 			root := glossaryRepo(t, "## Glossary\n\n"+entry+"\n")
@@ -76,6 +78,7 @@ func TestGlossaryMalformedEntryIsReported(t *testing.T) {
 	}
 }
 func TestGlossaryUndeclaredBoldTermIsReported(t *testing.T) {
+	t.Parallel()
 	root := glossaryRepo(t, "## Glossary\nNone.\n## Story\n**New Term** and **New Term**\n**Existing Terms** and **Existing Termes**\n")
 	writeReceiptFixture(t, root, glossaryFixtureDir+"/_techspec.md", "## Design\n**New Term**\n")
 	result := glossaryCheck(t, root, StageTechSpec)
@@ -85,14 +88,17 @@ func TestGlossaryUndeclaredBoldTermIsReported(t *testing.T) {
 	}
 }
 func TestGlossaryBoldRuleIgnoresLabelsDigitsAndFences(t *testing.T) {
+	t.Parallel()
 	root := glossaryRepo(t, "## Glossary\nNone.\n## Story\n**Label** **Phase 2** **Some (Term)** **Some Term.**\n```markdown\n**Fenced Term**\n```\n~~~\n**Other Fence**\n~~~\n**New Term**\n")
 	glossaryAssert(t, glossaryCheck(t, root, StagePRD), CodeGlossaryUndeclared, 11)
 }
 func TestGlossaryNotATermCoversAPhrase(t *testing.T) {
+	t.Parallel()
 	root := glossaryRepo(t, "## Glossary\n- not a term: **New Term** — a label\n## Story\n**New Term**\n")
 	glossaryAssert(t, glossaryCheck(t, root, StageAll), CodeGlossaryUndeclared)
 }
 func TestGlossaryAddedTermNeedsATaskThatWritesIt(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, context, verification string
 		want                        bool
@@ -133,6 +139,7 @@ func TestGlossaryAddedTermNeedsATaskThatWritesIt(t *testing.T) {
 	})
 }
 func TestGlossaryChangedTermMustExist(t *testing.T) {
+	t.Parallel()
 	root := glossaryRepo(t, "## Glossary\n- changes: **New Term**\n")
 	glossaryTask(t, root, "pending", "- interface: CONTEXT.md", "**New Term**")
 	result := glossaryCheck(t, root, StageAll)
@@ -144,6 +151,7 @@ func TestGlossaryChangedTermMustExist(t *testing.T) {
 	glossaryAssert(t, glossaryCheck(t, root, StageAll), CodeGlossaryUnplanned)
 }
 func TestGlossaryCompletedTaskMustLeaveTheTermDefined(t *testing.T) {
+	t.Parallel()
 	root := glossaryRepo(t, "## Glossary\n- adds: **New Term**\n")
 	glossaryTask(t, root, "completed", "- interface: CONTEXT.md", "**New Term**")
 	glossaryAssert(t, glossaryCheck(t, root, StageAll), CodeGlossaryMissing, 5)
@@ -167,6 +175,7 @@ func TestGlossaryCompletedTaskMustLeaveTheTermDefined(t *testing.T) {
 	glossaryAssert(t, glossaryCheck(t, root, StageAll), CodeGlossaryMissing)
 }
 func TestGlossaryReadsMappedAndRenamedGlossaries(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"CONTEXT.md", "GLOSSARY.md"} {
 		t.Run(name, func(t *testing.T) {
 			root := glossaryRepo(t, "## Glossary\n- adds: **Mapped Term**\n## Story\n**Root Term** **Mapped Terms**\n")
@@ -184,6 +193,7 @@ func TestGlossaryReadsMappedAndRenamedGlossaries(t *testing.T) {
 	}
 }
 func TestGlossaryStagesReportOnlyTheirCodes(t *testing.T) {
+	t.Parallel()
 	t.Run("missing inputs are recorded", func(t *testing.T) {
 		root := glossaryRepo(t, "## Glossary\n- adds: **New Term**\n")
 		result := glossaryCheck(t, root, StageAll)
@@ -237,6 +247,7 @@ func TestGlossaryStagesReportOnlyTheirCodes(t *testing.T) {
 	}
 }
 func TestGlossaryLegacySpecIsSkipped(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	gittest.InitRepo(t, root, "-b", "main")
 	writeReceiptFixture(t, root, "CONTEXT.md", "**Existing Term**: definition\n")
