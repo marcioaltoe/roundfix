@@ -82,7 +82,18 @@ tests can call `t.Parallel()`.
 ## Context
 
 - interface: `internal/cli/cli.go`
+- interface: `internal/cli/cli_test.go`
+- interface: `internal/cli/carryforward.go`
+- interface: `internal/cli/deliver_revalidate.go`
+- interface: `internal/cli/deliver_workflow.go`
+- interface: `internal/cli/doctor.go`
+- interface: `internal/cli/readiness_forge.go`
+- interface: `internal/cli/reconcile.go`
+- interface: `internal/cli/orphan_unix_test.go`
+- interface: `internal/cli/readiness_forge_test.go`
 - interface: `internal/testfixture/parallel_tests_test.go`
+- interface: `docs/references/skill-coverage.json`
+- interface: `internal/cli/deliver_item_binary_test.go`
 
 ## Result
 

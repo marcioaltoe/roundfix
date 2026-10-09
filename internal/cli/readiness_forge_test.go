@@ -302,7 +302,7 @@ func enterpriseReadinessRunner(t *testing.T, run readinessRunner) readinessRunne
 }
 
 func TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken(t *testing.T) {
-	t.Parallel()
+	// Sequential: the probe's 250 ms bound is the behavior under test, and the child missed it under the race detector while it ran in parallel (0254 QA F4).
 	dir := t.TempDir()
 	setCommandEnvForTest(t, "PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	setCommandEnvForTest(t, "PROBE_LOG", filepath.Join(dir, "probes"))

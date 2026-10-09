@@ -208,6 +208,17 @@ The outside-evidence row rests on sources this Spec did not produce:
 - adds: **Sequential Test**
 - adds: **Parallel Test Package**
 
+## Skills
+
+- unchanged: command deliver plan — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command deliver resume — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command deliver retry — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command deliver start — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command deliver status — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command deliver stop — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command doctor — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+- unchanged: command reconcile — task_06 only routes process-global reads through commandDependencies, defaulting to today's read; the command's behavior, flags, output and exit codes are unchanged.
+
 ## Decisions
 
 - Every top-level test in a Parallel Test Package runs in parallel or names

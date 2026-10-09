@@ -205,7 +205,8 @@
         "internal/cli/deliver_revalidate.go",
         "internal/cli/deliver_review_correction.go",
         "internal/cli/deliver_workflow.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command deliver resume",
@@ -220,7 +221,8 @@
         "internal/cli/deliver_revalidate.go",
         "internal/cli/deliver_review_correction.go",
         "internal/cli/deliver_workflow.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command deliver retry",
@@ -235,7 +237,8 @@
         "internal/cli/deliver_revalidate.go",
         "internal/cli/deliver_review_correction.go",
         "internal/cli/deliver_workflow.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command deliver start",
@@ -250,7 +253,8 @@
         "internal/cli/deliver_revalidate.go",
         "internal/cli/deliver_review_correction.go",
         "internal/cli/deliver_workflow.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command deliver status",
@@ -265,7 +269,8 @@
         "internal/cli/deliver_revalidate.go",
         "internal/cli/deliver_review_correction.go",
         "internal/cli/deliver_workflow.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command deliver stop",
@@ -280,7 +285,8 @@
         "internal/cli/deliver_revalidate.go",
         "internal/cli/deliver_review_correction.go",
         "internal/cli/deliver_workflow.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command doctor",
@@ -291,7 +297,8 @@
         "docs/user-guide/commands/doctor.md",
         "internal/cli/doctor.go",
         "internal/cli/doctor_storage.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command events",
@@ -435,7 +442,8 @@
       "sources": [
         "docs/user-guide/commands/reconcile.md",
         "internal/cli/reconcile.go"
-      ]
+      ],
+      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
     },
     {
       "id": "command release plan",

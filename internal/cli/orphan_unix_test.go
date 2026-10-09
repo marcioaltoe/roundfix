@@ -27,7 +27,7 @@ import (
 )
 
 func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *testing.T) {
-	t.Parallel()
+	// Sequential: its five-second observation deadline missed under the race detector while it ran in parallel (0254 QA F4).
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
 	ownerIdentity, err := store.OwnerProcessIdentity(context.Background(), pid)

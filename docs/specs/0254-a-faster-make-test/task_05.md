@@ -69,7 +69,8 @@ or writes the real `~/.roundfix`.
 9. MUST verify from the repository history:
    - that each Task's changed files stay within its declarations or its
      `## Recorded paths`, and that every recorded path is a test file of a
-     package that Task names;
+     package that Task names, or, for task_06 only, one of the `internal/cli`
+     dependency-seam production files its Context declares;
    - that every Governed Path changed is bounded in `_authorization.md`;
    - that the Makefile, the CI workflows, `go.mod`, `go.sum`, `.roundfixrc.yml`
      and every production Go file other than `internal/verifyselect/contracts.go`
