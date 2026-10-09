@@ -94,6 +94,7 @@ tests can call `t.Parallel()`.
 - interface: `internal/testfixture/parallel_tests_test.go`
 - interface: `docs/references/skill-coverage.json`
 - interface: `internal/cli/deliver_item_binary_test.go`
+- interface: `internal/store/journal_test.go`
 
 ## Result
 

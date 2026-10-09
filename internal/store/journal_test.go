@@ -1098,6 +1098,13 @@ func TestReaderPagesEventsWhileWriterAppends(t *testing.T) {
 	if seen != total {
 		t.Fatalf("expected %d events paged, got %d", total, seen)
 	}
+	// A visible final row precedes the writer's deferred lock release, so join
+	// the writer before the deferred Store cleanup closes its lock file.
+	if appended != nil {
+		if err := <-appended; err != nil {
+			t.Fatalf("writer append: %v", err)
+		}
+	}
 
 	if _, err := reader.AppendRunEvent(ctx, sampleRunEvent(run.ID, "rejected")); err == nil {
 		t.Fatal("expected read-only connection to reject writes")

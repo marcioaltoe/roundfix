@@ -365,13 +365,24 @@ exec sleep 30
 	}
 	deps.environ = commandEnvironmentForTest(t).dependencies.environ()
 	deps.timeout = 250 * time.Millisecond
-	started := time.Now()
-	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
-	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
-		t.Fatalf("sleeping child did not cancel: %v", err)
+	// Under load the shell can need longer than the bound to record its PID, so
+	// each attempt must still time out and cancel, and the liveness check below
+	// runs on the first attempt whose child started.
+	var pid []byte
+	for attempt := 0; attempt < 5 && pid == nil; attempt++ {
+		if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
+			t.Fatal(err)
+		}
+		started := time.Now()
+		_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
+		if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
+			t.Fatalf("sleeping child did not cancel: %v", err)
+		}
+		if recorded, readErr := os.ReadFile(filepath.Join(dir, "pid")); readErr == nil && len(strings.TrimSpace(string(recorded))) > 0 {
+			pid = recorded
+		}
 	}
-	pid, err := os.ReadFile(filepath.Join(dir, "pid"))
-	if err != nil {
+	if pid == nil {
 		t.Fatal("sleeping child never started")
 	}
 	// kill -0 is a read-only liveness probe, through the same bounded exec runner.
