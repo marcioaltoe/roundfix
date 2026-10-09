@@ -72,7 +72,10 @@ None. No Task runs a generator, and no derived file changes.
 
 - No change to the Makefile, the CI workflows, `go.mod`, `go.sum`,
   `.roundfixrc.yml`, the lint, formatter or test-runner configuration, or any
-  production Go file other than `internal/verifyselect/contracts.go`.
+  production Go file other than `internal/verifyselect/contracts.go` and, for
+  corrective task_06 only, `internal/cli` files that route a process-global read
+  through `commandDependencies` with today's read as the default (operator
+  decision 2026-10-09 on QA finding F2; no behavior change).
 - No assertion, expected value, golden or fixture meaning changes.
 - No change to archived Specs, existing Archive Records, existing history
   entries or `CHANGELOG.md`.

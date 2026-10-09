@@ -73,7 +73,7 @@ or writes the real `~/.roundfix`.
    - that every Governed Path changed is bounded in `_authorization.md`;
    - that the Makefile, the CI workflows, `go.mod`, `go.sum`, `.roundfixrc.yml`
      and every production Go file other than `internal/verifyselect/contracts.go`
-     did not change;
+     and the task_06 `internal/cli` dependency seams did not change;
    - that in the test files task_01 and task_02 changed, every removed or
      altered line belongs to a file task_03 or task_04 declares, or is an
      existing `t.Parallel()` call moved to the first statement (expanding a

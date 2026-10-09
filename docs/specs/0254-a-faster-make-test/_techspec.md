@@ -149,7 +149,9 @@ failed their tests, because they read whole archived Spec folders.
   unchanged, because `-tags` accepts a comma-separated list.
 
 No production Go file changes except `internal/verifyselect/contracts.go`,
-which is repository tooling.
+which is repository tooling, and the corrective task_06 seams: `internal/cli`
+reads of process-global state that a sequential test changes move behind
+`commandDependencies`, defaulting to today's read.
 
 ## Implementation Design
 
