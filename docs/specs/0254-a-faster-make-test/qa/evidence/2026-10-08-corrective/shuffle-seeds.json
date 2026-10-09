@@ -1,0 +1,9 @@
+{
+  "roundfix/internal/cli": "1791510603198886000",
+  "roundfix/internal/daemon": "1791510602446162000",
+  "roundfix/internal/spec": "1791510602221321000",
+  "roundfix/internal/speccheck": "1791510602417994000",
+  "roundfix/internal/worktree": "1791510602434584000",
+  "roundfix/internal/store": "1791510602633279000",
+  "roundfix/internal/baseline": "1791510602937502000"
+}

@@ -1,0 +1,6 @@
+{
+  "files": 207,
+  "meaning_changes": [],
+  "comparison": "Go scanner tokens retain literal contents; only Parallel calls, Sequential comments and optional statement terminators removed. Named gate_test.go fixture literals remove only their inserted Parallel lines; all other bytes preserved.",
+  "fixture_literal_insertions": "Task 02 internal/spec/gate_test.go: two single-test deliberate-failure fixtures gained Parallel lines; their failing assertions and expected diagnostics unchanged."
+}

@@ -1,0 +1,27 @@
+{
+  "suite-start-2.stdout.log.txt": {
+    "sha256": "53747bada36987ff5698fdaca8953c467bc387a67b456a5bd5cf530a655e4993",
+    "bytes": 12154207,
+    "gzip": "suite-start-2.stdout.log.txt.gz"
+  },
+  "suite-head-2.stdout.log.txt": {
+    "sha256": "b44e06d9b03821741f00833ba70fcaf71e9d1e50a7d8322d71171d30ebfe422e",
+    "bytes": 13026160,
+    "gzip": "suite-head-2.stdout.log.txt.gz"
+  },
+  "shuffle.stdout.log.txt": {
+    "sha256": "b3cb41f30c2f0ebbfcc9b8927f488d55703092c13b5c8a35357de8423c72cec3",
+    "bytes": 1682458,
+    "gzip": "shuffle.stdout.log.txt.gz"
+  },
+  "suite-head-1.stdout.log.txt": {
+    "sha256": "709f03f3f0e29275e6f5f7e3d3535c69914a93d9a8ab39ea359f6d91a0f7f668",
+    "bytes": 13026553,
+    "gzip": "suite-head-1.stdout.log.txt.gz"
+  },
+  "suite-start-1.stdout.log.txt": {
+    "sha256": "579c5accc5ec283ea27505cf5034cada4e018994de2cc131e59afb8157120862",
+    "bytes": 12154981,
+    "gzip": "suite-start-1.stdout.log.txt.gz"
+  }
+}

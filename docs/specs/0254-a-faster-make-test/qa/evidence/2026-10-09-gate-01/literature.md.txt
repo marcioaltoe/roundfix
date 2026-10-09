@@ -1,0 +1,7 @@
+Fresh primary-source reads through public web reader.
+
+Candido, Melo and d’Amorim (ASE 2017), page 8, lines 878–885: 97.5% null dereference, 1.6% unsynchronized access, 0.8% likely broken dependencies. These Java results support testing concurrent safety; they do not estimate Go failure frequencies.
+https://damorim.github.io/publications/candido-etal-ase17.pdf
+
+Mondal et al. (ICSME 2021), pages 1 and 3: shared-state races and test dependencies cause parallel execution failures. Supports separate race and shuffled runs.
+https://damorim.github.io/publications/MondalETAL_ICSME21.pdf

@@ -1,0 +1,14 @@
+suiteguard: guard cost: measured 2521 paths; fingerprint took 914.858417ms before and 1.172323541s after
+--- FAIL: TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken (6.84s)
+    readiness_forge_test.go:386: sleeping child never started
+suiteguard: guard cost: measured 2521 paths; fingerprint took 421.992041ms before and 333.084875ms after
+FAIL
+suiteguard: guard cost: measured 2521 paths; fingerprint took 364.405458ms before and 99.808084ms after
+FAIL	roundfix/internal/cli	286.008s
+ok  	roundfix/internal/daemon	134.115s
+ok  	roundfix/internal/spec	69.692s
+ok  	roundfix/internal/speccheck	56.109s
+ok  	roundfix/internal/worktree	108.737s
+ok  	roundfix/internal/store	69.181s
+ok  	roundfix/internal/baseline	187.818s
+FAIL

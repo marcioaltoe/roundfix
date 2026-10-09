@@ -1,0 +1,1141 @@
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification
+=== PAUSE TestQAReportReaderAgreesWithTheDerivedVerification
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive
+=== PAUSE TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive
+=== RUN   TestArchivedQAReportCorpusRemainsReadable
+=== PAUSE TestArchivedQAReportCorpusRemainsReadable
+=== CONT  TestQAReportReaderAgreesWithTheDerivedVerification
+=== CONT  TestArchivedQAReportCorpusRemainsReadable
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/well-formed_pass
+=== CONT  TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/two_consecutive_opening_lines
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/two_verdict_lines
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/no_closing_line
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/empty_verdict_value
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/blank_line_before_opening
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/four-dash_closing_line
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/indented_verdict_line
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerification/CRLF_line_endings
+--- PASS: TestQAReportReaderAgreesWithTheDerivedVerification (0.09s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/well-formed_pass (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/two_consecutive_opening_lines (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/two_verdict_lines (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/no_closing_line (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/empty_verdict_value (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/blank_line_before_opening (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/four-dash_closing_line (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/indented_verdict_line (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerification/CRLF_line_endings (0.01s)
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0001-implement-command
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0002-acpx-migration
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0004-watch-merge-readiness
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0005-tui-cockpit
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0001-implement-command/qa/qa-report-2026-07-04.md
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0006-acpx-run-robustness
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0007-command-lifecycle
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0008-worktree-isolation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0009-parallel-scheduling
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0011-storage-lifecycle
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0013-codex-runtime-hygiene
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0014-run-store-retention
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0016-worktree-bootstrap
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0017-run-discovery
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0018-external-spec-root
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0019-run-outcome-notifications
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0020-run-browser
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0021-cockpit-visual-fidelity
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0022-cleanup-robustness
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0023-agent-model-catalog-and-isolation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0024-context-efficient-runs
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0025-optional-reasoning-effort
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0026-model-fallback-guardrail
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0027-review-loop-integrity
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0028-settlement-and-reporting
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0029-launch-and-recovery-fixes
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0030-context-driven-agent-instructions
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0031-decision-driven-setup-generation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0032-deterministic-agent-session-cancellation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0033-console-log-tool-summary-deduplication
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0034-release-plan
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0035-agent-selection-profiles
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0036-doctor-skill-readiness
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0037-terminal-outcome-integrity
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0038-terminal-run-worktree-reconciliation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0039-review-source-evidence-and-detached-outcomes
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0041-agent-selection-runtime-readiness
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0042-verification-capacity-and-daemon-task-settlement
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0043-context-driven-baseline-coverage-and-skill-restoration
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0044-upgrade-retention-and-formatter-compatibility
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0045-context-driven-baseline-0-0-1-reset
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0046-public-context-driven-baseline-command
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0047-context-driven-guidance-composition
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0048-context-driven-project-decisions-and-spec-constraints
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0050-doctor-skill-readiness-hardening
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0051-doctor-readiness-contract-reconciliation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0052-claude-adapter-standardization
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0053-qa-gate-reachability-and-verdict-semantics
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0054-tooling-task-and-verification-hygiene
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0055-owner-identity-without-fork
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0056-profiles-configure-merge-semantics
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0057-baseline-capability-evidence-and-retention
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0058-npm-trusted-publishing-and-release-preflight
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0059-run-storage-compaction-and-global-sanitation
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0060-spec-owned-reference-lifecycle
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0061-repository-derived-skill-requirements
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0062-baseline-digest-regeneration-bootstrap
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0064-spec-artifact-consistency-gate
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0065-loop-order-and-verification-honesty
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0066-run-teardown-reclaims-what-it-created
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0067-derived-artifact-regeneration-boundary
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0068-spec-close-audit
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0069-review-run-targets-its-pull-request
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0070-declared-unreachable-acceptance
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0072-qa-is-a-task-not-a-flag
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0073-skill-versions-decoupled-from-the-binary
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0074-git-spawn-economy
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0075-typed-docs-backlog
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0076-force-stop-exit-proof
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0077-a-green-check-is-not-a-review
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0078-roundfix-asks-for-the-review
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0079-one-door-for-fleet-knowledge
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0080-cheap-detectors-run-before-the-gate
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0081-a-journal-cheap-to-write-and-keep
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0082-the-manifest-already-answered-that
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0083-a-gate-that-can-say-no
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0084-an-update-that-can-run
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0085-what-an-agent-reads-before-it-decides
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0088-a-third-runtime-that-can-run
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0089-an-effort-the-runtime-actually-receives
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0090-a-gate-that-could-have-failed
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0091-a-proof-that-can-refuse
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0092-a-run-that-can-hand-back-its-work
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0093-a-spec-that-validates-itself
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0094-one-history-root-under-docs
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0095-a-verification-that-ran-before-anyone-believed-it
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0096-a-failure-the-agent-can-read
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0097-a-wave-that-cannot-collide
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0098-a-hook-that-cannot-outrank-the-gate
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0103-a-suite-that-leaks-nothing
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0105-the-gates-own-economics
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0113-a-gate-report-that-does-not-block-its-successor
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0113-a-refused-gate-writes-its-refusal-once
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0114-an-audit-that-reads-the-authorization-it-was-given
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0116-a-verdict-that-states-its-own-scope
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0117-a-window-the-preflight-owns
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0118-a-task-proved-once-does-not-run-twice
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0119-spec-contained-authorization
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0130-documentation-cleanup-compatibility
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0131-a-failed-gate-accepts-its-repair
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0132-a-grant-read-exactly-where-it-lives
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0133-a-fixture-that-does-not-spawn-per-test
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0134-a-governed-deletion-the-gate-can-see
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0135-a-rename-the-gate-sees-from-both-sides
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0136-a-rename-the-committer-can-stage
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0137-a-fixture-that-carries-its-committer
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0138-a-matrix-the-spec-declares
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0139-a-suite-that-passes-where-it-runs
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0140-a-spec-traces-the-promises-it-makes
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0141-a-commit-that-carries-the-work-and-nothing-else
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0142-an-absent-ref-is-named-absent
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0143-a-repository-says-who-reviews-before-the-pull-request
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0144-a-run-stops-when-its-budget-is-spent
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0145-a-runner-that-owns-its-lock
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0002-acpx-migration/qa/qa-report-2026-07-05.md
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0146-a-gate-that-runs-the-analyzer
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0147-a-planner-that-reads-both-tag-spellings
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0148-a-profile-that-declares-both-tiers
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0149-a-supported-way-to-reopen-a-settled-gate
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0150-a-reopen-that-cannot-be-raced
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0151-a-supersession-the-archive-can-see
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0152-one-declared-acceptance-policy
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0153-a-reviewer-the-workflow-runs
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0154-evidence-when-the-target-branch-is-gone
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0155-a-verify-that-runs-what-changed
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0156-a-delivery-loop-that-outlives-the-session
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0157-reconciliation-and-one-repository-identity
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0158-daemon-verification-and-access-readiness
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0159-archive-override-and-authoring-rules
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0160-a-review-that-reaches-a-verdict
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0161-deliver-ready-for-real-repositories
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0162-a-durable-repository-key-per-run
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0163-baseline-decisions-and-regeneration
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0164-knowledge-lifecycle-and-capture
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0165-a-measured-run-ceiling
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0166-docs-changes-run-the-tests-that-read-them
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0167-verification-and-readiness-follow-ups
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0168-deliver-one-worktree-per-item
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0169-override-and-ordinal-follow-ups
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0170-authoring-that-fails-before-dispatch
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0171-a-deterministic-suite-under-load
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0172-a-qa-gate-that-tells-the-truth
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0173-a-delivery-queue-that-recovers
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0174-operator-surfaces-that-tell-the-truth
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0175-cleanup-after-a-squash-merge
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0176-baseline-follow-ups-and-the-incremental-tier
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0177-runs-that-fit-their-budget-and-park-honestly
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0178-a-qa-audit-across-every-run-of-a-spec
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0179-review-findings-with-evidence-and-no-unselected-providers
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0180-a-prepared-queue-that-revalidates-before-each-spec
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0181-gates-that-refuse-only-what-someone-can-act-on
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0182-delivery-that-reviews-and-retries-from-where-the-item-stands
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0183-run-storage-that-says-what-it-holds
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0184-baseline-plans-that-show-what-a-history-move-breaks
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0186-citation-scans-that-read-only-what-they-mean-to
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0187-a-queue-that-recovers-without-a-supervisor
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0188-a-grant-that-authorizes-delivery-without-governed-paths
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0189-profiles-that-follow-the-current-models
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0190-a-task-settles-on-the-facts-its-gate-will-check
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0191-claims-with-receipts-and-contracts-as-they-ship
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0192-owned-skills-that-describe-the-product-as-it-is
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0193-baseline-guides-that-describe-the-product-as-it-is
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0194-a-skill-and-a-command-guide-read-one-command-at-a-time
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0195-owned-skills-and-a-release-step-that-follow-the-bundle
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0196-a-notice-when-profiles-fall-behind
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0199-stack-rules-that-say-what-they-mean
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0200-a-skill-snapshot-that-matches-its-upstream
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0202-a-qa-gate-that-reruns-only-stale-rows
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0205-an-advisory-judge-for-spec-authoring
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0206-stack-rules-with-force-and-the-rules-adopters-repeat
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0208-a-baseline-that-follows-the-reshaped-skills-catalog
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0209-sources-that-share-a-context-share-a-spec
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0210-evidence-snapshots-that-stay-small
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0004-watch-merge-readiness/qa/qa-report-2026-07-05.md
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0211-a-delivery-queue-that-finishes-without-intervention
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0212-gates-and-run-storage-that-let-a-correct-delivery-finish
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0213-a-test-suite-that-does-not-flake
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0214-measure-before-changing
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0216-baseline-wording-left-after-the-stack-wave
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0217-a-cursor-runtime-to-measure-grok-on
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0218-the-jev-router-on-docs-and-chore-tasks
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0219-a-delivery-that-survives-archive-requeue-and-review
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0220-tests-and-pins-that-hold-in-every-environment
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0221-a-delivery-queue-that-runs-the-binary-its-item-builds
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0222-a-review-through-claude-that-keeps-its-verdict
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0223-adjustments-the-adopters-asked-for
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0224-an-archived-retry-that-needs-no-recorded-candidate
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0225-a-jev-ceiling-the-maintainer-sets
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0226-an-archived-spec-keeps-its-links
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0227-reconcile-releases-the-runs-of-merged-specs
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0228-queue-items-that-stay-current-with-main
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0229-a-jev-router-that-checks-credit-and-names-its-model
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0230-retire-the-jev-router
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0231-checks-that-hold-in-delivery
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0232-a-queue-that-sees-a-pull-request-merged-by-hand
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0233-a-light-tier-on-open-models
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0234-an-openrouter-key-per-stage
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0235-one-qa-partial-policy
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0236-baseline-update-with-a-repository-profile
+=== RUN   TestArchivedQAReportCorpusRemainsReadable/0237-review-selection-failures-that-say-why
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0005-tui-cockpit/qa/qa-report-2026-07-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0006-acpx-run-robustness/qa/qa-report-2026-07-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0007-command-lifecycle/qa/qa-report-2026-07-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0008-worktree-isolation/qa/qa-report-2026-07-05.md
+--- PASS: TestArchivedQAReportCorpusRemainsReadable (0.22s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0001-implement-command (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0002-acpx-migration (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0004-watch-merge-readiness (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0005-tui-cockpit (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0006-acpx-run-robustness (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0007-command-lifecycle (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0008-worktree-isolation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0009-parallel-scheduling (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0011-storage-lifecycle (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0013-codex-runtime-hygiene (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0014-run-store-retention (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0016-worktree-bootstrap (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0017-run-discovery (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0018-external-spec-root (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0019-run-outcome-notifications (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0020-run-browser (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0021-cockpit-visual-fidelity (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0022-cleanup-robustness (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0023-agent-model-catalog-and-isolation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0024-context-efficient-runs (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0025-optional-reasoning-effort (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0026-model-fallback-guardrail (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0027-review-loop-integrity (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0028-settlement-and-reporting (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0029-launch-and-recovery-fixes (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0030-context-driven-agent-instructions (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0031-decision-driven-setup-generation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0032-deterministic-agent-session-cancellation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0033-console-log-tool-summary-deduplication (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0034-release-plan (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0035-agent-selection-profiles (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0036-doctor-skill-readiness (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0037-terminal-outcome-integrity (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0038-terminal-run-worktree-reconciliation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0039-review-source-evidence-and-detached-outcomes (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0041-agent-selection-runtime-readiness (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0042-verification-capacity-and-daemon-task-settlement (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0043-context-driven-baseline-coverage-and-skill-restoration (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0044-upgrade-retention-and-formatter-compatibility (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0045-context-driven-baseline-0-0-1-reset (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0046-public-context-driven-baseline-command (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0047-context-driven-guidance-composition (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0048-context-driven-project-decisions-and-spec-constraints (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0050-doctor-skill-readiness-hardening (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0051-doctor-readiness-contract-reconciliation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0052-claude-adapter-standardization (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0053-qa-gate-reachability-and-verdict-semantics (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0054-tooling-task-and-verification-hygiene (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0055-owner-identity-without-fork (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0056-profiles-configure-merge-semantics (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0057-baseline-capability-evidence-and-retention (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0058-npm-trusted-publishing-and-release-preflight (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0059-run-storage-compaction-and-global-sanitation (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0060-spec-owned-reference-lifecycle (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0061-repository-derived-skill-requirements (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0062-baseline-digest-regeneration-bootstrap (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0064-spec-artifact-consistency-gate (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0065-loop-order-and-verification-honesty (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0066-run-teardown-reclaims-what-it-created (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0067-derived-artifact-regeneration-boundary (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0068-spec-close-audit (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0069-review-run-targets-its-pull-request (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0070-declared-unreachable-acceptance (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0072-qa-is-a-task-not-a-flag (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0073-skill-versions-decoupled-from-the-binary (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0074-git-spawn-economy (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0075-typed-docs-backlog (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0076-force-stop-exit-proof (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0077-a-green-check-is-not-a-review (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0078-roundfix-asks-for-the-review (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0079-one-door-for-fleet-knowledge (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0080-cheap-detectors-run-before-the-gate (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0081-a-journal-cheap-to-write-and-keep (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0082-the-manifest-already-answered-that (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0083-a-gate-that-can-say-no (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0084-an-update-that-can-run (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0085-what-an-agent-reads-before-it-decides (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0088-a-third-runtime-that-can-run (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0089-an-effort-the-runtime-actually-receives (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0090-a-gate-that-could-have-failed (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0091-a-proof-that-can-refuse (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0092-a-run-that-can-hand-back-its-work (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0093-a-spec-that-validates-itself (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0094-one-history-root-under-docs (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0095-a-verification-that-ran-before-anyone-believed-it (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0096-a-failure-the-agent-can-read (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0097-a-wave-that-cannot-collide (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0098-a-hook-that-cannot-outrank-the-gate (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0103-a-suite-that-leaks-nothing (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0105-the-gates-own-economics (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0113-a-gate-report-that-does-not-block-its-successor (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0113-a-refused-gate-writes-its-refusal-once (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0114-an-audit-that-reads-the-authorization-it-was-given (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0116-a-verdict-that-states-its-own-scope (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0117-a-window-the-preflight-owns (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0118-a-task-proved-once-does-not-run-twice (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0119-spec-contained-authorization (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0130-documentation-cleanup-compatibility (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0131-a-failed-gate-accepts-its-repair (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0132-a-grant-read-exactly-where-it-lives (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0133-a-fixture-that-does-not-spawn-per-test (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0134-a-governed-deletion-the-gate-can-see (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0135-a-rename-the-gate-sees-from-both-sides (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0136-a-rename-the-committer-can-stage (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0137-a-fixture-that-carries-its-committer (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0138-a-matrix-the-spec-declares (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0139-a-suite-that-passes-where-it-runs (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0140-a-spec-traces-the-promises-it-makes (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0141-a-commit-that-carries-the-work-and-nothing-else (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0142-an-absent-ref-is-named-absent (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0143-a-repository-says-who-reviews-before-the-pull-request (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0144-a-run-stops-when-its-budget-is-spent (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0145-a-runner-that-owns-its-lock (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0146-a-gate-that-runs-the-analyzer (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0147-a-planner-that-reads-both-tag-spellings (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0148-a-profile-that-declares-both-tiers (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0149-a-supported-way-to-reopen-a-settled-gate (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0150-a-reopen-that-cannot-be-raced (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0151-a-supersession-the-archive-can-see (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0152-one-declared-acceptance-policy (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0153-a-reviewer-the-workflow-runs (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0154-evidence-when-the-target-branch-is-gone (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0155-a-verify-that-runs-what-changed (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0156-a-delivery-loop-that-outlives-the-session (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0157-reconciliation-and-one-repository-identity (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0158-daemon-verification-and-access-readiness (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0159-archive-override-and-authoring-rules (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0160-a-review-that-reaches-a-verdict (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0161-deliver-ready-for-real-repositories (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0162-a-durable-repository-key-per-run (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0163-baseline-decisions-and-regeneration (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0164-knowledge-lifecycle-and-capture (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0165-a-measured-run-ceiling (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0166-docs-changes-run-the-tests-that-read-them (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0167-verification-and-readiness-follow-ups (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0168-deliver-one-worktree-per-item (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0169-override-and-ordinal-follow-ups (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0170-authoring-that-fails-before-dispatch (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0171-a-deterministic-suite-under-load (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0172-a-qa-gate-that-tells-the-truth (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0173-a-delivery-queue-that-recovers (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0174-operator-surfaces-that-tell-the-truth (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0175-cleanup-after-a-squash-merge (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0176-baseline-follow-ups-and-the-incremental-tier (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0177-runs-that-fit-their-budget-and-park-honestly (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0178-a-qa-audit-across-every-run-of-a-spec (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0179-review-findings-with-evidence-and-no-unselected-providers (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0180-a-prepared-queue-that-revalidates-before-each-spec (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0181-gates-that-refuse-only-what-someone-can-act-on (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0182-delivery-that-reviews-and-retries-from-where-the-item-stands (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0183-run-storage-that-says-what-it-holds (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0184-baseline-plans-that-show-what-a-history-move-breaks (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0186-citation-scans-that-read-only-what-they-mean-to (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0187-a-queue-that-recovers-without-a-supervisor (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0188-a-grant-that-authorizes-delivery-without-governed-paths (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0189-profiles-that-follow-the-current-models (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0190-a-task-settles-on-the-facts-its-gate-will-check (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0191-claims-with-receipts-and-contracts-as-they-ship (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0192-owned-skills-that-describe-the-product-as-it-is (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0193-baseline-guides-that-describe-the-product-as-it-is (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0194-a-skill-and-a-command-guide-read-one-command-at-a-time (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0195-owned-skills-and-a-release-step-that-follow-the-bundle (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0196-a-notice-when-profiles-fall-behind (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0199-stack-rules-that-say-what-they-mean (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0200-a-skill-snapshot-that-matches-its-upstream (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0202-a-qa-gate-that-reruns-only-stale-rows (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0205-an-advisory-judge-for-spec-authoring (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0206-stack-rules-with-force-and-the-rules-adopters-repeat (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0208-a-baseline-that-follows-the-reshaped-skills-catalog (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0209-sources-that-share-a-context-share-a-spec (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0210-evidence-snapshots-that-stay-small (0.01s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0211-a-delivery-queue-that-finishes-without-intervention (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0212-gates-and-run-storage-that-let-a-correct-delivery-finish (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0213-a-test-suite-that-does-not-flake (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0214-measure-before-changing (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0216-baseline-wording-left-after-the-stack-wave (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0217-a-cursor-runtime-to-measure-grok-on (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0218-the-jev-router-on-docs-and-chore-tasks (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0219-a-delivery-that-survives-archive-requeue-and-review (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0220-tests-and-pins-that-hold-in-every-environment (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0221-a-delivery-queue-that-runs-the-binary-its-item-builds (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0222-a-review-through-claude-that-keeps-its-verdict (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0223-adjustments-the-adopters-asked-for (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0224-an-archived-retry-that-needs-no-recorded-candidate (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0225-a-jev-ceiling-the-maintainer-sets (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0226-an-archived-spec-keeps-its-links (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0227-reconcile-releases-the-runs-of-merged-specs (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0228-queue-items-that-stay-current-with-main (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0229-a-jev-router-that-checks-credit-and-names-its-model (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0230-retire-the-jev-router (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0231-checks-that-hold-in-delivery (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0232-a-queue-that-sees-a-pull-request-merged-by-hand (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0233-a-light-tier-on-open-models (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0234-an-openrouter-key-per-stage (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0235-one-qa-partial-policy (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0236-baseline-update-with-a-repository-profile (0.00s)
+    --- PASS: TestArchivedQAReportCorpusRemainsReadable/0237-review-selection-failures-that-say-why (0.00s)
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0009-parallel-scheduling/qa/qa-report-2026-07-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0011-storage-lifecycle/qa/qa-report-2026-07-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0013-codex-runtime-hygiene/qa/qa-report-2026-07-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0014-run-store-retention/qa/qa-report-2026-07-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0016-worktree-bootstrap/qa/qa-report-2026-07-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0017-run-discovery/qa/qa-report-2026-07-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0018-external-spec-root/qa/qa-report-2026-07-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0019-run-outcome-notifications/qa/qa-report-2026-07-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0020-run-browser/qa/qa-report-2026-07-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0021-cockpit-visual-fidelity/qa/qa-report-2026-07-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0022-cleanup-robustness/qa/qa-report-2026-07-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0023-agent-model-catalog-and-isolation/qa/qa-report-2026-07-15.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0024-context-efficient-runs/qa/qa-report-2026-07-10.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0025-optional-reasoning-effort/qa/qa-report-2026-07-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0026-model-fallback-guardrail/qa/qa-report-2026-07-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0027-review-loop-integrity/qa/qa-report-2026-07-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0028-settlement-and-reporting/qa/qa-report-2026-07-15.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0029-launch-and-recovery-fixes/qa/qa-report-2026-07-15.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0030-context-driven-agent-instructions/qa/qa-report-2026-07-16-manual-variations.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0030-context-driven-agent-instructions/qa/qa-report-2026-07-16-post-spec0031-rerun-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0030-context-driven-agent-instructions/qa/qa-report-2026-07-16-post-spec0031-rerun-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0031-decision-driven-setup-generation/qa/qa-report-2026-07-16.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0032-deterministic-agent-session-cancellation/qa/qa-report-2026-07-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0033-console-log-tool-summary-deduplication/qa/qa-report-2026-07-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0034-release-plan/qa/qa-report-2026-07-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0035-agent-selection-profiles/qa/qa-report-2026-07-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0036-doctor-skill-readiness/qa/qa-report-2026-07-26-01-partial.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0036-doctor-skill-readiness/qa/qa-report-2026-07-26.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0037-terminal-outcome-integrity/qa/qa-report-2026-07-27.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0038-terminal-run-worktree-reconciliation/qa/qa-report-2026-07-27.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0041-agent-selection-runtime-readiness/qa/qa-report-2026-07-18.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0042-verification-capacity-and-daemon-task-settlement/qa/qa-report-2026-07-28-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0042-verification-capacity-and-daemon-task-settlement/qa/qa-report-2026-07-28-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0042-verification-capacity-and-daemon-task-settlement/qa/qa-report-2026-07-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0043-context-driven-baseline-coverage-and-skill-restoration/qa/qa-report-2026-07-22.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0044-upgrade-retention-and-formatter-compatibility/qa/qa-report-2026-07-22.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0045-context-driven-baseline-0-0-1-reset/qa/qa-report-2026-07-23-aa84d5a-fail.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0045-context-driven-baseline-0-0-1-reset/qa/qa-report-2026-07-23.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0046-public-context-driven-baseline-command/qa/qa-report-2026-07-23-release-ready.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0046-public-context-driven-baseline-command/qa/qa-report-2026-07-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0047-context-driven-guidance-composition/qa/qa-report-2026-07-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0047-context-driven-guidance-composition/qa/qa-report-2026-07-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0048-context-driven-project-decisions-and-spec-constraints/qa/qa-report-2026-07-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0050-doctor-skill-readiness-hardening/qa/qa-report-2026-07-26.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0051-doctor-readiness-contract-reconciliation/qa/qa-report-2026-07-26.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0052-claude-adapter-standardization/qa/qa-report-2026-07-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0053-qa-gate-reachability-and-verdict-semantics/qa/qa-report-2026-07-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0054-tooling-task-and-verification-hygiene/qa/qa-report-2026-07-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0055-owner-identity-without-fork/qa/qa-report-2026-07-31.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0057-baseline-capability-evidence-and-retention/qa/qa-report-2026-08-02-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0057-baseline-capability-evidence-and-retention/qa/qa-report-2026-08-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-07-31.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0059-run-storage-compaction-and-global-sanitation/qa/qa-report-2026-08-06-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0059-run-storage-compaction-and-global-sanitation/qa/qa-report-2026-08-06-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0059-run-storage-compaction-and-global-sanitation/qa/qa-report-2026-08-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0060-spec-owned-reference-lifecycle/qa/qa-report-2026-07-31.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0061-repository-derived-skill-requirements/qa/qa-report-2026-07-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0062-baseline-digest-regeneration-bootstrap/qa/qa-report-2026-08-01-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0062-baseline-digest-regeneration-bootstrap/qa/qa-report-2026-08-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-04-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-04-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0065-loop-order-and-verification-honesty/qa/qa-report-2026-08-05-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0065-loop-order-and-verification-honesty/qa/qa-report-2026-08-05-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0065-loop-order-and-verification-honesty/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0066-run-teardown-reclaims-what-it-created/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0068-spec-close-audit/qa/qa-report-2026-08-04-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0068-spec-close-audit/qa/qa-report-2026-08-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0069-review-run-targets-its-pull-request/qa/qa-report-2026-08-05-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0069-review-run-targets-its-pull-request/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0070-declared-unreachable-acceptance/qa/qa-report-2026-08-04-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0070-declared-unreachable-acceptance/qa/qa-report-2026-08-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0073-skill-versions-decoupled-from-the-binary/qa/qa-report-2026-08-06-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0073-skill-versions-decoupled-from-the-binary/qa/qa-report-2026-08-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0074-git-spawn-economy/qa/qa-report-2026-08-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0075-typed-docs-backlog/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0076-force-stop-exit-proof/qa/qa-report-2026-08-04-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0076-force-stop-exit-proof/qa/qa-report-2026-08-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0077-a-green-check-is-not-a-review/qa/qa-report-2026-08-05-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0077-a-green-check-is-not-a-review/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0081-a-journal-cheap-to-write-and-keep/qa/qa-report-2026-08-11-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0081-a-journal-cheap-to-write-and-keep/qa/qa-report-2026-08-11-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0081-a-journal-cheap-to-write-and-keep/qa/qa-report-2026-08-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0082-the-manifest-already-answered-that/qa/qa-report-2026-08-07-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0082-the-manifest-already-answered-that/qa/qa-report-2026-08-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0083-a-gate-that-can-say-no/qa/qa-report-2026-08-07.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0084-an-update-that-can-run/qa/qa-report-2026-08-08.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-2026-08-11-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-2026-08-11-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-2026-08-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0088-a-third-runtime-that-can-run/qa/qa-report-2026-08-08.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0089-an-effort-the-runtime-actually-receives/qa/qa-report-2026-08-09-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0089-an-effort-the-runtime-actually-receives/qa/qa-report-2026-08-09.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0090-a-gate-that-could-have-failed/qa/qa-report-2026-08-09-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0090-a-gate-that-could-have-failed/qa/qa-report-2026-08-09.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0093-a-spec-that-validates-itself/qa/qa-report-2026-08-09-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0093-a-spec-that-validates-itself/qa/qa-report-2026-08-09-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0093-a-spec-that-validates-itself/qa/qa-report-2026-08-09.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0095-a-verification-that-ran-before-anyone-believed-it/qa/qa-report-2026-08-14-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0095-a-verification-that-ran-before-anyone-believed-it/qa/qa-report-2026-08-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0096-a-failure-the-agent-can-read/qa/qa-report-2026-08-16-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0096-a-failure-the-agent-can-read/qa/qa-report-2026-08-16.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0097-a-wave-that-cannot-collide/qa/qa-report-2026-09-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-15-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-15.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0105-the-gates-own-economics/qa/qa-report-2026-08-31.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0114-an-audit-that-reads-the-authorization-it-was-given/qa/qa-report-2026-08-15-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0114-an-audit-that-reads-the-authorization-it-was-given/qa/qa-report-2026-08-15-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0114-an-audit-that-reads-the-authorization-it-was-given/qa/qa-report-2026-08-15.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0116-a-verdict-that-states-its-own-scope/qa/qa-report-2026-08-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0117-a-window-the-preflight-owns/qa/qa-report-2026-08-26.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0118-a-task-proved-once-does-not-run-twice/qa/qa-report-2026-08-27.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-09.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0130-documentation-cleanup-compatibility/qa/qa-report-2026-09-09.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0131-a-failed-gate-accepts-its-repair/qa/qa-report-2026-09-10.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0132-a-grant-read-exactly-where-it-lives/qa/qa-report-2026-09-11-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0132-a-grant-read-exactly-where-it-lives/qa/qa-report-2026-09-11.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0133-a-fixture-that-does-not-spawn-per-test/qa/qa-report-2026-09-13-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0133-a-fixture-that-does-not-spawn-per-test/qa/qa-report-2026-09-13.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0134-a-governed-deletion-the-gate-can-see/qa/qa-report-2026-09-14-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0134-a-governed-deletion-the-gate-can-see/qa/qa-report-2026-09-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0135-a-rename-the-gate-sees-from-both-sides/qa/qa-report-2026-09-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0136-a-rename-the-committer-can-stage/qa/qa-report-2026-09-14-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0136-a-rename-the-committer-can-stage/qa/qa-report-2026-09-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0137-a-fixture-that-carries-its-committer/qa/qa-report-2026-09-14.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0138-a-matrix-the-spec-declares/qa/qa-report-2026-09-16.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0139-a-suite-that-passes-where-it-runs/qa/qa-report-2026-09-16.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0140-a-spec-traces-the-promises-it-makes/qa/qa-report-2026-09-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0141-a-commit-that-carries-the-work-and-nothing-else/qa/qa-report-2026-09-17-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0141-a-commit-that-carries-the-work-and-nothing-else/qa/qa-report-2026-09-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0142-an-absent-ref-is-named-absent/qa/qa-report-2026-09-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0143-a-repository-says-who-reviews-before-the-pull-request/qa/qa-report-2026-09-17.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0143-a-repository-says-who-reviews-before-the-pull-request/qa/qa-report-2026-09-18.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0144-a-run-stops-when-its-budget-is-spent/qa/qa-report-2026-09-18-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0144-a-run-stops-when-its-budget-is-spent/qa/qa-report-2026-09-18.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0145-a-runner-that-owns-its-lock/qa/qa-report-2026-09-18.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0146-a-gate-that-runs-the-analyzer/qa/qa-report-2026-09-18-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0146-a-gate-that-runs-the-analyzer/qa/qa-report-2026-09-18.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0147-a-planner-that-reads-both-tag-spellings/qa/qa-report-2026-09-18.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0148-a-profile-that-declares-both-tiers/qa/qa-report-2026-09-19.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate/qa/qa-report-2026-09-19-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate/qa/qa-report-2026-09-19-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate/qa/qa-report-2026-09-19.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0150-a-reopen-that-cannot-be-raced/qa/qa-report-2026-09-19-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0150-a-reopen-that-cannot-be-raced/qa/qa-report-2026-09-19-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0150-a-reopen-that-cannot-be-raced/qa/qa-report-2026-09-19.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0151-a-supersession-the-archive-can-see/qa/qa-report-2026-09-19.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0151-a-supersession-the-archive-can-see/qa/qa-report-2026-09-20-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0151-a-supersession-the-archive-can-see/qa/qa-report-2026-09-20.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0152-one-declared-acceptance-policy/qa/qa-report-2026-09-21-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0152-one-declared-acceptance-policy/qa/qa-report-2026-09-21-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0152-one-declared-acceptance-policy/qa/qa-report-2026-09-21.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0153-a-reviewer-the-workflow-runs/qa/qa-report-2026-09-22-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0153-a-reviewer-the-workflow-runs/qa/qa-report-2026-09-22.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0154-evidence-when-the-target-branch-is-gone/qa/qa-report-2026-09-23-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0154-evidence-when-the-target-branch-is-gone/qa/qa-report-2026-09-23-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0154-evidence-when-the-target-branch-is-gone/qa/qa-report-2026-09-23.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0155-a-verify-that-runs-what-changed/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0155-a-verify-that-runs-what-changed/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0156-a-delivery-loop-that-outlives-the-session/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0156-a-delivery-loop-that-outlives-the-session/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0157-reconciliation-and-one-repository-identity/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0157-reconciliation-and-one-repository-identity/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0158-daemon-verification-and-access-readiness/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0158-daemon-verification-and-access-readiness/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0159-archive-override-and-authoring-rules/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0159-archive-override-and-authoring-rules/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0161-deliver-ready-for-real-repositories/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0161-deliver-ready-for-real-repositories/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0162-a-durable-repository-key-per-run/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0162-a-durable-repository-key-per-run/qa/qa-report-2026-09-24-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0162-a-durable-repository-key-per-run/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0163-baseline-decisions-and-regeneration/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0164-knowledge-lifecycle-and-capture/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0165-a-measured-run-ceiling/qa/qa-report-2026-09-24-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0165-a-measured-run-ceiling/qa/qa-report-2026-09-24.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0166-docs-changes-run-the-tests-that-read-them/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0167-verification-and-readiness-follow-ups/qa/qa-report-2026-09-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0167-verification-and-readiness-follow-ups/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0169-override-and-ordinal-follow-ups/qa/qa-report-2026-09-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0169-override-and-ordinal-follow-ups/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0170-authoring-that-fails-before-dispatch/qa/qa-report-2026-09-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0170-authoring-that-fails-before-dispatch/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0172-a-qa-gate-that-tells-the-truth/qa/qa-report-2026-09-25-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0172-a-qa-gate-that-tells-the-truth/qa/qa-report-2026-09-25.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0173-a-delivery-queue-that-recovers/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0174-operator-surfaces-that-tell-the-truth/qa/qa-report-2026-09-28-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0174-operator-surfaces-that-tell-the-truth/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0175-cleanup-after-a-squash-merge/qa/qa-report-2026-09-28-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0175-cleanup-after-a-squash-merge/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0176-baseline-follow-ups-and-the-incremental-tier/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/qa/qa-report-2026-09-28-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/qa/qa-report-2026-09-28-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/qa/qa-report-2026-09-28.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/qa/qa-report-2026-09-29-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0183-run-storage-that-says-what-it-holds/qa/qa-report-2026-09-29-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0183-run-storage-that-says-what-it-holds/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0184-baseline-plans-that-show-what-a-history-move-breaks/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record/qa/qa-report-2026-09-29.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0186-citation-scans-that-read-only-what-they-mean-to/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0187-a-queue-that-recovers-without-a-supervisor/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0188-a-grant-that-authorizes-delivery-without-governed-paths/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0189-profiles-that-follow-the-current-models/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0191-claims-with-receipts-and-contracts-as-they-ship/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0192-owned-skills-that-describe-the-product-as-it-is/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0196-a-notice-when-profiles-fall-behind/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0199-stack-rules-that-say-what-they-mean/qa/qa-report-2026-09-30.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0202-a-qa-gate-that-reruns-only-stale-rows/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0205-an-advisory-judge-for-spec-authoring/qa/qa-report-2026-10-01-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0205-an-advisory-judge-for-spec-authoring/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0206-stack-rules-with-force-and-the-rules-adopters-repeat/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0208-a-baseline-that-follows-the-reshaped-skills-catalog/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0209-sources-that-share-a-context-share-a-spec/qa/qa-report-2026-10-01-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0209-sources-that-share-a-context-share-a-spec/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0210-evidence-snapshots-that-stay-small/qa/qa-report-2026-10-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0211-a-delivery-queue-that-finishes-without-intervention/qa/qa-report-2026-10-02-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0211-a-delivery-queue-that-finishes-without-intervention/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0212-gates-and-run-storage-that-let-a-correct-delivery-finish/qa/qa-report-2026-10-02-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0212-gates-and-run-storage-that-let-a-correct-delivery-finish/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0213-a-test-suite-that-does-not-flake/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0214-measure-before-changing/qa/qa-report-2026-10-02-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0214-measure-before-changing/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0216-baseline-wording-left-after-the-stack-wave/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0217-a-cursor-runtime-to-measure-grok-on/qa/qa-report-2026-10-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/qa/qa-report-2026-10-02-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/qa/qa-report-2026-10-02.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0219-a-delivery-that-survives-archive-requeue-and-review/qa/qa-report-2026-10-03-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0219-a-delivery-that-survives-archive-requeue-and-review/qa/qa-report-2026-10-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0220-tests-and-pins-that-hold-in-every-environment/qa/qa-report-2026-10-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0221-a-delivery-queue-that-runs-the-binary-its-item-builds/qa/qa-report-2026-10-03.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0222-a-review-through-claude-that-keeps-its-verdict/qa/qa-report-2026-10-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0223-adjustments-the-adopters-asked-for/qa/qa-report-2026-10-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/qa/qa-report-2026-10-04-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/qa/qa-report-2026-10-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0225-a-jev-ceiling-the-maintainer-sets/qa/qa-report-2026-10-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0226-an-archived-spec-keeps-its-links/qa/qa-report-2026-10-04.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0227-reconcile-releases-the-runs-of-merged-specs/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0230-retire-the-jev-router/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0231-checks-that-hold-in-delivery/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0232-a-queue-that-sees-a-pull-request-merged-by-hand/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0233-a-light-tier-on-open-models/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0234-an-openrouter-key-per-stage/qa/qa-report-2026-10-05.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0235-one-qa-partial-policy/qa/qa-report-2026-10-06-01.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0235-one-qa-partial-policy/qa/qa-report-2026-10-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0236-baseline-update-with-a-repository-profile/qa/qa-report-2026-10-06.md
+=== RUN   TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0237-review-selection-failures-that-say-why/qa/qa-report-2026-10-06.md
+--- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive (3.56s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0001-implement-command/qa/qa-report-2026-07-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0002-acpx-migration/qa/qa-report-2026-07-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0004-watch-merge-readiness/qa/qa-report-2026-07-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0005-tui-cockpit/qa/qa-report-2026-07-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0006-acpx-run-robustness/qa/qa-report-2026-07-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0007-command-lifecycle/qa/qa-report-2026-07-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0008-worktree-isolation/qa/qa-report-2026-07-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0009-parallel-scheduling/qa/qa-report-2026-07-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0011-storage-lifecycle/qa/qa-report-2026-07-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0013-codex-runtime-hygiene/qa/qa-report-2026-07-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0014-run-store-retention/qa/qa-report-2026-07-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0016-worktree-bootstrap/qa/qa-report-2026-07-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0017-run-discovery/qa/qa-report-2026-07-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0018-external-spec-root/qa/qa-report-2026-07-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0019-run-outcome-notifications/qa/qa-report-2026-07-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0020-run-browser/qa/qa-report-2026-07-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0021-cockpit-visual-fidelity/qa/qa-report-2026-07-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0022-cleanup-robustness/qa/qa-report-2026-07-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0023-agent-model-catalog-and-isolation/qa/qa-report-2026-07-15.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0024-context-efficient-runs/qa/qa-report-2026-07-10.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0025-optional-reasoning-effort/qa/qa-report-2026-07-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0026-model-fallback-guardrail/qa/qa-report-2026-07-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0027-review-loop-integrity/qa/qa-report-2026-07-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0028-settlement-and-reporting/qa/qa-report-2026-07-15.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0029-launch-and-recovery-fixes/qa/qa-report-2026-07-15.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0030-context-driven-agent-instructions/qa/qa-report-2026-07-16-manual-variations.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0030-context-driven-agent-instructions/qa/qa-report-2026-07-16-post-spec0031-rerun-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0030-context-driven-agent-instructions/qa/qa-report-2026-07-16-post-spec0031-rerun-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0031-decision-driven-setup-generation/qa/qa-report-2026-07-16.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0032-deterministic-agent-session-cancellation/qa/qa-report-2026-07-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0033-console-log-tool-summary-deduplication/qa/qa-report-2026-07-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0034-release-plan/qa/qa-report-2026-07-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0035-agent-selection-profiles/qa/qa-report-2026-07-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0036-doctor-skill-readiness/qa/qa-report-2026-07-26-01-partial.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0036-doctor-skill-readiness/qa/qa-report-2026-07-26.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0037-terminal-outcome-integrity/qa/qa-report-2026-07-27.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0038-terminal-run-worktree-reconciliation/qa/qa-report-2026-07-27.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0041-agent-selection-runtime-readiness/qa/qa-report-2026-07-18.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0042-verification-capacity-and-daemon-task-settlement/qa/qa-report-2026-07-28-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0042-verification-capacity-and-daemon-task-settlement/qa/qa-report-2026-07-28-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0042-verification-capacity-and-daemon-task-settlement/qa/qa-report-2026-07-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0043-context-driven-baseline-coverage-and-skill-restoration/qa/qa-report-2026-07-22.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0044-upgrade-retention-and-formatter-compatibility/qa/qa-report-2026-07-22.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0045-context-driven-baseline-0-0-1-reset/qa/qa-report-2026-07-23-aa84d5a-fail.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0045-context-driven-baseline-0-0-1-reset/qa/qa-report-2026-07-23.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0046-public-context-driven-baseline-command/qa/qa-report-2026-07-23-release-ready.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0046-public-context-driven-baseline-command/qa/qa-report-2026-07-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0047-context-driven-guidance-composition/qa/qa-report-2026-07-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0047-context-driven-guidance-composition/qa/qa-report-2026-07-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0048-context-driven-project-decisions-and-spec-constraints/qa/qa-report-2026-07-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0050-doctor-skill-readiness-hardening/qa/qa-report-2026-07-26.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0051-doctor-readiness-contract-reconciliation/qa/qa-report-2026-07-26.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0052-claude-adapter-standardization/qa/qa-report-2026-07-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0053-qa-gate-reachability-and-verdict-semantics/qa/qa-report-2026-07-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0054-tooling-task-and-verification-hygiene/qa/qa-report-2026-07-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0055-owner-identity-without-fork/qa/qa-report-2026-07-31.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0057-baseline-capability-evidence-and-retention/qa/qa-report-2026-08-02-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0057-baseline-capability-evidence-and-retention/qa/qa-report-2026-08-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-07-31.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0059-run-storage-compaction-and-global-sanitation/qa/qa-report-2026-08-06-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0059-run-storage-compaction-and-global-sanitation/qa/qa-report-2026-08-06-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0059-run-storage-compaction-and-global-sanitation/qa/qa-report-2026-08-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0060-spec-owned-reference-lifecycle/qa/qa-report-2026-07-31.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0061-repository-derived-skill-requirements/qa/qa-report-2026-07-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0062-baseline-digest-regeneration-bootstrap/qa/qa-report-2026-08-01-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0062-baseline-digest-regeneration-bootstrap/qa/qa-report-2026-08-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-04-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-04-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0064-spec-artifact-consistency-gate/qa/qa-report-2026-08-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0065-loop-order-and-verification-honesty/qa/qa-report-2026-08-05-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0065-loop-order-and-verification-honesty/qa/qa-report-2026-08-05-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0065-loop-order-and-verification-honesty/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0066-run-teardown-reclaims-what-it-created/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0067-derived-artifact-regeneration-boundary/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0068-spec-close-audit/qa/qa-report-2026-08-04-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0068-spec-close-audit/qa/qa-report-2026-08-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0069-review-run-targets-its-pull-request/qa/qa-report-2026-08-05-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0069-review-run-targets-its-pull-request/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0070-declared-unreachable-acceptance/qa/qa-report-2026-08-04-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0070-declared-unreachable-acceptance/qa/qa-report-2026-08-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0072-qa-is-a-task-not-a-flag/qa/qa-report-2026-08-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0073-skill-versions-decoupled-from-the-binary/qa/qa-report-2026-08-06-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0073-skill-versions-decoupled-from-the-binary/qa/qa-report-2026-08-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0074-git-spawn-economy/qa/qa-report-2026-08-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0075-typed-docs-backlog/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0076-force-stop-exit-proof/qa/qa-report-2026-08-04-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0076-force-stop-exit-proof/qa/qa-report-2026-08-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0077-a-green-check-is-not-a-review/qa/qa-report-2026-08-05-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0077-a-green-check-is-not-a-review/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0080-cheap-detectors-run-before-the-gate/qa/qa-report-2026-08-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0081-a-journal-cheap-to-write-and-keep/qa/qa-report-2026-08-11-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0081-a-journal-cheap-to-write-and-keep/qa/qa-report-2026-08-11-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0081-a-journal-cheap-to-write-and-keep/qa/qa-report-2026-08-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0082-the-manifest-already-answered-that/qa/qa-report-2026-08-07-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0082-the-manifest-already-answered-that/qa/qa-report-2026-08-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0083-a-gate-that-can-say-no/qa/qa-report-2026-08-07.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0084-an-update-that-can-run/qa/qa-report-2026-08-08.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-2026-08-11-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-2026-08-11-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-2026-08-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0088-a-third-runtime-that-can-run/qa/qa-report-2026-08-08.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0089-an-effort-the-runtime-actually-receives/qa/qa-report-2026-08-09-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0089-an-effort-the-runtime-actually-receives/qa/qa-report-2026-08-09.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0090-a-gate-that-could-have-failed/qa/qa-report-2026-08-09-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0090-a-gate-that-could-have-failed/qa/qa-report-2026-08-09.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0091-a-proof-that-can-refuse/qa/qa-report-2026-08-10.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0092-a-run-that-can-hand-back-its-work/qa/qa-report-2026-08-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0093-a-spec-that-validates-itself/qa/qa-report-2026-08-09-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0093-a-spec-that-validates-itself/qa/qa-report-2026-08-09-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0093-a-spec-that-validates-itself/qa/qa-report-2026-08-09.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0095-a-verification-that-ran-before-anyone-believed-it/qa/qa-report-2026-08-14-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0095-a-verification-that-ran-before-anyone-believed-it/qa/qa-report-2026-08-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0096-a-failure-the-agent-can-read/qa/qa-report-2026-08-16-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0096-a-failure-the-agent-can-read/qa/qa-report-2026-08-16.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0097-a-wave-that-cannot-collide/qa/qa-report-2026-09-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-15-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-15.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0105-the-gates-own-economics/qa/qa-report-2026-08-31.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-gate-report-that-does-not-block-its-successor/qa/qa-report-2026-08-15.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0114-an-audit-that-reads-the-authorization-it-was-given/qa/qa-report-2026-08-15-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0114-an-audit-that-reads-the-authorization-it-was-given/qa/qa-report-2026-08-15-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0114-an-audit-that-reads-the-authorization-it-was-given/qa/qa-report-2026-08-15.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0116-a-verdict-that-states-its-own-scope/qa/qa-report-2026-08-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0117-a-window-the-preflight-owns/qa/qa-report-2026-08-26.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0118-a-task-proved-once-does-not-run-twice/qa/qa-report-2026-08-27.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-09.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0119-spec-contained-authorization/qa/qa-report-2026-09-10.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0130-documentation-cleanup-compatibility/qa/qa-report-2026-09-09.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0131-a-failed-gate-accepts-its-repair/qa/qa-report-2026-09-10.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0132-a-grant-read-exactly-where-it-lives/qa/qa-report-2026-09-11-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0132-a-grant-read-exactly-where-it-lives/qa/qa-report-2026-09-11.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0133-a-fixture-that-does-not-spawn-per-test/qa/qa-report-2026-09-13-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0133-a-fixture-that-does-not-spawn-per-test/qa/qa-report-2026-09-13.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0134-a-governed-deletion-the-gate-can-see/qa/qa-report-2026-09-14-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0134-a-governed-deletion-the-gate-can-see/qa/qa-report-2026-09-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0135-a-rename-the-gate-sees-from-both-sides/qa/qa-report-2026-09-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0136-a-rename-the-committer-can-stage/qa/qa-report-2026-09-14-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0136-a-rename-the-committer-can-stage/qa/qa-report-2026-09-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0137-a-fixture-that-carries-its-committer/qa/qa-report-2026-09-14.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0138-a-matrix-the-spec-declares/qa/qa-report-2026-09-16.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0139-a-suite-that-passes-where-it-runs/qa/qa-report-2026-09-16.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0140-a-spec-traces-the-promises-it-makes/qa/qa-report-2026-09-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0141-a-commit-that-carries-the-work-and-nothing-else/qa/qa-report-2026-09-17-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0141-a-commit-that-carries-the-work-and-nothing-else/qa/qa-report-2026-09-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0142-an-absent-ref-is-named-absent/qa/qa-report-2026-09-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0143-a-repository-says-who-reviews-before-the-pull-request/qa/qa-report-2026-09-17.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0143-a-repository-says-who-reviews-before-the-pull-request/qa/qa-report-2026-09-18.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0144-a-run-stops-when-its-budget-is-spent/qa/qa-report-2026-09-18-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0144-a-run-stops-when-its-budget-is-spent/qa/qa-report-2026-09-18.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0145-a-runner-that-owns-its-lock/qa/qa-report-2026-09-18.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0146-a-gate-that-runs-the-analyzer/qa/qa-report-2026-09-18-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0146-a-gate-that-runs-the-analyzer/qa/qa-report-2026-09-18.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0147-a-planner-that-reads-both-tag-spellings/qa/qa-report-2026-09-18.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0148-a-profile-that-declares-both-tiers/qa/qa-report-2026-09-19.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate/qa/qa-report-2026-09-19-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate/qa/qa-report-2026-09-19-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate/qa/qa-report-2026-09-19.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0150-a-reopen-that-cannot-be-raced/qa/qa-report-2026-09-19-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0150-a-reopen-that-cannot-be-raced/qa/qa-report-2026-09-19-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0150-a-reopen-that-cannot-be-raced/qa/qa-report-2026-09-19.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0151-a-supersession-the-archive-can-see/qa/qa-report-2026-09-19.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0151-a-supersession-the-archive-can-see/qa/qa-report-2026-09-20-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0151-a-supersession-the-archive-can-see/qa/qa-report-2026-09-20.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0152-one-declared-acceptance-policy/qa/qa-report-2026-09-21-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0152-one-declared-acceptance-policy/qa/qa-report-2026-09-21-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0152-one-declared-acceptance-policy/qa/qa-report-2026-09-21.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0153-a-reviewer-the-workflow-runs/qa/qa-report-2026-09-22-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0153-a-reviewer-the-workflow-runs/qa/qa-report-2026-09-22.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0154-evidence-when-the-target-branch-is-gone/qa/qa-report-2026-09-23-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0154-evidence-when-the-target-branch-is-gone/qa/qa-report-2026-09-23-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0154-evidence-when-the-target-branch-is-gone/qa/qa-report-2026-09-23.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0155-a-verify-that-runs-what-changed/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0155-a-verify-that-runs-what-changed/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0156-a-delivery-loop-that-outlives-the-session/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0156-a-delivery-loop-that-outlives-the-session/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0157-reconciliation-and-one-repository-identity/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0157-reconciliation-and-one-repository-identity/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0158-daemon-verification-and-access-readiness/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0158-daemon-verification-and-access-readiness/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0159-archive-override-and-authoring-rules/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0159-archive-override-and-authoring-rules/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0160-a-review-that-reaches-a-verdict/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0161-deliver-ready-for-real-repositories/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0161-deliver-ready-for-real-repositories/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0162-a-durable-repository-key-per-run/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0162-a-durable-repository-key-per-run/qa/qa-report-2026-09-24-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0162-a-durable-repository-key-per-run/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0163-baseline-decisions-and-regeneration/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0164-knowledge-lifecycle-and-capture/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0165-a-measured-run-ceiling/qa/qa-report-2026-09-24-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0165-a-measured-run-ceiling/qa/qa-report-2026-09-24.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0166-docs-changes-run-the-tests-that-read-them/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0167-verification-and-readiness-follow-ups/qa/qa-report-2026-09-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0167-verification-and-readiness-follow-ups/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0168-deliver-one-worktree-per-item/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0169-override-and-ordinal-follow-ups/qa/qa-report-2026-09-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0169-override-and-ordinal-follow-ups/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0170-authoring-that-fails-before-dispatch/qa/qa-report-2026-09-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0170-authoring-that-fails-before-dispatch/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0171-a-deterministic-suite-under-load/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0172-a-qa-gate-that-tells-the-truth/qa/qa-report-2026-09-25-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0172-a-qa-gate-that-tells-the-truth/qa/qa-report-2026-09-25.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0173-a-delivery-queue-that-recovers/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0174-operator-surfaces-that-tell-the-truth/qa/qa-report-2026-09-28-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0174-operator-surfaces-that-tell-the-truth/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0175-cleanup-after-a-squash-merge/qa/qa-report-2026-09-28-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0175-cleanup-after-a-squash-merge/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0176-baseline-follow-ups-and-the-incremental-tier/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/qa/qa-report-2026-09-28-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/qa/qa-report-2026-09-28-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/qa/qa-report-2026-09-28.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/qa/qa-report-2026-09-29-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0183-run-storage-that-says-what-it-holds/qa/qa-report-2026-09-29-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0183-run-storage-that-says-what-it-holds/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0184-baseline-plans-that-show-what-a-history-move-breaks/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record/qa/qa-report-2026-09-29.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0186-citation-scans-that-read-only-what-they-mean-to/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0187-a-queue-that-recovers-without-a-supervisor/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0188-a-grant-that-authorizes-delivery-without-governed-paths/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0189-profiles-that-follow-the-current-models/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0191-claims-with-receipts-and-contracts-as-they-ship/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0192-owned-skills-that-describe-the-product-as-it-is/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0196-a-notice-when-profiles-fall-behind/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0199-stack-rules-that-say-what-they-mean/qa/qa-report-2026-09-30.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0202-a-qa-gate-that-reruns-only-stale-rows/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0205-an-advisory-judge-for-spec-authoring/qa/qa-report-2026-10-01-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0205-an-advisory-judge-for-spec-authoring/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0206-stack-rules-with-force-and-the-rules-adopters-repeat/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0208-a-baseline-that-follows-the-reshaped-skills-catalog/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0209-sources-that-share-a-context-share-a-spec/qa/qa-report-2026-10-01-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0209-sources-that-share-a-context-share-a-spec/qa/qa-report-2026-10-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0210-evidence-snapshots-that-stay-small/qa/qa-report-2026-10-01.md (0.02s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0211-a-delivery-queue-that-finishes-without-intervention/qa/qa-report-2026-10-02-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0211-a-delivery-queue-that-finishes-without-intervention/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0212-gates-and-run-storage-that-let-a-correct-delivery-finish/qa/qa-report-2026-10-02-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0212-gates-and-run-storage-that-let-a-correct-delivery-finish/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0213-a-test-suite-that-does-not-flake/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0214-measure-before-changing/qa/qa-report-2026-10-02-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0214-measure-before-changing/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0216-baseline-wording-left-after-the-stack-wave/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0217-a-cursor-runtime-to-measure-grok-on/qa/qa-report-2026-10-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/qa/qa-report-2026-10-02-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/qa/qa-report-2026-10-02.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0219-a-delivery-that-survives-archive-requeue-and-review/qa/qa-report-2026-10-03-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0219-a-delivery-that-survives-archive-requeue-and-review/qa/qa-report-2026-10-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0220-tests-and-pins-that-hold-in-every-environment/qa/qa-report-2026-10-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0221-a-delivery-queue-that-runs-the-binary-its-item-builds/qa/qa-report-2026-10-03.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0222-a-review-through-claude-that-keeps-its-verdict/qa/qa-report-2026-10-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0223-adjustments-the-adopters-asked-for/qa/qa-report-2026-10-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/qa/qa-report-2026-10-04-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/qa/qa-report-2026-10-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0225-a-jev-ceiling-the-maintainer-sets/qa/qa-report-2026-10-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0226-an-archived-spec-keeps-its-links/qa/qa-report-2026-10-04.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0227-reconcile-releases-the-runs-of-merged-specs/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0230-retire-the-jev-router/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0231-checks-that-hold-in-delivery/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0232-a-queue-that-sees-a-pull-request-merged-by-hand/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0233-a-light-tier-on-open-models/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0234-an-openrouter-key-per-stage/qa/qa-report-2026-10-05.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0235-one-qa-partial-policy/qa/qa-report-2026-10-06-01.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0235-one-qa-partial-policy/qa/qa-report-2026-10-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0236-baseline-update-with-a-repository-profile/qa/qa-report-2026-10-06.md (0.01s)
+    --- PASS: TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive/docs/history/specs/0237-review-selection-failures-that-say-why/qa/qa-report-2026-10-06.md (0.01s)
+PASS
+suiteguard: guard cost: measured 2521 paths; fingerprint took 74.877667ms before and 62.491292ms after
+ok  	roundfix/internal/spec	3.818s

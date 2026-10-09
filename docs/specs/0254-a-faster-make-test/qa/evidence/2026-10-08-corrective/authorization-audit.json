@@ -1,0 +1,36 @@
+{
+  "task_01": {
+    "changed_governed": [
+      "docs/agents/specific-repository.md",
+      "internal/cli/cli_test.go"
+    ],
+    "unbounded_governed": [],
+    "authorization_precedes": true
+  },
+  "task_02": {
+    "changed_governed": [
+      "internal/baseline/derived_ownership_test.go",
+      "internal/spec/coverage_test.go",
+      "internal/speccheck/mechanical_test.go"
+    ],
+    "unbounded_governed": [],
+    "authorization_precedes": true
+  },
+  "task_03": {
+    "changed_governed": [],
+    "unbounded_governed": [],
+    "authorization_precedes": true
+  },
+  "task_04": {
+    "changed_governed": [],
+    "unbounded_governed": [],
+    "authorization_precedes": true
+  },
+  "task_06": {
+    "changed_governed": [
+      "internal/cli/cli_test.go"
+    ],
+    "unbounded_governed": [],
+    "authorization_precedes": true
+  }
+}

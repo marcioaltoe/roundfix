@@ -1,0 +1,17 @@
+{
+  "report": "closed fail",
+  "coverage_rows": 8,
+  "counts": {
+    "pass": 4,
+    "fail": 1,
+    "environment": 2,
+    "finding": 0,
+    "declared": 1,
+    "skipped": 0
+  },
+  "coverage_sources": "Requirements 1 and 9 plus non-waivable sources",
+  "seeded_fields_and_mechanical_skips": "preserved",
+  "additional_execution_constraints": "all evidence retained; Requirements 3 and 5 environment-blocked",
+  "evidence_links": "all resolve",
+  "tracked_implementation": "unchanged"
+}

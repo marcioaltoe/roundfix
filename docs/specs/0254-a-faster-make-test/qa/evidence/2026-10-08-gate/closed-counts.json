@@ -1,0 +1,14 @@
+{
+  "pass": 4,
+  "fail": 1,
+  "environment": 2,
+  "finding": 0,
+  "declared": 1,
+  "pending": 0,
+  "skipped": 0,
+  "coverage_rows": 8,
+  "additional_execution_environment_blocks": [
+    3,
+    5
+  ]
+}

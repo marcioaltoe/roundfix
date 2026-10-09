@@ -1,0 +1,163 @@
+import json,re
+from pathlib import Path
+E=Path(__file__).resolve().parent
+R=E.parents[1]/"qa-report-2026-10-09.md"
+M=json.loads((E/"measurements.json").read_text())
+P=json.loads((E/"suite-pairs.json").read_text())
+O=json.loads((E/"remaining-observables.json").read_text())
+F=json.loads((E/"focused-observables.json").read_text())
+required=["suite-start-1","suite-head-1","suite-start-2","suite-head-2","focused-rule","focused-selector","focused-profile","focused-archive","sabotage-rule","restored-rule","race","shuffle","selector","contracts-start","contracts-head"]
+assert all(n in M for n in required)
+assert all(v["status"]=="reaped" for v in json.loads((E/"started-pids.json").read_text()))
+failed=[]
+for n in required:
+ if n!="sabotage-rule" and M[n]["exit"]!=0:failed.append(f"{n}: exit {M[n]['exit']}")
+for p in P:
+ if not(p["both_exit_zero"] and p["wall_meets"] and p["sequential_meets"]):failed.append(f"pair {p['pair']}: required suite metric unmet")
+if not F["all_named_tests_pass"] or not F["all_profiles_pause"]:failed.append("focused named tests or profile pause evidence missing")
+if not F["sabotage"]["expected_failure"] or not F["sabotage"]["restored_pass"]:failed.append("rule sabotage/restoration proof missing")
+if not O["race"]["all_seven_pass"] or O["race"]["race_diagnostic"]:failed.append("seven-package race-safety proof failed")
+if not O["shuffle"]["all_seven_pass"]:failed.append("seven-package shuffled proof failed")
+if not O["selector"]["one_line_both_tags"]:failed.append("one-line selector proof failed")
+if not O["contracts"]["both_pass"] or not O["contracts"]["head_faster"]:failed.append("Full Contract Run pass/faster metric failed")
+verdict="fail" if failed else "partial"
+s=R.read_text();prefix=s.split("## Scope and environment",1)[0]
+prefix=prefix.replace("status: in-progress","status: closed").replace("verdict: pending","verdict: "+verdict)
+rows=[]
+for ident in ["R1","R7a","R7b","R7c","R7d","R7e","R9","R10","R11"]:
+ m=re.search(r"^### "+ident+r"\n.*?(?=^### |^## |\Z)",s,re.M|re.S);assert m,ident;rows.append(m[0].strip())
+head=(E/"head.txt").read_text().strip()
+body=f"""## Scope and environment
+
+Full authored task_05 gate at `{head}`, following completed task_01, task_02, task_03, task_04 and task_06. The terminal QA node depends on all non-QA leaves. No carried row, frontend or Surface Transcript is declared. The seeded mechanical authorization audit, skips and carry-forward reasons remain unchanged.
+
+Only Requirements 1 and 9 start with MUST run or MUST verify and therefore declare coverage sources. Together with repository Verification, the five outside-source observations, the Pull Request row and the PRD Unreachable Acceptance declaration, they form the nine-row matrix. The other Requirements still constrain execution; their mandatory observations below affect the verdict without introducing extra provenance sources.
+
+Fresh evidence is under [evidence/2026-10-09-gate](evidence/2026-10-09-gate). The public CLI is only the Run Worktree's ./bin/roundfix under disposable HOME/TMPDIR without provider keys. Measurements use fresh disposable clones at `2ce5abe83b63adbe238dacd4cff3bb74f8b84173` and audited head, separate warmed GOCACHE paths, Go 1.26.5 and the same 10-core macOS machine. Installed Rust toolchain binaries lead the isolated PATH; host metadata and the precise environment policy are in host.json. No real Agent Session, provider request, implementation edit, Task-status edit, commit, push, PR mutation or archive was performed.
+
+## Static gate
+
+Recorded Daemon fact: make verify-changed passed (exit 0); diagnostics removed on success. This repository Verification was not run again. GOCACHE=/private/tmp/roundfix-0254-qa09-build make build passed. The fresh binary's version is recorded in user_flow_binary and public-cli.json; its 93c4dac1 prefix independently matches audited head. Its dirty suffix reflects the seeded untracked qa/ content.
+
+./bin/roundfix spec check 0254-a-faster-make-test --strict passed with No findings and without authored Verification execution. The skipped detectors name absent Finding, Rollup, Backlog, Vocabulary Contract and reference-index artifacts; none removes an applicable source here. Exact accepted stdout/stderr are retained. The read-only archive --plan also passed in a keyless disposable profile and named only core/evidence files, with no reusable-knowledge candidate to promote. Its observation predates report closure; no archive action followed.
+
+## Row evidence
+
+"""+"\n\n".join(rows)+"\n\n"
+body+="""## Focused behavior and rule execution
+
+Requirements 2 and 4: all focused commands pass. focused-observables.json confirms every named profile/archive/selector test, the three intentional selector output breaks, unchanged Makefile wiring tests, all six profile pause events, 16 seeded rule cases plus the repository scan, and the seeded cross-class collision cases. Both full head suites also execute every ordinary test named or created by Tasks 01, 03 and 04.
+
+The rule's current counts are:
+
+| Package | Sequential Tests | Ceiling |
+| --- | ---: | ---: |
+"""
+for line in F["counts"]:
+ m=re.match(r"(internal/\w+): (\d+) Sequential Tests, ceiling (\d+)",line);body+=f"| {m[1]} | {m[2]} | {m[3]} |\n"
+body+="""
+In the disposable head clone only, removing the first Parallel call from TestArchiveRefusesASpecAFileStillPins makes the rule exit 1 and name internal/cli/archive_active_spec_path_test.go:31. Its original bytes are restored in a finally block; the restored rule passes. Exact diagnostic and exit results are retained. This deliberate failure is successful negative evidence, not a QA failure.
+
+Independent Git archive inventories at PinnedHistoryRevision contain the same nonempty set of 352 QA Reports; the narrowed glob materializes 352 regular files instead of 5,570. The live report-reader tests independently pass. archive-equivalence.json retains both sets and their hashes.
+
+Requirement 8: CONTEXT.md defines Sequential Test and Parallel Test Package, each with an Avoid line and ADR-0259 reference; glossary.json confirms both. The strict check independently has no Glossary Gap. No other introduced term is declared.
+
+## Performance execution
+
+Requirement 3 ran the exact go test -count=1 -parallel 16 -json ./... pair, starting clone then head clone, back to back. The first pair's load drift triggered the single authored repeat; both pairs are retained. The second also has load drift, so these numeric observations do not establish a stable same-load causal estimate. No favorable-run search or threshold change occurred during QA.
+
+| Pair | Revision | Exit | Wall s | User CPU s | System CPU s | CLI sequential s | Never-paused tests | 1-minute load before/after |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+"""
+for pair in [1,2]:
+ for label in ["start","head"]:
+  v=json.loads((E/f"suite-{label}-{pair}-summary.json").read_text());m=v["measurement"];q=v["sequential_cli"];rev="2ce5abe8" if label=="start" else "93c4dac1"
+  body+=f"| {pair} | {rev} | {m['exit']} | {m['wall']:.2f} | {m['user']:.2f} | {m['system']:.2f} | {q['elapsed_sum']:.2f} | {q['count']} | {m['load_before'][0]:.2f}/{m['load_after'][0]:.2f} |\n"
+body+="\nWall ratios: "+", ".join(f"{p['wall_ratio']*100:.2f}%" for p in P)+". CLI sequential-phase ratios: "+", ".join(f"{p['sequential_ratio']*100:.2f}%" for p in P)+". The current approved thresholds are 70% and 25%; suite-pairs.json records each decision. The phase sums terminal top-level tests that never paused, including skipped helpers, separately from the AST count. Every package's status and elapsed time, all three load averages before/after, and wall/user/system CPU are retained in the four summaries, raw JSON streams and measurements.json.\n"
+body+="""
+## Safety execution
+
+Requirement 5 uses the seven named packages with go test -count=1 -race -short -timeout 30m and then go test -count=1 -shuffle=on -v -timeout 20m. The short race mode skips the two authored Store journal harnesses; shuffle still runs them. Results and shuffle seeds are independently extracted into remaining-observables.json and shuffle-seeds.json.
+
+| Package | Race/short | Shuffle | Shuffle seed |
+| --- | --- | --- | --- |
+"""
+for i,pkg in enumerate(["cli","daemon","spec","speccheck","worktree","store","baseline"]):
+ a=O["race"]["packages"].get(pkg,{});b=O["shuffle"]["packages"].get(pkg,{});seeds=O["shuffle"]["shuffle_seeds"]
+ body+=f"| internal/{pkg} | {a.get('status','missing')} {a.get('detail','')} | {b.get('status','missing')} {b.get('detail','')} | {seeds[i] if len(seeds)>i else 'missing'} |\n"
+body+=f"\nRace command: exit {M['race']['exit']}, wall {M['race']['wall']:.2f} s; race diagnostic present: {O['race']['race_diagnostic']}. Shuffle command: exit {M['shuffle']['exit']}, wall {M['shuffle']['wall']:.2f} s. The complete transcripts preserve package/test results and seeds.\n"
+body+="""
+## Contract execution
+
+Requirement 6: go run -buildvcs=false ./cmd/verify-select -contracts -all prints exactly one stdout line beginning docscontract,repocontract. selector-observable.json retains stdout separately from the selection-summary stderr; independent named selector and unchanged Makefile wiring tests pass.
+
+| Revision | make verify-contracts exit | Wall s | User CPU s | System CPU s |
+| --- | ---: | ---: | ---: | ---: |
+"""
+for label,rev in [("start","2ce5abe8"),("head","93c4dac1")]:
+ m=M['contracts-'+label];body+=f"| {rev} | {m['exit']} | {m['wall']:.2f} | {m['user']:.2f} | {m['system']:.2f} |\n"
+C=O["contracts"];body+=f"\nHead/start Full Contract Run ratio: {C['wall_ratio']*100:.2f}%; head faster: {C['head_faster']}. Both commands ran back to back in their respective clones. This is the separately authored contract measurement, not a rerun of the Daemon's repository Verification. Exact commands, CPU/load and transcripts are retained.\n"
+body+="""
+## Scope and history
+
+Requirement 9's Git audit checks each of the five actual Task commits, their exact Context and Recorded paths, the operative grant and forbidden surfaces. No undeclared path, invalid Recorded path, unbounded Governed Path, prohibited configuration/production mutation or conversion meaning change was found. The 178 Task 01/02 Recorded paths are test files of named packages; Task 06's production Recorded paths match its declared dependency seams.
+
+The independent token comparison covers 207 pre-existing Task 01/02 conversion files, retaining literal contents and excluding only authorized Parallel calls, Sequential comments and formatting terminators. The separately authored rule implementation is excluded from that equivalence. Task 02's two single-test deliberate-failure fixtures retain their failing assertions after removing only the inserted Parallel lines. scope-audit.json, conversion-token-audit.json and the exact Task patches make the audit reproducible.
+
+Supplemental commit cd60e425 joins the Store writer before cleanup and checks timeout/cancellation on each of up to five bounded forge-probe attempts before checking a child that recorded its PID. It changes only those test files and Task 06 Context. Commit 93c4dac1 records the maintainer-approved 70% wall target. supplemental-commit-audit.json and both patches disclose these changes separately from Task commits.
+
+Historical limit: the CLI ceiling increased from Task 06's intermediate 8 to 11 during the earlier repair. Current 11 satisfies Task 06's at-most-12 requirement and the original maximum 40, but the history conflicts with the only-falls wording. This matrix measures current ceilings and declared scope; it does not establish historical ceiling monotonicity.
+
+## Outside evidence and isolation
+
+R7a is independent installed-toolchain evidence. R7c/R7e compare the original published papers with the PRD; their Java failure proportions are not treated as Go failure-rate estimates. R7d follows original Git revisions behind these read-only Secondbrain files:
+
+- /Users/marcio/dev/secondbrain/wiki/index.md (consulted index)
+- /Users/marcio/dev/secondbrain/projects/roundfix/mirror/docs/history/specs/0071-verification-cost.md
+- /Users/marcio/dev/secondbrain/projects/roundfix/mirror/docs/history/specs/0074-git-spawn-economy.md
+
+The qmd query failed with Metal-context and readonly-cache errors; it supplies no evidence. The original sources support per-test environments, proportional Verification and Git-spawn economy, but the narrower regeneration-gate attribution is unconfirmed in the inspected passages. Fresh mirror/original copies preserve these observations.
+
+Initial measurement attempts are not accepted timing: sandbox-attempt/ records the denied Unix socket bind; rust-isolation-attempt/ records rustfmt's missing default under the disposable HOME. A minimal isolated rustfmt --version with the installed toolchain bin proves the correction, and the accepted pairs pass afterward. Owned launchers interrupted/reaped their Go children; a process check found zero remaining executables under those exact temporary roots. No test, assertion or repository configuration changed. All accepted runner child PIDs are recorded as reaped.
+
+Initial GitHub inherited-profile attempts are retained without an isolation claim. The accepted re-observation uses disposable HOME/GH_CONFIG_DIR and a synthetic nonsecret token, and still cannot connect to api.github.com. No public CI log was reached; no cited CI duration is credited as current observation.
+
+## Findings
+
+"""
+if failed:
+ body+="Mandatory execution failures (blocking this gate):\n\n"+"\n".join("- "+x for x in failed)+"\n\nExact commands and diagnostics are retained in the corresponding transcripts. These failures do not invalidate the independent nine matrix observations; no unrelated row is finding-blocked.\n"
+else:
+ body+="No new blocking finding. F2's performance target is met under the approved 70% threshold; F3's scope declaration gap remains resolved by current declarations. F4's forge-startup failure and F5's Store race are not reproduced in either head suite or the required race/shuffle runs after cd60e425. This is current-run evidence, not a claim of exhaustive freedom from intermittent failures. Earlier reports remain unchanged.\n"
+body+="""
+## Blocked and skipped
+
+R7b is blocked (environment: network denied: api.github.com). Its exact attempted hosts/errors and unblocking action are recorded under the row. R11 is blocked (environment: no open Pull Request); every pre-PR control is answered, including absent Merge-Ready acceptance/current review artifact. That later review is still required.
+
+R10 is blocked (declared: post-merge CI suite budget), matching the pre-run PRD declaration. Its operator follow-up remains unproven: read the first main CI Verify after merge, compare the suite-time budget baseline, and propose a lower budget later. No local performance result substitutes for it.
+
+No QA row is skipped or finding-blocked. The seeded mechanical consequent-fix-declaration skip is preserved as a detector skip, not a skipped coverage row.
+
+## Coverage and final verdict
+
+Nine rows are terminal: six pass, two environment-blocked, one declared-blocked, zero finding-blocked, zero skipped and zero pending. Both declared verification Requirements and every non-waivable source appear in the matrix; no extra source appears in provenance. All mandatory execution checks and metrics above were attempted.
+
+"""
+body+=("Verdict: fail because the mandatory execution failures above remain unresolved.\n" if failed else "Verdict: qualifying declared partial. All runnable execution checks and numeric metrics pass; the only unproven acceptance is the declared post-merge CI criterion, plus the permitted network-denied outside source and pre-PR Pull Request row.\n")
+body+="\n## Outcome\n\n"+("The Archive Record must retain failed QA unless a separately applicable override is consumed; this child does not archive or settle Task status.\n" if failed else "The Daemon can apply the qualifying declared-partial settlement contract. The eventual Archive Record records this report's partial verdict and carries the post-merge CI satisfied-by action as unproven. Review, publication, merge and post-merge CI remain subsequent steps; this child performs none of them.\n")
+if "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken" in O["race"]["failed_tests"]:
+ detail="""### F4 — repeated: the bounded forge probe never acknowledges a started child
+
+Impact: Friction. Actor: reviewer requiring the conversion's seven-package safety proof. Expected: CLI passes the required race/short run and the bounded fixture records a started child whose cancellation/liveness can be confirmed. Actual: TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken fails at readiness_forge_test.go:386, sleeping child never started, after 6.84 s. It reaches the final PID-file refusal after the cd60e425 five-attempt repair; the accepted full-access run has no sandbox denial explaining the failure.
+
+Reproduction: the exact seven-package go test -count=1 -race -short -timeout 30m command in measurements.json against the recorded head clone/cache. Evidence: race.stdout.log.txt, race.stderr.log.txt and remaining-observables.json. The other six packages pass and no data-race diagnostic appears. Both ordinary head suites and shuffle pass; they do not waive this intermittent failed acceptance.
+
+Source tracing: the fixture symlink first starts the compiled CLI test binary, then runScriptFixture execs the shell sidecar that writes SLEEP_PID. The 250 ms context bound encloses that bootstrap and the sleep. The missing acknowledgement is observed; a startup/scheduling explanation remains a hypothesis because this run captured no child-side bootstrap trace. No bound, assertion, source or retry policy is changed by QA. Corrective implementation and a fresh safety proof remain necessary.
+
+Affected: mandatory execution Requirement 5, preventing QA acceptance. None of the nine declared coverage observations depends on this fixture, so none is finding-blocked; those independent rows still finish. F5's prior Store race is not reproduced after the explicit writer join.
+
+"""
+ body=body.replace("## Findings\n\n","## Findings\n\n"+detail,1)
+R.write_text(prefix+body)
+(E/"execution-verdict.json").write_text(json.dumps({"verdict":verdict,"mandatory_execution_failures":failed},indent=2))
+print(verdict,failed)

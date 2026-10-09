@@ -1,0 +1,32 @@
+{
+  "measurement": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-all"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/head",
+    "exit": 0,
+    "wall": 0.3398695000214502,
+    "user": 0.10040000000026339,
+    "system": 0.12575500000002648,
+    "load_before": [
+      15.10791015625,
+      26.12939453125,
+      26.45654296875
+    ],
+    "load_after": [
+      15.10791015625,
+      26.12939453125,
+      26.45654296875
+    ]
+  },
+  "stdout_lines": 1,
+  "one_line_both_tags": true,
+  "stdout": [
+    "docscontract,repocontract ^(TestABrokenUserGuideLinkIsReported|TestAReleaseStepThatNamesAMissingCheckIsReported|TestAStaleBehaviorSurfaceIsReported|TestAnUndocumentedCommandIsReported|TestAnUnmappedBehaviorSurfaceIsReported|TestBaselineDecisionExamples|TestBaselineDocumentationContract|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent|TestBrokenLinksHandlesDestinationDecorationsAndFences|TestCheckActiveCorpusHasNoErrors|TestCheckCorpusBudget|TestCheckCorpusGolden|TestCheckLoopOrderDivergent|TestCheckLoopOrderRepositoryAgrees|TestCleanupHistoricalGrantEvidence|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestCommandIndexNamesEveryCommandFile|TestCommandPathsReadSubcommandsAndAlternatives|TestCommandReferenceLinksResolve|TestDeclaredStepRegenerationAndFrozenBoundaries|TestDocsLayoutGuideNamesEveryHistoryFamily|TestEveryBoundedPathIsGoverned|TestEveryCheckTheReleaseStepNamesExists|TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestGuidanceCompositionDocumentation|TestMeasuredSanctionedOwnershipMatchesRecords|TestModelSelectionReferenceStatesTheShippedSnapshot|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestProfilesDocumentationContractMatchesPublicGuidance|TestProjectConstraintDocumentation|TestRegenerationIsDeclared|TestReleasePlanDocumentationContract|TestRepositoryGateRunsTheAnalyzer|TestReviewHistoryConfiguration|TestReviewHistoryConfigurationRejectsReachableRuleSources|TestReviewHistoryConfigurationRequiresExclusions|TestSecondbrainExportFollowsTheHistoryForm|TestSecondbrainExportRuleRefusesBothMismatches|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources|TestStageScopeDefaultSweepIsUnchanged|TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck|TestTheSkillCoverageMapIsCurrent|TestUserGuideLinksResolve|TestUserGuideNamesNoRefusedQAFlag)$ ./internal/agent ./internal/app ./internal/authorization ./internal/baseline ./internal/baselineacp ./internal/cli ./internal/codex ./internal/config ./internal/daemon ./internal/docscontract ./internal/gittest ./internal/notify ./internal/preflight ./internal/releaseplan ./internal/reviewsource ./internal/reviewsource/coderabbit ./internal/rounds ./internal/runevent ./internal/skillhash ./internal/spec ./internal/specaudit ./internal/speccheck ./internal/store ./internal/suiteguard ./internal/tui ./internal/verifyselect ./internal/watch ./internal/worktree ./skills"
+  ]
+}

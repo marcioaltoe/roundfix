@@ -1,0 +1,34 @@
+{
+  "isolated-version": {
+    "command": [
+      "./bin/roundfix",
+      "--version"
+    ],
+    "exit": 0,
+    "disposable_home_profile": "/private/tmp/roundfix-0254-public-profile-pn00azo8",
+    "provider_keys": "none supplied"
+  },
+  "isolated-spec-check": {
+    "command": [
+      "./bin/roundfix",
+      "spec",
+      "check",
+      "0254-a-faster-make-test",
+      "--strict"
+    ],
+    "exit": 0,
+    "disposable_home_profile": "/private/tmp/roundfix-0254-public-profile-pn00azo8",
+    "provider_keys": "none supplied"
+  },
+  "archive-plan": {
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "0254-a-faster-make-test",
+      "--plan"
+    ],
+    "exit": 0,
+    "disposable_home_profile": "/private/tmp/roundfix-0254-public-profile-pn00azo8",
+    "provider_keys": "none supplied"
+  }
+}

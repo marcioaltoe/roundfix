@@ -1,0 +1,96 @@
+{
+  "failures": [
+    {
+      "Time": "2026-10-08T20:21:59.99539-03:00",
+      "Action": "fail",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
+      "Elapsed": 0.37
+    },
+    {
+      "Time": "2026-10-08T20:22:00.475557-03:00",
+      "Action": "fail",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-10-08T20:23:26.829509-03:00",
+      "Action": "fail",
+      "Package": "roundfix/internal/cli",
+      "Elapsed": 222.923
+    }
+  ],
+  "output": [
+    {
+      "Time": "2026-10-08T20:21:40.178011-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
+      "Output": "=== RUN   TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion\n"
+    },
+    {
+      "Time": "2026-10-08T20:21:40.178014-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
+      "Output": "=== PAUSE TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion\n"
+    },
+    {
+      "Time": "2026-10-08T20:21:40.178128-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
+      "Output": "=== RUN   TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner\n"
+    },
+    {
+      "Time": "2026-10-08T20:21:40.178131-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
+      "Output": "=== PAUSE TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner\n"
+    },
+    {
+      "Time": "2026-10-08T20:21:59.628471-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
+      "Output": "=== CONT  TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner\n"
+    },
+    {
+      "Time": "2026-10-08T20:21:59.986581-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
+      "Output": "    orphan_unix_test.go:246: legacy force stop exit = 1, want 0; stderr=\"Stop failed\\n\\nReason:\\n  force stop Run run_20261008T232159Z_bfe784938a99fa36 owner PID 41282 failed step \\\"enumerate owned process tree\\\": owner process 41282 failed step \\\"enumerate owned process tree\\\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\\n\\nUsage:\\n  Run 'roundfix stop --help' for usage.\\n\"\n"
+    },
+    {
+      "Time": "2026-10-08T20:21:59.995368-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
+      "Output": "--- FAIL: TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner (0.37s)\n"
+    },
+    {
+      "Time": "2026-10-08T20:22:00.184682-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
+      "Output": "=== CONT  TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion\n"
+    },
+    {
+      "Time": "2026-10-08T20:22:00.452198-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
+      "Output": "    orphan_unix_test.go:103: force stop exit = 1, want 0; stderr=\"Stop failed\\n\\nReason:\\n  force stop Run run_20261008T232200Z_8378dcacadcabbd7 owner PID 41639 failed step \\\"enumerate owned process tree\\\": owner process 41639 failed step \\\"enumerate owned process tree\\\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\\n\\nUsage:\\n  Run 'roundfix stop --help' for usage.\\n\"\n"
+    },
+    {
+      "Time": "2026-10-08T20:22:00.475503-03:00",
+      "Action": "output",
+      "Package": "roundfix/internal/cli",
+      "Test": "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
+      "Output": "--- FAIL: TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion (0.29s)\n"
+    }
+  ]
+}

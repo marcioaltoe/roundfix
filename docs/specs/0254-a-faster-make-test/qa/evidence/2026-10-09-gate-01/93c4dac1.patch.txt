@@ -1,0 +1,59 @@
+commit 93c4dac118c1d80522e166d950a3a6af6ae0a264
+Author:     Marcio Altoe <marcio.altoe@gmail.com>
+AuthorDate: Fri Oct 9 06:33:44 2026 -0300
+Commit:     Marcio Altoe <marcio.altoe@gmail.com>
+CommitDate: Fri Oct 9 06:33:44 2026 -0300
+
+    docs: 0254's wall-time target is at most 70 % of the start
+    
+    Maintainer decision 2026-10-09 ("Aceitar ≤ 70% e publicar"): QA measured
+    67 % and 69 % under variable load while the internal/cli sequential phase fell
+    from 43 % to 0.2 %. The rest of the way to 60 s is a later Spec.
+    
+    Claude-Session: https://claude.ai/code/session_01X72SScyNYJXGpMtUGhPDZb
+
+diff --git a/docs/specs/0254-a-faster-make-test/_authorization.md b/docs/specs/0254-a-faster-make-test/_authorization.md
+index 140407b6..fda771c3 100644
+--- a/docs/specs/0254-a-faster-make-test/_authorization.md
++++ b/docs/specs/0254-a-faster-make-test/_authorization.md
+@@ -68,6 +68,14 @@ and every other test file the conversions change.
+ 
+ None. No Task runs a generator, and no derived file changes.
+ 
++## Revised target
++
++On 2026-10-09 the maintainer approved lowering Success Metric 1 from 65 % to
++70 % of the starting wall time ("Aceitar ≤ 70% e publicar"), after QA measured
++67 % and 69 % under variable host load and task_06 brought the `internal/cli`
++sequential phase from 43 % to 0.2 %. The remaining distance to 60 s, mainly
++the volume of git processes per run, is a later Spec.
++
+ ## Limits
+ 
+ - No change to the Makefile, the CI workflows, `go.mod`, `go.sum`,
+diff --git a/docs/specs/0254-a-faster-make-test/_prd.md b/docs/specs/0254-a-faster-make-test/_prd.md
+index 3fcf5fc2..ea2650e8 100644
+--- a/docs/specs/0254-a-faster-make-test/_prd.md
++++ b/docs/specs/0254-a-faster-make-test/_prd.md
+@@ -142,7 +142,7 @@ any 0253 added, and its ceiling leaves room for them.
+ 
+ 1. Success Metric: on the same machine, back to back, a full
+    `go test -count=1 -parallel 16 ./...` at the audited head takes at most
+-   65 % of the wall time it takes at the starting commit `2ce5abe8`.
++   70 % of the wall time it takes at the starting commit `2ce5abe8`.
+    Prototype: 227 s against 384 s, 59 %, before the residue work.
+ 2. Success Metric: in the same pair of runs, the sequential phase of
+    `internal/cli` (the summed durations of its top-level tests that never
+diff --git a/docs/specs/0254-a-faster-make-test/task_05.md b/docs/specs/0254-a-faster-make-test/task_05.md
+index 8c7bc530..512b5f95 100644
+--- a/docs/specs/0254-a-faster-make-test/task_05.md
++++ b/docs/specs/0254-a-faster-make-test/task_05.md
+@@ -34,7 +34,7 @@ or writes the real `~/.roundfix`.
+    CPU, the load average before and after, every package's elapsed time, and
+    the sequential phase of `internal/cli` (the summed elapsed time of its
+    top-level tests that never paused). Success Metric 1 holds when the head's
+-   wall time is at most 65 % of the start's; Success Metric 2 holds when the
++   wall time is at most 70 % of the start's; Success Metric 2 holds when the
+    head's `internal/cli` sequential phase is at most 25 % of the start's. When
+    the load average differs by more than half between the two runs, it
+    repeats the pair and records both.

@@ -1,0 +1,211 @@
+{
+  "measurement": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/head",
+    "exit": 0,
+    "wall": 195.2710890409653,
+    "user": 451.21701600000006,
+    "system": 817.207274,
+    "load_before": [
+      9.15087890625,
+      14.859375,
+      13.994140625
+    ],
+    "load_after": [
+      26.486328125,
+      29.353515625,
+      21.16162109375
+    ]
+  },
+  "packages": {
+    "roundfix/cmd/roundfix": {
+      "elapsed": 0,
+      "status": "skip"
+    },
+    "roundfix/cmd/verify-select": {
+      "elapsed": 0,
+      "status": "skip"
+    },
+    "roundfix/internal/app": {
+      "elapsed": 0.216,
+      "status": "pass"
+    },
+    "roundfix/internal/baselineacp": {
+      "elapsed": 0.222,
+      "status": "pass"
+    },
+    "roundfix/internal/docscontract": {
+      "elapsed": 0,
+      "status": "skip"
+    },
+    "roundfix/internal/codex": {
+      "elapsed": 0.191,
+      "status": "pass"
+    },
+    "roundfix/internal/authorization": {
+      "elapsed": 0.468,
+      "status": "pass"
+    },
+    "roundfix/internal/mdtree": {
+      "elapsed": 0.192,
+      "status": "pass"
+    },
+    "roundfix/internal/lighttier": {
+      "elapsed": 0.258,
+      "status": "pass"
+    },
+    "roundfix/internal/notify": {
+      "elapsed": 0.204,
+      "status": "pass"
+    },
+    "roundfix/internal/openrouterkey": {
+      "elapsed": 0.19,
+      "status": "pass"
+    },
+    "roundfix/internal/releaseplan": {
+      "elapsed": 0.194,
+      "status": "pass"
+    },
+    "roundfix/internal/reviewsource": {
+      "elapsed": 0.2,
+      "status": "pass"
+    },
+    "roundfix/internal/reviewsource/coderabbit": {
+      "elapsed": 0.242,
+      "status": "pass"
+    },
+    "roundfix/internal/rounds": {
+      "elapsed": 0.27,
+      "status": "pass"
+    },
+    "roundfix/internal/preflight": {
+      "elapsed": 1.224,
+      "status": "pass"
+    },
+    "roundfix/internal/gittest": {
+      "elapsed": 1.776,
+      "status": "pass"
+    },
+    "roundfix/internal/config": {
+      "elapsed": 1.946,
+      "status": "pass"
+    },
+    "roundfix/internal/runcause": {
+      "elapsed": 0.487,
+      "status": "pass"
+    },
+    "roundfix/internal/skillcoverage": {
+      "elapsed": 0.212,
+      "status": "pass"
+    },
+    "roundfix/internal/runevent": {
+      "elapsed": 0.217,
+      "status": "pass"
+    },
+    "roundfix/internal/judge": {
+      "elapsed": 2.082,
+      "status": "pass"
+    },
+    "roundfix/internal/skillhash": {
+      "elapsed": 0.215,
+      "status": "pass"
+    },
+    "roundfix/internal/agent": {
+      "elapsed": 3.784,
+      "status": "pass"
+    },
+    "roundfix/internal/suiteguardcontract": {
+      "elapsed": 0.724,
+      "status": "pass"
+    },
+    "roundfix/internal/suiteguard": {
+      "elapsed": 5.025,
+      "status": "pass"
+    },
+    "roundfix/internal/delivery": {
+      "elapsed": 8.259,
+      "status": "pass"
+    },
+    "roundfix/internal/testwait": {
+      "elapsed": 0.927,
+      "status": "pass"
+    },
+    "roundfix/internal/testfixture": {
+      "elapsed": 6.983,
+      "status": "pass"
+    },
+    "roundfix/internal/tui": {
+      "elapsed": 3.681,
+      "status": "pass"
+    },
+    "roundfix/internal/watch": {
+      "elapsed": 0.316,
+      "status": "pass"
+    },
+    "roundfix/internal/specaudit": {
+      "elapsed": 22.491,
+      "status": "pass"
+    },
+    "roundfix/skills": {
+      "elapsed": 10.958,
+      "status": "pass"
+    },
+    "roundfix/internal/speccheck": {
+      "elapsed": 56.812,
+      "status": "pass"
+    },
+    "roundfix/internal/verifyselect": {
+      "elapsed": 53.881,
+      "status": "pass"
+    },
+    "roundfix/internal/spec": {
+      "elapsed": 76.082,
+      "status": "pass"
+    },
+    "roundfix/internal/store": {
+      "elapsed": 82.605,
+      "status": "pass"
+    },
+    "roundfix/internal/daemon": {
+      "elapsed": 108.313,
+      "status": "pass"
+    },
+    "roundfix/internal/worktree": {
+      "elapsed": 107.053,
+      "status": "pass"
+    },
+    "roundfix/internal/baseline": {
+      "elapsed": 137.571,
+      "status": "pass"
+    },
+    "roundfix/internal/cli": {
+      "elapsed": 194.476,
+      "status": "pass"
+    }
+  },
+  "sequential_cli": {
+    "count": 10,
+    "elapsed_sum": 2.25,
+    "tests": {
+      "TestRunResolveDetachedChildReportsProfileProofFailure": 0.01,
+      "TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate": 0.64,
+      "TestDeliveryOwnerRunsAgainForAnItemRetriedDuringItsPass": 0.15,
+      "TestDeliveryOwnerReleasesAnIdleQueueAfterOnePass": 0.14,
+      "TestDeliveryOwnerFailsWhenIdleReleaseFails": 0.15,
+      "TestDeliveryOwnerReleasesItsClaimAfterEngineFailure": 0.12,
+      "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion": 0.51,
+      "TestCLIForceStopOwnerProcessHelper": 0,
+      "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken": 0.47,
+      "TestSpecJudgeReadsTheKeyFromItsOwnEnvironment": 0.06
+    }
+  },
+  "failures": []
+}

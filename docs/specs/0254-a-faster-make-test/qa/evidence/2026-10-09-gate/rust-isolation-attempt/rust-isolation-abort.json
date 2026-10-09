@@ -1,0 +1,5 @@
+{
+  "owned_go_pid": 34859,
+  "launcher_pid": 33815,
+  "reason": "rustfmt shim has no configured toolchain under disposable HOME; exact root reproduced and installed binary resolves it"
+}

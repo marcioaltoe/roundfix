@@ -1,0 +1,32 @@
+[
+  {
+    "pair": 1,
+    "wall_ratio": 0.6429407363624733,
+    "wall_ceiling": 0.7,
+    "wall_meets": true,
+    "sequential_ratio": 0.024913352321471467,
+    "sequential_ceiling": 0.25,
+    "sequential_meets": true,
+    "load_drift": {
+      "load_before": 0.07887085049672886,
+      "load_after": 1.3299270072992702
+    },
+    "load_repeat_trigger": true,
+    "both_exit_zero": true
+  },
+  {
+    "pair": 2,
+    "wall_ratio": 0.6528575024898489,
+    "wall_ceiling": 0.7,
+    "wall_meets": true,
+    "sequential_ratio": 0.019912369924106093,
+    "sequential_ceiling": 0.25,
+    "sequential_meets": true,
+    "load_drift": {
+      "load_before": 1.0369134105635185,
+      "load_after": 1.1093657961908503
+    },
+    "load_repeat_trigger": true,
+    "both_exit_zero": false
+  }
+]

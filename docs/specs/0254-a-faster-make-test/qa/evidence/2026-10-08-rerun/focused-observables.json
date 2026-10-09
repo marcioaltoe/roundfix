@@ -1,0 +1,13 @@
+{
+  "six_profiles_pause_and_pass": [
+    "TestBaselineUpdateReachesCurrentWithARepositoryProfile",
+    "TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile",
+    "TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile",
+    "TestBaselineSkillsRestoreAcceptsARepositoryProfile",
+    "TestBaselineSkillsRestoreNamesTheProfilePath",
+    "TestDoctorComparesARepositoryProfileWithItsSnapshot"
+  ],
+  "selector_breaks_collision_and_wiring": "all named tests passed",
+  "rule": "repository plus 16 seeded cases passed",
+  "sabotage": "exit 1 names archive_active_spec_path_test.go:31; restored exit 0"
+}

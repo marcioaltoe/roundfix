@@ -1,0 +1,565 @@
+{
+  "clone-start": {
+    "command": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "clone",
+      "--quiet",
+      "--no-hardlinks",
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T005858Z_c134f9dbf1a064cc",
+      "/private/tmp/roundfix-0254-qa-8i12aue0/start"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T005858Z_c134f9dbf1a064cc",
+    "exit": 0,
+    "wall": 0.9323812499642372,
+    "user": 0.046944,
+    "system": 0.449744,
+    "load_before": [
+      3.5966796875,
+      11.33642578125,
+      13.90771484375
+    ],
+    "load_after": [
+      3.46875,
+      11.18115234375,
+      13.837890625
+    ]
+  },
+  "checkout-start": {
+    "command": [
+      "git",
+      "checkout",
+      "--detach",
+      "2ce5abe8"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/start",
+    "exit": 0,
+    "wall": 0.11929637502180412,
+    "user": 0.050426,
+    "system": 0.07902700000000001,
+    "load_before": [
+      3.46875,
+      11.18115234375,
+      13.837890625
+    ],
+    "load_after": [
+      3.46875,
+      11.18115234375,
+      13.837890625
+    ]
+  },
+  "warm-start": {
+    "command": [
+      "go",
+      "test",
+      "-run",
+      "^$",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/start",
+    "exit": 0,
+    "wall": 16.52333562495187,
+    "user": 97.396618,
+    "system": 15.995959,
+    "load_before": [
+      3.46875,
+      11.18115234375,
+      13.837890625
+    ],
+    "load_after": [
+      7.4296875,
+      11.71728515625,
+      13.984375
+    ]
+  },
+  "clone-head": {
+    "command": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "clone",
+      "--quiet",
+      "--no-hardlinks",
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T005858Z_c134f9dbf1a064cc",
+      "/private/tmp/roundfix-0254-qa-8i12aue0/head"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T005858Z_c134f9dbf1a064cc",
+    "exit": 0,
+    "wall": 0.9689108749735169,
+    "user": 0.048688999999995985,
+    "system": 0.4580699999999993,
+    "load_before": [
+      7.4296875,
+      11.71728515625,
+      13.984375
+    ],
+    "load_after": [
+      7.4296875,
+      11.71728515625,
+      13.984375
+    ]
+  },
+  "checkout-head": {
+    "command": [
+      "git",
+      "checkout",
+      "--detach",
+      "84a095f9152b55ecd880eef20f74473facc86b30"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 0.0668758749961853,
+    "user": 0.03787900000000377,
+    "system": 0.037392000000000536,
+    "load_before": [
+      7.4296875,
+      11.71728515625,
+      13.984375
+    ],
+    "load_after": [
+      7.4296875,
+      11.71728515625,
+      13.984375
+    ]
+  },
+  "warm-head": {
+    "command": [
+      "go",
+      "test",
+      "-run",
+      "^$",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 16.421118333004415,
+    "user": 97.089818,
+    "system": 15.211161,
+    "load_before": [
+      7.4296875,
+      11.71728515625,
+      13.984375
+    ],
+    "load_after": [
+      9.6357421875,
+      12.0185546875,
+      14.05322265625
+    ]
+  },
+  "focused-rule": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "./internal/testfixture"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 0.4719898750190623,
+    "user": 0.3745700000000056,
+    "system": 0.3262009999999975,
+    "load_before": [
+      9.6357421875,
+      12.0185546875,
+      14.05322265625
+    ],
+    "load_after": [
+      9.6357421875,
+      12.0185546875,
+      14.05322265625
+    ]
+  },
+  "focused-selector": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "./internal/verifyselect"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 5.071561332966667,
+    "user": 2.4337559999999883,
+    "system": 4.271162000000004,
+    "load_before": [
+      9.6357421875,
+      12.0185546875,
+      14.05322265625
+    ],
+    "load_after": [
+      9.02392578125,
+      11.85205078125,
+      13.982421875
+    ]
+  },
+  "focused-profile": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "RepositoryProfile|ProfilePath",
+      "./internal/cli"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 4.0298146669520065,
+    "user": 1.7621010000000012,
+    "system": 4.396512999999999,
+    "load_before": [
+      9.02392578125,
+      11.85205078125,
+      13.982421875
+    ],
+    "load_after": [
+      8.62158203125,
+      11.7216796875,
+      13.923828125
+    ]
+  },
+  "focused-archive": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "Test(QAReportReaderAgreesWithTheDerivedVerification|ArchivedQAReportCorpus)",
+      "./internal/spec"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 3.899174458987545,
+    "user": 2.0455259999999953,
+    "system": 3.5456119999999984,
+    "load_before": [
+      8.62158203125,
+      11.7216796875,
+      13.923828125
+    ],
+    "load_after": [
+      8.17138671875,
+      11.57666015625,
+      13.859375
+    ]
+  },
+  "sabotage-rule": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "TestEveryTestInAParallelTestPackageRunsInParallel/repository$",
+      "./internal/testfixture"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 1,
+    "wall": 0.3038719160249457,
+    "user": 0.2235170000000153,
+    "system": 0.22523500000000496,
+    "load_before": [
+      8.17138671875,
+      11.57666015625,
+      13.859375
+    ],
+    "load_after": [
+      8.17138671875,
+      11.57666015625,
+      13.859375
+    ]
+  },
+  "restored-rule": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "TestEveryTestInAParallelTestPackageRunsInParallel/repository$",
+      "./internal/testfixture"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 0.31317712500458583,
+    "user": 0.22481999999999402,
+    "system": 0.24241499999999405,
+    "load_before": [
+      8.17138671875,
+      11.57666015625,
+      13.859375
+    ],
+    "load_after": [
+      8.17138671875,
+      11.57666015625,
+      13.859375
+    ]
+  },
+  "sandbox-suite-start-1": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/start",
+    "exit": 1,
+    "wall": 330.06116441602353,
+    "user": 409.117864,
+    "system": 671.342029,
+    "load_before": [
+      8.17138671875,
+      11.57666015625,
+      13.859375
+    ],
+    "load_after": [
+      10.82763671875,
+      9.71240234375,
+      12.27099609375
+    ]
+  },
+  "suite-start-1": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/start",
+    "exit": 0,
+    "wall": 294.3558542079991,
+    "user": 391.511802,
+    "system": 648.416524,
+    "load_before": [
+      39.13671875,
+      26.79833984375,
+      19.1162109375
+    ],
+    "load_after": [
+      13.49609375,
+      17.44091796875,
+      17.12744140625
+    ]
+  },
+  "suite-head-1": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 197.35907066700747,
+    "user": 439.110202,
+    "system": 858.612354,
+    "load_before": [
+      13.49609375,
+      17.44091796875,
+      17.12744140625
+    ],
+    "load_after": [
+      24.30078125,
+      26.57080078125,
+      21.64599609375
+    ]
+  },
+  "suite-start-2": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/start",
+    "exit": 0,
+    "wall": 301.94294062501285,
+    "user": 382.3574910000001,
+    "system": 643.3407709999999,
+    "load_before": [
+      24.30078125,
+      26.57080078125,
+      21.64599609375
+    ],
+    "load_after": [
+      13.82373046875,
+      16.36572265625,
+      18.2529296875
+    ]
+  },
+  "suite-head-2": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 189.29650354199111,
+    "user": 436.59643299999993,
+    "system": 846.2309420000001,
+    "load_before": [
+      13.82373046875,
+      16.36572265625,
+      18.2529296875
+    ],
+    "load_after": [
+      27.0478515625,
+      27.87939453125,
+      23.35546875
+    ]
+  },
+  "race": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-race",
+      "-short",
+      "-timeout",
+      "30m",
+      "./internal/cli",
+      "./internal/daemon",
+      "./internal/spec",
+      "./internal/speccheck",
+      "./internal/worktree",
+      "./internal/store",
+      "./internal/baseline"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 1,
+    "wall": 315.4209366669529,
+    "user": 806.409208,
+    "system": 1197.829236,
+    "load_before": [
+      27.0478515625,
+      27.87939453125,
+      23.35546875
+    ],
+    "load_after": [
+      15.28759765625,
+      33.54833984375,
+      29.32470703125
+    ]
+  },
+  "shuffle": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-shuffle=on",
+      "-v",
+      "-timeout",
+      "20m",
+      "./internal/cli",
+      "./internal/daemon",
+      "./internal/spec",
+      "./internal/speccheck",
+      "./internal/worktree",
+      "./internal/store",
+      "./internal/baseline"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 195.44523308298085,
+    "user": 405.8749149999999,
+    "system": 757.1406049999996,
+    "load_before": [
+      15.28759765625,
+      33.54833984375,
+      29.32470703125
+    ],
+    "load_after": [
+      15.626953125,
+      29.72216796875,
+      29.08984375
+    ]
+  },
+  "selector": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-all"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 0.35770350001985207,
+    "user": 0.10051599999997052,
+    "system": 0.13945500000045286,
+    "load_before": [
+      15.626953125,
+      29.72216796875,
+      29.08984375
+    ],
+    "load_after": [
+      15.626953125,
+      29.72216796875,
+      29.08984375
+    ]
+  },
+  "contracts-start": {
+    "command": [
+      "make",
+      "verify-contracts"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/start",
+    "exit": 0,
+    "wall": 97.1216444169986,
+    "user": 293.9605220000003,
+    "system": 80.07088699999986,
+    "load_before": [
+      15.626953125,
+      29.72216796875,
+      29.08984375
+    ],
+    "load_after": [
+      11.42578125,
+      24.43994140625,
+      27.09619140625
+    ]
+  },
+  "contracts-head": {
+    "command": [
+      "make",
+      "verify-contracts"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8i12aue0/head",
+    "exit": 0,
+    "wall": 68.29254812496947,
+    "user": 309.68107899999995,
+    "system": 84.69940399999996,
+    "load_before": [
+      11.42578125,
+      24.43994140625,
+      27.09619140625
+    ],
+    "load_after": [
+      11.18994140625,
+      22.12109375,
+      26.03662109375
+    ]
+  }
+}

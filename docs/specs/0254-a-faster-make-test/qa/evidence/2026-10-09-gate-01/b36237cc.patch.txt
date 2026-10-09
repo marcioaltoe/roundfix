@@ -1,0 +1,91 @@
+commit b36237cc0210b46d971f869136a7f8ef829da279
+Author:     Marcio Altoe <marcio.altoe@gmail.com>
+AuthorDate: Fri Oct 9 07:50:52 2026 -0300
+Commit:     Marcio Altoe <marcio.altoe@gmail.com>
+CommitDate: Fri Oct 9 07:50:52 2026 -0300
+
+    fix: the forge probe test checks its bound and the kill separately, and a load-sensitive daemon test runs sequentially
+    
+    QA F4 repeated: under the race detector the probe child could not record its
+    PID within the 250 ms bound. The bound is now checked on its own, and the kill
+    on a 2 s probe whose child has time to start; both assertions remain. A daemon
+    capacity-cancellation test failed only when seven packages ran together under
+    the race detector and returns to sequential (daemon cap 16). The seven packages
+    pass -race -short; make verify-changed and make verify-docs pass.
+    
+    Claude-Session: https://claude.ai/code/session_01X72SScyNYJXGpMtUGhPDZb
+
+diff --git a/docs/specs/0254-a-faster-make-test/task_06.md b/docs/specs/0254-a-faster-make-test/task_06.md
+index e39c06eb..b324c74a 100644
+--- a/docs/specs/0254-a-faster-make-test/task_06.md
++++ b/docs/specs/0254-a-faster-make-test/task_06.md
+@@ -95,6 +95,7 @@ tests can call `t.Parallel()`.
+ - interface: `docs/references/skill-coverage.json`
+ - interface: `internal/cli/deliver_item_binary_test.go`
+ - interface: `internal/store/journal_test.go`
++- interface: `internal/daemon/task_engine_test.go`
+ 
+ ## Result
+ 
+diff --git a/internal/cli/readiness_forge_test.go b/internal/cli/readiness_forge_test.go
+index 8a71cebf..c3071cbb 100644
+--- a/internal/cli/readiness_forge_test.go
++++ b/internal/cli/readiness_forge_test.go
+@@ -364,25 +364,27 @@ exec sleep 30
+ 		t.Fatal(err)
+ 	}
+ 	deps.environ = commandEnvironmentForTest(t).dependencies.environ()
++	// The production bound: a probe whose child never answers ends with the
++	// deadline, well inside three seconds, whether or not the child started.
+ 	deps.timeout = 250 * time.Millisecond
+-	// Under load the shell can need longer than the bound to record its PID, so
+-	// each attempt must still time out and cancel, and the liveness check below
+-	// runs on the first attempt whose child started.
+-	var pid []byte
+-	for attempt := 0; attempt < 5 && pid == nil; attempt++ {
+-		if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
+-			t.Fatal(err)
+-		}
+-		started := time.Now()
+-		_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
+-		if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
+-			t.Fatalf("sleeping child did not cancel: %v", err)
+-		}
+-		if recorded, readErr := os.ReadFile(filepath.Join(dir, "pid")); readErr == nil && len(strings.TrimSpace(string(recorded))) > 0 {
+-			pid = recorded
+-		}
++	started := time.Now()
++	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
++	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
++		t.Fatalf("sleeping child did not cancel: %v", err)
+ 	}
+-	if pid == nil {
++	// Cancellation kills the child: a longer bound lets the child record its
++	// PID even under load, and the deadline still ends the probe.
++	if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
++		t.Fatal(err)
++	}
++	deps.timeout = 2 * time.Second
++	started = time.Now()
++	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
++	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 5*time.Second {
++		t.Fatalf("sleeping child did not cancel: %v", err)
++	}
++	pid, err := os.ReadFile(filepath.Join(dir, "pid"))
++	if err != nil || len(strings.TrimSpace(string(pid))) == 0 {
+ 		t.Fatal("sleeping child never started")
+ 	}
+ 	// kill -0 is a read-only liveness probe, through the same bounded exec runner.
+diff --git a/internal/daemon/task_engine_test.go b/internal/daemon/task_engine_test.go
+index f5144fb9..020e57af 100644
+--- a/internal/daemon/task_engine_test.go
++++ b/internal/daemon/task_engine_test.go
+@@ -4772,7 +4772,7 @@ func assertVerificationFeedbackJournaled(t *testing.T, events []runevent.RunEven
+ }
+ 
+ func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement(t *testing.T) {
+-	t.Parallel()
++	// Sequential: it failed after 5 s only when seven packages ran together under the race detector while it ran in parallel (0254 verification).
+ 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+ 		{id: "task_01", verification: []string{"verify-task_01"}},
+ 		{id: "task_02", verification: []string{"verify-task_02"}},

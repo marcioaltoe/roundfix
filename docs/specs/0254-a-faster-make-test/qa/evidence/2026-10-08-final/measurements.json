@@ -1,0 +1,539 @@
+{
+  "clone-start": {
+    "command": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "clone",
+      "--quiet",
+      "--no-hardlinks",
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T022127Z_b07b78f779e8b076",
+      "/private/tmp/roundfix-0254-qa-gtz267t7/start"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T022127Z_b07b78f779e8b076",
+    "exit": 0,
+    "wall": 0.9528176669846289,
+    "user": 0.048114,
+    "system": 0.43658099999999994,
+    "load_before": [
+      3.80126953125,
+      12.08056640625,
+      16.39599609375
+    ],
+    "load_after": [
+      3.80126953125,
+      12.08056640625,
+      16.39599609375
+    ]
+  },
+  "checkout-start": {
+    "command": [
+      "git",
+      "checkout",
+      "--detach",
+      "2ce5abe8"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/start",
+    "exit": 0,
+    "wall": 0.1247934169950895,
+    "user": 0.048112999999999996,
+    "system": 0.06689000000000006,
+    "load_before": [
+      3.80126953125,
+      12.08056640625,
+      16.39599609375
+    ],
+    "load_after": [
+      3.80126953125,
+      12.08056640625,
+      16.39599609375
+    ]
+  },
+  "warm-start": {
+    "command": [
+      "go",
+      "test",
+      "-run",
+      "^$",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/start",
+    "exit": 0,
+    "wall": 15.856463124975562,
+    "user": 96.874205,
+    "system": 15.559214,
+    "load_before": [
+      3.80126953125,
+      12.08056640625,
+      16.39599609375
+    ],
+    "load_after": [
+      7.591796875,
+      12.4267578125,
+      16.42041015625
+    ]
+  },
+  "clone-head": {
+    "command": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "clone",
+      "--quiet",
+      "--no-hardlinks",
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T022127Z_b07b78f779e8b076",
+      "/private/tmp/roundfix-0254-qa-gtz267t7/head"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T022127Z_b07b78f779e8b076",
+    "exit": 0,
+    "wall": 0.49310895800590515,
+    "user": 0.04925300000000732,
+    "system": 0.430218,
+    "load_before": [
+      7.591796875,
+      12.4267578125,
+      16.42041015625
+    ],
+    "load_after": [
+      7.591796875,
+      12.4267578125,
+      16.42041015625
+    ]
+  },
+  "checkout-head": {
+    "command": [
+      "git",
+      "checkout",
+      "--detach",
+      "18276c2df7a393615c8bbd9a18e8ce3eb4f72b68"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 0.10907762497663498,
+    "user": 0.04352899999999238,
+    "system": 0.057095999999997815,
+    "load_before": [
+      7.591796875,
+      12.4267578125,
+      16.42041015625
+    ],
+    "load_after": [
+      7.591796875,
+      12.4267578125,
+      16.42041015625
+    ]
+  },
+  "warm-head": {
+    "command": [
+      "go",
+      "test",
+      "-run",
+      "^$",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 16.056559832999483,
+    "user": 96.98956,
+    "system": 15.575636,
+    "load_before": [
+      7.591796875,
+      12.4267578125,
+      16.42041015625
+    ],
+    "load_after": [
+      10.3935546875,
+      12.85107421875,
+      16.50390625
+    ]
+  },
+  "focused-rule": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "./internal/testfixture"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 0.4736051249783486,
+    "user": 0.37634299999999143,
+    "system": 0.3162620000000018,
+    "load_before": [
+      10.3935546875,
+      12.85107421875,
+      16.50390625
+    ],
+    "load_after": [
+      10.3935546875,
+      12.85107421875,
+      16.50390625
+    ]
+  },
+  "focused-selector": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "./internal/verifyselect"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 5.012487832980696,
+    "user": 2.271332000000001,
+    "system": 4.116954999999997,
+    "load_before": [
+      10.3935546875,
+      12.85107421875,
+      16.50390625
+    ],
+    "load_after": [
+      10.36181640625,
+      12.8037109375,
+      16.46533203125
+    ]
+  },
+  "focused-profile": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "RepositoryProfile|ProfilePath",
+      "./internal/cli"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 3.8960167500190437,
+    "user": 1.4655710000000113,
+    "system": 3.904857,
+    "load_before": [
+      10.36181640625,
+      12.8037109375,
+      16.46533203125
+    ],
+    "load_after": [
+      9.61181640625,
+      12.607421875,
+      16.37451171875
+    ]
+  },
+  "focused-archive": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "Test(QAReportReaderAgreesWithTheDerivedVerification|ArchivedQAReportCorpus)",
+      "./internal/spec"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 4.001353915955406,
+    "user": 2.0729570000000024,
+    "system": 3.702881000000005,
+    "load_before": [
+      9.61181640625,
+      12.607421875,
+      16.37451171875
+    ],
+    "load_after": [
+      9.001953125,
+      12.43115234375,
+      16.2900390625
+    ]
+  },
+  "sabotage-rule": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "TestEveryTestInAParallelTestPackageRunsInParallel/repository$",
+      "./internal/testfixture"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 1,
+    "wall": 0.31506908300798386,
+    "user": 0.22693499999999744,
+    "system": 0.24015999999999593,
+    "load_before": [
+      9.001953125,
+      12.43115234375,
+      16.2900390625
+    ],
+    "load_after": [
+      9.001953125,
+      12.43115234375,
+      16.2900390625
+    ]
+  },
+  "restored-rule": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-v",
+      "-run",
+      "TestEveryTestInAParallelTestPackageRunsInParallel/repository$",
+      "./internal/testfixture"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 0.31514508300460875,
+    "user": 0.22261000000000308,
+    "system": 0.2550120000000007,
+    "load_before": [
+      9.001953125,
+      12.43115234375,
+      16.2900390625
+    ],
+    "load_after": [
+      9.001953125,
+      12.43115234375,
+      16.2900390625
+    ]
+  },
+  "suite-start-1": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/start",
+    "exit": 0,
+    "wall": 310.6177060829941,
+    "user": 393.58525700000007,
+    "system": 648.716716,
+    "load_before": [
+      9.001953125,
+      12.43115234375,
+      16.2900390625
+    ],
+    "load_after": [
+      7.86376953125,
+      10.06103515625,
+      14.1787109375
+    ]
+  },
+  "suite-head-1": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 1,
+    "wall": 208.64364841603674,
+    "user": 458.25641700000006,
+    "system": 834.0103829999999,
+    "load_before": [
+      7.86376953125,
+      10.06103515625,
+      14.1787109375
+    ],
+    "load_after": [
+      20.78662109375,
+      24.8603515625,
+      20.615234375
+    ]
+  },
+  "suite-start-2": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/start",
+    "exit": 0,
+    "wall": 307.31050083303126,
+    "user": 378.8867969999999,
+    "system": 642.6670509999999,
+    "load_before": [
+      20.78662109375,
+      24.8603515625,
+      20.615234375
+    ],
+    "load_after": [
+      13.3544921875,
+      15.8818359375,
+      17.7119140625
+    ]
+  },
+  "suite-head-2": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 212.778948125022,
+    "user": 429.936833,
+    "system": 824.132376,
+    "load_before": [
+      13.3544921875,
+      15.8818359375,
+      17.7119140625
+    ],
+    "load_after": [
+      18.3720703125,
+      25.94482421875,
+      22.5068359375
+    ]
+  },
+  "race": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-race",
+      "-short",
+      "-timeout",
+      "30m",
+      "./internal/cli",
+      "./internal/daemon",
+      "./internal/spec",
+      "./internal/speccheck",
+      "./internal/worktree",
+      "./internal/store",
+      "./internal/baseline"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 1,
+    "wall": 322.1433657499729,
+    "user": 821.3171480000001,
+    "system": 1284.5385190000002,
+    "load_before": [
+      18.3720703125,
+      25.94482421875,
+      22.5068359375
+    ],
+    "load_after": [
+      10.947265625,
+      25.4990234375,
+      24.75048828125
+    ]
+  },
+  "shuffle": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-shuffle=on",
+      "-v",
+      "-timeout",
+      "20m",
+      "./internal/cli",
+      "./internal/daemon",
+      "./internal/spec",
+      "./internal/speccheck",
+      "./internal/worktree",
+      "./internal/store",
+      "./internal/baseline"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 200.3477524999762,
+    "user": 401.81386699999985,
+    "system": 742.3767740000003,
+    "load_before": [
+      10.947265625,
+      25.4990234375,
+      24.75048828125
+    ],
+    "load_after": [
+      15.13232421875,
+      26.205078125,
+      25.84765625
+    ]
+  },
+  "selector": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-all"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 0.42519341700244695,
+    "user": 0.09713099999999031,
+    "system": 0.12726799999927607,
+    "load_before": [
+      15.13232421875,
+      26.205078125,
+      25.84765625
+    ],
+    "load_after": [
+      15.13232421875,
+      26.205078125,
+      25.84765625
+    ]
+  },
+  "contracts-start": {
+    "command": [
+      "make",
+      "verify-contracts"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/start",
+    "exit": 0,
+    "wall": 95.11988608399406,
+    "user": 293.10565399999996,
+    "system": 81.04770200000075,
+    "load_before": [
+      15.13232421875,
+      26.205078125,
+      25.84765625
+    ],
+    "load_after": [
+      10.80810546875,
+      21.64013671875,
+      24.10595703125
+    ]
+  },
+  "contracts-head": {
+    "command": [
+      "make",
+      "verify-contracts"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 67.00121200003196,
+    "user": 310.51047800000015,
+    "system": 84.80159599999934,
+    "load_before": [
+      10.80810546875,
+      21.64013671875,
+      24.10595703125
+    ],
+    "load_after": [
+      13.44189453125,
+      20.49169921875,
+      23.50146484375
+    ]
+  }
+}

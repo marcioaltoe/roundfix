@@ -1,0 +1,14 @@
+import os,subprocess,time,json,resource
+from pathlib import Path
+root=Path.cwd();E=root/'docs/specs/0254-a-faster-make-test/qa/evidence/2026-10-08-gate';temp=Path((E/'temporary-root.txt').read_text());results=json.loads((E/'measurements.json').read_text());pids=[]
+def run(name,args,label):
+ cwd=temp/label;env=dict(os.environ,GOCACHE=str(temp/(label+'-cache')));print('START',name,flush=True);before=resource.getrusage(resource.RUSAGE_CHILDREN);start=time.monotonic();load=os.getloadavg()
+ with (E/(name+'.stdout.log')).open('w') as out,(E/(name+'.stderr.log')).open('w') as err:
+  proc=subprocess.Popen(args,cwd=cwd,env=env,stdout=out,stderr=err);pids.append({'name':name,'pid':proc.pid,'status':'running'});(E/'started-pids.json').write_text(json.dumps(pids,indent=2))
+  try:code=proc.wait()
+  except BaseException:proc.terminate();proc.wait();pids[-1]['status']='terminated';(E/'started-pids.json').write_text(json.dumps(pids,indent=2));raise
+ after=resource.getrusage(resource.RUSAGE_CHILDREN);pids[-1]['status']='reaped';(E/'started-pids.json').write_text(json.dumps(pids,indent=2));results[name]={'command':args,'cwd':str(cwd),'exit':code,'wall':time.monotonic()-start,'user':after.ru_utime-before.ru_utime,'system':after.ru_stime-before.ru_stime,'load_before':load,'load_after':os.getloadavg()};(E/'measurements.json').write_text(json.dumps(results,indent=2));print('END',name,results[name],flush=True)
+run('suite-head-unpaired',['go','test','-count=1','-parallel','16','-json','./...'],'head')
+run('race-cli',['go','test','-count=1','-race','-short','-timeout','30m','./internal/cli'],'head')
+run('shuffle-cli',['go','test','-count=1','-shuffle=on','-v','-timeout','20m','./internal/cli'],'head')
+print('DONE',flush=True)

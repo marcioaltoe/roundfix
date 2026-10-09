@@ -1,0 +1,10 @@
+{
+  "command": [
+    "ps",
+    "-axo",
+    "pid=,command="
+  ],
+  "exit": 0,
+  "temporary_root": "/private/tmp/roundfix-0254-qa-ckjw6vcg",
+  "matching_processes": []
+}

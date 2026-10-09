@@ -1,0 +1,7 @@
+{
+  "verdict": "fail",
+  "mandatory_execution_failures": [
+    "race: exit 1",
+    "seven-package race-safety proof failed"
+  ]
+}

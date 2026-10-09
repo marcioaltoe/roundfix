@@ -1,0 +1,6 @@
+{
+  "go": "go version go1.26.5 darwin/arm64",
+  "os": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "cpu_count": 10,
+  "cache_policy": "Each warmed disposable clone has its own GOCACHE; only PATH, HOME, TMPDIR, LANG, GOPATH, GOCACHE passed to Go; installed rustfmt toolchain bin leads PATH; provider variables absent."
+}

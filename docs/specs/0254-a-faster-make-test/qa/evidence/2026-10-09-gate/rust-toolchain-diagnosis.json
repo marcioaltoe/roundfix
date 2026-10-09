@@ -1,0 +1,11 @@
+{
+  "command": [
+    "rustfmt",
+    "--version"
+  ],
+  "isolated_home": "/private/tmp/rf0254-rust-rgf96lf6",
+  "installed_bin": "/Users/marcio/.rustup/toolchains/stable-aarch64-apple-darwin/bin",
+  "exit": 0,
+  "stdout": "rustfmt 1.9.0-stable (8bab26f4f6 2026-07-14)\n",
+  "stderr": ""
+}

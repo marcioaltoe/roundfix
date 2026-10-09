@@ -1,0 +1,215 @@
+commit 0e53d98f18862f7c1c9eb17bf110dace01779929
+Author:     Marcio Altoe <marcio.altoe@gmail.com>
+AuthorDate: Thu Oct 8 19:58:36 2026 -0300
+Commit:     Marcio Altoe <marcio.altoe@gmail.com>
+CommitDate: Thu Oct 8 20:33:48 2026 -0300
+
+    test: the sequential residue in internal/cli shrinks and pinned history reads less
+    
+    Roundfix-Spec: 0254-a-faster-make-test
+    Roundfix-Task: task_03
+
+diff --git a/docs/specs/0254-a-faster-make-test/task_03.md b/docs/specs/0254-a-faster-make-test/task_03.md
+index ed054288..2b9485f7 100644
+--- a/docs/specs/0254-a-faster-make-test/task_03.md
++++ b/docs/specs/0254-a-faster-make-test/task_03.md
+@@ -1,7 +1,7 @@
+ ---
+ task: task_03
+ spec: 0254-a-faster-make-test
+-status: pending
++status: completed
+ type: test
+ complexity: medium
+ ---
+@@ -105,3 +105,75 @@ this Task file.
+ - [_prd.md](_prd.md) — Goals 3–4; User Stories 1–2; Core Feature 4; Success Metric 2
+ - [_techspec.md](_techspec.md) — Current behavior; API Contract 2; Invariants 1–3; Testing Approach; Build Order 3
+ - ADR-0259; ADR-0089; ADR-0090
++
++
++## Result
++
++The six repository-profile tests now call `t.Parallel()` first. Their shared
++fixture supplies `setCommandWorkDirForTest(t, root)` and their command helper
++uses `runCLIContext(t, t.Context(), ...)`, so profile discovery receives the
++per-test working directory. Searching `internal/cli` found no additional
++callers of that fixture. The CLI Sequential Test ceiling falls from 48 to 40;
++the other ceilings keep their original values.
++
++Both archived QA Report sweeps now request
++`":(glob)" + ArchiveDir(ArchiveKindSpec) + "/*/qa/qa-report-*.md"` from
++`gittest.PinnedHistory`. Their report discovery, assertions and empty-corpus
++refusals are unchanged. Tests that read whole archived Spec folders retain
++their whole-directory fixtures. No production file, expected value, golden,
++or `internal/gittest` file changed.
++
++### Focused evidence
++
++All Go checks used `GOCACHE=/private/tmp/roundfix-task03-gocache` on this
++machine with Go 1.26.5. The cache was warmed by
++`go test -run '^$' ./internal/spec` before the timing pair.
++
++| Acceptance criterion | Evidence in this turn |
++| --- | --- |
++| Six repository-profile tests are parallel and pass | `go test -count=1 -race -short -shuffle=on -v -run 'RepositoryProfile\|ProfilePath' ./internal/cli` exited 0 (`ok`, 5.742 s). The captured output contains `=== PAUSE` and `--- PASS` for each of the six named tests; an explicit output check confirmed all six. |
++| CLI rule stays within ceiling 40 | `go test -count=1 -v ./internal/testfixture` exited 0. The repository rule logged `internal/cli: 37 Sequential Tests, ceiling 40`. |
++| QA sweeps read only reports and check the same set | A read-only Python inspection of `git archive --format=tar` at `gittest.PinnedHistoryRevision` compared the whole archive and the new glob. Both contain the identical nonempty set of 352 QA Report paths across 202 Spec directories. Regular files materialized fall from 5,570 to 352. The sorted report-path set has SHA-256 `786ef852156223212383c5ad64b81c388b53b40c8ac9fc1fd3b5af94306aa19a` in both archives. Both `go test -count=1 ./internal/spec` runs passed, exercising both sweeps. |
++| CLI and Spec pass with race detection and short mode | Focused CLI check above and `go test -count=1 -race -short -shuffle=on -run 'Test(QAReportReaderAgreesWithTheDerivedVerification\|ArchivedQAReportCorpus)' ./internal/spec` exited 0; Spec reported `ok`, 8.011 s. These cover the changed tests. The full-package `-race -short` check remains Daemon-owned and was not run in this turn. |
++
++The task's two declared Verification commands, `make verify`, and
++`make verify-changed` were not run. Focused output was captured at
++`/private/tmp/roundfix-task03-profile-check.log`,
++`/private/tmp/roundfix-task03-rule-check.log`, and
++`/private/tmp/roundfix-task03-qa-check.log`.
++
++### Back-to-back Spec timing
++
++`/usr/bin/time -p go test -count=1 ./internal/spec` ran immediately before
++and immediately after changing only the two QA sweep pathspecs, with the same
++machine, cache, and environment. No other test command ran during the pair.
++
++| Fixture | Package test time | Wall | User CPU | System CPU | Outcome |
++| --- | --- | --- | --- | --- | --- |
++| Whole archive directory | 17.185 s | 17.34 s | 88.74 s | 43.84 s | exit 0 |
++| Archived QA Report glob | 10.341 s | 10.84 s | 31.75 s | 39.84 s | exit 0 |
++
++This is one local pair, not a claim about CI or the full repository suite.
++The pinned corpus available here has 352 reports; the authoring prototype's
++759-report count is not used as the current measurement.
++
++### Scope review
++
++Other Sequential Tests in the allowed CLI files keep their existing reason:
++carry-forward hooks, item-binary fixtures, and forge probes supply environment
++values that their child processes read; the TUI and color cases explicitly
++test process defaults under ADR-0089; the detached-child branch calls
++`os.Unsetenv` in production. None qualifies for an additional conversion
++without changing its contract or production code.
++
++`gofmt -l` reported no formatting changes for the four changed Go test files.
++`git diff --check` passed. The initial worktree change was the Daemon's
++`status: in_progress` in this Task file. The implementation changes only the
++four declared test paths and this Result section. Task status, checkboxes,
++the Task Graph, and other Task files remain Daemon-owned. No follow-up work
++was added to this diff.
++
++## Carry-forward provenance
++
++- Source Run: `run_20261008T215927Z_c26d3579de5392c8`
++- Source commit: `0fb78b66a0d1438979c4f104970bb9f03d657521`
+diff --git a/internal/cli/baseline_update_repository_profile_test.go b/internal/cli/baseline_update_repository_profile_test.go
+index 434a3148..525fd4c1 100644
+--- a/internal/cli/baseline_update_repository_profile_test.go
++++ b/internal/cli/baseline_update_repository_profile_test.go
+@@ -22,7 +22,7 @@ import (
+ const baselineRepositoryProfileTestID = "repository-go-cli-tui"
+ 
+ func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
+-	// Sequential: changes the process working directory for repository profile discovery.
++	t.Parallel()
+ 	for _, copied := range []bool{true, false} {
+ 		t.Run(fmt.Sprintf("copied skills=%t", copied), func(t *testing.T) {
+ 			root := newBaselineRepositoryProfileFixture(t, copied)
+@@ -48,7 +48,7 @@ func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
+ }
+ 
+ func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testing.T) {
+-	// Sequential: changes the process working directory for repository profile discovery.
++	t.Parallel()
+ 	root := newBaselineRepositoryProfileFixture(t, true)
+ 	editRepositoryProfileTestSkill(t, root)
+ 	before := baselinePlanTestTree(t, root)
+@@ -75,7 +75,7 @@ func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testi
+ }
+ 
+ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testing.T) {
+-	// Sequential: changes the process working directory for repository profile discovery.
++	t.Parallel()
+ 	root := newBaselineRepositoryProfileFixture(t, true)
+ 	editRepositoryProfileTestSkill(t, root)
+ 	// Force the real install to replace every owned skill, rather than just report them.
+@@ -117,7 +117,7 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
+ }
+ 
+ func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
+-	// Sequential: changes the process working directory for repository profile discovery.
++	t.Parallel()
+ 	root := newBaselineRepositoryProfileFixture(t, true)
+ 	editRepositoryProfileTestSkill(t, root)
+ 	before := baselinePlanTestTree(t, root)
+@@ -153,7 +153,7 @@ func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
+ }
+ 
+ func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
+-	// Sequential: changes the process working directory for repository profile discovery.
++	t.Parallel()
+ 	root := newBaselineRepositoryProfileFixture(t, false)
+ 	before := baselinePlanTestTree(t, root)
+ 	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "skills", "restore", "--profile", "missing-profile", "--repo", root, "--format", "text")
+@@ -169,7 +169,7 @@ func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
+ }
+ 
+ func TestBaselineSkillsRestoreAcceptsARepositoryProfile(t *testing.T) {
+-	// Sequential: changes the process working directory for repository profile discovery.
++	t.Parallel()
+ 	root := newBaselineRepositoryProfileFixture(t, false)
+ 	source := filepath.Join(root, "missing-source")
+ 	before := baselinePlanTestTree(t, root)
+@@ -193,7 +193,7 @@ func newBaselineRepositoryProfileFixture(t *testing.T, copySkills bool) string {
+ 		t.Fatal(err)
+ 	}
+ 	root := newBaselineApplyTestRepository(t)
+-	t.Chdir(root) // profile init intentionally resolves the process working directory.
++	setCommandWorkDirForTest(t, root)
+ 	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "profile", "init", "--id", baselineRepositoryProfileTestID, "--from", "go-cli-tui")
+ 	if code != exitOK || stderr != "" {
+ 		t.Fatalf("profile init exit=%d stdout=%s stderr=%s", code, out, stderr)
+@@ -239,7 +239,7 @@ func newBaselineRepositoryProfileFixture(t *testing.T, copySkills bool) string {
+ func runRepositoryProfileCommand(t *testing.T, args ...string) (string, string, int) {
+ 	t.Helper()
+ 	var stdout, stderr bytes.Buffer
+-	code := RunContext(t.Context(), args, &stdout, &stderr)
++	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
+ 	return stdout.String(), stderr.String(), code
+ }
+ 
+diff --git a/internal/spec/qa_frontmatter_test.go b/internal/spec/qa_frontmatter_test.go
+index 7100a4b0..b1edd3eb 100644
+--- a/internal/spec/qa_frontmatter_test.go
++++ b/internal/spec/qa_frontmatter_test.go
+@@ -92,7 +92,7 @@ func TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive(t *testing.T
+ 	if !ok {
+ 		t.Fatal("runtime.Caller could not locate the repository")
+ 	}
+-	repoRoot := gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec))
++	repoRoot := gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ":(glob)"+ArchiveDir(ArchiveKindSpec)+"/*/qa/qa-report-*.md")
+ 	pattern := filepath.Join(repoRoot, filepath.FromSlash("docs/history/specs/*/qa/qa-report-*.md"))
+ 	reportPaths, err := filepath.Glob(pattern)
+ 	if err != nil {
+diff --git a/internal/spec/qa_test.go b/internal/spec/qa_test.go
+index 8e14dfd6..8e407d98 100644
+--- a/internal/spec/qa_test.go
++++ b/internal/spec/qa_test.go
+@@ -553,7 +553,7 @@ func TestArchivedQAReportCorpusRemainsReadable(t *testing.T) {
+ 	if !ok {
+ 		t.Fatal("runtime.Caller could not locate the repository")
+ 	}
+-	pattern := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec)), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
++	pattern := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ":(glob)"+ArchiveDir(ArchiveKindSpec)+"/*/qa/qa-report-*.md"), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
+ 	reports, err := filepath.Glob(pattern)
+ 	if err != nil {
+ 		t.Fatalf("find archived QA Reports: %v", err)
+diff --git a/internal/testfixture/parallel_tests_test.go b/internal/testfixture/parallel_tests_test.go
+index ce03638f..f721a289 100644
+--- a/internal/testfixture/parallel_tests_test.go
++++ b/internal/testfixture/parallel_tests_test.go
+@@ -18,7 +18,7 @@ import (
+ )
+ 
+ var parallelTestPackages = map[string]int{
+-	"internal/cli":       48,
++	"internal/cli":       40,
+ 	"internal/daemon":    16,
+ 	"internal/baseline":  12,
+ 	"internal/store":     3,

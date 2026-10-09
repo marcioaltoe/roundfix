@@ -1,0 +1,7 @@
+{
+  "verdict": "fail",
+  "failures": [
+    "suite-head-2: exit 1",
+    "Pair 2 has a failed suite execution"
+  ]
+}

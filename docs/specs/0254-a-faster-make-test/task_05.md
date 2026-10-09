@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0254-a-faster-make-test
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

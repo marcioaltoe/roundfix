@@ -1,0 +1,1580 @@
+# Wiki Index
+
+1494 pages. Regenerated 2026-10-09 by `scripts/wiki-index.py`.
+
+## concepts
+
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-01-14-habitos-de-desenvolvedores-altamente-produtivos]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 1: 14 Hábitos de Desenvolvedores Altamente Produtivos
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-02-parte-um-principios]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 2: Parte um: Princípios
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-03-parte-dois-habitos-de-aprendizagem]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 3: Parte dois: Hábitos de aprendizagem
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-04-parte-tres-habitos-do-dia-a-dia]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 4: Parte três: Hábitos do dia-a-dia
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-05-parte-quatro-habitos-de-carreira]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 5: Parte quatro: Hábitos de carreira
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-06-parte-cinco-habitos-de-equipe]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 6: Parte cinco: Hábitos de equipe
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-07-parte-seis-habitos-de-vida]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 7: Parte seis: Hábitos de vida
+- [[14-habitos-de-desenvolvedores-altamente-produtivos-capitulo-08-parte-sete-o-fim]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — capítulo 8: Parte sete: O fim
+- [[14-habitos-de-desenvolvedores-altamente-produtivos]] — 14 Hábitos de Desenvolvedores Altamente Produtivos — conhecimento aplicável
+- [[adocao-vs-habilidade-em-ia-corporativa]] — Adoção vs habilidade em IA corporativa (barbell)
+- [[agent-engineering-patterns]] — Agent Engineering Patterns
+- [[agent-evaluation]] — Agent Evaluation
+- [[agent-harnesses]] — Agent Harnesses
+- [[agent-workflows-e-loop-engineering]] — Agent workflows e loop engineering
+- [[agentes-com-tools-e-mcp]] — Agentes com tools e MCP no AI SDK v6
+- [[agentic-coding-e-unknowns]] — Agentic coding e unknowns
+- [[agile-development-practices]] — Agile development practices
+- [[ai-sdk-v6-streaming-e-message-parts]] — AI SDK v6: streaming e message parts
+- [[ambiente-seguro-para-consultas-operacionais]] — Ambiente seguro para consultas operacionais
+- [[api-design-e-integration-patterns]] — API design e integration patterns
+- [[api-governance]] — API governance
+- [[api-nativa-do-bun-e-suites-vitest]] — APIs nativas do Bun e suítes Vitest
+- [[aprendizado-de-ingles-tecnico-para-tecnologia]] — Aprendizado de inglês técnico para tecnologia
+- [[apuracao-resultado-operacional-varejo-alimentar]] — Apuração de resultado operacional em varejo alimentar
+- [[arquitetura-de-instrucoes-e-progressive-disclosure]] — Arquitetura de instruções e progressive disclosure
+- [[arquitetura-de-software-padroes]] — Arquitetura de Software — Padrões
+- [[arquitetura-evolutiva]] — Arquitetura evolutiva
+- [[arquitetura-fluxo-pix]] — Arquitetura de fluxo Pix
+- [[arquitetura-hexagonal]] — Arquitetura Hexagonal (Ports and Adapters)
+- [[arquitetura-saas-multi-organizacao]] — Arquitetura SaaS multi-organização
+- [[autenticacao-assinaturas-agentes-locais]] — Autenticação por assinatura em agentes locais
+- [[avaliacao-de-llms-evals]] — Avaliação de LLMs: evals, scorers e datasets
+- [[base-de-calculo-ibs-cbs]] — Base de cálculo do IBS e da CBS
+- [[bounded-contexts-e-ddd]] — Bounded contexts e DDD
+- [[building-an-event-driven-data-mesh-capitulo-02-1-event-driven-data-communication]] — Building an Event-Driven Data Mesh — capítulo 2: 1. Event-Driven Data Communication
+- [[building-an-event-driven-data-mesh-capitulo-03-2-data-mesh]] — Building an Event-Driven Data Mesh — capítulo 3: 2. Data Mesh
+- [[building-an-event-driven-data-mesh-capitulo-04-3-event-streams-for-data-mesh]] — Building an Event-Driven Data Mesh — capítulo 4: 3. Event Streams for Data Mesh
+- [[building-an-event-driven-data-mesh-capitulo-05-4-federated-governance]] — Building an Event-Driven Data Mesh — capítulo 5: 4. Federated Governance
+- [[building-an-event-driven-data-mesh-capitulo-06-5-self-service-data-platform]] — Building an Event-Driven Data Mesh — capítulo 6: 5. Self-Service Data Platform
+- [[building-an-event-driven-data-mesh-capitulo-07-6-event-schemas]] — Building an Event-Driven Data Mesh — capítulo 7: 6. Event Schemas
+- [[building-an-event-driven-data-mesh-capitulo-08-7-designing-events]] — Building an Event-Driven Data Mesh — capítulo 8: 7. Designing Events
+- [[building-an-event-driven-data-mesh-capitulo-09-8-bootstrapping-data-products]] — Building an Event-Driven Data Mesh — capítulo 9: 8. Bootstrapping Data Products
+- [[building-an-event-driven-data-mesh-capitulo-10-9-integrating-event-driven-data-into-data-at-rest]] — Building an Event-Driven Data Mesh — capítulo 10: 9. Integrating Event-Driven Data into Data at Rest
+- [[building-an-event-driven-data-mesh-capitulo-11-10-eventual-consistency]] — Building an Event-Driven Data Mesh — capítulo 11: 10. Eventual Consistency
+- [[building-an-event-driven-data-mesh-capitulo-12-11-bringing-it-all-together]] — Building an Event-Driven Data Mesh — capítulo 12: 11. Bringing It All Together
+- [[building-an-event-driven-data-mesh]] — Building an Event-Driven Data Mesh — conhecimento aplicável
+- [[building-event-driven-microservices-capitulo-02-1-why-event-driven-microservices]] — Building Event-Driven Microservices — capítulo 2: 1. Why Event-Driven Microservices
+- [[building-event-driven-microservices-capitulo-03-2-event-driven-microservice-fundamentals]] — Building Event-Driven Microservices — capítulo 3: 2. Event-Driven Microservice Fundamentals
+- [[building-event-driven-microservices-capitulo-04-3-communication-and-data-contracts]] — Building Event-Driven Microservices — capítulo 4: 3. Communication and Data Contracts
+- [[building-event-driven-microservices-capitulo-05-4-integrating-event-driven-architectures-with-existing-syste]] — Building Event-Driven Microservices — capítulo 5: 4. Integrating Event-Driven Architectures with Existing Systems
+- [[building-event-driven-microservices-capitulo-06-5-event-driven-processing-basics]] — Building Event-Driven Microservices — capítulo 6: 5. Event-Driven Processing Basics
+- [[building-event-driven-microservices-capitulo-07-6-deterministic-stream-processing]] — Building Event-Driven Microservices — capítulo 7: 6. Deterministic Stream Processing
+- [[building-event-driven-microservices-capitulo-08-7-stateful-streaming]] — Building Event-Driven Microservices — capítulo 8: 7. Stateful Streaming
+- [[building-event-driven-microservices-capitulo-09-8-building-workflows-with-microservices]] — Building Event-Driven Microservices — capítulo 9: 8. Building Workflows with Microservices
+- [[building-event-driven-microservices-capitulo-10-9-microservices-using-function-as-a-service]] — Building Event-Driven Microservices — capítulo 10: 9. Microservices Using Function-as-a-Service
+- [[building-event-driven-microservices-capitulo-11-10-basic-producer-and-consumer-microservices]] — Building Event-Driven Microservices — capítulo 11: 10. Basic Producer and Consumer Microservices
+- [[building-event-driven-microservices-capitulo-12-11-heavyweight-framework-microservices]] — Building Event-Driven Microservices — capítulo 12: 11. Heavyweight Framework Microservices
+- [[building-event-driven-microservices-capitulo-13-12-lightweight-framework-microservices]] — Building Event-Driven Microservices — capítulo 13: 12. Lightweight Framework Microservices
+- [[building-event-driven-microservices-capitulo-14-13-integrating-event-driven-and-request-response-microservic]] — Building Event-Driven Microservices — capítulo 14: 13. Integrating Event-Driven and Request-Response Microservices
+- [[building-event-driven-microservices-capitulo-15-14-supportive-tooling]] — Building Event-Driven Microservices — capítulo 15: 14. Supportive Tooling
+- [[building-event-driven-microservices-capitulo-16-15-testing-event-driven-microservices]] — Building Event-Driven Microservices — capítulo 16: 15. Testing Event-Driven Microservices
+- [[building-event-driven-microservices-capitulo-17-16-deploying-event-driven-microservices]] — Building Event-Driven Microservices — capítulo 17: 16. Deploying Event-Driven Microservices
+- [[building-event-driven-microservices-capitulo-18-17-conclusion]] — Building Event-Driven Microservices — capítulo 18: 17. Conclusion
+- [[building-event-driven-microservices]] — Building Event-Driven Microservices — conhecimento aplicável
+- [[building-evolutionary-architectures-capitulo-01-foreword-to-the-first-edition]] — Building Evolutionary Architectures — capítulo 1: Foreword to the First Edition
+- [[building-evolutionary-architectures-capitulo-02-foreword-to-the-second-edition]] — Building Evolutionary Architectures — capítulo 2: Foreword to the Second Edition
+- [[building-evolutionary-architectures-capitulo-04-i-mechanics]] — Building Evolutionary Architectures — capítulo 4: I. Mechanics
+- [[building-evolutionary-architectures-capitulo-05-1-evolving-software-architecture]] — Building Evolutionary Architectures — capítulo 5: 1. Evolving Software Architecture
+- [[building-evolutionary-architectures-capitulo-06-2-fitness-functions]] — Building Evolutionary Architectures — capítulo 6: 2. Fitness Functions
+- [[building-evolutionary-architectures-capitulo-07-3-engineering-incremental-change]] — Building Evolutionary Architectures — capítulo 7: 3. Engineering Incremental Change
+- [[building-evolutionary-architectures-capitulo-08-4-automating-architectural-governance]] — Building Evolutionary Architectures — capítulo 8: 4. Automating Architectural Governance
+- [[building-evolutionary-architectures-capitulo-09-ii-structure]] — Building Evolutionary Architectures — capítulo 9: II. Structure
+- [[building-evolutionary-architectures-capitulo-10-5-evolutionary-architecture-topologies]] — Building Evolutionary Architectures — capítulo 10: 5. Evolutionary Architecture Topologies
+- [[building-evolutionary-architectures-capitulo-11-6-evolutionary-data]] — Building Evolutionary Architectures — capítulo 11: 6. Evolutionary Data
+- [[building-evolutionary-architectures-capitulo-12-iii-impact]] — Building Evolutionary Architectures — capítulo 12: III. Impact
+- [[building-evolutionary-architectures-capitulo-13-7-building-evolvable-architectures]] — Building Evolutionary Architectures — capítulo 13: 7. Building Evolvable Architectures
+- [[building-evolutionary-architectures-capitulo-14-8-evolutionary-architecture-pitfalls-and-antipatterns]] — Building Evolutionary Architectures — capítulo 14: 8. Evolutionary Architecture Pitfalls and Antipatterns
+- [[building-evolutionary-architectures-capitulo-15-9-putting-evolutionary-architecture-into-practice]] — Building Evolutionary Architectures — capítulo 15: 9. Putting Evolutionary Architecture into Practice
+- [[building-evolutionary-architectures]] — Building Evolutionary Architectures — conhecimento aplicável
+- [[building-microservices-capitulo-02-i-foundation]] — Building Microservices — capítulo 2: I. Foundation
+- [[building-microservices-capitulo-03-1-what-are-microservices]] — Building Microservices — capítulo 3: 1. What Are Microservices?
+- [[building-microservices-capitulo-04-2-how-to-model-microservices]] — Building Microservices — capítulo 4: 2. How to Model Microservices
+- [[building-microservices-capitulo-05-3-splitting-the-monolith]] — Building Microservices — capítulo 5: 3. Splitting the Monolith
+- [[building-microservices-capitulo-06-4-microservice-communication-styles]] — Building Microservices — capítulo 6: 4. Microservice Communication Styles
+- [[building-microservices-capitulo-07-ii-implementation]] — Building Microservices — capítulo 7: II. Implementation
+- [[building-microservices-capitulo-08-5-implementing-microservice-communication]] — Building Microservices — capítulo 8: 5. Implementing Microservice Communication
+- [[building-microservices-capitulo-09-6-workflow]] — Building Microservices — capítulo 9: 6. Workflow
+- [[building-microservices-capitulo-10-7-build]] — Building Microservices — capítulo 10: 7. Build
+- [[building-microservices-capitulo-11-8-deployment]] — Building Microservices — capítulo 11: 8. Deployment
+- [[building-microservices-capitulo-12-9-testing]] — Building Microservices — capítulo 12: 9. Testing
+- [[building-microservices-capitulo-13-10-from-monitoring-to-observability]] — Building Microservices — capítulo 13: 10. From Monitoring to Observability
+- [[building-microservices-capitulo-14-11-security]] — Building Microservices — capítulo 14: 11. Security
+- [[building-microservices-capitulo-15-12-resiliency]] — Building Microservices — capítulo 15: 12. Resiliency
+- [[building-microservices-capitulo-16-13-scaling]] — Building Microservices — capítulo 16: 13. Scaling
+- [[building-microservices-capitulo-17-iii-people]] — Building Microservices — capítulo 17: III. People
+- [[building-microservices-capitulo-18-14-user-interfaces]] — Building Microservices — capítulo 18: 14. User Interfaces
+- [[building-microservices-capitulo-19-15-organizational-structures]] — Building Microservices — capítulo 19: 15. Organizational Structures
+- [[building-microservices-capitulo-20-16-the-evolutionary-architect]] — Building Microservices — capítulo 20: 16. The Evolutionary Architect
+- [[building-microservices-capitulo-21-afterword-bringing-it-all-together]] — Building Microservices — capítulo 21: Afterword: Bringing It All Together
+- [[building-microservices-capitulo-22-bibliography]] — Building Microservices — capítulo 22: Bibliography
+- [[building-microservices-capitulo-23-glossary]] — Building Microservices — capítulo 23: Glossary
+- [[building-microservices]] — Building Microservices — conhecimento aplicável
+- [[building-multi-tenant-saas-architectures-capitulo-02-1-the-saas-mindset]] — Building Multi-Tenant SaaS Architectures — capítulo 2: 1. The SaaS Mindset
+- [[building-multi-tenant-saas-architectures-capitulo-03-2-multi-tenant-architecture-fundamentals]] — Building Multi-Tenant SaaS Architectures — capítulo 3: 2. Multi-Tenant Architecture Fundamentals
+- [[building-multi-tenant-saas-architectures-capitulo-04-3-multi-tenant-deployment-models]] — Building Multi-Tenant SaaS Architectures — capítulo 4: 3. Multi-Tenant Deployment Models
+- [[building-multi-tenant-saas-architectures-capitulo-05-4-onboarding-and-identity]] — Building Multi-Tenant SaaS Architectures — capítulo 5: 4. Onboarding and Identity
+- [[building-multi-tenant-saas-architectures-capitulo-06-5-tenant-management]] — Building Multi-Tenant SaaS Architectures — capítulo 6: 5. Tenant Management
+- [[building-multi-tenant-saas-architectures-capitulo-07-6-tenant-authentication-and-routing]] — Building Multi-Tenant SaaS Architectures — capítulo 7: 6. Tenant Authentication and Routing
+- [[building-multi-tenant-saas-architectures-capitulo-08-7-building-multi-tenant-services]] — Building Multi-Tenant SaaS Architectures — capítulo 8: 7. Building Multi-Tenant Services
+- [[building-multi-tenant-saas-architectures-capitulo-09-8-data-partitioning]] — Building Multi-Tenant SaaS Architectures — capítulo 9: 8. Data Partitioning
+- [[building-multi-tenant-saas-architectures-capitulo-10-9-tenant-isolation]] — Building Multi-Tenant SaaS Architectures — capítulo 10: 9. Tenant Isolation
+- [[building-multi-tenant-saas-architectures-capitulo-11-10-eks-kubernetes-saas-architecture-patterns-and-strategies]] — Building Multi-Tenant SaaS Architectures — capítulo 11: 10. EKS (Kubernetes) SaaS: Architecture Patterns and Strategies
+- [[building-multi-tenant-saas-architectures-capitulo-12-11-serverless-saas-architecture-patterns-and-strategies]] — Building Multi-Tenant SaaS Architectures — capítulo 12: 11. Serverless SaaS: Architecture Patterns and Strategies
+- [[building-multi-tenant-saas-architectures-capitulo-13-12-tenant-aware-operations]] — Building Multi-Tenant SaaS Architectures — capítulo 13: 12. Tenant-Aware Operations
+- [[building-multi-tenant-saas-architectures-capitulo-14-13-saas-migration-strategies]] — Building Multi-Tenant SaaS Architectures — capítulo 14: 13. SaaS Migration Strategies
+- [[building-multi-tenant-saas-architectures-capitulo-15-14-tiering-strategies]] — Building Multi-Tenant SaaS Architectures — capítulo 15: 14. Tiering Strategies
+- [[building-multi-tenant-saas-architectures-capitulo-16-15-saas-anywhere]] — Building Multi-Tenant SaaS Architectures — capítulo 16: 15. SaaS Anywhere
+- [[building-multi-tenant-saas-architectures-capitulo-17-16-genai-and-multi-tenancy]] — Building Multi-Tenant SaaS Architectures — capítulo 17: 16. GenAI and Multi-Tenancy
+- [[building-multi-tenant-saas-architectures-capitulo-18-17-guiding-principles]] — Building Multi-Tenant SaaS Architectures — capítulo 18: 17. Guiding Principles
+- [[building-multi-tenant-saas-architectures]] — Building Multi-Tenant SaaS Architectures — conhecimento aplicável
+- [[busca-textual-em-postgres-trigrama-vs-fts]] — Busca textual em Postgres: trigrama vs FTS
+- [[cache-patterns]] — Cache Patterns
+- [[camadas-de-dados-em-postgres]] — Camadas de dados em Postgres (bronze, prata, ouro)
+- [[catalogo-de-ferramentas-e-bibliotecas]] — Catálogo de ferramentas e bibliotecas
+- [[cct-dominical-supermercados-es-2026]] — CCT dominical no ES — supermercados fechados aos domingos (2026)
+- [[cessao-de-creditos-de-icms]] — Cessão de créditos de ICMS — deságio e transferência
+- [[ciclo-de-vida-de-decisoes-e-raiz-docs-history]] — Ciclo de vida de decisões e a raiz docs/history
+- [[classificacao-ncm-assistida-por-ia]] — Classificação de NCM assistida por IA
+- [[claude-code-hooks-e-automacao]] — Claude Code: hooks e automação determinística
+- [[claude-code-operacao-produtiva]] — Claude Code: operação produtiva
+- [[clean-architecture]] — Clean Architecture
+- [[clean-code-boas-praticas]] — Clean Code — Boas Práticas
+- [[cnpj-alfanumerico-e-adaptacao-de-sistemas]] — CNPJ alfanumérico e adaptação de sistemas
+- [[communication-patterns-capitulo-02-i-visual-communication]] — Communication Patterns — capítulo 2: I. Visual Communication
+- [[communication-patterns-capitulo-03-1-communication-essentials]] — Communication Patterns — capítulo 3: 1. Communication Essentials
+- [[communication-patterns-capitulo-04-2-clarify-the-clutter]] — Communication Patterns — capítulo 4: 2. Clarify the Clutter
+- [[communication-patterns-capitulo-05-3-accessibility]] — Communication Patterns — capítulo 5: 3. Accessibility
+- [[communication-patterns-capitulo-06-4-narrative]] — Communication Patterns — capítulo 6: 4. Narrative
+- [[communication-patterns-capitulo-07-5-notation]] — Communication Patterns — capítulo 7: 5. Notation
+- [[communication-patterns-capitulo-08-6-composition]] — Communication Patterns — capítulo 8: 6. Composition
+- [[communication-patterns-capitulo-09-ii-multimodal-communication]] — Communication Patterns — capítulo 9: II. Multimodal Communication
+- [[communication-patterns-capitulo-10-7-written-communication]] — Communication Patterns — capítulo 10: 7. Written Communication
+- [[communication-patterns-capitulo-11-8-verbal-and-nonverbal-communication]] — Communication Patterns — capítulo 11: 8. Verbal and Nonverbal Communication
+- [[communication-patterns-capitulo-12-9-the-rhetoric-triangle]] — Communication Patterns — capítulo 12: 9. The Rhetoric Triangle
+- [[communication-patterns-capitulo-13-iii-communicating-knowledge]] — Communication Patterns — capítulo 13: III. Communicating Knowledge
+- [[communication-patterns-capitulo-14-10-knowledge-management-principles]] — Communication Patterns — capítulo 14: 10. Knowledge Management Principles
+- [[communication-patterns-capitulo-15-11-knowledge-and-people]] — Communication Patterns — capítulo 15: 11. Knowledge and People
+- [[communication-patterns-capitulo-16-12-effective-practices]] — Communication Patterns — capítulo 16: 12. Effective Practices
+- [[communication-patterns-capitulo-17-iv-communicating-remotely]] — Communication Patterns — capítulo 17: IV. Communicating Remotely
+- [[communication-patterns-capitulo-18-13-remote-time]] — Communication Patterns — capítulo 18: 13. Remote Time
+- [[communication-patterns-capitulo-19-14-remote-principles]] — Communication Patterns — capítulo 19: 14. Remote Principles
+- [[communication-patterns-capitulo-20-15-remote-channels]] — Communication Patterns — capítulo 20: 15. Remote Channels
+- [[communication-patterns-capitulo-21-epilogue]] — Communication Patterns — capítulo 21: Epilogue
+- [[communication-patterns-capitulo-22-a-adr-templates]] — Communication Patterns — capítulo 22: A. ADR Templates
+- [[communication-patterns-para-arquitetura]] — Communication patterns para arquitetura
+- [[communication-patterns]] — Communication Patterns — conhecimento aplicável
+- [[comparativo-voicenotes-vs-tldv]] — Comparativo Voicenotes vs tl;dv
+- [[conciliacao-tef-pos-e-fechamento-de-caixa]] — Conciliação TEF, POS e fechamento de caixa
+- [[contas-bancarias-fora-da-escrituracao-e-presuncao-de-omissao-de-receita]] — Contas bancárias fora da escrituração e a presunção de omissão de receita
+- [[continuous-api-management-capitulo-01-foreword-to-the-first-edition]] — Continuous API Management — capítulo 1: Foreword to the First Edition
+- [[continuous-api-management-capitulo-03-1-the-challenge-and-promise-of-api-management]] — Continuous API Management — capítulo 3: 1. The Challenge and Promise of API Management
+- [[continuous-api-management-capitulo-04-2-api-governance]] — Continuous API Management — capítulo 4: 2. API Governance
+- [[continuous-api-management-capitulo-05-3-the-api-as-a-product]] — Continuous API Management — capítulo 5: 3. The API as a Product
+- [[continuous-api-management-capitulo-06-4-the-pillars-of-an-api-product]] — Continuous API Management — capítulo 6: 4. The Pillars of an API Product
+- [[continuous-api-management-capitulo-07-5-continuous-api-improvement]] — Continuous API Management — capítulo 7: 5. Continuous API Improvement
+- [[continuous-api-management-capitulo-08-6-api-styles]] — Continuous API Management — capítulo 8: 6. API Styles
+- [[continuous-api-management-capitulo-09-7-the-api-product-lifecycle]] — Continuous API Management — capítulo 9: 7. The API Product Lifecycle
+- [[continuous-api-management-capitulo-10-8-api-teams]] — Continuous API Management — capítulo 10: 8. API Teams
+- [[continuous-api-management-capitulo-11-9-api-landscapes]] — Continuous API Management — capítulo 11: 9. API Landscapes
+- [[continuous-api-management-capitulo-12-10-api-landscape-journey]] — Continuous API Management — capítulo 12: 10. API Landscape Journey
+- [[continuous-api-management-capitulo-13-11-managing-the-api-lifecycle-in-an-evolving-landscape]] — Continuous API Management — capítulo 13: 11. Managing the API Lifecycle in an Evolving Landscape
+- [[continuous-api-management-capitulo-14-12-continuing-the-journey]] — Continuous API Management — capítulo 14: 12. Continuing the Journey
+- [[continuous-api-management]] — Continuous API Management — conhecimento aplicável
+- [[contratos-http-post-only]] — Contratos HTTP Post-only
+- [[controle-de-parcelamentos-da-consultoria]] — Controle de parcelamentos da consultoria
+- [[controles-de-erp-para-ajustes-fiscais-sem-estoque]] — Controles de ERP para ajustes fiscais sem estoque
+- [[convergencia-observavel-em-sistemas-operacionais]] — Convergência observável em sistemas operacionais
+- [[correcao-de-dados-com-aprovacao-humana]] — Correção de dados com aprovação humana
+- [[correcao-de-reforcos-de-caixa-por-lancamentos-extemporaneos]] — Correção de reforços de caixa por lançamentos extemporâneos
+- [[cqrs]] — CQRS (Command Query Responsibility Segregation)
+- [[crescimento-com-eficiencia-no-varejo-alimentar]] — Crescimento com eficiência no varejo alimentar
+- [[custos-e-limites-de-agentes-de-codigo]] — Custos e limites de agentes de código
+- [[custos-holding-e-inventario-es]] — Custos de holding e inventário no Espírito Santo (2026)
+- [[data-mesh-e-data-products]] — Data mesh e data products
+- [[database-sharding]] — Database Sharding
+- [[ddia-aplicacoes-em-projetos-gesttione]] — DDIA — aplicações em projetos Gesttione
+- [[ddia-capitulo-01-confiabilidade-escalabilidade-manutencao]] — DDIA capítulo 1 — Reliable, Scalable and Maintainable Applications
+- [[ddia-capitulo-02-modelos-de-dados-e-linguagens-de-consulta]] — DDIA capítulo 2 — Data Models and Query Languages
+- [[ddia-capitulo-03-armazenamento-e-recuperacao]] — DDIA capítulo 3 — Storage and Retrieval
+- [[ddia-capitulo-04-codificacao-e-evolucao]] — DDIA capítulo 4 — Encoding and Evolution
+- [[ddia-capitulo-05-replicacao]] — DDIA capítulo 5 — Replication
+- [[ddia-capitulo-06-particionamento]] — DDIA capítulo 6 — Partitioning
+- [[ddia-capitulo-07-transacoes]] — DDIA capítulo 7 — Transactions
+- [[ddia-capitulo-08-problemas-de-sistemas-distribuidos]] — DDIA capítulo 8 — The Trouble with Distributed Systems
+- [[ddia-capitulo-09-consistencia-e-consenso]] — DDIA capítulo 9 — Consistency and Consensus
+- [[ddia-capitulo-10-processamento-em-lote]] — DDIA capítulo 10 — Batch Processing
+- [[ddia-capitulo-11-processamento-de-streams]] — DDIA capítulo 11 — Stream Processing
+- [[ddia-glossario-sistemas-de-dados]] — DDIA — glossário de sistemas de dados
+- [[decisao-estruturada-em-modelos-system-one]] — Decisão estruturada em modelos System One
+- [[descontos-incondicionais]] — Descontos incondicionais, condicionais e bonificações na base do ICMS/PIS/Cofins
+- [[design-patterns-gof]] — Design Patterns GoF
+- [[designing-data-intensive-applications]] — Designing Data-Intensive Applications — síntese
+- [[designing-distributed-systems-capitulo-02-1-introduction]] — Designing Distributed Systems — capítulo 2: 1. Introduction
+- [[designing-distributed-systems-capitulo-03-i-single-node-patterns]] — Designing Distributed Systems — capítulo 3: I. Single-Node Patterns
+- [[designing-distributed-systems-capitulo-04-2-the-sidecar-pattern]] — Designing Distributed Systems — capítulo 4: 2. The Sidecar Pattern
+- [[designing-distributed-systems-capitulo-05-3-ambassadors]] — Designing Distributed Systems — capítulo 5: 3. Ambassadors
+- [[designing-distributed-systems-capitulo-06-4-adapters]] — Designing Distributed Systems — capítulo 6: 4. Adapters
+- [[designing-distributed-systems-capitulo-07-ii-serving-patterns]] — Designing Distributed Systems — capítulo 7: II. Serving Patterns
+- [[designing-distributed-systems-capitulo-08-5-replicated-load-balanced-services]] — Designing Distributed Systems — capítulo 8: 5. Replicated Load-Balanced Services
+- [[designing-distributed-systems-capitulo-09-6-sharded-services]] — Designing Distributed Systems — capítulo 9: 6. Sharded Services
+- [[designing-distributed-systems-capitulo-10-7-scatter-gather]] — Designing Distributed Systems — capítulo 10: 7. Scatter/Gather
+- [[designing-distributed-systems-capitulo-11-8-functions-and-event-driven-processing]] — Designing Distributed Systems — capítulo 11: 8. Functions and Event-Driven Processing
+- [[designing-distributed-systems-capitulo-12-9-ownership-election]] — Designing Distributed Systems — capítulo 12: 9. Ownership Election
+- [[designing-distributed-systems-capitulo-13-iii-batch-computational-patterns]] — Designing Distributed Systems — capítulo 13: III. Batch Computational Patterns
+- [[designing-distributed-systems-capitulo-14-10-work-queue-systems]] — Designing Distributed Systems — capítulo 14: 10. Work Queue Systems
+- [[designing-distributed-systems-capitulo-15-11-event-driven-batch-processing]] — Designing Distributed Systems — capítulo 15: 11. Event-Driven Batch Processing
+- [[designing-distributed-systems-capitulo-16-12-coordinated-batch-processing]] — Designing Distributed Systems — capítulo 16: 12. Coordinated Batch Processing
+- [[designing-distributed-systems-capitulo-17-13-conclusion-a-new-beginning]] — Designing Distributed Systems — capítulo 17: 13. Conclusion: A New Beginning?
+- [[designing-distributed-systems]] — Designing Distributed Systems — conhecimento aplicável
+- [[diagnostico-voicenotes-hermes-2026-09-30]] — Diagnóstico da ingestão Voicenotes no Hermes — 2026-09-30
+- [[dicionario-ai-coding-matt-pocock]] — Dicionário de AI coding (Matt Pocock)
+- [[digitalocean-spaces-cold-storage-e-limites-de-lifecycle]] — DigitalOcean Spaces — Cold Storage e limites de lifecycle
+- [[dimensionamento-vps-hermes-secondbrain]] — Dimensionamento de VPS para Hermes e Secondbrain
+- [[distributed-systems-patterns]] — Distributed systems patterns
+- [[ditr-itr-e-obrigacao-anual-2026]] — DITR/ITR e obrigação anual de declaração — 2026
+- [[documento-fiscal-eletronico-ibs-cbs]] — Documento fiscal eletrônico no IBS/CBS
+- [[efd-reinf-e-distribuicao-de-lucros]] — EFD-Reinf e distribuição de lucros
+- [[enabling-microservice-success-capitulo-01-foreword]] — Enabling Microservice Success — capítulo 1: Foreword
+- [[enabling-microservice-success-capitulo-03-i-context]] — Enabling Microservice Success — capítulo 3: I. Context
+- [[enabling-microservice-success-capitulo-04-1-understanding-microservices]] — Enabling Microservice Success — capítulo 4: 1. Understanding Microservices
+- [[enabling-microservice-success-capitulo-05-2-effective-software-delivery]] — Enabling Microservice Success — capítulo 5: 2. Effective Software Delivery
+- [[enabling-microservice-success-capitulo-06-3-are-microservices-right-for-you]] — Enabling Microservice Success — capítulo 6: 3. Are Microservices Right for You?
+- [[enabling-microservice-success-capitulo-07-ii-organizational-structure-and-culture]] — Enabling Microservice Success — capítulo 7: II. Organizational Structure and Culture
+- [[enabling-microservice-success-capitulo-08-4-conways-law-and-finding-the-right-boundaries]] — Enabling Microservice Success — capítulo 8: 4. Conway’s Law and Finding the Right Boundaries
+- [[enabling-microservice-success-capitulo-09-5-building-effective-teams]] — Enabling Microservice Success — capítulo 9: 5. Building Effective Teams
+- [[enabling-microservice-success-capitulo-10-6-enabling-autonomy]] — Enabling Microservice Success — capítulo 10: 6. Enabling Autonomy
+- [[enabling-microservice-success-capitulo-11-7-engineering-enablement-and-paving-the-road]] — Enabling Microservice Success — capítulo 11: 7. Engineering Enablement and Paving the Road
+- [[enabling-microservice-success-capitulo-12-8-ensuring-you-build-it-you-run-it]] — Enabling Microservice Success — capítulo 12: 8. Ensuring “You Build It, You Run It”
+- [[enabling-microservice-success-capitulo-13-iii-building-and-operating]] — Enabling Microservice Success — capítulo 13: III. Building and Operating
+- [[enabling-microservice-success-capitulo-14-9-active-service-ownership]] — Enabling Microservice Success — capítulo 14: 9. Active Service Ownership
+- [[enabling-microservice-success-capitulo-15-10-getting-value-from-testing]] — Enabling Microservice Success — capítulo 15: 10. Getting Value from Testing
+- [[enabling-microservice-success-capitulo-16-11-governance-and-standardization-finding-the-balance]] — Enabling Microservice Success — capítulo 16: 11. Governance and Standardization: Finding the Balance
+- [[enabling-microservice-success-capitulo-17-12-building-resilience-in]] — Enabling Microservice Success — capítulo 17: 12. Building Resilience In
+- [[enabling-microservice-success-capitulo-18-13-running-your-system-in-production]] — Enabling Microservice Success — capítulo 18: 13. Running Your System in Production
+- [[enabling-microservice-success-capitulo-19-14-keeping-things-up-to-date]] — Enabling Microservice Success — capítulo 19: 14. Keeping Things Up-to-Date
+- [[enabling-microservice-success-capitulo-20-afterword]] — Enabling Microservice Success — capítulo 20: Afterword
+- [[enabling-microservice-success-capitulo-21-a-microservices-assessment]] — Enabling Microservice Success — capítulo 21: A. Microservices Assessment
+- [[enabling-microservice-success-capitulo-22-b-recommended-reading]] — Enabling Microservice Success — capítulo 22: B. Recommended Reading
+- [[enabling-microservice-success]] — Enabling Microservice Success — conhecimento aplicável
+- [[engenharia-de-prompts-e-chatgpt]] — Engenharia de prompts e ChatGPT
+- [[escala-6x1-e-jornada-de-40h]] — Escala 6x1 e jornada de 40h
+- [[escalabilidade-de-sistemas]] — Escalabilidade de sistemas
+- [[espelho-de-erp-e-fronteira-s2s]] — Espelho de ERP e fronteira S2S
+- [[estilo-de-comunicacao-marcio]] — Estilo de comunicação de Marcio
+- [[estoque-minimo-maximo-e-reabastecimento]] — Estoque mínimo, máximo e reabastecimento
+- [[estrategia-conversao-livros-secondbrain]] — Estratégia de conversão de livros para conhecimento no secondbrain
+- [[estrategia-tecnologica]] — Estratégia tecnológica
+- [[etl-idempotente-em-postgres]] — ETL idempotente em Postgres
+- [[event-driven-architecture]] — Event-Driven Architecture (EDA)
+- [[eventstorming-para-descoberta-de-dominio]] — EventStorming para descoberta de domínio
+- [[execucao-remota-persistente-com-tmux-no-brain-macmini]] — Execução remota persistente com tmux no brain/macmini
+- [[expansao-de-lojas-e-modelo-de-ocupacao]] — Expansão de lojas e modelo de ocupação
+- [[extratos-de-conta-encerrada-como-obter]] — Extratos de conta encerrada: como obter junto ao banco
+- [[fator-r-do-simples-nacional]] — Fator R do Simples Nacional
+- [[fichas-tecnicas-custos-e-rendimento-na-panificacao]] — Fichas técnicas, custos e rendimento na panificação
+- [[fitness-functions-e-metricas-arquiteturais]] — Fitness functions e métricas arquiteturais
+- [[flow-architectures-capitulo-01-foreword]] — Flow Architectures — capítulo 1: Foreword
+- [[flow-architectures-capitulo-03-the-10-year-impact-of-the-world-wide-flow]] — Flow Architectures — capítulo 3: The 10-Year Impact of the World Wide Flow
+- [[flow-architectures-capitulo-04-1-introduction-to-flow]] — Flow Architectures — capítulo 4: 1. Introduction to Flow
+- [[flow-architectures-capitulo-05-2-the-business-case-for-flow]] — Flow Architectures — capítulo 5: 2. The Business Case for Flow
+- [[flow-architectures-capitulo-06-3-understanding-the-flow-value-chain]] — Flow Architectures — capítulo 6: 3. Understanding the Flow Value Chain
+- [[flow-architectures-capitulo-07-4-evaluating-the-current-streaming-market]] — Flow Architectures — capítulo 7: 4. Evaluating the Current Streaming Market
+- [[flow-architectures-capitulo-08-5-evaluating-the-emergence-of-flow]] — Flow Architectures — capítulo 8: 5. Evaluating the Emergence of Flow
+- [[flow-architectures-capitulo-09-6-building-for-a-flow-future]] — Flow Architectures — capítulo 9: 6. Building for a Flow Future
+- [[flow-architectures-capitulo-10-a-evaluating-the-current-flow-market]] — Flow Architectures — capítulo 10: A. Evaluating the Current Flow Market
+- [[flow-architectures]] — Flow Architectures — conhecimento aplicável
+- [[foundations-of-scalable-systems-capitulo-02-i-the-basics]] — Foundations of Scalable Systems — capítulo 2: I. The Basics
+- [[foundations-of-scalable-systems-capitulo-03-1-introduction-to-scalable-systems]] — Foundations of Scalable Systems — capítulo 3: 1. Introduction to Scalable Systems
+- [[foundations-of-scalable-systems-capitulo-04-2-distributed-systems-architectures-an-introduction]] — Foundations of Scalable Systems — capítulo 4: 2. Distributed Systems Architectures: An Introduction
+- [[foundations-of-scalable-systems-capitulo-05-3-distributed-systems-essentials]] — Foundations of Scalable Systems — capítulo 5: 3. Distributed Systems Essentials
+- [[foundations-of-scalable-systems-capitulo-06-4-an-overview-of-concurrent-systems]] — Foundations of Scalable Systems — capítulo 6: 4. An Overview of Concurrent Systems
+- [[foundations-of-scalable-systems-capitulo-07-ii-scalable-systems]] — Foundations of Scalable Systems — capítulo 7: II. Scalable Systems
+- [[foundations-of-scalable-systems-capitulo-08-5-application-services]] — Foundations of Scalable Systems — capítulo 8: 5. Application Services
+- [[foundations-of-scalable-systems-capitulo-09-6-distributed-caching]] — Foundations of Scalable Systems — capítulo 9: 6. Distributed Caching
+- [[foundations-of-scalable-systems-capitulo-10-7-asynchronous-messaging]] — Foundations of Scalable Systems — capítulo 10: 7. Asynchronous Messaging
+- [[foundations-of-scalable-systems-capitulo-11-8-serverless-processing-systems]] — Foundations of Scalable Systems — capítulo 11: 8. Serverless Processing Systems
+- [[foundations-of-scalable-systems-capitulo-12-9-microservices]] — Foundations of Scalable Systems — capítulo 12: 9. Microservices
+- [[foundations-of-scalable-systems-capitulo-13-iii-scalable-distributed-databases]] — Foundations of Scalable Systems — capítulo 13: III. Scalable Distributed Databases
+- [[foundations-of-scalable-systems-capitulo-14-10-scalable-database-fundamentals]] — Foundations of Scalable Systems — capítulo 14: 10. Scalable Database Fundamentals
+- [[foundations-of-scalable-systems-capitulo-15-11-eventual-consistency]] — Foundations of Scalable Systems — capítulo 15: 11. Eventual Consistency
+- [[foundations-of-scalable-systems-capitulo-16-12-strong-consistency]] — Foundations of Scalable Systems — capítulo 16: 12. Strong Consistency
+- [[foundations-of-scalable-systems-capitulo-17-13-distributed-database-implementations]] — Foundations of Scalable Systems — capítulo 17: 13. Distributed Database Implementations
+- [[foundations-of-scalable-systems-capitulo-18-iv-event-and-stream-processing]] — Foundations of Scalable Systems — capítulo 18: IV. Event and Stream Processing
+- [[foundations-of-scalable-systems-capitulo-19-14-scalable-event-driven-processing]] — Foundations of Scalable Systems — capítulo 19: 14. Scalable Event-Driven Processing
+- [[foundations-of-scalable-systems-capitulo-20-15-stream-processing-systems]] — Foundations of Scalable Systems — capítulo 20: 15. Stream Processing Systems
+- [[foundations-of-scalable-systems-capitulo-21-16-final-tips-for-success]] — Foundations of Scalable Systems — capítulo 21: 16. Final Tips for Success
+- [[foundations-of-scalable-systems]] — Foundations of Scalable Systems — conhecimento aplicável
+- [[fundamentals-of-software-architecture-capitulo-01-preface-invalidating-axioms]] — Fundamentals of Software Architecture — capítulo 1: Preface: Invalidating Axioms
+- [[fundamentals-of-software-architecture-capitulo-02-1-introduction]] — Fundamentals of Software Architecture — capítulo 2: 1. Introduction
+- [[fundamentals-of-software-architecture-capitulo-03-i-foundations]] — Fundamentals of Software Architecture — capítulo 3: I. Foundations
+- [[fundamentals-of-software-architecture-capitulo-04-2-architectural-thinking]] — Fundamentals of Software Architecture — capítulo 4: 2. Architectural Thinking
+- [[fundamentals-of-software-architecture-capitulo-05-3-modularity]] — Fundamentals of Software Architecture — capítulo 5: 3. Modularity
+- [[fundamentals-of-software-architecture-capitulo-06-4-architecture-characteristics-defined]] — Fundamentals of Software Architecture — capítulo 6: 4. Architecture Characteristics Defined
+- [[fundamentals-of-software-architecture-capitulo-07-5-identifying-architectural-characteristics]] — Fundamentals of Software Architecture — capítulo 7: 5. Identifying Architectural Characteristics
+- [[fundamentals-of-software-architecture-capitulo-08-6-measuring-and-governing-architecture-characteristics]] — Fundamentals of Software Architecture — capítulo 8: 6. Measuring and Governing Architecture Characteristics
+- [[fundamentals-of-software-architecture-capitulo-09-7-scope-of-architecture-characteristics]] — Fundamentals of Software Architecture — capítulo 9: 7. Scope of Architecture Characteristics
+- [[fundamentals-of-software-architecture-capitulo-10-8-component-based-thinking]] — Fundamentals of Software Architecture — capítulo 10: 8. Component-Based Thinking
+- [[fundamentals-of-software-architecture-capitulo-11-ii-architecture-styles]] — Fundamentals of Software Architecture — capítulo 11: II. Architecture Styles
+- [[fundamentals-of-software-architecture-capitulo-12-9-foundations]] — Fundamentals of Software Architecture — capítulo 12: 9. Foundations
+- [[fundamentals-of-software-architecture-capitulo-13-10-layered-architecture-style]] — Fundamentals of Software Architecture — capítulo 13: 10. Layered Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-14-11-pipeline-architecture-style]] — Fundamentals of Software Architecture — capítulo 14: 11. Pipeline Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-15-12-microkernel-architecture-style]] — Fundamentals of Software Architecture — capítulo 15: 12. Microkernel Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-16-13-service-based-architecture-style]] — Fundamentals of Software Architecture — capítulo 16: 13. Service-Based Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-17-14-event-driven-architecture-style]] — Fundamentals of Software Architecture — capítulo 17: 14. Event-Driven Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-18-15-space-based-architecture-style]] — Fundamentals of Software Architecture — capítulo 18: 15. Space-Based Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-19-16-orchestration-driven-service-oriented-architecture]] — Fundamentals of Software Architecture — capítulo 19: 16. Orchestration-Driven Service-Oriented Architecture
+- [[fundamentals-of-software-architecture-capitulo-20-17-microservices-architecture]] — Fundamentals of Software Architecture — capítulo 20: 17. Microservices Architecture
+- [[fundamentals-of-software-architecture-capitulo-21-18-choosing-the-appropriate-architecture-style]] — Fundamentals of Software Architecture — capítulo 21: 18. Choosing the Appropriate Architecture Style
+- [[fundamentals-of-software-architecture-capitulo-22-iii-techniques-and-soft-skills]] — Fundamentals of Software Architecture — capítulo 22: III. Techniques and Soft Skills
+- [[fundamentals-of-software-architecture-capitulo-23-19-architecture-decisions]] — Fundamentals of Software Architecture — capítulo 23: 19. Architecture Decisions
+- [[fundamentals-of-software-architecture-capitulo-24-20-analyzing-architecture-risk]] — Fundamentals of Software Architecture — capítulo 24: 20. Analyzing Architecture Risk
+- [[fundamentals-of-software-architecture-capitulo-25-21-diagramming-and-presenting-architecture]] — Fundamentals of Software Architecture — capítulo 25: 21. Diagramming and Presenting Architecture
+- [[fundamentals-of-software-architecture-capitulo-26-22-making-teams-effective]] — Fundamentals of Software Architecture — capítulo 26: 22. Making Teams Effective
+- [[fundamentals-of-software-architecture-capitulo-27-23-negotiation-and-leadership-skills]] — Fundamentals of Software Architecture — capítulo 27: 23. Negotiation and Leadership Skills
+- [[fundamentals-of-software-architecture-capitulo-28-24-developing-a-career-path]] — Fundamentals of Software Architecture — capítulo 28: 24. Developing a Career Path
+- [[fundamentals-of-software-architecture-capitulo-29-self-assessment-questions]] — Fundamentals of Software Architecture — capítulo 29: Self-Assessment Questions
+- [[fundamentals-of-software-architecture]] — Fundamentals of Software Architecture — conhecimento aplicável
+- [[fundamentos-de-arquitetura-de-software]] — Fundamentos de arquitetura de software
+- [[gestao-de-estoque-por-tensoes]] — Gestão de estoque por tensões
+- [[gesttione-institucional-e-produtos]] — Gesttione institucional e produtos
+- [[governanca-e-compliance-operacional]] — Governança e compliance operacional
+- [[holding-patrimonial-familiar]] — Holding patrimonial familiar — estrutura, usufruto de quotas e riscos
+- [[ia-segmentacao-e-price-optimization-no-varejo]] — IA, segmentação e price optimization no varejo
+- [[ibs-e-cbs]] — IBS e CBS
+- [[ingresso-de-eventos-em-sessao-de-agente]] — Ingresso de eventos em sessão de agente
+- [[integracao-erp-cftv-por-xml-e-pos]] — Integração entre ERP e CFTV por XML e POS
+- [[integracao-ferramentas]] — Integração de ferramentas com o second brain
+- [[integracoes-rh-folha-e-agentes-de-ia]] — Integrações RH, folha e agentes de IA
+- [[joint-venture-gesttione-grupo-top]] — Joint Venture Gesttione–Grupo TOP
+- [[jornada-varejo-perdas-metas]] — Jornada de varejo sobre perdas e metas
+- [[kds-e-fluxo-de-cozinha]] — KDS e fluxo de cozinha
+- [[lddd-aplicacoes-em-projetos-gesttione]] — LDDD — aplicações em projetos Gesttione
+- [[lddd-capitulo-01-analisando-dominios-de-negocio]] — LDDD capítulo 1 — Analyzing Business Domains
+- [[lddd-capitulo-02-descobrindo-conhecimento-de-dominio]] — LDDD capítulo 2 — Discovering Domain Knowledge
+- [[lddd-capitulo-03-gerenciando-complexidade-do-dominio]] — LDDD capítulo 3 — Managing Domain Complexity
+- [[lddd-capitulo-04-integrando-bounded-contexts]] — LDDD capítulo 4 — Integrating Bounded Contexts
+- [[lddd-capitulo-05-logica-de-negocio-simples]] — LDDD capítulo 5 — Implementing Simple Business Logic
+- [[lddd-capitulo-06-logica-de-negocio-complexa]] — LDDD capítulo 6 — Tackling Complex Business Logic
+- [[lddd-capitulo-07-modelando-a-dimensao-do-tempo]] — LDDD capítulo 7 — Modeling the Dimension of Time
+- [[lddd-capitulo-08-padroes-arquiteturais]] — LDDD capítulo 8 — Architectural Patterns
+- [[lddd-capitulo-09-padroes-de-comunicacao]] — LDDD capítulo 9 — Communication Patterns
+- [[lddd-capitulo-10-heuristicas-de-design]] — LDDD capítulo 10 — Design Heuristics
+- [[lddd-capitulo-11-evoluindo-decisoes-de-design]] — LDDD capítulo 11 — Evolving Design Decisions
+- [[lddd-capitulo-12-eventstorming]] — LDDD capítulo 12 — EventStorming
+- [[lddd-capitulo-13-ddd-no-mundo-real]] — LDDD capítulo 13 — Domain-Driven Design in the Real World
+- [[lddd-capitulo-14-microservices]] — LDDD capítulo 14 — Microservices
+- [[lddd-capitulo-15-event-driven-architecture]] — LDDD capítulo 15 — Event-Driven Architecture
+- [[lddd-capitulo-16-data-mesh]] — LDDD capítulo 16 — Data Mesh
+- [[lddd-glossario-ddd]] — LDDD — glossário DDD
+- [[learning-domain-driven-design]] — Learning Domain-Driven Design — síntese
+- [[learning-systems-thinking-capitulo-02-i-a-system-of-thinking]] — Learning Systems Thinking — capítulo 2: I. A System of Thinking
+- [[learning-systems-thinking-capitulo-03-1-what-is-systems-thinking]] — Learning Systems Thinking — capítulo 3: 1. What Is Systems Thinking?
+- [[learning-systems-thinking-capitulo-04-2-crafting-conceptual-integrity]] — Learning Systems Thinking — capítulo 4: 2. Crafting Conceptual Integrity
+- [[learning-systems-thinking-capitulo-05-3-shifting-your-perspective]] — Learning Systems Thinking — capítulo 5: 3. Shifting Your Perspective
+- [[learning-systems-thinking-capitulo-06-ii-you-are-a-system-of-thinking]] — Learning Systems Thinking — capítulo 6: II. You Are a System of Thinking
+- [[learning-systems-thinking-capitulo-07-4-self-awareness-as-a-foundational-skill]] — Learning Systems Thinking — capítulo 7: 4. Self-Awareness as a Foundational Skill
+- [[learning-systems-thinking-capitulo-08-5-replace-reacting-with-responding]] — Learning Systems Thinking — capítulo 8: 5. Replace Reacting with Responding
+- [[learning-systems-thinking-capitulo-09-6-a-system-of-learning]] — Learning Systems Thinking — capítulo 9: 6. A System of Learning
+- [[learning-systems-thinking-capitulo-10-iii-we-are-a-system-of-thinking]] — Learning Systems Thinking — capítulo 10: III. We Are a System of Thinking
+- [[learning-systems-thinking-capitulo-11-7-collective-systemic-reasoning]] — Learning Systems Thinking — capítulo 11: 7. Collective Systemic Reasoning
+- [[learning-systems-thinking-capitulo-12-8-designing-feedback-loops]] — Learning Systems Thinking — capítulo 12: 8. Designing Feedback Loops
+- [[learning-systems-thinking-capitulo-13-9-pattern-thinking]] — Learning Systems Thinking — capítulo 13: 9. Pattern Thinking
+- [[learning-systems-thinking-capitulo-14-iv-designing-a-system-of-thinking]] — Learning Systems Thinking — capítulo 14: IV. Designing a System of Thinking
+- [[learning-systems-thinking-capitulo-15-10-modeling-together]] — Learning Systems Thinking — capítulo 15: 10. Modeling, Together
+- [[learning-systems-thinking-capitulo-16-11-systems-leadership]] — Learning Systems Thinking — capítulo 16: 11. Systems Leadership
+- [[learning-systems-thinking-capitulo-17-12-redefining-success]] — Learning Systems Thinking — capítulo 17: 12. Redefining Success
+- [[learning-systems-thinking-capitulo-18-further-resources]] — Learning Systems Thinking — capítulo 18: Further Resources
+- [[learning-systems-thinking-capitulo-19-glossary]] — Learning Systems Thinking — capítulo 19: Glossary
+- [[learning-systems-thinking]] — Learning Systems Thinking — conhecimento aplicável
+- [[licenca-e-salario-paternidade-lei-15371-2026]] — Licença e salário-paternidade — Lei 15.371/2026
+- [[liquidez-operacional-e-renegociacao]] — Liquidez operacional e renegociação
+- [[llm-wiki-pattern]] — LLM Wiki Pattern (Karpathy) — e a instância Tabularium
+- [[load-balancing]] — Load Balancing
+- [[lucro-presumido-servicos-de-saude]] — Lucro presumido — serviços de saúde (percentuais reduzidos)
+- [[manuais-operacionais-portaveis-para-modelos]] — Manuais operacionais portáveis para modelos
+- [[margem-markup-e-divisor-de-preco]] — Margem, markup e divisor de preço
+- [[mastering-api-architecture-capitulo-01-foreword]] — Mastering API Architecture — capítulo 1: Foreword
+- [[mastering-api-architecture-capitulo-03-introduction]] — Mastering API Architecture — capítulo 3: Introduction
+- [[mastering-api-architecture-capitulo-04-i-designing-building-and-testing-apis]] — Mastering API Architecture — capítulo 4: I. Designing, Building, and Testing APIs
+- [[mastering-api-architecture-capitulo-05-1-design-build-and-specify-apis]] — Mastering API Architecture — capítulo 5: 1. Design, Build, and Specify APIs
+- [[mastering-api-architecture-capitulo-06-2-testing-apis]] — Mastering API Architecture — capítulo 6: 2. Testing APIs
+- [[mastering-api-architecture-capitulo-07-ii-api-traffic-management]] — Mastering API Architecture — capítulo 7: II. API Traffic Management
+- [[mastering-api-architecture-capitulo-08-3-api-gateways-ingress-traffic-management]] — Mastering API Architecture — capítulo 8: 3. API Gateways: Ingress Traffic Management
+- [[mastering-api-architecture-capitulo-09-4-service-mesh-service-to-service-traffic-management]] — Mastering API Architecture — capítulo 9: 4. Service Mesh: Service-to-Service Traffic Management
+- [[mastering-api-architecture-capitulo-10-iii-api-operations-and-security]] — Mastering API Architecture — capítulo 10: III. API Operations and Security
+- [[mastering-api-architecture-capitulo-11-5-deploying-and-releasing-apis]] — Mastering API Architecture — capítulo 11: 5. Deploying and Releasing APIs
+- [[mastering-api-architecture-capitulo-12-6-operational-security-threat-modeling-for-apis]] — Mastering API Architecture — capítulo 12: 6. Operational Security: Threat Modeling for APIs
+- [[mastering-api-architecture-capitulo-13-7-api-authentication-and-authorization]] — Mastering API Architecture — capítulo 13: 7. API Authentication and Authorization
+- [[mastering-api-architecture-capitulo-14-iv-evolutionary-architecture-with-apis]] — Mastering API Architecture — capítulo 14: IV. Evolutionary Architecture with APIs
+- [[mastering-api-architecture-capitulo-15-8-redesigning-applications-to-api-driven-architectures]] — Mastering API Architecture — capítulo 15: 8. Redesigning Applications to API-Driven Architectures
+- [[mastering-api-architecture-capitulo-16-9-using-api-infrastructure-to-evolve-toward-cloud-platforms]] — Mastering API Architecture — capítulo 16: 9. Using API Infrastructure to Evolve Toward Cloud Platforms
+- [[mastering-api-architecture-capitulo-17-10-wrap-up]] — Mastering API Architecture — capítulo 17: 10. Wrap-up
+- [[mastering-api-architecture]] — Mastering API Architecture — conhecimento aplicável
+- [[mcp-servers-para-producao]] — MCP servers para produção
+- [[mecanica-interna-de-llms-para-pratica]] — Mecânica interna de LLMs para uso prático
+- [[memoria-de-sessoes-para-agentes-de-codigo]] — Memória de sessões para agentes de código
+- [[metas-escalonadas-com-contrapesos]] — Metas escalonadas com contrapesos
+- [[metas-por-unidade-setor-e-ciclo]] — Metas por unidade, setor e ciclo
+- [[micro-varejo-condominial-e-varejo-nao-assistido]] — Micro varejo condominial e varejo não assistido
+- [[microservices-e-migracao]] — Microservices e migração
+- [[microservices-up-and-running-capitulo-02-1-toward-a-microservices-architecture]] — Microservices: Up and Running — capítulo 2: 1. Toward a Microservices Architecture
+- [[microservices-up-and-running-capitulo-03-2-designing-a-microservices-operating-model]] — Microservices: Up and Running — capítulo 3: 2. Designing a Microservices Operating Model
+- [[microservices-up-and-running-capitulo-04-3-designing-microservices-the-seed-s-process]] — Microservices: Up and Running — capítulo 4: 3. Designing Microservices: The SEED(S) Process
+- [[microservices-up-and-running-capitulo-05-4-rightsizing-your-microservices-finding-service-boundaries]] — Microservices: Up and Running — capítulo 5: 4. Rightsizing Your Microservices: Finding Service Boundaries
+- [[microservices-up-and-running-capitulo-06-5-dealing-with-the-data]] — Microservices: Up and Running — capítulo 6: 5. Dealing with the Data
+- [[microservices-up-and-running-capitulo-07-6-building-an-infrastructure-pipeline]] — Microservices: Up and Running — capítulo 7: 6. Building an Infrastructure Pipeline
+- [[microservices-up-and-running-capitulo-08-7-building-a-microservices-infrastructure]] — Microservices: Up and Running — capítulo 8: 7. Building a Microservices Infrastructure
+- [[microservices-up-and-running-capitulo-09-8-developer-workspace]] — Microservices: Up and Running — capítulo 9: 8. Developer Workspace
+- [[microservices-up-and-running-capitulo-10-9-developing-microservices]] — Microservices: Up and Running — capítulo 10: 9. Developing Microservices
+- [[microservices-up-and-running-capitulo-11-10-releasing-microservices]] — Microservices: Up and Running — capítulo 11: 10. Releasing Microservices
+- [[microservices-up-and-running-capitulo-12-11-managing-change]] — Microservices: Up and Running — capítulo 12: 11. Managing Change
+- [[microservices-up-and-running-capitulo-13-12-a-journeys-end-and-a-new-beginning]] — Microservices: Up and Running — capítulo 13: 12. A Journey’s End (and a New Beginning)
+- [[microservices-up-and-running]] — Microservices: Up and Running — conhecimento aplicável
+- [[migracao-de-banco-em-transacao-unica-drizzle]] — Migração de banco em transação única (drizzle-orm)
+- [[modelo-de-aluguel-e-risco-de-inundacao]] — Modelo de aluguel e risco de inundação
+- [[modelos-custos-e-selecao]] — Modelos, custos e seleção para o secondbrain
+- [[modulos-profundos-e-feedback-loops-para-agentes]] — Módulos profundos e feedback loops para coding agents
+- [[monitoramento-operacional-clientes-orienta-gestao]] — Monitoramento operacional de clientes da Orienta Gestão
+- [[monolith-to-microservices-capitulo-02-1-just-enough-microservices]] — Monolith to Microservices — capítulo 2: 1. Just Enough Microservices
+- [[monolith-to-microservices-capitulo-03-2-planning-a-migration]] — Monolith to Microservices — capítulo 3: 2. Planning a Migration
+- [[monolith-to-microservices-capitulo-04-3-splitting-the-monolith]] — Monolith to Microservices — capítulo 4: 3. Splitting the Monolith
+- [[monolith-to-microservices-capitulo-05-4-decomposing-the-database]] — Monolith to Microservices — capítulo 5: 4. Decomposing the Database
+- [[monolith-to-microservices-capitulo-06-5-growing-pains]] — Monolith to Microservices — capítulo 6: 5. Growing Pains
+- [[monolith-to-microservices-capitulo-07-6-closing-words]] — Monolith to Microservices — capítulo 7: 6. Closing Words
+- [[monolith-to-microservices-capitulo-08-a-bibliography]] — Monolith to Microservices — capítulo 8: A. Bibliography
+- [[monolith-to-microservices-capitulo-09-b-pattern-index]] — Monolith to Microservices — capítulo 9: B. Pattern Index
+- [[monolith-to-microservices]] — Monolith to Microservices — conhecimento aplicável
+- [[notas-de-aprendizado-design-e-dados]] — Notas de aprendizado sobre design e dados
+- [[object-calisthenics]] — Object Calisthenics
+- [[operacao-onerosa-na-reforma-tributaria-do-consumo]] — Operação onerosa na Reforma Tributária do Consumo
+- [[padrao-saga]] — Padrão Saga
+- [[padroes-de-autorizacao]] — Padrões de autorização
+- [[painel-dez-indicadores-varejo-alimentar]] — Painel de 10 indicadores para varejo alimentar
+- [[patterns-de-workflow-agentic]] — Patterns de workflow agentic: workflows, loops, guardrails e roteamento
+- [[perguntas-estruturadas-em-agentes-cli]] — Perguntas estruturadas em agentes CLI
+- [[pericia-contabil-exame-do-razao-e-conciliacao-bancaria]] — Perícia contábil: exame do razão e conciliação bancária lançamento a lançamento
+- [[persistencia-de-conversas-com-llm]] — Persistência de conversas com LLM
+- [[pesquisa-autonoma-com-metrica]] — Pesquisa autônoma com métrica e evaluator congelado
+- [[pessoa-fisica-contribuinte-ibs-cbs-operacoes-patrimoniais]] — Pessoa física como contribuinte de IBS/CBS em operações patrimoniais
+- [[planejamento-de-distribuicao-de-lucros-2026]] — Planejamento de distribuição de lucros 2026
+- [[planejamento-estrategico-grupo-top]] — Planejamento estratégico Grupo TOP
+- [[porta-de-captura-unica-do-fleet-inbox]] — Porta de captura única do fleet (inbox)
+- [[practical-process-automation-capitulo-02-1-introduction]] — Practical Process Automation — capítulo 2: 1. Introduction
+- [[practical-process-automation-capitulo-03-i-fundamentals]] — Practical Process Automation — capítulo 3: I. Fundamentals
+- [[practical-process-automation-capitulo-04-2-workflow-engines-and-process-solutions]] — Practical Process Automation — capítulo 4: 2. Workflow Engines and Process Solutions
+- [[practical-process-automation-capitulo-05-3-developing-process-solutions]] — Practical Process Automation — capítulo 5: 3. Developing Process Solutions
+- [[practical-process-automation-capitulo-06-4-orchestrate-anything]] — Practical Process Automation — capítulo 6: 4. Orchestrate Anything
+- [[practical-process-automation-capitulo-07-5-championing-workflow-engines-and-bpmn]] — Practical Process Automation — capítulo 7: 5. Championing Workflow Engines and BPMN
+- [[practical-process-automation-capitulo-08-ii-process-automation-in-the-enterprise]] — Practical Process Automation — capítulo 8: II. Process Automation in the Enterprise
+- [[practical-process-automation-capitulo-09-6-solution-architecture]] — Practical Process Automation — capítulo 9: 6. Solution Architecture
+- [[practical-process-automation-capitulo-10-7-autonomy-boundaries-and-isolation]] — Practical Process Automation — capítulo 10: 7. Autonomy, Boundaries, and Isolation
+- [[practical-process-automation-capitulo-11-8-balancing-orchestration-and-choreography]] — Practical Process Automation — capítulo 11: 8. Balancing Orchestration and Choreography
+- [[practical-process-automation-capitulo-12-9-workflow-engines-and-integration-challenges]] — Practical Process Automation — capítulo 12: 9. Workflow Engines and Integration Challenges
+- [[practical-process-automation-capitulo-13-10-businessit-collaboration]] — Practical Process Automation — capítulo 13: 10. Business–IT Collaboration
+- [[practical-process-automation-capitulo-14-11-process-visibility]] — Practical Process Automation — capítulo 14: 11. Process Visibility
+- [[practical-process-automation-capitulo-15-iii-get-going]] — Practical Process Automation — capítulo 15: III. Get Going!
+- [[practical-process-automation-capitulo-16-12-the-journey-to-introduce-process-automation]] — Practical Process Automation — capítulo 16: 12. The Journey to Introduce Process Automation
+- [[practical-process-automation-capitulo-17-13-parting-words]] — Practical Process Automation — capítulo 17: 13. Parting Words
+- [[practical-process-automation]] — Practical Process Automation — conhecimento aplicável
+- [[precificacao-dinamica-no-varejo-alimentar]] — Precificação dinâmica no varejo alimentar
+- [[prevencao-de-fraudes-bancarias-e-chaves-pix]] — Prevenção de fraudes bancárias e chaves Pix
+- [[prevencao-de-perdas-orientada-a-eventos]] — Prevenção de perdas orientada a eventos
+- [[price-waterfall-e-pocket-margin]] — Price waterfall e pocket margin
+- [[pricing-no-varejo-alimentar]] — Pricing no varejo alimentar
+- [[principios-solid]] — Princípios SOLID
+- [[process-automation]] — Process automation
+- [[produtividade-de-desenvolvedores]] — Produtividade de desenvolvedores
+- [[rag-na-pratica]] — RAG na prática
+- [[reconciliacao-e-reprodutibilidade-de-modelos-financeiros]] — Reconciliação e reprodutibilidade de modelos financeiros
+- [[reconstrucao-de-componentes-react-via-fiber-e-llm]] — Reconstrução de componentes React via Fiber e LLM
+- [[refactoring]] — Refactoring
+- [[referencias-tecnicas-de-desenvolvimento]] — Referências técnicas de desenvolvimento
+- [[reforma-tributaria-do-consumo]] — Reforma tributária do consumo
+- [[reforma-tributaria-e-modelagem-de-caixa]] — Reforma tributária e modelagem de caixa
+- [[rendimento-e-rastreabilidade-no-acougue]] — Rendimento e rastreabilidade no açougue
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-01-foreword]] — Restful Web API Patterns and Practices Cookbook — capítulo 1: Foreword
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-03-i-understanding-restful-hypermedia]] — Restful Web API Patterns and Practices Cookbook — capítulo 3: I. Understanding RESTful Hypermedia
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-04-1-introducing-restful-web-apis]] — Restful Web API Patterns and Practices Cookbook — capítulo 4: 1. Introducing RESTful Web APIs
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-05-2-thinking-and-designing-in-hypermedia]] — Restful Web API Patterns and Practices Cookbook — capítulo 5: 2. Thinking and Designing in Hypermedia
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-06-ii-hypermedia-recipe-catalog]] — Restful Web API Patterns and Practices Cookbook — capítulo 6: II. Hypermedia Recipe Catalog
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-07-3-hypermedia-design]] — Restful Web API Patterns and Practices Cookbook — capítulo 7: 3. Hypermedia Design
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-08-4-hypermedia-clients]] — Restful Web API Patterns and Practices Cookbook — capítulo 8: 4. Hypermedia Clients
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-09-5-hypermedia-services]] — Restful Web API Patterns and Practices Cookbook — capítulo 9: 5. Hypermedia Services
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-10-6-distributed-data]] — Restful Web API Patterns and Practices Cookbook — capítulo 10: 6. Distributed Data
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-11-7-hypermedia-workflow]] — Restful Web API Patterns and Practices Cookbook — capítulo 11: 7. Hypermedia Workflow
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-12-8-closing-remarks]] — Restful Web API Patterns and Practices Cookbook — capítulo 12: 8. Closing Remarks
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-13-a-guiding-principles-of-restful-web-apis]] — Restful Web API Patterns and Practices Cookbook — capítulo 13: A. Guiding Principles of RESTful Web APIs
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-14-b-additional-reading]] — Restful Web API Patterns and Practices Cookbook — capítulo 14: B. Additional Reading
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-15-c-related-standards]] — Restful Web API Patterns and Practices Cookbook — capítulo 15: C. Related Standards
+- [[restful-web-api-patterns-and-practices-cookbook-capitulo-16-d-using-the-hypercli]] — Restful Web API Patterns and Practices Cookbook — capítulo 16: D. Using the HyperCLI
+- [[restful-web-api-patterns-and-practices-cookbook]] — Restful Web API Patterns and Practices Cookbook — conhecimento aplicável
+- [[revisao-de-codigo-em-workflows-agenticos]] — Revisão de código em workflows agénticos
+- [[rotina-operacional-sped-da-consultoria]] — Rotina operacional SPED da consultoria
+- [[ruptura-historica-e-valor-de-venda-perdida]] — Ruptura histórica e valor de venda perdida
+- [[saas-multi-tenant]] — SaaS multi-tenant
+- [[second-brain-markdown-para-agentes]] — Second brain em markdown para agentes
+- [[second-brain-para-gestao-operacional]] — Second Brain para gestão operacional
+- [[serverless-development-on-aws-capitulo-01-foreword]] — Serverless Development on AWS — capítulo 1: Foreword
+- [[serverless-development-on-aws-capitulo-03-1-introduction-to-serverless-on-aws]] — Serverless Development on AWS — capítulo 3: 1. Introduction to Serverless on AWS
+- [[serverless-development-on-aws-capitulo-04-2-enterprise-readiness-for-serverless]] — Serverless Development on AWS — capítulo 4: 2. Enterprise Readiness for Serverless
+- [[serverless-development-on-aws-capitulo-05-3-software-architecture-for-building-serverless-microservice]] — Serverless Development on AWS — capítulo 5: 3. Software Architecture for Building Serverless Microservices
+- [[serverless-development-on-aws-capitulo-06-4-serverless-and-security]] — Serverless Development on AWS — capítulo 6: 4. Serverless and Security
+- [[serverless-development-on-aws-capitulo-07-5-serverless-implementation-patterns]] — Serverless Development on AWS — capítulo 7: 5. Serverless Implementation Patterns
+- [[serverless-development-on-aws-capitulo-08-6-implementing-serverless-applications]] — Serverless Development on AWS — capítulo 8: 6. Implementing Serverless Applications
+- [[serverless-development-on-aws-capitulo-09-7-testing-serverless-applications]] — Serverless Development on AWS — capítulo 9: 7. Testing Serverless Applications
+- [[serverless-development-on-aws-capitulo-10-8-operating-serverless]] — Serverless Development on AWS — capítulo 10: 8. Operating Serverless
+- [[serverless-development-on-aws-capitulo-11-9-cost-of-serverless-operation]] — Serverless Development on AWS — capítulo 11: 9. Cost of Serverless Operation
+- [[serverless-development-on-aws-capitulo-12-10-sustainability-in-serverless]] — Serverless Development on AWS — capítulo 12: 10. Sustainability in Serverless
+- [[serverless-development-on-aws-capitulo-13-11-preparing-for-the-future-with-serverless]] — Serverless Development on AWS — capítulo 13: 11. Preparing for the Future with Serverless
+- [[serverless-development-on-aws-capitulo-14-a-appendix-a-postnls-serverless-journey]] — Serverless Development on AWS — capítulo 14: A. Appendix A: PostNL’s Serverless Journey
+- [[serverless-development-on-aws-capitulo-15-b-appendix-b-taco-bells-serverless-journey]] — Serverless Development on AWS — capítulo 15: B. Appendix B: Taco Bell’s Serverless Journey
+- [[serverless-development-on-aws-capitulo-16-c-appendix-c-templates-and-worksheets]] — Serverless Development on AWS — capítulo 16: C. Appendix C: Templates and Worksheets
+- [[serverless-development-on-aws]] — Serverless Development on AWS — conhecimento aplicável
+- [[serverless-e-cloud-operations]] — Serverless e cloud operations
+- [[simples-nacional-e-regime-hibrido-ibs-cbs]] — Simples Nacional e regime híbrido de IBS/CBS
+- [[simulacao-alocacao-empregados-simples-nacional]] — Simulação por alocação de empregados no Simples Nacional
+- [[sincronizacao-voicenotes-secondbrain]] — Sincronização de Voicenotes para o secondbrain
+- [[software-architecture-metrics-capitulo-02-1-four-key-metrics-unleashed]] — Software Architecture Metrics — capítulo 2: 1. Four Key Metrics Unleashed
+- [[software-architecture-metrics-capitulo-03-2-the-fitness-function-testing-pyramid-an-analogy-for-archit]] — Software Architecture Metrics — capítulo 3: 2. The Fitness Function Testing Pyramid: An Analogy for Architectural Tests and Metrics
+- [[software-architecture-metrics-capitulo-04-3-evolutionary-architecture-guiding-architecture-with-testab]] — Software Architecture Metrics — capítulo 4: 3. Evolutionary Architecture: Guiding Architecture with Testability and Deployability
+- [[software-architecture-metrics-capitulo-05-4-improve-your-architecture-with-the-modularity-maturity-ind]] — Software Architecture Metrics — capítulo 5: 4. Improve Your Architecture with the Modularity Maturity Index
+- [[software-architecture-metrics-capitulo-06-5-private-builds-and-metrics-tools-for-surviving-devops-tran]] — Software Architecture Metrics — capítulo 6: 5. Private Builds and Metrics: Tools for Surviving DevOps Transitions
+- [[software-architecture-metrics-capitulo-07-6-scaling-an-organization-the-central-role-of-software-archi]] — Software Architecture Metrics — capítulo 7: 6. Scaling an Organization: The Central Role of Software Architecture
+- [[software-architecture-metrics-capitulo-08-7-the-role-of-measurement-in-software-architecture]] — Software Architecture Metrics — capítulo 8: 7. The Role of Measurement in Software Architecture
+- [[software-architecture-metrics-capitulo-09-8-progressing-from-metrics-to-engineering]] — Software Architecture Metrics — capítulo 9: 8. Progressing from Metrics to Engineering
+- [[software-architecture-metrics-capitulo-10-9-using-software-metrics-to-ensure-maintainability]] — Software Architecture Metrics — capítulo 10: 9. Using Software Metrics to Ensure Maintainability
+- [[software-architecture-metrics-capitulo-11-10-measure-the-unknown-with-the-goal-question-metric-approac]] — Software Architecture Metrics — capítulo 11: 10. Measure the Unknown with the Goal-Question-Metric Approach
+- [[software-architecture-metrics]] — Software Architecture Metrics — conhecimento aplicável
+- [[software-architecture-patterns-capitulo-01-1-introduction]] — Software Architecture Patterns — capítulo 1: 1. Introduction
+- [[software-architecture-patterns-capitulo-02-2-architectural-structures-and-styles]] — Software Architecture Patterns — capítulo 2: 2. Architectural Structures and Styles
+- [[software-architecture-patterns-capitulo-03-3-layered-architecture]] — Software Architecture Patterns — capítulo 3: 3. Layered Architecture
+- [[software-architecture-patterns-capitulo-04-4-microkernel-architecture]] — Software Architecture Patterns — capítulo 4: 4. Microkernel Architecture
+- [[software-architecture-patterns-capitulo-05-5-event-driven-architecture]] — Software Architecture Patterns — capítulo 5: 5. Event-Driven Architecture
+- [[software-architecture-patterns-capitulo-06-6-microservices-architecture]] — Software Architecture Patterns — capítulo 6: 6. Microservices Architecture
+- [[software-architecture-patterns-capitulo-07-7-space-based-architecture]] — Software Architecture Patterns — capítulo 7: 7. Space-Based Architecture
+- [[software-architecture-patterns-capitulo-08-a-style-analysis-summary]] — Software Architecture Patterns — capítulo 8: A. Style Analysis Summary
+- [[software-architecture-patterns]] — Software Architecture Patterns — conhecimento aplicável
+- [[software-architecture-the-hard-parts-capitulo-02-1-what-happens-when-there-are-no-best-practices]] — Software Architecture: The Hard Parts — capítulo 2: 1. What Happens When There Are No “Best Practices”?
+- [[software-architecture-the-hard-parts-capitulo-03-i-pulling-things-apart]] — Software Architecture: The Hard Parts — capítulo 3: I. Pulling Things Apart
+- [[software-architecture-the-hard-parts-capitulo-04-2-discerning-coupling-in-software-architecture]] — Software Architecture: The Hard Parts — capítulo 4: 2. Discerning Coupling in Software Architecture
+- [[software-architecture-the-hard-parts-capitulo-05-3-architectural-modularity]] — Software Architecture: The Hard Parts — capítulo 5: 3. Architectural Modularity
+- [[software-architecture-the-hard-parts-capitulo-06-4-architectural-decomposition]] — Software Architecture: The Hard Parts — capítulo 6: 4. Architectural Decomposition
+- [[software-architecture-the-hard-parts-capitulo-07-5-component-based-decomposition-patterns]] — Software Architecture: The Hard Parts — capítulo 7: 5. Component-Based Decomposition Patterns
+- [[software-architecture-the-hard-parts-capitulo-08-6-pulling-apart-operational-data]] — Software Architecture: The Hard Parts — capítulo 8: 6. Pulling Apart Operational Data
+- [[software-architecture-the-hard-parts-capitulo-09-7-service-granularity]] — Software Architecture: The Hard Parts — capítulo 9: 7. Service Granularity
+- [[software-architecture-the-hard-parts-capitulo-10-ii-putting-things-back-together]] — Software Architecture: The Hard Parts — capítulo 10: II. Putting Things Back Together
+- [[software-architecture-the-hard-parts-capitulo-11-8-reuse-patterns]] — Software Architecture: The Hard Parts — capítulo 11: 8. Reuse Patterns
+- [[software-architecture-the-hard-parts-capitulo-12-9-data-ownership-and-distributed-transactions]] — Software Architecture: The Hard Parts — capítulo 12: 9. Data Ownership and Distributed Transactions
+- [[software-architecture-the-hard-parts-capitulo-13-10-distributed-data-access]] — Software Architecture: The Hard Parts — capítulo 13: 10. Distributed Data Access
+- [[software-architecture-the-hard-parts-capitulo-14-11-managing-distributed-workflows]] — Software Architecture: The Hard Parts — capítulo 14: 11. Managing Distributed Workflows
+- [[software-architecture-the-hard-parts-capitulo-15-12-transactional-sagas]] — Software Architecture: The Hard Parts — capítulo 15: 12. Transactional Sagas
+- [[software-architecture-the-hard-parts-capitulo-16-13-contracts]] — Software Architecture: The Hard Parts — capítulo 16: 13. Contracts
+- [[software-architecture-the-hard-parts-capitulo-17-14-managing-analytical-data]] — Software Architecture: The Hard Parts — capítulo 17: 14. Managing Analytical Data
+- [[software-architecture-the-hard-parts-capitulo-18-15-build-your-own-trade-off-analysis]] — Software Architecture: The Hard Parts — capítulo 18: 15. Build Your Own Trade-Off Analysis
+- [[software-architecture-the-hard-parts-capitulo-19-a-concept-and-term-references]] — Software Architecture: The Hard Parts — capítulo 19: A. Concept and Term References
+- [[software-architecture-the-hard-parts-capitulo-20-b-architecture-decision-record-references]] — Software Architecture: The Hard Parts — capítulo 20: B. Architecture Decision Record References
+- [[software-architecture-the-hard-parts-capitulo-21-c-trade-off-references]] — Software Architecture: The Hard Parts — capítulo 21: C. Trade-Off References
+- [[software-architecture-the-hard-parts]] — Software Architecture: The Hard Parts — conhecimento aplicável
+- [[spec-driven-development]] — Spec-Driven Development
+- [[split-payment-e-liquidez-empresarial]] — Split payment e liquidez empresarial
+- [[stacked-pull-requests]] — Stacked pull requests
+- [[system-design-entrevistas]] — System Design — Entrevistas
+- [[systems-thinking-e-sociotecnico]] — Systems thinking e sociotécnico
+- [[technology-strategy-patterns-capitulo-02-introduction]] — Technology Strategy Patterns — capítulo 2: Introduction
+- [[technology-strategy-patterns-capitulo-03-i-context-architecture-and-strategy]] — Technology Strategy Patterns — capítulo 3: I. Context: Architecture and Strategy
+- [[technology-strategy-patterns-capitulo-04-1-architect-and-strategist]] — Technology Strategy Patterns — capítulo 4: 1. Architect and Strategist
+- [[technology-strategy-patterns-capitulo-05-ii-creating-the-strategy]] — Technology Strategy Patterns — capítulo 5: II. Creating the Strategy
+- [[technology-strategy-patterns-capitulo-06-2-analysis]] — Technology Strategy Patterns — capítulo 6: 2. Analysis
+- [[technology-strategy-patterns-capitulo-07-3-world-context]] — Technology Strategy Patterns — capítulo 7: 3. World Context
+- [[technology-strategy-patterns-capitulo-08-4-industry-context]] — Technology Strategy Patterns — capítulo 8: 4. Industry Context
+- [[technology-strategy-patterns-capitulo-09-5-corporate-context]] — Technology Strategy Patterns — capítulo 9: 5. Corporate Context
+- [[technology-strategy-patterns-capitulo-10-6-department-context]] — Technology Strategy Patterns — capítulo 10: 6. Department Context
+- [[technology-strategy-patterns-capitulo-11-iii-communicating-the-strategy]] — Technology Strategy Patterns — capítulo 11: III. Communicating the Strategy
+- [[technology-strategy-patterns-capitulo-12-7-approach-patterns]] — Technology Strategy Patterns — capítulo 12: 7. Approach Patterns
+- [[technology-strategy-patterns-capitulo-13-8-templates]] — Technology Strategy Patterns — capítulo 13: 8. Templates
+- [[technology-strategy-patterns-capitulo-14-9-decks]] — Technology Strategy Patterns — capítulo 14: 9. Decks
+- [[technology-strategy-patterns-capitulo-15-10-bringing-it-all-together]] — Technology Strategy Patterns — capítulo 15: 10. Bringing It All Together
+- [[technology-strategy-patterns-capitulo-16-a-recommended-reading]] — Technology Strategy Patterns — capítulo 16: A. Recommended Reading
+- [[technology-strategy-patterns]] — Technology Strategy Patterns — conhecimento aplicável
+- [[test-patterns]] — Test Patterns (Test Doubles)
+- [[testes-paralelos-em-go]] — Testes paralelos em Go
+- [[the-art-of-agile-development-capitulo-01-foreword]] — The Art of Agile Development — capítulo 1: Foreword
+- [[the-art-of-agile-development-capitulo-03-i-improving-agility]] — The Art of Agile Development — capítulo 3: I. Improving Agility
+- [[the-art-of-agile-development-capitulo-04-1-what-is-agile]] — The Art of Agile Development — capítulo 4: 1. What Is Agile?
+- [[the-art-of-agile-development-capitulo-05-2-how-to-be-agile]] — The Art of Agile Development — capítulo 5: 2. How to Be Agile
+- [[the-art-of-agile-development-capitulo-06-3-choose-your-agility]] — The Art of Agile Development — capítulo 6: 3. Choose Your Agility
+- [[the-art-of-agile-development-capitulo-07-4-invest-in-agility]] — The Art of Agile Development — capítulo 7: 4. Invest in Agility
+- [[the-art-of-agile-development-capitulo-08-5-invest-in-change]] — The Art of Agile Development — capítulo 8: 5. Invest in Change
+- [[the-art-of-agile-development-capitulo-09-6-scaling-agility]] — The Art of Agile Development — capítulo 9: 6. Scaling Agility
+- [[the-art-of-agile-development-capitulo-10-ii-focusing-on-value]] — The Art of Agile Development — capítulo 10: II. Focusing on Value
+- [[the-art-of-agile-development-capitulo-11-7-teamwork]] — The Art of Agile Development — capítulo 11: 7. Teamwork
+- [[the-art-of-agile-development-capitulo-12-8-planning]] — The Art of Agile Development — capítulo 12: 8. Planning
+- [[the-art-of-agile-development-capitulo-13-9-ownership]] — The Art of Agile Development — capítulo 13: 9. Ownership
+- [[the-art-of-agile-development-capitulo-14-10-accountability]] — The Art of Agile Development — capítulo 14: 10. Accountability
+- [[the-art-of-agile-development-capitulo-15-11-improvement]] — The Art of Agile Development — capítulo 15: 11. Improvement
+- [[the-art-of-agile-development-capitulo-16-iii-delivering-reliably]] — The Art of Agile Development — capítulo 16: III. Delivering Reliably
+- [[the-art-of-agile-development-capitulo-17-12-collaboration]] — The Art of Agile Development — capítulo 17: 12. Collaboration
+- [[the-art-of-agile-development-capitulo-18-13-development]] — The Art of Agile Development — capítulo 18: 13. Development
+- [[the-art-of-agile-development-capitulo-19-14-design]] — The Art of Agile Development — capítulo 19: 14. Design
+- [[the-art-of-agile-development-capitulo-20-15-devops]] — The Art of Agile Development — capítulo 20: 15. DevOps
+- [[the-art-of-agile-development-capitulo-21-16-quality]] — The Art of Agile Development — capítulo 21: 16. Quality
+- [[the-art-of-agile-development-capitulo-22-iv-optimizing-outcomes]] — The Art of Agile Development — capítulo 22: IV. Optimizing Outcomes
+- [[the-art-of-agile-development-capitulo-23-17-autonomy]] — The Art of Agile Development — capítulo 23: 17. Autonomy
+- [[the-art-of-agile-development-capitulo-24-18-discovery]] — The Art of Agile Development — capítulo 24: 18. Discovery
+- [[the-art-of-agile-development-capitulo-25-19-into-the-future]] — The Art of Agile Development — capítulo 25: 19. Into the Future
+- [[the-art-of-agile-development-capitulo-26-references]] — The Art of Agile Development — capítulo 26: References
+- [[the-art-of-agile-development]] — The Art of Agile Development — conhecimento aplicável
+- [[tradeoffs-arquiteturais]] — Trade-offs arquiteturais
+- [[transferencias-internas-e-cmv-por-setor]] — Transferências internas e CMV por setor
+- [[validacao-e-verificacao-de-email]] — Validação e verificação de email
+- [[validacao-humana-em-wikis-llm]] — Validação humana em wikis mantidos por LLM
+- [[venda-de-imoveis-por-pessoa-fisica]] — Venda de imóveis por pessoa física no IBS/CBS
+- [[verificacao-adversarial-e-oraculos-de-agentes]] — Verificação adversarial e oráculos para agentes de código
+- [[visualizacao-de-schema-de-banco-de-dados]] — Visualização de schema de banco de dados
+- [[workflow-engenharia-agentic]] — Workflow de engenharia agentic com gates humanos — análise e integração com o Tabularium
+- [[workflow-operacional]] — Workflow operacional
+
+## entities
+
+- [[ai-engineer-youtube-channel]] — AI Engineer (canal YouTube)
+- [[ai-memory]] — ai-memory
+- [[alexandre-rezende]] — Alexandre Rezende
+- [[algarve]] — Algarve
+- [[aline-dominato-sessa]] — Aline Dominato Sessa
+- [[alterdata]] — Alterdata
+- [[andrej-karpathy-skills]] — andrej-karpathy-skills
+- [[andrej-karpathy]] — Andrej Karpathy
+- [[autoresearch]] — autoresearch
+- [[bc-protege-mais]] — BC Protege+
+- [[belmock-contabilidade]] — Belmock (contabilidade)
+- [[biblioteca-tecnica-secondbrain]] — Biblioteca técnica no secondbrain
+- [[bippy]] — bippy
+- [[business-analyst-skill]] — Business Analyst (skill)
+- [[cafe-arrumado]] — Café Arrumado
+- [[caffe-lorenzon]] — Caffe Lorenzon
+- [[chartdb]] — chartdb
+- [[check-if-email-exists]] — check-if-email-exists
+- [[clientes-monitorados-orienta-gestao]] — Clientes monitorados da Orienta Gestão
+- [[codex-astra-luna-orchestrator]] — Codex Astra Luna Orchestrator (setup)
+- [[comite-gestor-do-ibs]] — Comitê Gestor do IBS
+- [[conexus]] — Conexus
+- [[confaz]] — CONFAZ
+- [[conselho-administrativo-de-recursos-fiscais]] — Conselho Administrativo de Recursos Fiscais
+- [[conselho-federal-de-contabilidade]] — Conselho Federal de Contabilidade (CFC)
+- [[contabilidade-real]] — Contabilidade Real
+- [[contabilidade-sias]] — Contabilidade Sias
+- [[contabilizei]] — Contabilizei
+- [[ctx-rs]] — ctx.rs
+- [[daniel-da-rocha]] — Daniel da Rocha
+- [[devspeak]] — DevSpeak
+- [[divina-industria]] — Divina Indústria
+- [[domingos-savio-erthal]] — Domingos Sávio Erthal
+- [[eldorado]] — Eldorado (grupo Samuel Nogarol)
+- [[eudes-trarbach]] — Eudes Trarbach
+- [[evalite]] — Evalite
+- [[expresso-serrano]] — Expresso Serrano
+- [[felipe-brothers]] — Felipe Carnielli Cesconeto
+- [[fernandes-correia-advogados]] — Fernandes Correia — advogados
+- [[firecrawl]] — Firecrawl
+- [[fiscus]] — Fiscus
+- [[fluxus]] — Fluxus
+- [[foreman-jev-supervisor]] — Foreman — supervisor de fábrica de software com Jev
+- [[gabriel-sessa-altoe]] — Gabriel Sessa Altoé
+- [[gesttione]] — Gesttione
+- [[getulio]] — Getúlio
+- [[github-repos-gesttione-archives]] — Projetos arquivados da Gesttione
+- [[github-repos-gesttione-solutions]] — Projetos da Gesttione Solutions
+- [[github-repos-marcioaltoe]] — Projetos pessoais de Marcio Altoé
+- [[grano]] — Grano
+- [[graphify]] — Graphify
+- [[grupo-top]] — Grupo TOP
+- [[gss]] — GSS
+- [[guarani]] — Guarani
+- [[hermes-jev-skills]] — hermes-jev-skills (kerpopule) — decisões de agente com medidas
+- [[hettore-sias]] — Hettore Sias
+- [[hills]] — Hills
+- [[idee-contabilidade]] — IDEE (Idee Contabilidade)
+- [[informatize-contabilidade]] — Informatize Contabilidade
+- [[jcm-router]] — jcm-router — roteamento por mensagem com guard de cache
+- [[jev-guard]] — jev-guard (leepokai) — gate de segurança para agentes de código
+- [[jev-typesafe]] — JEV (TypeSafe) — System One de decisões estruturadas
+- [[jota]] — JOTA
+- [[julio-cesar-morosky-filho]] — Julio César Morosky Filho
+- [[julio-cesar-morosky]] — Julio César Morosky
+- [[jurinews]] — JuriNews
+- [[karlos-franco]] — Karlos Franco
+- [[langgraph]] — LangGraph
+- [[lc-hortifruti]] — LC Hortifruti
+- [[legisweb]] — LegisWeb
+- [[leonardo-erthal]] — Leonardo (Monza)
+- [[levei-um-bolo]] — Levei um Bolo
+- [[llm-council]] — llm-council
+- [[loja-de-referencia-varejo-alimentar]] — Loja de referência de varejo alimentar
+- [[lorena-silva]] — Lorena Silva
+- [[luca-king]] — Luca King
+- [[lucas-subtil-de-paula]] — Lucas Subtil de Paula
+- [[luciana-pao-divino]] — Luciana (Pão Divino)
+- [[luiz-panzzone]] — Luiz Carlos Azevedo de Almeida
+- [[marcelo-vieira-molinaroli-filho]] — Marcelo Vieira Molinaroli Filho
+- [[marcelo-vieira-molinaroli]] — Marcelo Vieira Molinaroli
+- [[marcio-altoe]] — Marcio Ribeiro Altoé
+- [[marcio-goulart-jr]] — Márcio Goulart Jr.
+- [[marcio-rodrigues-propan]] — Márcio Rodrigues (Propan)
+- [[marcio-valentin]] — Márcio Valentin
+- [[master-contabil]] — Master Contábil
+- [[matt-pocock]] — Matt Pocock
+- [[mediterraneo]] — Mediterrâneo
+- [[meire-erthal]] — Meire Erthal
+- [[moacir-barros]] — Moacir Barros
+- [[monte-libano]] — Monte Líbano (padaria)
+- [[monza]] — Monza (padaria e confeitaria)
+- [[natalia-sias]] — Natália (Contabilidade Sias)
+- [[nopro-ai]] — Nopro AI
+- [[oceq-group]] — Oceq Group
+- [[openfinance-brasil]] — Open Finance Brasil
+- [[openlogi]] — openlogi
+- [[oraculum]] — Oraculum
+- [[orienta-gestao]] — Orienta Gestão
+- [[padaria-nova-republica]] — Padaria Nova República / Padaria República
+- [[padarias-skips-brothers]] — Padarias Skips e Brothers
+- [[pantheon]] — Pantheon
+- [[panzzone]] — Panzzone
+- [[pao-divino]] — Pão Divino
+- [[pao-e-cia]] — Pão e Cia
+- [[patrimonius]] — Patrimonius
+- [[peterpao]] — Peterpão
+- [[piraci-oliveira-advogados]] — Piraci Oliveira / Piraci Advogados
+- [[portal-da-legislacao-planalto]] — Portal da Legislação/Planalto
+- [[procuradoria-geral-da-fazenda-nacional]] — Procuradoria-Geral da Fazenda Nacional
+- [[progresso-contabilidade]] — Progresso Contabilidade
+- [[rafael-brothers]] — Rafael Carnielli Cesconeto
+- [[rc-contabilidade]] — RC Contabilidade
+- [[receita-federal-do-brasil]] — Receita Federal do Brasil
+- [[renato-augusto-youtube-channel]] — Renato Augusto (canal YouTube)
+- [[renato-ronchi-poletto]] — Renato Ronchi Poletto
+- [[ricardo-pinto]] — Ricardo Pinto
+- [[rodrigo-branas]] — Rodrigo Branas
+- [[rodrigo-ronchi-poletto]] — Rodrigo Ronchi Poletto
+- [[rogerio-neber-ferreira]] — Rogério Neber Ferreira
+- [[rogerio-ronchi-poletto]] — Rogério Ronchi Poletto
+- [[roundfix]] — Roundfix
+- [[samuel-nogarol]] — Samuel Nogarol
+- [[santhiago-vila-frios]] — Santhiago (Vila Frios)
+- [[sefaz-es]] — SEFAZ-ES — Secretaria da Fazenda do Espírito Santo
+- [[senior-hcm]] — Sênior HCM
+- [[show-de-compras]] — Show de Compras (grupo Ronchi)
+- [[silvana-bicalho-belmock]] — Silvana Bicalho Belmock
+- [[sistemas-sgl-e-hipadoca]] — SGL e Hipadoca
+- [[skills]] — Skills
+- [[superior-tribunal-de-justica]] — Superior Tribunal de Justiça
+- [[supremo-tribunal-federal]] — Supremo Tribunal Federal
+- [[tecni-contabil]] — Tecni Contábil
+- [[tecnoweb]] — Tecnoweb Informática
+- [[thomas-case]] — Thomas Case
+- [[tldv]] — tl;dv
+- [[tortellote]] — Tortellote
+- [[totvs]] — TOTVS
+- [[trarbach]] — Trarbach
+- [[tribunal-de-justica-de-sao-paulo]] — Tribunal de Justiça de São Paulo
+- [[tribunal-regional-federal-da-3a-regiao]] — Tribunal Regional Federal da 3ª Região
+- [[tributario-nos-bastidores]] — Tributário nos Bastidores
+- [[truefoundry]] — TrueFoundry
+- [[vila-frios]] — Vila Frios
+- [[vio]] — Vio
+- [[visio]] — Visio
+- [[voicenotes]] — Voicenotes
+- [[vortex]] — Vortex
+- [[walter-uliana-ronchi]] — Walter Uliana Ronchi
+
+## fiscal
+
+- [[apropriacao-indebita-tributaria]] — Apropriação indébita tributária
+- [[bonificacao-em-acoes-e-irrf]] — Bonificação em ações e IRRF
+- [[contabilizacao-ibs-cbs-periodo-de-teste-2026]] — Contabilização de IBS/CBS no período de teste de 2026
+- [[contencioso-tributario-em-tribunais-superiores]] — Contencioso tributário em tribunais superiores
+- [[cronograma-documentos-fiscais-ibs-cbs-ato-4-2026]] — Cronograma de documentos fiscais IBS/CBS — Ato Conjunto nº 4/2026
+- [[depreciacao-acelerada-irpj-csll]] — Depreciação acelerada — IRPJ/CSLL (Lei 14.871/2024)
+- [[devedor-contumaz]] — Devedor contumaz
+- [[digest-fiscal-2026-07-13-a-2026-07-19]] — Digest fiscal — semana de 2026-07-13 a 2026-07-19
+- [[digest-fiscal-2026-07-20-a-2026-07-26]] — Digest fiscal — semana de 2026-07-20 a 2026-07-26
+- [[digest-fiscal-2026-07-27-a-2026-08-02]] — Digest fiscal — semana de 2026-07-27 a 2026-08-02
+- [[digest-fiscal-2026-08-03-a-2026-08-09]] — Digest fiscal — semana de 2026-08-03 a 2026-08-09
+- [[digest-fiscal-2026-08-10-a-2026-08-16]] — Digest fiscal — semana de 2026-08-10 a 2026-08-16
+- [[digest-fiscal-2026-08-17-a-2026-08-23]] — Digest fiscal — semana de 2026-08-17 a 2026-08-23
+- [[digest-fiscal-2026-08-24-a-2026-08-30]] — Digest fiscal — semana de 2026-08-24 a 2026-08-30
+- [[digest-fiscal-2026-08-31-a-2026-09-06]] — Digest fiscal — semana de 2026-08-31 a 2026-09-06
+- [[digest-fiscal-2026-09-07-a-2026-09-13]] — Digest fiscal — semana de 2026-09-07 a 2026-09-13
+- [[digest-fiscal-2026-09-14-a-2026-09-20]] — Digest fiscal — semana de 2026-09-14 a 2026-09-20
+- [[digest-fiscal-2026-09-21-a-2026-09-27]] — Digest fiscal — semana de 2026-09-21 a 2026-09-27
+- [[digest-fiscal-2026-09-28-a-2026-10-04]] — Digest fiscal — semana de 2026-09-28 a 2026-10-04
+- [[holdings-patrimoniais-comodato-gratuito-e-ddl]] — Holdings patrimoniais, comodato gratuito e DDL
+- [[icms-creditos-e-produtos-intermediarios]] — ICMS — créditos de produtos intermediários
+- [[icms-difal-e-lc-190-2022]] — ICMS DIFAL e LC 190/2022
+- [[irpf-ganho-capital-doacao-adiantamento-legitima]] — IRPF sobre ganho de capital em doação como adiantamento de legítima
+- [[itbi-base-de-calculo-e-valor-declarado]] — ITBI — base de cálculo e valor declarado
+- [[itbi-imunidade-integralizacao-holding]] — ITBI na integralização de capital em holding — imunidade, Tema 796 e Tema 1348
+- [[itbi-municipios-es]] — ITBI nos municípios do Espírito Santo — Vila Velha e Guarapari
+- [[itcmd-base-de-calculo-em-quotas-sociais]] — ITCMD — base de cálculo em quotas sociais
+- [[itcmd-e-distribuicao-desproporcional-de-lucros]] — ITCMD e distribuição desproporcional de lucros
+- [[itcmd-es]] — ITCMD no Espírito Santo — alíquota, base, usufruto, isenções e progressividade
+- [[judicializacao-do-ibs-cbs]] — Judicialização do IBS/CBS
+- [[lc-227-2026-itcmd-e-itbi]] — LC 227/2026 — normas gerais do ITCMD e alterações do ITBI (CTN)
+- [[lc-236-2026-contencioso-administrativo-tributario]] — LC 236/2026 — contencioso administrativo tributário, limites de multas e soluções consensuais
+- [[lucros-dividendos-e-distribuicao-disfarcada]] — Lucros, dividendos e distribuição disfarçada
+- [[manual-operacoes-icms-ipi-parana]] — Manual operacional ICMS/IPI Paraná
+- [[monitoramento-fiscal-2026-07-14]] — Monitoramento fiscal — 2026-07-14
+- [[monitoramento-fiscal-2026-07-16]] — Monitoramento fiscal — 2026-07-16
+- [[monitoramento-fiscal-2026-07-17]] — Monitoramento fiscal — 2026-07-17
+- [[monitoramento-fiscal-2026-07-19]] — Monitoramento fiscal — 2026-07-19
+- [[monitoramento-fiscal-2026-07-20]] — Monitoramento fiscal — 2026-07-20
+- [[monitoramento-fiscal-2026-07-21]] — Monitoramento fiscal — 2026-07-21
+- [[monitoramento-fiscal-2026-07-22]] — Monitoramento fiscal — 2026-07-22
+- [[monitoramento-fiscal-2026-07-24]] — Monitoramento fiscal — 2026-07-24
+- [[monitoramento-fiscal-2026-07-25]] — Monitoramento fiscal — 2026-07-25
+- [[monitoramento-fiscal-2026-07-26]] — Monitoramento fiscal — 2026-07-26
+- [[monitoramento-fiscal-2026-07-28]] — Monitoramento fiscal — 2026-07-28
+- [[monitoramento-fiscal-2026-07-29]] — Monitoramento fiscal — 2026-07-29
+- [[monitoramento-fiscal-2026-07-30]] — Monitoramento fiscal — 2026-07-30
+- [[monitoramento-fiscal-2026-07-31]] — Monitoramento fiscal — 2026-07-31
+- [[monitoramento-fiscal-2026-08-01]] — Monitoramento fiscal — 2026-08-01
+- [[monitoramento-fiscal-2026-08-03]] — Monitoramento fiscal — 2026-08-03
+- [[monitoramento-fiscal-2026-08-05]] — Monitoramento fiscal — 2026-08-05
+- [[monitoramento-fiscal-2026-08-06]] — Monitoramento fiscal — 2026-08-06
+- [[monitoramento-fiscal-2026-08-07]] — Monitoramento fiscal — 2026-08-07
+- [[monitoramento-fiscal-2026-08-08]] — Monitoramento fiscal — 2026-08-08
+- [[monitoramento-fiscal-2026-08-10]] — Monitoramento fiscal 2026-08-10
+- [[monitoramento-fiscal-2026-08-11]] — Monitoramento fiscal — 2026-08-11
+- [[monitoramento-fiscal-2026-08-12]] — Monitoramento fiscal — 2026-08-12
+- [[monitoramento-fiscal-2026-08-13]] — Monitoramento fiscal — 2026-08-13
+- [[monitoramento-fiscal-2026-08-14]] — Monitoramento fiscal — 2026-08-14
+- [[monitoramento-fiscal-2026-08-15]] — Monitoramento fiscal — 2026-08-15
+- [[monitoramento-fiscal-2026-08-16]] — Monitoramento fiscal — 2026-08-16
+- [[monitoramento-fiscal-2026-08-18]] — Monitoramento fiscal — 2026-08-18
+- [[monitoramento-fiscal-2026-08-19]] — Monitoramento fiscal — 2026-08-19
+- [[monitoramento-fiscal-2026-08-20]] — Monitoramento fiscal — 2026-08-20
+- [[monitoramento-fiscal-2026-08-21]] — Monitoramento fiscal — 2026-08-21
+- [[monitoramento-fiscal-2026-08-22]] — Monitoramento fiscal — 2026-08-22
+- [[monitoramento-fiscal-2026-08-23]] — Monitoramento fiscal — 2026-08-23
+- [[monitoramento-fiscal-2026-08-24]] — Monitoramento fiscal — 2026-08-24
+- [[monitoramento-fiscal-2026-08-25]] — Monitoramento fiscal — 2026-08-25
+- [[monitoramento-fiscal-2026-08-28]] — Monitoramento fiscal — 2026-08-28
+- [[monitoramento-fiscal-2026-08-29]] — Monitoramento fiscal — 2026-08-29
+- [[monitoramento-fiscal-2026-08-30]] — Monitoramento fiscal — 2026-08-30
+- [[monitoramento-fiscal-2026-08-31]] — Monitoramento fiscal — 2026-08-31
+- [[monitoramento-fiscal-2026-09-01]] — Monitoramento fiscal — 2026-09-01
+- [[monitoramento-fiscal-2026-09-02]] — Monitoramento fiscal — 2026-09-02
+- [[monitoramento-fiscal-2026-09-03]] — Monitoramento fiscal — 2026-09-03
+- [[monitoramento-fiscal-2026-09-04]] — Monitoramento fiscal — 2026-09-04
+- [[monitoramento-fiscal-2026-09-05]] — Monitoramento fiscal — 2026-09-05
+- [[monitoramento-fiscal-2026-09-06]] — Monitoramento fiscal — 2026-09-06
+- [[monitoramento-fiscal-2026-09-07]] — Monitoramento fiscal — 2026-09-07
+- [[monitoramento-fiscal-2026-09-09]] — Monitoramento fiscal — 2026-09-09
+- [[monitoramento-fiscal-2026-09-10]] — Monitoramento fiscal — 2026-09-10
+- [[monitoramento-fiscal-2026-09-11]] — Monitoramento fiscal — 2026-09-11
+- [[monitoramento-fiscal-2026-09-12]] — Monitoramento fiscal — 2026-09-12
+- [[monitoramento-fiscal-2026-09-13]] — Monitoramento fiscal — 2026-09-13
+- [[monitoramento-fiscal-2026-09-14]] — Monitoramento fiscal — 2026-09-14
+- [[monitoramento-fiscal-2026-09-15]] — Monitoramento fiscal — 2026-09-15
+- [[monitoramento-fiscal-2026-09-16]] — Monitoramento fiscal — 2026-09-16
+- [[monitoramento-fiscal-2026-09-17]] — Monitoramento fiscal — 2026-09-17
+- [[monitoramento-fiscal-2026-09-18]] — Monitoramento fiscal — 2026-09-18
+- [[monitoramento-fiscal-2026-09-19]] — Monitoramento fiscal — 2026-09-19
+- [[monitoramento-fiscal-2026-09-21]] — Monitoramento fiscal — 2026-09-21
+- [[monitoramento-fiscal-2026-09-22]] — Monitoramento fiscal — 2026-09-22
+- [[monitoramento-fiscal-2026-09-23]] — Monitoramento fiscal — 2026-09-23
+- [[monitoramento-fiscal-2026-09-24]] — Monitoramento fiscal — 2026-09-24
+- [[monitoramento-fiscal-2026-09-25]] — Monitoramento fiscal — 2026-09-25
+- [[monitoramento-fiscal-2026-09-26]] — Monitoramento fiscal — 2026-09-26
+- [[monitoramento-fiscal-2026-09-27]] — Monitoramento fiscal — 2026-09-27
+- [[monitoramento-fiscal-2026-09-28]] — Monitoramento fiscal — 2026-09-28
+- [[monitoramento-fiscal-2026-09-29]] — Monitoramento fiscal — 2026-09-29
+- [[monitoramento-fiscal-2026-09-30]] — Monitoramento fiscal — 2026-09-30
+- [[monitoramento-fiscal-2026-10-01]] — Monitoramento fiscal — 2026-10-01
+- [[monitoramento-fiscal-2026-10-02]] — Monitoramento fiscal — 2026-10-02
+- [[monitoramento-fiscal-2026-10-03]] — Monitoramento fiscal — 2026-10-03
+- [[monitoramento-fiscal-2026-10-04]] — Monitoramento fiscal — 2026-10-04
+- [[monitoramento-fiscal-2026-10-05]] — Monitoramento fiscal — 2026-10-05
+- [[monitoramento-fiscal-2026-10-06]] — Monitoramento fiscal — 2026-10-06
+- [[monitoramento-fiscal-2026-10-07]] — Monitoramento fiscal — 2026-10-07
+- [[monitoramento-fiscal-2026-10-08]] — Monitoramento fiscal — 2026-10-08
+- [[monitoramento-fiscal-2026-10-09]] — Monitoramento fiscal — 2026-10-09
+- [[pis-cofins-e-creditos-nao-cumulativos]] — PIS/Cofins — créditos não cumulativos
+- [[pis-cofins-e-teses-sobre-base-de-calculo]] — PIS/Cofins — teses sobre base de cálculo e não cumulatividade
+- [[recurso-especial-e-requisitos-formais-stj]] — Recurso especial e requisitos formais no STJ
+- [[regime-especial-bares-restaurantes-padarias-ibs-cbs]] — Regime especial de bares, restaurantes e padarias (IBS/CBS)
+- [[relevancia-do-recurso-especial-lei-15484-2026]] — Relevância do recurso especial — Lei nº 15.484/2026
+- [[selic-e-correcao-contra-fazenda-publica]] — Selic e correção contra a Fazenda Pública
+- [[split-payment-e-impacto-no-capital-de-giro]] — Split payment e impacto no capital de giro
+- [[transferencias-mercadorias-bens-icms]] — Transferências de mercadorias e bens no ICMS
+- [[vale-presente-e-voucher-pago-por-tercero]] — Vale-presente e voucher pago por terceiro — roteiro fiscal ES (ICMS, PIS/Cofins, IOF, IRPJ)
+- [[venda-oleo-cozinha-usado-es]] — Venda de óleo de cozinha usado no ES
+
+## ideas
+
+- [[analise-uso-consultas-oraculum-base-queries]] — Tarefa: analisar uso e consultas do Oraculum para criar base queries
+- [[pricing-inteligente-oraculum-bi-varejo]] — Ideia: pricing inteligente no Oraculum/BI para varejo alimentar
+- [[ruptura-por-zero-sales-oraculum-visio]] — Ideia: ruptura por zero-sales no Oraculum/Visio
+
+## sources
+
+- [[1cc-108-01525-e-105-12641-caixa-como-contrapartida-e-reforco-por-saque]] — 1º Conselho de Contribuintes, Acórdãos 108-01.525 (1994) e 105-12.641 (1998): Caixa como contrapartida de todos os movimentos bancários e reforço de caixa por saque
+- [[2026-07-13-assinaturas-hermes-paperclip]] — Autenticação por assinatura no Hermes, Paperclip, Codex e Claude Code
+- [[2026-07-30-estrategia-expansao-modelo-aluguel]] — 07-30 Reunião Semanal: Estratégia de Expansão, Modelo de Aluguel vs. Compra e Mitigação de Riscos de Inundação
+- [[2026-07-30-estrategia-operacional-second-brain-metas]] — 07-30 Reunião: Estratégia Operacional, Second Brain e Metas
+- [[2026-07-30-expansao-loja-integracoes-sgl-hipadoca]] — 07-30 Reunião: Expansão de Loja, Integrações Tecnológicas (SGL/Hipadoca), UX de PDV e Governança Operacional
+- [[2026-07-30-fluxo-cozinha-kds]] — 07-30 Reunião: Fluxo de Cozinha e KDS — Estados, Setorização e Alerta Sonoro
+- [[2026-07-30-transformacao-operacional-compliance]] — 07-30 Reunião Estratégica: Transformação Operacional, Compliance Fiscal e Inovação de Produtos
+- [[2026-07-31-ajuste-precos-padaria]] — 07-31 Reunião: Ajuste de Preços na Padaria, Fluxo de Caixa e Impacto da Reforma Tributária
+- [[2026-07-31-reforma-tributaria-caixa-precificacao]] — 07-31 Reunião: Impacto da Reforma Tributária no Caixa, Precificação e Endividamento
+- [[2026-07-31-renegociacao-dividas-liquidez]] — 07-31 Reunião Estratégica: Renegociação de Dívidas, Liquidez Imediata e Ajustes Operacionais e de Precificação
+- [[2026-07-31-ruptura-precificacao-dinamica]] — 07-31 Reunião Semanal: Ruptura de Estoque, Precificação Dinâmica e Controle de Recebíveis
+- [[acaps-ronchi-loja-conceito-pedra-azul-2022]] — ACAPS — Supermercado Ronchi inaugura loja conceito em Pedra Azul (2022)
+- [[agazeta-top-panificadora-conteudo-de-marca-2022]] — A Gazeta (conteúdo de marca) — Top Panificadora, vendas online e história (2022)
+- [[agent-skills-skillsmd-guide-2026]] — Agent skills: o padrão SKILL.md (AI Guides, 2026-06-29)
+- [[agentes-de-ia-na-pratica-totvs-newsletter-2026-08-11]] — Agentes de IA na prática — newsletter TOTVS (2026-08-11)
+- [[ai-adoption-is-a-myth-vasuman-2026]] — AI Adoption is a Myth — vas @vasuman (2026-08-07)
+- [[ai-velocity-pod-senior-eng-agentes-2026]] — AI Velocity Pod — 1 engenheiro sênior + agentes vs squad de 5 (Mark Ajzenstadt, 2026-08-05)
+- [[aidd-context-llm-wiki-pix-architecture-2026]] — AGENTS.md enxuto, LLM Wiki e arquitetura de fluxo Pix
+- [[aihero-ai-coding-crash-course-index]] — AI Coding Crash Course — Course Index (aihero.dev)
+- [[aihero-ai-coding-crash-course-setup-e-fundamentos]] — AI Coding Crash Course — Setup & Fundamentals (aihero.dev)
+- [[aihero-ai-coding-crash-course-skills-e-memoria]] — AI Coding Crash Course — Skills & Memory (aihero.dev)
+- [[aihero-ai-coding-crash-course-steering-e-workflows]] — AI Coding Crash Course — Steering & Workflows (aihero.dev)
+- [[aihero-ai-coding-crash-course-terminal-e-sessoes]] — AI Coding Crash Course — Terminal & Sessions (aihero.dev)
+- [[aihero-ai-coding-crash-course-workflow-integrado]] — AI Coding Crash Course — Integrated Workflow (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-advanced-patterns]] — AI SDK v6 Crash Course — Advanced Patterns: workflows, loops e guardrails (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-custom-data-parts]] — AI SDK v6 Crash Course — Custom Data Parts e streaming de dados arbitrários (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-evals-e-observabilidade]] — AI SDK v6 Crash Course — Evals e Observabilidade (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-fundamentos-llm]] — AI SDK v6 Crash Course — Fundamentos de LLM e Prompting (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-persistencia]] — AI SDK v6 Crash Course — Persistência de Conversas (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-streaming-e-ui]] — AI SDK v6 Crash Course — Streaming e UI (aihero.dev)
+- [[aihero-ai-sdk-v6-crash-course-tools-agents-mcp]] — AI SDK v6 Crash Course — Tools, Agents e MCP (aihero.dev)
+- [[aihero-complete-guide-agents-md]] — AI Hero — A Complete Guide to AGENTS.md
+- [[aihero-llm-fundamentals]] — LLM Fundamentals — curso gratuito (Matt Pocock, aihero.dev)
+- [[aihero-publicos-ai-coding-dictionary]] — AI Hero público — AI Coding Dictionary (69 verbetes)
+- [[aihero-publicos-ai-sdk-vercel]] — AI Hero público — Vercel AI SDK (tutoriais)
+- [[aihero-publicos-claude-code-e-skills]] — AI Hero público — Claude Code, skills e workflows agênticos de coding
+- [[aihero-publicos-evals]] — AI Hero público — Evals e Evalite
+- [[aihero-publicos-llm-fundamentals]] — AI Hero público — LLM Fundamentals (conceitos base de LLMs)
+- [[aihero-publicos-mcp]] — AI Hero público — Model Context Protocol (MCP)
+- [[aihero-publicos-roadmap-e-mindset]] — AI Hero público — AI Engineer Roadmap, mindset e análises de campo
+- [[andrew-ng-loop-graph-4-passos-2026]] — Andrew Ng: Loop → Graph Engineering, 4 passos (Vaishnavi, 2026-08-05)
+- [[anotacoes-reuniao-marcelinho-2026-08-06]] — Anotações da reunião com Marcelinho — liquidez, sistemas e resultado por unidade
+- [[anotacoes-reuniao-planejamento-financeiro-top-2026-08-15]] — Anotações da reunião de planejamento financeiro TOP — 2026-08-15
+- [[arxiv-2607-19297-graph-based-agentic-ai-langgraph]] — arXiv 2607.19297 — Graph-Based Agentic AI with LangGraph
+- [[arxiv-csai-agent-software-reliability-2026-08-08]] — ArXiv cs.AI recente — confiabilidade de agentes e desenvolvimento de software
+- [[authorization-patterns-abac]] — Attribute-Based Access Control (ABAC)
+- [[authorization-patterns-acl]] — Access Control List (ACL)
+- [[authorization-patterns-authorization-designs-for-saas]] — Authorization Designs for SaaS Products
+- [[authorization-patterns-rbac]] — Role-Based Access Control (RBAC)
+- [[bcb-normas-conta-encerrada-guarda-de-documentos]] — Normas BCB/CMN sobre conta encerrada, guarda de documentos, CCS, ouvidoria e reclamação
+- [[bibliografia-gestao-varejo-alimentar-2026]] — Bibliografia recomendada — gestão, lucratividade e controladoria (varejo alimentar)
+- [[bonificacao-em-acoes-irrf-contencioso-2026]] — Bonificação em ações e possibilidade de novo contencioso de IRRF
+- [[book-14-habitos-de-desenvolvedores-altamente-produtivos]] — 14 Hábitos de Desenvolvedores Altamente Produtivos
+- [[book-building-an-event-driven-data-mesh]] — Building an Event-Driven Data Mesh
+- [[book-building-event-driven-microservices]] — Building Event-Driven Microservices
+- [[book-building-evolutionary-architectures]] — Building Evolutionary Architectures
+- [[book-building-microservices]] — Building Microservices
+- [[book-building-multi-tenant-saas-architectures]] — Building Multi-Tenant SaaS Architectures
+- [[book-communication-patterns]] — Communication Patterns
+- [[book-continuous-api-management]] — Continuous API Management
+- [[book-designing-data-intensive-applications]] — Designing Data-Intensive Applications
+- [[book-designing-distributed-systems]] — Designing Distributed Systems
+- [[book-enabling-microservice-success]] — Enabling Microservice Success
+- [[book-flow-architectures]] — Flow Architectures
+- [[book-foundations-of-scalable-systems]] — Foundations of Scalable Systems
+- [[book-fundamentals-of-software-architecture]] — Fundamentals of Software Architecture
+- [[book-learning-domain-driven-design]] — Learning Domain-Driven Design
+- [[book-learning-systems-thinking]] — Learning Systems Thinking
+- [[book-mastering-api-architecture]] — Mastering API Architecture
+- [[book-microservices-up-and-running]] — Microservices: Up and Running
+- [[book-monolith-to-microservices]] — Monolith to Microservices
+- [[book-practical-process-automation]] — Practical Process Automation
+- [[book-restful-web-api-patterns-and-practices-cookbook]] — Restful Web API Patterns and Practices Cookbook
+- [[book-serverless-development-on-aws]] — Serverless Development on AWS
+- [[book-software-architecture-metrics]] — Software Architecture Metrics
+- [[book-software-architecture-patterns]] — Software Architecture Patterns
+- [[book-software-architecture-the-hard-parts]] — Software Architecture: The Hard Parts
+- [[book-technology-strategy-patterns]] — Technology Strategy Patterns
+- [[book-the-art-of-agile-development]] — The Art of Agile Development
+- [[branas-formacao-arquitetura-aulas-assistir]] — Formação em Arquitetura de Software — Aulas avulsas (Assistir)
+- [[branas-formacao-arquitetura-automacao-de-testes]] — Formação em Arquitetura de Software — Automação de Testes (Fundamentos, FIRST/TDD e Tipos)
+- [[branas-formacao-arquitetura-boas-vindas-e-mentorias]] — Formação em Arquitetura de Software — Boas-vindas e Mentorias
+- [[branas-formacao-arquitetura-clean-architecture]] — Formação em Arquitetura de Software — Clean Architecture
+- [[branas-formacao-arquitetura-ddd]] — Formação em Arquitetura de Software — DDD
+- [[branas-formacao-arquitetura-design-patterns]] — Formação em Arquitetura de Software — Design Patterns
+- [[branas-formacao-arquitetura-hexagonal]] — Formação em Arquitetura de Software — Arquitetura Hexagonal (Ports and Adapters)
+- [[branas-formacao-arquitetura-microservices-e-padroes]] — Formação em Arquitetura de Software — Microservices e Padrões
+- [[branas-formacao-arquitetura-refactoring]] — Formação em Arquitetura de Software — Refactoring (Fundamentos, Code Smells e Técnicas)
+- [[branas-formacao-arquitetura-test-patterns]] — Formação em Arquitetura de Software — Test Patterns (Test Doubles)
+- [[branas-formacao-ia-agentes-do-zero-e-mastra]] — Formação Inteligência Artificial — Agentes do zero e Mastra
+- [[branas-formacao-ia-aulas-assistir]] — Formação Inteligência Artificial — Aulas Assistir
+- [[branas-formacao-ia-coding-agents-e-harness]] — Formação Inteligência Artificial — Coding Agents e Harness
+- [[branas-formacao-ia-ferramentas-e-infra]] — Formação Inteligência Artificial — Ferramentas e Infra
+- [[branas-formacao-ia-fundamentos-de-ia]] — Formação Inteligência Artificial — Fundamentos de IA/LLMs
+- [[branas-formacao-ia-llm-wiki-second-brain]] — Formação Inteligência Artificial — LLM Wiki / Second Brain
+- [[branas-formacao-ia-processo-de-desenvolvimento]] — Formação Inteligência Artificial — Processo de Desenvolvimento
+- [[branas-formacao-ia-rag]] — Formação Inteligência Artificial — RAG
+- [[carf-1301-007968-saldo-credor-produzido-pela-fiscalizacao]] — CARF 1301-007.968 — saldo credor de caixa “produzido” pela fiscalização
+- [[carf-1301-007987-origem-comprovada-por-nota-fiscal-afasta-presuncao]] — CARF 1301-007.987 (10/12/2025): crédito bancário com origem em nota fiscal emitida e escriturada afasta a presunção de omissão; manter a exigência seria dupla tributação
+- [[ccmg-24096-22-e-23952-25-lancamento-cruzado-pelo-caixa-e-conta-nao-contabilizada]] — CC/MG, Acórdãos 24.096/22 e 23.952/25: o lançamento pelo Caixa de valor que entrou no banco só se aceita com datas e valores coincidentes; conta bancária não contabilizada atrai a presunção do art. 42
+- [[ccrf-to-211-2020-suprimento-de-caixa-nao-caracterizado]] — CCRF/TO, Acórdão 211/2020: auto de suprimento ilegal de caixa julgado improcedente por falta de caracterização e de prova; o contribuinte não deve produzir prova negativa
+- [[cerf-es-acordaos-257-2019-e-051-2023-presuncoes-do-art-76-lei-7000]] — CERF/ES, Acórdãos 257/2019 e 051/2023: presunções do art. 76 da Lei 7.000/2001 são relativas; entrada sem repercussão financeira não atrai a presunção
+- [[cnpj-alfanumerico-adaptacoes-2026]] — CNPJ alfanumérico exige adaptações — Progresso Contabilidade
+- [[comodato-gratuito-imovel-socio-holdings-2026]] — Comodato gratuito de imóvel a sócio e risco fiscal para holdings
+- [[comparativo-voicenotes-tldv]] — Comparativo Voicenotes vs tl;dv
+- [[confaz-convenios-icms-2026-10-01]] — CONFAZ — convênios ICMS (índice; captura 2026-10-01)
+- [[confaz-convenios-icms-2026-10-02]] — CONFAZ — convênios ICMS (índice; captura 2026-10-02)
+- [[confaz-convenios-icms-2026-10-04]] — CONFAZ — convênios ICMS (índice; captura 2026-10-04)
+- [[confaz-convenios-icms-2026-10-05]] — CONFAZ — convênios ICMS (índice; captura 2026-10-05)
+- [[confaz-convenios-icms-2026-10-06]] — CONFAZ — convênios ICMS (índice; captura 2026-10-06)
+- [[confaz-convenios-icms-2026-10-07]] — CONFAZ — convênios ICMS (índice; captura 2026-10-07)
+- [[contabilidade-sias-sobre-nos]] — Contabilidade Sias — Sobre nós (site oficial)
+- [[contabilizacao-de-vendas-com-cartao-e-retificacao-de-erro-itg-2000-nbc-tg-23]] — Vendas com cartão: conta a receber em nome da administradora baixada pelo crédito bancário; erro de contrapartida e sua retificação (ITG 2000 itens 6 e 31 a 36, NBC TG 23, Estrutura Conceitual); cruzamento Decred x ECD no CARF 1301-007.821
+- [[context-audit-4-camadas-unhobbling-2026]] — Context audit de 4 camadas e o unhobbling da Anthropic (AI Guides, 2026-07-29)
+- [[contribuintes-aguardam-o-voto-de-fux-no-julgamento-da-exclusao-do-iss-base-pis-cofins-2026]] — Contribuintes aguardam voto de Fux sobre exclusão do ISS da base do PIS/Cofins
+- [[convenio-icms-142-2018-cest-2026-10-01]] — Convênio ICMS nº 142/2018 — ST e tabela CEST (corpus 2026-09-25)
+- [[ctn-lc-236-2026-processo-administrativo-fiscal-precedentes-vinculantes]] — CTN alterado — novo processo administrativo fiscal, precedentes vinculantes e nulidades (blog, 2026-09-30)
+- [[dev-reference-dockerfile-referencia]] — Resumo de Instruções do Dockerfile
+- [[dev-reference-rest-api-nomenclatura]] — Principios de Nomenclatura para REST API
+- [[dev-reference-sql-case-rollup]] — SQL - Usando CASE e GROUP BY ROLLUP para Totais
+- [[difal-contribuintes-antes-lc-190-2022-stj-tema-1369]] — STJ valida DIFAL para contribuintes antes da LC 190/2022 — Tema 1369
+- [[digest-fiscus-classificacao-ncm-sem-gtin-ia-2026-09-23]] — Classificação de NCM sem GTIN: mercado, precisão da IA e custo da revisão humana
+- [[digest-fiscus-panificacao-es-pareceres-e-reducao-100-2026-09-22]] — Digest fiscus: panificação no ICMS-ES — redução de 100%, regime de padarias e pareceres da SEFAZ-ES (2026-09-22)
+- [[digest-fiscus-spaces-cold-storage-e-bun-s3-vitest-2026-08-11]] — Digest fiscus — Spaces Cold Storage e cliente S3 do Bun sob Vitest (2026-08-11)
+- [[digest-fluxus-ingresso-de-eventos-em-sessao-de-agente-2026-08-17]] — Digest fluxus — ingresso de eventos externos em sessão de agente (2026-08-17)
+- [[digest-fluxus-micro-varejo-condominial-2026-08-17]] — Digest fluxus — o que move uma loja autônoma de condomínio, medido (2026-08-17)
+- [[digest-gesttione-compete-es-bares-restaurantes-padarias-feef-2026-09-29]] — COMPETE-ES: bares, restaurantes e padarias — revenda na base, FEEF, art. 25-C e códigos de ajuste da EFD
+- [[digest-gesttione-ctg-2001-r3-escrituracao-digital-ecd-2026-09-23]] — CTG 2001 (R3): escrituração digital (SPED/ECD), lançamento em partidas dobradas e substituição da ECD
+- [[digest-gesttione-itg-2000-r1-escrituracao-contabil-2026-09-23]] — ITG 2000 (R1): forma contábil, Diário e Razão e retificação de lançamentos
+- [[digest-gesttione-nbc-tg-23-r2-retificacao-erro-periodos-anteriores-2026-09-23]] — NBC TG 23 (R2) e NBC TG 1000 (R1) seção 10: retificação de erros de períodos anteriores
+- [[digest-gesttione-nbc-tp-01-r2-pericia-contabil-procedimentos-laudo-2026-09-23]] — NBC TP 01 (R2): perícia contábil, procedimentos periciais e estrutura do laudo
+- [[digest-gesttione-vale-presente-pago-por-tercero-2026-10-07]] — Vale-presente pago por empresa parceira (ação de marketing): ICMS-ES, PIS/Cofins, IOF e IRPJ
+- [[digest-gesttione-venda-oleo-cozinha-usado-es-coletora-intermediaria-2026-09-29]] — Óleo de cozinha usado no ES: venda a coletora intermediaria, NCM e notas-modelo com CST 51
+- [[digest-gesttione-venda-oleo-cozinha-usado-es-icms-cbenef-mtr-2026-09-29]] — Venda de óleo de cozinha usado no ES: isenção do ICMS, cBenef, CFOP e MTR-ES
+- [[digest-gesttione-vila-frios-cadastro-faturamento-2026-10-08]] — Digest gesttione: Vila Frios — faturamento confirmado e cadastro para NF e boleto (2026-10-08)
+- [[digest-oraculum-benchmarks-panificacao-2026-08-21]] — Digest oraculum — benchmarks da panificação Ideal/ABIP (2026-08-21)
+- [[digest-oraculum-cct-dominical-supermercados-es-2026-08-21]] — Digest oraculum — CCT dominical dos supermercados no ES (2026-08-21)
+- [[digest-oraculum-cct-padarias-restaurantes-es-2026-08-21]] — Digest oraculum — CCTs de padarias e restaurantes do ES autorizam domingo (2026-08-21)
+- [[digest-pantheon-dimensionar-postgres-e-testar-alertas-2026-09-08]] — Digest pantheon — dimensionar PostgreSQL e testar a entrega dos alertas (2026-09-08)
+- [[digest-pantheon-dmarc-rfc-9989-traefik-x-forwarded-2026-10-02]] — Digest pantheon — DMARC: RFC 9989 removeu o gate pct; o Traefik v3.6 apaga os X-Forwarded-* de pares não confiables (2026-10-02)
+- [[digest-pantheon-migrate-do-drizzle-em-transacao-unica-2026-09-15]] — Digest pantheon — o migrator do drizzle-orm 0.45.2 aplica as pendentes numa única transação (2026-09-15)
+- [[digest-pantheon-registro-do-inngest-exige-chave-de-assinatura-2026-09-15]] — Digest pantheon — no Inngest self-hosted 1.38.1, registrar app exige a chave de assinatura; o GraphQL não exige nada (2026-09-15)
+- [[digest-roundfix-ai-memory-e-graphify-avaliados-contra-o-roundfix-2026-09-30]] — Digest roundfix: ai-memory e Graphify avaliados contra o Roundfix (2026-09-30)
+- [[digest-roundfix-autorizacoes-historicas-e-propriedade-da-regeneracion-2026-09-09]] — Digest roundfix — autorizações históricas e propriedade dos artefactos de regeneração (2026-09-09)
+- [[digest-roundfix-branches-por-finalidade-e-namespace-2026-09-08]] — Digest roundfix — branches por finalidade e namespace próprio (2026-09-08)
+- [[digest-roundfix-checkout-completo-para-testes-de-evidencia-historica-2026-09-09]] — Digest roundfix — checkout completo para testes de evidência histórica (2026-09-09)
+- [[digest-roundfix-ci-rerun-merge-antigo-2026-10-06]] — Digest roundfix: rodar de novo um check de CI do GitHub testa o merge antigo
+- [[digest-roundfix-claude-agent-sdk-permissoes-e-anexos-2026-10-04]] — Claude Agent SDK: restrição de ferramentas e custo de menções @path
+- [[digest-roundfix-correcoes-jev-2026-09-29]] — Digest roundfix: dez correções no wiki após a medição do jev-gateway (2026-09-29)
+- [[digest-roundfix-git-add-f-apaga-arquivo-2026-09-17]] — Digest roundfix: git add -f mata o Run quando a Task apaga arquivo (2026-09-17)
+- [[digest-roundfix-modelos-custos-e-disponibilidade-2026-09-08]] — Digest roundfix — modelos, versões, preços e disponibilidade (2026-09-08)
+- [[digest-roundfix-modelos-de-codificacao-ago-set-2026-e-runtimes-cursor-grok-2026-09-30]] — Digest roundfix: modelos de codificação ago–set 2026 e runtimes Cursor/Grok (2026-09-30)
+- [[digest-roundfix-mutexes-cache-e-identidade-worktrees-2026-09-08]] — Digest roundfix — mutexes, cache de testes e identidade entre worktrees (2026-09-08)
+- [[digest-roundfix-openclaw-skills-e-agentes-2026-10-06]] — Digest roundfix: análise das skills e agentes do OpenClaw (acpx, agent-skills)
+- [[digest-roundfix-orquestradores-e-ecosistema-jev-o-que-se-transfere-ao-roundfix-2026-09-30]] — Digest roundfix: orquestradores de Specs e ecossistema Jev — o que se transfere ao roundfix (2026-09-30)
+- [[digest-roundfix-override-qa-para-arquivamento-2026-09-08]] — Digest roundfix — override de QA autorizado para arquivamento de Specs (2026-09-08)
+- [[digest-roundfix-perguntas-estruturadas-agentes-cli-2026-09-08]] — Digest roundfix — perguntas estruturadas no Claude Code, Codex e OpenCode (2026-09-08)
+- [[digest-roundfix-piloto-porta-unica-captura-2026-10-06]] — Digest roundfix: piloto da porta única de captura (resultados 2026-08-06)
+- [[digest-roundfix-porta-de-captura-unica-2026-08-11]] — Digest roundfix — a porta de captura única do fleet knowledge (2026-08-11)
+- [[digest-roundfix-review-opcional-e-coderabbit-cli-2026-09-08]] — Digest roundfix — review pré-PR opcional: Codex, Claude, CodeRabbit ou none (2026-09-08)
+- [[digest-roundfix-revisao-local-e-supervisao-durable-2026-09-08]] — Digest roundfix — revisão local antes do PR e supervisão durável (2026-09-08)
+- [[digest-roundfix-revisor-configurado-e-fila-autonoma-2026-09-08]] — Digest roundfix — revisor configurado e prontidão de uma fila autônoma (2026-09-08)
+- [[digest-roundfix-testes-go-sequenciais-somam-tempo-2026-10-08]] — Digest roundfix — testes Go sequenciais somam tempo ao pacote (2026-10-08)
+- [[digest-roundfix-toolchain-formatter-e-subprocessos-go-no-macos-2026-09-09]] — Digest roundfix — toolchain, formatter e subprocessos Go no macOS (2026-09-09)
+- [[digest-sql-library-correcao-de-dados-com-aprovacao-humana-2026-08-27]] — Digest sql-library — correção de dado com aprovação humana: padrões externos (2026-08-27)
+- [[digest-vortex-busca-textual-postgres-trigrama-vs-fts-2026-08-19]] — Digest vortex — busca textual no Postgres: trigrama e FTS resolvem problemas diferentes (2026-08-19)
+- [[documentos-identificacao-familia-2026-10-08]] — Documentos de identificação da família (2026-10-08)
+- [[drive-algarve-parecer-compete-es-algarve-e-padaria-sa]] — Algarve e Padaria Sá — parecer COMPETE-ES (ICMS recolhido a maior, padrão de apuração, riscos) e análise preliminar de abril–maio/2026
+- [[drive-cafe-arrumado-contratos-sociais-e-mutuo]] — Café Arrumado — contratos sociais (2021) e modelo de contrato de mútuo (2023)
+- [[drive-eldorado-integral-troca-de-contabilidade-2016]] — Eldorado/Integral — carta à MSC Serviços Contábeis na troca de contabilidade (2016) e plano de contas do grupo (2015)
+- [[drive-grupo-top-autos-icms-2025-01]] — Grupo TOP — autos de infração de ICMS por tributação incorreta em NFC-e (SEFAZ-ES, dez/2024) (Drive)
+- [[drive-grupo-top-estrutura-societaria]] — Grupo TOP — estrutura societária: MM5, Top Armazéns e Top Construtora (Drive)
+- [[drive-grupo-top-guia-empresarial]] — Grupo TOP — guia empresarial e documento institucional revisado (Drive)
+- [[drive-grupo-top-parceria-rural]] — Grupo TOP — Parceria Rural: fluxo fiscal de suínos entre produtor, Top Panificadora, MM5 e frigorífico (Drive)
+- [[drive-grupo-top-pgfn-e-rescisao-villela]] — Grupo TOP — dívida ativa PGFN (set/2026) e rescisão dos contratos com a Villela (Drive)
+- [[drive-grupo-top-relatorios-gerenciais-2021-2025]] — Grupo TOP — relatórios gerenciais de vendas, CMV e margens 2021–2025 (Drive)
+- [[drive-grupo-top-simulacoes-e-estudos]] — Grupo TOP — simulações e estudos: preço de venda, vinho com COMPETE, terceirização do hortifrúti, pedidos × NFs (Drive)
+- [[drive-guarani-auto-de-infracao-panificadora-solar-2023]] — Guarani — auto de infração de ICMS da Panificadora Solar (SEFAZ-ES, 2023-08-28)
+- [[drive-guarani-parcelamento-padaria-mineira-2022]] — Guarani — parcelamento de auto de infração da Padaria Mineira (SEFAZ-ES, 2022) e contrato da Solutta
+- [[drive-lc-hortifruti-locacoes-lt-participacoes]] — LC Hortifruti — contratos de locação com a LT Participações (2018) e estrutura contábil
+- [[drive-mediterraneo-conferencia-tributos-itens-vendidos-06-2023]] — Mediterrâneo — conferência de tributos dos itens vendidos, 06/2023 (Brajan)
+- [[drive-mediterraneo-parecer-oceq-06-2023]] — Mediterrâneo — parecer fiscal 06/2023 da OCEQ sobre erros de escrituração do SPED
+- [[drive-padarias-skips-brothers-fera-malha-pgdas-d-e-simulacao]] — Brothers — Fera Panificadora na malha do PGDAS-D (05 e 06/2026) e simulação Simples × presumido
+- [[drive-panzzone-societario-zenavi-panetteria-mj-maju]] — Panzzone — contratos sociais (Zenavi, Panetteria MJ, Maju Participações) e modelo de locação da Maju
+- [[drive-pao-divino-estudo-inicial-e-simulacao-credito]] — Pão Divino — estudo inicial de endividamento e simulação de crédito de R$ 900 mil (2023-11)
+- [[drive-pao-e-cia-diagnostico-inicial-pao-e-praia]] — Pão e Cia — diagnóstico inicial \"Pão e Praia\" (2023-04)
+- [[drive-pao-e-cia-simulacao-preco-de-venda]] — Pão e Cia — simulação de preço de venda por divisor (2026-09)
+- [[drive-peterpao-guia-reuniao-seguranca-tributaria-e-reforma]] — Peterpão — guia de reunião: segurança tributária e preparação para a reforma (setembro/2026)
+- [[drive-show-de-compras-estudo-viabilidade-2021]] — Show de Compras — estudo de viabilidade e projeção de vendas da ampliação (2021)
+- [[drive-show-de-compras-risco-fiscal-caixa-resumo-e-plano]] — Show de Compras — risco fiscal no caixa (ECD 2022–2025): resumo ao proprietário e plano de ação
+- [[drive-tortellote-situacao-fiscal-2026-01]] — Tortellote — situação fiscal federal e dívida ativa da AC Comércio de Produtos de Padaria (2026-01-09)
+- [[drive-trarbach-impugnacao-auto-638]] — Impugnação do AI 5.185.638-8 (saldo credor de caixa) — versão do Drive de 2026-09-29
+- [[drive-trarbach-impugnacao-auto-657]] — Impugnação do AI 5.185.657-7 (suprimento de caixa) — versão do Drive de 2026-09-29
+- [[drive-trarbach-intimacao-3-acao-fiscal-0771-2026]] — Intimação 3 da ação fiscal 00771/2026 — SEFAZ-ES à Trarbach (março de 2026)
+- [[drive-trarbach-material-impugnacoes]] — Material para as impugnações — textos, quesitos e documentos (Gesttione, 2026-09-28)
+- [[drive-trarbach-minuta-impugnacao-master-contabil]] — Minuta de impugnação conjunta da Master Contábil — autos Trarbach (Drive, 2026-09-23)
+- [[drive-trarbach-provas-da-defesa]] — Planilha única de provas da defesa — autos 5.185.657-7 e 5.185.638-8 (Gesttione, 2026-09-28)
+- [[drive-trarbach-revisao-impugnacoes]] — Revisão das impugnações — autos 5.185.657-7 e 5.185.638-8 (Gesttione, 2026-09-28)
+- [[drive-trarbach-tese-de-defesa]] — Tese de defesa v1.1 — autos 5.185.657-7 e 5.185.638-8 (Gesttione, 2026-09-28)
+- [[drive-vila-frios-fiscalizacao-sefaz-paf-04615-2026]] — Vila Frios — fiscalização SEFAZ-ES, PAF 04615/2026 (intimação, manifestação, contrato de locação e orientação da Gesttione)
+- [[drive-vila-frios-holding-patrimonial-familiar]] — Vila Frios — estudo e proposta de holding patrimonial familiar (Santhiago e família)
+- [[ecd-correcao-por-lancamento-extemporaneo-in-2003-art-8-registro-i200-faq-ecf]] — Correção da ECD por lançamento extemporâneo: IN RFB 2.003/2021 art. 8º, registro I200 (tipo X e DT_LCTO_EXT) e orientação da Receita sobre a ECF
+- [[efd-reinf-adto-lucros-idee-2026]] — Idee — solicitação mensal de informações sobre adiantamento/distribuição de lucros para EFD-Reinf
+- [[end-protocol-correcoes-spec-2026]] — End protocol e correção que promove a spec (Alex Prompter, 2026-08-09)
+- [[escopo-integracoes-senior-grupo-top]] — Escopo — Integrações Sênior | Grupo TOP
+- [[eshoje-padaria-nova-republica-fechamento-2018]] — ES Hoje — fechamento da Padaria Nova República e a nova Padaria República (2018)
+- [[exa-roundfix-reestruturacao-fila-2026-09-24]] — Exa — pesquisa para reestruturar a fila de Specs do Roundfix (2026-09-24)
+- [[exclusoes-base-calculo-ibs-cbs-art12-lc214]] — Exclusões da base de cálculo do IBS e da CBS — Art. 12 da LC 214/2025 (deck Piraci)
+- [[feedback-top-planejamento-financeiro-2026-08-02]] — Feedback TOP — pacote de planejamento financeiro de 2026-07-31
+- [[fine-tuning-como-skill-valiosa-2026]] — Fine-tuning como skill valiosa — guia prático (1.5B, QLoRA, Colab)
+- [[fine-tuning-qlora-guia-2026]] — Fine-tuning na prática — guia QLoRA (1.5B em 200–500 exemplos) capturado no ciclo de lançamento do JEV
+- [[firecrawl-agent-novo-endpoint-2026-09-24]] — Firecrawl — endpoint /agent (extração schema-driven sem URLs)
+- [[folha-vitoria-monte-libano-60-anos-2024]] — Folha Vitória — Monte Líbano, 60 anos (conteúdo de marca, 2024)
+- [[folha-vitoria-monte-libano-assume-ledut-2023]] — Folha Vitória — Monte Líbano assume a padaria Ledut em Bento Ferreira (2023)
+- [[from-prompt-to-response-inside-llm-vicky-grok-2026]] — From Prompt to Response Inside an LLM — Vikas Gupta (2026-08-09)
+- [[gesttione-acervo-cadastro-mercadologico]] — Estruturas mercadológicas para varejo alimentar e panificação
+- [[gesttione-acervo-compete-es]] — COMPETE-ES: procedimento histórico e tese Gesttione de recolhimento
+- [[gesttione-acervo-contabilidade-e-ecf]] — Plano referencial e tabelas dinâmicas da ECF leiaute 9
+- [[gesttione-acervo-convencoes-historicas]] — Convenções coletivas do comércio: acervo 2012–2015
+- [[gesttione-acervo-documentos-fiscais-historicos]] — ECF, NF-e, Sintegra, EFD e eSocial: documentação legada
+- [[gesttione-acervo-fichas-tecnicas-e-receitas]] — Fichas técnicas e receitas de panificação: modelos do acervo
+- [[gesttione-acervo-gestao-propan]] — Propan: custos, cadastro, produtividade e planejamento
+- [[gesttione-acervo-linear-tesouraria]] — Linear: integração de tesouraria, TEF e POS — manual de 2013
+- [[gesttione-acervo-panificacao-fiscal]] — Panificação no ES: parecer Sindipães e manual Gesttione
+- [[gesttione-acervo-planejamento-e-precos]] — Planejamento financeiro e formação de preços: referências do acervo
+- [[gesttione-acervo-referencias-2026-09-18]] — Acervo Gesttione: manuais e referências — ingestão de 18/09/2026
+- [[gesttione-acervo-reforma-tributaria-operacional]] — Gesttione: IBS/CBS e NF-e de débito por multa e juros
+- [[gesttione-acervo-regulamentos-historicos]] — Regulamentos tributários e anexos: versões históricas do Drive
+- [[gesttione-acervo-roteiros-tributarios-historicos]] — Roteiros AWG e Gesttione: coleção tributária histórica
+- [[gesttione-acervo-tabelas-e-classificacao-fiscal]] — Tabelas fiscais de apoio: NCM, CFOP, CST e contribuições
+- [[gesttione-acervo-transferencias-es]] — Manuais Gesttione de transferências internas no Espírito Santo
+- [[gesttione-brandbook-gesttione-2]] — Brandbook — Gesttione
+- [[gesttione-brandbook-gesttione-3]] — Brandbook — Gesttione
+- [[gesttione-brandbook-gesttione-4]] — Brandbook — Gesttione
+- [[gesttione-brandbook-gesttione-5]] — Brandbook — Gesttione
+- [[gesttione-brandbook-gesttione]] — Brandbook — Gesttione
+- [[gesttione-claude-design-overview-2]] — Claude Design — Overview
+- [[gesttione-claude-design-overview]] — Claude Design — Overview
+- [[gesttione-design-system-setup-no-claude-design-2]] — Design System Setup no Claude Design
+- [[gesttione-design-system-setup-no-claude-design]] — Design System Setup no Claude Design
+- [[gesttione-gesttione-design-system-reference-2]] — Gesttione Design System — Reference
+- [[gesttione-gesttione-design-system-reference-3]] — Gesttione Design System — Reference
+- [[gesttione-gesttione-design-system-reference-4]] — Gesttione Design System — Reference
+- [[gesttione-gesttione-design-system-reference]] — Gesttione Design System — Reference
+- [[gesttione-gesttione-design-system]] — '@gesttione/design-system'
+- [[gesttione-gesttione-documento-matriz-institucional-2]] — Gesttione — Documento-Matriz Institucional
+- [[gesttione-gesttione-documento-matriz-institucional-3]] — Gesttione — Documento-Matriz Institucional
+- [[gesttione-gesttione-documento-matriz-institucional]] — Gesttione — Documento-Matriz Institucional
+- [[gesttione-gesttione-factory-2]] — Gesttione Factory
+- [[gesttione-gesttione-factory]] — Gesttione Factory
+- [[gesttione-gesttione-narrativa-de-acelera-o]] — Gesttione — Narrativa de Aceleração
+- [[gesttione-gesttione-posicionamento-competitivo]] — Gesttione — Posicionamento competitivo
+- [[gesttione-gesttione-tax-2]] — Gesttione Tax
+- [[gesttione-gesttione-tax]] — Gesttione Tax
+- [[gesttione-gesttione-visio-2]] — Gesttione Visio
+- [[gesttione-gesttione-visio]] — Gesttione Visio
+- [[gesttione-gesttione]] — Gesttione
+- [[gesttione-handoff-claude-design-claude-code-2]] — Handoff Claude Design → Claude Code
+- [[gesttione-handoff-claude-design-claude-code]] — Handoff Claude Design → Claude Code
+- [[gesttione-home-p-blica-copy]] — Home Pública — Copy
+- [[gesttione-home-p-blica-plano-fase-2]] — Home Pública — Plano Fase 2
+- [[gesttione-image-prompts-gpt-image-2-2]] — Image Prompts — GPT Image 2
+- [[gesttione-image-prompts-gpt-image-2]] — Image Prompts — GPT Image 2
+- [[gesttione-logos-de-produto-prompts-gpt-image-2-2]] — Logos de Produto — Prompts GPT Image 2
+- [[gesttione-logos-de-produto-prompts-gpt-image-2]] — Logos de Produto — Prompts GPT Image 2
+- [[gesttione-roteiro-v-deo-de-pitch-da-gesttione]] — Roteiro — vídeo de pitch da Gesttione
+- [[gesttione-screen-briefings-claude-design]] — Screen Briefings — Claude Design
+- [[github-apps-libs-chartdb-fant-bippy-openlogi-karpathy-2026]] — GitHub/apps/libs: ChartDB, Fant React, bippy, OpenLogi, andrej-karpathy-skills
+- [[github-donvito-codex-astra-luna-orchestrator]] — Codex Astra Orchestrator + Luna Subagents (donvito, 2026)
+- [[github-karpathy-llm-council]] — karpathy/llm-council — conselho de múltiplos LLMs via OpenRouter
+- [[github-liquidslr-system-design-notes]] — GitHub: liquidslr/system-design-notes — notas de System Design Interview (Alex Xu)
+- [[github-reacherhq-check-if-email-exists]] — GitHub: reacherhq/check-if-email-exists
+- [[github-repo-inventory]] — Inventário de repositórios GitHub
+- [[github-stacked-pull-requests-public-preview-2026]] — GitHub: stacked pull requests em public preview
+- [[graph-engineering-2026]] — Graph Engineering 2026 — loops, grafos e governança
+- [[graphify-y-ai-memory-2026-09-25]] — Graphify e ai-memory — knowledge graph de codebase e memória de longo prazo para agentes (2026-09-25)
+- [[harness-engineering-101-alex-prompter-2026]] — harness engineering 101 — Alex Prompter (2026-07-16)
+- [[hipoteses-ibs-cbs-com-risco-de-judicializacao-2026]] — Hipóteses de IBS/CBS com provável judicialização
+- [[how-to-use-claude-code-boris-cherny-2026]] — How to Actually Use Claude Code — Boris Cherny (CyrilXBT, 2026-08-07)
+- [[icms-liminar-afasta-inclusao-ibs-cbs-base-do-icms-2026]] — ICMS — liminar afasta a inclusão do IBS e da CBS na base do ICMS (2026-09-16)
+- [[idee-ideembc-site]] — IDEE Management & Business Consulting — site oficial
+- [[idempotent-csv-loads-into-postgresql-2026-08-17]] — Idempotent CSV Loads into PostgreSQL: Patterns and Pitfalls (Elysiate, 2026)
+- [[informatize-contabilidade-site]] — Informatize Contabilidade — site oficial
+- [[itbi-stf-definira-base-calculo-valor-venal-ou-valor-do-negocio]] — ITBI — STF definirá a base de cálculo: valor venal ou valor do negócio
+- [[itbi-valor-declarado-lc-227-2026-tjsp]] — TJSP mantém valor declarado como base do ITBI após LC 227/2026
+- [[itcmd-base-calculo-doacao-quotas-sociais-tjsp-2026]] — TJSP — base de cálculo do ITCMD na doação de quotas de sociedades familiares
+- [[itcmd-distribuicao-desproporcional-lucros-tjsp-2026]] — TJSP — ITCMD na distribuição desproporcional de lucros
+- [[jaynitx-elon-musk-algorithm-2026]] — O algoritmo de 5 passos de Elon Musk para construir (Jaynit, 2026)
+- [[jev-ecosistema-verificadores-routers-2026-09-25]] — Ecossistema JEV — verificadores, routers e supervisão (2026-09-25)
+- [[jev-ecossistema-batch-2-n01ennn-2026-09-28]] — Ecossistema JEV — batch #2 de 20 repos (N01ennn, 2026-09-28)
+- [[jev-engineering-claude-code-2026-09-25]] — Jev engineering para Claude Code — safety gate, stop hook, triage filter e a conta (2026-09-25)
+- [[jev-gateway-e-ecossistema-2026-09-25]] — Ecossistema JEV — jev-gateway, curso, adoção e benchmark (2026-09-17/25)
+- [[jev-in-the-agent-loop-n01ennn-2026-09-28]] — Jev in the Agent Loop — guia completo de automação da camada de decisão (N01ennn, 2026-09-25)
+- [[jornada-varejo-perdas-metas-2026-05-29]] — Jornada de varejo alimentar sobre perdas e metas — 2026-05-29
+- [[jota-cobertura-tributaria-listagem-2026-07-14]] — JOTA — listagem pública de cobertura tributária em 2026-07-14
+- [[jota-cobertura-tributaria-listagem-2026-07-16]] — JOTA — listagem pública de cobertura tributária em 2026-07-16
+- [[jota-cobertura-tributaria-listagem-2026-07-19]] — JOTA — listagem pública de cobertura tributária em 2026-07-19
+- [[jota-cobertura-tributaria-listagem-2026-07-22]] — JOTA — listagem pública de cobertura tributária em 2026-07-22
+- [[jota-cobertura-tributaria-listagem-2026-07-24]] — JOTA — listagem pública de cobertura tributária em 2026-07-24
+- [[jota-cobertura-tributaria-listagem-2026-07-26]] — JOTA — listagem pública de cobertura tributária em 2026-07-26
+- [[jota-cobertura-tributaria-listagem-2026-07-29]] — JOTA — listagem pública de cobertura tributária em 2026-07-29
+- [[jota-cobertura-tributaria-listagem-2026-07-31]] — JOTA — listagem pública de cobertura tributária em 2026-07-31
+- [[jota-cobertura-tributaria-listagem-2026-08-01]] — JOTA — listagem pública de cobertura tributária em 2026-08-01
+- [[jota-cobertura-tributaria-listagem-2026-08-03]] — JOTA — listagem pública de cobertura tributária em 2026-08-03
+- [[jota-cobertura-tributaria-listagem-2026-08-05]] — JOTA — listagem pública de cobertura tributária em 2026-08-05
+- [[jota-cobertura-tributaria-listagem-2026-08-07]] — JOTA — listagem pública da cobertura de Tributos em 2026-08-07
+- [[jota-cobertura-tributaria-listagem-2026-08-08]] — JOTA — listagem pública de cobertura tributária em 2026-08-08
+- [[jota-cobertura-tributaria-listagem-2026-08-11]] — JOTA — listagem pública de cobertura tributária em 2026-08-11
+- [[jota-cobertura-tributaria-listagem-2026-08-12]] — JOTA — listagem pública de cobertura tributária em 2026-08-12
+- [[jota-cobertura-tributaria-listagem-2026-08-14]] — JOTA — listagem pública de cobertura tributária em 2026-08-14
+- [[jota-cobertura-tributaria-listagem-2026-08-16]] — JOTA — listagem pública de cobertura tributária em 2026-08-16
+- [[jota-cobertura-tributaria-listagem-2026-08-18]] — JOTA — listagem pública de cobertura tributária em 2026-08-18
+- [[jota-cobertura-tributaria-listagem-2026-08-20]] — JOTA — listagem pública de cobertura tributária em 2026-08-20
+- [[jota-cobertura-tributaria-listagem-2026-08-22]] — JOTA — listagem pública de cobertura tributária em 2026-08-22
+- [[jota-cobertura-tributaria-listagem-2026-08-24]] — JOTA — listagem pública de cobertura tributária em 2026-08-24
+- [[jota-cobertura-tributaria-listagem-2026-08-28]] — JOTA — listagem pública de cobertura tributária em 2026-08-28
+- [[jota-cobertura-tributaria-listagem-2026-08-29]] — JOTA — listagem pública de cobertura tributária em 2026-08-29
+- [[jota-cobertura-tributaria-listagem-2026-08-31]] — JOTA — listagem pública de cobertura tributária em 2026-08-31
+- [[jota-cobertura-tributaria-listagem-2026-09-05]] — JOTA — listagem pública de cobertura tributária em 2026-09-05
+- [[jota-cobertura-tributaria-listagem-2026-09-07]] — JOTA — listagem pública de cobertura tributária em 2026-09-07
+- [[jota-cobertura-tributaria-listagem-2026-09-09]] — JOTA — listagem pública de cobertura tributária em 2026-09-09
+- [[jota-cobertura-tributaria-listagem-2026-09-11]] — JOTA — listagem pública de cobertura tributária em 2026-09-11
+- [[jota-cobertura-tributaria-listagem-2026-09-13]] — JOTA — listagem pública de cobertura tributária em 2026-09-13
+- [[jota-cobertura-tributaria-listagem-2026-09-16]] — JOTA — listagem de cobertura tributária pública em 2026-09-16
+- [[jota-cobertura-tributaria-listagem-2026-09-18]] — JOTA — listagem de cobertura tributária pública em 2026-09-18
+- [[jota-cobertura-tributaria-listagem-2026-09-19]] — JOTA — listagem de cobertura tributária pública em 2026-09-19
+- [[jota-cobertura-tributaria-listagem-2026-09-21]] — JOTA — listagem de cobertura tributária pública em 2026-09-21
+- [[jota-cobertura-tributaria-listagem-2026-09-24]] — JOTA — listagem de cobertura tributária pública em 2026-09-24
+- [[jota-cobertura-tributaria-listagem-2026-09-25]] — JOTA — listagem de cobertura tributária pública em 2026-09-25
+- [[jota-cobertura-tributaria-listagem-2026-09-27]] — JOTA — listagem de cobertura tributária pública em 2026-09-27
+- [[jota-cobertura-tributaria-listagem-2026-09-28]] — JOTA — listagem de cobertura tributária pública em 2026-09-28
+- [[jota-cobertura-tributaria-listagem-2026-09-29]] — JOTA — listagem de cobertura tributária pública em 2026-09-29
+- [[jota-cobertura-tributaria-listagem-2026-10-01]] — JOTA — listagem de cobertura tributária pública em 2026-10-01
+- [[jota-cobertura-tributaria-listagem-2026-10-04]] — JOTA — listagem de cobertura tributária pública em 2026-10-04
+- [[jota-cobertura-tributaria-listagem-2026-10-06]] — JOTA — listagem de cobertura tributária pública em 2026-10-06
+- [[jota-cobertura-tributaria-listagem-2026-10-08]] — JOTA — listagem de cobertura tributária pública em 2026-10-08
+- [[jurinews-noticias]] — JuriNews — noticias fiscales 2026
+- [[karpathy-autoresearch]] — Andrej Karpathy — autoresearch
+- [[karpathy-llm-wiki]] — Karpathy — LLM Wiki (gist)
+- [[lc-224-2025-e-in-rfb-2305-2026-10-01]] — LC 224/2025 e IN RFB 2.305/2025 (corpus 2026-09-25)
+- [[learning-notes-steve-jobs-design-de-produto]] — Como Steve Jobs Criava Produtos Incrivelmente Bons
+- [[learning-notes-storytelling-com-dados]] — Storytelling com Dados - Cole Nussbaumer Knaflic
+- [[legisweb-ativo-imobilizado-venda-transferencia-para]] — LegisWeb — Ativo imobilizado: venda e transferência — Pará
+- [[legisweb-icms-ipi-iss-2026]] — Notícias LegisWeb — ICMS, IPI, ISS e Outros 2026
+- [[legisweb-ir-contribuicoes-2026]] — Notícias LegisWeb — IR e Contribuições 2026
+- [[legisweb-legislacao-es-2026]] — Legislação do Espírito Santo 2026 (via LegisWeb)
+- [[legisweb-manual-procedimentos-icms-ipi-principais-operacoes-parana]] — LegisWeb — Manual de Procedimentos ICMS/IPI: principais operações — Paraná
+- [[legisweb-reforma-tributaria-2026]] — Notícias LegisWeb — Reforma Tributária 2026
+- [[legisweb-transferencia-com-substituicao-tributaria-parana]] — LegisWeb — Transferência com substituição tributária — Paraná
+- [[legisweb-transferencia-mercadoria-mesma-titularidade-minas-gerais]] — LegisWeb — Transferência de mercadoria entre estabelecimento de mesma titularidade — Minas Gerais
+- [[leis-federais-pis-cofins-2026-10-01]] — Leis federais de PIS/Cofins e IN RFB 2.121/2022 consolidadas (corpus 2026-09-25)
+- [[lembrete-contabilizei-imposto-lucros-2026]] — Lembrete: estratégia para não pagar 10% de imposto sobre lucros
+- [[limites-credito-pis-cofins-lc-224-2025-judiciario-2026]] — Judiciário afasta limitações ao crédito de PIS/Cofins da LC 224/2025
+- [[llm-knowledge-bases-karpathy-e-guia-2026]] — LLM Knowledge Bases — post original do Karpathy + guia prático do Alex Prompter
+- [[llm-wiki-github-comments-2026-04-18]] — LLM Wiki — captura GitHub com comentários (2026-04-18)
+- [[marcio-rodrigues-rede-monza-modelo-expansao-2019]] — Márcio Rodrigues — Rede de Padarias Monza, o modelo de expansão (2019)
+- [[meat-vision-source-manifest]] — Manifesto da ingestão Meat Vision — 2026-05-29
+- [[medallion-em-postgresql-2026-08-17]] — Bronze, Silver, Gold: A Layered Data Architecture in PostgreSQL (BayIS, 2026)
+- [[minuta-contrato-joint-venture-projeto-gesttione-2026]] — Minuta Contrato de Joint Venture — Projeto Gesttione (thread IDEE)
+- [[monitoramento-operacional-clientes-orienta-gestao-2026]] — Monitoramento operacional de clientes da Orienta Gestão
+- [[multa-tributaria-75-porcento-lc-236-retroatividade-benigna-2026]] — Multa tributária limitada a 75% — LC 236/2026 e retroatividade benigna (art. 106, II, 'c', CTN)
+- [[normas-rfb-atos-recentes-sijut-2026-07-14]] — Normas RFB — atos recentes no Sijut em 2026-07-14
+- [[normas-rfb-atos-recentes-sijut-2026-07-17]] — Normas RFB — atos recentes no Sijut em 2026-07-17
+- [[normas-rfb-atos-recentes-sijut-2026-07-20]] — Normas RFB — atos recentes no Sijut em 2026-07-20
+- [[normas-rfb-atos-recentes-sijut-2026-07-22]] — Normas RFB — atos recentes no Sijut em 2026-07-22
+- [[normas-rfb-atos-recentes-sijut-2026-07-25]] — Normas RFB — atos recentes no Sijut em 2026-07-25
+- [[normas-rfb-atos-recentes-sijut-2026-07-28]] — Normas RFB — atos recentes no Sijut em 2026-07-28
+- [[normas-rfb-atos-recentes-sijut-2026-07-30]] — Normas RFB — atos recentes no Sijut em 2026-07-30
+- [[normas-rfb-atos-recentes-sijut-2026-08-03]] — Normas RFB — atos recentes no Sijut em 2026-08-03
+- [[normas-rfb-atos-recentes-sijut-2026-08-06]] — Normas RFB — atos recentes no Sijut em 2026-08-06
+- [[normas-rfb-atos-recentes-sijut-2026-08-08]] — Normas RFB — consulta de atos recentes no Sijut em 2026-08-08
+- [[normas-rfb-atos-recentes-sijut-2026-08-11]] — Normas RFB — consulta de atos recentes no Sijut em 2026-08-11
+- [[normas-rfb-atos-recentes-sijut-2026-08-14]] — Normas RFB — consulta de atos recentes no Sijut em 2026-08-14
+- [[normas-rfb-atos-recentes-sijut-2026-08-16]] — Normas RFB — consulta de atos recentes no Sijut em 2026-08-16
+- [[normas-rfb-atos-recentes-sijut-2026-08-31]] — Normas RFB — consulta de atos recentes no Sijut em 2026-08-31
+- [[normas-rfb-atos-recentes-sijut-2026-09-02]] — Normas RFB — consulta de atos recentes no Sijut em 2026-09-02
+- [[normas-rfb-atos-recentes-sijut-2026-09-23]] — Normas RFB — consulta de atos recentes no Sijut em 2026-09-23
+- [[normas-rfb-atos-recentes-sijut-2026-10-06]] — Normas RFB — consulta de atos recentes no Sijut em 2026-10-06
+- [[notas-proprietario-exame-do-razao-confronto-diario-razao]] — Notas do proprietário: exame do razão, confronto diário x razão e cruzamento automatizado
+- [[obsidian-claude-memory-karpathy-loop-engineering-2026]] — Obsidian + Claude memory, Karpathy skills e loop engineering
+- [[open-weights-modelos-abertos-2026]] — Modelos open weights: rotas de uso e quando compensam (Alex Veremeyenko, 2026-08-03)
+- [[openfinance-brasil-api-docs-2026]] — Open Finance Brasil — documentação oficial das APIs (captura única 2026-08-10)
+- [[orientacao-tecnica-cfc-01-2026]] — Orientação Técnica CFC n.º 1/2026 — IBS, CBS e teste operacional de 2026
+- [[padaria-monza-nossa-historia]] — Padaria Monza — Nossa História (site oficial)
+- [[pagamentos-bancarios-baixados-pelo-caixa-decisoes-ccmg-23992-21-carf-1201-007102-1102-001895]] — Pagamentos bancários baixados pelo Caixa e saldo credor por erro de escrituração: CC/MG 23.992/21, CARF 1201-007.102, CARF 1102-001.895, CARF 107-07.155 e a coletânea de Alcantara
+- [[parecer-piraci-destaque-cbs-ibs-dfe-2026-08-01]] — Parecer Piraci — destaque de CBS/IBS nos documentos fiscais eletrônicos a partir de 2026-08-03
+- [[pec-fim-escala-6x1-progresso-2026]] — Progresso — tramitação da PEC do fim da escala 6x1
+- [[pesquisa-pricing-varejo-ia-waterfall-segmentacao-2026]] — Pesquisa: pricing no varejo, IA, waterfall e segmentação
+- [[pesquisa-ruptura-zero-sales-ia-varejo-padaria-2026]] — Pesquisa: ruptura por zero-sales e IA no varejo/padaria
+- [[pesquisa-varejo-alimentar-para-planejamento-grupo-top-2026-07-27]] — Pesquisa de varejo alimentar para o planejamento do Grupo TOP — 2026-07-27
+- [[piraci-clausula-protetiva-reforma-tributaria-2026-09-30]] — Piraci 2026-09-30 — cláusula protetiva da reforma tributária (minuta contratual)
+- [[piraci-live-simples-nacional-regime-hibrido-2026-08-20]] — Piraci — LIVE Simples Nacional: regime híbrido ou por dentro do DAS (Aula #1, 20/08/2026)
+- [[piraci-locacao-pessoa-fisica-cbs]] — Piraci — Locação de imóveis por pessoa física e CBS
+- [[piraci-parecer-cbs-ibs-locacao-neutralidade-2026-09-27]] — Parecer Piraci 2026-09-27 — neutralidade do CBS/IBS em contratos de locação (2027–2028)
+- [[piraci-parecer-credito-cbs-split-rad-2026-09-05]] — Parecer Piraci 2026-09-05 — momento do crédito de CBS a partir de 2027 e a definição da modalidade híbrida no Simples
+- [[piraci-parecer-creditos-cbs-ibs-2027-2026-08-31]] — Parecer Piraci 2026-08-31 — créditos IBS/CBS 2027, split payment e regra de transição (art. 48 LC 214/2025)
+- [[piraci-parecer-nfe-operacoes-onerosas-reforma-tributaria]] — Piraci — Parecer sobre DF-e em operações onerosas na Reforma Tributária
+- [[piraci-parecer-pnct-ato-conjunto-5-2026]] — Piraci — parecer PNCT / Ato Conjunto RFB/CGIBS nº 5/2026 (esclarecimentos)
+- [[piraci-parecer-split-payment-rad-2026-08-24]] — Parecer Piraci — Split Payment e Recolhimento pelo Adquirente (RAD), 2026-08-24
+- [[piraci-pareceres-2026]] — Piraci Oliveira Advogados — pareceres e blog 2026 (captura inicial 2026-08-10/11)
+- [[piraci-pareceres-ato-conjunto-4-2026]] — Piraci — pareceres sobre documentos fiscais, locação e venda de imóveis na reforma tributária
+- [[piraci-simples-nacional-opcoes-ibs-cbs-2026]] — Piraci — Simples Nacional e opções IBS/CBS em 2026
+- [[planalto-leis-ordinarias-por-ano-2026-07-14]] — Planalto — leis ordinárias por ano em 2026-07-14
+- [[planalto-leis-ordinarias-por-ano-2026-07-16]] — Planalto — leis ordinárias por ano em 2026-07-16
+- [[planalto-leis-ordinarias-por-ano-2026-07-19]] — Planalto — leis ordinárias por ano em 2026-07-19
+- [[planalto-leis-ordinarias-por-ano-2026-07-21]] — Planalto — leis ordinárias por ano em 2026-07-21
+- [[planalto-leis-ordinarias-por-ano-2026-07-25]] — Planalto — leis ordinárias por ano em 2026-07-25
+- [[planalto-leis-ordinarias-por-ano-2026-07-26]] — Planalto — leis ordinárias por ano em 2026-07-26
+- [[planalto-leis-ordinarias-por-ano-2026-08-23]] — Planalto — leis ordinárias por ano em 2026-08-23
+- [[planalto-leis-ordinarias-por-ano-2026-08-24]] — Planalto — leis ordinárias por ano em 2026-08-24
+- [[planalto-leis-ordinarias-por-ano-2026-08-29]] — Planalto — leis ordinárias por ano em 2026-08-29
+- [[planalto-leis-ordinarias-por-ano-2026-08-30]] — Planalto — leis ordinárias por ano em 2026-08-30
+- [[planalto-leis-ordinarias-por-ano-2026-09-05]] — Planalto — leis ordinárias por ano em 2026-09-05
+- [[planalto-leis-ordinarias-por-ano-2026-09-06]] — Planalto — leis ordinárias por ano em 2026-09-06
+- [[planalto-leis-ordinarias-por-ano-2026-09-17]] — Planalto — leis ordinárias por ano em 2026-09-17
+- [[planalto-leis-ordinarias-por-ano-2026-09-18]] — Planalto — leis ordinárias por ano em 2026-09-18
+- [[portaria-conjunta-14-metodologia-aliquotas-combustibles-2026-10-08]] — Portaria Conjunta MF/CGIBS nº 14/2026 — metodologia de alíquotas de combustibles (IBS/CBS)
+- [[portaria-es-16-r-2019-st-mva-2026-10-01]] — Portaria SEFAZ-ES nº 16-R/2019 — substituição tributária e MVA (corpus 2026-09-25)
+- [[prescricao-intercorrente-lc-236-2026-blog-2026-10-01]] — Prescrição intercorrente na execução fiscal — LC 236/2026 e art. 174 do CTN (blog, 2026-10-01)
+- [[produtos-intermediarios-credito-icms-tit-stj-stf-2026]] — Produtos intermediários e crédito de ICMS — TIT, STJ e STF
+- [[progresso-alerta-fraudes-bancarias-2026-08-06]] — Progresso — alerta sobre fraudes bancárias, contas e chaves Pix
+- [[progresso-alerta-split-recebiles-2026-09-29]] — Alerta ⚠️Propostas de “split” de recebíveis para reduzir impostos
+- [[progresso-devedor-contumaz-apropriacao-indebita-2026-08-13]] — Progresso — alerta sobre risco de 'devedor contumaz' e crime de apropriação indébita tributária
+- [[progresso-ditr-2026]] — Declaração do ITR (DITR) 2026 — Progresso
+- [[progresso-licenca-salario-paternidade-lei-15371-2026]] — Progresso — licença e salário-paternidade pela Lei 15.371/2026
+- [[progresso-mudancas-apuracao-fator-r-simples-nacional-2026-08-27]] — Progresso — mudanças na apuração do Fator R do Simples Nacional (2027)
+- [[progresso-novo-prazo-adesao-simples-nacional-2027]] — Progresso — novo prazo para adesão ao Simples Nacional 2027
+- [[progresso-padarias-regime-especial-ibs-cbs-2026-09-14]] — Progresso — Vitória para padarias: redução de 40% na alíquota-base de IBS/CBS (Decreto 12.955/2026)
+- [[progresso-registro-mensal-lucros-dividendos-2026]] — Registro mensal da distribuição de lucros e dividendos — Progresso
+- [[progresso-revisao-cadastro-produtos-ibs-cbs-2026-09-24]] — Progresso — revisão do cadastro de produtos para IBS/CBS (2027)
+- [[progresso-simples-nacional-opcao-apuracao-ibs-cbs-2026-08-18]] — Progresso — Simples Nacional: definir como irá apurar IBS e CBS (prazo 30/09/2026)
+- [[project-mirror-deltas-2026-07-20]] — Deltas dos mirrors de projetos — 2026-07-20
+- [[project-mirror-deltas-2026-07-27]] — Deltas dos mirrors de projetos — 2026-07-27
+- [[project-mirror-deltas-2026-08-03]] — Deltas dos mirrors de projetos — 2026-08-03
+- [[project-mirror-deltas-2026-08-10]] — Deltas dos mirrors de projetos — 2026-08-10
+- [[project-mirror-deltas-2026-08-17]] — Deltas dos mirrors de projetos — 2026-08-17
+- [[project-mirror-deltas-2026-08-24]] — Deltas dos mirrors de projetos — 2026-08-24
+- [[project-mirror-deltas-2026-08-31]] — Deltas dos mirrors de projetos — 2026-08-31
+- [[project-mirror-deltas-2026-09-07]] — Deltas dos mirrors de projetos — 2026-09-07
+- [[project-mirror-deltas-2026-09-14]] — Deltas dos mirrors de projetos — 2026-09-14
+- [[project-mirror-deltas-2026-09-21]] — Deltas de mirrors 2026-09-21
+- [[project-mirror-deltas-2026-09-28]] — Deltas de mirrors 2026-09-28
+- [[prompt-engineering-frameworks-prompts-chatgpt]] — Frameworks para Prompts do ChatGPT
+- [[prompt-engineering-guia-definitivo-chatgpt]] — Guia Definitivo do ChatGPT
+- [[questionarios-planejamento-estrategico-grupo-top-marcio-altoe-2026-07-27]] — Respostas de Marcio Altoé ao planejamento estratégico do Grupo TOP — 2026-07-27
+- [[questionarios-planejamento-estrategico-grupo-top]] — Questionários ref. Planejamento Estratégico
+- [[rari-graph-engineering-2026]] — Graph Engineering: sistemas de agentes que não quebram em escala (rari/0xwhrrari, 2026)
+- [[recurso-especial-relevancia-lei-15484-2026]] — Tributário nos Bastidores — relevância como requisito do recurso especial
+- [[reforma-fontes-oficiais-2026]] — Fontes oficiais da Reforma Tributária — captura 2026-08-10
+- [[reforma-tributaria-10-teses-e-controversias-judiciais-2026]] — Tributário nos Bastidores — Reforma Tributária: 10 teses e controvérsias judiciais
+- [[ricms-es-titulos-i-e-ii-2026-10-01]] — RICMS/ES — Títulos I (isenções, reduções, alíquotas) e II (regimes especiais) (corpus 2026-09-25)
+- [[rohonchain-gpt6-astra-trading-strategies-2026]] — GPT-6 Astra + Kimi K3 para estratégias de trading 24/7 (RohOnChain, 2026)
+- [[rotina-operacional-estoque-sped-fiscal-2026]] — Rotina operacional da consultoria — estoque no SPED Fiscal
+- [[rotina-operacional-parcelamentos-clientes-2026]] — Rotina operacional da consultoria — controle de parcelamentos de clientes
+- [[rotina-operacional-sped-consultoria-2026]] — Rotina operacional da consultoria — SPED Fiscal, SPED Contribuições e fechamento trimestral
+- [[roundfix-jev-gateway-baseline-onda-1-2026-09-25]] — Roundfix — baseline do jev-gateway na Onda 1 (Specs 0170–0172, 2026-09-25)
+- [[roundfix-sequencia-de-eficiencia-2026-09-25]] — Roundfix — sequência de máxima eficiência e pesquisa Exa (2026-09-25)
+- [[rvaniaaa-second-brain-compiler-2026]] — O Second Brain não é um armazenamento, é um compilador (rvaniaaa, 2026)
+- [[sefaz-es-legislacao-2026]] — Legislação SEFAZ-ES 2026 — textos oficiais (captura 2026-08-10)
+- [[selic-contra-fazenda-publica-antes-da-citacao-stf-2026]] — STF julgará Selic contra a Fazenda Pública antes da citação
+- [[simulacao-empregados-simples-carf-2026]] — Progresso — CARF e simulação por alocação de empregados no Simples
+- [[split-payment-reforma-tributaria-impacto-caixa-2026]] — Tributário nos Bastidores — split payment e impacto no caixa das empresas
+- [[stf-cinco-votos-imunidade-itbi-empresas-imobiliarias-2026]] — STF tem 5 votos por imunidade de ITBI na integralização de capital (RE 1.495.108, Tema 1.348)
+- [[stf-creditos-presumidos-icms-base-pis-cofins-2026-10-08]] — STF — créditos presumidos de ICMS fora da base do PIS/Cofins (RE 835.818, Tema 843)
+- [[stf-irpf-ganho-capital-doacao-adiantamento-legitima-tema-1391-2026]] — STF — IRPF sobre ganho de capital em doação no Tema 1391
+- [[stj-arresto-sisbajud-antes-citacao-edital-execucao-fiscal-2026]] — STJ valida arresto pelo SisbaJud antes da citação por edital em execução fiscal (REsp 2.189.427/PE)
+- [[stj-artigo-343-a-requisito-recursos-2026]] — STJ — novo requisito do art. 343-A do Regimento Interno
+- [[stj-tema-648-exibicao-de-documentos-bancarios]] — STJ, Tema 648 — exibição de documentos bancários: requisitos
+- [[sumula-carf-33-declaracao-apos-inicio-do-procedimento-fiscal]] — Súmula CARF 33: declaração entregue após o início do procedimento fiscal não produz efeitos sobre o lançamento de ofício
+- [[tema-1412-stj-bonificacoes-descontos-pis-cofins-2026]] — Tributário nos Bastidores — Tema 1.412 do STJ: bonificações e descontos no PIS/Cofins
+- [[thread-luca-claude-code-framework-ctx-roundfix-2026]] — Thread Luca King — claude-code-framework, ctx e Roundfix
+- [[tmux-uso-basico-e-acesso-remoto-macmini]] — tmux: uso básico e acesso remoto ao brain/macmini
+- [[tributacao-dividendos-risco-distribuicao-disfarcada-lucros-2026]] — Tributação de dividendos e risco de distribuição disfarçada de lucros
+- [[trilha-controladoria-orcamento]] — Trilha de controladoria — DRE e processo orçamentário (2026)
+- [[trilha-gestao-administracao-e-indicadores]] — Trilha de gestão — administração e indicadores (Sebrae, 2026)
+- [[trilha-gestao-dividas-e-fluxo-de-caixa]] — Trilha de gestão — dívidas, fluxo de caixa e capital de giro (Sebrae, 2026)
+- [[trilha-gestao-e-lucratividade-varejo-alimentar-2026]] — Trilha de gestão e lucratividade no varejo alimentar (2026-08-21)
+- [[trilha-governanca-e-sucessao]] — Governança e sucessão em empresas familiares (IBGC, 2026)
+- [[trilha-pricing-varejo-alimentar]] — Trilha de pricing no varejo alimentar (2026)
+- [[trilha-varejo-perdas-e-lucratividade]] — Varejo alimentar — perdas, prevenção e lucratividade (ABRAPPE/ABRAS, 2026)
+- [[typesafe-jev-system-one-2026]] — TypeSafe/JEV — modelo System One de decisões estruturadas (docs + vídeos, 2026-09-18)
+- [[undefinedki-agent-harness-six-decisions-2026]] — Como desenhar um Agent Harness: seis decisões (Yaman/undefinedKi, 2026)
+- [[voicenotes-2026-09-30-metas-financeiras-cmv-e-romaneio-grupo-top]] — Metas financeiras e controle por loja — CMV e romaneio (2026-09-30)
+- [[voicenotes-2026-10-02-alinhamento-contabil-risco-fiscal-caixa]] — Alinhamento contábil e plano para reduzir risco fiscal no caixa (2026-10-02)
+- [[voicenotes-2026-10-02-anomalias-datas-inbol-adiantamentos-aluguel-ronca]] — Anomalias de datas em notas da Inbol e adiantamentos de aluguel da Ronchi (2026-10-02)
+- [[voicenotes-2026-10-05-alinhamento-envio-xmls-relatorios-simples]] — Alinhamento de envio de XMLs e relatórios para empresas do Simples (2026-10-05)
+- [[voicenotes-2026-10-06-ajustes-resposta-diligencia-sefaz-agendamento-fiscal]] — Ajustes na resposta à diligência da SEFAZ e agendamento da visita do fiscal (2026-10-06)
+- [[voicenotes-2026-10-06-pre-avaliacao-compra-panzone-itapua-vila-velha]] — Pré-avaliação da compra da Panzone Itapuã (Vila Velha) — 2026-10-06
+- [[voicenotes-2026-10-06-ricardo-indica-cliente-luciana]] — Ricardo indica cliente Luciana (networking) — 2026-10-06
+- [[voicenotes-alinhamento-adesao-edital-pgfn-regularizacao-grupo-top]] — Voicenotes — Alinhamento para adesão a edital PGFN e regularização fiscal do grupo TOP
+- [[voicenotes-autos-infracao-caixa-credor-suprimento-caixa]] — Voicenotes — Autos de infração por saldo credor de caixa e suprimento de caixa sem comprovação (Trarbach)
+- [[voicenotes-boatos-reformulacao-decreto-cbs-ate-31-12]] — Voicenotes: boatos de reformulação do decreto da CBS até 31/12
+- [[voicenotes-developer-interview-about-llm-productivity-salary-expectations-and-start-date]] — Voicenotes: Developer interview about LLM productivity, salary expectations and start date
+- [[voicenotes-dr-piraci-parte-1-perguntas-respostas]] — Voicenotes — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 1 (Perguntas e Respostas)
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-1-agosto-parte-1]] — Voicenotes — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 1
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-1-agosto-parte-2]] — Voicenotes — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 2
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-1-agosto-parte-3]] — Voicenotes — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 3
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-a-1-de-agosto-parte-1-perguntas-e-respostas]] — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 1 (Perguntas e Respostas)
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-a-1-de-agosto-parte-1]] — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 1
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-a-1-de-agosto-parte-2]] — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 2
+- [[voicenotes-dr-piraci-sua-nota-sobrevive-a-1-de-agosto-parte-3]] — Dr. Piraci | Sua nota sobrevive a 1º de agosto? - Parte 3
+- [[voicenotes-esclarecimentos-contratuais-thomas-origem-oportunidades-congelamento]] — Voicenotes — Esclarecimentos contratuais com a Thomas: origem de oportunidades e congelamento
+- [[voicenotes-estrategia-defesa-fiscal-extratos-razao-fdi-cms]] — Voicenotes — Estrategia de defensa fiscal con extratos, razón y FDI-CMS (Grupo TOP)
+- [[voicenotes-feedback-da-devspeak-gravacao-de-mock-interviews-system-design-e-app]] — Voicenotes — Feedback da DevSpeak: gravação de mock interviews, system design e app
+- [[voicenotes-feedback-devspeak-mock-interviews-system-design-app]] — Voicenotes — Feedback da DevSpeak: gravação de mock interviews, system design e app
+- [[voicenotes-fiscalizacao-caixa-numerario-em-transito-2026-10-02]] — Fiscalização do caixa e conciliação via numerário em trânsito (2026-10-02)
+- [[voicenotes-marcio-contratou-thomas-case-recolocacao-dev-ia]] — Voicenotes — Márcio contratou Thomas Case para recolocação como dev de IA
+- [[voicenotes-mcp-oficial]] — Voicenotes MCP oficial
+- [[voicenotes-nopro-ai-reforma-tributaria-decisoes-sob-pressao]] — Voicenotes — Nopro AI, reforma tributária e decisões sob pressão com IA e governança
+- [[voicenotes-nopro-ai-reforma-tributaria-e-decisoes-sob-pressao-com-ia-e-governanca]] — Voicenotes: Nopro AI, reforma tributária e decisões sob pressão com IA e governança
+- [[voicenotes-pendencias-nm5-mm5-instabilidade-regularize-contratos-cnpjs-simples]] — Voicenotes — Pendências NM5/MM5, instabilidade do Regularize e contratos dos CNPJs no Simples
+- [[voicenotes-planejamento-de-implentacoes-no-visio-e-oraculum]] — Voicenotes — Planejamento de Implentações no Visio e Oraculum
+- [[voicenotes-plano-regularizacao-pis-cofins-virginia]] — Plano de regularização PIS/COFINS da cliente Virgínia — retificações, COMPETE e risco fiscal
+- [[voicenotes-prazo-processo-confirmado-28-09-alinhamento-julio]] — Voicenotes — Prazo do processo confirmado para 28/09 e alinhamento com Júlio
+- [[voicenotes-procedimento-ajuste-icms-sam-contingencia-sefaz]] — Voicenotes — Procedimento de ajuste ICMS no SAM e notas em contingência na SEFAZ
+- [[voicenotes-proposta-troca-contabilidade-padarias-skips-brothers]] — Troca de contabilidade das padarias Skips e Brothers — proposta da Contabilidade Progresso
+- [[voicenotes-regularizacion-empresas-simples-hibrido]] — Voicenotes — Definição de empresas a regularizar e opção pelo Simples híbrido (Grupo TOP)
+- [[voicenotes-saam-treinamento-reforma-tributaria-xml-sped-certificados]] — Voicenotes — SAAM: Treinamento nas rotinas da reforma tributária, XML, SPED e certificados
+- [[voicenotes-transcricao-curta-com-confirmacao-pronto]] — Voicenotes — Transcrição curta com confirmação: Pronto
+- [[voicenotes-treinamento-no-saam-rotinas-da-reforma-tributaria-xml-sped-e-certificados]] — Voicenotes: Treinamento no SAAM sobre reforma tributária, XML, SPED e certificados
+- [[voicenotes-vm-pay-erros-cupom-fiscal-pick-list-fracionaveis]] — Voicenotes — VM Pay: Erros de cupom fiscal e pick list de fracionáveis
+- [[voicenotes-wdq4zf1q]] — Voicenotes — VM Pay: Erros de cupom fiscal e pick list de fracionáveis
+- [[web-alcantara-extratos-x-ecd-i250-historico-padronizado]] — Alcantara: confronto extratos bancários x ECD (I250) e histórico padronizado FEBRABAN
+- [[web-auditece-presuncao-omissao-receita-suprimento-origem-entrega-capacidade]] — Auditece: hipóteses de presunção de omissão de receita no Ceará (suprimento, saldo credor, passivo fictício)
+- [[web-conjur-omissao-receitas-presumida-depositos-bancarios-carf]] — Conjur: omissão de receitas presumida por depósitos bancários na jurisprudência do CARF (parte 1)
+- [[web-conjur-saldo-credor-declarado-na-conta-caixa]] — Conjur: saldo credor declarado na conta caixa (Yamamoto e Ferreira, 01/01/2026)
+- [[web-nbc-tp-01-r2-pericia-contabil-2025]] — NBC TP 01 (R2), Perícia Contábil (DOU 14/03/2025)
+- [[web-normas-escrituracao-por-totais-mensais-dl-486-cc-1184-rir-273-itg-1000]] — Escrituração por totais mensais: DL 486/1969 art. 5º § 3º, Código Civil art. 1.184 § 1º, RIR/2018 art. 273 § 3º, ITG 1000 item 10 e NBC T 2 item 14
+- [[web-uerj-redp-pericia-contabil-instrumento-probatorio]] — Lopo Martinez (REDP/UERJ): a perícia contábil como instrumento probatório nos litígios
+- [[web-wepericia-roteiro-pericia-autuacao-fiscal]] — WE Perícia: roteiro técnico de perícia contábil em autuação fiscal
+- [[whatsapp-2026-09]] — WhatsApp — resumo do mês 2026-09
+- [[whatsapp-2026-10-06]] — WhatsApp — resumo do dia 2026-10-06
+- [[whatsapp-2026-10-07]] — WhatsApp — resumo do dia 2026-10-07
+- [[whatsapp-2026-10-08]] — WhatsApp — resumo do dia 2026-10-08
+- [[x-agent-workflows-loop-engineering-2026]] — Posts do X sobre agent workflows, loop engineering e Claude Code
+- [[x-alex-prompter-councils-structured-disagreement-2026]] — Conselhos multi-agente: estruturando desacordo — Alex Prompter (2026-08-08)
+- [[x-claude-fable-unknowns-gpt56-token-usage-2026]] — Claude Fable unknowns e GPT-5.6 token usage
+- [[x-codila-loop-engineering-graph-engineering-2026]] — @0xCodila — Loop Engineering e Graph Engineering
+- [[x-fable-portable-operating-manual-2026]] — Fable 5 portable operating manual
+- [[x-graph-engineering-agent-architectures-2026]] — Posts do X sobre Graph Engineering para agentes
+- [[youtube-full-walkthrough-workflow-ai-coding-matt-pocock]] — Full Walkthrough: Workflow for AI Coding — Matt Pocock
+- [[youtube-google-adk-curso-agentic-engineering-2026]] — Google ADK — 1h de curso de agentic engineering (compilação)
+- [[youtube-how-we-build-effective-agents-barry-zhang-anthropic]] — How We Build Effective Agents — Barry Zhang (Anthropic, 2025)
+- [[youtube-playlist-agent-harness-engineering]] — AI Engineer — Agent & Harness Engineering (55 vídeos)
+- [[youtube-playlist-boas-praticas-clean-code]] — Renato Augusto — Boas Práticas / Clean Code (9 vídeos)
+- [[youtube-playlist-design-patterns-gof]] — Renato Augusto — Design Patterns GoF (11 vídeos)
+- [[youtube-playlist-fundamentos-arquitetura-software]] — Renato Augusto — Fundamentos de Arquitetura de Software e System Design (15 vídeos)
+- [[youtube-playlist-solid]] — Renato Augusto — SOLID (5 vídeos)
+
+## topics/authorization-patterns
+
+- [[log-legado-authorization-patterns]] — Log legado — authorization-patterns
+
+## topics/authorization-patterns/concepts
+
+- [[abac]] — ABAC (Attribute-Based Access Control)
+- [[acl]] — ACL (Access Control List)
+- [[modelos-de-autorizacao-para-saas]] — Modelos de Autorização para SaaS
+- [[rbac]] — RBAC (Role-Based Access Control)
+
+## topics/authorization-patterns/index
+
+- [[authorization-patterns-concept-index]] — authorization-patterns — Concept Index
+- [[authorization-patterns-dashboard]] — authorization-patterns — Dashboard
+- [[authorization-patterns-source-index]] — authorization-patterns — Source Index
+
+## topics/dev-reference
+
+- [[log-legado-dev-reference]] — Log legado — dev-reference
+
+## topics/dev-reference/concepts
+
+- [[dockerfile-referencia]] — Dockerfile — Referência de Instruções
+- [[rest-api-nomenclatura]] — REST API — Nomenclatura de Endpoints
+- [[sql-case-rollup]] — SQL — CASE com GROUP BY ROLLUP
+
+## topics/dev-reference/index
+
+- [[dev-reference-concept-index]] — dev-reference — Concept Index
+- [[dev-reference-dashboard]] — dev-reference — Dashboard
+- [[dev-reference-source-index]] — dev-reference — Source Index
+
+## topics/gesttione
+
+- [[log-legado-gesttione]] — Log legado — gesttione
+
+## topics/gesttione/codebase/concepts
+
+- [[Circular Dependencies]] — Circular Dependencies
+- [[Code Smells]] — Code Smells
+- [[Codebase Overview]] — Codebase Overview
+- [[Complexity Hotspots]] — Complexity Hotspots
+- [[Dead Code Report]] — Dead Code Report
+- [[Dependency Hotspots]] — Dependency Hotspots
+- [[Directory Map]] — Directory Map
+- [[High-Impact Symbols]] — High-Impact Symbols
+- [[Module Health]] — Module Health
+- [[Symbol Taxonomy]] — Symbol Taxonomy
+
+## topics/gesttione/codebase/index
+
+- [[Codebase Concept Index]] — Codebase Concept Index
+- [[Codebase Dashboard]] — Codebase Dashboard
+- [[Codebase Source Index]] — Codebase Source Index
+
+## topics/gesttione/index
+
+- [[gesttione-concept-index]] — gesttione — Concept Index
+- [[gesttione-dashboard]] — gesttione — Dashboard
+- [[gesttione-source-index]] — gesttione — Source Index
+
+## topics/inbox
+
+- [[log-legado-inbox]] — Log legado — inbox
+
+## topics/inbox/index
+
+- [[inbox-concept-index]] — inbox — Concept Index
+- [[inbox-dashboard]] — inbox — Dashboard
+- [[inbox-source-index]] — inbox — Source Index
+
+## topics/learning-notes
+
+- [[log-legado-learning-notes]] — Log legado — learning-notes
+
+## topics/learning-notes/concepts
+
+- [[design-de-produto-steve-jobs]] — Design de Produto — Filosofia de Steve Jobs
+- [[storytelling-com-dados]] — Storytelling com Dados — Cole Nussbaumer Knaflic
+
+## topics/learning-notes/index
+
+- [[learning-notes-concept-index]] — learning-notes — Concept Index
+- [[learning-notes-dashboard]] — learning-notes — Dashboard
+- [[learning-notes-source-index]] — learning-notes — Source Index
+
+## topics/prompt-engineering
+
+- [[log-legado-prompt-engineering]] — Log legado — prompt-engineering
+
+## topics/prompt-engineering/concepts
+
+- [[frameworks-de-prompts]] — Frameworks de Prompts para ChatGPT
+- [[guia-definitivo-chatgpt]] — Guia Definitivo do ChatGPT — Visão Geral
+
+## topics/prompt-engineering/index
+
+- [[prompt-engineering-concept-index]] — prompt-engineering — Concept Index
+- [[prompt-engineering-dashboard]] — prompt-engineering — Dashboard
+- [[prompt-engineering-source-index]] — prompt-engineering — Source Index
+
+## projetos (fora do wiki)
+
+Projetos pessoais com instruções próprias; leia o `AGENTS.md` de cada um.
+
+- [3D World — instruções do projeto](../projetos/3d-world/AGENTS.md)
+- [Brincadeira do Gabriel — instruções do projeto](../projetos/brincadeira-do-gabriel/AGENTS.md)
+- [English Classroom — instruções do projeto](../projetos/english-classroom/AGENTS.md)
+- [Finance — instruções do projeto](../projetos/finance/AGENTS.md)
+- [GTD — instruções do projeto](../projetos/gtd/AGENTS.md)
+- [Health — instruções do projeto](../projetos/health/AGENTS.md)
+- [Legislação — instruções do projeto](../projetos/legislacao/AGENTS.md)
+- [LinkedIn — instruções do projeto](../projetos/linkedin/AGENTS.md)
+- [SM Black — instruções do projeto](../projetos/sm-black/AGENTS.md)

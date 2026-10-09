@@ -1,0 +1,7 @@
+{
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "cpu_count": 10,
+  "go_version": "go version go1.26.5 darwin/arm64",
+  "rust_bin": "/Users/marcio/.rustup/toolchains/stable-aarch64-apple-darwin/bin",
+  "environment_policy": "only PATH (actual Rust toolchain first), disposable HOME/TMPDIR, LANG, explicit GOPATH and task-local GOCACHE; no provider keys inherited"
+}

@@ -1,0 +1,229 @@
+{
+  "race": {
+    "measurement": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-short",
+        "-timeout",
+        "30m",
+        "./internal/cli",
+        "./internal/daemon",
+        "./internal/spec",
+        "./internal/speccheck",
+        "./internal/worktree",
+        "./internal/store",
+        "./internal/baseline"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/head",
+      "exit": 1,
+      "wall": 306.5553646670305,
+      "user": 815.575758,
+      "system": 1233.268168,
+      "load_before": [
+        17.37060546875,
+        29.0205078125,
+        24.05419921875
+      ],
+      "load_after": [
+        11.5869140625,
+        28.37646484375,
+        26.58935546875
+      ]
+    },
+    "packages": {
+      "cli": {
+        "status": "FAIL",
+        "detail": "286.008s"
+      },
+      "daemon": {
+        "status": "ok",
+        "detail": "134.115s"
+      },
+      "spec": {
+        "status": "ok",
+        "detail": "69.692s"
+      },
+      "speccheck": {
+        "status": "ok",
+        "detail": "56.109s"
+      },
+      "worktree": {
+        "status": "ok",
+        "detail": "108.737s"
+      },
+      "store": {
+        "status": "ok",
+        "detail": "69.181s"
+      },
+      "baseline": {
+        "status": "ok",
+        "detail": "187.818s"
+      }
+    },
+    "all_seven_pass": false,
+    "failed_tests": [
+      "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken"
+    ],
+    "race_diagnostic": false,
+    "shuffle_seeds": []
+  },
+  "shuffle": {
+    "measurement": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-shuffle=on",
+        "-v",
+        "-timeout",
+        "20m",
+        "./internal/cli",
+        "./internal/daemon",
+        "./internal/spec",
+        "./internal/speccheck",
+        "./internal/worktree",
+        "./internal/store",
+        "./internal/baseline"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/head",
+      "exit": 0,
+      "wall": 198.0425839999807,
+      "user": 394.5582949999998,
+      "system": 721.8555489999999,
+      "load_before": [
+        11.5869140625,
+        28.37646484375,
+        26.58935546875
+      ],
+      "load_after": [
+        15.10791015625,
+        26.12939453125,
+        26.45654296875
+      ]
+    },
+    "packages": {
+      "cli": {
+        "status": "ok",
+        "detail": "197.432s"
+      },
+      "daemon": {
+        "status": "ok",
+        "detail": "97.145s"
+      },
+      "spec": {
+        "status": "ok",
+        "detail": "51.652s"
+      },
+      "speccheck": {
+        "status": "ok",
+        "detail": "54.912s"
+      },
+      "worktree": {
+        "status": "ok",
+        "detail": "92.793s"
+      },
+      "store": {
+        "status": "ok",
+        "detail": "34.724s"
+      },
+      "baseline": {
+        "status": "ok",
+        "detail": "140.476s"
+      }
+    },
+    "all_seven_pass": true,
+    "failed_tests": [],
+    "race_diagnostic": false,
+    "shuffle_seeds": [
+      "1791541245278637000",
+      "1791541244202738000",
+      "1791541244413242000",
+      "1791541244459487000",
+      "1791541244428596000",
+      "1791541244429583000",
+      "1791541244566083000"
+    ]
+  },
+  "selector": {
+    "measurement": {
+      "command": [
+        "go",
+        "run",
+        "-buildvcs=false",
+        "./cmd/verify-select",
+        "-contracts",
+        "-all"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/head",
+      "exit": 0,
+      "wall": 0.3398695000214502,
+      "user": 0.10040000000026339,
+      "system": 0.12575500000002648,
+      "load_before": [
+        15.10791015625,
+        26.12939453125,
+        26.45654296875
+      ],
+      "load_after": [
+        15.10791015625,
+        26.12939453125,
+        26.45654296875
+      ]
+    },
+    "stdout_lines": 1,
+    "one_line_both_tags": true,
+    "stdout": [
+      "docscontract,repocontract ^(TestABrokenUserGuideLinkIsReported|TestAReleaseStepThatNamesAMissingCheckIsReported|TestAStaleBehaviorSurfaceIsReported|TestAnUndocumentedCommandIsReported|TestAnUnmappedBehaviorSurfaceIsReported|TestBaselineDecisionExamples|TestBaselineDocumentationContract|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent|TestBrokenLinksHandlesDestinationDecorationsAndFences|TestCheckActiveCorpusHasNoErrors|TestCheckCorpusBudget|TestCheckCorpusGolden|TestCheckLoopOrderDivergent|TestCheckLoopOrderRepositoryAgrees|TestCleanupHistoricalGrantEvidence|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestCommandIndexNamesEveryCommandFile|TestCommandPathsReadSubcommandsAndAlternatives|TestCommandReferenceLinksResolve|TestDeclaredStepRegenerationAndFrozenBoundaries|TestDocsLayoutGuideNamesEveryHistoryFamily|TestEveryBoundedPathIsGoverned|TestEveryCheckTheReleaseStepNamesExists|TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestGuidanceCompositionDocumentation|TestMeasuredSanctionedOwnershipMatchesRecords|TestModelSelectionReferenceStatesTheShippedSnapshot|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestProfilesDocumentationContractMatchesPublicGuidance|TestProjectConstraintDocumentation|TestRegenerationIsDeclared|TestReleasePlanDocumentationContract|TestRepositoryGateRunsTheAnalyzer|TestReviewHistoryConfiguration|TestReviewHistoryConfigurationRejectsReachableRuleSources|TestReviewHistoryConfigurationRequiresExclusions|TestSecondbrainExportFollowsTheHistoryForm|TestSecondbrainExportRuleRefusesBothMismatches|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources|TestStageScopeDefaultSweepIsUnchanged|TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck|TestTheSkillCoverageMapIsCurrent|TestUserGuideLinksResolve|TestUserGuideNamesNoRefusedQAFlag)$ ./internal/agent ./internal/app ./internal/authorization ./internal/baseline ./internal/baselineacp ./internal/cli ./internal/codex ./internal/config ./internal/daemon ./internal/docscontract ./internal/gittest ./internal/notify ./internal/preflight ./internal/releaseplan ./internal/reviewsource ./internal/reviewsource/coderabbit ./internal/rounds ./internal/runevent ./internal/skillhash ./internal/spec ./internal/specaudit ./internal/speccheck ./internal/store ./internal/suiteguard ./internal/tui ./internal/verifyselect ./internal/watch ./internal/worktree ./skills"
+    ]
+  },
+  "contracts": {
+    "start": {
+      "command": [
+        "make",
+        "verify-contracts"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/start",
+      "exit": 0,
+      "wall": 94.99253783398308,
+      "user": 291.9973369999998,
+      "system": 78.69021299999986,
+      "load_before": [
+        15.10791015625,
+        26.12939453125,
+        26.45654296875
+      ],
+      "load_after": [
+        11.384765625,
+        21.8076171875,
+        24.73876953125
+      ]
+    },
+    "head": {
+      "command": [
+        "make",
+        "verify-contracts"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-u7vs4ipx/head",
+      "exit": 0,
+      "wall": 66.26085083303042,
+      "user": 309.8881449999999,
+      "system": 80.96760699999959,
+      "load_before": [
+        11.384765625,
+        21.8076171875,
+        24.73876953125
+      ],
+      "load_after": [
+        11.15673828125,
+        20.08544921875,
+        23.8984375
+      ]
+    },
+    "both_pass": true,
+    "head_faster": true,
+    "wall_ratio": 0.6975374312962712
+  }
+}

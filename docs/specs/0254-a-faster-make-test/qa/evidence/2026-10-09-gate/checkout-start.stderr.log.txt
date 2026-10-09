@@ -1,0 +1,1 @@
+HEAD is now at 2ce5abe8 docs: plan authoring rules that stop QA reruns (0253) (#483)

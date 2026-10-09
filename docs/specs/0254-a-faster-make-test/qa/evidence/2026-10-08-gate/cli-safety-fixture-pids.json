@@ -1,0 +1,22 @@
+[
+  {
+    "measurement": "race-cli",
+    "fixture_pid": 88632,
+    "signal_zero": "absent"
+  },
+  {
+    "measurement": "race-cli",
+    "fixture_pid": 89645,
+    "signal_zero": "absent"
+  },
+  {
+    "measurement": "shuffle-cli",
+    "fixture_pid": 70629,
+    "signal_zero": "absent"
+  },
+  {
+    "measurement": "shuffle-cli",
+    "fixture_pid": 74320,
+    "signal_zero": "absent"
+  }
+]

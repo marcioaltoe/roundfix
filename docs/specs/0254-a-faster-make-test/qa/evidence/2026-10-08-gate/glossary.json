@@ -1,0 +1,12 @@
+{
+  "declared": [
+    "Sequential Test",
+    "Parallel Test Package"
+  ],
+  "defined": {
+    "Sequential Test": true,
+    "Parallel Test Package": true
+  },
+  "domain_guide": "docs/agents/domain.md",
+  "additional_terms_needed": []
+}

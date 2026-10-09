@@ -1,0 +1,23 @@
+{
+  "version": {
+    "command": [
+      "./bin/roundfix",
+      "--version"
+    ],
+    "exit": 0,
+    "stdout": "roundfix 0.64.0 (93c4dac1-dirty, built 2026-10-09 06:46:55 -0300)\n",
+    "stderr": ""
+  },
+  "spec-check": {
+    "command": [
+      "./bin/roundfix",
+      "spec",
+      "check",
+      "0254-a-faster-make-test",
+      "--strict"
+    ],
+    "exit": 0,
+    "stdout": "Spec 0254-a-faster-make-test\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  vocabulary documentation detector: missing docs/specs/0254-a-faster-make-test/_techspec.md Vocabulary Contract\n  SC-REF-UNRESOLVED: missing docs/specs/0254-a-faster-make-test/references/_index.md\n",
+    "stderr": ""
+  }
+}

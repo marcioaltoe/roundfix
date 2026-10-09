@@ -1,0 +1,237 @@
+{
+  "measurement": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-parallel",
+      "16",
+      "-json",
+      "./..."
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-8ez6eks6/head",
+    "exit": 0,
+    "wall": 217.80220445798477,
+    "user": 428.75611,
+    "system": 824.175118,
+    "load_before": [
+      9.73486328125,
+      11.244140625,
+      15.0751953125
+    ],
+    "load_after": [
+      15.43701171875,
+      20.18994140625,
+      18.82763671875
+    ]
+  },
+  "packages": {
+    "roundfix/cmd/roundfix": {
+      "elapsed": 0,
+      "status": "skip"
+    },
+    "roundfix/cmd/verify-select": {
+      "elapsed": 0,
+      "status": "skip"
+    },
+    "roundfix/internal/app": {
+      "elapsed": 0.198,
+      "status": "pass"
+    },
+    "roundfix/internal/baselineacp": {
+      "elapsed": 0.31,
+      "status": "pass"
+    },
+    "roundfix/internal/authorization": {
+      "elapsed": 0.612,
+      "status": "pass"
+    },
+    "roundfix/internal/docscontract": {
+      "elapsed": 0,
+      "status": "skip"
+    },
+    "roundfix/internal/codex": {
+      "elapsed": 0.212,
+      "status": "pass"
+    },
+    "roundfix/internal/mdtree": {
+      "elapsed": 0.203,
+      "status": "pass"
+    },
+    "roundfix/internal/lighttier": {
+      "elapsed": 0.32,
+      "status": "pass"
+    },
+    "roundfix/internal/notify": {
+      "elapsed": 0.22,
+      "status": "pass"
+    },
+    "roundfix/internal/openrouterkey": {
+      "elapsed": 0.187,
+      "status": "pass"
+    },
+    "roundfix/internal/releaseplan": {
+      "elapsed": 0.187,
+      "status": "pass"
+    },
+    "roundfix/internal/reviewsource": {
+      "elapsed": 0.306,
+      "status": "pass"
+    },
+    "roundfix/internal/gittest": {
+      "elapsed": 1.215,
+      "status": "pass"
+    },
+    "roundfix/internal/reviewsource/coderabbit": {
+      "elapsed": 0.263,
+      "status": "pass"
+    },
+    "roundfix/internal/rounds": {
+      "elapsed": 0.265,
+      "status": "pass"
+    },
+    "roundfix/internal/runevent": {
+      "elapsed": 0.197,
+      "status": "pass"
+    },
+    "roundfix/internal/skillcoverage": {
+      "elapsed": 0.201,
+      "status": "pass"
+    },
+    "roundfix/internal/preflight": {
+      "elapsed": 1.3980000000000001,
+      "status": "pass"
+    },
+    "roundfix/internal/runcause": {
+      "elapsed": 0.618,
+      "status": "pass"
+    },
+    "roundfix/internal/judge": {
+      "elapsed": 2.018,
+      "status": "pass"
+    },
+    "roundfix/internal/skillhash": {
+      "elapsed": 0.281,
+      "status": "pass"
+    },
+    "roundfix/internal/config": {
+      "elapsed": 2.336,
+      "status": "pass"
+    },
+    "roundfix/internal/agent": {
+      "elapsed": 4.502,
+      "status": "pass"
+    },
+    "roundfix/internal/suiteguardcontract": {
+      "elapsed": 0.4,
+      "status": "pass"
+    },
+    "roundfix/internal/suiteguard": {
+      "elapsed": 5.191,
+      "status": "pass"
+    },
+    "roundfix/internal/testwait": {
+      "elapsed": 0.987,
+      "status": "pass"
+    },
+    "roundfix/internal/delivery": {
+      "elapsed": 8.894,
+      "status": "pass"
+    },
+    "roundfix/internal/testfixture": {
+      "elapsed": 5.322,
+      "status": "pass"
+    },
+    "roundfix/internal/tui": {
+      "elapsed": 1.091,
+      "status": "pass"
+    },
+    "roundfix/internal/watch": {
+      "elapsed": 0.328,
+      "status": "pass"
+    },
+    "roundfix/skills": {
+      "elapsed": 9.102,
+      "status": "pass"
+    },
+    "roundfix/internal/specaudit": {
+      "elapsed": 17.951999999999998,
+      "status": "pass"
+    },
+    "roundfix/internal/store": {
+      "elapsed": 29.443,
+      "status": "pass"
+    },
+    "roundfix/internal/verifyselect": {
+      "elapsed": 42.61,
+      "status": "pass"
+    },
+    "roundfix/internal/spec": {
+      "elapsed": 63.793,
+      "status": "pass"
+    },
+    "roundfix/internal/speccheck": {
+      "elapsed": 74.732,
+      "status": "pass"
+    },
+    "roundfix/internal/worktree": {
+      "elapsed": 80.511,
+      "status": "pass"
+    },
+    "roundfix/internal/daemon": {
+      "elapsed": 92.825,
+      "status": "pass"
+    },
+    "roundfix/internal/baseline": {
+      "elapsed": 127.818,
+      "status": "pass"
+    },
+    "roundfix/internal/cli": {
+      "elapsed": 216.613,
+      "status": "pass"
+    }
+  },
+  "sequential_cli": {
+    "count": 36,
+    "elapsed_sum": 114.35,
+    "tests": {
+      "TestArchivePlanWithoutAKeyPrintsNoAdvice": 0.16,
+      "TestCapabilityRecheck": 0.16,
+      "TestCapabilityTextRendersProbe": 0.13,
+      "TestCarryForwardAppliesThroughRefusingCommitHooks": 2.72,
+      "TestCarryForwardProofIgnoresRefusingCommitHooks": 10.31,
+      "TestCarryForwardStagingRunsNoRepositoryHook": 14.51,
+      "TestCarryForwardLeavesTheCheckoutHooksPathUnchanged": 7.65,
+      "TestCarryForwardRemovesItsEmptyHooksDirectory": 7.74,
+      "TestRunRunsWithoutSubcommandHonorsInteractivity": 0.37,
+      "TestRunResolveDetachedChildReportsProfileProofFailure": 0.08,
+      "TestRunNoAgentConsoleRejectsInteractiveCockpit": 0.36,
+      "TestRunPreflightFailureColorsOutputWhenForced": 0.09,
+      "TestAttachRunBrowserLoopOpensCockpitAndRefreshes": 1.1,
+      "TestAttachRunBrowserCancelExitsZeroWithoutAttaching": 1.93,
+      "TestDeliveryArchiveStageCommitsTheArchiveRecord": 2.84,
+      "TestDeliveryStepRunsTheItemBinary": 2.54,
+      "TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments": 3.46,
+      "TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate": 2.76,
+      "TestDeliveryStepParksWhenTheItemBuildFails": 1.74,
+      "TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored": 1.41,
+      "TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable": 1.35,
+      "TestDeliveryItemBinaryThatCannotStartReturnsAParkError": 1.48,
+      "TestRevalidateWarnsWhenTheOwnerPredatesSourceOnMain": 7.88,
+      "TestRevalidateStaysQuietForDocsOnlyMain": 9.03,
+      "TestRevalidateStaysQuietForACurrentOwner": 13.32,
+      "TestRevalidateStaysQuietWithoutTheBuildCommit": 11.79,
+      "TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry": 4.47,
+      "TestRevalidateStaysQuietWhenTheOwnerSourceDiffFails": 1.04,
+      "TestDeliveryOwnerRunsAgainForAnItemRetriedDuringItsPass": 0.16,
+      "TestDeliveryOwnerReleasesAnIdleQueueAfterOnePass": 0.12,
+      "TestDeliveryOwnerFailsWhenIdleReleaseFails": 0.13,
+      "TestDeliveryOwnerReleasesItsClaimAfterEngineFailure": 0.14,
+      "TestCLIForceStopOwnerProcessHelper": 0,
+      "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken": 0.42,
+      "TestScriptFixtureIsTheCompiledTestBinary": 0.92,
+      "TestSpecJudgeReadsTheKeyFromItsOwnEnvironment": 0.04
+    }
+  },
+  "failures": []
+}

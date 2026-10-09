@@ -1,0 +1,47 @@
+[
+  {
+    "command": [
+      "gh",
+      "run",
+      "view",
+      "37835405144",
+      "--repo",
+      "marcioaltoe/roundfix",
+      "--log"
+    ],
+    "profile": "disposable HOME/GH_CONFIG_DIR; synthetic nonsecret GH_TOKEN; no real credentials",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "error connecting to api.github.com\ncheck your internet connection or https://githubstatus.com\n"
+  },
+  {
+    "command": [
+      "gh",
+      "run",
+      "view",
+      "37834066256",
+      "--repo",
+      "marcioaltoe/roundfix",
+      "--log"
+    ],
+    "profile": "disposable HOME/GH_CONFIG_DIR; synthetic nonsecret GH_TOKEN; no real credentials",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "error connecting to api.github.com\ncheck your internet connection or https://githubstatus.com\n"
+  },
+  {
+    "command": [
+      "gh",
+      "run",
+      "view",
+      "37821753645",
+      "--repo",
+      "marcioaltoe/roundfix",
+      "--log"
+    ],
+    "profile": "disposable HOME/GH_CONFIG_DIR; synthetic nonsecret GH_TOKEN; no real credentials",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "error connecting to api.github.com\ncheck your internet connection or https://githubstatus.com\n"
+  }
+]

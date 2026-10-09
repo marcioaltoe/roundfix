@@ -1,0 +1,50 @@
+[
+  {
+    "path": "suite-start-2.stdout.log.txt.gz",
+    "raw_sha256": "980b24f661542281bdc0e33b6061d6ac39e5ad91379c0292b8f225c303084b5f",
+    "raw_bytes": 12154306,
+    "compressed_bytes": 868142
+  },
+  {
+    "path": "suite-head-2.stdout.log.txt.gz",
+    "raw_sha256": "882f12209a5ca3641ff4ee451818bea1a083d9e903173b4294662809ca481f45",
+    "raw_bytes": 13026758,
+    "compressed_bytes": 984947
+  },
+  {
+    "path": "shuffle.stdout.log.txt.gz",
+    "raw_sha256": "37910f4b7ece7626df8ccc36a9af4d414028d4040ab79117e08bc8670f17a668",
+    "raw_bytes": 1682505,
+    "compressed_bytes": 239080
+  },
+  {
+    "path": "suite-head-1.stdout.log.txt.gz",
+    "raw_sha256": "2e1ad01ea559e3bc6631df8baf432486b1cccaa36c28a0e4e62d2ea6a2d7e212",
+    "raw_bytes": 13026902,
+    "compressed_bytes": 985111
+  },
+  {
+    "path": "suite-start-1.stdout.log.txt.gz",
+    "raw_sha256": "e89d6ad2a7d1537b2daa3a22b7af1c79938aebf11c56b1b016b8dc7da9a0e249",
+    "raw_bytes": 12153374,
+    "compressed_bytes": 872803
+  },
+  {
+    "path": "rust-isolation-attempt/suite-head-1.stdout.log.txt.gz",
+    "raw_sha256": "f9131a5387634a1e317cc6b715ca3fd839b8a86761433bcdfa60b69a481f1b75",
+    "raw_bytes": 10667992,
+    "compressed_bytes": 797761
+  },
+  {
+    "path": "rust-isolation-attempt/suite-start-1.stdout.log.txt.gz",
+    "raw_sha256": "801de448840c0d4d98ea0bb9693e7a221a6e0ee0703da4aab1fb77a8caac89ce",
+    "raw_bytes": 12155422,
+    "compressed_bytes": 872964
+  },
+  {
+    "path": "sandbox-attempt/suite-start-1.stdout.log.txt.gz",
+    "raw_sha256": "0c655b31fccaaba7ef70983d9021358365196787db35a264a84f3db3678b0e5b",
+    "raw_bytes": 5945676,
+    "compressed_bytes": 428046
+  }
+]

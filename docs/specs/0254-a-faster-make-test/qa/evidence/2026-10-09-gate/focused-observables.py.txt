@@ -1,0 +1,22 @@
+import json,re
+from pathlib import Path
+E=Path(__file__).resolve().parent
+M=json.loads((E/"measurements.json").read_text())
+names={
+ "focused-profile":["TestBaselineUpdateReachesCurrentWithARepositoryProfile","TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile","TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile","TestBaselineSkillsRestoreAcceptsARepositoryProfile","TestBaselineSkillsRestoreNamesTheProfilePath","TestDoctorComparesARepositoryProfileWithItsSnapshot"],
+ "focused-selector":["TestContractInvocationsSortAndDeduplicate","TestRunPrintsContractInvocations","TestRunPrintsEveryContractWithAll","TestNoContractNameCrossesABuildTagClass","TestVerifyContractsRunsEveryContract","TestVerifyChangedRunsTheSelectedContracts"],
+ "focused-archive":["TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive","TestArchivedQAReportCorpusRemainsReadable"],
+ "focused-rule":["TestEveryTestInAParallelTestPackageRunsInParallel"]}
+r={}
+for label,tests in names.items():
+ raw=(E/(label+".stdout.log.txt")).read_text()
+ r[label]={t:{"pass":f"--- PASS: {t} " in raw,"pause":f"=== PAUSE {t}\n" in raw} for t in tests}
+ r[label+"-exit"]=M[label]["exit"]
+raw=(E/"focused-rule.stdout.log.txt").read_text();r["counts"]=re.findall(r"internal/\w+: \d+ Sequential Tests, ceiling \d+",raw)
+r["seeded_rule_subtests"]=re.findall(r"--- PASS: (TestEveryTestInAParallelTestPackageRunsInParallel/[^ ]+)",raw)
+r["seeded_collision_subtests"]=re.findall(r"--- PASS: (TestNoContractNameCrossesABuildTagClass/[^ ]+)",(E/"focused-selector.stdout.log.txt").read_text())
+sabotage=(E/"sabotage-rule.stdout.log.txt").read_text()
+r["sabotage"]={"expected_failure":M["sabotage-rule"]["exit"]!=0 and "internal/cli/archive_active_spec_path_test.go:31" in sabotage,"restored_pass":M["restored-rule"]["exit"]==0,"diagnostic_lines":[l for l in sabotage.splitlines() if "missing first-statement" in l]}
+r["all_named_tests_pass"]=all(v["pass"] for k in names for v in r[k].values())
+r["all_profiles_pause"]=all(v["pause"] for v in r["focused-profile"].values())
+(E/"focused-observables.json").write_text(json.dumps(r,indent=2));print(json.dumps(r,indent=2))

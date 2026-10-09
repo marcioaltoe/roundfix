@@ -1,0 +1,7 @@
+{
+  "terms": {
+    "Sequential Test": true,
+    "Parallel Test Package": true
+  },
+  "other_new_terms": "none declared or introduced in the bounded test/tooling slice"
+}

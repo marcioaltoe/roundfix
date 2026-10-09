@@ -1,0 +1,41 @@
+import os,sys,subprocess,time,json,resource,tempfile
+from pathlib import Path
+root=Path.cwd(); evidence=root/'docs/specs/0254-a-faster-make-test/qa/evidence/2026-10-08-final'; temp=Path(tempfile.mkdtemp(prefix='roundfix-0254-qa-',dir='/private/tmp')); (evidence/'temporary-root.txt').write_text(str(temp))
+results={}; pids=[]; head=subprocess.check_output(['git','-c','core.fsmonitor=false','rev-parse','HEAD'],text=True).strip()
+def run(name,args,cwd,env=None):
+ print('START',name,flush=True); before=resource.getrusage(resource.RUSAGE_CHILDREN); load0=os.getloadavg(); start=time.monotonic()
+ with (evidence/(name+'.stdout.log.txt')).open('w') as out,(evidence/(name+'.stderr.log.txt')).open('w') as err:
+  proc=subprocess.Popen(args,cwd=cwd,env=env,stdout=out,stderr=err)
+  pids.append({'name':name,'pid':proc.pid,'status':'running'}); (evidence/'started-pids.json').write_text(json.dumps(pids,indent=2))
+  try: code=proc.wait()
+  except BaseException: proc.terminate();proc.wait();raise
+ pids[-1]['status']='reaped'; (evidence/'started-pids.json').write_text(json.dumps(pids,indent=2))
+ after=resource.getrusage(resource.RUSAGE_CHILDREN); results[name]={'command':args,'cwd':str(cwd),'exit':code,'wall':time.monotonic()-start,'user':after.ru_utime-before.ru_utime,'system':after.ru_stime-before.ru_stime,'load_before':load0,'load_after':os.getloadavg()}
+ (evidence/'measurements.json').write_text(json.dumps(results,indent=2));print('END',name,'exit',code,'wall',round(results[name]['wall'],2),flush=True);return code
+clones={};envs={}
+for label,rev in [('start','2ce5abe8'),('head',head)]:
+ clone=temp/label
+ if run('clone-'+label,['git','-c','core.fsmonitor=false','clone','--quiet','--no-hardlinks',str(root),str(clone)],root):sys.exit(2)
+ if run('checkout-'+label,['git','checkout','--detach',rev],clone):sys.exit(2)
+ env=dict(os.environ,GOCACHE=str(temp/(label+'-cache')));envs[label]=env;clones[label]=clone
+ if run('warm-'+label,['go','test','-run','^$','./...'],clone,env):sys.exit(2)
+run('focused-rule',['go','test','-count=1','-v','./internal/testfixture'],clones['head'],envs['head'])
+run('focused-selector',['go','test','-count=1','-v','./internal/verifyselect'],clones['head'],envs['head'])
+run('focused-profile',['go','test','-count=1','-v','-run','RepositoryProfile|ProfilePath','./internal/cli'],clones['head'],envs['head'])
+run('focused-archive',['go','test','-count=1','-v','-run','Test(QAReportReaderAgreesWithTheDerivedVerification|ArchivedQAReportCorpus)','./internal/spec'],clones['head'],envs['head'])
+# Sabotage only the disposable clone and restore its original bytes.
+file=clones['head']/'internal/cli/archive_active_spec_path_test.go'; original=file.read_bytes();file.write_bytes(original.replace(b'\tt.Parallel()\n',b'',1))
+try: run('sabotage-rule',['go','test','-count=1','-v','-run','TestEveryTestInAParallelTestPackageRunsInParallel/repository$','./internal/testfixture'],clones['head'],envs['head'])
+finally: file.write_bytes(original)
+run('restored-rule',['go','test','-count=1','-v','-run','TestEveryTestInAParallelTestPackageRunsInParallel/repository$','./internal/testfixture'],clones['head'],envs['head'])
+for pair in [1,2]:
+ for label in ['start','head']: run('suite-'+label+'-'+str(pair),['go','test','-count=1','-parallel','16','-json','./...'],clones[label],envs[label])
+ a=results['suite-start-'+str(pair)];b=results['suite-head-'+str(pair)]
+ # Compare the 1-minute average at the beginning of each run; also record all boundaries.
+ if all(abs(a[k][0]-b[k][0])<=0.5*min(a[k][0],b[k][0]) for k in ['load_before','load_after']):break
+packages=['./internal/'+p for p in ['cli','daemon','spec','speccheck','worktree','store','baseline']]
+run('race',['go','test','-count=1','-race','-short','-timeout','30m']+packages,clones['head'],envs['head'])
+run('shuffle',['go','test','-count=1','-shuffle=on','-v','-timeout','20m']+packages,clones['head'],envs['head'])
+run('selector',['go','run','-buildvcs=false','./cmd/verify-select','-contracts','-all'],clones['head'],envs['head'])
+for label in ['start','head']:run('contracts-'+label,['make','verify-contracts'],clones[label],envs[label])
+print('DONE',temp,flush=True)

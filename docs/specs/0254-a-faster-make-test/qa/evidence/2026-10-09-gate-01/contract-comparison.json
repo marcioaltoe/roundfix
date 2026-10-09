@@ -1,0 +1,47 @@
+{
+  "start": {
+    "command": [
+      "make",
+      "verify-contracts"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/start",
+    "exit": 0,
+    "wall": 96.0655434160144,
+    "user": 298.57320400000026,
+    "system": 78.13239700000031,
+    "load_before": [
+      13.2548828125,
+      24.01318359375,
+      25.27294921875
+    ],
+    "load_after": [
+      9.544921875,
+      19.8623046875,
+      23.52734375
+    ]
+  },
+  "head": {
+    "command": [
+      "make",
+      "verify-contracts"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/head",
+    "exit": 0,
+    "wall": 74.3141285830061,
+    "user": 323.14274799999976,
+    "system": 82.46941900000002,
+    "load_before": [
+      9.544921875,
+      19.8623046875,
+      23.52734375
+    ],
+    "load_after": [
+      10.17041015625,
+      18.23779296875,
+      22.62939453125
+    ]
+  },
+  "both_pass": true,
+  "head_faster": true,
+  "wall_ratio": 0.7735773508425052
+}

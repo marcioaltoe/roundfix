@@ -1,0 +1,45 @@
+package main
+
+import (
+ "encoding/json"
+ "go/scanner"
+ "go/token"
+ "os"
+ "reflect"
+ "strings"
+)
+
+type pair struct { Path, Before, After string }
+type lexeme struct { Token token.Token; Literal string }
+func tokens(src string, fixtureParallel bool) []lexeme {
+ var s scanner.Scanner
+ f := token.NewFileSet().AddFile("conversion", -1, len(src))
+ s.Init(f, []byte(src), nil, scanner.ScanComments)
+ var all []lexeme
+ for {
+  _, t, l := s.Scan()
+  if t == token.EOF { break }
+  // A newline adds an optional statement terminator before a closing brace
+  // when an authorized one-line body expands; punctuation elsewhere is unchanged.
+  if t == token.SEMICOLON { continue }
+  if t == token.COMMENT && strings.HasPrefix(l, "// Sequential:") { continue }
+  // Task 02 inserted the same Parallel line inside two single-test deliberate-
+  // failure fixtures in gate_test.go. Remove only that literal line in this
+  // named file; every other byte of all source literals remains in the comparison.
+  if fixtureParallel && t == token.STRING && strings.HasPrefix(l, "`") { l = strings.ReplaceAll(l, "\n\tt.Parallel()\n", "\n") }
+  all = append(all, lexeme{t,l})
+ }
+ var out []lexeme
+ for i:=0; i<len(all); {
+  if i+4<len(all) && all[i].Token==token.IDENT && all[i+1].Token==token.PERIOD && all[i+2].Literal=="Parallel" && all[i+3].Token==token.LPAREN && all[i+4].Token==token.RPAREN { i+=5; continue }
+  out=append(out,all[i]); i++
+ }
+ return out
+}
+func main() {
+ var pairs []pair
+ if err:=json.NewDecoder(os.Stdin).Decode(&pairs); err!=nil { panic(err) }
+ result:=map[string]bool{}
+ for _,p:=range pairs { fixture:=p.Path=="task_02:internal/spec/gate_test.go"; result[p.Path]=reflect.DeepEqual(tokens(p.Before,fixture),tokens(p.After,fixture)) }
+ if err:=json.NewEncoder(os.Stdout).Encode(result); err!=nil { panic(err) }
+}

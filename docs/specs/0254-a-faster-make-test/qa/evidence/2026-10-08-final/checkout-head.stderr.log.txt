@@ -1,0 +1,1 @@
+HEAD is now at 18276c2d fix: 0254 keeps three timing- and signal-sensitive tests sequential and records its scope

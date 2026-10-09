@@ -1,0 +1,77 @@
+{
+  "measurement": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-shuffle=on",
+      "-v",
+      "-timeout",
+      "20m",
+      "./internal/cli",
+      "./internal/daemon",
+      "./internal/spec",
+      "./internal/speccheck",
+      "./internal/worktree",
+      "./internal/store",
+      "./internal/baseline"
+    ],
+    "cwd": "/private/tmp/roundfix-0254-qa-gtz267t7/head",
+    "exit": 0,
+    "wall": 200.3477524999762,
+    "user": 401.81386699999985,
+    "system": 742.3767740000003,
+    "load_before": [
+      10.947265625,
+      25.4990234375,
+      24.75048828125
+    ],
+    "load_after": [
+      15.13232421875,
+      26.205078125,
+      25.84765625
+    ]
+  },
+  "packages": {
+    "cli": {
+      "status": "ok",
+      "detail": "199.744s"
+    },
+    "daemon": {
+      "status": "ok",
+      "detail": "92.527s"
+    },
+    "spec": {
+      "status": "ok",
+      "detail": "54.056s"
+    },
+    "speccheck": {
+      "status": "ok",
+      "detail": "44.775s"
+    },
+    "worktree": {
+      "status": "ok",
+      "detail": "101.080s"
+    },
+    "store": {
+      "status": "ok",
+      "detail": "27.124s"
+    },
+    "baseline": {
+      "status": "ok",
+      "detail": "144.318s"
+    }
+  },
+  "all_seven_pass": true,
+  "failed_tests": [],
+  "race_diagnostic": false,
+  "shuffle_seeds": [
+    "1791514325351665000",
+    "1791514324593609000",
+    "1791514324596283000",
+    "1791514324822694000",
+    "1791514324962294000",
+    "1791514324770731000",
+    "1791514324881797000"
+  ]
+}

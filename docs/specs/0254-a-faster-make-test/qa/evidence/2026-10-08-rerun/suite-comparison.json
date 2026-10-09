@@ -1,0 +1,11 @@
+{
+  "wall_ratio": 0.7208815774442154,
+  "wall_ceiling": 0.65,
+  "wall_meets": false,
+  "sequential_ratio": 0.43229514275120506,
+  "sequential_ceiling": 0.25,
+  "sequential_meets": false,
+  "load_change_fraction": 0.10273341523341524,
+  "load_repeat_required": true,
+  "load_after_change_fraction": 0.9517813267813268
+}

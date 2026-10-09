@@ -1,0 +1,4 @@
+archive plan for 0254-a-faster-make-test: removes 321 file(s) (63718605 bytes) and writes docs/history/specs/0254-a-faster-make-test.md
+core 14 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-08-01.md, qa/qa-report-2026-10-08-02.md, qa/qa-report-2026-10-08-03.md, qa/qa-report-2026-10-08.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md, task_06.md
+evidence 307 file(s) (63497540 bytes) under qa/evidence/
+promote with: roundfix archive 0254-a-faster-make-test --promote <path>

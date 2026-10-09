@@ -1,0 +1,35 @@
+=== RUN   TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== PAUSE TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== RUN   TestBaselineUpdateReachesCurrentWithARepositoryProfile
+=== PAUSE TestBaselineUpdateReachesCurrentWithARepositoryProfile
+=== RUN   TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile
+=== PAUSE TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile
+=== RUN   TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile
+=== PAUSE TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile
+=== RUN   TestDoctorComparesARepositoryProfileWithItsSnapshot
+=== PAUSE TestDoctorComparesARepositoryProfileWithItsSnapshot
+=== RUN   TestBaselineSkillsRestoreNamesTheProfilePath
+=== PAUSE TestBaselineSkillsRestoreNamesTheProfilePath
+=== RUN   TestBaselineSkillsRestoreAcceptsARepositoryProfile
+=== PAUSE TestBaselineSkillsRestoreAcceptsARepositoryProfile
+=== CONT  TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== CONT  TestDoctorComparesARepositoryProfileWithItsSnapshot
+=== CONT  TestBaselineSkillsRestoreAcceptsARepositoryProfile
+=== CONT  TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile
+=== CONT  TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile
+=== CONT  TestBaselineSkillsRestoreNamesTheProfilePath
+=== CONT  TestBaselineUpdateReachesCurrentWithARepositoryProfile
+=== RUN   TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true
+--- PASS: TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles (0.04s)
+--- PASS: TestBaselineSkillsRestoreNamesTheProfilePath (1.47s)
+--- PASS: TestBaselineSkillsRestoreAcceptsARepositoryProfile (1.47s)
+--- PASS: TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile (1.74s)
+--- PASS: TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile (1.77s)
+--- PASS: TestDoctorComparesARepositoryProfileWithItsSnapshot (1.78s)
+=== RUN   TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false
+--- PASS: TestBaselineUpdateReachesCurrentWithARepositoryProfile (2.43s)
+    --- PASS: TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true (1.82s)
+    --- PASS: TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false (0.61s)
+PASS
+suiteguard: guard cost: measured 2521 paths; fingerprint took 78.273125ms before and 59.982ms after
+ok  	roundfix/internal/cli	2.859s

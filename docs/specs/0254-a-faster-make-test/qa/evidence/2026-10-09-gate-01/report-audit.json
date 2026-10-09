@@ -1,0 +1,15 @@
+{
+  "report": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0254-a-faster-make-test-3ff5f2cd98d93a6e-f930c3a7-572143e0/run_20261009T105130Z_504fbf912a905c9e/docs/specs/0254-a-faster-make-test/qa/qa-report-2026-10-09-01.md",
+  "rows": 9,
+  "counts": {
+    "environment": 2,
+    "finding": 0,
+    "declared": 1
+  },
+  "terminal": true,
+  "seeded_auditor_identity_preserved": true,
+  "mechanical_skip_preserved": true,
+  "evidence_files": 101,
+  "all_started_pids_reaped": true,
+  "verdict": "fail"
+}

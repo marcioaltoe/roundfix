@@ -1,0 +1,8 @@
+{
+  "revision": "40a7893d872c8a6705f6d7745e6efe430ae9deeb",
+  "whole_count": 5570,
+  "narrow_count": 352,
+  "same_nonempty_report_set": true,
+  "report_set_sha256": "786ef852156223212383c5ad64b81c388b53b40c8ac9fc1fd3b5af94306aa19a",
+  "discovery_boundary": "both tests discover direct qa/qa-report-*.md only, excluding nested evidence fixtures"
+}

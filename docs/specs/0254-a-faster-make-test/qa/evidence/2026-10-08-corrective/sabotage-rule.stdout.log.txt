@@ -1,0 +1,17 @@
+=== RUN   TestEveryTestInAParallelTestPackageRunsInParallel
+=== PAUSE TestEveryTestInAParallelTestPackageRunsInParallel
+=== CONT  TestEveryTestInAParallelTestPackageRunsInParallel
+=== RUN   TestEveryTestInAParallelTestPackageRunsInParallel/repository
+    parallel_tests_test.go:222: internal/baseline: 12 Sequential Tests, ceiling 12
+    parallel_tests_test.go:222: internal/cli: 8 Sequential Tests, ceiling 8
+    parallel_tests_test.go:222: internal/daemon: 15 Sequential Tests, ceiling 16
+    parallel_tests_test.go:222: internal/spec: 1 Sequential Tests, ceiling 2
+    parallel_tests_test.go:222: internal/speccheck: 0 Sequential Tests, ceiling 2
+    parallel_tests_test.go:222: internal/store: 2 Sequential Tests, ceiling 3
+    parallel_tests_test.go:222: internal/worktree: 1 Sequential Tests, ceiling 2
+    parallel_tests_test.go:225: internal/cli/archive_active_spec_path_test.go:31: TestArchiveRefusesASpecAFileStillPins: missing first-statement Parallel() or Sequential: reason
+--- FAIL: TestEveryTestInAParallelTestPackageRunsInParallel (0.11s)
+    --- FAIL: TestEveryTestInAParallelTestPackageRunsInParallel/repository (0.11s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.190s
+FAIL

@@ -1,0 +1,16 @@
+suiteguard: guard cost: measured 2521 paths; fingerprint took 2.688623125s before and 1.412458166s after
+suiteguard: guard cost: measured 2521 paths; fingerprint took 3.528579084s before and 1.631358625s after
+--- FAIL: TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion (14.45s)
+    orphan_unix_test.go:107: observe terminal Run: select Run "run_20261009T014541Z_7c628b3c15400bbe": context deadline exceeded
+--- FAIL: TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken (8.04s)
+    readiness_forge_test.go:375: sleeping child never started
+FAIL
+suiteguard: guard cost: measured 2521 paths; fingerprint took 473.703833ms before and 102.416625ms after
+FAIL	roundfix/internal/cli	295.013s
+ok  	roundfix/internal/daemon	150.306s
+ok  	roundfix/internal/spec	66.922s
+ok  	roundfix/internal/speccheck	66.304s
+ok  	roundfix/internal/worktree	111.229s
+ok  	roundfix/internal/store	75.036s
+ok  	roundfix/internal/baseline	196.269s
+FAIL

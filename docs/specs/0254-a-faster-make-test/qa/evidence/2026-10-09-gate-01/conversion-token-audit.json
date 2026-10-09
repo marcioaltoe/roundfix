@@ -1,0 +1,998 @@
+[
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_active_spec_path_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_glossary_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_links_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_output_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_plan_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_record_readers_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/archive_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/baseline_branch_prefix_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/baseline_history_citation_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/baseline_update_history_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/baseline_update_outdated_skills_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/baseline_update_retired_skills_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/baseline_update_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/built_in_review_provider_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/carryforward_completed_target_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/carryforward_integration_order_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/carryforward_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_archive_links_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_archive_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_archived_retry_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_conflict_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_derived_lines_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_derived_skill_layout_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_item_branch_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_limits_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_merged_outside_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_operator_archive_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_owner_staleness_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_park_status_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_prerequisite_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_publication_scope_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_recovery_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_retry_amendment_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_retry_runs_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_retry_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_revalidate_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_review_correction_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_runtime_infrastructure_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_start_readiness_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/deliver_token_ceiling_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/detach_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/doctor_characterization_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/doctor_storage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/doctor_trailing_skills_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/events_usage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/gc_run_retention_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/gc_sanitize_pre_key_root_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/gc_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/history_refusal_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/history_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/implement_budget_renewal_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/implement_detach_teardown_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/implement_qa_format_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/implement_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/qa_partial_policy_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/qa_report_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/readiness_toolchain_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/reconcile_legacy_key_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/reconcile_staging_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/reconcile_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/releaseplan_checks_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/releaseplan_skill_coverage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/reopen_late_dependency_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_archived_spec_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_convention_validator_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_dispose_lock_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_dispose_revision_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_disposition_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_final_message_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_head_bound_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_lineage_selection_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_lineage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_merge_base_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_override_convention_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_permission_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_prompt_bound_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_provider_scope_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_record_checkout_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_scope_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_selection_retry_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_session_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/review_validation_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/run_retention_start_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/runs_list_vanished_checkout_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/runs_show_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/script_fixture_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/settle_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/setup_readiness_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/spec_audit_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/spec_check_provenance_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/spec_check_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/spec_judge_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/spec_judge_tier_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/supersede_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/this_repository_skill_set_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/version_freshness_isolation_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_01",
+    "path": "internal/cli/window_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/adopter_neutral_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/archive_record_clause_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/assets_sync_owned_membership_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/assets_sync_retired_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/authoring_evidence_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/authorization_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/branch_prefix_optional_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/clause_characterization_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/derived_ownership_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/frontend_layout_decision_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/glossary_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/grouped_sources_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/history_citation_plan_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/history_citations_root_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/history_citations_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/history_sanitize_clause_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/loop_and_go_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/loop_clause_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/module_versions_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/network_denied_row_clause_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/qa_override_clause_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/reduced_retirement_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/release_clause_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/resolve_executable_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/retired_skills_installed_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/roundfix_skill_membership_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/runtime_and_verification_decisions_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/skills_lock_read_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/skills_restore_git_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/skills_snapshot_profile_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/skills_trailing_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/baseline/verification_tier_clauses_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/daemon_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/lost_rollout_recovery_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_budget_renewal_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_every_run_audit_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_evidence_snapshot_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_format_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_frontmatter_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_prior_pass_skip_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_prior_pass_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_row_carry_event_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/qa_two_pass_carry_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/settlement_active_spec_path_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/settlement_checks_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/task_budget_renewal_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/task_deletes_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/task_engine_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/token_usage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/daemon/verification_probe_malformed_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/archive_links_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/archive_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/authorization_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/cause_graph_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/collision_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/context_deletes_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/coverage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/gate_test.go",
+    "equivalent": true,
+    "note": "Three inserted Parallel calls, including two embedded single-test deliberate-failure fixtures; every original byte and assertion preserved."
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/history_sanitize_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/history_sanitize_unproven_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/requires_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/retirement_deferred_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/task_complexity_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/spec/task_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/active_spec_paths_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/archive_license_git_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/archive_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/authoring_horizon_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/backlog_deferred_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/checkout_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/evidence_digest_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/evidence_record_symlink_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/evidence_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/glossary_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/mechanical_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/qa_row_carry_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/receipt_characterization_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/receipts_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/report_shape_findings_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/skills_declaration_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/transcripts_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/speccheck/wrap_fix_quoting_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/journal_baseline_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/journal_consumer_corpus_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/journal_parallel_runs_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/migrate_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/process_info_unix_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/process_linux_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/process_unix_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/repository_key_backfill_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/store/token_usage_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/adminlock_guard_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/adminlock_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/archive_record_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/disposal_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/item_nested_cleanup_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/prune_repository_key_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/staging_test.go",
+    "equivalent": true
+  },
+  {
+    "task": "task_02",
+    "path": "internal/worktree/worktree_test.go",
+    "equivalent": true
+  }
+]

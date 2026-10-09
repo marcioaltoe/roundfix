@@ -1,0 +1,61 @@
+{
+  "go-parallel": {
+    "command": [
+      "go",
+      "doc",
+      "testing.T.Parallel"
+    ],
+    "exit": 0
+  },
+  "go-testflag": {
+    "command": [
+      "go",
+      "help",
+      "testflag"
+    ],
+    "exit": 0
+  },
+  "go-version": {
+    "command": [
+      "go",
+      "version"
+    ],
+    "exit": 0
+  },
+  "gh-37835405144": {
+    "command": [
+      "gh",
+      "run",
+      "view",
+      "37835405144",
+      "--repo",
+      "marcioaltoe/roundfix",
+      "--log"
+    ],
+    "exit": 1
+  },
+  "gh-37834066256": {
+    "command": [
+      "gh",
+      "run",
+      "view",
+      "37834066256",
+      "--repo",
+      "marcioaltoe/roundfix",
+      "--log"
+    ],
+    "exit": 1
+  },
+  "gh-37821753645": {
+    "command": [
+      "gh",
+      "run",
+      "view",
+      "37821753645",
+      "--repo",
+      "marcioaltoe/roundfix",
+      "--log"
+    ],
+    "exit": 1
+  }
+}

@@ -1,0 +1,8 @@
+Spec 0254-a-faster-make-test
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0254-a-faster-make-test/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0254-a-faster-make-test/references/_index.md

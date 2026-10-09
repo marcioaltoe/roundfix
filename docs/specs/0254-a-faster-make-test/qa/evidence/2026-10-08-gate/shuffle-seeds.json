@@ -1,0 +1,30 @@
+[
+  {
+    "package": "roundfix/internal/daemon",
+    "seed": "1791501279098851000"
+  },
+  {
+    "package": "roundfix/internal/spec",
+    "seed": "1791501279169960000"
+  },
+  {
+    "package": "roundfix/internal/speccheck",
+    "seed": "1791501278795180000"
+  },
+  {
+    "package": "roundfix/internal/worktree",
+    "seed": "1791501279161860000"
+  },
+  {
+    "package": "roundfix/internal/store",
+    "seed": "1791501279157546000"
+  },
+  {
+    "package": "roundfix/internal/baseline",
+    "seed": "1791501279235085000"
+  },
+  {
+    "package": "roundfix/internal/cli",
+    "seed": "1791501997169190000"
+  }
+]

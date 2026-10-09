@@ -1,0 +1,1 @@
+verify-select: contracts: 75 selected (every Repository Contract Test), 0 not selected

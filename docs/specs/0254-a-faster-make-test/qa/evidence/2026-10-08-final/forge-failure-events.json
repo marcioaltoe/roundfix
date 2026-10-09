@@ -1,0 +1,36 @@
+[
+  {
+    "Time": "2026-10-08T23:34:37.601989-03:00",
+    "Action": "run",
+    "Package": "roundfix/internal/cli",
+    "Test": "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken"
+  },
+  {
+    "Time": "2026-10-08T23:34:37.601993-03:00",
+    "Action": "output",
+    "Package": "roundfix/internal/cli",
+    "Test": "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken",
+    "Output": "=== RUN   TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken\n"
+  },
+  {
+    "Time": "2026-10-08T23:34:39.400199-03:00",
+    "Action": "output",
+    "Package": "roundfix/internal/cli",
+    "Test": "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken",
+    "Output": "    readiness_forge_test.go:375: sleeping child never started\n"
+  },
+  {
+    "Time": "2026-10-08T23:34:39.431121-03:00",
+    "Action": "output",
+    "Package": "roundfix/internal/cli",
+    "Test": "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken",
+    "Output": "--- FAIL: TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken (1.83s)\n"
+  },
+  {
+    "Time": "2026-10-08T23:34:39.431139-03:00",
+    "Action": "fail",
+    "Package": "roundfix/internal/cli",
+    "Test": "TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken",
+    "Elapsed": 1.83
+  }
+]

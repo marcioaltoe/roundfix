@@ -1,0 +1,227 @@
+{
+  "race": {
+    "measurement": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-short",
+        "-timeout",
+        "30m",
+        "./internal/cli",
+        "./internal/daemon",
+        "./internal/spec",
+        "./internal/speccheck",
+        "./internal/worktree",
+        "./internal/store",
+        "./internal/baseline"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/head",
+      "exit": 0,
+      "wall": 308.22263508400647,
+      "user": 822.0176280000001,
+      "system": 1206.4478590000003,
+      "load_before": [
+        18.7265625,
+        26.8662109375,
+        23.251953125
+      ],
+      "load_after": [
+        11.4697265625,
+        28.134765625,
+        26.30322265625
+      ]
+    },
+    "packages": {
+      "cli": {
+        "status": "ok",
+        "detail": "286.885s"
+      },
+      "daemon": {
+        "status": "ok",
+        "detail": "143.057s"
+      },
+      "spec": {
+        "status": "ok",
+        "detail": "72.336s"
+      },
+      "speccheck": {
+        "status": "ok",
+        "detail": "54.333s"
+      },
+      "worktree": {
+        "status": "ok",
+        "detail": "110.854s"
+      },
+      "store": {
+        "status": "ok",
+        "detail": "63.505s"
+      },
+      "baseline": {
+        "status": "ok",
+        "detail": "200.514s"
+      }
+    },
+    "all_seven_pass": true,
+    "failed_tests": [],
+    "race_diagnostic": false,
+    "shuffle_seeds": []
+  },
+  "shuffle": {
+    "measurement": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-shuffle=on",
+        "-v",
+        "-timeout",
+        "20m",
+        "./internal/cli",
+        "./internal/daemon",
+        "./internal/spec",
+        "./internal/speccheck",
+        "./internal/worktree",
+        "./internal/store",
+        "./internal/baseline"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/head",
+      "exit": 0,
+      "wall": 200.27410920802504,
+      "user": 397.7968759999999,
+      "system": 735.9151459999994,
+      "load_before": [
+        11.4697265625,
+        28.134765625,
+        26.30322265625
+      ],
+      "load_after": [
+        13.2548828125,
+        24.01318359375,
+        25.27294921875
+      ]
+    },
+    "packages": {
+      "cli": {
+        "status": "ok",
+        "detail": "199.240s"
+      },
+      "daemon": {
+        "status": "ok",
+        "detail": "96.073s"
+      },
+      "spec": {
+        "status": "ok",
+        "detail": "59.271s"
+      },
+      "speccheck": {
+        "status": "ok",
+        "detail": "48.397s"
+      },
+      "worktree": {
+        "status": "ok",
+        "detail": "80.680s"
+      },
+      "store": {
+        "status": "ok",
+        "detail": "27.308s"
+      },
+      "baseline": {
+        "status": "ok",
+        "detail": "140.595s"
+      }
+    },
+    "all_seven_pass": true,
+    "failed_tests": [],
+    "race_diagnostic": false,
+    "shuffle_seeds": [
+      "1791544956854292000",
+      "1791544955847295000",
+      "1791544955730078000",
+      "1791544955790295000",
+      "1791544955760471000",
+      "1791544956874372000",
+      "1791544956767098000"
+    ]
+  },
+  "selector": {
+    "measurement": {
+      "command": [
+        "go",
+        "run",
+        "-buildvcs=false",
+        "./cmd/verify-select",
+        "-contracts",
+        "-all"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/head",
+      "exit": 0,
+      "wall": 0.3391230840352364,
+      "user": 0.09916299999986222,
+      "system": 0.13279200000033597,
+      "load_before": [
+        13.2548828125,
+        24.01318359375,
+        25.27294921875
+      ],
+      "load_after": [
+        13.2548828125,
+        24.01318359375,
+        25.27294921875
+      ]
+    },
+    "stdout_lines": 1,
+    "one_line_both_tags": true,
+    "stdout": [
+      "docscontract,repocontract ^(TestABrokenUserGuideLinkIsReported|TestAReleaseStepThatNamesAMissingCheckIsReported|TestAStaleBehaviorSurfaceIsReported|TestAnUndocumentedCommandIsReported|TestAnUnmappedBehaviorSurfaceIsReported|TestBaselineDecisionExamples|TestBaselineDocumentationContract|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent|TestBrokenLinksHandlesDestinationDecorationsAndFences|TestCheckActiveCorpusHasNoErrors|TestCheckCorpusBudget|TestCheckCorpusGolden|TestCheckLoopOrderDivergent|TestCheckLoopOrderRepositoryAgrees|TestCleanupHistoricalGrantEvidence|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestCommandIndexNamesEveryCommandFile|TestCommandPathsReadSubcommandsAndAlternatives|TestCommandReferenceLinksResolve|TestDeclaredStepRegenerationAndFrozenBoundaries|TestDocsLayoutGuideNamesEveryHistoryFamily|TestEveryBoundedPathIsGoverned|TestEveryCheckTheReleaseStepNamesExists|TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestGuidanceCompositionDocumentation|TestMeasuredSanctionedOwnershipMatchesRecords|TestModelSelectionReferenceStatesTheShippedSnapshot|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestProfilesDocumentationContractMatchesPublicGuidance|TestProjectConstraintDocumentation|TestRegenerationIsDeclared|TestReleasePlanDocumentationContract|TestRepositoryGateRunsTheAnalyzer|TestReviewHistoryConfiguration|TestReviewHistoryConfigurationRejectsReachableRuleSources|TestReviewHistoryConfigurationRequiresExclusions|TestSecondbrainExportFollowsTheHistoryForm|TestSecondbrainExportRuleRefusesBothMismatches|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources|TestStageScopeDefaultSweepIsUnchanged|TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck|TestTheSkillCoverageMapIsCurrent|TestUserGuideLinksResolve|TestUserGuideNamesNoRefusedQAFlag)$ ./internal/agent ./internal/app ./internal/authorization ./internal/baseline ./internal/baselineacp ./internal/cli ./internal/codex ./internal/config ./internal/daemon ./internal/docscontract ./internal/gittest ./internal/notify ./internal/preflight ./internal/releaseplan ./internal/reviewsource ./internal/reviewsource/coderabbit ./internal/rounds ./internal/runevent ./internal/skillhash ./internal/spec ./internal/specaudit ./internal/speccheck ./internal/store ./internal/suiteguard ./internal/tui ./internal/verifyselect ./internal/watch ./internal/worktree ./skills"
+    ]
+  },
+  "contracts": {
+    "start": {
+      "command": [
+        "make",
+        "verify-contracts"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/start",
+      "exit": 0,
+      "wall": 96.0655434160144,
+      "user": 298.57320400000026,
+      "system": 78.13239700000031,
+      "load_before": [
+        13.2548828125,
+        24.01318359375,
+        25.27294921875
+      ],
+      "load_after": [
+        9.544921875,
+        19.8623046875,
+        23.52734375
+      ]
+    },
+    "head": {
+      "command": [
+        "make",
+        "verify-contracts"
+      ],
+      "cwd": "/private/tmp/roundfix-0254-qa-ckjw6vcg/head",
+      "exit": 0,
+      "wall": 74.3141285830061,
+      "user": 323.14274799999976,
+      "system": 82.46941900000002,
+      "load_before": [
+        9.544921875,
+        19.8623046875,
+        23.52734375
+      ],
+      "load_after": [
+        10.17041015625,
+        18.23779296875,
+        22.62939453125
+      ]
+    },
+    "both_pass": true,
+    "head_faster": true,
+    "wall_ratio": 0.7735773508425052
+  }
+}

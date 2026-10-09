@@ -1,0 +1,29 @@
+import json,re,gzip
+from pathlib import Path
+E=Path(__file__).resolve().parent
+M=json.loads((E/'measurements.json').read_text())
+def text(name):
+ p=E/(name+'.stdout.log.txt')
+ return p.read_text() if p.exists() else gzip.open(str(p)+'.gz','rt').read()
+packages=['cli','daemon','spec','speccheck','worktree','store','baseline']
+result={}
+for name in ['race','shuffle']:
+ if name not in M:continue
+ raw=text(name);status={};seeds=[]
+ for line in raw.splitlines():
+  match=re.match(r'^(ok|FAIL)\s+roundfix/internal/(\w+)\s*(.*)',line)
+  if match and match[2] in packages:status[match[2]]={'status':match[1],'detail':match[3]}
+  seed=re.search(r'-test.shuffle (\S+)',line)
+  if seed:seeds.append(seed[1])
+ result[name]={'measurement':M[name],'packages':status,'all_seven_pass':len(status)==7 and all(v['status']=='ok' for v in status.values()),'failed_tests':re.findall(r'--- FAIL: (\S+)',raw),'race_diagnostic':'WARNING: DATA RACE' in raw,'shuffle_seeds':seeds}
+ if name=='shuffle':(E/'shuffle-seeds.json').write_text(json.dumps(result[name],indent=2))
+if 'selector' in M:
+ lines=text('selector').strip().splitlines()
+ result['selector']={'measurement':M['selector'],'stdout_lines':len(lines),'one_line_both_tags':len(lines)==1 and lines[0].startswith('docscontract,repocontract '),'stdout':lines}
+ (E/'selector-observable.json').write_text(json.dumps(result['selector'],indent=2))
+if all('contracts-'+l in M for l in ['start','head']):
+ a=M['contracts-start'];b=M['contracts-head']
+ result['contracts']={'start':a,'head':b,'both_pass':a['exit']==b['exit']==0,'head_faster':b['wall']<a['wall'],'wall_ratio':b['wall']/a['wall']}
+ (E/'contract-comparison.json').write_text(json.dumps(result['contracts'],indent=2))
+(E/'remaining-observables.json').write_text(json.dumps(result,indent=2))
+print(json.dumps(result,indent=2))
