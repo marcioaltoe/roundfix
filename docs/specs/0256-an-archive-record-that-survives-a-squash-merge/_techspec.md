@@ -38,7 +38,11 @@ commit changes one scalar of one record.
   repository as the remote. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0261 is implemented here and
-  extends ADR-0247. ADR-0223, ADR-0229 and ADR-0237 bind retries, which must
+  extends ADR-0247. ADR-0260 (Spec 0255, merged first) makes the owner archive relink Live
+  Documents and record them under `relinked:`; the Pull Request Record Commit
+  changes only `pull_request`, never `relinked` or a relinked file, and the
+  queue's exact-archive proof keeps accepting the relinked files it already
+  proves. ADR-0223, ADR-0229 and ADR-0237 bind retries, which must
   adopt a Pull Request Record Commit instead of repeating it. ADR-0232 binds
   merge evidence, which reads the merged record. ADR-0165 and ADR-0169 bind
   the review's archived-Spec handling. ADR-0184 binds the Surface

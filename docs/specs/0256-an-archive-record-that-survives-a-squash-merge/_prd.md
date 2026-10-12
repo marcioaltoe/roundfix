@@ -64,7 +64,11 @@ for a separate Spec.
   ADR-0247: "Readers work from the record or from Git, never from a folder
   that may be gone". ADR-0248 and ADR-0251 bind the History Sanitize Command's
   records, which already write `pull_request`. ADR-0254 binds sanitize inside
-  `baseline update`. ADR-0215 binds archived evidence, and no archived record
+  `baseline update`. ADR-0260 (Spec 0255, merged first) makes the owner archive relink Live
+  Documents and record them under `relinked:`; the Pull Request Record Commit
+  changes only `pull_request`, never `relinked` or a relinked file, and the
+  queue's exact-archive proof keeps accepting the relinked files it already
+  proves. ADR-0215 binds archived evidence, and no archived record
   is rewritten. ADR-0223, ADR-0229 and ADR-0237 bind a delivery's work across retries. The new commit must survive them, and ADR-0232's merge evidence
   must still read the merged record. ADR-0165 and ADR-0169 bind the pre-PR
   review's archived-Spec handling and its merge-base diff. ADR-0196 validates
