@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.67.0] - 2026-10-12
+
+### An Archive Record that survives a squash merge
+
+- **The record names its pull request.** After the Delivery Queue opens the pull request, it adds a Pull Request Record Commit that sets only `pull_request` in the Archive Record. The queue accepts that commit by proving nothing else changed. To do the same by hand, run `roundfix archive <slug> --pull-request <n>`; the same number again changes nothing, and a different one is refused.
+- **Source Revision Recovery.** With a squash merge, the record's `source_revision` often exists only in the pull request's head. When that commit is missing locally, readers (`review`, `runs causes`, `spec check`, and the Run worktree readers) fetch `refs/pull/<N>/head` from the configured remote. The fetch never prompts, gives up after 60 s and writes no ref. A record without the field takes its number from the `(#N)` subject of the commit that added it. No existing record is rewritten.
+- **Archive warning.** `roundfix archive` warns on stderr when `source_revision` is not an ancestor of the default branch.
+- **Only real records are read.** In the archive root, only a file named `NNNN-<slug>.md` that declares the Archive Record schema counts as a record. A README there no longer blocks `roundfix review`.
+- **Hardening.** `--pull-request` refuses to write through a symbolic link.
+- **Glossary.** Adds Source Revision Recovery and Pull Request Record Commit. Revises Archive Record and Archive Command.
+
 ## [0.66.0] - 2026-10-12
 
 ### An archive that relinks and an update that lists citations
