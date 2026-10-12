@@ -73,6 +73,22 @@ file.
 10. MUST NOT change `routeException`'s owner, methods or reason, the
     `http.contract` decision, any module, the Source Baseline assets or any
     file outside its Context and the derived files.
+11. MUST keep the interactive Baseline prompt from recording
+    `auth.base_path` unasked (addendum 2026-10-12, after Run
+    run_20261012T191532Z_192c8d919680b754 failed `make verify-changed` twice
+    in `internal/cli`: `TestProjectDecisionReuse`,
+    `TestProjectDecisionParity`,
+    `TestBetterAuthSuggestionReusesFullHTTPException` and
+    `TestProjectDecisionJourney` ended their scripted input because
+    `promptBaselineDecisions` in `internal/cli/baseline_human.go` asks every
+    profile decision). The prompt MUST skip `auth.base_path` while the
+    current decisions do not record it, so the answer stays absent and the
+    recorded provider exception stands, as Requirement 2 and ADR-0263
+    require; a repository records it with `baseline update --decision`
+    (task_02). When it is recorded, the prompt asks it with the recorded
+    value as the suggestion. The scripted answers in
+    `internal/cli/baseline_human_test.go` MUST stay unchanged, and the four
+    tests above MUST pass.
 
 ## Subtasks
 
@@ -118,6 +134,8 @@ file.
 - interface: `docs/user-guide/context-driven-development.md`
 - interface: `docs/references/behavior-surfaces.json`
 - interface: `CONTEXT.md`
+- interface: `internal/cli/baseline_human.go`
+- instruction: `internal/cli/baseline_human_test.go`
 - creates: `internal/baseline/better_auth_base_path_test.go`
 
 ## Verification
