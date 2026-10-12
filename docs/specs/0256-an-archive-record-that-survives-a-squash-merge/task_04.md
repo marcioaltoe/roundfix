@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0256-an-archive-record-that-survives-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -109,3 +109,130 @@ merged head carries the number.
 - [_prd.md](_prd.md) — Goal 1; User Stories 1 and 3; Core Feature 2; Success Metric 1
 - [_techspec.md](_techspec.md) — Interfaces; API Contract 4; API Contract 5; Testing Approach; Risks & Considerations; Build Order 4
 - ADR-0261; ADR-0223; ADR-0229; ADR-0237; ADR-0232
+
+
+## Result
+
+Implemented the delivery side of the 2026-10-12 Backlog Entry,
+[an Archive Record points at a branch commit a squash merge drops](references/2026-10-12-an-archive-record-points-at-a-branch-commit-a-squash-merge-drops.md),
+under TechSpec API Contracts 4 and 5.
+
+The engine accepts the optional `PullRequestRecorder` dependency, wired by
+`newCommandDeliveryEngine`, at the start of Checking. An exact new head is
+appended to candidate commits, emits the contracted recording log line and
+returns directly to Publishing. The existing gate, archive proof, pull request
+boundary and blocker strings are unchanged. A missing dependency skips the
+step; an inexact or unchanged returned head parks `review-stale`; a recording
+error reaches the existing `delivery-error` path.
+
+The workflow reads the candidate's record and skips Legacy Archive Folders
+and an already matching number. It adopts a clean, exact single child commit,
+or commits the sole uncommitted record change without rewriting its bytes.
+For a fresh write it runs the Archive Command through `stepExecutable`, proves
+the working record and staged tree, commits the required subject and proves
+the resulting commit. The proof requires exactly the record path, an unchanged
+regular-file mode and equal fields except the number and the renderer's exact
+outcome shortening. It also compares the complete YAML mapping and body to
+refuse unknown metadata or added prose. Body comparison accounts for the
+existing Git runner stripping trailing newlines from object reads.
+
+### Acceptance evidence
+
+| Criterion | Focused evidence |
+| --- | --- |
+| Fake forge merges a head whose record names the opened pull request | `TestCommandDeliveryEngineRecordsThePullRequest` uses the real command-engine constructor, real local Git pushes and a strict local fake `gh`. It opens pull request 7, builds a squash commit in the bare origin, reads its Archive Record and asserts number 7. The queue records three candidate heads and exactly one record commit. Only `main` and the item branch exist in the forge; its merge updates `main` locally, and the queue pushes only the item branch. |
+| Interruption produces exactly one record commit on resume | `TestDeliveryRetryAdoptsAPullRequestRecordCommit` resumes Checking with an existing pull request, appends the adopted head once and republishes without Implement, archive or gate replay. `TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord` simulates interruption after the commit but before queue persistence: the old candidate adopts the same commit, the updated candidate returns an empty result, and `rev-list --count` remains 1. `TestDeliveryWorkflowAdoptsAnUncommittedRecord` covers staged and unstaged interrupted writes, preserving alternate YAML quoting byte for byte. |
+| A commit changing anything else parks review-stale | `TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath` rejects another path, title, source revision, arbitrary outcome, wrong number, mode, grandchild, merge commit, unknown field, extra prose and changed body title. `TestDeliveryParksAnInexactPullRequestRecordCommit` asserts `review-stale`, unchanged candidate commits and no checks or merge, including a purported exact result equal to the candidate. |
+| Failed recording parks and never merges without the number | `TestDeliveryParksWhenThePullRequestCannotBeRecorded` asserts `delivery-error`, no check read and zero merge effects. `TestDeliveryRecordsThePullRequestBeforeChecks` asserts recording before checks, one pull request, two pushes, the prescribed log and no second gate. The real command-engine test independently reads the number from the merged record. |
+
+Additional focused tests cover an absent recorder through the unchanged engine
+regression, Legacy Archive Folders, uncommitted unrelated/staged changes,
+missing or wrong numbers, changed fields and modes, and the exact outcome
+shortening produced at the record's size limit.
+
+### Focused checks
+
+- Initial red signal: `go test -count=1 -run '^TestDeliveryRecordsThePullRequestBeforeChecks$' ./internal/delivery`
+  exited 1 before implementation because the recorder type and engine hook
+  did not exist.
+- `go test -count=1 -v -run '^TestDelivery(RecordsThePullRequest|RetryAdoptsAPullRequest|ParksAnInexactPullRequest|ParksWhenThePullRequest|EngineMergesAQueueWithoutAnOperator|EngineResumesWithoutDoubleEffects)' ./internal/delivery`
+  exited 0. All four required new engine tests and both existing regressions
+  ran and passed.
+- `go test -count=1 -v -run '^(TestDeliveryWorkflow|TestDeliveryRecordProof|TestCommandDeliveryEngineRecordsThePullRequest|TestDeliveryArchiveStageCommitsTheArchiveRecord|TestDeliveryAcceptsAnExactRetirement|TestDeliveryRefusesAnInexactRetirement|TestDeliveryKeepsTheLegacyExactMove)' ./internal/cli`
+  exited 0. The four required new workflow/command tests, additional refusal,
+  legacy and shortening tests, and existing archive regressions ran and passed.
+- `gofmt` formatted the four Go files. `git diff --check` exited 0.
+
+Required existing tests stayed unchanged:
+
+- `TestDeliveryArchiveStageCommitsTheArchiveRecord`: no stage or expectation
+  moved; archive still commits only its exact retirement.
+- `TestDeliveryAcceptsAnExactRetirement`: no expectation moved; record and
+  promotion proofs retain their previous contract.
+- `TestDeliveryEngineMergesAQueueWithoutAnOperator`: no stage or candidate
+  expectation moved; its engine has no recorder and retains its prior order.
+
+### Sabotage evidence
+
+Both mutations used temporary `go test -overlay` source replacements under
+`/tmp/roundfix-task04-sabotage`, leaving the checkout's production files intact.
+The overlays were removed afterwards, and both affected tests were rerun
+against the normal source.
+
+1. Removed the record proof's requirement that the diff contain exactly the
+   record path. Command:
+   `go test -overlay /tmp/roundfix-task04-sabotage/proof.json -count=1 -v -run '^TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath$/extra_path$' ./internal/cli`.
+   Exit 1: `TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path`
+   failed because the unrelated-path commit was returned with `Exact:true`.
+2. Disabled the recorder block at Checking. Command:
+   `go test -overlay /tmp/roundfix-task04-sabotage/checking.json -count=1 -v -run '^TestDeliveryRecordsThePullRequestBeforeChecks$' ./internal/delivery`.
+   Exit 1: `TestDeliveryRecordsThePullRequestBeforeChecks` failed because the
+   observed actions reached checks and merge without recording or republishing.
+
+### Verification feedback: attempt 1
+
+Inspected the Daemon's diagnostic artifact for the rejected
+`make verify-changed` attempt. The new fake-forge test violated two existing
+fixture contracts: it wrote an executable script outside the frozen inventory,
+and its process-wide environment changes added a Sequential Test beyond the
+CLI package's ceiling. These were fixture failures, not changes to the
+recording or exactness contract.
+
+Repaired only `TestCommandDeliveryEngineRecordsThePullRequest`: it now calls
+`t.Parallel()` first and runs the real constructor scenario in a child test
+process with private PATH, HOME and isolated Git configuration. The fake `gh`
+uses the existing `writeScriptFixture` helper, a symlink to the compiled test
+binary and a non-executable shell sidecar. Its real Git pushes, squash merge,
+record-number assertions, one-record-commit assertion and ref inventory are
+preserved. No production behavior, fixture inventory or package ceiling was
+changed in this feedback repair.
+
+Focused checks after the repair:
+
+- `go test -count=1 -v -run '^TestCommandDeliveryEngineRecordsThePullRequest$' ./internal/cli`
+  exited 0; both the parent and isolated child scenario passed.
+- `go test -count=1 -v -run '^(TestNoTestWritesAnExecutableOutsideTheResidue|TestEveryTestInAParallelTestPackageRunsInParallel)$' ./internal/testfixture`
+  exited 0; both repository guards passed and the CLI Sequential Test count
+  returned to its existing ceiling of 11.
+- `go test -count=1 -v -run '^(TestCommandDeliveryEngineRecordsThePullRequest|TestDeliveryWorkflow|TestDeliveryRecordProof|TestDeliveryArchiveStageCommitsTheArchiveRecord|TestDeliveryAcceptsAnExactRetirement)' ./internal/cli`
+  exited 0; the revised command-engine scenario passed concurrently with the
+  workflow, shortening and required archive regression tests.
+- `gofmt` formatted the changed test file; `git diff --check` exited 0.
+
+The declared Task Verification and `make verify-changed` were not rerun by
+this Agent. The Daemon owns the next full Verification and Task settlement.
+
+### Handoff boundary
+
+Only this Task's two production files, two new test files and this Result
+were changed. The pre-existing daemon status edit is preserved. No other
+Task, Task Graph, archive-stage implementation, gate, or blocker string was
+changed. Test repositories and the fake forge are disposable and use no
+network connection. No commit, push or pull request was made for this Run.
+The declared Verification commands, selected repository Verification and
+Task settlement remain with the Daemon; no terminal Task verdict is claimed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T140955Z_23b372ef5c35c71c`
+- Source commit: `fccf7bcfe7d0274bea01376a657d609d0f523994`

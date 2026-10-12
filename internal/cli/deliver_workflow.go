@@ -44,7 +44,10 @@ var _ delivery.ItemHistory = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
+var _ delivery.PullRequestRecorder = (*commandDeliveryWorkflow)(nil)
 var _ delivery.MergeObserver = (*commandDeliveryWorkflow)(nil)
+
+var deliveryPullRequestNumber = regexp.MustCompile(`^[1-9][0-9]{0,9}$`)
 
 const deliveryBranchPrefix = "roundfix/deliver-"
 
@@ -63,6 +66,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Workspace:     workflow,
 		Runner:        workflow,
 		Reviewer:      workflow,
+		Recorder:      workflow,
 		Archiver:      workflow,
 		Gate:          workflow,
 		Authorizer:    workflow,
@@ -1232,6 +1236,201 @@ func (workflow *commandDeliveryWorkflow) reconcileArchiveCommit(
 	}
 	result.ExactSpecMove, err = workflow.archiveCommitIsExact(ctx, gitRoot, parent, archiveHead, source, destination)
 	return result, err
+}
+
+// RecordPullRequest resumes either side of the record commit before checks run.
+func (workflow *commandDeliveryWorkflow) RecordPullRequest(ctx context.Context, workDir, specSlug, head, number string) (delivery.PullRequestRecord, error) {
+	if !deliveryPullRequestNumber.MatchString(number) {
+		return delivery.PullRequestRecord{}, errors.New("invalid pull request number")
+	}
+	_, destination, err := workflow.archivePaths(workDir, specSlug)
+	if err != nil {
+		return delivery.PullRequestRecord{}, err
+	}
+	path := destination + ".md"
+	entries, err := workflow.gitTreeEntries(ctx, workDir, head)
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("inspect candidate Archive Record: %w", err)
+	}
+	if _, exists := entries[path]; !exists {
+		return delivery.PullRequestRecord{}, nil // Legacy Archive Folder.
+	}
+	content, err := workflow.git.RunGit(ctx, workDir, "show", head+":"+path)
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("read candidate Archive Record: %w", err)
+	}
+	before, err := spec.ParseArchiveRecord([]byte(content))
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("parse candidate Archive Record: %w", err)
+	}
+	if before.PullRequest == number {
+		return delivery.PullRequestRecord{}, nil
+	}
+	if before.PullRequest != "" {
+		return delivery.PullRequestRecord{}, fmt.Errorf("Archive Record already records pull request %s", before.PullRequest)
+	}
+	state, err := preflight.InspectGit(ctx, workDir, workflow.git)
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("inspect pull request record worktree: %w", err)
+	}
+	inexact := delivery.PullRequestRecord{Head: state.HEAD}
+	if state.HEAD != head {
+		if len(state.Dirty) != 0 {
+			return inexact, nil
+		}
+		exact, err := workflow.pullRequestRecordCommitIsExact(ctx, workDir, head, state.HEAD, path, number)
+		return delivery.PullRequestRecord{Head: state.HEAD, Exact: exact}, err
+	}
+	// Adopt an interrupted write only when the record is the sole change.
+	if len(state.Dirty) == 0 {
+		executable, err := workflow.stepExecutable(ctx, workDir, specSlug, "record pull request")
+		if err != nil {
+			return delivery.PullRequestRecord{}, err
+		}
+		result, err := workflow.runRoundfix(ctx, executable, workDir, "archive", specSlug, "--pull-request", number)
+		if err != nil {
+			return delivery.PullRequestRecord{}, fmt.Errorf("start Archive Command to record pull request: %w", err)
+		}
+		if result.exitCode != exitOK {
+			return delivery.PullRequestRecord{}, result.failure("roundfix archive --pull-request")
+		}
+		state, err = preflight.InspectGit(ctx, workDir, workflow.git)
+		if err != nil {
+			return delivery.PullRequestRecord{}, fmt.Errorf("inspect recorded pull request: %w", err)
+		}
+	}
+	if state.HEAD != head || len(state.Dirty) != 1 || state.Dirty[0].Path != path {
+		return inexact, nil
+	}
+	info, err := os.Lstat(filepath.Join(workDir, filepath.FromSlash(path)))
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("inspect recorded file: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return inexact, nil
+	}
+	after, err := os.ReadFile(filepath.Join(workDir, filepath.FromSlash(path)))
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("read recorded file: %w", err)
+	}
+	if !pullRequestRecordChangeIsExact([]byte(content), after, number) {
+		return inexact, nil
+	}
+	if _, err := workflow.git.RunGit(ctx, workDir, "add", "--", path); err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("stage pull request record: %w", err)
+	}
+	// Prove the staged tree as well: an interrupted index must not sneak in
+	// content different from the sole working-tree change we just inspected.
+	tree, err := workflow.git.RunGit(ctx, workDir, "write-tree")
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("snapshot pull request record: %w", err)
+	}
+	exact, err := workflow.pullRequestRecordTreeIsExact(ctx, workDir, head, strings.TrimSpace(tree), path, number)
+	if err != nil || !exact {
+		return inexact, err
+	}
+	if _, err := workflow.git.RunGit(ctx, workDir, "commit", "-m", "docs: record pull request #"+number+" in the "+specSlug+" Archive Record"); err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("commit pull request record: %w", err)
+	}
+	newHead, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return delivery.PullRequestRecord{}, fmt.Errorf("read pull request record commit: %w", err)
+	}
+	newHead = strings.TrimSpace(newHead)
+	exact, err = workflow.pullRequestRecordCommitIsExact(ctx, workDir, head, newHead, path, number)
+	return delivery.PullRequestRecord{Head: newHead, Exact: exact}, err
+}
+
+func (workflow *commandDeliveryWorkflow) pullRequestRecordCommitIsExact(ctx context.Context, workDir, parent, head, path, number string) (bool, error) {
+	parents, err := workflow.git.RunGit(ctx, workDir, "rev-list", "--parents", "-n", "1", head)
+	if err != nil {
+		return false, fmt.Errorf("read pull request record parents: %w", err)
+	}
+	fields := strings.Fields(parents)
+	if len(fields) != 2 || fields[1] != parent {
+		return false, nil
+	}
+	return workflow.pullRequestRecordTreeIsExact(ctx, workDir, parent, head, path, number)
+}
+
+func (workflow *commandDeliveryWorkflow) pullRequestRecordTreeIsExact(ctx context.Context, workDir, parent, head, path, number string) (bool, error) {
+	changed, err := workflow.git.RunGit(ctx, workDir, "diff", "--no-renames", "--name-only", "-z", parent, head, "--")
+	if err != nil {
+		return false, fmt.Errorf("read pull request record diff: %w", err)
+	}
+	paths := nulPaths(changed)
+	if len(paths) != 1 || paths[0] != path {
+		return false, nil
+	}
+	beforeEntries, err := workflow.gitTreeEntries(ctx, workDir, parent)
+	if err != nil {
+		return false, fmt.Errorf("read candidate record mode: %w", err)
+	}
+	afterEntries, err := workflow.gitTreeEntries(ctx, workDir, head)
+	if err != nil {
+		return false, fmt.Errorf("read recorded mode: %w", err)
+	}
+	kind := gitTreeEntryKind(beforeEntries[path])
+	if (kind != "100644 blob" && kind != "100755 blob") || gitTreeEntryKind(afterEntries[path]) != kind {
+		return false, nil
+	}
+	before, err := workflow.git.RunGit(ctx, workDir, "show", parent+":"+path)
+	if err != nil {
+		return false, fmt.Errorf("read candidate record proof: %w", err)
+	}
+	after, err := workflow.git.RunGit(ctx, workDir, "show", head+":"+path)
+	if err != nil {
+		return false, fmt.Errorf("read recorded proof: %w", err)
+	}
+	return pullRequestRecordChangeIsExact([]byte(before), []byte(after), number), nil
+}
+
+func pullRequestRecordChangeIsExact(before, after []byte, number string) bool {
+	if !deliveryPullRequestNumber.MatchString(number) {
+		return false
+	}
+	oldRecord, err := spec.ParseArchiveRecord(before)
+	if err != nil || oldRecord.PullRequest != "" {
+		return false
+	}
+	newRecord, err := spec.ParseArchiveRecord(after)
+	if err != nil || newRecord.PullRequest != number {
+		return false
+	}
+	oldRecord.PullRequest = number
+	rendered, err := spec.RenderArchiveRecord(oldRecord)
+	if err != nil {
+		return false
+	}
+	expected, err := spec.ParseArchiveRecord(rendered)
+	if err != nil || (newRecord.Outcome != oldRecord.Outcome && newRecord.Outcome != expected.Outcome) {
+		return false
+	}
+	// The typed parser reads known fields. Also compare the complete YAML
+	// mapping and body so unknown metadata or prose cannot evade the proof.
+	oldFrontmatter, oldBody, oldOK := splitArchivePRD(before)
+	newFrontmatter, newBody, newOK := splitArchivePRD(after)
+	if !oldOK || !newOK {
+		return false
+	}
+	var oldValues, newValues map[string]any
+	if yaml.Unmarshal(oldFrontmatter, &oldValues) != nil || yaml.Unmarshal(newFrontmatter, &newValues) != nil {
+		return false
+	}
+	delete(oldValues, "pull_request")
+	delete(newValues, "pull_request")
+	if !reflect.DeepEqual(oldValues, newValues) {
+		return false
+	}
+	if newRecord.Outcome != oldRecord.Outcome {
+		oldBody = bytes.Replace(oldBody, []byte(oldRecord.Outcome), []byte(newRecord.Outcome), 1)
+	}
+	// GitRunner strips terminal newlines; filesystem reads retain them.
+	if !bytes.Equal(bytes.TrimRight(oldBody, "\n"), bytes.TrimRight(newBody, "\n")) {
+		return false
+	}
+	newRecord.Outcome = oldRecord.Outcome
+	return reflect.DeepEqual(oldRecord, newRecord)
 }
 
 func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, _ string) (delivery.GateResult, error) {

@@ -204,6 +204,15 @@ type CandidateArchiver interface {
 	Archive(ctx context.Context, gitRoot, specSlug, reviewedHead string) (ArchiveResult, error)
 }
 
+type PullRequestRecorder interface {
+	RecordPullRequest(ctx context.Context, workDir, specSlug, head, number string) (PullRequestRecord, error)
+}
+
+type PullRequestRecord struct {
+	Head  string
+	Exact bool
+}
+
 type RepositoryGate interface {
 	Gate(ctx context.Context, gitRoot, specSlug, head string) (GateResult, error)
 }
@@ -245,6 +254,7 @@ type EngineDependencies struct {
 	Workspace     ItemWorkspace
 	Runner        CandidateRunner
 	Reviewer      PrePRReviewer
+	Recorder      PullRequestRecorder
 	Archiver      CandidateArchiver
 	Gate          RepositoryGate
 	Authorizer    AuthorizationReader
@@ -272,6 +282,7 @@ type Engine struct {
 	workspace     ItemWorkspace
 	runner        CandidateRunner
 	reviewer      PrePRReviewer
+	recorder      PullRequestRecorder
 	archiver      CandidateArchiver
 	gate          RepositoryGate
 	authorizer    AuthorizationReader
@@ -322,6 +333,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		workspace:     dependencies.Workspace,
 		runner:        dependencies.Runner,
 		reviewer:      dependencies.Reviewer,
+		recorder:      dependencies.Recorder,
 		archiver:      dependencies.Archiver,
 		gate:          dependencies.Gate,
 		authorizer:    dependencies.Authorizer,
@@ -1195,6 +1207,21 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	head, err := candidateHead(*item)
 	if err != nil {
 		return err
+	}
+	if engine.recorder != nil {
+		record, err := engine.recorder.RecordPullRequest(ctx, workDir, item.SpecSlug, head, item.PullRequestNumber)
+		if err != nil {
+			return fmt.Errorf("record pull request: %w", err)
+		}
+		record.Head = strings.TrimSpace(record.Head)
+		if record.Head != "" {
+			if !record.Exact || record.Head == head {
+				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
+			}
+			item.CandidateCommits = append(item.CandidateCommits, record.Head)
+			fmt.Fprintf(engine.log, "roundfix: Delivery Queue item %s: recorded pull request %s in its Archive Record\n", item.SpecSlug, item.PullRequestNumber)
+			return engine.setStage(ctx, gitRoot, item, store.DeliveryStagePublishing)
+		}
 	}
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
 	rerunRuns := make(map[string]bool)
