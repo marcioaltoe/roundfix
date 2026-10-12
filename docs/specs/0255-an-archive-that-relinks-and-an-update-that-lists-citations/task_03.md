@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0255-an-archive-that-relinks-and-an-update-that-lists-citations
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -82,3 +82,62 @@ own through the queue's archive tests on temporary repositories.
 - `_prd.md` → Core Feature 3; Goals; User Story 1; Success Metric 4
 - `_techspec.md` → API Contract 6; Invariant 6; Build Order 3
 - ADR-0260; ADR-0230; ADR-0247
+
+## Result
+
+The Delivery Queue now stages every `ArchiveRecord.Relinked` path with the
+record, folder deletions and promoted copies. The retirement proof pairs each
+promotion with exactly one parent folder file sharing its basename and blob,
+then uses `ArchiveCitationMoves` and `RelinkContent` to recompute each relinked
+file. It rejects paths inside the removed folder or History Root, duplicate
+paths, paths absent at the parent, different bytes and unexplained changes.
+The existing record identity, new-destination and complete-removal checks
+remain in place.
+
+Relink reads use the existing byte-preserving `reconcileGitRaw` helper:
+`preflight.ExecGitRunner` strips trailing newlines, which cannot support this
+byte comparison. The new fixtures cover both a newline-terminated relative
+Markdown link with a fragment and repository paths in a file with no final
+newline. Existing assertions were not changed.
+
+### Focused implementation checks
+
+- Before the implementation, `rtk proxy go test -count=1 -v -run
+  '^TestDelivery(AcceptsARelinkedRetirement|RefusesAnAmbiguousPromotionPairing)$'
+  ./internal/cli` exited 1: the valid working-tree retirement was rejected.
+- After the final code and test edits, the following focused command exited 0;
+  all eight selected tests and their subtests passed:
+
+  ```sh
+  rtk proxy go test -count=1 -v -run '^TestDelivery(AcceptsARelinkedRetirement|ArchiveStageCommitsRelinkedFiles|RefusesATamperedRelinkedFile|RefusesAnAmbiguousPromotionPairing|AcceptsAnExactRetirement|RefusesAnInexactRetirement|KeepsTheLegacyExactMove|ArchiveStageCommitsTheArchiveRecord)$' ./internal/cli
+  ```
+
+- The adjacent existing resume, outward-link and already-archived checks
+  also exited 0; all five selected tests and their subtests passed:
+
+  ```sh
+  rtk proxy go test -count=1 -v -run '^Test(Resume(AcceptsARealArchiveCommit|RefusesAnArchiveCommitWithExtraChanges|AcceptsAnArchiveCommitWithRewrittenLinks|RefusesALinkRewritingArchiveCommitWithExtraChanges)|ArchiveReportsASpecAlreadyArchivedAtTheReviewedHead)$' ./internal/cli
+  ```
+
+- `rtk proxy git diff --check` exited 0. Final scope inspection shows only
+  `internal/cli/deliver_workflow.go`, the new
+  `internal/cli/deliver_archive_relink_test.go` and this Task's Result changed
+  by the Agent; the pre-existing Daemon status edit remains intact.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| An archive that relinked files is committed and proven exact by the queue. | `TestDeliveryArchiveStageCommitsRelinkedFiles` checks the real archive stage, the committed record, promotion and both relinked files, complete folder removal, clean Git status and the committed proof. `TestDeliveryAcceptsARelinkedRetirement` checks literal expected rewrites, working-tree proof, committed proof and reconciliation. |
+| A tampered or unexplained change in the archive commit is refused. | `TestDeliveryRefusesATamperedRelinkedFile` rejects an extra byte, an extra trailing newline, an unlisted file, an unlisted relink, a promotion without a basename match, a History Root relink, a relink absent at the parent and duplicate relinks. `TestDeliveryRefusesAnAmbiguousPromotionPairing` rejects two same-basename, same-blob source candidates. Every refusal is checked before and after commit and through reconciliation. |
+| Existing exact-archive and legacy-move proofs behave as before. | The unchanged `TestDeliveryAcceptsAnExactRetirement`, `TestDeliveryRefusesAnInexactRetirement`, `TestDeliveryKeepsTheLegacyExactMove` and `TestDeliveryArchiveStageCommitsTheArchiveRecord` passed in the focused selection above. |
+
+The authored Verification command, repository Verification and terminal Task
+settlement remain with the Daemon. This turn did not run those commands, edit
+Task status, change another Task or the Task Graph, or commit, push or open a
+Pull Request. No follow-up implementation was added to this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T110224Z_380dd005763aa861`
+- Source commit: `7a8e35163035995a5d27cb9213b8db8ebab3b1b9`

@@ -1193,6 +1193,7 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 			return delivery.ArchiveResult{}, err
 		}
 		stagePaths = append(stagePaths, archived.Record.Promoted...)
+		stagePaths = append(stagePaths, archived.Record.Relinked...)
 	} else {
 		stagePaths = append(stagePaths, destination)
 	}
@@ -1612,8 +1613,7 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 		if head == "" {
 			return os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
 		}
-		text, err := workflow.git.RunGit(ctx, root, "show", head+":"+path)
-		return []byte(text), err
+		return reconcileGitRaw(ctx, root, "show", head+":"+path)
 	}
 	content, err := read(destination + ".md")
 	if err != nil {
@@ -1656,9 +1656,13 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 		return false, nil
 	}
 	allowed := map[string]bool{destination + ".md": true}
+	folderFiles := make([]string, 0, len(sourceTree))
 	for name := range sourceTree {
-		allowed[source+"/"+name] = true
+		path := source + "/" + name
+		allowed[path] = true
+		folderFiles = append(folderFiles, path)
 	}
+	promotions := make(map[string]string, len(record.Promoted))
 	for _, path := range record.Promoted {
 		if !strings.HasPrefix(path, "docs/references/") || filepath.ToSlash(filepath.Clean(path)) != path || allowed[path] {
 			return false, nil
@@ -1688,17 +1692,20 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 		if err != nil {
 			return false, err
 		}
-		matched := false
-		for _, entry := range sourceTree {
+		matched := ""
+		for name, entry := range sourceTree {
 			fields := strings.Fields(entry)
-			if len(fields) == 3 && (gitTreeEntryKind(entry) == "100644 blob" || gitTreeEntryKind(entry) == "100755 blob") && fields[2] == strings.TrimSpace(blob) {
-				matched = true
-				break
+			if filepath.Base(name) == filepath.Base(path) && len(fields) == 3 && (gitTreeEntryKind(entry) == "100644 blob" || gitTreeEntryKind(entry) == "100755 blob") && fields[2] == strings.TrimSpace(blob) {
+				if matched != "" {
+					return false, nil
+				}
+				matched = source + "/" + name
 			}
 		}
-		if !matched {
+		if matched == "" {
 			return false, nil
 		}
+		promotions[matched] = path
 	}
 	for path := range allowed {
 		if !strings.HasPrefix(path, source+"/") {
@@ -1710,6 +1717,36 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 				return false, nil
 			}
 		}
+	}
+	moves := spec.ArchiveCitationMoves(source, destination+".md", folderFiles, promotions)
+	historyRoot := filepath.ToSlash(filepath.Dir(spec.ArchiveDir(spec.ArchiveKindSpec)))
+	archiveRoot := filepath.ToSlash(filepath.Dir(destination))
+	for _, path := range record.Relinked {
+		if filepath.IsAbs(path) || filepath.ToSlash(filepath.Clean(path)) != path || path == "." || path == ".." || strings.HasPrefix(path, "../") || allowed[path] {
+			return false, nil
+		}
+		for _, excluded := range []string{source, historyRoot, archiveRoot} {
+			if path == excluded || strings.HasPrefix(path, excluded+"/") {
+				return false, nil
+			}
+		}
+		exists, err := workflow.gitObjectExists(ctx, root, parent+":"+path)
+		if err != nil || !exists {
+			return false, err
+		}
+		original, err := reconcileGitRaw(ctx, root, "show", parent+":"+path)
+		if err != nil {
+			return false, fmt.Errorf("read relinked file %q at archive parent: %w", path, err)
+		}
+		relinked, err := read(path)
+		if err != nil {
+			return false, fmt.Errorf("read relinked file %q after archive: %w", path, err)
+		}
+		expected, _ := spec.RelinkContent(original, path, moves)
+		if !bytes.Equal(relinked, expected) {
+			return false, nil
+		}
+		allowed[path] = true
 	}
 	var changes []string
 	if head == "" {
