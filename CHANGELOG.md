@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.66.0] - 2026-10-12
+
+### An archive that relinks and an update that lists citations
+
+- **Archive Relink.** When `roundfix archive` retires a Spec, it checks each file in that Spec's folder that a Live Document still cites. A Live Document is an active Spec, an open Backlog Entry or Finding, or a file under `docs/references/`. Each such file is copied unchanged to `docs/references/`, and the citing links and path mentions are rewritten to the new location. Links to the folder itself or to its core artifacts now point at the Archive Record. The record lists the files it rewrote under `relinked:`.
+  - Citations from other places, such as handoffs, are printed as warnings.
+  - The archive refuses, and writes nothing, when a promotion target already exists, two promotions share a name, or a citing file has uncommitted changes.
+- **Delivery Queue.** The queue accepts a relinked file only when recomputing the rewrite from the parent commit reproduces the same bytes.
+- **History Citations in `baseline update`.** The plan now lists, in text and JSON, every citation that the Pending History sanitization would break, and the Plan Digest covers them. `--promote <path>` copies a cited file to `docs/references/`; nothing is copied without it.
+- **Stale History Citations.** When the `history-full` tag exists, the update also lists links that an earlier update already broke, with the `git show history-full:<path>` command that restores each target.
+- **Glossary.** Adds Live Document, Archive Relink, History Citation and Stale History Citation. Revises Archive Record, Archive Command and Managed Refresh.
+
 ## [0.65.0] - 2026-10-09
 
 ### A faster make test
