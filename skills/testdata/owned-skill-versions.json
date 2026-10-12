@@ -421,6 +421,10 @@
       {
         "version": "0.0.4",
         "digest": "5221305da8faae1b6f1f7b2bb77a29a9f3674d017e27f3962c33a54c573786b4"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "5b6432e62bfffc6ba5b5137e2e66015a77299a93b74f733a88cb4e3292aed3c2"
       }
     ],
     "write-idea": [

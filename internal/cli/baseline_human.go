@@ -969,6 +969,12 @@ func promptBaselineDecisions(
 		if _, fixed := profile.Values[id]; fixed {
 			continue
 		}
+		// The optional base path is recorded deliberately through baseline update.
+		if id == "auth.base_path" {
+			if _, recorded := state.currentDecisions[id]; !recorded {
+				continue
+			}
+		}
 		value, err := promptBaselineDecision(ctx, prompt, catalog, id, state.currentDecisions)
 		if err != nil {
 			return nil, err

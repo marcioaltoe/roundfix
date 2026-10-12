@@ -962,6 +962,10 @@ _Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
 The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
 _Avoid_: HTTP profile, universal REST rule, inferred route style
 
+**Better Auth Base Path**:
+The path under which a repository mounts Better Auth's routes, the value of Better Auth's `basePath` option, recorded as the optional `auth.base_path` decision. When it is recorded, the provider's route exception and the matching HTTP Contract Decision exception cover that path followed by `/*`; when it is absent, the recorded exception stands, and Better Auth's own default is `/api/auth` ([ADR-0263](docs/adr/0263-the-better-auth-base-path-is-a-repository-decision-a-baseline-update-records.md)).
+_Avoid_: Auth prefix, API prefix, auth scope
+
 **Formatter-Stable Output**:
 Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
 _Avoid_: Renderer-canonical output, format-after-apply fixup

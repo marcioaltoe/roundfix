@@ -5,10 +5,10 @@ disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Setup Context-Driven
@@ -198,6 +198,10 @@ provide one non-empty repository-defined rule. When Better Auth remains
 selected, `auth.provider` proposes `GET` and `POST` under `/api/auth/*`, owner
 `Better Auth`, with the Session, OAuth redirect, callback, and related provider
 protocol reason. The human must keep or change that complete typed proposal.
+`/api/auth` is Better Auth's default base path, not a Baseline rule: a repository
+that mounts Better Auth elsewhere records the optional `auth.base_path`
+decision, and the provider and HTTP exceptions then cover that path followed
+by `/*`.
 
 Automation supplies both structured values through the strict Decision
 Document passed to `--decision-file`. If either value is unresolved, planning

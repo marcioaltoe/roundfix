@@ -298,6 +298,13 @@ related provider protocol routes. The maintainer must keep or change that
 typed proposal. The CLI derives the matching `http.contract` exception and
 refuses conflicting provider and HTTP values.
 
+The Better Auth base path is the optional `auth.base_path` decision. While none
+is recorded, the recorded provider exception stands, and `/api/auth` is Better
+Auth's own default. A repository that mounts Better Auth elsewhere records its
+path; the provider exception and the matching `http.contract` exception then
+cover that path followed by `/*`, and the backend guide names the recorded
+path.
+
 Existing root instructions make Preservation the default; an empty instruction
 inventory makes Greenfield the default. A recoverable existing profile is the
 profile default. Classification, plan approval, and apply never accept an empty

@@ -10,4 +10,4 @@ command written in another language follows its own guide.
 
 {{http.contract}}
 
-{{auth.provider}}
+{{auth.provider}}{{auth.base_path}}

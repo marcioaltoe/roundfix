@@ -36,6 +36,7 @@
     "http.contract",
     "frontend.layout",
     "auth.provider",
+    "auth.base_path",
     "spec.scaffold",
     "domain.layout",
     "triage.external",
