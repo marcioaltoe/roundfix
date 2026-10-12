@@ -37,6 +37,7 @@ regeneration:
     outputs:
       - docs/references/coverage-record.json
 promoted: []
+pull_request: "501"
 ---
 
 # The Baseline respects the repository's own choices
