@@ -32,9 +32,14 @@ the Spec or stops a queue.
 
 For each queued Spec, `roundfix deliver` advances from the Run to merge in
 this order: Run, pre-PR review, archive on the branch, repository gate, push,
-pull request, current-head checks, and squash merge. With pre-PR review set to
+pull request, Pull Request Record Commit, current-head checks, and squash merge. With pre-PR review set to
 `none`, the queue records the configured omission and proceeds to archive after
 the Run's QA gate.
+
+After it opens the pull request and before it judges checks, the Delivery Queue
+records the pull request number in the Archive Record in a Pull Request Record
+Commit. The commit changes the record's `pull_request` field and the queue
+pushes it before judging the pull request checks.
 
 A Spec's optional `_tasks.md` frontmatter `requires` lists prerequisite Specs.
 Start refuses unknown slugs, self-references, duplicates and queued cycles

@@ -27,7 +27,10 @@ These rules apply to round one's candidate and round two's delta.
 For an Archive Record added under the archive root, the diff also omits
 deletions under its `source`, with reason `archived-spec-source`, and keeps
 the record. PRD Decisions and the TechSpec come from Git at
-`source_revision`. If the commit is absent, context is skipped while the
+`source_revision`. Only a file named `NNNN-<slug>.md` that declares the Archive
+Record schema is read as a record. Other Markdown files directly under the
+archive root are ignored. The reader first fetches `refs/pull/<N>/head` when
+the commit is absent; only when that fetch fails is context skipped while the
 Spec stays in `archivedSpecs`; blocking findings still require a corrective
 Spec.
 

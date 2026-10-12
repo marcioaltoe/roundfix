@@ -755,7 +755,7 @@ A citation already unresolved in the working tree whose target remains in the Hi
 _Avoid_: Broken link, history warning, missing source
 
 **Archive Record**:
-The small `<slug>.md` record an archive leaves under the resolved archive root. It carries the disposition, QA Report and verdict, promoted references, an optional `relinked` list, and `source_revision`; the removed Spec folder stays recoverable in Git at that revision. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override (ADR-0248, ADR-0251, ADR-0260).
+The small `<slug>.md` record an archive leaves under the resolved archive root: a file named `NNNN-<slug>.md` whose front matter declares `roundfix/archive-record/v1`; any other Markdown file in that root is not a record. It carries the disposition, QA Report and verdict, promoted references, `source_revision` and, once the delivery pull request is open, `pull_request`; the removed Spec folder stays recoverable in Git at that revision, after a squash merge through Source Revision Recovery. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override (ADR-0248, ADR-0251, ADR-0260, ADR-0261).
 _Avoid_: Archive folder, archive log, copied Spec
 
 **Archive Advice**:
@@ -763,8 +763,16 @@ Jev's advisory classification of candidate files before the archive cut. It labe
 _Avoid_: Archive verdict, promotion decision, required evidence
 
 **Archive Command**:
-The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict (ADR-0260).
+The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added (ADR-0261). Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict (ADR-0260).
 _Avoid_: Move command, retire run, cleanup command
+
+**Source Revision Recovery**:
+A reader's fetch of `refs/pull/<N>/head` when an Archive Record's `source_revision` is missing locally, with the number taken from the record's `pull_request` or from the trailing `(#N)` of the commit that added the record. It writes no ref, never prompts, and leaves the reader's unavailable outcome when it fails (ADR-0261).
+_Avoid_: Backfill, archive ref, history restore
+
+**Pull Request Record Commit**:
+The Delivery Queue's commit, made after it opens a Spec's pull request, that stores the number in the Archive Record its archive commit added and changes nothing else; the queue accepts it by proof instead of a second repository gate (ADR-0261).
+_Avoid_: Archive commit, record backfill, amend
 
 **History Sanitize Command**:
 The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag. `roundfix baseline update` runs the same planning for every convertible unit at once, while this command remains the path for reviewed batches (ADR-0254).

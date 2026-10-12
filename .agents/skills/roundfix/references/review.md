@@ -232,6 +232,12 @@ section, a PRD, or a TechSpec is skipped, its slug is listed in the record's
 `skippedSpecs`, and the review proceeds with the remaining context. The
 record's `specs` names the Specs whose context was carried.
 
+Only a file named `NNNN-<slug>.md` that declares the Archive Record schema is
+read as a record. Other Markdown files directly under the archive root are
+ignored. When an Archive Record's `source_revision` is absent locally, the
+reader first fetches `refs/pull/<N>/head` when the commit is absent; only when
+that fetch fails is the archived Spec context skipped.
+
 The record's `archivedSpecs` field always lists the sorted slugs of changed
 Spec folders under the resolved archive root, including folders whose context
 was skipped; it is always present and is `[]` when the candidate archives no

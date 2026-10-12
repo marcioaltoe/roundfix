@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0256-an-archive-record-that-survives-a-squash-merge
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -112,3 +112,40 @@ Context and this Task file.
 - [_prd.md](_prd.md) — Goal 5; Core Feature 6; User Story 2
 - [_techspec.md](_techspec.md) — Skill and document texts; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; Build Order 1
 - ADR-0261; ADR-0247; ADR-0256; ADR-0189; ADR-0233; ADR-0244
+
+## Result
+
+Implemented the documentation slice for the archive pull request identity and
+squash recovery:
+
+- Added the archive warning and `--pull-request <n>` record guidance.
+- Added Archive Record identity filtering and pull request head recovery to the
+  review guidance, and recovery-first Run causes guidance.
+- Added the Delivery Queue's Pull Request Record Commit between pull request
+  creation and check judgment, plus the hand-delivery command sequence.
+- Added the archive-spec `### Squash merges` section above the unchanged QA
+  settlement table.
+- Revised the four glossary entries in `CONTEXT.md), preserving all existing
+  `_Avoid_` lines and adding Source Revision Recovery and Pull Request Record
+  Commit.
+- Generated the skill mirrors, owned-skill version records
+  (`archive-spec` 0.0.9 and `roundfix` 0.1.60), and Behavior Surface Record.
+
+Focused evidence:
+
+- `make skills-sync` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed.
+- Focused whitespace-normalized phrase checks passed for all canonical
+  references, mirrors, and matching user guides.
+- Focused byte comparisons passed for the `### QA settlement` tables in
+  `archive-spec` and `roundfix` canonical and mirror skills.
+- `git diff --check` — passed.
+
+The declared Task Verification commands were left for the Daemon. Task status
+remains Daemon-owned and unchanged.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T140955Z_23b372ef5c35c71c`
+- Source commit: `ef8fe2fa6cb74a040a4b4ed23a0fe969ac8c2c25`

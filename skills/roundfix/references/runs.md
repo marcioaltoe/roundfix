@@ -211,6 +211,11 @@ Run counts, and the table digest. Exit `0` includes empty results and an absent
 database, `2` means invalid usage or no Git repository, and `1` means an
 unreadable database.
 
+An Archive Record supplies the graph and Task files from Git at its
+`source_revision`. The reader first fetches `refs/pull/<N>/head` when the
+commit is absent; only when that fetch fails does the Run causes report mark
+the revision unavailable and retain the archived Spec's disposition.
+
 An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>`
 creation time predates the configured Run Retention cutoff, the diagnostic
 adds `; Run Retention may have removed it, because it removes terminal Runs

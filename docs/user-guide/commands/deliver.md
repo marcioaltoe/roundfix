@@ -32,9 +32,15 @@ the Spec or stops a queue.
 
 Creates and operates a durable, ordered queue of Specs. Each item advances
 from its Run to merge in this order: Run, pre-PR review, archive on the branch,
-repository gate, push, pull request, current-head checks, and squash merge.
+repository gate, push, pull request, Pull Request Record Commit, current-head
+checks, and squash merge.
 When the configured pre-PR review is `none`, the queue records that omission
 and archives after the Run's QA gate.
+
+After it opens the pull request and before it judges checks, the Delivery Queue
+records the pull request number in the Archive Record in a Pull Request Record
+Commit. The commit changes the record's `pull_request` field and the queue
+pushes it before judging the pull request checks.
 
 A Spec can name prerequisite Specs in its Task Graph manifest (`_tasks.md`):
 
