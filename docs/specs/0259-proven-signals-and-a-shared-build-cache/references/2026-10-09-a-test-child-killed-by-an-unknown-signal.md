@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-09
-spec: null
+spec: 0259-proven-signals-and-a-shared-build-cache
 ---
 
 # A test's child process is killed by a signal nobody identified
