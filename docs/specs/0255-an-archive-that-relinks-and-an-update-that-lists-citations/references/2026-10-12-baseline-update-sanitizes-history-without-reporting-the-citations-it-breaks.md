@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0255-an-archive-that-relinks-and-an-update-that-lists-citations
 ---
 
 # `baseline update` sanitizes history without reporting the citations it breaks
