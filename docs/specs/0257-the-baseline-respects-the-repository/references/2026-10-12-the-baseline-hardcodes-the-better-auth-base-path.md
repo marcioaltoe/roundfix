@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0257-the-baseline-respects-the-repository
 ---
 
 # The Baseline hardcodes the Better Auth base path
