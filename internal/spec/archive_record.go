@@ -28,6 +28,7 @@ const (
 	ArchiveFailedQA   ArchiveDisposition = "failed-qa"
 	ArchiveSuperseded ArchiveDisposition = "superseded"
 	ArchiveNoQA       ArchiveDisposition = "no-qa"
+	ArchiveCancelled  ArchiveDisposition = "cancelled"
 )
 
 type ArchiveRegeneration struct {
@@ -36,18 +37,20 @@ type ArchiveRegeneration struct {
 }
 type QAArchiveOverrideRecord struct{ Approval, Reason, QAOutcome, QATaskStatus, Revision string }
 type ArchiveRecord struct {
-	Spec, Title, Created, Archived string
-	Disposition                    ArchiveDisposition
-	Source, SourceRevision         string
-	QATask, QAReport, QAVerdict    string
-	Unproven                       []string
-	QAOverride                     *QAArchiveOverrideRecord
-	SupersededBy                   string
-	ADRs, Sources, Promoted        []string
-	Relinked                       []string
-	Regeneration                   []ArchiveRegeneration
-	PullRequest, DeliveryCommit    string
-	Outcome                        string
+	Spec, Title, Created, Archived                string
+	Disposition                                   ArchiveDisposition
+	Source, SourceRevision                        string
+	QATask, QAReport, QAVerdict                   string
+	CancelReason                                  string
+	CompletedTasks, PendingTasks, ReturnedSources []string
+	Unproven                                      []string
+	QAOverride                                    *QAArchiveOverrideRecord
+	SupersededBy                                  string
+	ADRs, Sources, Promoted                       []string
+	Relinked                                      []string
+	Regeneration                                  []ArchiveRegeneration
+	PullRequest, DeliveryCommit                   string
+	Outcome                                       string
 }
 type ArchiveRecordInput struct {
 	Legacy                                          bool
@@ -416,6 +419,12 @@ func archiveRecordMapping(r ArchiveRecord) *yaml.Node {
 		return v
 	}
 	add("unproven", list(r.Unproven))
+	if r.Disposition == ArchiveCancelled {
+		add("cancel_reason", r.CancelReason)
+		add("completed_tasks", list(r.CompletedTasks))
+		add("pending_tasks", list(r.PendingTasks))
+		add("returned_sources", list(r.ReturnedSources))
+	}
 	if r.QAOverride != nil {
 		o := r.QAOverride
 		add("qa_override", true)
@@ -518,6 +527,24 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 		return ArchiveRecord{}, errors.New("archive record status must be archived")
 	}
 	r := ArchiveRecord{Spec: get("spec"), Title: get("title"), Created: get("created"), Archived: get("archived"), Disposition: ArchiveDisposition(get("disposition")), Source: get("source"), SourceRevision: get("source_revision"), QATask: get("qa_task"), QAReport: get("qa_report"), QAVerdict: get("qa_verdict"), SupersededBy: get("superseded_by"), PullRequest: get("pull_request"), DeliveryCommit: get("delivery_commit"), Outcome: archiveParagraph(string(body), "# ")}
+	for _, key := range []string{"cancel_reason", "completed_tasks", "pending_tasks", "returned_sources"} {
+		_, present := m[key]
+		if r.Disposition != ArchiveCancelled && present {
+			return r, fmt.Errorf("archive record disposition %s cannot carry %s", r.Disposition, key)
+		}
+		if r.Disposition == ArchiveCancelled && !present {
+			return r, fmt.Errorf("archive record missing %s", key)
+		}
+	}
+	if r.Disposition == ArchiveCancelled {
+		r.CancelReason = get("cancel_reason")
+		for key, dst := range map[string]*[]string{"completed_tasks": &r.CompletedTasks, "pending_tasks": &r.PendingTasks, "returned_sources": &r.ReturnedSources} {
+			n := m[key]
+			if err := n.Decode(dst); err != nil {
+				return r, fmt.Errorf("parse archive %s: %w", key, err)
+			}
+		}
+	}
 	for k, dst := range map[string]any{"unproven": &r.Unproven, "adrs": &r.ADRs, "sources": &r.Sources, "regeneration": &r.Regeneration, "promoted": &r.Promoted} {
 		n := m[k]
 		if err := n.Decode(dst); err != nil {
@@ -554,7 +581,7 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 		if _, ok := m["qa_override"]; ok {
 			return r, errors.New("archive record disposition failed-qa cannot carry qa_override")
 		}
-	case ArchivePass, ArchivePartial, ArchiveQAOverride, ArchiveSuperseded, ArchiveNoQA:
+	case ArchivePass, ArchivePartial, ArchiveQAOverride, ArchiveSuperseded, ArchiveNoQA, ArchiveCancelled:
 	default:
 		return r, fmt.Errorf("unknown archive disposition %q", r.Disposition)
 	}

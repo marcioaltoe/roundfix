@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0261-a-cancelled-spec-leaves-a-record
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -128,3 +128,58 @@ yet.
 - [_prd.md](_prd.md) — Goal 1; Goal 2; Goal 3; User Story 1; User Story 2; User Story 5; Core Feature 2; Core Feature 3; Core Feature 4; Core Feature 5; Success Metric 1; Success Metric 3; Acceptance evidence
 - [_techspec.md](_techspec.md) — Reader inventory; Interfaces; Data Models; API Contract 3; Testing Approach; Build Order 1
 - ADR-0262; ADR-0247; ADR-0248; ADR-0251; ADR-0057; ADR-0259
+
+## Result
+
+Implemented the Task 01 package slice. `Cancel` reads Task state in graph
+order, records cancellation without changing Tasks, returns adopted Backlog
+Entries and Findings, applies Archive Relink with no manual promotions, and
+removes the Spec folder only after every write succeeds. Cancelled records
+carry the four required fields; other dispositions reject those keys and keep
+their existing rendering. Task completion for cancellation follows only
+`completed_tasks`.
+
+### Focused checks
+
+- Starting signal: `rtk proxy go test ./internal/spec -run '^TestACancelledArchiveRecordRoundTrips$/true$' -count=1`
+  exited 1 with undefined `ArchiveCancelled` and missing cancellation fields.
+- `rtk proxy go test ./internal/spec -run '^(TestCancel|TestACancelled|TestOnlyACancelled|TestArchivedTaskCompletedForACancelled|TestArchiveRecord|TestArchiveWritesTheArchiveRecord|TestArchiveRefusesBeforeAnyFileChanges)' -count=1`
+  exited 0 after correcting the new fixture's QA declaration and snapshot
+  path keys. This exercises every new cancellation and cancelled-record test,
+  plus existing record rendering and refusal regressions.
+- `rtk proxy go test ./internal/spec -run '^(TestReadArchivedSpecReadsRecordAndLegacyFolder|TestArchiveRollsBackTheRecordWhenPromotionCannotBeWritten)$' -count=1`
+  exited 0. Together with the preceding selection, all tests in the unchanged
+  `archive_record_test.go` were exercised.
+- `rtk git diff --check` exited 0.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Five completed and three pending Tasks, reason, date and returned open Backlog Entry | `TestCancelRecordsCompletedAndPendingTasks` uses eight Tasks and one adopted Backlog Entry; checks both Task lists, normalized reason, cancellation date, PRD opening paragraph, revision, removed paths/count/bytes and exact returned bytes with only the two front matter values replaced. `TestCancelKeepsObservedQAAndTaskGraphOrder` covers dependency order, failed/in-progress Tasks and observed failed QA metadata. |
+| Finding returns pending with addendum and no absorption pointer | `TestCancelReturnsAnAdoptedFindingAsPending` compares the entire returned document with only the prescribed front matter edits and exact dated addendum. It preserves prior evidence, comments and source-index return order; also covers a missing `updated_at`. Backlog tests cover comments, inserted `spec: null` and CRLF bytes. |
+| Every refusal and later filesystem write failure leave the tree unchanged | `TestCancelRefusalsWriteNothing` checks 17 refusal cases against snapshots including file bytes, directory presence, modes and symlink targets. `TestCancelRollsBackAFailedWrite` makes the Findings directory read-only: record and Backlog Entry writes happen before the Finding write fails, then all created files and directories are removed and the original tree matches. `TestCancelRelinksLiveCitations/rewrite_failure` makes the later live document read-only and proves prior relinks and copies are rolled back. No test-only production hook is used. |
+| Cancelled record round-trips and other dispositions reject its fields | `TestACancelledArchiveRecordRoundTrips` checks populated and empty lists plus every required key's absence; `TestOnlyACancelledRecordCarriesCancelFields` checks each key against all six existing dispositions and the exact refusal text. `TestArchivedTaskCompletedForACancelledRecord` checks listed Tasks, pending Tasks, unknown Tasks, empty identity and an empty completed list. |
+
+Additional evidence: `TestCancelRelinksLiveCitations` checks that a secondary
+Spec's reference and core-artifact links resolve after cancellation, promoted
+bytes equal the original source, and the record lists `promoted` and
+`relinked`. It also exercises uncommitted live-document, occupied promotion,
+duplicate basename and symlink refusals. `TestCancelWithoutATaskGraph` covers
+both archive-root forms with empty Task lists.
+`TestCancelLeavesOtherAdoptedSourcesInTheFolder` checks that another source
+type remains named in the record and is never returned or promoted.
+
+### Ownership and follow-up
+
+Task status, checkboxes, the Task Graph, other Task files, `Archive`,
+`BuildArchiveRecord`, History Sanitize and CLI files were not edited. The
+Task's declared Verification commands, its CLI regression command and the
+repository Verification remain for the Daemon. No commit, push or pull
+request was made.
+
+The PRD's Non-Goals still says Markdown-link rewriting is out of scope;
+Requirement 9, ADR-0260 and the TechSpec Project Constraints explicitly
+require Archive Relink for cancellation. This implementation follows that
+explicit Task requirement; reconciling the PRD wording is a documentation
+follow-up outside this slice.
