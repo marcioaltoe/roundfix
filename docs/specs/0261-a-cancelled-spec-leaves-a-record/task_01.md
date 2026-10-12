@@ -76,6 +76,15 @@ yet.
    record tests passing unchanged, and MUST NOT change `Archive`,
    `BuildArchiveRecord`'s results for archives, the History Sanitize Command or
    any CLI file.
+9. MUST apply the Archive Relink of ADR-0260 (Spec 0255, merged first) before
+   the folder is removed, exactly as `Archive` does: call
+   `PlanArchiveRelink` with no manual promotions, copy each non-core file a
+   Live Document still cites to `docs/references/` and rewrite the inbound
+   links, list the rewritten files under the record's `relinked:`, and refuse
+   with no write on the relink plan's refusals. Add
+   `TestCancelRelinksLiveCitations` to `internal/spec/cancel_test.go`: an
+   active Spec that links a `references/` file of the cancelled Spec still
+   resolves after the cancellation, and the record lists it under `relinked:`.
 
 ## Subtasks
 
@@ -96,6 +105,7 @@ yet.
 
 ## Context
 
+- instruction: `docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md`
 - instruction: `docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md`
 - instruction: `docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md`
 - instruction: `docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md`
@@ -110,7 +120,7 @@ yet.
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run '^(TestCancelRecordsCompletedAndPendingTasks|TestCancelReturnsAnAdoptedBacklogEntryAsOpen|TestCancelReturnsAnAdoptedFindingAsPending|TestCancelLeavesOtherAdoptedSourcesInTheFolder|TestCancelWithoutATaskGraph|TestCancelRefusalsWriteNothing|TestCancelRollsBackAFailedWrite)$' ./internal/spec 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestCancelRecordsCompletedAndPendingTasks TestCancelReturnsAnAdoptedBacklogEntryAsOpen TestCancelReturnsAnAdoptedFindingAsPending TestCancelLeavesOtherAdoptedSourcesInTheFolder TestCancelWithoutATaskGraph TestCancelRefusalsWriteNothing TestCancelRollsBackAFailedWrite; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task none of these tests exists, so the command fails.
+- `out="$(go test -count=1 -v -run '^(TestCancelRecordsCompletedAndPendingTasks|TestCancelReturnsAnAdoptedBacklogEntryAsOpen|TestCancelReturnsAnAdoptedFindingAsPending|TestCancelLeavesOtherAdoptedSourcesInTheFolder|TestCancelWithoutATaskGraph|TestCancelRefusalsWriteNothing|TestCancelRollsBackAFailedWrite|TestCancelRelinksLiveCitations)$' ./internal/spec 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestCancelRecordsCompletedAndPendingTasks TestCancelReturnsAnAdoptedBacklogEntryAsOpen TestCancelReturnsAnAdoptedFindingAsPending TestCancelLeavesOtherAdoptedSourcesInTheFolder TestCancelWithoutATaskGraph TestCancelRefusalsWriteNothing TestCancelRollsBackAFailedWrite TestCancelRelinksLiveCitations; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task none of these tests exists, so the command fails.
 - `out="$(go test -count=1 -v -run '^(TestACancelledArchiveRecordRoundTrips|TestOnlyACancelledRecordCarriesCancelFields|TestArchivedTaskCompletedForACancelledRecord)$' ./internal/spec 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestACancelledArchiveRecordRoundTrips TestOnlyACancelledRecordCarriesCancelFields TestArchivedTaskCompletedForACancelledRecord; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; out="$(go test -count=1 -v -run '^TestArchiveCommandLeavesTheArchiveRecord$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- "--- PASS: TestArchiveCommandLeavesTheArchiveRecord" || exit 1` — expected: exit 0; before this Task the record tests do not exist, so the command fails at its first check.
 
 ## References

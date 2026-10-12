@@ -91,7 +91,9 @@ still be complete and adopted references self-contained." ADR-0215 binds archive
   cites ADR-0194 for the QA directory's format and reopen's Late Dependency;
   the QA gate here uses both unchanged, so it applies only as the gate's
   existing contract. Source:
-  `docs/agents/domain.md`.
+  `docs/agents/domain.md`. ADR-0260 (Spec 0255) makes an archive relink Live Documents before the
+  folder leaves; a cancellation removes the folder too, so it applies the same
+  Archive Relink and records `relinked:`.
 - Tooling authority: applicable — task_02 alone changes Governed Paths: the
   `spec-workflow` Baseline module and the files its sanctioned regeneration and
   Managed Refresh rewrite, and the canonical Roundfix and archive-spec skill

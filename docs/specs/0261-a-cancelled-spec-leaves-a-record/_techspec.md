@@ -52,7 +52,9 @@ module and regenerates its derived files.
   contract run. ADR-0244 binds the glossary terms. ADR-0179 binds the Governed
   Paths. ADR-0261, from Spec 0256, makes Source Revision Recovery reach a
   cancelled record too; this Spec adds nothing to it. The rest of the PRD's
-  row applies unchanged. Source: `docs/agents/domain.md`.
+  row applies unchanged. Source: `docs/agents/domain.md`. ADR-0260 (Spec 0255) makes an archive relink Live Documents before the
+  folder leaves; a cancellation removes the folder too, so it applies the same
+  Archive Relink and records `relinked:`.
 - Tooling authority: applicable — task_02 alone changes Governed Paths, and
   the grant bounds exactly those. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`; Spec-contained authorization record:
