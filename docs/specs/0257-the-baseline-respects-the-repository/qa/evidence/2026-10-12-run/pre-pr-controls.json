@@ -1,7 +1,0 @@
-{
-  "approval": "Maintainer delivery authority in _authorization.md; approved, implement/commit/push/pull_request/merge granted. QA does not claim a provider review or final Merge-Ready acceptance.",
-  "checks_and_status": "Daemon make verify-changed at audited head: pass, exit 0; required make verify-docs is row 09.",
-  "unresolved_threads": "None: no Pull Request exists, per Daemon prompt.",
-  "merge_ready_acceptance": "None yet: pre-PR review follows archive; no fabricated review acceptance.",
-  "review_artifact_ancestry": "Claimed candidate a65cc5115a2df609264a9afff63da34e52766767; no pre-PR Review Artifact yet. Operative grant dc1c5e7483f8df724a5fe8b93cac5b320a109b4b is ancestor of each Task commit."
-}

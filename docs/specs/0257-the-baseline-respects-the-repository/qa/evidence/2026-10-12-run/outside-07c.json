@@ -1,9 +1,0 @@
-{
-  "publisher_document": "ingraft, Editable Vendors",
-  "locator": "ingraft documentation: Editable Vendors",
-  "access": "Published excerpt supplied in PRD Acceptance evidence, as Requirement 7 explicitly permits; full live page not fetched.",
-  "origin": "The named publisher, not a Spec-authored measurement or fixture. PRD transports the attributed excerpt.",
-  "assessment": "Treating vendor source as read-only supports the first two divergence choices and retaining the upstream installation. Row 06 observes the governed rule and the complementary-skill choice in both guide and skill.",
-  "freshness": "No claim of current full-page wording or live source reachability.",
-  "network": "No request: authorization and QA Task confine the gate to offline evidence."
-}

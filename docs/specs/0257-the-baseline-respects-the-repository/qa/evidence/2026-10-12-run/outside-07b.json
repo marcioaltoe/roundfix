@@ -1,9 +1,0 @@
-{
-  "publisher_document": "Microsoft APM, Drift Detection",
-  "locator": "Microsoft APM documentation: Drift Detection; apm outdated command",
-  "access": "Published excerpt supplied in PRD Acceptance evidence, as Requirement 7 explicitly permits; full live page not fetched.",
-  "origin": "The named publisher, not a Spec-authored measurement or fixture. PRD transports the attributed excerpt.",
-  "assessment": "Comparing a locked dependency with its remote tip supplies upstream ordering evidence. The offline snapshot and lock digest comparison does not supply that evidence. Observed row 05 names a difference without guessing age and preserves the tree.",
-  "freshness": "No claim of current full-page wording or live source reachability.",
-  "network": "No request: authorization and QA Task confine the gate to offline evidence."
-}

@@ -1,1 +1,0 @@
-roundfix: baseline update failed: declare Setup Manifest decisions: resolve Setup Manifest decisions: normalize Baseline decisions: auth.base_path must be an absolute path with at least one segment and no trailing slash, wildcard, query, fragment or whitespace

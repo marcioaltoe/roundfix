@@ -1,9 +1,0 @@
-{
-  "publisher_document": "Better Auth, options reference",
-  "locator": "better-auth/better-auth: docs/content/docs/reference/options.mdx, basePath option",
-  "access": "Published excerpt supplied in PRD Acceptance evidence, as Requirement 7 explicitly permits; full live page not fetched.",
-  "origin": "The named publisher, not a Spec-authored measurement or fixture. PRD transports the attributed excerpt.",
-  "assessment": "Application mounting path and library default are distinct. The supplied publisher excerpt attributes /api/auth to the library default. Observed rows 03 and 04 demonstrate the recorded override and preserved unrecorded default.",
-  "freshness": "No claim of current full-page wording or live source reachability.",
-  "network": "No request: authorization and QA Task confine the gate to offline evidence."
-}

@@ -1,7 +1,0 @@
-{
-  "exit": 0,
-  "selected": 32,
-  "passed": 32,
-  "missing_passes": [],
-  "capture": "Temporary log; no concurrent QA writes during guarded tests."
-}

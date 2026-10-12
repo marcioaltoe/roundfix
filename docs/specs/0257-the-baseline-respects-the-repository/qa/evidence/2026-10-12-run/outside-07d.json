@@ -1,9 +1,0 @@
-{
-  "publisher_document": "Safeguard Research, When to Fork an Abandoned Dependency",
-  "locator": "Safeguard Research: When to Fork an Abandoned Dependency, 2026-04-05",
-  "access": "Published excerpt supplied in PRD Acceptance evidence, as Requirement 7 explicitly permits; full live page not fetched.",
-  "origin": "The named publisher, not a Spec-authored measurement or fixture. PRD transports the attributed excerpt.",
-  "assessment": "The publisher excerpt requires a concrete blocker and exhaustion of lighter options before forking. Row 06 observes the replacement choice last, qualified by useless or almost useless, with objective defects sent upstream.",
-  "freshness": "No claim of current full-page wording or live source reachability.",
-  "network": "No request: authorization and QA Task confine the gate to offline evidence."
-}
