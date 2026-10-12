@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0256-an-archive-record-that-survives-a-squash-merge
 ---
 
 # An Archive Record points at a branch commit that a squash merge drops
