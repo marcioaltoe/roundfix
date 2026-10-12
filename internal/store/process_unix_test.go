@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -668,6 +669,7 @@ func TestOwnerProcessHelperIgnoreModeStaysAlive(t *testing.T) {
 	t.Parallel()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
 	cmd.Env = append(os.Environ(), "ROUNDFIX_OWNER_PROCESS_HELPER=ignore")
+	keepOwnerHelperLifeline(t, cmd)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("open owner process helper stdout: %v", err)
@@ -747,13 +749,20 @@ func TestOwnerProcessHelper(t *testing.T) {
 	if mode == "" {
 		return
 	}
+	var lifeline <-chan struct{}
+	if mode != "tree-middle" {
+		lifeline = ownerHelperLifeline()
+	}
 	switch mode {
 	case "graceful":
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, syscall.SIGTERM)
 		defer signal.Stop(signals)
 		fmt.Fprintln(os.Stdout, "ready")
-		<-signals
+		select {
+		case <-signals:
+		case <-lifeline:
+		}
 	case "ignore":
 		signal.Ignore(syscall.SIGTERM)
 		defer signal.Reset(syscall.SIGTERM)
@@ -761,12 +770,18 @@ func TestOwnerProcessHelper(t *testing.T) {
 		signal.Notify(signals, syscall.SIGUSR1)
 		defer signal.Stop(signals)
 		fmt.Fprintln(os.Stdout, "ready")
-		for range signals {
-			fmt.Fprintln(os.Stdout, "alive")
+		for {
+			select {
+			case <-signals:
+				fmt.Fprintln(os.Stdout, "alive")
+			case <-lifeline:
+				return
+			}
 		}
 	case "tree-root":
 		middle := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
 		middle.Env = ownerProcessHelperEnv("tree-middle")
+		middle.Stdin = os.Stdin
 		output, err := middle.Output()
 		if err != nil {
 			t.Fatalf("start outliving grandchild: %v", err)
@@ -783,10 +798,14 @@ func TestOwnerProcessHelper(t *testing.T) {
 		signal.Notify(signals, syscall.SIGTERM)
 		defer signal.Stop(signals)
 		fmt.Fprintf(os.Stdout, "%d\nready\n", grandchildPID)
-		<-signals
+		select {
+		case <-signals:
+		case <-lifeline:
+		}
 	case "tree-middle":
 		grandchild := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
 		grandchild.Env = ownerProcessHelperEnv("tree-grandchild")
+		grandchild.Stdin = os.Stdin
 		stdout, err := grandchild.StdoutPipe()
 		if err != nil {
 			t.Fatalf("open grandchild stdout: %v", err)
@@ -807,7 +826,10 @@ func TestOwnerProcessHelper(t *testing.T) {
 		signal.Notify(signals, syscall.SIGTERM)
 		defer signal.Stop(signals)
 		fmt.Fprintln(os.Stdout, "ready")
-		<-signals
+		select {
+		case <-signals:
+		case <-lifeline:
+		}
 	default:
 		t.Fatalf("unknown owner process helper mode %q", mode)
 	}
@@ -817,6 +839,7 @@ func startOwnerProcessHelper(t *testing.T, mode string) (int, <-chan error) {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
 	cmd.Env = ownerProcessHelperEnv(mode)
+	keepOwnerHelperLifeline(t, cmd)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("open owner process helper stdout: %v", err)
@@ -859,6 +882,7 @@ func startOwnerProcessTreeHelper(t *testing.T) (int, int, <-chan error) {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
 	cmd.Env = ownerProcessHelperEnv("tree-root")
+	keepOwnerHelperLifeline(t, cmd)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -954,4 +978,27 @@ func assertOwnerProcessForceKilled(t *testing.T, pid int, wait <-chan error) {
 	if ProcessAlive(pid) {
 		t.Fatalf("owner process %d remained alive after controller force-kill escalation", pid)
 	}
+}
+
+// ownerHelperLifeline observes EOF without consuming bytes meant for another
+// process: the shared tree pipe carries no data, only its writer's lifetime.
+func ownerHelperLifeline() <-chan struct{} {
+	ended := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		close(ended)
+	}()
+	return ended
+}
+
+func keepOwnerHelperLifeline(t *testing.T, command *exec.Cmd) {
+	t.Helper()
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	command.Stdin = reader
+	// Files are close-on-exec: descendants inherit the reader through stdin,
+	// while this test binary alone retains the writer.
+	t.Cleanup(func() { _ = writer.Close(); _ = reader.Close() })
 }

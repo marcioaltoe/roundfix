@@ -28,6 +28,7 @@ const (
 	detachTestChildExitOneSilently     = "exit-one-silently"
 	detachTestChildIgnoreSentinel      = "ignore-sentinel"
 	detachTestRunID                    = "run-detach-test"
+	detachTestOwnerIdentityEnv         = "ROUNDFIX_DETACH_TEST_OWNER_IDENTITY"
 	detachTestOwnerPIDEnv              = "ROUNDFIX_DETACH_TEST_OWNER_PID"
 	detachTestPIDPathEnv               = "ROUNDFIX_DETACH_TEST_PID_PATH"
 	detachTestSentinelPathEnv          = "ROUNDFIX_DETACH_TEST_SENTINEL_PATH"
@@ -240,7 +241,7 @@ func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
 	command.Env = withEnvValue(os.Environ(), detachTestChildModeEnv, detachTestChildIgnoreSentinel)
 	command.Env = withEnvValue(command.Env, detachTestSentinelPathEnv, survivor.sentinelPath)
 	command.Env = withEnvValue(command.Env, detachTestPIDPathEnv, survivor.pidPath)
-	command.Env = withEnvValue(command.Env, detachTestOwnerPIDEnv, strconv.Itoa(os.Getpid()))
+	command.Env = detachTestOwnerEnvironment(t, command.Env)
 	configureDetachedSysProcAttr(command)
 	if err := command.Start(); err != nil {
 		t.Fatalf("start detached child that ignores its sentinel: %v", err)
@@ -279,7 +280,7 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 	var stderr bytes.Buffer
 	environment := commandEnvironmentForTest(t)
 	childEnvironment := withEnvValue(environment.environ, detachTestChildModeEnv, childMode)
-	childEnvironment = withEnvValue(childEnvironment, detachTestOwnerPIDEnv, strconv.Itoa(os.Getpid()))
+	childEnvironment = detachTestOwnerEnvironment(t, childEnvironment)
 	var survivor *detachTestSurvivor
 	if childMode == detachTestChildRunCreated {
 		survivor = newDetachTestSurvivor(t)
@@ -390,7 +391,7 @@ func runDetachTestChild(mode string) int {
 		ticker := time.NewTicker(10 * time.Millisecond)
 		defer ticker.Stop()
 		for {
-			if !store.ProcessAlive(ownerPID) {
+			if !detachTestOwnerAlive(ownerPID) {
 				return exitRunFailed
 			}
 			<-ticker.C
@@ -453,7 +454,7 @@ func waitForDetachTestSentinel() int {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		if !store.ProcessAlive(ownerPID) {
+		if !detachTestOwnerAlive(ownerPID) {
 			return exitRunFailed
 		}
 		if _, err := os.Stat(sentinelPath); err == nil {
@@ -548,4 +549,23 @@ func openDetachTestHandshake() (*os.File, bool) {
 		return nil, false
 	}
 	return handshake, true
+}
+
+func detachTestOwnerEnvironment(t *testing.T, environment []string) []string {
+	t.Helper()
+	identity, err := store.OwnerProcessIdentity(t.Context(), os.Getpid())
+	if err != nil {
+		t.Fatalf("read detach test owner identity: %v", err)
+	}
+	environment = withEnvValue(environment, detachTestOwnerPIDEnv, strconv.Itoa(os.Getpid()))
+	return withEnvValue(environment, detachTestOwnerIdentityEnv, identity)
+}
+
+func detachTestOwnerAlive(pid int) bool {
+	recorded := os.Getenv(detachTestOwnerIdentityEnv)
+	if recorded == "" || !store.ProcessAlive(pid) {
+		return false
+	}
+	identity, err := store.OwnerProcessIdentity(context.Background(), pid)
+	return err == nil && identity == recorded
 }

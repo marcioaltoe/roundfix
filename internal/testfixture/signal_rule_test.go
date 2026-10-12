@@ -24,6 +24,8 @@ func provenSignalAllowedFunction(relative, name string) bool {
 	switch filepath.ToSlash(filepath.Dir(relative)) {
 	case "internal/store":
 		return name == "SignalProvenProcess" || name == "SignalProvenProcessGroup" || name == "signalOwnerProcess"
+	case "internal/suiteguard":
+		return name == "killResidue"
 	case "internal/cli":
 		return name == "interruptSelf"
 	}
