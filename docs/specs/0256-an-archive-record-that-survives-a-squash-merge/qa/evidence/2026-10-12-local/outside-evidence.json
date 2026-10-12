@@ -1,0 +1,68 @@
+{
+  "measurement_path": "docs/references/2026-10-12-squash-merged-archive-source-revisions.md",
+  "records": [
+    {
+      "spec": "0252-one-gate-per-run-and-a-smaller-baseline",
+      "pull_request": "481",
+      "source_revision": "4d3e9059fa3d6704a8c5c0628cca369adbd7c2f7",
+      "measured_main_only_present": false,
+      "measured_main_ancestor": false,
+      "measured_recovered": true,
+      "committed_record_matches_revision": true,
+      "number_absent_from_record": true,
+      "fallback_subject_matches": true
+    },
+    {
+      "spec": "0253-authoring-rules-that-stop-qa-reruns",
+      "pull_request": "484",
+      "source_revision": "1740b715c99db7a1ae7bd78e6bcd3a0b71f51ac7",
+      "measured_main_only_present": false,
+      "measured_main_ancestor": false,
+      "measured_recovered": true,
+      "committed_record_matches_revision": true,
+      "number_absent_from_record": true,
+      "fallback_subject_matches": true
+    },
+    {
+      "spec": "0254-a-faster-make-test",
+      "pull_request": "487",
+      "source_revision": "c74b91f92628c31480650b05d4b812685afe2909",
+      "measured_main_only_present": false,
+      "measured_main_ancestor": false,
+      "measured_recovered": true,
+      "committed_record_matches_revision": true,
+      "number_absent_from_record": true,
+      "fallback_subject_matches": true
+    }
+  ],
+  "published_sources": {
+    "GitHub Docs": {
+      "url": "https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally",
+      "passages_present": true,
+      "read_mode": "committed published passages; no live page refresh"
+    },
+    "Git fetch documentation": {
+      "url": "https://git-scm.com/docs/git-fetch",
+      "passages_present": true,
+      "read_mode": "committed published passage; no live page refresh"
+    }
+  },
+  "adopter_sources": [
+    {
+      "path": "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/references/2026-10-12-an-archive-record-points-at-a-branch-commit-a-squash-merge-drops.md",
+      "source": "Pantheon adopter observation on 2026-10-09; original Secondbrain triaged inbox entry named under Evidence",
+      "expected_observation_present": true,
+      "independently_refreshed": false,
+      "supports": "squash-dropped revision and no-backfill recovery"
+    },
+    {
+      "path": "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/references/2026-10-12-review-reads-any-markdown-in-the-archive-root-as-an-archive-record.md",
+      "source": "Pantheon adopter observation on 2026-10-09; original Secondbrain triaged inbox entry named under Evidence",
+      "expected_observation_present": true,
+      "independently_refreshed": false,
+      "supports": "prose archive index must reach review provider"
+    }
+  ],
+  "comparison": "measurement needs subject fallback for PRs 481/484/487; independent CLI recovery proves both selectors; measured no-ref result matches two fresh local recovery observations; published fetch passage supports absent FETCH_HEAD; read-only namespace supports no new pushed archive ref",
+  "limits": "No live GitHub, git-scm or adopter refresh; source origins and dated snapshot provenance retained."
+}

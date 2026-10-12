@@ -1,0 +1,2 @@
+exit: 0
+All Task scope, exact grant bounds, ancestry, protected paths, mirror and shared-section assertions passed.

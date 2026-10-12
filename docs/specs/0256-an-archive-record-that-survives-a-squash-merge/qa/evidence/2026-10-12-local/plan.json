@@ -1,0 +1,67 @@
+[
+  [
+    "1",
+    "Repository Verification",
+    "repository Verification; task_05 Requirement 1"
+  ],
+  [
+    "2",
+    "All Task tests and delivery metrics",
+    "task_05 Requirement 1"
+  ],
+  [
+    "3",
+    "Branch archive warning",
+    "task_05 Requirement 1; Surface Transcript 1"
+  ],
+  [
+    "4",
+    "Archive with pull request",
+    "task_05 Requirement 1; Surface Transcript 2"
+  ],
+  [
+    "5",
+    "Record-only update and replay",
+    "task_05 Requirement 1; Surface Transcript 3"
+  ],
+  [
+    "6",
+    "Default-branch refusal",
+    "task_05 Requirement 1; Surface Transcript 4"
+  ],
+  [
+    "7",
+    "Archive help",
+    "task_05 Requirement 1; Surface Transcript 5"
+  ],
+  [
+    "8",
+    "Missing-revision CLI recovery and no-ref checks",
+    "task_05 Requirement 1"
+  ],
+  [
+    "9",
+    "Phrase checks, wording sweep and glossary",
+    "task_05 Requirement 10"
+  ],
+  [
+    "10",
+    "Task scope, authorization and unchanged contracts",
+    "task_05 Requirement 10"
+  ],
+  [
+    "11",
+    "Independent measurement, published passages and adopter evidence",
+    "outside-evidence row"
+  ],
+  [
+    "12",
+    "Real GitHub recovery declaration",
+    "PRD Unreachable Acceptance: real github.com squash-dropped revision recovery"
+  ],
+  [
+    "13",
+    "Pre-PR delivery controls",
+    "Pull Request row"
+  ]
+]

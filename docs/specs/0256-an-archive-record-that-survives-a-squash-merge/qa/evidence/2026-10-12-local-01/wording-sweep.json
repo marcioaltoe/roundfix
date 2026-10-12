@@ -1,0 +1,79 @@
+{
+  "replaced_sentences": [
+    "If the commit is absent, context is skipped",
+    "If that commit is absent, the Spec stays archived in the report with its disposition"
+  ],
+  "files_searched": 493,
+  "hits": [
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "hit": "source_revision` is absent",
+      "context": " the Archive Record schema is read as a record. Other Markdown files directly under the archive root are ignored. When an Archive Record's `source_revision` is absent locally, the reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails is the archived Spec context skipped. The record's `archivedSpecs` field always lists the sorted slu",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "hit": "commit is absent",
+      "context": "hive root are ignored. When an Archive Record's `source_revision` is absent locally, the reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails is the archived Spec context skipped. The record's `archivedSpecs` field always lists the sorted slugs of changed Spec folders under the resolved archive root, including folders who",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": ".agents/skills/roundfix/references/runs.md",
+      "hit": "source_revision`. The reader first fetches `refs/pull/<N>/head` when the commit is absent",
+      "context": "alid usage or no Git repository, and `1` means an unreadable database. An Archive Record supplies the graph and Task files from Git at its `source_revision`. The reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails does the Run causes report mark the revision unavailable and retain the archived Spec's disposition. An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>` creation ",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+      "hit": "commit is missing",
+      "context": " accepted by proof, not by review. A reader can now reach the network, so the fetch is non-interactive, bounded and attempted only when the commit is missing and a pull request number is known. Tests use a local bare repository as the forge.",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "docs/references/2026-10-12-squash-merged-archive-source-revisions.md",
+      "hit": "source_revision` reports it unavailable",
+      "context": "the default branch's ancestry. A clone of the default branch cannot read the removed Spec folder, so every reader that opens the folder at `source_revision` reports it unavailable. - The forge keeps the revision under the pull request's head ref, and a fetch of that ref recovers it without creating a local ref. - The pull request number is known after the merge from the delivery commit'",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "docs/user-guide/commands/review.md",
+      "hit": "commit is absent",
+      "context": " read as a record. Other Markdown files directly under the archive root are ignored. The reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails is context skipped while the Spec stays in `archivedSpecs`; blocking findings still require a corrective Spec. After the diff block, the prompt lists the sorted omitted paths and th",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "docs/user-guide/commands/runs.md",
+      "hit": "source_revision`. The reader first fetches `refs/pull/<N>/head` when the commit is absent",
+      "context": "re-pr-review`, `qa-gate`, `verification`, or `unknown`, in that order. An Archive Record supplies the graph and Task files from Git at its `source_revision`. The reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails does the Spec stay archived in the report with its disposition and the revision remain unavailable. It is not listed under `specs_not_found`. JSON adds `archived_specs` entries with",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "skills/roundfix/references/review.md",
+      "hit": "source_revision` is absent",
+      "context": " the Archive Record schema is read as a record. Other Markdown files directly under the archive root are ignored. When an Archive Record's `source_revision` is absent locally, the reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails is the archived Spec context skipped. The record's `archivedSpecs` field always lists the sorted slu",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "skills/roundfix/references/review.md",
+      "hit": "commit is absent",
+      "context": "hive root are ignored. When an Archive Record's `source_revision` is absent locally, the reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails is the archived Spec context skipped. The record's `archivedSpecs` field always lists the sorted slugs of changed Spec folders under the resolved archive root, including folders who",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    },
+    {
+      "path": "skills/roundfix/references/runs.md",
+      "hit": "source_revision`. The reader first fetches `refs/pull/<N>/head` when the commit is absent",
+      "context": "alid usage or no Git repository, and `1` means an unreadable database. An Archive Record supplies the graph and Task files from Git at its `source_revision`. The reader first fetches `refs/pull/<N>/head` when the commit is absent; only when that fetch fails does the Run causes report mark the revision unavailable and retain the archived Spec's disposition. An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>` creation ",
+      "allowed": true,
+      "reason": "recovery-first wording or unrelated reader/context; inspected in wording-sweep.json"
+    }
+  ]
+}

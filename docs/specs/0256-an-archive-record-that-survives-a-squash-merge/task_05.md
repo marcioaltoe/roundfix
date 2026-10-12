@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0256-an-archive-record-that-survives-a-squash-merge
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

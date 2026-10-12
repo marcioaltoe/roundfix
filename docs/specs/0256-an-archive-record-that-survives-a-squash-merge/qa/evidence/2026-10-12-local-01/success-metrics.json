@@ -1,0 +1,53 @@
+{
+  "merged_pull_request": "7",
+  "record_commits_after_interruption": 1,
+  "README_provider_calls": 1,
+  "basis": "fresh passing assertions, not a new live forge measurement",
+  "checks": [
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 69,
+      "source": "if count := strings.TrimSpace(gittest.Run(t, repo, \"rev-list\", \"--count\", candidate+\"..HEAD\")); count != \"1\" {"
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 70,
+      "source": "t.Fatalf(\"record commits=%s\", count)"
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 110,
+      "source": "record.PullRequest = \"8\""
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 167,
+      "source": "if count := strings.TrimSpace(gittest.Run(t, repo, \"rev-list\", \"--count\", candidate+\"..HEAD\")); count != \"1\" {"
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 196,
+      "source": "record.PullRequest = \"\""
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 199,
+      "source": "record.PullRequest = \"8\""
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 383,
+      "source": "if err != nil || record.PullRequest != \"7\" {"
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 389,
+      "source": "if count := strings.TrimSpace(gittest.Run(t, origin, \"rev-list\", \"--count\", archiveHead+\"..\"+item.CandidateCommits[2])); count != \"1\" {"
+    },
+    {
+      "path": "internal/cli/deliver_record_pull_request_test.go",
+      "line": 390,
+      "source": "t.Fatalf(\"record commits=%s\", count)"
+    }
+  ]
+}

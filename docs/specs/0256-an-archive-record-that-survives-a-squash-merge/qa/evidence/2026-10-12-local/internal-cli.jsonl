@@ -1,0 +1,385 @@
+{"Time":"2026-10-12T12:44:36.495721-03:00","Action":"start","Package":"roundfix/internal/cli"}
+{"Time":"2026-10-12T12:44:37.192957-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193022-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision","Output":"=== RUN   TestArchiveOnABranchWarnsAboutASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193034-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision","Output":"=== PAUSE TestArchiveOnABranchWarnsAboutASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193036-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193037-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef"}
+{"Time":"2026-10-12T12:44:37.193042-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef","Output":"=== RUN   TestArchiveWithAPullRequestNamesItsHeadRef\n"}
+{"Time":"2026-10-12T12:44:37.193046-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef","Output":"=== PAUSE TestArchiveWithAPullRequestNamesItsHeadRef\n"}
+{"Time":"2026-10-12T12:44:37.193047-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef"}
+{"Time":"2026-10-12T12:44:37.193048-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord"}
+{"Time":"2026-10-12T12:44:37.193049-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord","Output":"=== RUN   TestArchiveRecordsAPullRequestInTheBranchRecord\n"}
+{"Time":"2026-10-12T12:44:37.19305-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord","Output":"=== PAUSE TestArchiveRecordsAPullRequestInTheBranchRecord\n"}
+{"Time":"2026-10-12T12:44:37.193051-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord"}
+{"Time":"2026-10-12T12:44:37.193088-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch"}
+{"Time":"2026-10-12T12:44:37.193093-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch","Output":"=== RUN   TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch\n"}
+{"Time":"2026-10-12T12:44:37.193094-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch","Output":"=== PAUSE TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch\n"}
+{"Time":"2026-10-12T12:44:37.193095-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch"}
+{"Time":"2026-10-12T12:44:37.193098-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption"}
+{"Time":"2026-10-12T12:44:37.193099-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption","Output":"=== RUN   TestArchiveHelpNamesThePullRequestOption\n"}
+{"Time":"2026-10-12T12:44:37.1931-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption","Output":"=== PAUSE TestArchiveHelpNamesThePullRequestOption\n"}
+{"Time":"2026-10-12T12:44:37.193106-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption"}
+{"Time":"2026-10-12T12:44:37.193107-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn"}
+{"Time":"2026-10-12T12:44:37.193108-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn","Output":"=== RUN   TestArchiveOnTheDefaultBranchDoesNotWarn\n"}
+{"Time":"2026-10-12T12:44:37.19311-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn","Output":"=== PAUSE TestArchiveOnTheDefaultBranchDoesNotWarn\n"}
+{"Time":"2026-10-12T12:44:37.193116-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn"}
+{"Time":"2026-10-12T12:44:37.193117-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals"}
+{"Time":"2026-10-12T12:44:37.193118-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals","Output":"=== RUN   TestArchivePullRequestRefusals\n"}
+{"Time":"2026-10-12T12:44:37.193123-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals","Output":"=== PAUSE TestArchivePullRequestRefusals\n"}
+{"Time":"2026-10-12T12:44:37.193124-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals"}
+{"Time":"2026-10-12T12:44:37.193125-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns"}
+{"Time":"2026-10-12T12:44:37.193126-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns","Output":"=== RUN   TestArchiveWithAnUnknownDefaultBranchWarns\n"}
+{"Time":"2026-10-12T12:44:37.193127-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns","Output":"=== PAUSE TestArchiveWithAnUnknownDefaultBranchWarns\n"}
+{"Time":"2026-10-12T12:44:37.193128-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns"}
+{"Time":"2026-10-12T12:44:37.193129-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord"}
+{"Time":"2026-10-12T12:44:37.19313-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord","Output":"=== RUN   TestArchivePullRequestRefusesAnExternalDefaultBranchRecord\n"}
+{"Time":"2026-10-12T12:44:37.193131-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord","Output":"=== PAUSE TestArchivePullRequestRefusesAnExternalDefaultBranchRecord\n"}
+{"Time":"2026-10-12T12:44:37.193132-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord"}
+{"Time":"2026-10-12T12:44:37.193139-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision"}
+{"Time":"2026-10-12T12:44:37.193143-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision","Output":"=== RUN   TestRunCausesReportAnArchiveRecordWithoutItsRevision\n"}
+{"Time":"2026-10-12T12:44:37.193145-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision","Output":"=== PAUSE TestRunCausesReportAnArchiveRecordWithoutItsRevision\n"}
+{"Time":"2026-10-12T12:44:37.193146-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision"}
+{"Time":"2026-10-12T12:44:37.193147-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193148-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"=== RUN   TestArchiveCommandLeavesTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193149-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"=== PAUSE TestArchiveCommandLeavesTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193154-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193194-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement"}
+{"Time":"2026-10-12T12:44:37.193196-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement","Output":"=== RUN   TestDeliveryAcceptsAnExactRetirement\n"}
+{"Time":"2026-10-12T12:44:37.193206-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement","Output":"=== PAUSE TestDeliveryAcceptsAnExactRetirement\n"}
+{"Time":"2026-10-12T12:44:37.193207-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement"}
+{"Time":"2026-10-12T12:44:37.193209-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.19321-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord","Output":"=== RUN   TestDeliveryArchiveStageCommitsTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193212-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord","Output":"=== PAUSE TestDeliveryArchiveStageCommitsTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193213-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193227-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193229-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord","Output":"=== RUN   TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.19324-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord","Output":"=== PAUSE TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193241-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193243-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath"}
+{"Time":"2026-10-12T12:44:37.193244-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath\n"}
+{"Time":"2026-10-12T12:44:37.193257-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath","Output":"=== PAUSE TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath\n"}
+{"Time":"2026-10-12T12:44:37.193258-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath"}
+{"Time":"2026-10-12T12:44:37.19326-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord"}
+{"Time":"2026-10-12T12:44:37.193261-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord","Output":"=== RUN   TestDeliveryWorkflowAdoptsAnUncommittedRecord\n"}
+{"Time":"2026-10-12T12:44:37.193263-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord","Output":"=== PAUSE TestDeliveryWorkflowAdoptsAnUncommittedRecord\n"}
+{"Time":"2026-10-12T12:44:37.193264-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord"}
+{"Time":"2026-10-12T12:44:37.193266-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord"}
+{"Time":"2026-10-12T12:44:37.193266-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord\n"}
+{"Time":"2026-10-12T12:44:37.193268-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord","Output":"=== PAUSE TestDeliveryWorkflowRefusesAnUncommittedInexactRecord\n"}
+{"Time":"2026-10-12T12:44:37.193269-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord"}
+{"Time":"2026-10-12T12:44:37.19327-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder"}
+{"Time":"2026-10-12T12:44:37.193271-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder","Output":"=== RUN   TestDeliveryWorkflowSkipsALegacyArchiveFolder\n"}
+{"Time":"2026-10-12T12:44:37.193272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder","Output":"=== PAUSE TestDeliveryWorkflowSkipsALegacyArchiveFolder\n"}
+{"Time":"2026-10-12T12:44:37.193273-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder"}
+{"Time":"2026-10-12T12:44:37.193278-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening"}
+{"Time":"2026-10-12T12:44:37.193279-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening","Output":"=== RUN   TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening\n"}
+{"Time":"2026-10-12T12:44:37.193281-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening","Output":"=== PAUSE TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening\n"}
+{"Time":"2026-10-12T12:44:37.193281-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening"}
+{"Time":"2026-10-12T12:44:37.193283-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest"}
+{"Time":"2026-10-12T12:44:37.193284-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"=== RUN   TestCommandDeliveryEngineRecordsThePullRequest\n"}
+{"Time":"2026-10-12T12:44:37.193349-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"=== PAUSE TestCommandDeliveryEngineRecordsThePullRequest\n"}
+{"Time":"2026-10-12T12:44:37.19335-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest"}
+{"Time":"2026-10-12T12:44:37.193395-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot"}
+{"Time":"2026-10-12T12:44:37.193397-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot","Output":"=== RUN   TestReviewIgnoresAProseReadmeInTheArchiveRoot\n"}
+{"Time":"2026-10-12T12:44:37.193408-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot","Output":"=== PAUSE TestReviewIgnoresAProseReadmeInTheArchiveRoot\n"}
+{"Time":"2026-10-12T12:44:37.193409-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot"}
+{"Time":"2026-10-12T12:44:37.19341-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193411-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord","Output":"=== RUN   TestReviewStillRefusesAMalformedArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193413-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord","Output":"=== PAUSE TestReviewStillRefusesAMalformedArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193414-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193444-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193445-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision","Output":"=== RUN   TestReviewContextRecoversASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193456-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision","Output":"=== PAUSE TestReviewContextRecoversASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193457-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193458-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.19346-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision","Output":"=== RUN   TestRunCausesRecoverASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193461-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision","Output":"=== PAUSE TestRunCausesRecoverASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193463-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193474-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193476-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision","Output":"=== CONT  TestArchiveOnABranchWarnsAboutASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193553-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193554-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord","Output":"=== CONT  TestDeliveryArchiveStageCommitsTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193564-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening"}
+{"Time":"2026-10-12T12:44:37.193565-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening","Output":"=== CONT  TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening\n"}
+{"Time":"2026-10-12T12:44:37.193592-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.193596-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision","Output":"=== CONT  TestRunCausesRecoverASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193639-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision"}
+{"Time":"2026-10-12T12:44:37.19365-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision","Output":"=== CONT  TestReviewContextRecoversASquashDroppedRevision\n"}
+{"Time":"2026-10-12T12:44:37.193654-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/record"}
+{"Time":"2026-10-12T12:44:37.193658-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/record","Output":"=== RUN   TestRunCausesRecoverASquashDroppedRevision/record\n"}
+{"Time":"2026-10-12T12:44:37.193662-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.193664-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord","Output":"=== CONT  TestReviewStillRefusesAMalformedArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.193834-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot"}
+{"Time":"2026-10-12T12:44:37.193841-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot","Output":"=== CONT  TestReviewIgnoresAProseReadmeInTheArchiveRoot\n"}
+{"Time":"2026-10-12T12:44:37.193845-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest"}
+{"Time":"2026-10-12T12:44:37.193847-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"=== CONT  TestCommandDeliveryEngineRecordsThePullRequest\n"}
+{"Time":"2026-10-12T12:44:37.193905-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord"}
+{"Time":"2026-10-12T12:44:37.193909-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord","Output":"=== CONT  TestDeliveryWorkflowAdoptsAnUncommittedRecord\n"}
+{"Time":"2026-10-12T12:44:37.193912-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false"}
+{"Time":"2026-10-12T12:44:37.193914-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false","Output":"=== RUN   TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false\n"}
+{"Time":"2026-10-12T12:44:37.193931-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder"}
+{"Time":"2026-10-12T12:44:37.193934-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder","Output":"=== CONT  TestDeliveryWorkflowSkipsALegacyArchiveFolder\n"}
+{"Time":"2026-10-12T12:44:37.193948-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/record"}
+{"Time":"2026-10-12T12:44:37.19395-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/record","Output":"=== RUN   TestReviewContextRecoversASquashDroppedRevision/record\n"}
+{"Time":"2026-10-12T12:44:37.425089-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder","Output":"--- PASS: TestDeliveryWorkflowSkipsALegacyArchiveFolder (0.23s)\n"}
+{"Time":"2026-10-12T12:44:37.425104-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowSkipsALegacyArchiveFolder","Elapsed":0.23}
+{"Time":"2026-10-12T12:44:37.425322-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord"}
+{"Time":"2026-10-12T12:44:37.425324-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord","Output":"=== CONT  TestDeliveryWorkflowRefusesAnUncommittedInexactRecord\n"}
+{"Time":"2026-10-12T12:44:37.425327-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path"}
+{"Time":"2026-10-12T12:44:37.425328-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path\n"}
+{"Time":"2026-10-12T12:44:37.573147-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord","Output":"--- PASS: TestReviewStillRefusesAMalformedArchiveRecord (0.38s)\n"}
+{"Time":"2026-10-12T12:44:37.573174-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewStillRefusesAMalformedArchiveRecord","Elapsed":0.38}
+{"Time":"2026-10-12T12:44:37.573179-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath"}
+{"Time":"2026-10-12T12:44:37.573181-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath","Output":"=== CONT  TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath\n"}
+{"Time":"2026-10-12T12:44:37.573195-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path"}
+{"Time":"2026-10-12T12:44:37.573198-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path\n"}
+{"Time":"2026-10-12T12:44:37.579068-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot","Output":"--- PASS: TestReviewIgnoresAProseReadmeInTheArchiveRoot (0.39s)\n"}
+{"Time":"2026-10-12T12:44:37.579088-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewIgnoresAProseReadmeInTheArchiveRoot","Elapsed":0.39}
+{"Time":"2026-10-12T12:44:37.579093-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:37.579094-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord","Output":"=== CONT  TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:37.66136-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision","Output":"--- PASS: TestArchiveOnABranchWarnsAboutASquashDroppedRevision (0.47s)\n"}
+{"Time":"2026-10-12T12:44:37.661889-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveOnABranchWarnsAboutASquashDroppedRevision","Elapsed":0.47}
+{"Time":"2026-10-12T12:44:37.661924-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals"}
+{"Time":"2026-10-12T12:44:37.66193-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals","Output":"=== CONT  TestArchivePullRequestRefusals\n"}
+{"Time":"2026-10-12T12:44:37.661935-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/non-integer"}
+{"Time":"2026-10-12T12:44:37.661938-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/non-integer","Output":"=== RUN   TestArchivePullRequestRefusals/non-integer\n"}
+{"Time":"2026-10-12T12:44:37.879901-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord","Output":"--- PASS: TestDeliveryArchiveStageCommitsTheArchiveRecord (0.69s)\n"}
+{"Time":"2026-10-12T12:44:37.879932-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryArchiveStageCommitsTheArchiveRecord","Elapsed":0.69}
+{"Time":"2026-10-12T12:44:37.879937-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement"}
+{"Time":"2026-10-12T12:44:37.879939-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement","Output":"=== CONT  TestDeliveryAcceptsAnExactRetirement\n"}
+{"Time":"2026-10-12T12:44:37.879942-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/record"}
+{"Time":"2026-10-12T12:44:37.879944-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/record","Output":"=== RUN   TestDeliveryAcceptsAnExactRetirement/record\n"}
+{"Time":"2026-10-12T12:44:37.954449-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/record","Output":"--- PASS: TestRunCausesRecoverASquashDroppedRevision/record (0.76s)\n"}
+{"Time":"2026-10-12T12:44:37.954469-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/record","Elapsed":0.76}
+{"Time":"2026-10-12T12:44:37.954491-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/adding_subject"}
+{"Time":"2026-10-12T12:44:37.954494-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/adding_subject","Output":"=== RUN   TestRunCausesRecoverASquashDroppedRevision/adding_subject\n"}
+{"Time":"2026-10-12T12:44:37.999564-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false","Output":"--- PASS: TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false (0.81s)\n"}
+{"Time":"2026-10-12T12:44:37.999579-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false","Elapsed":0.81}
+{"Time":"2026-10-12T12:44:37.999589-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true"}
+{"Time":"2026-10-12T12:44:37.999591-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true","Output":"=== RUN   TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true\n"}
+{"Time":"2026-10-12T12:44:38.013174-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/non-integer","Output":"--- PASS: TestArchivePullRequestRefusals/non-integer (0.35s)\n"}
+{"Time":"2026-10-12T12:44:38.013192-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/non-integer","Elapsed":0.35}
+{"Time":"2026-10-12T12:44:38.013197-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/zero"}
+{"Time":"2026-10-12T12:44:38.013199-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/zero","Output":"=== RUN   TestArchivePullRequestRefusals/zero\n"}
+{"Time":"2026-10-12T12:44:38.04035-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path (0.62s)\n"}
+{"Time":"2026-10-12T12:44:38.04038-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path","Elapsed":0.62}
+{"Time":"2026-10-12T12:44:38.040467-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path"}
+{"Time":"2026-10-12T12:44:38.040474-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path\n"}
+{"Time":"2026-10-12T12:44:38.148088-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening","Output":"--- PASS: TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening (0.95s)\n"}
+{"Time":"2026-10-12T12:44:38.148106-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening","Elapsed":0.95}
+{"Time":"2026-10-12T12:44:38.148109-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord"}
+{"Time":"2026-10-12T12:44:38.148111-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"=== CONT  TestArchiveCommandLeavesTheArchiveRecord\n"}
+{"Time":"2026-10-12T12:44:38.148112-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false"}
+{"Time":"2026-10-12T12:44:38.148114-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false","Output":"=== RUN   TestArchiveCommandLeavesTheArchiveRecord/false\n"}
+{"Time":"2026-10-12T12:44:38.269776-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path (0.70s)\n"}
+{"Time":"2026-10-12T12:44:38.269798-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path","Elapsed":0.7}
+{"Time":"2026-10-12T12:44:38.27006-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title"}
+{"Time":"2026-10-12T12:44:38.270067-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title\n"}
+{"Time":"2026-10-12T12:44:38.300319-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/record","Output":"--- PASS: TestReviewContextRecoversASquashDroppedRevision/record (1.11s)\n"}
+{"Time":"2026-10-12T12:44:38.300334-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/record","Elapsed":1.11}
+{"Time":"2026-10-12T12:44:38.300338-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/adding_subject"}
+{"Time":"2026-10-12T12:44:38.300341-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/adding_subject","Output":"=== RUN   TestReviewContextRecoversASquashDroppedRevision/adding_subject\n"}
+{"Time":"2026-10-12T12:44:38.328154-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/zero","Output":"--- PASS: TestArchivePullRequestRefusals/zero (0.31s)\n"}
+{"Time":"2026-10-12T12:44:38.328171-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/zero","Elapsed":0.31}
+{"Time":"2026-10-12T12:44:38.328174-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/negative"}
+{"Time":"2026-10-12T12:44:38.328175-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/negative","Output":"=== RUN   TestArchivePullRequestRefusals/negative\n"}
+{"Time":"2026-10-12T12:44:38.462935-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/record","Output":"--- PASS: TestDeliveryAcceptsAnExactRetirement/record (0.58s)\n"}
+{"Time":"2026-10-12T12:44:38.462954-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/record","Elapsed":0.58}
+{"Time":"2026-10-12T12:44:38.46296-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/promotion"}
+{"Time":"2026-10-12T12:44:38.462962-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/promotion","Output":"=== RUN   TestDeliveryAcceptsAnExactRetirement/promotion\n"}
+{"Time":"2026-10-12T12:44:38.536262-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false","Output":"--- PASS: TestArchiveCommandLeavesTheArchiveRecord/false (0.39s)\n"}
+{"Time":"2026-10-12T12:44:38.536275-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false","Elapsed":0.39}
+{"Time":"2026-10-12T12:44:38.536278-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true"}
+{"Time":"2026-10-12T12:44:38.536279-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true","Output":"=== RUN   TestArchiveCommandLeavesTheArchiveRecord/true\n"}
+{"Time":"2026-10-12T12:44:38.633606-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/negative","Output":"--- PASS: TestArchivePullRequestRefusals/negative (0.31s)\n"}
+{"Time":"2026-10-12T12:44:38.633628-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/negative","Elapsed":0.31}
+{"Time":"2026-10-12T12:44:38.633633-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/empty"}
+{"Time":"2026-10-12T12:44:38.633635-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/empty","Output":"=== RUN   TestArchivePullRequestRefusals/empty\n"}
+{"Time":"2026-10-12T12:44:38.642304-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path (0.60s)\n"}
+{"Time":"2026-10-12T12:44:38.642332-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path","Elapsed":0.6}
+{"Time":"2026-10-12T12:44:38.642336-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number"}
+{"Time":"2026-10-12T12:44:38.642338-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number\n"}
+{"Time":"2026-10-12T12:44:38.755743-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/adding_subject","Output":"--- PASS: TestRunCausesRecoverASquashDroppedRevision/adding_subject (0.80s)\n"}
+{"Time":"2026-10-12T12:44:38.755769-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/adding_subject","Elapsed":0.8}
+{"Time":"2026-10-12T12:44:38.755824-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/unreachable_forge"}
+{"Time":"2026-10-12T12:44:38.75583-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/unreachable_forge","Output":"=== RUN   TestRunCausesRecoverASquashDroppedRevision/unreachable_forge\n"}
+{"Time":"2026-10-12T12:44:38.762209-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord","Output":"--- PASS: TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord (1.18s)\n"}
+{"Time":"2026-10-12T12:44:38.762438-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord","Elapsed":1.18}
+{"Time":"2026-10-12T12:44:38.762471-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision"}
+{"Time":"2026-10-12T12:44:38.762474-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision","Output":"=== CONT  TestRunCausesReportAnArchiveRecordWithoutItsRevision\n"}
+{"Time":"2026-10-12T12:44:38.834497-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true","Output":"--- PASS: TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true (0.83s)\n"}
+{"Time":"2026-10-12T12:44:38.834521-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true","Elapsed":0.83}
+{"Time":"2026-10-12T12:44:38.834528-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord","Output":"--- PASS: TestDeliveryWorkflowAdoptsAnUncommittedRecord (1.64s)\n"}
+{"Time":"2026-10-12T12:44:38.834531-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowAdoptsAnUncommittedRecord","Elapsed":1.64}
+{"Time":"2026-10-12T12:44:38.834533-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord"}
+{"Time":"2026-10-12T12:44:38.834535-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord","Output":"=== CONT  TestArchivePullRequestRefusesAnExternalDefaultBranchRecord\n"}
+{"Time":"2026-10-12T12:44:38.927556-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true","Output":"--- PASS: TestArchiveCommandLeavesTheArchiveRecord/true (0.39s)\n"}
+{"Time":"2026-10-12T12:44:38.927594-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true","Elapsed":0.39}
+{"Time":"2026-10-12T12:44:38.927601-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"--- PASS: TestArchiveCommandLeavesTheArchiveRecord (0.78s)\n"}
+{"Time":"2026-10-12T12:44:38.927603-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Elapsed":0.78}
+{"Time":"2026-10-12T12:44:38.927626-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns"}
+{"Time":"2026-10-12T12:44:38.927628-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns","Output":"=== CONT  TestArchiveWithAnUnknownDefaultBranchWarns\n"}
+{"Time":"2026-10-12T12:44:38.981138-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/empty","Output":"--- PASS: TestArchivePullRequestRefusals/empty (0.35s)\n"}
+{"Time":"2026-10-12T12:44:38.981169-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/empty","Elapsed":0.35}
+{"Time":"2026-10-12T12:44:38.981174-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/leading_zero"}
+{"Time":"2026-10-12T12:44:38.981176-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/leading_zero","Output":"=== RUN   TestArchivePullRequestRefusals/leading_zero\n"}
+{"Time":"2026-10-12T12:44:39.01598-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title (0.75s)\n"}
+{"Time":"2026-10-12T12:44:39.016009-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title","Elapsed":0.75}
+{"Time":"2026-10-12T12:44:39.016017-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision"}
+{"Time":"2026-10-12T12:44:39.016019-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision\n"}
+{"Time":"2026-10-12T12:44:39.096179-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision","Output":"--- PASS: TestRunCausesReportAnArchiveRecordWithoutItsRevision (0.33s)\n"}
+{"Time":"2026-10-12T12:44:39.0962-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesReportAnArchiveRecordWithoutItsRevision","Elapsed":0.33}
+{"Time":"2026-10-12T12:44:39.096205-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch"}
+{"Time":"2026-10-12T12:44:39.096207-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch","Output":"=== CONT  TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch\n"}
+{"Time":"2026-10-12T12:44:39.144942-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/promotion","Output":"--- PASS: TestDeliveryAcceptsAnExactRetirement/promotion (0.68s)\n"}
+{"Time":"2026-10-12T12:44:39.144965-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement/promotion","Elapsed":0.68}
+{"Time":"2026-10-12T12:44:39.144971-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement","Output":"--- PASS: TestDeliveryAcceptsAnExactRetirement (1.27s)\n"}
+{"Time":"2026-10-12T12:44:39.144973-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryAcceptsAnExactRetirement","Elapsed":1.27}
+{"Time":"2026-10-12T12:44:39.144975-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn"}
+{"Time":"2026-10-12T12:44:39.144977-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn","Output":"=== CONT  TestArchiveOnTheDefaultBranchDoesNotWarn\n"}
+{"Time":"2026-10-12T12:44:39.144987-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/true"}
+{"Time":"2026-10-12T12:44:39.144989-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/true","Output":"=== RUN   TestArchiveOnTheDefaultBranchDoesNotWarn/true\n"}
+{"Time":"2026-10-12T12:44:39.242223-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number (0.60s)\n"}
+{"Time":"2026-10-12T12:44:39.242249-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number","Elapsed":0.6}
+{"Time":"2026-10-12T12:44:39.242256-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number"}
+{"Time":"2026-10-12T12:44:39.242259-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number\n"}
+{"Time":"2026-10-12T12:44:39.296049-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/leading_zero","Output":"--- PASS: TestArchivePullRequestRefusals/leading_zero (0.31s)\n"}
+{"Time":"2026-10-12T12:44:39.296064-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/leading_zero","Elapsed":0.31}
+{"Time":"2026-10-12T12:44:39.296068-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/too_long"}
+{"Time":"2026-10-12T12:44:39.29607-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/too_long","Output":"=== RUN   TestArchivePullRequestRefusals/too_long\n"}
+{"Time":"2026-10-12T12:44:39.392343-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/adding_subject","Output":"--- PASS: TestReviewContextRecoversASquashDroppedRevision/adding_subject (1.09s)\n"}
+{"Time":"2026-10-12T12:44:39.392359-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/adding_subject","Elapsed":1.09}
+{"Time":"2026-10-12T12:44:39.392362-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/unreachable_forge"}
+{"Time":"2026-10-12T12:44:39.392363-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/unreachable_forge","Output":"=== RUN   TestReviewContextRecoversASquashDroppedRevision/unreachable_forge\n"}
+{"Time":"2026-10-12T12:44:39.400042-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/unreachable_forge","Output":"--- PASS: TestRunCausesRecoverASquashDroppedRevision/unreachable_forge (0.64s)\n"}
+{"Time":"2026-10-12T12:44:39.400064-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision/unreachable_forge","Elapsed":0.64}
+{"Time":"2026-10-12T12:44:39.400069-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision","Output":"--- PASS: TestRunCausesRecoverASquashDroppedRevision (2.21s)\n"}
+{"Time":"2026-10-12T12:44:39.400072-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesRecoverASquashDroppedRevision","Elapsed":2.21}
+{"Time":"2026-10-12T12:44:39.400077-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption"}
+{"Time":"2026-10-12T12:44:39.400079-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption","Output":"=== CONT  TestArchiveHelpNamesThePullRequestOption\n"}
+{"Time":"2026-10-12T12:44:39.400092-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption","Output":"--- PASS: TestArchiveHelpNamesThePullRequestOption (0.00s)\n"}
+{"Time":"2026-10-12T12:44:39.400096-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveHelpNamesThePullRequestOption","Elapsed":0}
+{"Time":"2026-10-12T12:44:39.400098-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord"}
+{"Time":"2026-10-12T12:44:39.4001-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord","Output":"=== CONT  TestArchiveRecordsAPullRequestInTheBranchRecord\n"}
+{"Time":"2026-10-12T12:44:39.416062-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns","Output":"--- PASS: TestArchiveWithAnUnknownDefaultBranchWarns (0.49s)\n"}
+{"Time":"2026-10-12T12:44:39.416272-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveWithAnUnknownDefaultBranchWarns","Elapsed":0.49}
+{"Time":"2026-10-12T12:44:39.416281-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef"}
+{"Time":"2026-10-12T12:44:39.416283-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef","Output":"=== CONT  TestArchiveWithAPullRequestNamesItsHeadRef\n"}
+{"Time":"2026-10-12T12:44:39.627517-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/too_long","Output":"--- PASS: TestArchivePullRequestRefusals/too_long (0.33s)\n"}
+{"Time":"2026-10-12T12:44:39.62754-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/too_long","Elapsed":0.33}
+{"Time":"2026-10-12T12:44:39.627545-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/plan"}
+{"Time":"2026-10-12T12:44:39.627548-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/plan","Output":"=== RUN   TestArchivePullRequestRefusals/plan\n"}
+{"Time":"2026-10-12T12:44:39.651448-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord","Output":"--- PASS: TestArchivePullRequestRefusesAnExternalDefaultBranchRecord (0.82s)\n"}
+{"Time":"2026-10-12T12:44:39.723255-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusesAnExternalDefaultBranchRecord","Elapsed":0.82}
+{"Time":"2026-10-12T12:44:39.723275-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/true","Output":"--- PASS: TestArchiveOnTheDefaultBranchDoesNotWarn/true (0.58s)\n"}
+{"Time":"2026-10-12T12:44:39.723279-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/true","Elapsed":0.58}
+{"Time":"2026-10-12T12:44:39.72328-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/false"}
+{"Time":"2026-10-12T12:44:39.723281-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/false","Output":"=== RUN   TestArchiveOnTheDefaultBranchDoesNotWarn/false\n"}
+{"Time":"2026-10-12T12:44:39.760122-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision (0.74s)\n"}
+{"Time":"2026-10-12T12:44:39.760142-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision","Elapsed":0.74}
+{"Time":"2026-10-12T12:44:39.760219-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome"}
+{"Time":"2026-10-12T12:44:39.760227-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome\n"}
+{"Time":"2026-10-12T12:44:39.767113-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch","Output":"--- PASS: TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch (0.67s)\n"}
+{"Time":"2026-10-12T12:44:39.829944-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch","Elapsed":0.67}
+{"Time":"2026-10-12T12:44:39.830011-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number (0.59s)\n"}
+{"Time":"2026-10-12T12:44:39.830017-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number","Elapsed":0.59}
+{"Time":"2026-10-12T12:44:39.830021-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field"}
+{"Time":"2026-10-12T12:44:39.830023-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field\n"}
+{"Time":"2026-10-12T12:44:39.889305-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef","Output":"--- PASS: TestArchiveWithAPullRequestNamesItsHeadRef (0.47s)\n"}
+{"Time":"2026-10-12T12:44:39.90328-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveWithAPullRequestNamesItsHeadRef","Elapsed":0.47}
+{"Time":"2026-10-12T12:44:39.903301-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/plan","Output":"--- PASS: TestArchivePullRequestRefusals/plan (0.28s)\n"}
+{"Time":"2026-10-12T12:44:39.903308-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/plan","Elapsed":0.28}
+{"Time":"2026-10-12T12:44:39.903466-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/different_stored_number"}
+{"Time":"2026-10-12T12:44:39.903474-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/different_stored_number","Output":"=== RUN   TestArchivePullRequestRefusals/different_stored_number\n"}
+{"Time":"2026-10-12T12:44:39.963491-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord","Output":"--- PASS: TestArchiveRecordsAPullRequestInTheBranchRecord (0.56s)\n"}
+{"Time":"2026-10-12T12:44:40.161258-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveRecordsAPullRequestInTheBranchRecord","Elapsed":0.56}
+{"Time":"2026-10-12T12:44:40.161272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/false","Output":"--- PASS: TestArchiveOnTheDefaultBranchDoesNotWarn/false (0.44s)\n"}
+{"Time":"2026-10-12T12:44:40.161275-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn/false","Elapsed":0.44}
+{"Time":"2026-10-12T12:44:40.161288-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn","Output":"--- PASS: TestArchiveOnTheDefaultBranchDoesNotWarn (1.02s)\n"}
+{"Time":"2026-10-12T12:44:40.191194-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveOnTheDefaultBranchDoesNotWarn","Elapsed":1.02}
+{"Time":"2026-10-12T12:44:40.191224-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/unreachable_forge","Output":"--- PASS: TestReviewContextRecoversASquashDroppedRevision/unreachable_forge (0.80s)\n"}
+{"Time":"2026-10-12T12:44:40.191231-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision/unreachable_forge","Elapsed":0.8}
+{"Time":"2026-10-12T12:44:40.191235-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision","Output":"--- PASS: TestReviewContextRecoversASquashDroppedRevision (3.00s)\n"}
+{"Time":"2026-10-12T12:44:40.219984-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewContextRecoversASquashDroppedRevision","Elapsed":3}
+{"Time":"2026-10-12T12:44:40.220011-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"    deliver_record_pull_request_test.go:284: isolated forge scenario: === RUN   TestCommandDeliveryEngineRecordsThePullRequest\n"}
+{"Time":"2026-10-12T12:44:40.220017-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        === PAUSE TestCommandDeliveryEngineRecordsThePullRequest\n"}
+{"Time":"2026-10-12T12:44:40.22002-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        === CONT  TestCommandDeliveryEngineRecordsThePullRequest\n"}
+{"Time":"2026-10-12T12:44:40.220022-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        roundfix: Delivery Queue item 0001-widget-flow: recorded pull request 7 in its Archive Record\n"}
+{"Time":"2026-10-12T12:44:40.220024-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        roundfix: checks: Delivery Queue item 0001-widget-flow: merge state CLEAN\n"}
+{"Time":"2026-10-12T12:44:40.220027-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        --- PASS: TestCommandDeliveryEngineRecordsThePullRequest (2.75s)\n"}
+{"Time":"2026-10-12T12:44:40.220029-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        PASS\n"}
+{"Time":"2026-10-12T12:44:40.220039-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"        suiteguard: guard cost: measured 2598 paths; fingerprint took 155.77025ms before and 92.811791ms after\n"}
+{"Time":"2026-10-12T12:44:40.220575-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Output":"--- PASS: TestCommandDeliveryEngineRecordsThePullRequest (3.03s)\n"}
+{"Time":"2026-10-12T12:44:40.223721-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCommandDeliveryEngineRecordsThePullRequest","Elapsed":3.03}
+{"Time":"2026-10-12T12:44:40.223728-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field (0.39s)\n"}
+{"Time":"2026-10-12T12:44:40.223731-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field","Elapsed":0.39}
+{"Time":"2026-10-12T12:44:40.223984-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode"}
+{"Time":"2026-10-12T12:44:40.223995-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode","Output":"=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode\n"}
+{"Time":"2026-10-12T12:44:40.23093-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome (0.47s)\n"}
+{"Time":"2026-10-12T12:44:40.23094-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome","Elapsed":0.47}
+{"Time":"2026-10-12T12:44:40.230947-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number"}
+{"Time":"2026-10-12T12:44:40.230948-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number\n"}
+{"Time":"2026-10-12T12:44:40.244028-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/different_stored_number","Output":"--- PASS: TestArchivePullRequestRefusals/different_stored_number (0.34s)\n"}
+{"Time":"2026-10-12T12:44:40.244073-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/different_stored_number","Elapsed":0.34}
+{"Time":"2026-10-12T12:44:40.244226-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/unknown_default_branch"}
+{"Time":"2026-10-12T12:44:40.244229-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/unknown_default_branch","Output":"=== RUN   TestArchivePullRequestRefusals/unknown_default_branch\n"}
+{"Time":"2026-10-12T12:44:40.522349-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/unknown_default_branch","Output":"--- PASS: TestArchivePullRequestRefusals/unknown_default_branch (0.28s)\n"}
+{"Time":"2026-10-12T12:44:40.522363-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/unknown_default_branch","Elapsed":0.28}
+{"Time":"2026-10-12T12:44:40.522369-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/active_unknown_default_branch"}
+{"Time":"2026-10-12T12:44:40.52237-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/active_unknown_default_branch","Output":"=== RUN   TestArchivePullRequestRefusals/active_unknown_default_branch\n"}
+{"Time":"2026-10-12T12:44:40.553832-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode (0.33s)\n"}
+{"Time":"2026-10-12T12:44:40.553868-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode","Elapsed":0.33}
+{"Time":"2026-10-12T12:44:40.553876-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord","Output":"--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord (3.13s)\n"}
+{"Time":"2026-10-12T12:44:40.586228-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesAnUncommittedInexactRecord","Elapsed":3.13}
+{"Time":"2026-10-12T12:44:40.586241-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number (0.36s)\n"}
+{"Time":"2026-10-12T12:44:40.586245-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number","Elapsed":0.36}
+{"Time":"2026-10-12T12:44:40.586256-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode"}
+{"Time":"2026-10-12T12:44:40.586258-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode\n"}
+{"Time":"2026-10-12T12:44:40.680286-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/active_unknown_default_branch","Output":"--- PASS: TestArchivePullRequestRefusals/active_unknown_default_branch (0.16s)\n"}
+{"Time":"2026-10-12T12:44:40.680299-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/active_unknown_default_branch","Elapsed":0.16}
+{"Time":"2026-10-12T12:44:40.680302-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/promote"}
+{"Time":"2026-10-12T12:44:40.680304-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/promote","Output":"=== RUN   TestArchivePullRequestRefusals/promote\n"}
+{"Time":"2026-10-12T12:44:40.894633-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode (0.31s)\n"}
+{"Time":"2026-10-12T12:44:40.894657-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode","Elapsed":0.31}
+{"Time":"2026-10-12T12:44:40.89467-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild"}
+{"Time":"2026-10-12T12:44:40.894671-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild\n"}
+{"Time":"2026-10-12T12:44:40.924327-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/promote","Output":"--- PASS: TestArchivePullRequestRefusals/promote (0.24s)\n"}
+{"Time":"2026-10-12T12:44:40.92434-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/promote","Elapsed":0.24}
+{"Time":"2026-10-12T12:44:40.92437-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/qa_override"}
+{"Time":"2026-10-12T12:44:40.924374-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/qa_override","Output":"=== RUN   TestArchivePullRequestRefusals/qa_override\n"}
+{"Time":"2026-10-12T12:44:41.158243-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/qa_override","Output":"--- PASS: TestArchivePullRequestRefusals/qa_override (0.23s)\n"}
+{"Time":"2026-10-12T12:44:41.158257-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/qa_override","Elapsed":0.23}
+{"Time":"2026-10-12T12:44:41.158278-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/approval"}
+{"Time":"2026-10-12T12:44:41.158282-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/approval","Output":"=== RUN   TestArchivePullRequestRefusals/approval\n"}
+{"Time":"2026-10-12T12:44:41.181486-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild (0.29s)\n"}
+{"Time":"2026-10-12T12:44:41.1815-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild","Elapsed":0.29}
+{"Time":"2026-10-12T12:44:41.181504-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge"}
+{"Time":"2026-10-12T12:44:41.181515-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge\n"}
+{"Time":"2026-10-12T12:44:41.380216-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/approval","Output":"--- PASS: TestArchivePullRequestRefusals/approval (0.22s)\n"}
+{"Time":"2026-10-12T12:44:41.38023-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/approval","Elapsed":0.22}
+{"Time":"2026-10-12T12:44:41.380241-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/reason"}
+{"Time":"2026-10-12T12:44:41.380243-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/reason","Output":"=== RUN   TestArchivePullRequestRefusals/reason\n"}
+{"Time":"2026-10-12T12:44:41.485855-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge (0.30s)\n"}
+{"Time":"2026-10-12T12:44:41.48587-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge","Elapsed":0.3}
+{"Time":"2026-10-12T12:44:41.485874-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field"}
+{"Time":"2026-10-12T12:44:41.485875-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field\n"}
+{"Time":"2026-10-12T12:44:41.601272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/reason","Output":"--- PASS: TestArchivePullRequestRefusals/reason (0.22s)\n"}
+{"Time":"2026-10-12T12:44:41.601286-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals/reason","Elapsed":0.22}
+{"Time":"2026-10-12T12:44:41.60129-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals","Output":"--- PASS: TestArchivePullRequestRefusals (3.94s)\n"}
+{"Time":"2026-10-12T12:44:41.786557-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchivePullRequestRefusals","Elapsed":3.94}
+{"Time":"2026-10-12T12:44:41.78657-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field (0.30s)\n"}
+{"Time":"2026-10-12T12:44:41.78658-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field","Elapsed":0.3}
+{"Time":"2026-10-12T12:44:41.786594-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose"}
+{"Time":"2026-10-12T12:44:41.786596-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose\n"}
+{"Time":"2026-10-12T12:44:42.076932-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose (0.29s)\n"}
+{"Time":"2026-10-12T12:44:42.076946-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose","Elapsed":0.29}
+{"Time":"2026-10-12T12:44:42.076953-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title"}
+{"Time":"2026-10-12T12:44:42.076954-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title","Output":"=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title\n"}
+{"Time":"2026-10-12T12:44:42.367047-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title (0.29s)\n"}
+{"Time":"2026-10-12T12:44:42.367069-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title","Elapsed":0.29}
+{"Time":"2026-10-12T12:44:42.367072-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath","Output":"--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath (4.79s)\n"}
+{"Time":"2026-10-12T12:44:42.367074-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath","Elapsed":4.79}
+{"Time":"2026-10-12T12:44:42.367076-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"PASS\n"}
+{"Time":"2026-10-12T12:44:42.439236-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"suiteguard: guard cost: measured 2598 paths; fingerprint took 377.107625ms before and 72.1405ms after\n"}
+{"Time":"2026-10-12T12:44:42.440609-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"ok  \troundfix/internal/cli\t5.943s\n"}
+{"Time":"2026-10-12T12:44:42.440638-03:00","Action":"pass","Package":"roundfix/internal/cli","Elapsed":5.945}

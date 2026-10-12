@@ -1,0 +1,65 @@
+[
+  {
+    "mode": "record",
+    "command": [
+      "./bin/roundfix",
+      "runs",
+      "causes",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "source_revision": "6ce7a4af60dbe97ad36e1db19626a8f0f24f3020",
+    "source_missing_before": true,
+    "source_available": true,
+    "refs_identical": true,
+    "FETCH_HEAD_absent": true,
+    "fresh_process_confirmation": true,
+    "clone": "/private/tmp/roundfix-0256-recovery-qz7g0t_m/record-clone",
+    "remote": "/tmp/roundfix-0256-recovery-qz7g0t_m/record-forge.git",
+    "record_sha256": "fba027f8fc483e8a7d921556f3080a0da0209b4431251922e43b3816507c0177"
+  },
+  {
+    "mode": "subject",
+    "command": [
+      "./bin/roundfix",
+      "runs",
+      "causes",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "source_revision": "6ce7a4af60dbe97ad36e1db19626a8f0f24f3020",
+    "source_missing_before": true,
+    "source_available": true,
+    "refs_identical": true,
+    "FETCH_HEAD_absent": true,
+    "fresh_process_confirmation": true,
+    "clone": "/private/tmp/roundfix-0256-recovery-qz7g0t_m/subject-clone",
+    "remote": "/tmp/roundfix-0256-recovery-qz7g0t_m/subject-forge.git",
+    "record_sha256": "724cced8f4195212282d4b4cffd1259b03e050ba78a3185863749251d8a153d1"
+  },
+  {
+    "mode": "unreachable",
+    "command": [
+      "./bin/roundfix",
+      "runs",
+      "causes",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "source_revision": "6ce7a4af60dbe97ad36e1db19626a8f0f24f3020",
+    "source_missing_before": true,
+    "source_available": false,
+    "refs_identical": true,
+    "FETCH_HEAD_absent": true,
+    "fresh_process_confirmation": true,
+    "clone": "/private/tmp/roundfix-0256-recovery-qz7g0t_m/unreachable-clone",
+    "remote": "/tmp/roundfix-0256-recovery-qz7g0t_m/unreachable-forge.git",
+    "record_sha256": "fba027f8fc483e8a7d921556f3080a0da0209b4431251922e43b3816507c0177"
+  }
+]

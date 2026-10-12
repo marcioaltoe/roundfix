@@ -1,0 +1,101 @@
+[
+  {
+    "transcript": 1,
+    "repository": "/tmp/roundfix-0256-flows-ootigsxg/repo1",
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "0300-qa-archive"
+    ],
+    "stdout": "archived 0300-qa-archive -> docs/history/specs/0300-qa-archive.md; removed 5 file(s) (783 bytes) kept in Git at 3d5f486d6776\n",
+    "stderr": "roundfix: warning: source_revision 3d5f486d6776 is not an ancestor of origin/main; a squash merge keeps it only in the pull request's head ref, so record the pull request with --pull-request once it opens\n",
+    "exit": 0,
+    "expected_stdout": "archived 0300-qa-archive -> docs/history/specs/0300-qa-archive.md; removed <count> file(s) (<bytes> bytes) kept in Git at <revision>\n",
+    "expected_stderr": "roundfix: warning: source_revision <revision> is not an ancestor of origin/main; a squash merge keeps it only in the pull request's head ref, so record the pull request with --pull-request once it opens\n",
+    "expected_exit": 0,
+    "matches": true
+  },
+  {
+    "transcript": 3,
+    "repository": "/tmp/roundfix-0256-flows-ootigsxg/repo1",
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "0300-qa-archive",
+      "--pull-request",
+      "7"
+    ],
+    "stdout": "recorded pull request 7 in docs/history/specs/0300-qa-archive.md\n",
+    "stderr": "",
+    "exit": 0,
+    "expected_stdout": "recorded pull request 7 in docs/history/specs/0300-qa-archive.md\n",
+    "expected_stderr": "",
+    "expected_exit": 0,
+    "matches": true
+  },
+  {
+    "probe": "record-only replay",
+    "stdout": "docs/history/specs/0300-qa-archive.md already records pull request 7\n",
+    "exit": 0,
+    "byte_identical": true
+  },
+  {
+    "transcript": 4,
+    "repository": "/tmp/roundfix-0256-flows-ootigsxg/repo1",
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "0300-qa-archive",
+      "--pull-request",
+      "7"
+    ],
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  Archive Record docs/history/specs/0300-qa-archive.md is already on origin/main; an archived record stays byte-identical\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n",
+    "exit": 2,
+    "expected_stdout": "",
+    "expected_stderr": "Preflight failed\n\nReason:\n  Archive Record docs/history/specs/0300-qa-archive.md is already on origin/main; an archived record stays byte-identical\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n",
+    "expected_exit": 2,
+    "matches": true
+  },
+  {
+    "transcript": 2,
+    "repository": "/tmp/roundfix-0256-flows-ootigsxg/repo2",
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "0300-qa-archive",
+      "--pull-request",
+      "7"
+    ],
+    "stdout": "archived 0300-qa-archive -> docs/history/specs/0300-qa-archive.md; removed 5 file(s) (783 bytes) kept in Git at 3d5f486d6776; pull request 7\n",
+    "stderr": "roundfix: warning: source_revision 3d5f486d6776 is not an ancestor of origin/main; readers recover it from refs/pull/7/head\n",
+    "exit": 0,
+    "expected_stdout": "archived 0300-qa-archive -> docs/history/specs/0300-qa-archive.md; removed <count> file(s) (<bytes> bytes) kept in Git at <revision>; pull request 7\n",
+    "expected_stderr": "roundfix: warning: source_revision <revision> is not an ancestor of origin/main; readers recover it from refs/pull/7/head\n",
+    "expected_exit": 0,
+    "matches": true
+  },
+  {
+    "transcript": 5,
+    "repository": "/tmp/roundfix-0256-flows-ootigsxg/repo2",
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "--help"
+    ],
+    "stdout": "Usage:\n  roundfix archive <slug>\n  roundfix archive <slug> --qa-override --approval <source> --reason <text>\n  roundfix archive <slug> --plan\n  roundfix archive <slug> --pull-request <number>\n\nArchives a Spec after verifying either every Task is completed and the newest\nQA Report has verdict: pass (or a partial verdict covered only by declared\nUnreachable Acceptance), or a recorded supersession exists for a Spec without\na Task Graph. Writes one Archive Record and removes the committed Spec folder.\nThe removed bytes stay in Git at the record's source_revision. The destination\nis docs/history/specs/<slug>.md for the built-in root, otherwise\n<spec-root>/_archived/<slug>.md.\narchive creates no Run and never pushes.\n\nThe QA override requires an approval source and reason, still requires every\nnon-QA Task completed, preserves the QA Task and Reports unchanged, and records\nthe observed QA outcome and archived HEAD. It is refused when QA already\nqualifies for normal archive.\n\nOptions:\n  --qa-override  Archive despite failed, missing, or unreadable QA evidence\n  --approval     Source of the maintainer authority for the override\n  --reason       Reason the unmet QA prerequisite is being waived\n  --pull-request Store the delivery pull request number in the Archive Record\n\nExit codes:\n  0  archived\n  2  Preflight Validation failed\n",
+    "stderr": "",
+    "exit": 0,
+    "expected_stdout": "Usage:\n  roundfix archive <slug>\n  roundfix archive <slug> --qa-override --approval <source> --reason <text>\n  roundfix archive <slug> --plan\n  roundfix archive <slug> --pull-request <number>\n...\n  --pull-request Store the delivery pull request number in the Archive Record\n...\n",
+    "expected_stderr": "",
+    "expected_exit": 0,
+    "matches": true
+  },
+  {
+    "probe": "archive on default branch",
+    "stdout": "archived 0300-qa-archive -> docs/history/specs/0300-qa-archive.md; removed 5 file(s) (783 bytes) kept in Git at a5ba6f90f0cd\n",
+    "stderr": "",
+    "exit": 0,
+    "warning_absent": true
+  }
+]

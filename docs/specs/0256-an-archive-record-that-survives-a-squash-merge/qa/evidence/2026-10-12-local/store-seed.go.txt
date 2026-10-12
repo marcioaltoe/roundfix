@@ -1,0 +1,3 @@
+package main
+import("context";"os";"fmt";"roundfix/internal/store")
+func main(){ctx:=context.Background();s,e:=store.Open(ctx,os.Args[1]);if e!=nil{panic(e)};r,e:=s.CreateRun(ctx,store.CreateRunRequest{Kind:store.KindImplement,GitRoot:os.Args[2],LocalBranch:"main",SpecSlug:os.Args[3],ArtifactDir:os.Args[1]+"/artifacts"});if e!=nil{panic(e)};_,e=s.CompleteRun(ctx,r.ID,store.StateClean);if e!=nil{panic(e)};if e=s.Close();e!=nil{panic(e)};fmt.Println(r.ID)}

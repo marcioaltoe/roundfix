@@ -1,0 +1,65 @@
+[
+  {
+    "mode": "record",
+    "command": [
+      "./bin/roundfix",
+      "runs",
+      "causes",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "source_revision": "3d5f486d6776f17c36800846ef74e2d62f60844c",
+    "source_missing_before": true,
+    "source_available": true,
+    "refs_identical": true,
+    "FETCH_HEAD_absent": true,
+    "fresh_process_confirmation": true,
+    "clone": "/private/tmp/roundfix-0256-recovery-s5132w_g/record-clone",
+    "remote": "/tmp/roundfix-0256-recovery-s5132w_g/record-forge.git",
+    "record_sha256": "bd1b1c25dae37e6ddd92df8fd4943145ff30e85684adbc9cf17010c1db36b397"
+  },
+  {
+    "mode": "subject",
+    "command": [
+      "./bin/roundfix",
+      "runs",
+      "causes",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "source_revision": "3d5f486d6776f17c36800846ef74e2d62f60844c",
+    "source_missing_before": true,
+    "source_available": true,
+    "refs_identical": true,
+    "FETCH_HEAD_absent": true,
+    "fresh_process_confirmation": true,
+    "clone": "/private/tmp/roundfix-0256-recovery-s5132w_g/subject-clone",
+    "remote": "/tmp/roundfix-0256-recovery-s5132w_g/subject-forge.git",
+    "record_sha256": "880bcf41ee657584f7f776cb17f88e629da27b6bc2928029b7f7565a155299f4"
+  },
+  {
+    "mode": "unreachable",
+    "command": [
+      "./bin/roundfix",
+      "runs",
+      "causes",
+      "--format",
+      "json"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "source_revision": "3d5f486d6776f17c36800846ef74e2d62f60844c",
+    "source_missing_before": true,
+    "source_available": false,
+    "refs_identical": true,
+    "FETCH_HEAD_absent": true,
+    "fresh_process_confirmation": true,
+    "clone": "/private/tmp/roundfix-0256-recovery-s5132w_g/unreachable-clone",
+    "remote": "/tmp/roundfix-0256-recovery-s5132w_g/unreachable-forge.git",
+    "record_sha256": "bd1b1c25dae37e6ddd92df8fd4943145ff30e85684adbc9cf17010c1db36b397"
+  }
+]

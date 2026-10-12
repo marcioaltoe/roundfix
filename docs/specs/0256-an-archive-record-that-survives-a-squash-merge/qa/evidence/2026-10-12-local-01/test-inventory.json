@@ -1,0 +1,49 @@
+{
+  "internal/cli": [
+    "TestReviewIgnoresAProseReadmeInTheArchiveRoot",
+    "TestReviewStillRefusesAMalformedArchiveRecord",
+    "TestReviewContextRecoversASquashDroppedRevision",
+    "TestRunCausesRecoverASquashDroppedRevision",
+    "TestArchiveOnABranchWarnsAboutASquashDroppedRevision",
+    "TestArchiveWithAPullRequestNamesItsHeadRef",
+    "TestArchiveRecordsAPullRequestInTheBranchRecord",
+    "TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch",
+    "TestArchiveHelpNamesThePullRequestOption",
+    "TestArchiveOnTheDefaultBranchDoesNotWarn",
+    "TestArchivePullRequestRefusals",
+    "TestArchiveWithAnUnknownDefaultBranchWarns",
+    "TestArchivePullRequestRefusesAnExternalDefaultBranchRecord",
+    "TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord",
+    "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath",
+    "TestDeliveryWorkflowAdoptsAnUncommittedRecord",
+    "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord",
+    "TestDeliveryWorkflowSkipsALegacyArchiveFolder",
+    "TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening",
+    "TestCommandDeliveryEngineRecordsThePullRequest"
+  ],
+  "internal/spec": [
+    "TestOnlyANamedSchemaFileIsAnArchiveRecord",
+    "TestArchivedSpecSlugsIgnoreNonRecordMarkdown",
+    "TestSourceRevisionRecoveryFetchesThePullRequestHead",
+    "TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit",
+    "TestSourceRevisionRecoveryWritesNoRef",
+    "TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable",
+    "TestSourceRevisionRecoveryRefusesAMalformedNumber",
+    "TestPullRequestFromSubject",
+    "TestSourceRevisionRecoveryHonorsCancellation",
+    "TestSourceRevisionRecoveryCancelsTheFetchProcess",
+    "TestRecordArchivePullRequestChangesOnlyThatField"
+  ],
+  "internal/speccheck": [
+    "TestArchivedTaskContextRecoversASquashDroppedRevision"
+  ],
+  "internal/worktree": [
+    "TestLeftoversRecoverASquashDroppedRevision"
+  ],
+  "internal/delivery": [
+    "TestDeliveryRecordsThePullRequestBeforeChecks",
+    "TestDeliveryRetryAdoptsAPullRequestRecordCommit",
+    "TestDeliveryParksAnInexactPullRequestRecordCommit",
+    "TestDeliveryParksWhenThePullRequestCannotBeRecorded"
+  ]
+}

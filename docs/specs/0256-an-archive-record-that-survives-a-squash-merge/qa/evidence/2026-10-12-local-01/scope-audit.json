@@ -1,0 +1,421 @@
+{
+  "range": "9001173f391108413013cb5cd31b28bcf3d6a579..HEAD",
+  "task_audits": [
+    {
+      "task": "task_01",
+      "commit": "1218a741c78d6354d01f2ae93b7ac21786fa5d4b",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "1218a741c78d6354d01f2ae93b7ac21786fa5d4b"
+      ],
+      "changed": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/spec-delivery.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/review.md",
+        "docs/user-guide/commands/runs.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/review.md",
+        "skills/roundfix/references/runs.md",
+        "skills/roundfix/references/spec-delivery.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/domain-modeling/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/spec-delivery.md",
+        "CONTEXT.md",
+        "docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md",
+        "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+        "docs/references/2026-10-12-squash-merged-archive-source-revisions.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/review.md",
+        "docs/user-guide/commands/runs.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/review.md",
+        "skills/roundfix/references/runs.md",
+        "skills/roundfix/references/spec-delivery.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "recorded_paths": [],
+      "undeclared": [],
+      "governed": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/spec-delivery.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "unbounded": [],
+      "authorization_ancestor": true,
+      "authorization_unchanged_in_task": true
+    },
+    {
+      "task": "task_02",
+      "commit": "871b35b4a641f0972e6cb6be77c625fe93196eec",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "871b35b4a641f0972e6cb6be77c625fe93196eec"
+      ],
+      "changed": [
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_02.md",
+        "internal/cli/review.go",
+        "internal/cli/review_archive_root_markdown_test.go",
+        "internal/cli/runs_causes.go",
+        "internal/cli/source_revision_recovery_test.go",
+        "internal/gittest/pull_request.go",
+        "internal/runcause/report.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/archive_record_identity_test.go",
+        "internal/spec/archive_record_test.go",
+        "internal/spec/source_revision.go",
+        "internal/spec/source_revision_test.go",
+        "internal/speccheck/archived_context_recovery_test.go",
+        "internal/speccheck/citations.go",
+        "internal/worktree/archive_reader.go",
+        "internal/worktree/archive_source_recovery_test.go"
+      ],
+      "declared": [
+        "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+        "docs/references/2026-10-12-squash-merged-archive-source-revisions.md",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_02.md",
+        "internal/cli/archive_record_readers_test.go",
+        "internal/cli/review.go",
+        "internal/cli/review_archive_root_markdown_test.go",
+        "internal/cli/review_scope_test.go",
+        "internal/cli/runs_causes.go",
+        "internal/cli/source_revision_recovery_test.go",
+        "internal/gittest/pull_request.go",
+        "internal/runcause/report.go",
+        "internal/spec/archive_reader.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/archive_record_identity_test.go",
+        "internal/spec/archive_record_test.go",
+        "internal/spec/source_revision.go",
+        "internal/spec/source_revision_test.go",
+        "internal/speccheck/archived_context_recovery_test.go",
+        "internal/speccheck/citations.go",
+        "internal/worktree/archive_reader.go",
+        "internal/worktree/archive_record_test.go",
+        "internal/worktree/archive_source_recovery_test.go"
+      ],
+      "recorded_paths": [
+        "internal/gittest/pull_request.go",
+        "internal/spec/archive_record_test.go"
+      ],
+      "undeclared": [],
+      "governed": [],
+      "unbounded": [],
+      "authorization_ancestor": true,
+      "authorization_unchanged_in_task": true
+    },
+    {
+      "task": "task_03",
+      "commit": "458000801d0b87a0fef7f32aad0af0f6c0f53736",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "458000801d0b87a0fef7f32aad0af0f6c0f53736"
+      ],
+      "changed": [
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_03.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_pull_request_test.go",
+        "internal/cli/archive_record_test.go",
+        "internal/spec/archive_record_pull_request.go",
+        "internal/spec/archive_record_pull_request_test.go"
+      ],
+      "declared": [
+        "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_03.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_pull_request_test.go",
+        "internal/cli/archive_record_test.go",
+        "internal/preflight/default_branch.go",
+        "internal/spec/archive.go",
+        "internal/spec/archive_record_pull_request.go",
+        "internal/spec/archive_record_pull_request_test.go"
+      ],
+      "recorded_paths": [
+        "internal/cli/archive_record_test.go"
+      ],
+      "undeclared": [],
+      "governed": [],
+      "unbounded": [],
+      "authorization_ancestor": true,
+      "authorization_unchanged_in_task": true
+    },
+    {
+      "task": "task_04",
+      "commit": "57f1beea517fece9bc892ee4a703d1b58fb26b11",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "57f1beea517fece9bc892ee4a703d1b58fb26b11"
+      ],
+      "changed": [
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_04.md",
+        "internal/cli/deliver_record_pull_request_test.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/delivery/engine.go",
+        "internal/delivery/record_pull_request_test.go"
+      ],
+      "declared": [
+        "docs/adr/0223-a-delivery-keeps-its-work-across-archive-requeue-and-review.md",
+        "docs/adr/0237-a-delivery-retry-records-a-merge-made-outside-the-queue.md",
+        "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_04.md",
+        "internal/cli/deliver_archive_record_test.go",
+        "internal/cli/deliver_record_pull_request_test.go",
+        "internal/cli/deliver_test.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/delivery/engine.go",
+        "internal/delivery/engine_test.go",
+        "internal/delivery/record_pull_request_test.go"
+      ],
+      "recorded_paths": [],
+      "undeclared": [],
+      "governed": [],
+      "unbounded": [],
+      "authorization_ancestor": true,
+      "authorization_unchanged_in_task": true
+    },
+    {
+      "task": "task_06",
+      "commit": "2bda795b811fb1c0976f27add4a21e7a64d1b49c",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "2bda795b811fb1c0976f27add4a21e7a64d1b49c"
+      ],
+      "changed": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/spec-delivery.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_06.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/runs.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/runs.md",
+        "skills/roundfix/references/spec-delivery.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/spec-delivery.md",
+        "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0256-an-archive-record-that-survives-a-squash-merge/task_06.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/runs.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/runs.md",
+        "skills/roundfix/references/spec-delivery.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "recorded_paths": [
+        "docs/references/behavior-surfaces.json"
+      ],
+      "undeclared": [],
+      "governed": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/runs.md",
+        ".agents/skills/roundfix/references/spec-delivery.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "unbounded": [],
+      "authorization_ancestor": true,
+      "authorization_unchanged_in_task": true
+    }
+  ],
+  "forbidden_changed_paths": [],
+  "settlement_sections": [
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c",
+      "unchanged": true
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c",
+      "unchanged": true
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c",
+      "unchanged": true
+    }
+  ],
+  "settlement_equal": true,
+  "mirrors": [
+    {
+      "canonical": ".agents/skills/roundfix/SKILL.md",
+      "mirror": "skills/roundfix/SKILL.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/storage.md",
+      "mirror": "skills/roundfix/references/storage.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/spec-delivery.md",
+      "mirror": "skills/roundfix/references/spec-delivery.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/implement.md",
+      "mirror": "skills/roundfix/references/implement.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/archive.md",
+      "mirror": "skills/roundfix/references/archive.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/setup.md",
+      "mirror": "skills/roundfix/references/setup.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/profiles.md",
+      "mirror": "skills/roundfix/references/profiles.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/deliver.md",
+      "mirror": "skills/roundfix/references/deliver.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/reconcile.md",
+      "mirror": "skills/roundfix/references/reconcile.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/runs.md",
+      "mirror": "skills/roundfix/references/runs.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/review-runs.md",
+      "mirror": "skills/roundfix/references/review-runs.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/release.md",
+      "mirror": "skills/roundfix/references/release.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/baseline.md",
+      "mirror": "skills/roundfix/references/baseline.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/spec.md",
+      "mirror": "skills/roundfix/references/spec.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/runtime.md",
+      "mirror": "skills/roundfix/references/runtime.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/review.md",
+      "mirror": "skills/roundfix/references/review.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/events.md",
+      "mirror": "skills/roundfix/references/events.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/settle.md",
+      "mirror": "skills/roundfix/references/settle.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/stop.md",
+      "mirror": "skills/roundfix/references/stop.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/archive-spec/SKILL.md",
+      "mirror": "skills/archive-spec/SKILL.md",
+      "equal": true
+    }
+  ],
+  "prior_avoid_lines_missing": []
+}

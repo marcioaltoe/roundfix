@@ -1,0 +1,22 @@
+[
+  {
+    "term": "Archive Record",
+    "phrase": "The small `<slug>.md` record an archive leaves under the resolved archive root: a file named `NNNN-<slug>.md` whose front matter declares `roundfix/archive-record/v1`; any other Markdown file in that root is not a record. It carries the disposition, QA Report and verdict, promoted references, `source_revision` and, once the delivery pull request is open, `pull_request`; the removed Spec folder stays recoverable in Git at that revision, after a squash merge through Source Revision Recovery.",
+    "pass": true
+  },
+  {
+    "term": "Archive Command",
+    "phrase": "It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added (ADR-0261).",
+    "pass": true
+  },
+  {
+    "term": "Source Revision Recovery",
+    "phrase": "A reader's fetch of `refs/pull/<N>/head` when an Archive Record's `source_revision` is missing locally, with the number taken from the record's `pull_request` or from the trailing `(#N)` of the commit that added the record. It writes no ref, never prompts, and leaves the reader's unavailable outcome when it fails (ADR-0261).",
+    "pass": true
+  },
+  {
+    "term": "Pull Request Record Commit",
+    "phrase": "The Delivery Queue's commit, made after it opens a Spec's pull request, that stores the number in the Archive Record its archive commit added and changes nothing else; the queue accepts it by proof instead of a second repository gate (ADR-0261).",
+    "pass": true
+  }
+]

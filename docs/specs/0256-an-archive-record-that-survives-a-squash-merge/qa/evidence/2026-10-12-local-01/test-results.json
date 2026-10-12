@@ -1,0 +1,1453 @@
+[
+  {
+    "package": "internal/spec",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^(TestArchivedSpecSlugsIgnoreNonRecordMarkdown|TestOnlyANamedSchemaFileIsAnArchiveRecord|TestPullRequestFromSubject|TestRecordArchivePullRequestChangesOnlyThatField|TestSourceRevisionRecoveryCancelsTheFetchProcess|TestSourceRevisionRecoveryFetchesThePullRequestHead|TestSourceRevisionRecoveryHonorsCancellation|TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable|TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit|TestSourceRevisionRecoveryRefusesAMalformedNumber|TestSourceRevisionRecoveryWritesNoRef)$",
+      "./internal/spec"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestArchivedSpecSlugsIgnoreNonRecordMarkdown",
+      "TestOnlyANamedSchemaFileIsAnArchiveRecord",
+      "TestPullRequestFromSubject",
+      "TestRecordArchivePullRequestChangesOnlyThatField",
+      "TestSourceRevisionRecoveryCancelsTheFetchProcess",
+      "TestSourceRevisionRecoveryFetchesThePullRequestHead",
+      "TestSourceRevisionRecoveryHonorsCancellation",
+      "TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable",
+      "TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit",
+      "TestSourceRevisionRecoveryRefusesAMalformedNumber",
+      "TestSourceRevisionRecoveryWritesNoRef"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 11,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:24.594418-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-example.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595359-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-malformed.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595363-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_delivery_(#7)",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595476-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_delivery_(#9999999999)",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595488-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_(#0)",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595497-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_(#07)",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595505-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_(#10000000000)",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.595957-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_(#7)_more",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.596072-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-unclosed.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.596103-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject/feat:_#7",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.596109-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestPullRequestFromSubject",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597125-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-quoted.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597187-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-key.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597484-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-indented.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597502-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/README.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597511-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/025-example.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597519-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597529-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-dir/file.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597539-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-dir\\file.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597549-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-prose.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597558-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-body.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597569-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-other.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.597577-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord/0256-nested.md",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.600873-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestOnlyANamedSchemaFileIsAnArchiveRecord",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.601203-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestArchivedSpecSlugsIgnoreNonRecordMarkdown",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:24.601387-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/pass/short",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:24.604596-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/pass/long",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.60785-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/partial/short",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.611014-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/partial/long",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.615461-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/qa-override/short",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.62097-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/qa-override/long",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:24.626546-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/superseded/short",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:24.630837-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/superseded/long",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.633373-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/failed-qa/short",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.641888-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/failed-qa/long",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:24.643733-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/no-qa/short",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.646082-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/no-qa/long",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.647472-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/malformed",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.648115-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField/missing",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:24.901302-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestRecordArchivePullRequestChangesOnlyThatField",
+        "Elapsed": 0.05
+      },
+      {
+        "Time": "2026-10-12T13:16:24.920927-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryHonorsCancellation",
+        "Elapsed": 0.31
+      },
+      {
+        "Time": "2026-10-12T13:16:24.920961-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/0",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:24.938118-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/07",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:24.957471-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/-7",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:24.973781-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/7/head",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:24.974672-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable/unreachable_forge",
+        "Elapsed": 0.38
+      },
+      {
+        "Time": "2026-10-12T13:16:24.99375-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryFetchesThePullRequestHead",
+        "Elapsed": 0.4
+      },
+      {
+        "Time": "2026-10-12T13:16:24.993773-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/7:refs/heads/attack",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:25.006506-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/10000000000",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:25.021934-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber/7_",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:25.035389-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryWritesNoRef",
+        "Elapsed": 0.44
+      },
+      {
+        "Time": "2026-10-12T13:16:25.039125-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit",
+        "Elapsed": 0.44
+      },
+      {
+        "Time": "2026-10-12T13:16:25.269448-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryRefusesAMalformedNumber",
+        "Elapsed": 0.44
+      },
+      {
+        "Time": "2026-10-12T13:16:25.269471-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable/wrong_pull_request_head",
+        "Elapsed": 0.29
+      },
+      {
+        "Time": "2026-10-12T13:16:27.276813-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable",
+        "Elapsed": 0.68
+      },
+      {
+        "Time": "2026-10-12T13:16:27.276874-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Test": "TestSourceRevisionRecoveryCancelsTheFetchProcess",
+        "Elapsed": 2.68
+      },
+      {
+        "Time": "2026-10-12T13:16:27.345179-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/spec",
+        "Elapsed": 3.572
+      }
+    ]
+  },
+  {
+    "package": "internal/cli",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^(TestArchiveCommandLeavesTheArchiveRecord|TestArchiveHelpNamesThePullRequestOption|TestArchiveOnABranchWarnsAboutASquashDroppedRevision|TestArchiveOnTheDefaultBranchDoesNotWarn|TestArchivePullRequestRefusals|TestArchivePullRequestRefusesAnExternalDefaultBranchRecord|TestArchiveRecordsAPullRequestInTheBranchRecord|TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch|TestArchiveWithAPullRequestNamesItsHeadRef|TestArchiveWithAnUnknownDefaultBranchWarns|TestCommandDeliveryEngineRecordsThePullRequest|TestDeliveryAcceptsAnExactRetirement|TestDeliveryArchiveStageCommitsTheArchiveRecord|TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening|TestDeliveryWorkflowAdoptsAnUncommittedRecord|TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord|TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath|TestDeliveryWorkflowRefusesAnUncommittedInexactRecord|TestDeliveryWorkflowSkipsALegacyArchiveFolder|TestReviewContextRecoversASquashDroppedRevision|TestReviewIgnoresAProseReadmeInTheArchiveRoot|TestReviewStillRefusesAMalformedArchiveRecord|TestRunCausesRecoverASquashDroppedRevision|TestRunCausesReportAnArchiveRecordWithoutItsRevision)$",
+      "./internal/cli"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestArchiveCommandLeavesTheArchiveRecord",
+      "TestArchiveHelpNamesThePullRequestOption",
+      "TestArchiveOnABranchWarnsAboutASquashDroppedRevision",
+      "TestArchiveOnTheDefaultBranchDoesNotWarn",
+      "TestArchivePullRequestRefusals",
+      "TestArchivePullRequestRefusesAnExternalDefaultBranchRecord",
+      "TestArchiveRecordsAPullRequestInTheBranchRecord",
+      "TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch",
+      "TestArchiveWithAPullRequestNamesItsHeadRef",
+      "TestArchiveWithAnUnknownDefaultBranchWarns",
+      "TestCommandDeliveryEngineRecordsThePullRequest",
+      "TestDeliveryAcceptsAnExactRetirement",
+      "TestDeliveryArchiveStageCommitsTheArchiveRecord",
+      "TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening",
+      "TestDeliveryWorkflowAdoptsAnUncommittedRecord",
+      "TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord",
+      "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath",
+      "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord",
+      "TestDeliveryWorkflowSkipsALegacyArchiveFolder",
+      "TestReviewContextRecoversASquashDroppedRevision",
+      "TestReviewIgnoresAProseReadmeInTheArchiveRoot",
+      "TestReviewStillRefusesAMalformedArchiveRecord",
+      "TestRunCausesRecoverASquashDroppedRevision",
+      "TestRunCausesReportAnArchiveRecordWithoutItsRevision"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 24,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:31.824397-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowSkipsALegacyArchiveFolder",
+        "Elapsed": 0.25
+      },
+      {
+        "Time": "2026-10-12T13:16:31.904048-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/non-integer",
+        "Elapsed": 0.33
+      },
+      {
+        "Time": "2026-10-12T13:16:31.974412-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestReviewStillRefusesAMalformedArchiveRecord",
+        "Elapsed": 0.4
+      },
+      {
+        "Time": "2026-10-12T13:16:32.041666-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveOnABranchWarnsAboutASquashDroppedRevision",
+        "Elapsed": 0.47
+      },
+      {
+        "Time": "2026-10-12T13:16:32.315921-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path",
+        "Elapsed": 0.75
+      },
+      {
+        "Time": "2026-10-12T13:16:32.39176-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/zero",
+        "Elapsed": 0.48
+      },
+      {
+        "Time": "2026-10-12T13:16:32.429809-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path",
+        "Elapsed": 0.86
+      },
+      {
+        "Time": "2026-10-12T13:16:32.429829-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryArchiveStageCommitsTheArchiveRecord",
+        "Elapsed": 0.86
+      },
+      {
+        "Time": "2026-10-12T13:16:32.429848-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveHelpNamesThePullRequestOption",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:32.52883-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestRunCausesRecoverASquashDroppedRevision/record",
+        "Elapsed": 0.96
+      },
+      {
+        "Time": "2026-10-12T13:16:32.568677-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false",
+        "Elapsed": 1
+      },
+      {
+        "Time": "2026-10-12T13:16:32.753053-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/negative",
+        "Elapsed": 0.36
+      },
+      {
+        "Time": "2026-10-12T13:16:32.785365-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveOnTheDefaultBranchDoesNotWarn/true",
+        "Elapsed": 0.74
+      },
+      {
+        "Time": "2026-10-12T13:16:32.787531-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening",
+        "Elapsed": 1.22
+      },
+      {
+        "Time": "2026-10-12T13:16:32.839352-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestRunCausesReportAnArchiveRecordWithoutItsRevision",
+        "Elapsed": 0.41
+      },
+      {
+        "Time": "2026-10-12T13:16:32.85295-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch",
+        "Elapsed": 0.88
+      },
+      {
+        "Time": "2026-10-12T13:16:32.987262-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path",
+        "Elapsed": 0.67
+      },
+      {
+        "Time": "2026-10-12T13:16:33.185149-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/empty",
+        "Elapsed": 0.43
+      },
+      {
+        "Time": "2026-10-12T13:16:33.320233-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title",
+        "Elapsed": 0.89
+      },
+      {
+        "Time": "2026-10-12T13:16:33.329535-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord",
+        "Elapsed": 1.5
+      },
+      {
+        "Time": "2026-10-12T13:16:33.375933-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveCommandLeavesTheArchiveRecord/false",
+        "Elapsed": 0.54
+      },
+      {
+        "Time": "2026-10-12T13:16:33.523627-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestRunCausesRecoverASquashDroppedRevision/adding_subject",
+        "Elapsed": 0.99
+      },
+      {
+        "Time": "2026-10-12T13:16:33.524757-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveOnTheDefaultBranchDoesNotWarn/false",
+        "Elapsed": 0.74
+      },
+      {
+        "Time": "2026-10-12T13:16:33.524765-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveOnTheDefaultBranchDoesNotWarn",
+        "Elapsed": 1.48
+      },
+      {
+        "Time": "2026-10-12T13:16:33.574765-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/leading_zero",
+        "Elapsed": 0.39
+      },
+      {
+        "Time": "2026-10-12T13:16:33.589704-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryAcceptsAnExactRetirement/record",
+        "Elapsed": 0.8
+      },
+      {
+        "Time": "2026-10-12T13:16:33.631813-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true",
+        "Elapsed": 1.06
+      },
+      {
+        "Time": "2026-10-12T13:16:33.631829-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowAdoptsAnUncommittedRecord",
+        "Elapsed": 2.06
+      },
+      {
+        "Time": "2026-10-12T13:16:33.790043-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number",
+        "Elapsed": 0.8
+      },
+      {
+        "Time": "2026-10-12T13:16:33.834686-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestReviewIgnoresAProseReadmeInTheArchiveRoot",
+        "Elapsed": 0.51
+      },
+      {
+        "Time": "2026-10-12T13:16:33.907578-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveCommandLeavesTheArchiveRecord/true",
+        "Elapsed": 0.53
+      },
+      {
+        "Time": "2026-10-12T13:16:33.907587-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveCommandLeavesTheArchiveRecord",
+        "Elapsed": 1.07
+      },
+      {
+        "Time": "2026-10-12T13:16:33.926555-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusesAnExternalDefaultBranchRecord",
+        "Elapsed": 1.07
+      },
+      {
+        "Time": "2026-10-12T13:16:33.96511-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/too_long",
+        "Elapsed": 0.39
+      },
+      {
+        "Time": "2026-10-12T13:16:34.187664-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision",
+        "Elapsed": 0.87
+      },
+      {
+        "Time": "2026-10-12T13:16:34.28005-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveWithAnUnknownDefaultBranchWarns",
+        "Elapsed": 0.63
+      },
+      {
+        "Time": "2026-10-12T13:16:34.28009-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestRunCausesRecoverASquashDroppedRevision/unreachable_forge",
+        "Elapsed": 0.76
+      },
+      {
+        "Time": "2026-10-12T13:16:34.330314-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestRunCausesRecoverASquashDroppedRevision",
+        "Elapsed": 2.71
+      },
+      {
+        "Time": "2026-10-12T13:16:34.330396-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/plan",
+        "Elapsed": 0.37
+      },
+      {
+        "Time": "2026-10-12T13:16:34.380617-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryAcceptsAnExactRetirement/promotion",
+        "Elapsed": 0.79
+      },
+      {
+        "Time": "2026-10-12T13:16:34.433573-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryAcceptsAnExactRetirement",
+        "Elapsed": 1.59
+      },
+      {
+        "Time": "2026-10-12T13:16:34.4336-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number",
+        "Elapsed": 0.64
+      },
+      {
+        "Time": "2026-10-12T13:16:34.500905-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveWithAPullRequestNamesItsHeadRef",
+        "Elapsed": 0.53
+      },
+      {
+        "Time": "2026-10-12T13:16:34.734875-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchiveRecordsAPullRequestInTheBranchRecord",
+        "Elapsed": 0.67
+      },
+      {
+        "Time": "2026-10-12T13:16:34.734925-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome",
+        "Elapsed": 0.55
+      },
+      {
+        "Time": "2026-10-12T13:16:34.752548-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/different_stored_number",
+        "Elapsed": 0.42
+      },
+      {
+        "Time": "2026-10-12T13:16:34.830213-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field",
+        "Elapsed": 0.4
+      },
+      {
+        "Time": "2026-10-12T13:16:34.872773-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestReviewContextRecoversASquashDroppedRevision/record",
+        "Elapsed": 0.95
+      },
+      {
+        "Time": "2026-10-12T13:16:35.139059-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/unknown_default_branch",
+        "Elapsed": 0.39
+      },
+      {
+        "Time": "2026-10-12T13:16:35.240684-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number",
+        "Elapsed": 0.51
+      },
+      {
+        "Time": "2026-10-12T13:16:35.281504-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode",
+        "Elapsed": 0.45
+      },
+      {
+        "Time": "2026-10-12T13:16:35.36211-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesAnUncommittedInexactRecord",
+        "Elapsed": 3.71
+      },
+      {
+        "Time": "2026-10-12T13:16:35.362146-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/active_unknown_default_branch",
+        "Elapsed": 0.22
+      },
+      {
+        "Time": "2026-10-12T13:16:35.59858-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestReviewContextRecoversASquashDroppedRevision/adding_subject",
+        "Elapsed": 0.73
+      },
+      {
+        "Time": "2026-10-12T13:16:35.664585-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode",
+        "Elapsed": 0.42
+      },
+      {
+        "Time": "2026-10-12T13:16:35.6885-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/promote",
+        "Elapsed": 0.33
+      },
+      {
+        "Time": "2026-10-12T13:16:35.985488-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/qa_override",
+        "Elapsed": 0.3
+      },
+      {
+        "Time": "2026-10-12T13:16:36.03052-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild",
+        "Elapsed": 0.37
+      },
+      {
+        "Time": "2026-10-12T13:16:36.177786-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestCommandDeliveryEngineRecordsThePullRequest",
+        "Elapsed": 2.53
+      },
+      {
+        "Time": "2026-10-12T13:16:36.17782-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestReviewContextRecoversASquashDroppedRevision/unreachable_forge",
+        "Elapsed": 0.58
+      },
+      {
+        "Time": "2026-10-12T13:16:36.470927-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestReviewContextRecoversASquashDroppedRevision",
+        "Elapsed": 2.25
+      },
+      {
+        "Time": "2026-10-12T13:16:36.470947-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/approval",
+        "Elapsed": 0.49
+      },
+      {
+        "Time": "2026-10-12T13:16:36.612478-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge",
+        "Elapsed": 0.58
+      },
+      {
+        "Time": "2026-10-12T13:16:36.766042-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals/reason",
+        "Elapsed": 0.29
+      },
+      {
+        "Time": "2026-10-12T13:16:37.081868-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestArchivePullRequestRefusals",
+        "Elapsed": 5.2
+      },
+      {
+        "Time": "2026-10-12T13:16:37.081887-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field",
+        "Elapsed": 0.47
+      },
+      {
+        "Time": "2026-10-12T13:16:37.531939-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose",
+        "Elapsed": 0.45
+      },
+      {
+        "Time": "2026-10-12T13:16:37.868564-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title",
+        "Elapsed": 0.34
+      },
+      {
+        "Time": "2026-10-12T13:16:37.868572-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Test": "TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath",
+        "Elapsed": 6.3
+      },
+      {
+        "Time": "2026-10-12T13:16:37.945892-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/cli",
+        "Elapsed": 6.876
+      }
+    ]
+  },
+  {
+    "package": "internal/worktree",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^(TestLeftoversKeepTheWorktreeWithoutTheSourceRevision|TestLeftoversRecoverASquashDroppedRevision)$",
+      "./internal/worktree"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestLeftoversKeepTheWorktreeWithoutTheSourceRevision",
+      "TestLeftoversRecoverASquashDroppedRevision"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 2,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:39.902486-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversKeepTheWorktreeWithoutTheSourceRevision/declared.txt",
+        "Elapsed": 0.66
+      },
+      {
+        "Time": "2026-10-12T13:16:40.09305-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversRecoverASquashDroppedRevision/record",
+        "Elapsed": 0.85
+      },
+      {
+        "Time": "2026-10-12T13:16:40.492992-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversKeepTheWorktreeWithoutTheSourceRevision/docs/specs/0175-cleanup-after-a-squash-merge/leftover.md",
+        "Elapsed": 0.59
+      },
+      {
+        "Time": "2026-10-12T13:16:40.81426-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversKeepTheWorktreeWithoutTheSourceRevision",
+        "Elapsed": 1.25
+      },
+      {
+        "Time": "2026-10-12T13:16:40.814284-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversRecoverASquashDroppedRevision/adding_subject",
+        "Elapsed": 0.72
+      },
+      {
+        "Time": "2026-10-12T13:16:41.555355-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversRecoverASquashDroppedRevision/unreachable_forge",
+        "Elapsed": 0.74
+      },
+      {
+        "Time": "2026-10-12T13:16:41.555362-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Test": "TestLeftoversRecoverASquashDroppedRevision",
+        "Elapsed": 2.32
+      },
+      {
+        "Time": "2026-10-12T13:16:41.630359-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/worktree",
+        "Elapsed": 2.81
+      }
+    ]
+  },
+  {
+    "package": "internal/speccheck",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^(TestArchivedTaskContextRecoversASquashDroppedRevision)$",
+      "./internal/speccheck"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestArchivedTaskContextRecoversASquashDroppedRevision"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 1,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:43.410612-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/record",
+        "Elapsed": 0.48
+      },
+      {
+        "Time": "2026-10-12T13:16:43.772176-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/adding_subject",
+        "Elapsed": 0.36
+      },
+      {
+        "Time": "2026-10-12T13:16:44.049351-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/unreachable_forge",
+        "Elapsed": 0.28
+      },
+      {
+        "Time": "2026-10-12T13:16:44.049362-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs",
+        "Elapsed": 1.12
+      },
+      {
+        "Time": "2026-10-12T13:16:44.380479-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/planning/record",
+        "Elapsed": 0.33
+      },
+      {
+        "Time": "2026-10-12T13:16:44.743398-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/planning/adding_subject",
+        "Elapsed": 0.36
+      },
+      {
+        "Time": "2026-10-12T13:16:45.027852-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/planning/unreachable_forge",
+        "Elapsed": 0.28
+      },
+      {
+        "Time": "2026-10-12T13:16:45.027866-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision/planning",
+        "Elapsed": 0.98
+      },
+      {
+        "Time": "2026-10-12T13:16:45.027873-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Test": "TestArchivedTaskContextRecoversASquashDroppedRevision",
+        "Elapsed": 2.1
+      },
+      {
+        "Time": "2026-10-12T13:16:45.129833-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/speccheck",
+        "Elapsed": 2.59
+      }
+    ]
+  },
+  {
+    "package": "internal/delivery",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^(TestDeliveryEngineMergesAQueueWithoutAnOperator|TestDeliveryEngineResumesWithoutDoubleEffects|TestDeliveryParksAnInexactPullRequestRecordCommit|TestDeliveryParksWhenThePullRequestCannotBeRecorded|TestDeliveryRecordsThePullRequestBeforeChecks|TestDeliveryRetryAdoptsAPullRequestRecordCommit)$",
+      "./internal/delivery"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestDeliveryEngineMergesAQueueWithoutAnOperator",
+      "TestDeliveryEngineResumesWithoutDoubleEffects",
+      "TestDeliveryParksAnInexactPullRequestRecordCommit",
+      "TestDeliveryParksWhenThePullRequestCannotBeRecorded",
+      "TestDeliveryRecordsThePullRequestBeforeChecks",
+      "TestDeliveryRetryAdoptsAPullRequestRecordCommit"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 6,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:46.039943-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryEngineResumesWithoutDoubleEffects/pull_request_intent",
+        "Elapsed": 0.02
+      },
+      {
+        "Time": "2026-10-12T13:16:46.039973-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryParksAnInexactPullRequestRecordCommit/inexact",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.041188-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryRecordsThePullRequestBeforeChecks",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.041202-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryEngineResumesWithoutDoubleEffects/push_intent",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.041208-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryEngineResumesWithoutDoubleEffects/merge_intent",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.041217-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryEngineResumesWithoutDoubleEffects",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.041538-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryParksWhenThePullRequestCannotBeRecorded",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.042955-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryRetryAdoptsAPullRequestRecordCommit",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.044589-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryEngineMergesAQueueWithoutAnOperator",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.044596-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryParksAnInexactPullRequestRecordCommit/archived",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.044605-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Test": "TestDeliveryParksAnInexactPullRequestRecordCommit",
+        "Elapsed": 0.03
+      },
+      {
+        "Time": "2026-10-12T13:16:46.121899-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/delivery",
+        "Elapsed": 0.44
+      }
+    ]
+  },
+  {
+    "package": "skills",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^(TestArchiveSpecContract|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable)$",
+      "./skills"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestArchiveSpecContract",
+      "TestAuthorialSkillSync",
+      "TestEveryOwnedSkillVersionIsRecorded",
+      "TestSettlementGuidanceIsOneTable"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 4,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:46.68841-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestEveryOwnedSkillVersionIsRecorded",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.688716-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestSettlementGuidanceIsOneTable",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.691553-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestArchiveSpecContract",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.69156-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/roundfix",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.692029-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/write-idea",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.692466-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/write-prd",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.69293-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/write-techspec",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.693304-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/write-tasks",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.693498-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/setup-context-driven",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.693671-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/implement-task",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.693837-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/implement-spec",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.694014-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/brainstorming",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.694185-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/business-analyst",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.694364-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/archive-spec",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.694574-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/qa-gate",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.694742-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/evidence-gate",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.695558-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/go-cli-typescript-bun.json",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.695812-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/go.json",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.695988-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/rust.json",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.696496-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync/typescript.json",
+        "Elapsed": 0
+      },
+      {
+        "Time": "2026-10-12T13:16:46.701772-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Test": "TestAuthorialSkillSync",
+        "Elapsed": 0.01
+      },
+      {
+        "Time": "2026-10-12T13:16:46.70249-03:00",
+        "Action": "pass",
+        "Package": "roundfix/skills",
+        "Elapsed": 0.264
+      }
+    ]
+  },
+  {
+    "package": "internal/docscontract",
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-tags",
+      "docscontract",
+      "-run",
+      "^(TestTheSkillCoverageMapIsCurrent)$",
+      "./internal/docscontract"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestTheSkillCoverageMapIsCurrent"
+    ],
+    "missing": [],
+    "failures": [],
+    "passed_top_level": 1,
+    "events": [
+      {
+        "Time": "2026-10-12T13:16:47.982147-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/docscontract",
+        "Test": "TestTheSkillCoverageMapIsCurrent",
+        "Elapsed": 0.05
+      },
+      {
+        "Time": "2026-10-12T13:16:47.983128-03:00",
+        "Action": "pass",
+        "Package": "roundfix/internal/docscontract",
+        "Elapsed": 0.41
+      }
+    ]
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestArchivedSpecSlugsIgnoreNonRecordMarkdown|TestOnlyANamedSchemaFileIsAnArchiveRecord|TestPullRequestFromSubject|TestRecordArchivePullRequestChangesOnlyThatField|TestSourceRevisionRecoveryCancelsTheFetchProcess|TestSourceRevisionRecoveryFetchesThePullRequestHead|TestSourceRevisionRecoveryHonorsCancellation|TestSourceRevisionRecoveryLeavesAnUnreachableRevisionUnavailable|TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit|TestSourceRevisionRecoveryRefusesAMalformedNumber|TestSourceRevisionRecoveryWritesNoRef)$",
+      "./internal/spec"
+    ],
+    "exit": 0,
+    "top_level_expected": 11,
+    "missing": []
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestArchiveCommandLeavesTheArchiveRecord|TestArchiveHelpNamesThePullRequestOption|TestArchiveOnABranchWarnsAboutASquashDroppedRevision|TestArchiveOnTheDefaultBranchDoesNotWarn|TestArchivePullRequestRefusals|TestArchivePullRequestRefusesAnExternalDefaultBranchRecord|TestArchiveRecordsAPullRequestInTheBranchRecord|TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch|TestArchiveWithAPullRequestNamesItsHeadRef|TestArchiveWithAnUnknownDefaultBranchWarns|TestCommandDeliveryEngineRecordsThePullRequest|TestDeliveryAcceptsAnExactRetirement|TestDeliveryArchiveStageCommitsTheArchiveRecord|TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening|TestDeliveryWorkflowAdoptsAnUncommittedRecord|TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord|TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath|TestDeliveryWorkflowRefusesAnUncommittedInexactRecord|TestDeliveryWorkflowSkipsALegacyArchiveFolder|TestReviewContextRecoversASquashDroppedRevision|TestReviewIgnoresAProseReadmeInTheArchiveRoot|TestReviewStillRefusesAMalformedArchiveRecord|TestRunCausesRecoverASquashDroppedRevision|TestRunCausesReportAnArchiveRecordWithoutItsRevision)$",
+      "./internal/cli"
+    ],
+    "exit": 0,
+    "top_level_expected": 24,
+    "missing": []
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestLeftoversKeepTheWorktreeWithoutTheSourceRevision|TestLeftoversRecoverASquashDroppedRevision)$",
+      "./internal/worktree"
+    ],
+    "exit": 0,
+    "top_level_expected": 2,
+    "missing": []
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestArchivedTaskContextRecoversASquashDroppedRevision)$",
+      "./internal/speccheck"
+    ],
+    "exit": 0,
+    "top_level_expected": 1,
+    "missing": []
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestDeliveryEngineMergesAQueueWithoutAnOperator|TestDeliveryEngineResumesWithoutDoubleEffects|TestDeliveryParksAnInexactPullRequestRecordCommit|TestDeliveryParksWhenThePullRequestCannotBeRecorded|TestDeliveryRecordsThePullRequestBeforeChecks|TestDeliveryRetryAdoptsAPullRequestRecordCommit)$",
+      "./internal/delivery"
+    ],
+    "exit": 0,
+    "top_level_expected": 6,
+    "missing": []
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestArchiveSpecContract|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable)$",
+      "./skills"
+    ],
+    "exit": 0,
+    "top_level_expected": 4,
+    "missing": []
+  }
+]
