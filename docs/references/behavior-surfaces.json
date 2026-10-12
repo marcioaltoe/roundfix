@@ -1,7 +1,7 @@
 {
   "schemaVersion": "roundfix/behavior-surfaces/v1",
   "surfaces": {
-    "command archive": "sha256:c1b23f0e879eac7cf22caec849511d7f450cdf6f3e06cdab936c334af8e822b6",
+    "command archive": "sha256:1ccd77e552c91c9302b9b7ed33cbf21e48eed0fd4b1af65110a82b54c156da7a",
     "command attach": "sha256:14d983efd7310a0d43d8bf05b595fa3230ccdaf817f10719deb443b82950098c",
     "command baseline apply": "sha256:d981a824a83163f519d2cb23248f54ab031b5ef585f112b92860bf30e6e70886",
     "command baseline assets sync": "sha256:8ecacd9e28d8fc9babeb232d2682ed7408776acd1dffce421b82a97f30d616aa",

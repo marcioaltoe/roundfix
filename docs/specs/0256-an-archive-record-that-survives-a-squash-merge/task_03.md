@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0256-an-archive-record-that-survives-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -99,3 +99,101 @@ repository.
 - [_prd.md](_prd.md) — Goal 1; Goal 3; User Story 2; Core Feature 1; Core Feature 4; Success Metric 3
 - [_techspec.md](_techspec.md) — Interfaces; Data Models; API Contract 1; API Contract 2; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Testing Approach; Build Order 3
 - ADR-0261; ADR-0247; ADR-0184; ADR-0256
+
+## Result
+
+Implemented the archive-side contracts of ADR-0261 and the adopted squash-merge
+Backlog Entry. `--pull-request` records a validated decimal number during a
+normal archive or in an existing branch record, with byte-identical replay of
+the same number. Record-only detection uses the missing active folder and the
+working-tree record; it checks the record path at the resolved default tip
+before writing. Full archive prints the existing confirmation with the optional
+pull request suffix, and checks ancestry for the standard-error warning without
+changing its successful exit code.
+
+`RecordArchivePullRequest` lives beside the record code, outside `archive.go`.
+It uses the existing parser and renderer, refuses conflicting stored numbers,
+and preserves every other field, including override, supersession, relink,
+regeneration and delivery metadata. Only the renderer's outcome shortening is
+permitted. No Archive Record schema, archive cut, QA override implementation,
+skill text, Task Graph or other Task file changed.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Branch warning, exit 0; no warning on the default branch | `TestArchiveOnABranchWarnsAboutASquashDroppedRevision` asserts Surface Transcript 1 whole. `TestArchiveWithAPullRequestNamesItsHeadRef` asserts Transcript 2 whole. `TestArchiveOnTheDefaultBranchDoesNotWarn` covers both origin/HEAD and the local main fallback. `TestArchiveWithAnUnknownDefaultBranchWarns` asserts the exact unknown-default warning. |
+| Store the number during archive and in the branch record | Transcript 2 checks the stored field. `TestArchiveRecordsAPullRequestInTheBranchRecord` asserts Transcript 3 whole, checks that other files are unchanged, and asserts the idempotent transcript and byte identity. `TestRecordArchivePullRequestChangesOnlyThatField` covers every disposition, all supported metadata, short and oversized UTF-8 outcomes, noncanonical replay, invalid values, conflicting values, and malformed or missing records. |
+| Refuse a default-branch record byte-identical | `TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch` asserts Transcript 4 whole and checks unchanged bytes. `TestArchivePullRequestRefusesAnExternalDefaultBranchRecord` also covers an external Spec root nested below its Git repository root. |
+| Help names the new form and option | `TestArchiveHelpNamesThePullRequestOption` asserts Transcript 5 as the complete existing help plus the new usage form and option, empty stderr, and exit 0. The Behavior Surface Record was regenerated; only the command archive fingerprint changed. |
+
+`TestArchivePullRequestRefusals` asserts full preflight output, exit 2 and no
+file changes for non-integer, empty, zero, negative, leading-zero and overlong
+numbers; a different stored number; unknown default branch with either form;
+`--plan`; and record-only combinations with `--promote`, `--qa-override`,
+`--approval` or `--reason`. Every new top-level test calls `t.Parallel()` first.
+Tests use disposable repositories and local bare origins; none opens a network
+connection.
+
+The existing `TestArchiveCommandLeavesTheArchiveRecord` body is byte-identical
+to HEAD and passes in the focused run. Its shared `commitArchiveFixture` now
+places the disposable archive fixture on main, making its existing empty-stderr
+expectation exercise the default-branch case under the new warning contract.
+This also preserves the existing Archive Relink transcripts. Those four helper
+lines are the only change in `internal/cli/archive_record_test.go`.
+
+### Focused checks
+
+- Initial red check: `go test ./internal/cli -run '^TestArchiveHelpNamesThePullRequestOption$' -count=1`
+  exited 1 because the new tests referenced the then-missing
+  `spec.RecordArchivePullRequest` entry point.
+- Final check after implementation, fixture adjustments and sabotage restoration:
+  `GOPROXY=off GOSUMDB=off go test ./internal/cli ./internal/spec -run '^(TestArchive|TestRecordArchivePullRequest)' -count=1`
+  exited 0; both packages reported `ok`. This includes all new tests and the
+  unchanged legacy archive test, plus the existing archive regressions.
+- Required generation:
+  `GOPROXY=off GOSUMDB=off go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and generated `docs/references/behavior-surfaces.json`; the record
+  was not edited by hand.
+- `git diff --check` exited 0. An inspection compared the legacy test body with
+  HEAD and confirmed identity, and confirmed both sabotaged gates were restored.
+
+### Required sabotages
+
+Each sabotage changed only `internal/cli/archive.go` temporarily and restored
+its exact pre-sabotage bytes in a `finally` block.
+
+1. Suppressed the call to `warnArchiveSourceRevision`. Running
+   `go test ./internal/cli -run '^TestArchiveOnABranchWarnsAboutASquashDroppedRevision$' -count=1`
+   exited 1 and reported that named test as failing: exit and stdout still
+   matched, but stderr was empty instead of the warning. Restored the call.
+2. Disabled the `entry != ""` default-branch refusal. Running
+   `go test ./internal/cli -run '^TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch$' -count=1`
+   exited 1 and reported that named test as failing: the command wrote the
+   number, printed the recording confirmation and exited 0 instead of the
+   full preflight refusal and exit 2. Restored the refusal.
+
+### Execution boundary
+
+The baseline contained only the Daemon's existing `status: in_progress` change
+in this Task file. Task status remains untouched. The Task's declared
+Verification commands, selected repository Verification and incremental
+Verification were not run; the Daemon owns them and settlement. No commit,
+push or pull request was created in the work repository. Local pushes occurred
+only between disposable test repositories and their local bare origins.
+
+The executor initially refused all sandboxed commands because the configured
+writable root contains a symlink. Approved sandbox bypass allowed the scoped
+work and checks. Source Revision Recovery and Delivery Queue recording remain
+with task_02 and task_04 respectively; no additional follow-up was found.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/archive_record_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T140955Z_23b372ef5c35c71c`
+- Source commit: `219a9b9ed461a37ef11e239f0d1f6583d826dba5`
