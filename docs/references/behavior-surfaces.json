@@ -13,6 +13,7 @@
     "command baseline skills reconcile": "sha256:556c32beaabbe90cb0a7a58637113df7d449f0890e1972e5a7c68b2294e8fad1",
     "command baseline skills restore": "sha256:fcb558ea62f494a5d991f6520fc7f4bfffb223dbabf0fa192569de0381a1b108",
     "command baseline update": "sha256:d982e4df41f94592a5e03709ec2a65f2ff4060d30f307bdbc5e5305c3babde76",
+    "command cancel": "sha256:ce63b06925c1d6b41d36d46f0d50d91f271c9ec8fc05d399a46776c533ef6e1b",
     "command deliver plan": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
     "command deliver resume": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
     "command deliver retry": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
@@ -59,11 +60,12 @@
     "command window show": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
     "config keys": "sha256:c6178dffc29408c49247ee5dd69df16ce0382d9f1eb9992894a84427a51c4c7a",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
-    "guide docs/user-guide/commands.md": "sha256:f16b8d0e54ade7b6c9bfde100dd2207a64ac2118a9a38081b3b14a3bc5e1e966",
-    "guide docs/user-guide/commands/archive.md": "sha256:9ecabd3bc1436c76f48dff5838da3795afdb1a03e468dd8d30f36708e94c26c3",
+    "guide docs/user-guide/commands.md": "sha256:9f09149447250cf10209aacc602f3b2fabd2bdf880424fae60384d2a2135f026",
+    "guide docs/user-guide/commands/archive.md": "sha256:1673ea80ece777cb9893cc15d35353a2e20fae2803b12c503391eac35bfea7cd",
     "guide docs/user-guide/commands/attach.md": "sha256:9439b3d9af405b2891440462b7947c94a41d3e34e31569a0e0d1ff2dcd2ea1a2",
     "guide docs/user-guide/commands/baseline.md": "sha256:c9be16957d11faecd5f7193342d6312c1bebe9a520371355406ac477ff861402",
-    "guide docs/user-guide/commands/deliver.md": "sha256:89184291f77e10c1e293acd859ccf728871802d88e02e967ffbc0e8582a80830",
+    "guide docs/user-guide/commands/cancel.md": "sha256:0e8018050598f5d762447ffed931762a19a373c0b5b7bec3e24a2e4ed83ba80e",
+    "guide docs/user-guide/commands/deliver.md": "sha256:e417a64a0cf907185fb9471762fba08e2ec43ed5962514504650dadf65efd9e8",
     "guide docs/user-guide/commands/detached-runs.md": "sha256:540b49cbc0063ee7ead6b14d47b274b7e93576cfe750e179a4019dfc9052d9f9",
     "guide docs/user-guide/commands/doctor.md": "sha256:b17c805e628972b4a9be6eec389bb155ac05d138bc6a78384e6bfa08e34d9afb",
     "guide docs/user-guide/commands/events.md": "sha256:cf3c8060b695c2aadc498e171e7350da36f57a1f5c2997424a4f9c5112eb0959",
@@ -88,7 +90,7 @@
     "guide docs/user-guide/commands/spec.md": "sha256:278371dff6106945b945e23c2c954486d3630fdc114a425c29a74ec30bdc86d9",
     "guide docs/user-guide/commands/stop.md": "sha256:cdf8a45559631f338114a2ea570e7b9c60f38508ba9946f8760524d312e24ac1",
     "guide docs/user-guide/commands/storage-report.md": "sha256:6f05c4ec595c8a67582c88011ac7995629ad58665f2f2c90a6146557ca291433",
-    "guide docs/user-guide/commands/supersede.md": "sha256:e582a51c031dd1f93eb7c9456ccb0cdb1cf83eade4496e7a1ceb5ad810333072",
+    "guide docs/user-guide/commands/supersede.md": "sha256:200fa30dfab0e06372da85c078fafc34101dee4fc8546d823fbc11217e8ec9f3",
     "guide docs/user-guide/commands/upgrade.md": "sha256:2d708a2e57e13df6536f623c7ccb2469f854a9a0e756573bdcf5fe1f6629ffe7",
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
@@ -96,6 +98,6 @@
     "guide docs/user-guide/context-driven-development.md": "sha256:c1583001540998d2b3c91e9bca9a074263ed7b944b6cb1bac06527f5f8ab3bc2",
     "guide docs/user-guide/release-runbook.md": "sha256:81b4fab4871437122e93b05bd771f4660a660159b2b5756f30c7334156df6bee",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:f1525e00f9be7aad470bc3f1d635f65c07ce1aae230c01a836a55d10215a4f14",
-    "guide docs/user-guide/usage.md": "sha256:ed35fc56ddde9bd15142d7965f2f846e1766dfbca4baa9e25f9552ca46e2bfae"
+    "guide docs/user-guide/usage.md": "sha256:5f4a52bc419412850196bf3e1847d66bc959b72190a42c51412c39113a064704"
   }
 }

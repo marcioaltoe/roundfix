@@ -80,6 +80,7 @@ Usage:
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
   roundfix archive <slug>
+  roundfix cancel <slug> --reason <text>
   roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
@@ -117,6 +118,7 @@ Commands:
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
+  cancel     Cancel an active Spec with an Archive Record
   history    Plan or apply a batch of history sanitization
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
@@ -586,6 +588,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runHistoryCommand(ctx, args[1:], stdout, stderr, environment)
 	case "archive":
 		return runArchiveCommand(ctx, args[1:], stdout, stderr, environment)
+	case "cancel":
+		return runCancelCommand(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
@@ -5945,6 +5949,8 @@ Options:
 		return historyUsage
 	case "archive":
 		return archiveUsage
+	case "cancel":
+		return cancelUsage
 	case "spec check":
 		return specCheckUsage
 	case "spec audit":

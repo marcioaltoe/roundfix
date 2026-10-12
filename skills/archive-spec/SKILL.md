@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Archive Spec
@@ -51,6 +51,16 @@ The same outcome settles the authored `qa` Task and determines what the archive 
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Archive Record with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; the QA Task and Reports stay unchanged in Git at the record's `source_revision`. |
+
+## Cancelling a Spec
+
+A Spec that will not be delivered is cancelled with `roundfix cancel <slug>
+--reason <text>`, never deleted by hand. The command writes an Archive Record
+with disposition `cancelled`, returns each adopted Backlog Entry to
+`docs/backlog/` with `status: open` and each adopted Finding to
+`docs/findings/` with `status: pending`, then removes the Spec folder while its
+bytes stay in Git at `source_revision`. A cancelled record never meets a
+prerequisite, never supersedes another Spec and is refused by Delivery Retry.
 
 ## Preconditions — verify, don't trust
 

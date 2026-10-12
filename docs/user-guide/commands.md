@@ -14,6 +14,7 @@ installing, substitute `go run ./cmd/roundfix`.
 | `archive` | [command guide](commands/archive.md) |
 | `attach` | [command guide](commands/attach.md) |
 | `baseline` | [command guide](commands/baseline.md) |
+| `cancel` | [command guide](commands/cancel.md) |
 | `deliver` | [command guide](commands/deliver.md) |
 | `detached-runs` | [command guide](commands/detached-runs.md) |
 | `doctor` | [command guide](commands/doctor.md) |

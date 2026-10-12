@@ -17,6 +17,8 @@ accepts this recorded supersession in place of completed Tasks and a passing
 gate when the Spec has no Task Graph; every other archive precondition still
 applies, and a Spec with a Task Graph keeps its existing evidence rules.
 
+A cancelled Spec cannot be the superseding Spec.
+
 Options:
 
 - `--spec <slug>` — Superseded Spec slug under the configured Spec Root.

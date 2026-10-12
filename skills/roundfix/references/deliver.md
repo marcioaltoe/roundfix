@@ -52,6 +52,9 @@ worktree. Each owner pass and each merge returns satisfied dependency parks to
 `queued` without increasing retries. Retrying a dependency park also targets
 `queued`, without worktree recovery or Task Carry-Forward.
 
+`deliver start` refuses a queue whose Spec requires a cancelled Spec, and
+`deliver retry` refuses a cancelled Spec.
+
 Each queued Spec runs in its own linked worktree under `worktree.location`.
 After the prerequisite check and before authorization or readiness checks,
 `deliver start` reads local item branches named

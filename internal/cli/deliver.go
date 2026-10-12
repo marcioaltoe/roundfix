@@ -106,9 +106,22 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("retry", err, stderr)
 	}
-	loaded, _, err := loadDeliveryCommand(ctx, environment, stderr)
+	loaded, specsRoot, err := loadDeliveryCommand(ctx, environment, stderr)
 	if err != nil {
 		return printDeliverFailure("retry", err, stderr)
+	}
+	archiveRoot := spec.ArchiveSpecRoot(specsRoot.Path, specsRoot.BuiltInRoot)
+	recordPath := spec.ArchiveRecordPath(archiveRoot, specSlug)
+	if _, err := os.Lstat(recordPath); err == nil {
+		archived, err := spec.ReadArchivedSpec(archiveRoot, specSlug)
+		if err != nil {
+			return printDeliverFailure("retry", fmt.Errorf("read archive for Spec %q: %w", specSlug, err), stderr)
+		}
+		if archived.Record.Disposition == spec.ArchiveCancelled {
+			return printDeliverFailure("retry", fmt.Errorf("Spec %q is cancelled in %s; a cancelled Spec is never delivered", specSlug, archived.Path), stderr)
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return printDeliverFailure("retry", fmt.Errorf("inspect archive record for Spec %q: %w", specSlug, err), stderr)
 	}
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -726,6 +739,9 @@ func validateDeliveryPrerequisites(root roundconfig.SpecsRoot, graphs []*spec.Gr
 				archived, err := spec.ReadArchivedSpec(archiveRoot, required)
 				if err != nil && !errors.Is(err, spec.ErrNotArchived) {
 					return fmt.Errorf("resolve prerequisite %q: %w", required, err)
+				}
+				if err == nil && archived.Form == spec.ArchivedRecord && archived.Record.Disposition == spec.ArchiveCancelled {
+					return fmt.Errorf("Delivery Queue Spec %s requires cancelled Spec %s", graph.Spec.Slug, required)
 				}
 				found = err == nil && archived.Form == spec.ArchivedRecord
 			}

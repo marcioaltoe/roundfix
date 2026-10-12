@@ -34,6 +34,8 @@ unchanged. Use repeatable `--promote <path>` to copy a confirmed candidate to
 `docs/references/` during the archive change.
 Existing archived folders retain their legacy link semantics.
 
+A Spec that will not be delivered is cancelled with `roundfix cancel`.
+
 A plan prints:
 
 ```text

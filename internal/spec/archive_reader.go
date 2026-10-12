@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -64,6 +65,9 @@ func validArchiveSource(source, revision string) bool {
 // ArchivedTaskCompleted is the record's completion contract. It does not
 // infer membership: callers bind Task identity through commit metadata.
 func ArchivedTaskCompleted(record ArchiveRecord, task string) bool {
+	if record.Disposition == ArchiveCancelled {
+		return task != "" && slices.Contains(record.CompletedTasks, task)
+	}
 	if task == record.QATask && record.Disposition == ArchiveFailedQA {
 		return false
 	}
