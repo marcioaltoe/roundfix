@@ -69,6 +69,16 @@ leaves a marked process behind fails.
 11. MUST add **Helper Lifeline** and **Helper Residue** to `CONTEXT.md`
     through `domain-modeling`, linked to ADR-0266, and keep Helper Residue
     distinct from **Process Residue**.
+12. MUST make `gittest.Harden` and `gittest.InitRepo` write
+    `core.fsmonitor = false` and `core.untrackedCache = false` into the
+    repository's own config, as `_techspec.md` → API Contract 6 states, and add
+    `TestHardenedRepositoryNeverStartsAFilesystemMonitor` to
+    `internal/gittest`: with a global config file that sets
+    `core.fsmonitor=true` (through `GIT_CONFIG_GLOBAL` pointing at a temporary
+    file), a hardened repository reports `false` for both keys, and a
+    `git add --all` followed by a commit of a file rewritten with the same size
+    records the change. This answers the operator's 2026-10-12 observation that
+    fixture seed commits failed with "nothing to commit" inside the Daemon.
 
 ## Subtasks
 
@@ -78,6 +88,7 @@ leaves a marked process behind fails.
 - [ ] Add the Helper Residue check and its tests to the suite guard.
 - [ ] Return the F6 test to parallel and lower the ceiling.
 - [ ] Add the repository rule and the glossary terms.
+- [ ] Keep every hardened fixture repository free of a filesystem monitor.
 
 ## Acceptance Criteria
 
@@ -85,6 +96,7 @@ leaves a marked process behind fails.
 - [ ] A package that leaves a marked process fails with the residue line and the process is dead.
 - [ ] A package whose helpers all ended passes and prints no residue line.
 - [ ] The F6 test runs in parallel and the `internal/cli` ceiling is 10.
+- [ ] A hardened fixture repository never starts a filesystem monitor, even with `core.fsmonitor=true` in the global config.
 
 ## Context
 
@@ -109,12 +121,15 @@ leaves a marked process behind fails.
 - creates: `internal/testfixture/signal_rule_test.go`
 - interface: `docs/agents/specific-repository.md`
 - interface: `CONTEXT.md`
+- interface: `internal/gittest/gittest.go`
+- interface: `internal/gittest/gittest_test.go`
 
 ## Verification
 
 - `for term in '**Helper Lifeline**:' '**Helper Residue**:'; do tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- "$term" || { printf 'CONTEXT.md does not define %s\n' "$term" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < docs/agents/specific-repository.md | grep -qF -- 'Helper Lifeline' || { printf 'the repository rule does not name the Helper Lifeline\n' >&2; exit 1; }; out="$(go test -count=1 -v -run '^(TestGuardReportsAndKillsHelperResidue|TestGuardPassesWhenEveryHelperEnded|TestGuardMarksItsTestBinary)$' ./internal/suiteguard 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestGuardReportsAndKillsHelperResidue TestGuardPassesWhenEveryHelperEnded TestGuardMarksItsTestBinary; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing passing test %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go build -buildvcs=false ./internal/suiteguard || exit 1; GOOS=linux go build -buildvcs=false ./internal/suiteguard || exit 1` — expected: exit 0. Before this Task the terms, the rule and the three tests are absent, so the command fails.
 - `out="$(go test -count=1 -v -run '^TestOwnerProcessHelpersEndWithTheirTestBinary$' ./internal/store 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestOwnerProcessHelpersEndWithTheirTestBinary ' || { printf 'the store death test did not pass\n' >&2; exit 1; }; out="$(go test -count=1 -v -run '^TestCLITestHelpersEndWithTheirTestBinary$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestCLITestHelpersEndWithTheirTestBinary ' || { printf 'the CLI death test did not pass\n' >&2; exit 1; }` — expected: exit 0. Before this Task neither death test exists, so no PASS line is printed.
 - `grep -A1 '^func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(' internal/cli/deliver_item_binary_test.go | grep -q 't.Parallel()' || { printf 'the F6 test does not call t.Parallel first\n' >&2; exit 1; }; grep -Eq '"internal/cli": +10,' internal/testfixture/parallel_tests_test.go || { printf 'the internal/cli ceiling is not 10\n' >&2; exit 1; }; go test -count=1 -run '^(TestEveryTestInAParallelTestPackageRunsInParallel|TestEverySignalGoesToAProvenProcess)$' ./internal/testfixture || exit 1; go test -count=1 -race -run '^TestDeliveryStep' ./internal/cli || exit 1` — expected: exit 0. Before this Task the F6 test is sequential and the ceiling is 11, so the first check fails.
+- `out="$(go test -count=1 -v -run '^TestHardenedRepositoryNeverStartsAFilesystemMonitor$' ./internal/gittest 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestHardenedRepositoryNeverStartsAFilesystemMonitor ' || { printf 'the filesystem monitor test did not pass\n' >&2; exit 1; }; grep -q 'fsmonitor = false' internal/gittest/gittest.go || { printf 'gittest does not disable the filesystem monitor\n' >&2; exit 1; }` — expected: exit 0. Before this Task the test is absent and `gittest` writes no `core.fsmonitor`, so the command fails.
 
 ## References
 

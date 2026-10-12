@@ -212,6 +212,20 @@ Config, empty by default. This repository declares `.gocache`.
    `suiteguard: helper residue check unavailable: <reason>` and does not fail.
    Windows and Unix systems other than darwin and Linux print the
    unavailable line with `unsupported on <GOOS>`.
+
+   A Git filesystem monitor is Helper Residue too. A maintainer whose global
+   Git configuration sets `core.fsmonitor=true` gets one detached
+   `git fsmonitor--daemon` for every fixture repository a test touches; the
+   daemon inherits the mark and outlives the test, and under load it misses
+   writes, so `git add --all` stages nothing and the fixture's seed commit
+   fails with "nothing to commit". The operator measured 47 live daemons and
+   that failure in three Delivery Queue Runs of Spec 0255 on 2026-10-12
+   (operator log, entries 267 and 268), while the same Verification passed
+   outside the Daemon. Production Git calls in `internal/speccheck` already pass
+   `-c core.fsmonitor=false`. `gittest.Harden` and `gittest.InitRepo` therefore
+   write `core.fsmonitor = false` and `core.untrackedCache = false` into the
+   repository's own config, which outranks the global value, so no hardened
+   fixture repository starts a monitor whatever the maintainer's configuration.
 7. API Contract: the shared build cache. With `GOCACHE` neither in the
    environment nor on the command line, the Makefile computes once
    `<root>/roundfix-go-build-<uid>`, where `<root>` is `$TMPDIR` without a
