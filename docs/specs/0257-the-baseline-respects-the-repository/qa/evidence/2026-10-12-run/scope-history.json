@@ -1,0 +1,143 @@
+[
+  {
+    "task": "task_01",
+    "commit": "883a863458d13291b96c01c5351df38fdc713f4e",
+    "command": [
+      "git",
+      "diff-tree",
+      "--no-commit-id",
+      "--name-only",
+      "-r",
+      "883a863458d13291b96c01c5351df38fdc713f4e"
+    ],
+    "changed": [
+      ".agents/skills/setup-context-driven/SKILL.md",
+      "CONTEXT.md",
+      "docs/agents/setup-context.json",
+      "docs/references/behavior-surfaces.json",
+      "docs/specs/0257-the-baseline-respects-the-repository/task_01.md",
+      "docs/user-guide/context-driven-development.md",
+      "internal/baseline/assets/decisions.json",
+      "internal/baseline/assets/profiles/go-cli-typescript-monorepo.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/assets/templates/guides/backend.md",
+      "internal/baseline/assets/templates/index.json",
+      "internal/baseline/better_auth_base_path_test.go",
+      "internal/baseline/profile_alignment_test.go",
+      "internal/baseline/project_decision_render.go",
+      "internal/baseline/project_decisions.go",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "internal/cli/baseline_human.go",
+      "skills/setup-context-driven/SKILL.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declared": []
+  },
+  {
+    "task": "task_02",
+    "commit": "c232bd353c4ed3bbb3ab6cbdcb0174df55cdde83",
+    "command": [
+      "git",
+      "diff-tree",
+      "--no-commit-id",
+      "--name-only",
+      "-r",
+      "c232bd353c4ed3bbb3ab6cbdcb0174df55cdde83"
+    ],
+    "changed": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/baseline.md",
+      "docs/references/behavior-surfaces.json",
+      "docs/specs/0257-the-baseline-respects-the-repository/task_02.md",
+      "docs/user-guide/commands/baseline.md",
+      "internal/baseline/update.go",
+      "internal/cli/baseline_update.go",
+      "internal/cli/baseline_update_decision_test.go",
+      "internal/cli/cli.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/baseline.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declared": []
+  },
+  {
+    "task": "task_03",
+    "commit": "67aeb4a4b1f4d0933f28fc20514804fd0ba3ddb6",
+    "command": [
+      "git",
+      "diff-tree",
+      "--no-commit-id",
+      "--name-only",
+      "-r",
+      "67aeb4a4b1f4d0933f28fc20514804fd0ba3ddb6"
+    ],
+    "changed": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/baseline.md",
+      ".agents/skills/roundfix/references/setup.md",
+      "CONTEXT.md",
+      "docs/adr/0221-a-required-external-skill-is-held-to-its-setup-snapshot-not-only-its-lock.md",
+      "docs/references/behavior-surfaces.json",
+      "docs/references/coverage-record.json",
+      "docs/specs/0257-the-baseline-respects-the-repository/task_03.md",
+      "docs/user-guide/commands/baseline.md",
+      "docs/user-guide/commands/doctor.md",
+      "internal/baseline/repository_skills_snapshot_test.go",
+      "internal/baseline/skills_snapshot_profile_test.go",
+      "internal/baseline/skills_trailing.go",
+      "internal/baseline/skills_trailing_test.go",
+      "internal/cli/baseline_update.go",
+      "internal/cli/baseline_update_repository_profile_test.go",
+      "internal/cli/doctor.go",
+      "internal/cli/doctor_trailing_skills_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/baseline.md",
+      "skills/roundfix/references/setup.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declared": []
+  },
+  {
+    "task": "task_04",
+    "commit": "a65cc5115a2df609264a9afff63da34e52766767",
+    "command": [
+      "git",
+      "diff-tree",
+      "--no-commit-id",
+      "--name-only",
+      "-r",
+      "a65cc5115a2df609264a9afff63da34e52766767"
+    ],
+    "changed": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/baseline.md",
+      "CONTEXT.md",
+      "docs/agents/setup-context.json",
+      "docs/agents/skill-dispatch.md",
+      "docs/specs/0257-the-baseline-respects-the-repository/task_04.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+      "internal/baseline/assets/modules/core.json",
+      "internal/baseline/assets/modules/rust.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/module-versions.json",
+      "internal/baseline/promoted_core_clauses_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "internal/baseline/vendored_skill_clauses_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/baseline.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declared": []
+  }
+]

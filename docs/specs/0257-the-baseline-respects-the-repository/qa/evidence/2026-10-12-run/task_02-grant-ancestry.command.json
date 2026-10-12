@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "git",
+    "merge-base",
+    "--is-ancestor",
+    "dc1c5e7483f8df724a5fe8b93cac5b320a109b4b",
+    "c232bd353c4ed3bbb3ab6cbdcb0174df55cdde83"
+  ],
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0257-the-baseline-respects-the-repository-db166b8a43ed6d99-44d709f1-31fe038a/run_20261012T194228Z_1d1cb31ee8783296",
+  "exit": 0
+}

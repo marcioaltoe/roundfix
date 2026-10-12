@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "git",
+    "-c",
+    "user.name=QA fixture",
+    "-c",
+    "user.email=qa@example.invalid",
+    "-c",
+    "commit.gpgsign=false",
+    "-c",
+    "core.hooksPath=/dev/null",
+    "commit",
+    "--quiet",
+    "-m",
+    "chore: temporary QA fixture"
+  ],
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0257-qa-uorgykm2/declared-auth",
+  "exit": 0
+}

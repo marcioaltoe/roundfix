@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "qa-report",
+    "accept",
+    "docs/specs/0257-the-baseline-respects-the-repository/qa/qa-report-2026-10-12.md"
+  ],
+  "exit": 0,
+  "stdout": "",
+  "stderr": "",
+  "mutates": false
+}

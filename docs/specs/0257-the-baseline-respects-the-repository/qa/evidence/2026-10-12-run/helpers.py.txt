@@ -1,0 +1,69 @@
+from pathlib import Path
+import subprocess, json, hashlib, tempfile, os, re, shutil
+ROOT=Path.cwd()
+E=ROOT/'docs/specs/0257-the-baseline-respects-the-repository/qa/evidence/2026-10-12-run'
+REPORT=E.parent.parent/'qa-report-2026-10-12.md'
+STATE=Path(tempfile.mkdtemp(prefix='roundfix-0257-qa-'))
+ENV=dict(os.environ)
+# Only child processes use an isolated home; the execution host is unchanged.
+ENV['HOME']=str(STATE/'home')
+ENV['XDG_CONFIG_HOME']=str(STATE/'config')
+ENV['GIT_CONFIG_GLOBAL']='/dev/null'
+ENV['GIT_CONFIG_NOSYSTEM']='1'
+for key in list(ENV):
+    if any(part in key.upper() for part in ('API_KEY','TOKEN','SECRET','PASSWORD')): ENV.pop(key)
+(STATE/'home').mkdir()
+def run(label, args, cwd=ROOT, expected=None):
+    p=subprocess.run(args,cwd=cwd,env=ENV,capture_output=True,text=True,timeout=120)
+    (E/(label+'.stdout.txt')).write_text(p.stdout)
+    (E/(label+'.stderr.txt')).write_text(p.stderr)
+    (E/(label+'.command.json')).write_text(json.dumps({'argv':args,'cwd':str(cwd),'exit':p.returncode},indent=2)+'\n')
+    if expected is not None: assert p.returncode==expected, (label,p.returncode,p.stdout[-2000:],p.stderr)
+    return p
+def cli(label,*args,repo=None,expected=None):
+    cwd=repo or ROOT
+    binary='./bin/roundfix'
+    return run(label,[binary,*args],cwd=cwd,expected=expected)
+def observe(row,status,detail):
+    s=REPORT.read_text(); s=s.replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+    start=s.index('### '+row+'\n'); match=re.search(r'\n### [^\n]+\n|\n## ',s[start+5:]); end=start+5+match.start() if match else len(s)
+    block=s[start:end].replace('Pending execution.',detail)
+    REPORT.write_text(s[:start]+block+s[end:])
+def tree(repo):
+    h=hashlib.sha256()
+    for p in sorted(repo.rglob('*')):
+        if '.git' in p.relative_to(repo).parts or not p.is_file(): continue
+        h.update(str(p.relative_to(repo)).encode()); h.update(p.read_bytes())
+    return h.hexdigest()
+def write(repo,path,text):
+    p=repo/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+def commit(repo,label):
+    run(label+'-add',['git','add','.'],cwd=repo,expected=0)
+    run(label+'-commit',['git','-c','user.name=QA fixture','-c','user.email=qa@example.invalid','-c','commit.gpgsign=false','-c','core.hooksPath=/dev/null','commit','--quiet','-m','chore: temporary QA fixture'],cwd=repo,expected=0)
+def adopter(label,profile='standard-typescript-monorepo'):
+    repo=STATE/label;repo.mkdir()
+    run(label+'-init',['git','init','--quiet',str(repo)],expected=0)
+    write(repo,'README.md','# Temporary QA fixture\n')
+    write(repo,'Makefile','verify:\n\t@true\nverify-incremental:\n\t@true\n')
+    # Repository skill presence needed for profile planning. No network is used.
+    shutil.copytree(ROOT/'.agents/skills',repo/'.agents/skills',symlinks=False)
+    shutil.copy2(ROOT/'skills-lock.json',repo/'skills-lock.json')
+    if profile=='standard-typescript-monorepo':
+        formatter=json.loads((ROOT/'internal/baseline/assets/profiles/standard-typescript-monorepo.json').read_text())['formatter']['version']
+        dependencies={n:'latest' for n in ['@logtape/logtape','@tanstack/react-query','@tanstack/react-router','better-auth','drizzle-orm','hono','oxlint','postgres','react','shadcn','tailwindcss','turbo','typescript','vite','vitest','zod']}
+        dependencies['oxfmt']=formatter
+        write(repo,'package.json',json.dumps({'name':'qa-fixture','packageManager':'bun@1.2.0','workspaces':['packages/*'],'dependencies':dependencies}))
+        write(repo,'packages/frontend/package.json','{"name":"frontend"}')
+        write(repo,'packages/backend/package.json','{"name":"backend","dependencies":{"postgres":"latest","drizzle-orm":"latest"}}')
+        write(repo,'packages/backend/src/infra/controllers/http/app.ts',"app.get('/health', handler)\napp.post('/orders', handler)\n")
+        write(repo,'DATABASE.md','# Database\nPostgreSQL is the repository database contract.\n')
+    else: write(repo,'go.mod','module example.invalid/qa\n\ngo 1.26\n');write(repo,'main.go','package main\nfunc main() {}\n')
+    commit(repo,label+'-initial')
+    values=['preservation.mode=greenfield','language.generated=English','verification.gate=make verify','verification.incremental=make verify-incremental','branch.prefix=<type>/','spec.scaffold=true','domain.layout=single-context','triage.external=false','autonomous.enabled=false','secondbrain.enabled=false','repository.extension.enabled=false']
+    if profile=='standard-typescript-monorepo': values+=['identifier.strategy={"kind":"uuid-v7"}','http.contract={"mode":"REST"}','auth.provider={"kind":"better-auth","routeException":{"scope":"/api/auth/*","methods":["GET","POST"],"owner":"Better Auth","reason":"Provider protocol routes require GET and POST semantics."}}']
+    args=['baseline','plan','--repo',str(repo),'--profile',profile,'--format','json']
+    for v in values: args+=['--decision',v]
+    p=cli(label+'-plan',*args,expected=0); plan=json.loads(p.stdout)
+    cli(label+'-apply','baseline','apply','--repo',str(repo),'--plan',str(E/(label+'-plan.stdout.txt')),'--confirm-plan',plan['planDigest'],'--format','json',expected=0)
+    commit(repo,label+'-adopted')
+    return repo

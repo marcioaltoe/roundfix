@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "git",
+    "diff",
+    "87e41ae4960027da16767779f3cb8895a4c556ec",
+    "a65cc5115a2df609264a9afff63da34e52766767",
+    "--",
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
+  ],
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0257-the-baseline-respects-the-repository-db166b8a43ed6d99-44d709f1-31fe038a/run_20261012T194228Z_1d1cb31ee8783296",
+  "exit": 0
+}

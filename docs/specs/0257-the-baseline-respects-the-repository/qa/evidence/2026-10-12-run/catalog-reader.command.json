@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "go",
+    "run",
+    "-overlay",
+    "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0257-catalog-txm7eji3/overlay.json",
+    "./cmd/roundfix",
+    "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0257-the-baseline-respects-the-repository-db166b8a43ed6d99-44d709f1-31fe038a/run_20261012T194228Z_1d1cb31ee8783296/docs/specs/0257-the-baseline-respects-the-repository/qa/evidence/2026-10-12-run/scope-paths.json"
+  ],
+  "exit": 0
+}

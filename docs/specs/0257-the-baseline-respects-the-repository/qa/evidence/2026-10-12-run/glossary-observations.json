@@ -1,0 +1,23 @@
+[
+  {
+    "term": "Better Auth Base Path",
+    "definition": "The path under which a repository mounts Better Auth's routes, the value of Better Auth's `basePath` option, recorded as the optional `auth.base_path` decision. When it is recorded, the provider's route exception and the matching HTTP Contract Decision exception cover that path followed by `/*`; when it is absent, the recorded exception stands, and Better Auth's own default is `/api/auth` ([ADR-0263](docs/adr/0263-the-better-auth-base-path-is-a-repository-decision-a-baseline-update-records.md)).\n_Avoid_: Auth prefix, API prefix, auth scope",
+    "adr_links": [
+      "docs/adr/0263-the-better-auth-base-path-is-a-repository-decision-a-baseline-update-records.md"
+    ]
+  },
+  {
+    "term": "Setup Snapshot Difference",
+    "definition": "A required external skill that is installed and matches its `skills-lock.json` entry but whose tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Doctor names it without a warning and the managed refresh keeps it; only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).\n_Avoid_: Trailing skill, outdated skill, stale skill",
+    "adr_links": [
+      "docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md"
+    ]
+  },
+  {
+    "term": "Vendored Skill",
+    "definition": "A skill a repository installs from an upstream source and never edits locally, because the next sync replaces its folder. A divergence is corrected in order: a rule that governs over the skill's default, then a repository-authored skill that supplies only what is missing, then a repository-authored replacement only when the vendored skill is useless or almost useless; an objective defect goes upstream as a pull request ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).\n_Avoid_: Forked skill, local skill copy, edited upstream skill",
+    "adr_links": [
+      "docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md"
+    ]
+  }
+]

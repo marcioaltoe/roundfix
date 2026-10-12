@@ -1,0 +1,5 @@
+{
+  "command": "make verify-docs",
+  "exit": 0,
+  "capture": "Temporary log imported after all guarded processes exited."
+}

@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "rg",
+    "-n",
+    "-F",
+    "-e",
+    "DR-SKILL-TRAILS-SNAPSHOT",
+    "-e",
+    "trails its Setup Snapshot",
+    "-e",
+    "trails the Setup Snapshot",
+    "-e",
+    "TrailingSetupSkills",
+    "internal",
+    "cmd",
+    "docs/user-guide",
+    ".agents/skills",
+    "skills"
+  ],
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0257-the-baseline-respects-the-repository-db166b8a43ed6d99-44d709f1-31fe038a/run_20261012T194228Z_1d1cb31ee8783296",
+  "exit": 1
+}

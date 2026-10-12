@@ -1,0 +1,37 @@
+{
+  "commit_range": "87e41ae4960027da16767779f3cb8895a4c556ec..a65cc5115a2df609264a9afff63da34e52766767",
+  "task_counts": {
+    "task_01": 24,
+    "task_02": 12,
+    "task_03": 22,
+    "task_04": 23
+  },
+  "out_of_scope": [],
+  "governed_count": 17,
+  "unbounded": [],
+  "grant_revision": "dc1c5e7483f8df724a5fe8b93cac5b320a109b4b",
+  "grant_precedes_every_task": true,
+  "protected_unchanged": [
+    "go.mod",
+    ".roundfixrc.yml",
+    "Makefile",
+    ".github/workflows/",
+    "internal/baseline/assets/retention/",
+    "internal/baseline/assets/source-baseline/",
+    "internal/baseline/assets/setup-snapshots/",
+    "internal/baseline/assets/snapshots/",
+    "skills-lock.json"
+  ],
+  "only_modules": [
+    "internal/baseline/assets/modules/rust.json",
+    "internal/baseline/assets/modules/core.json"
+  ],
+  "unchanged_qa_settlement_sections": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/archive-spec/SKILL.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ]
+}

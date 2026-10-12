@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0257-the-baseline-respects-the-repository
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

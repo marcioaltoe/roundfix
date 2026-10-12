@@ -1,0 +1,33 @@
+exec((Path(__file__).parent/'helpers.py.txt').read_text())
+observe('01','pass','Static gate: Daemon-provided `make verify-changed` passed, exit 0, diagnostics removed on success. `make build` passed, exit 0, and `./bin/roundfix --version` returned the frontmatter user_flow_binary. This is a recorded Daemon fact, not a QA rerun. The strict precondition also passed through that same binary.')
+repo=adopter('declared-auth')
+args=['baseline','update','--repo',str(repo),'--no-skills','--no-history','--decision','auth.base_path=/auth','--format','json']
+before=tree(repo); preview=cli('auth-preview',*args,expected=3); assert tree(repo)==before
+preview=json.loads(preview.stdout);assert preview['state']=='plan_ready'
+applied=json.loads(cli('auth-apply',*args,'--yes',expected=0).stdout);assert applied['state']=='verified';assert applied['planDigest']==preview['planDigest']
+manifest=json.loads((repo/'docs/agents/setup-context.json').read_text()); decisions=manifest['decisions']
+# Manifest decisions store typed values under value.
+def value(key): return decisions[key]['value']
+provider=value('auth.provider'); contract=value('http.contract');base=value('auth.base_path')
+assert base=='/auth'; assert provider['routeException']['scope']=='/auth/*'
+exceptions=[x for x in contract['exceptions'] if x['owner']=='Better Auth'];assert len(exceptions)==1;assert exceptions[0]==provider['routeException']
+guide=(repo/'docs/agents/backend.md').read_text(); assert '/api/auth/*' not in guide;assert guide.count('`/auth/*`')==2
+assert "The recorded Better Auth base path is `/auth`, the value of Better Auth's `basePath` option." in guide
+second=json.loads(cli('auth-second','baseline','update','--repo',str(repo),'--no-skills','--no-history','--format','json',expected=0).stdout);assert second['state']=='current';assert second['fileChanges']==[]
+(E/'auth-observations.json').write_text(json.dumps({'repository':str(repo),'preview_tree_before':before,'preview_tree_after':before,'manifest_values':{k:value(k) for k in ['auth.base_path','auth.provider','http.contract']},'better_auth_exceptions':len(exceptions),'guide_lines':[x for x in guide.splitlines() if '/auth' in x],'second_state':second['state']},indent=2)+'\n')
+# Public negative inputs: same adopter, byte-preservation and atomic refusal.
+negative=[]
+for index,invalid in enumerate(['auth','/','/auth/','/auth/*','/a b','/a//b','/a?x','/a#x']):
+    before=tree(repo); p=cli('auth-invalid-'+str(index),'baseline','update','--repo',str(repo),'--no-skills','--no-history','--decision','auth.base_path='+invalid,'--yes','--format','json',expected=2);assert tree(repo)==before;assert json.loads(p.stdout)['category']=='invalid';negative.append(invalid)
+for index,invalid in enumerate(['unknown.decision=true','preservation.mode=preservation','auth.base_path','auth.base_path=/auth']):
+    before=tree(repo); extra=['--decision','auth.base_path=/auth'] if index==3 else []
+    p=cli('decision-invalid-'+str(index),'baseline','update','--repo',str(repo),'--no-skills','--no-history','--decision',invalid,*extra,'--yes','--format','json',expected=2);assert tree(repo)==before
+observe('03','pass','Adopted a temporary Standard TypeScript repository through the built `baseline plan` and `baseline apply`. Unconfirmed update exited 3, state `plan_ready`, with identical before/after tree digest. `--yes` exited 0, state `verified`, and kept the preview Plan Digest. Independent manifest and guide reads found `/auth`, exactly one matching Better Auth exception, two `/auth/*` guide lines, and no `/api/auth/*`. A fresh second command returned `current`, no file changes. Eight invalid paths plus unknown, preservation, malformed and duplicate decisions exited 2/category `invalid` with no byte changes. [Observations](evidence/2026-10-12-run/auth-observations.json); exact commands and separate streams are `auth-*` and `decision-invalid-*` evidence files.')
+repo=adopter('unrecorded-auth'); path=repo/'docs/agents/backend.md'; before=path.read_bytes(); digest=hashlib.sha256(before).hexdigest()
+p=cli('unrecorded-auth-update','baseline','update','--repo',str(repo),'--no-skills','--no-history','--yes','--format','json',expected=0)
+assert path.read_bytes()==before; manifest=json.loads((repo/'docs/agents/setup-context.json').read_text());assert 'auth.base_path' not in manifest['decisions'];assert '/api/auth/*' in before.decode()
+base='87e41ae4960027da16767779f3cb8895a4c556ec'; head='a65cc5115a2df609264a9afff63da34e52766767';golden='internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md'
+p=run('unrecorded-golden-history',['git','diff',base,head,'--',golden],expected=0);assert p.stdout==''
+(E/'unrecorded-auth-observations.json').write_text(json.dumps({'repository':str(repo),'backend_before_sha256':digest,'backend_after_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'base_path_present':False,'update_state':json.loads((E/'unrecorded-auth-update.stdout.txt').read_text())['state'],'golden_changed':False},indent=2)+'\n')
+observe('04','pass','A second temporary Standard TypeScript adopter recorded no base path. Confirmed update exited 0; independent guide read remained byte-identical and the fresh Setup Manifest had no `auth.base_path`. `/api/auth/*` remains. `git diff` across the Task commit range for the Standard TypeScript backend golden emitted no changes. [Before/after digests and absent decision](evidence/2026-10-12-run/unrecorded-auth-observations.json); exact update and history command streams are preserved.')
+print('Rows 01, 03 and 04 passed; temporary root: '+str(STATE))

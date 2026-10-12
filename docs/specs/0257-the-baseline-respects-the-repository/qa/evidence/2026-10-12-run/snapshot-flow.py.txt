@@ -1,0 +1,53 @@
+exec((Path(__file__).parent/'helpers.py.txt').read_text())
+repo=adopter('snapshot-difference','go-cli-tui')
+# Modify a one-file external skill and update only this disposable lock entry.
+skill=repo/'.agents/skills/testing-boss';shutil.rmtree(skill);skill.mkdir(); data=b'# testing-boss\nA differing upstream installation, age unknown.\n';(skill/'SKILL.md').write_bytes(data)
+hashvalue=hashlib.sha256(b'SKILL.md'+data).hexdigest()
+lock=json.loads((repo/'skills-lock.json').read_text());lock['skills']['testing-boss']['computedHash']=hashvalue;(repo/'skills-lock.json').write_text(json.dumps(lock))
+store=STATE/'offline-store';run('snapshot-store-init',['git','init','--bare','--quiet',str(store)],expected=0)
+before=tree(repo);preview=json.loads(cli('snapshot-preview','baseline','update','--repo',str(repo),'--no-history','--skills-source-dir',str(store),'--format','json',expected=0).stdout)
+assert preview['state']=='current'; assert not preview['skills']['drifted']; assert [x['skill'] for x in preview['skills']['differing']]==['testing-boss']; assert tree(repo)==before
+p=cli('snapshot-apply','baseline','update','--repo',str(repo),'--yes','--no-history','--skills-source-dir',str(store),'--format','json',expected=0); applied=json.loads(p.stdout)
+assert applied['skills']['restored']==[];assert (skill/'SKILL.md').read_bytes()==data;assert hashlib.sha256(b'SKILL.md'+data).hexdigest()==hashvalue
+# Fake all external runtime/forge/platform checks; these never call providers.
+fake=STATE/'fake-bin';fake.mkdir()
+def exe(name,source):
+    q=fake/name;q.write_text(source);q.chmod(0o755)
+exe('node','#!/bin/sh\nprintf "v99.0.0\\n"\n')
+exe('npx','#!/bin/sh\ncase "$*" in *claude*) printf "@agentclientprotocol/claude-agent-acp 99.0.0\\n";; *) printf "@agentclientprotocol/codex-acp 99.0.0\\n";; esac\n')
+exe('codex','#!/bin/sh\nprintf "codex-cli 99.0.0\\n"\n')
+exe('xattr','#!/bin/sh\nexit 0\n');exe('codesign','#!/bin/sh\nexit 0\n')
+exe('gh','#!/bin/sh\nprintf "gh version 99.0.0\\n"\n')
+exe('acpx',r"""#!/usr/bin/env python3
+import sys,json,os
+from pathlib import Path
+args=sys.argv[1:]
+with (Path(os.environ['HOME'])/'fake-runtime-calls.txt').open('a') as f:f.write(json.dumps(args)+'\n')
+if '--version' in args: print('99.0.0');sys.exit(0)
+models=['gpt-6.1-sol','opus','sonnet','gpt-5.6-sol']
+model=args[args.index('--model')+1] if '--model' in args else 'gpt-6.1-sol'
+options=[{'id':'model','category':'model','type':'select','currentValue':model,'options':[{'value':m} for m in models]},{'id':'reasoning_effort','type':'select','currentValue':'high','options':[{'value':e} for e in ['low','medium','high','xhigh']]},{'id':'effort','type':'select','currentValue':'high','options':[{'value':e} for e in ['low','medium','high','max']]},{'id':'sandbox_mode','type':'select','currentValue':'danger-full-access','options':[{'value':'danger-full-access'}]}]
+if 'show' in args: print(json.dumps({'schema':'acpx.session.v1','acpx':{'current_model_id':model,'config_options':options}}))
+elif 'set' in args:
+    index=args.index('set');key=args[index+1];value=args[index+2]
+    for o in options:
+        if o['id']==key:o['currentValue']=value
+    print(json.dumps({'action':'config_set','configId':key,'value':value,'configOptions':options}))
+elif 'ensure' in args: print(json.dumps({'sessionId':'fake-offline-session'}))
+elif 'close' in args: print('{}')
+elif 'prompt' in args: print('{}')
+else: print('{}')
+""")
+ENV['PATH']=str(fake)+':'+ENV.get('PATH','');ENV['CODEX_PATH']=str(fake/'codex');ENV.pop('NODE_OPTIONS',None)
+(repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(ROOT/'bin/roundfix')
+# This bin symlink is an entry point, outside all managed paths.
+before_doctor=tree(repo)
+p=cli('snapshot-doctor','doctor',repo=repo)
+lines=[x for x in p.stdout.splitlines() if x.startswith('skills:')];assert len(lines)==1;assert lines[0].startswith('skills: ok (');assert 'DR-SKILL-DIFFERS-FROM-SNAPSHOT' in lines[0];assert 'testing-boss' in lines[0];assert tree(repo)==before_doctor
+(E/'snapshot-observations.json').write_text(json.dumps({'repository':str(repo),'offline_object_store':str(store),'preview_state':preview['state'],'differing':preview['skills']['differing'],'skill_tree_digest_before':hashvalue,'skill_tree_digest_after':hashvalue,'restore_count':len(applied['skills']['restored']),'doctor_exit':p.returncode,'doctor_skills_line':lines[0]},indent=2)+'\n')
+print('Doctor exit',p.returncode);print(p.stdout)
+if (STATE/'home/fake-runtime-calls.txt').exists():shutil.copy2(STATE/'home/fake-runtime-calls.txt',E/'snapshot-fake-runtime-calls.txt')
+retired=['DR-SKILL-TRAILS-SNAPSHOT','trails its Setup Snapshot','trails the Setup Snapshot','TrailingSetupSkills']
+p=run('snapshot-retired-search',['rg','-n','-F',*[a for phrase in retired for a in ['-e',phrase]],'internal','cmd','docs/user-guide','.agents/skills','skills']);assert p.returncode==1
+assert json.loads((E/'snapshot-doctor.command.json').read_text())['exit']==0
+observe('05','pass','A Go-profile temporary adopter has a required external testing-boss skill whose calculated tree digest matches its disposable lock but differs from the embedded snapshot. Preview exited 0/state `current`, listing only `skills.differing`; confirmed update with an empty temporary bare object store exited 0, restored zero skills and kept the entire skill digest. Independent Doctor command exited 0 and its skills line was `ok`, with DR-SKILL-DIFFERS-FROM-SNAPSHOT and no restore action. Runtime, forge and macOS platform checks are fake local executables; no provider, real Session or credential was used. [Observations](evidence/2026-10-12-run/snapshot-observations.json), [Doctor](evidence/2026-10-12-run/snapshot-doctor.stdout.txt), [fake runtime calls](evidence/2026-10-12-run/snapshot-fake-runtime-calls.txt). Repository search for all four retired strings under every required root exited 1/no hits; [exact search](evidence/2026-10-12-run/snapshot-retired-search.command.json). Missing and mismatched restore behavior is independently exercised by the row 02 fake-dependency cases.')
