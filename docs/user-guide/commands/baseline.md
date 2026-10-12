@@ -134,6 +134,40 @@ Tag are refused and left untouched; a refusal does not block the Baseline Plan
 or change the update's state. A repository-wide history precondition such as an
 invalid tag makes the history section `blocked` with a one-line result.
 
+The update lists each History Citation in text and JSON, and binds the list into
+the Plan Digest:
+
+```
+History citations: <n>
+- cites <path>:<line> names <target>
+- cites <path>:<line> names <target> (live)
+- cites <path>:<line> names <target> (live; promote with --promote <target>)
+- cites <path>:<line> names <target> (promoted to docs/references/<basename>)
+History stale citations: <n>
+- cites <path>:<line> names <target>; history-full holds it: git show history-full:<target>
+```
+
+JSON includes `history.citations` and `history.staleCitations` arrays.
+Citation objects carry `path`, `line`, `target` and `live`, with
+`offer` for the Live Document promotion offer and `promotedTo` after a
+promotion. Stale History Citations are reported outside the digest, state,
+category and exit code.
+
+The repeatable `--promote <path>` flag copies a selected Legacy Archive
+Folder's named file to `docs/references/` during apply. Each value must be a
+clean repository-relative file inside a selected folder, outside Refused Units,
+non-core, unique by basename among promotions, and absent from
+`docs/references/`. The update refuses `--promote` with `--no-history`,
+invalid values, refused units or occupied destinations with category `invalid`
+and writes nothing. It never rewrites citing files.
+
+Adopter note: if an earlier `roundfix baseline update` or Sanitize Batch
+already broke citations, run `roundfix baseline update` with the History Full
+Tag present, read the `History stale citations` lines, and restore a target
+you keep with `git show history-full:<path>` into `docs/references/` before
+fixing the link. Specs already written to link an owner's copy need nothing,
+because the owner's archive performs an Archive Relink.
+
 JSON always includes a `history` object whose status is `skipped`, `current`,
 `pending`, `applied` or `blocked`. It reports selected units, refusals, tag
 action and apply counts when those values exist. Selected history is bound into

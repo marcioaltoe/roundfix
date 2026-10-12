@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.6
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.6
+version: 0.0.8
 ---
 
 # Archive Spec
@@ -16,6 +16,23 @@ version: 0.0.6
 Archive a completed spec by writing `<slug>.md` under the resolved archive root and removing `<resolved-spec-root>/<slug>/`, which stays in Git at the record's `source_revision`. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
+
+## Archive Relink
+
+Before writing the Archive Record, the archive performs an Archive Relink. It
+automatically promotes each cited non-core file that a Live Document references
+from the owner Spec to
+`docs/references/<basename>`, then rewrites citations from each Live Document
+to the promoted copy; citations of the Spec folder or a core artifact point to
+the Archive Record. The record lists rewritten files under `relinked` when any
+exist. The source keeps one owner, so a secondary Spec needs no copy (ADR-0260,
+ADR-0083).
+
+The archive refuses to write when a promotion destination already exists, when
+two promotions share a basename, or when a Live Document to be rewritten has
+changes not committed at `HEAD`. Citations in files that are not Live
+Documents, or citations that remain after rewriting, are warnings naming the
+file, line and target; the archive leaves those files unchanged.
 
 ### QA settlement
 

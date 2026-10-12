@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Write Idea
@@ -30,6 +30,9 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
   owning Spec with a destination relative to `_idea.md`, never the pre-adoption
   path retained as provenance. A secondary Spec links that owner's copy and
   adopts nothing.
+  The owner's archive performs an Archive Relink: it promotes that copy to
+  `docs/references/` and rewrites the secondary Spec's links, so the source
+  keeps one owner and the secondary Spec needs no copy (ADR-0260, ADR-0083).
 - **Do not write the file until the user approves the draft** — unlike `write-prd`, this stage is inherently interactive: its whole product is shared judgment.
 
 ## Sources that share a context

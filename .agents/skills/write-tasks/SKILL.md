@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.12
+  version: 0.0.13
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.12
+version: 0.0.13
 ---
 
 # Write Tasks
@@ -87,6 +87,9 @@ Code for another operating system is verified by building its non-test code for 
   owning Spec with a destination relative to that Task file, never at its
   pre-adoption provenance path. A secondary Spec links the primary owner's
   copy and adopts nothing.
+  The owner's archive performs an Archive Relink: it promotes that copy to
+  `docs/references/` and rewrites the secondary Spec's links, so the source
+  keeps one owner and the secondary Spec needs no copy (ADR-0260, ADR-0083).
 - **Context entries are labeled paths.** Add `## Context` only when the Task
   needs specific instruction or interface paths beyond the standard Spec
   bundle. Use bullets shaped as `- instruction: <path>`,

@@ -172,6 +172,12 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	if len(result.Promoted) > 0 {
 		suffix += fmt.Sprintf("; promoted %d file(s) to docs/references/", len(result.Promoted))
 	}
+	if len(result.Relinked) > 0 {
+		suffix += fmt.Sprintf("; relinked %d file(s)", len(result.Relinked))
+	}
+	for _, citation := range result.Unrelinked {
+		fmt.Fprintf(stderr, "%s: warning: archive leaves %s:%d naming removed %s unrelinked\n", app.Name, citation.Path, citation.Line, citation.Target)
+	}
 	if result.QAOverride {
 		fmt.Fprintf(stdout, "archived %s with QA override -> %s%s\n", req.slug, rel, suffix)
 	} else {
@@ -312,6 +318,39 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 	}
 	relRecord := filepath.ToSlash(filepath.Join(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug+".md"))
 	relRecord, _ = filepathRelSlash(loaded.GitRoot, relRecord)
+	repositoryRoot := loaded.GitRoot
+	if root.External {
+		repositoryRoot, err = gitOutput(ctx, root.Path, "rev-parse", "--show-toplevel")
+		if err != nil {
+			printPreflightFailure("archive", err, stderr)
+			return exitPreflight
+		}
+	}
+	specRootRel, err := filepathRelSlash(repositoryRoot, root.Path)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	archiveRootRel, err := filepathRelSlash(repositoryRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	folderRel, err := filepathRelSlash(repositoryRoot, specDir)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	recordRel, err := filepathRelSlash(repositoryRoot, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug))
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	relinkPlan, err := spec.PlanArchiveRelink(ctx, repositoryRoot, specRootRel, archiveRootRel, folderRel, recordRel, nil)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
 	fmt.Fprintf(stdout, "archive plan for %s: removes %d file(s) (%d bytes) and writes %s\n", req.slug, len(files), totalBytes, relRecord)
 	fmt.Fprintf(stdout, "core %d file(s): %s\n", len(core), strings.Join(core, ", "))
 	fmt.Fprintf(stdout, "evidence %d file(s) (%d bytes) under qa/evidence/\n", len(evidence), evidenceBytes)
@@ -333,6 +372,34 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 			detail += " (" + *advice.Reason + ")"
 		}
 		fmt.Fprintf(stdout, "candidate %s %d bytes: %s\n", advice.File, size, detail)
+	}
+	promotions := map[string]string{}
+	for _, path := range relinkPlan.Promote {
+		destination := "docs/references/" + filepath.Base(path)
+		promotions[folderRel+"/"+path] = destination
+		fmt.Fprintf(stdout, "promotes %s to %s\n", path, destination)
+	}
+	folderFiles := make([]string, 0, len(files))
+	for _, path := range files {
+		folderFiles = append(folderFiles, folderRel+"/"+path)
+	}
+	moves := spec.ArchiveCitationMoves(folderRel, recordRel, folderFiles, promotions)
+	var relinked []string
+	for path := range relinkPlan.Relinked {
+		relinked = append(relinked, path)
+	}
+	sort.Strings(relinked)
+	for _, path := range relinked {
+		content, err := gitOutput(ctx, repositoryRoot, "show", "HEAD:"+path)
+		if err != nil {
+			printPreflightFailure("archive", err, stderr)
+			return exitPreflight
+		}
+		_, count := spec.RelinkContent([]byte(content), path, moves)
+		fmt.Fprintf(stdout, "relinks %s: %d citation(s)\n", path, count)
+	}
+	for _, citation := range relinkPlan.Unrelinked {
+		fmt.Fprintf(stdout, "leaves %s:%d naming %s unrelinked\n", citation.Path, citation.Line, citation.Target)
 	}
 	fmt.Fprintf(stdout, "promote with: roundfix archive %s --promote <path>\n", req.slug)
 	return exitOK

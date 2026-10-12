@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.10
+  version: 0.0.11
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.10
+version: 0.0.11
 ---
 
 # Write PRD
@@ -134,6 +134,9 @@ in order after recording decisions and before writing the PRD:
    `docs/history/specs/` for an existing owner. Exactly one Spec owns a shared
    source: the first Spec that commits to implementation. A secondary Spec links
    the owner's post-adoption copy and adopts nothing.
+   The owner's archive performs an Archive Relink: it promotes that copy to
+   `docs/references/` and rewrites the secondary Spec's links, so the source
+   keeps one owner and the secondary Spec needs no copy (ADR-0260, ADR-0083).
 4. **Preflight.** Resolve every adopted source's basename and destination under
    `docs/specs/<slug>/references/` before changing any finding status, writing
    the index, or moving a source. `_index.md` is a reserved basename; reject any
