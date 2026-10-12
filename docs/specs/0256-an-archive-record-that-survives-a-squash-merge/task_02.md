@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0256-an-archive-record-that-survives-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -132,3 +132,134 @@ repositories and a local bare repository standing in for the forge.
 - [_prd.md](_prd.md) — Goal 2; Goal 4; User Stories 1, 4 and 5; Core Feature 3; Core Feature 5; Success Metric 2; Success Metric 4
 - [_techspec.md](_techspec.md) — Reader inventory; Interfaces; API Contract 3; Testing Approach; Build Order 2
 - ADR-0261; ADR-0247; ADR-0165; ADR-0169; ADR-0259
+
+
+## Result
+
+Implemented this Task's reader slice for Daemon Verification. The incoming
+`in_progress` status was left untouched. The initial worktree had only the
+Daemon's status change in this Task file.
+
+### Implementation
+
+- Added the named-schema predicate to the review scope, review Spec context
+  and archived-slug enumeration. YAML schema identity is separate from full
+  record validation, so schema-declaring malformed records still fail.
+- Added Source Revision Recovery with the record number or adding-commit
+  subject, strict positive-number validation, local availability first and
+  an availability check after fetching. Fetch uses the configured remote,
+  no tags, no destination ref, no `FETCH_HEAD`, an empty refmap and no automatic
+  maintenance. It has no stdin, forces `GIT_TERMINAL_PROMPT=0`, and runs through
+  `exec.CommandContext` under the 60-second `SourceRecoveryFetchTimeout`.
+- Wired recovery into all four folder readers. Review and Run causes use
+  `watch.push_remote`; the other two use `origin`. Existing unavailable
+  diagnostics, skipped context, report metadata and unresolved citations
+  retain their previous behavior.
+- Added the required tests and a reusable local-forge/main-only-clone fixture
+  in `internal/gittest/pull_request.go`. Every recovery fixture proves
+  `git cat-file -e <source_revision>^{commit}` fails before its reader runs.
+  Every new top-level test starts with `t.Parallel()`; the process-boundary
+  probe re-executes the test binary with a private environment and uses
+  `testfixture.FixtureBinary` for its compiled Git wrapper (ADR-0125).
+- Updated only the enumeration assertion of
+  `TestReadArchivedSpecReadsRecordAndLegacyFolder`: its unnumbered `demo.md`
+  is intentionally excluded by the new predicate. All its known-slug read
+  assertions remain. No schema, archived record, archive cut, dependency,
+  Task Graph or other Task file was changed.
+
+### Characterization and sabotages
+
+Before the production change:
+
+```sh
+go test ./internal/cli -run '^TestReviewIgnoresAProseReadmeInTheArchiveRoot$' -count=1
+```
+
+Exit 1: `TestReviewIgnoresAProseReadmeInTheArchiveRoot` reported provider calls
+0, review exit 2 and
+`read review archive record: missing YAML frontmatter opening marker`.
+
+Two temporary sabotages were applied individually and restored in `finally`
+blocks before subsequent checks:
+
+1. Bypassed `IsArchiveRecord` in the review scope. The characterization
+   command above exited 1 with the same README error and zero provider calls.
+2. Removed the fetch invocation from `EnsureSourceRevision`.
+   `go test ./internal/spec -run '^TestSourceRevisionRecoveryFetchesThePullRequestHead$' -count=1`
+   exited 1 in `TestSourceRevisionRecoveryFetchesThePullRequestHead` with
+   `check fetched source revision: source_revision is unavailable`.
+
+### Focused-check evidence
+
+The final restored implementation passed this focused regression selection
+(exit 0 in all four packages):
+
+```sh
+go test ./internal/spec ./internal/cli ./internal/worktree ./internal/speccheck -run '(ArchiveRecord|ArchivedSpec|ArchivedTask|SourceRevisionRecovery|PullRequestFromSubject|ReviewIgnoresAProse|ReviewStillRefuses|Recovers?ASquashDroppedRevision|LeftoversReadTaskContext|LeftoversKeepTheWorktree|RunCausesReadAnArchivedTaskGraph)' -count=1
+```
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| A prose archive-root README reaches the provider | `TestReviewIgnoresAProseReadmeInTheArchiveRoot` asserts review exit 0, one provider call, prose in the prompt and no archived/skipped Spec context. |
+| A malformed declared record blocks review | `TestReviewStillRefusesAMalformedArchiveRecord` asserts refusal before any provider call. The identity and enumeration tests also reject malformed declared records without treating prose or another schema as records. |
+| All four readers recover the folder | `TestReviewContextRecoversASquashDroppedRevision`, `TestRunCausesRecoverASquashDroppedRevision`, `TestLeftoversRecoverASquashDroppedRevision` and `TestArchivedTaskContextRecoversASquashDroppedRevision` each cover the record number and adding subject through a bare forge. Review and causes use a remote named `delivery` with an unreachable `origin`; Spec check covers built-in and custom roots. Leftovers also reads the archived QA report. |
+| No ref or FETCH_HEAD; unavailable behavior preserved | `TestSourceRevisionRecoveryWritesNoRef` compares all refs before/after, includes a configured pull-ref mapping and requires absent `FETCH_HEAD`. The unreachable-revision test covers an absent forge and a head lacking the revision. Each reader test has an unreachable-forge case preserving its prior outcome. The unchanged `TestRunCausesReportAnArchiveRecordWithoutItsRevision` and `TestLeftoversKeepTheWorktreeWithoutTheSourceRevision` pass. |
+
+Additional evidence: malformed numbers fetch no objects; an available local
+commit succeeds with an unreachable remote; a later record edit carrying
+`(#8)` still recovers from the adding commit's `(#7)`.
+`TestSourceRevisionRecoveryCancelsTheFetchProcess` observes prompt setting 0,
+EOF on stdin, cancellation by a tighter parent deadline, and a dead/reaped
+fetch PID on return.
+
+The broader selection first exposed the obsolete `demo.md` enumeration
+expectation above; it passed after updating that intentionally changed
+contract. Initial CLI recovery fixtures also exposed macOS `/var` versus
+`/private/var` repository keys; canonicalizing the clone paths corrected the
+fixture artifacts and disposable Run-store keys.
+
+`git diff --check` passed. The Agent did not run the Task's declared
+Verification commands, repository Verification or incremental Verification;
+the Daemon owns those commands. No commit, push or pull request was made.
+No follow-up outside this Task was implemented.
+
+
+### Verification Feedback repair — attempt 1
+
+The Daemon's `make verify-changed` attempt reported an executable-fixture
+inventory failure in the cancellation probe. Diagnostic source:
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261012T140955Z_23b372ef5c35c71c/verification/batch-002-attempt-1.log`.
+The probe wrote an executable shell wrapper, contrary to ADR-0125's compiled
+fixture rule.
+
+Replaced that wrapper with a Go binary built through the existing
+`testfixture.FixtureBinary` helper. The compiled fixture delegates local
+reads to real Git and blocks the fetch inside its own process. The probe
+retains its private child environment, prompt, EOF and dead-PID assertions.
+This repair changes only this Task's test and Result; the executable
+inventory and production implementation remain unchanged.
+
+Focused checks after the repair:
+
+- `go test ./internal/spec -run '^TestSourceRevisionRecoveryCancelsTheFetchProcess$' -count=1`
+  — exit 0; the compiled-fixture probe verifies the non-interactive fetch
+  boundary and cancellation that kills and reaps its process.
+- `go test ./internal/testfixture -run '^TestNoTestWritesAnExecutableOutsideTheResidue$' -count=1`
+  — exit 0; the repository inventory accepts the repaired fixture.
+- `git diff --check` — exit 0.
+
+Status remains `in_progress`, owned by the Daemon. The Agent did not rerun
+`make verify-changed` or any declared Verification command. The configured
+Verification rerun and settlement remain with the Daemon.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/gittest/pull_request.go`
+- `internal/spec/archive_record_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T140955Z_23b372ef5c35c71c`
+- Source commit: `003f2a8769e196cae168af15aa9920bc0db0f632`

@@ -59,6 +59,48 @@ type ArchiveRecordInput struct {
 
 func ArchiveRecordPath(root, slug string) string { return filepath.Join(root, slug+".md") }
 
+var archiveRecordName = regexp.MustCompile(`^[0-9]{4}-[^/\\]+\.md$`)
+
+// IsArchiveRecordName identifies a record filename directly under an archive root.
+func IsArchiveRecordName(name string) bool { return archiveRecordName.MatchString(name) }
+
+// IsArchiveRecord identifies the schema declaration without validating the record.
+// Malformed records that declare the schema still reach ParseArchiveRecord.
+func IsArchiveRecord(name string, content []byte) bool {
+	if !IsArchiveRecordName(name) {
+		return false
+	}
+	lines := strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n")
+	if len(lines) == 0 || lines[0] != "---" {
+		return false
+	}
+	end := len(lines)
+	for i, line := range lines[1:] {
+		if line == "---" {
+			end = i + 1
+			break
+		}
+	}
+	var fields map[string]yaml.Node
+	if yaml.Unmarshal([]byte(strings.Join(lines[1:end], "\n")), &fields) == nil {
+		return fields["schema"].Value == ArchiveRecordSchema
+	}
+	// A broken field elsewhere must not hide a declared record schema.
+	for _, line := range lines[1:] {
+		if line == "---" {
+			break
+		}
+		if strings.TrimLeft(line, " \t") != line {
+			continue
+		}
+		var declaration map[string]yaml.Node
+		if yaml.Unmarshal([]byte(line), &declaration) == nil && declaration["schema"].Value == ArchiveRecordSchema {
+			return true
+		}
+	}
+	return false
+}
+
 // BuildArchiveRecord derives archive metadata without modifying any source file.
 func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	content, err := os.ReadFile(filepath.Join(in.SpecDir, "_prd.md"))
@@ -598,7 +640,17 @@ func ArchivedSpecSlugs(root string) ([]string, error) {
 			if _, err := os.Stat(filepath.Join(root, entry.Name(), "_prd.md")); err == nil {
 				seen[entry.Name()] = true
 			}
-		} else if strings.HasSuffix(entry.Name(), ".md") {
+		} else if IsArchiveRecordName(entry.Name()) {
+			content, err := os.ReadFile(filepath.Join(root, entry.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("read archive record %q: %w", entry.Name(), err)
+			}
+			if !IsArchiveRecord(entry.Name(), content) {
+				continue
+			}
+			if _, err := ParseArchiveRecord(content); err != nil {
+				return nil, fmt.Errorf("read archive record %q: %w", entry.Name(), err)
+			}
 			seen[strings.TrimSuffix(entry.Name(), ".md")] = true
 		}
 	}

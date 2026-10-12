@@ -425,6 +425,13 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 			if strings.TrimSpace(files) == "" {
 				continue
 			}
+			content, err := reviewCandidateFile(ctx, gitRoot, headCommit, changedPath, runner)
+			if err != nil {
+				return "", nil, fmt.Errorf("read review archive record: %w", err)
+			}
+			if !spec.IsArchiveRecord(strings.TrimPrefix(changedPath, root+"/"), []byte(content)) {
+				continue
+			}
 			slug := strings.TrimSuffix(strings.TrimPrefix(changedPath, root+"/"), ".md")
 			archived, err := readArchivedSpecAt(ctx, runner, gitRoot, headCommit, root, slug)
 			if err != nil {
@@ -1214,7 +1221,7 @@ func runConfiguredReviewSession(
 			return agent.ExecuteResult{}, scope, false, err
 		}
 	}
-	specContext, err := reviewCandidateSpecContexts(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner)
+	specContext, err := reviewCandidateSpecContexts(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner, config.Watch.PushRemote)
 	if err != nil {
 		return agent.ExecuteResult{}, scope, false, reviewSpecReadError{err: err}
 	}
@@ -1422,6 +1429,7 @@ func reviewCandidateSpecContexts(
 	headCommit string,
 	specRoots []string,
 	runner preflight.GitRunner,
+	remote string,
 ) (reviewSpecContextResult, error) {
 	if len(specRoots) == 0 {
 		return reviewSpecContextResult{}, nil
@@ -1467,6 +1475,13 @@ func reviewCandidateSpecContexts(
 			remainder := strings.TrimPrefix(changedPath, prefix)
 			slash := strings.IndexByte(remainder, '/')
 			if slash < 0 && root != activeRoot && strings.HasSuffix(remainder, ".md") {
+				content, err := reviewCandidateFile(ctx, gitRoot, headCommit, changedPath, runner)
+				if err != nil {
+					return reviewSpecContextResult{}, fmt.Errorf("read archived Spec: %w", err)
+				}
+				if !spec.IsArchiveRecord(remainder, []byte(content)) {
+					break
+				}
 				slug := strings.TrimSuffix(remainder, ".md")
 				archived, err := readArchivedSpecAt(ctx, runner, gitRoot, headCommit, root, slug)
 				if err != nil {
@@ -1520,6 +1535,10 @@ func reviewCandidateSpecContexts(
 		revision := headCommit
 		if location.record != nil {
 			revision = location.record.SourceRevision
+			if _, err := spec.EnsureSourceRevision(ctx, gitRoot, remote, *location.record, headCommit, prefix+slug+".md"); err != nil {
+				result.skipped = append(result.skipped, slug)
+				continue
+			}
 			if _, err := runner.RunGit(ctx, gitRoot, "cat-file", "-e", revision+"^{commit}"); err != nil {
 				result.skipped = append(result.skipped, slug)
 				continue
