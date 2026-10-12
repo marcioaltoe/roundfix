@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0257-the-baseline-respects-the-repository
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -119,3 +119,133 @@ file.
 - `_prd.md` → Goal 4; User Story 5; Core Features 4 and 5; Success Metric 4
 - `_techspec.md` → API Contract 7; Exact clause texts; Divergence audit; Skill and document texts; Derived files; Invariants 6 to 9; Testing Approach; Build Order 4
 - ADR-0264; ADR-0257; ADR-0186; ADR-0250; ADR-0244
+
+## Result
+
+Implementation handed back for Daemon Verification. Task status, Subtasks,
+Acceptance Criteria, the Task Graph and every other Task file are unchanged.
+
+### Implementation
+
+- Reworded the two core clauses and the Rust current-docs clause with the
+  TechSpec's exact texts, keeping their identities and enforcement and adding
+  no `replaces`. Only `rule.core.skill-dispatch` (6 → 7) and
+  `rule.rust.current-docs` (3 → 4) changed rule versions. The sanctioned module
+  record selected core module version 21 and Rust module version 5.
+- Added `internal/baseline/vendored_skill_clauses_test.go`, following the
+  verification-tier clause tests. The tests pin all three texts independently
+  of the assets, verify each core text renders once with its enforcement, and
+  exercise Source Baseline refresh accounting through
+  `newClauseReplacementAdopter`.
+- Changed only the declared vendored-skill sentence in
+  `internal/baseline/promoted_core_clauses_test.go`.
+- Added the exact `## Vendored skills` section to the canonical `roundfix`
+  Baseline reference and synchronized its mirror. The owned-skill record
+  selected version `0.1.66`; both version fields in each SKILL.md were written
+  by the record command. The QA settlement section is byte-identical to HEAD.
+- Added **Vendored Skill** beside the Repository Skill Set and Setup Snapshot
+  Difference terms through `domain-modeling`, using the specified definition,
+  avoid-list and a resolving Markdown link to ADR-0264.
+
+### Acceptance evidence
+
+| Acceptance criterion | Evidence observed in this turn |
+| --- | --- |
+| Skill-dispatch states the three choices and installed-directory rule | `TestTheVendoredSkillClausesCarryTheDivergenceOrder` and `TestTheVendoredSkillClausesRenderInTheGuides` passed. A direct inspection also found exactly one correctly forced bullet for each exact core text in both the repository guide and Standard TypeScript golden. |
+| Source Baseline refresh retains both core clauses, none unaccounted | `TestAnAdopterRetainsTheVendoredSkillClauses` passed for both core clause identities. It checks every disposition for `ClauseUnaccounted`, each requested disposition for `ClauseRetained`, and the corresponding retention evidence. |
+| Roundfix skill states the order and matches its mirror | The canonical reference contains the exact three-choice section. Its bytes equal `skills/roundfix/references/baseline.md`; the sanctioned regeneration's `TestAuthorialSkillSync` passed after synchronization. |
+| CONTEXT defines Vendored Skill | Direct inspection confirmed the exact definition and avoid-list beside related skill terms, with the ADR-0264 link. |
+
+### Commands and focused checks
+
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`: exit 0; recorded the module versions.
+- `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then `make skills-sync` again: each exited 0.
+- `make baseline-digests`: exit 0 after synchronization. The first invocation
+  had stopped at `TestAuthorialSkillSync` because the canonical reference had
+  been edited before its mirror was synchronized; the required sync/record/sync
+  sequence corrected that cause. No expected bytes were edited by hand.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`:
+  first refresh exited 0 and reported `File changes: 2`, updating the Setup
+  Manifest and skill-dispatch guide. The second exited 0 and reported
+  `File changes: 0` and `Idempotence: verified`. A final invocation after
+  restoring the sabotage also exited 0 with the same zero-change result.
+  Refresh reported the existing nested-carrier conflict warnings for the
+  formatter-fixture and Source Baseline AGENTS.md carriers; neither was changed.
+- `go test ./internal/baseline -run '^(TestTheVendoredSkillClausesCarryTheDivergenceOrder|TestTheVendoredSkillClausesRenderInTheGuides|TestAnAdopterRetainsTheVendoredSkillClauses|TestTheCoreGuidesStateThePromotedRules|TestTheRustGuideStatesTheErrorPolicy)$' -count=1 -v`:
+  exit 0 on the restored final sources; all five named tests reported PASS.
+- Direct structural comparison to HEAD confirmed the modules differ only in
+  the three guidance strings, two rule versions and recorded module versions.
+  The final changed-file audit found only Task Context paths plus this Result;
+  `git diff --check` exited 0.
+
+### Failure proofs and restoration
+
+1. Before editing the modules, the focused text/rendering check
+   `go test ./internal/baseline -run '^TestTheVendoredSkillClauses(CarryTheDivergenceOrder|RenderInTheGuides)$' -count=1`
+   exited 1: all three old texts differed, and both core golden bullets lacked
+   the new text.
+2. Clause sabotage: temporarily changed `First, state the correction` to
+   `First, ignore the correction` in the core source, then ran
+   `make baseline-digests` successfully. The same focused text/rendering
+   command exited 1: `TestTheVendoredSkillClausesCarryTheDivergenceOrder`
+   reported a text mismatch and `TestTheVendoredSkillClausesRenderInTheGuides`
+   reported the missing exact forced bullet, both for
+   `clause.core.prohibit-editing-vendored-skills`.
+3. Restored the exact core source bytes and ran `make baseline-digests` again,
+   exit 0. No module-record command was run on the sabotaged content, so no
+   temporary version entered the record.
+4. Retention sabotage: a temporary Go test overlay removed that clause from
+   the refresh catalog with `mutateCatalogClause` after the Source Baseline
+   adopter was created. `go test -overlay /private/tmp/roundfix-task04-evidence/retention-overlay.json ./internal/baseline -run '^TestAnAdopterRetainsTheVendoredSkillClauses$' -count=1`
+   exited 1. The test reported `action_required`, category `classification`,
+   and `retention transition has 1 unaccounted clause(s): clause.core.prohibit-editing-vendored-skills`.
+   The repository test source was unchanged by the overlay; both temporary
+   overlay files were removed. The restored focused command above then
+   reported PASS for all three new tests and both existing checks.
+
+### Files changed by sanctioned commands
+
+Module record command:
+
+- `internal/baseline/assets/modules/core.json` (module version line)
+- `internal/baseline/assets/modules/rust.json` (module version line)
+- `internal/baseline/module-versions.json`
+
+`make baseline-digests`:
+
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md`
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+
+Managed Refresh:
+
+- `docs/agents/setup-context.json`
+- `docs/agents/skill-dispatch.md`
+
+Owned-skill record and synchronization (files whose bytes changed):
+
+- `.agents/skills/roundfix/SKILL.md`
+- `skills/roundfix/SKILL.md`
+- `skills/roundfix/references/baseline.md`
+- `skills/testdata/owned-skill-versions.json`
+
+The remaining authored changes are the canonical reference
+`.agents/skills/roundfix/references/baseline.md`, `CONTEXT.md`, the new test
+file, the declared sentence in `promoted_core_clauses_test.go`, and this Result;
+module guidance and rule versions were edited at their sources before recording.
+No production Go file, Source Baseline asset, clause force record, other
+module, other Task or Task Graph changed.
+
+### Handoff boundary
+
+The Task's two declared Verification commands, `make verify` and
+`make verify-changed` were not run; they remain Daemon-owned. No commit, push
+or pull request was made. No implementation blocker or follow-up was found.

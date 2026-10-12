@@ -63,6 +63,10 @@
       {
         "version": 20,
         "digest": "sha256:88b11b44088d41b2f25789ebbc881e3dcce782689e1ee57bb26c4589c82dc9f5"
+      },
+      {
+        "version": 21,
+        "digest": "sha256:8a91dc5f4c81ff85c0ee68fde4c590c5c9bf4b936c52a929eec07b17baf4c75d"
       }
     ],
     "external-triage": [
@@ -103,6 +107,10 @@
       {
         "version": 4,
         "digest": "sha256:4ab9de1b2cbe322e4abbd8cee5901558b881439e246abeddf37b8ae155ac4100"
+      },
+      {
+        "version": 5,
+        "digest": "sha256:8a83f7586aac02130fba94f4f6b7977fb1cc00e63d747d160b8151fb82d91239"
       }
     ],
     "secondbrain": [

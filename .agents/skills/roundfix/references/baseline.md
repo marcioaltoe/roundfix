@@ -241,3 +241,13 @@ through `--confirm-plan`. Asset refresh without `--check` requires explicit
 maintainer intent. For Decision Documents, preservation, cross-clone safety,
 recovery, migration, security limits, and completion evidence, follow
 `docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
+
+## Vendored skills
+
+A vendored skill is installed from an upstream source and never edited in the repository, because the next sync replaces its folder; the restore and the managed refresh only install, compare and restore it. When one diverges from what the repository needs, correct it in this order:
+
+1. A rule that governs over the skill's default: a Baseline clause, or a Repository-Specific Normative Rule. This answers a convention difference such as the package manager, the test runner or a library choice.
+2. A repository-authored skill that supplies or overrides only what is missing, installed beside the vendored one.
+3. A repository-authored skill that replaces the vendored one, only when the vendored skill is useless or almost useless to the repository.
+
+Send an objective upstream defect to the upstream as a pull request; it never justifies the third choice.
