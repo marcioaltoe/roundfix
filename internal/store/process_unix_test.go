@@ -874,10 +874,16 @@ func startOwnerProcessTreeHelper(t *testing.T) (int, int, <-chan error) {
 	if groupID, err := unix.Getpgid(cmd.Process.Pid); err != nil || groupID != cmd.Process.Pid {
 		t.Fatalf("owner process tree group = %d, error = %v, want %d", groupID, err, cmd.Process.Pid)
 	}
+	identity, err := OwnerProcessIdentity(t.Context(), cmd.Process.Pid)
+	if err != nil {
+		t.Fatalf("record process tree leader identity: %v", err)
+	}
 	wait := make(chan error, 1)
 	waitStarted := false
 	t.Cleanup(func() {
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		if _, err := SignalProvenProcessGroup(context.Background(), cmd.Process.Pid, identity, syscall.SIGKILL); err != nil {
+			t.Errorf("clean up process tree: %v", err)
+		}
 		if !waitStarted {
 			_ = cmd.Wait()
 			return

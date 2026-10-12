@@ -176,6 +176,15 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 		return ownerProcessControlError(pid, "send graceful termination", gracefulErr)
 	}
 
+	absent, err = controller.proveOwner(stopCtx, pid, recordedIdentity)
+	if errors.Is(err, ErrOwnerProcessIdentityUnproven) || absent {
+		// The recorded owner ended during the grace; a reused PID is a stranger.
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
 	if err := controller.signalProcess(pid, true); err != nil {
 		if errors.Is(err, errOwnerProcessAlreadyAbsent) {
 			return nil

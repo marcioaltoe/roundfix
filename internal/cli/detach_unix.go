@@ -3,9 +3,11 @@
 package cli
 
 import (
-	"errors"
+	"context"
 	"os/exec"
 	"syscall"
+
+	"roundfix/internal/store"
 )
 
 // configureDetachedSysProcAttr makes the detached child a session leader so it
@@ -16,7 +18,7 @@ func configureDetachedSysProcAttr(cmd *exec.Cmd) {
 
 // killDetachedProcessGroup kills the detached child's whole process group and
 // reports whether it handled the kill.
-func killDetachedProcessGroup(cmd *exec.Cmd) bool {
-	err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	return err == nil || errors.Is(err, syscall.ESRCH)
+func killDetachedProcessGroup(cmd *exec.Cmd, leaderIdentity string) bool {
+	_, err := store.SignalProvenProcessGroup(context.Background(), cmd.Process.Pid, leaderIdentity, syscall.SIGKILL)
+	return err == nil
 }

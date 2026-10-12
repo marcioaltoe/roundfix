@@ -21,6 +21,6 @@ func configureDetachedSysProcAttr(cmd *exec.Cmd) {
 
 // killDetachedProcessGroup has no syscall-level process-group kill on Windows;
 // return false so the caller falls back to Process.Kill.
-func killDetachedProcessGroup(_ *exec.Cmd) bool {
+func killDetachedProcessGroup(_ *exec.Cmd, _ string) bool {
 	return false
 }

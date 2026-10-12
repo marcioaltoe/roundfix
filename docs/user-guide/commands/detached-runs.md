@@ -28,6 +28,9 @@ humans use `roundfix attach <run-id>` for the read-only Live Run View. Detach
 implies non-interactive mode: `--interactive` is rejected and `--no-input` is
 implied.
 
+Roundfix signals a detached child's process group only after proving that its
+leader is the child it started.
+
 Run Outcome Notification delivery is best-effort and never changes the Run
 outcome or exit code. Each attempt appends a separate durable Run Event with
 route, completion time, and receipt status `sent`, `skipped`, or `failed`;

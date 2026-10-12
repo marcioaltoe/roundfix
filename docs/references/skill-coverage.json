@@ -482,7 +482,8 @@
       "sources": [
         "docs/user-guide/commands/resolve.md",
         "internal/cli/detach.go"
-      ]
+      ],
+      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
     },
     {
       "id": "command review",
@@ -684,7 +685,8 @@
       "sources": [
         "docs/user-guide/commands/watch.md",
         "internal/cli/detach.go"
-      ]
+      ],
+      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
     },
     {
       "id": "command window clear",
@@ -828,7 +830,8 @@
       ],
       "sources": [
         "docs/user-guide/commands/detached-runs.md"
-      ]
+      ],
+      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
     },
     {
       "id": "guide docs/user-guide/commands/doctor.md",

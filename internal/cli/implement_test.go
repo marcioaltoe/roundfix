@@ -1860,7 +1860,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	ownerIdentity := ""
 	reapOwner := func() {
 		if ownerPID > 0 {
-			killDetachFixtureGroup(t, ownerPID)
+			killDetachFixtureGroup(t, ownerPID, ownerIdentity)
 			waitForDetachFixtureExit(t, ownerPID, ownerIdentity)
 			ownerPID = 0
 		}
@@ -1893,10 +1893,14 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("start detach caller: %v", err)
 	}
 
+	callerIdentity, err := store.OwnerProcessIdentity(t.Context(), cmd.Process.Pid)
+	if err != nil {
+		t.Fatalf("record detach caller identity: %v", err)
+	}
 	callerReaped := false
 	t.Cleanup(func() {
 		if !callerReaped {
-			killDetachFixtureGroup(t, cmd.Process.Pid)
+			killDetachFixtureGroup(t, cmd.Process.Pid, callerIdentity)
 			_ = waitProcessForTest(t, cmd)
 		}
 	})
@@ -1919,7 +1923,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	if err != nil {
 		t.Fatalf("record detached Run owner %d start identity: %v", ownerPID, err)
 	}
-	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
+	if _, err := store.SignalProvenProcessGroup(t.Context(), cmd.Process.Pid, callerIdentity, syscall.SIGKILL); err != nil {
 		t.Fatalf("kill caller process group: %v", err)
 	}
 	_ = waitProcessForTest(t, cmd)

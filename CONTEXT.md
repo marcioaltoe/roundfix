@@ -44,6 +44,10 @@ _Avoid_: Open run, live run
 A user's explicit request to end an Active Run before it reaches another terminal outcome.
 _Avoid_: Pause, retry, failure
 
+**Proven Signal**:
+A signal sent only to the process whose identity was recorded when its PID was learned, or to its process group after proving the leader or the continued presence of live members. A different identity means the recorded process ended and receives no signal ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
+_Avoid_: Safe kill, PID kill, best-effort signal
+
 **Force Stop**:
 The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation

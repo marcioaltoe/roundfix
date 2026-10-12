@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -36,6 +38,8 @@ type detachTestSurvivor struct {
 	pidPath      string
 	sentinelPath string
 	pid          int
+	identity     string
+	process      *os.Process
 }
 
 func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
@@ -242,6 +246,7 @@ func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
 		t.Fatalf("start detached child that ignores its sentinel: %v", err)
 	}
 	survivor.pid = command.Process.Pid
+	survivor.process = command.Process
 
 	t.Cleanup(func() {
 		if err := survivor.terminate(); err != nil {
@@ -301,6 +306,11 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 	)
 	if survivor != nil && code == exitOK {
 		survivor.pid = readDetachTestSurvivorPID(t, survivor.pidPath)
+		var err error
+		survivor.identity, err = store.OwnerProcessIdentity(t.Context(), survivor.pid)
+		if err != nil {
+			t.Fatalf("record detached survivor identity: %v", err)
+		}
 		if !store.ProcessAlive(survivor.pid) {
 			t.Fatalf("detached child %d did not survive its caller", survivor.pid)
 		}
@@ -460,35 +470,53 @@ func (survivor *detachTestSurvivor) terminate() error {
 	if survivor == nil || survivor.pid <= 0 {
 		return nil
 	}
-	process, err := os.FindProcess(survivor.pid)
-	if err != nil {
-		return fmt.Errorf("find detached child %d: %w", survivor.pid, err)
+	var killErr error
+	sent := true
+	if survivor.process != nil {
+		killErr = survivor.process.Kill()
+	} else {
+		sent, killErr = store.SignalProvenProcess(context.Background(), survivor.pid, survivor.identity, syscall.SIGKILL)
 	}
-	killErr := process.Kill()
 	killFailedWhileAlive := killErr != nil && store.ProcessAlive(survivor.pid)
 	var sentinelErr error
 	if err := os.WriteFile(survivor.sentinelPath, []byte("release\n"), 0o600); err != nil {
 		sentinelErr = fmt.Errorf("write detached child release sentinel: %w", err)
 	}
 
-	wait := make(chan error, 1)
-	go func() {
-		_, waitErr := process.Wait()
-		wait <- waitErr
-	}()
-	deadline := time.NewTimer(detachWaitTimeout)
-	defer deadline.Stop()
-	select {
-	case waitErr := <-wait:
-		if waitErr != nil && store.ProcessAlive(survivor.pid) {
-			return errors.Join(killErr, sentinelErr, fmt.Errorf("wait for detached child %d after kill: %w", survivor.pid, waitErr))
+	if survivor.process != nil {
+		wait := make(chan error, 1)
+		go func() { _, err := survivor.process.Wait(); wait <- err }()
+		select {
+		case waitErr := <-wait:
+			if waitErr != nil && store.ProcessAlive(survivor.pid) {
+				return errors.Join(killErr, sentinelErr, fmt.Errorf("wait for detached child %d after kill: %w", survivor.pid, waitErr))
+			}
+		case <-time.After(detachWaitTimeout):
+			return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
 		}
-	case <-deadline.C:
+	} else if sent {
+		// The detached command released its handle, but its successful child is
+		// still our child. Reap it after the Proven Signal so a zombie cannot be
+		// mistaken for a survivor. Wait4 cannot signal a reused PID.
+		wait := make(chan error, 1)
+		go func() {
+			var status syscall.WaitStatus
+			_, err := syscall.Wait4(survivor.pid, &status, 0, nil)
+			wait <- err
+		}()
+		select {
+		case waitErr := <-wait:
+			if waitErr != nil && store.ProcessAlive(survivor.pid) {
+				return errors.Join(killErr, sentinelErr, fmt.Errorf("reap detached child %d after proven signal: %w", survivor.pid, waitErr))
+			}
+		case <-time.After(detachWaitTimeout):
+			return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
+		}
+	}
+	if sent && store.ProcessAlive(survivor.pid) {
 		return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
 	}
-	if store.ProcessAlive(survivor.pid) {
-		return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
-	}
+
 	if killFailedWhileAlive {
 		return errors.Join(fmt.Errorf("kill detached child %d: %w", survivor.pid, killErr), sentinelErr)
 	}

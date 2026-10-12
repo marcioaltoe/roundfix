@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0259-proven-signals-and-a-shared-build-cache
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -126,3 +126,155 @@ store's real-process tests prove that a reused PID receives nothing.
 - `_prd.md` → Goals; User Story 2; Core Feature 1; Core Feature 2; Core Feature 8; Success Metric 2; Acceptance evidence; Skills
 - `_techspec.md` → Current behavior; API Contract 1; API Contract 2; API Contract 3; API Contract 4; Invariants 1-2; Testing Approach; Build Order 1
 - ADR-0266; ADR-0213; ADR-0044
+
+
+## Result
+
+Implemented the Task 01 slice for Daemon Verification. Task status, authored
+Verification, Subtasks and Acceptance Criteria checkboxes remain Daemon-owned.
+
+### Implementation
+
+- Added `SignalProvenProcess` and `SignalProvenProcessGroup`. Invalid PID,
+  self PID, blank identity and zero signal refuse with
+  `ErrOwnerProcessIdentityUnproven`. Each operation reads the existing start
+  identity immediately before sending; absence or mismatch returns no-send
+  without an error. Live identity read failures send nothing and propagate.
+- Group proof reads live membership after leader absence. Darwin uses
+  `kern.proc.pgrp`; Linux reads the group field in `/proc/<pid>/stat`.
+  Exiting/zombie-only groups handle `EPERM` as no-send. Other Unix platforms
+  return `ErrOwnerProcessUnsupported`. The platform membership readers live
+  in `internal/store/process_darwin.go`, `process_linux.go` and
+  `process_unix_other.go` so Darwin APIs do not enter Linux builds; these
+  changes implement only this Task's group operation.
+- `TerminateAndWait` repeats `proveOwner` with the recorded identity after
+  the grace and before escalation. A changed identity proves the original
+  owner ended and returns nil without the forced kill. Initial refusal,
+  unreadable identity errors, empty-identity PID-only behavior and the CLI's
+  explicit unreadable-identity override retain their existing contracts.
+- Detach records the child identity immediately after Start and carries it
+  through handshake teardown. QA-format splits Run into Start/Wait and
+  synchronizes cancellation with the post-Start identity publication.
+  Windows retains child-only detach teardown and default formatter
+  cancellation.
+- Converted the store tree cleanup, fixture group sender and implement
+  caller group sender to group proof with recorded identities. Survivor
+  teardown uses its owned child handle when available; a PID learned from
+  the record uses a Proven Signal followed by `Wait4` to reap the child the
+  test binary started. Existing behavior assertions were retained.
+- Added an AST rule over every Go file, including files for other platforms,
+  with the required artifact-directory exclusions. Its exceptions name
+  functions in the store and the run UI, never entire files. Import aliases
+  are resolved. Shell command strings and split command/argument calls are
+  checked, while zero probes and diagnostic prose remain permitted.
+  The direct-kill seed also has an allowlisted neighbor in the same file.
+- Added the six required store regression tests with real test-owned helpers
+  and identities captured after Start. A token mismatch models PID reuse;
+  an input/output exchange proves the helper still runs after the refusal.
+  The controller test injects identity/liveness readers and uses a real
+  child kill in its forced branch, checking both the absence of that branch
+  and continued helper liveness after changed/unreadable proof.
+- Added Proven Signal to CONTEXT with its ADR-0266 link and Avoid terms.
+  Added the detached Runs guide sentence and dated Coverage Reviews for
+  resolve, watch and the guide, each naming Spec 0259 task_01. The Behavior
+  Surface Record was generated with the required record command.
+
+### Focused checks and acceptance evidence
+
+All commands below were invoked through `rtk proxy`; final runs exited 0.
+These are focused implementation checks, not the authored Verification.
+
+| Acceptance criterion | Evidence |
+| --- | --- |
+| Rule accepts the repository and rejects seeded violations with file and line | `go test -race -count=1 -v ./internal/testfixture -run 'TestEverySignalGoesToAProvenProcess/\|TestEveryTestInAParallelTestPackageRunsInParallel/repository$'`: explicit PASS lines for the repository and all six required seeds. Each failing seed asserts its diagnostic at the seeded file and line; the shell seed covers kill, pkill and killall. The Parallel Test Package repository check also passed. |
+| Mismatched identity leaves the process running | `go test -race -count=1 -timeout=2m ./internal/store -run 'SignalProven\|ReprovesBeforeForceKill\|TestOwnerProcessController(Terminate\|Force\|ProveOwner)'`: passed. Process and group mismatch tests exchange data with the unchanged live helpers; matching signals stop the helpers; group proof also stops a member after its leader is reaped and declines an empty group. |
+| Force Stop sends no forced kill after identity changes during grace | The same store selection passed `TestOwnerProcessControllerReprovesBeforeForceKill`, covering changed, absent, unreadable, matching and legacy identities. Changed proof returns nil, the forced branch is not entered, and the real helper remains responsive. |
+| Windows and Linux non-test code compiles | `GOOS=windows go build -buildvcs=false ./internal/store ./internal/cli ./internal/daemon` and `GOOS=linux go build -buildvcs=false ./internal/store ./internal/cli ./internal/daemon`: passed for all affected non-test packages. Whole-module builds remain for Daemon Verification. |
+
+Additional final focused evidence:
+
+- `go test -race -count=1 ./internal/cli -run 'TestRunDetachedCommand|TestDetachedChildIsTerminatedAtTeardown|TestRunImplementDetachSurvivesCallerProcessGroupKill|TestImplementDetachChildEndsWhenItsTestBinaryDies|TestDetachSurvivorEndsWhenItsTestBinaryDies|TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded'`: passed. This covers both handshake timeout phases, existing diagnostics/exit codes, survivor reaping and caller/group teardown.
+- `go test -race -count=1 ./internal/daemon -run 'TestQAFormat(CancellationRestoresFiles|StartFailureRestoresFiles|CommitsTheFormattedReport|RevertsAFailingFormatter)$'`: passed, including cancellation restoration and Start failure.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed after the final guide edit. This is the source record operation expressly required by Requirement 9, not the Daemon's non-recording Verification command. Only the detached Runs guide fingerprint changed.
+- `git diff --check`: passed before this Result entry; final scope and authored-Task projection are checked again after the entry.
+
+### Corrections during implementation
+
+The starting inspection found the unproven signal paths and no Proven Signal
+operations or repository rule. Early focused runs exposed scanner false
+positives on its own seed/comparison strings and loss of released-child
+reaping in survivor teardown; both were corrected without file exemptions or
+weaker behavior assertions. The controller harness initially used zero grace,
+which this controller treats as waiting until its stop deadline. Its later
+real-helper version omitted the actual mocked force kill, exposing duplicate
+Wait calls in failure cleanup. It now uses a bounded grace, actually kills
+its owned child in the force branch, and gives Wait one owner, including on
+failure. An early long-running check overlapped source edits and reported
+suiteguard boundary changes; final focused runs used stable sources and
+exited 0, including race checks.
+
+### Execution boundary and follow-up
+
+The sandbox could not start a command because the configured writable root
+contains a symlink. Approved escalated local execution was used in the same
+Task Worktree. No Makefile, CI workflow, module file, Task Graph manifest or
+other Task file was changed. No commit, push or pull request was made.
+Authored Verification and repository Verification were not run.
+
+Task 02's future `killResidue` sender must extend the function-scoped Signal
+rule only together with its environment-mark re-proof, as API Contract 4
+requires. Helper Lifeline/Residue and build-cache work stay in their assigned
+Tasks. This Result does not settle Task status or claim a full-suite/F6 verdict.
+
+
+### Verification Feedback — attempt 1
+
+The Daemon's configured `make verify-changed` exited 2. Its diagnostic is
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261012T221735Z_f00baa2097cf9b98/verification/batch-001-attempt-1.log`.
+The only test failure recorded there is
+`TestBudgetExceededRunRecordsItsReason`, whose expectation of one completed
+Task and one commit was unmet. No diagnostic log body is embedded here.
+The artifact records successful store and testfixture package checks; those
+are Daemon-provided facts, not additional Agent reruns.
+
+Investigation of `internal/daemon/task_engine_test.go` found a fixed 500 ms
+wall-clock Run Budget surrounding real Git/setup/settlement work for the
+first fixture Task. Its assertion assumes that work finishes before expiry
+and that the second Task then blocks. `fixture.plan()` configures no
+formatter and uses a fake Agent; `formatQADirectory` returns before any
+process setup when FormatCommand is empty. The budget watchdog is unchanged
+by this Task and expires from the real wall-clock deadline. None of the
+changed Proven Signal operations is invoked by this fixture.
+
+Focused diagnostic evidence:
+
+- `rtk proxy go test -race -count=1 ./internal/daemon -run '^TestBudgetExceededRunRecordsItsReason$'`: exited 0 on one isolated run. This is not a fix or evidence that the configured suite failure is resolved.
+- Prepared `/private/tmp/roundfix-task01-budget-baseline-hop9rk1x/overlay.json` without repository edits. The overlay restored every changed production Go file to HEAD, removed the new signal operations from that diagnostic compilation, and used the committed budget test with its assertions unchanged. Its only test perturbation delayed the first fake Task by 501 ms through the existing `afterTask` seam, modeling work that exceeds the fixture's budget.
+- `rtk proxy go test -race -count=1 -overlay=/private/tmp/roundfix-task01-budget-baseline-hop9rk1x/overlay.json ./internal/daemon -run '^TestBudgetExceededRunRecordsItsReason$'`: exited 1 with the same unmet completion/commit expectation. This deliberately failing baseline diagnostic demonstrates the existing timing dependency; it does not establish the exact latency source in the Daemon's earlier run.
+- Diff inspection confirmed the diagnostic overlay introduced no repository source/test changes. The feedback turn changes only this Result entry; Task status and the authored Task projection remain unchanged.
+
+Follow-up outside Task 01: make the budget-reason fixture arrange expiration
+after the first settlement through a deterministic test seam, preserving all
+its current outcome, reason, commit and Task-state assertions. Increasing its
+timeout or accepting zero completed Tasks would not repair that contract.
+The assigned slice and Requirement 10 do not authorize a budget fixture or
+scheduler repair, so `task_engine_test.go` and budget production code remain
+unchanged. The configured gate failure remains unresolved and is not waived
+by the isolated pass. No in-slice signal defect was identified in the feedback.
+
+No declared Verification command, `make verify-changed`, or full suite was
+rerun by the Agent. No Task status, other Task, manifest, commit, push or pull
+request was changed. The Daemon retains Verification and settlement ownership.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/store/process_darwin.go`
+- `internal/store/process_linux.go`
+- `internal/store/process_unix_other.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T221735Z_f00baa2097cf9b98`
+- Source commit: `3bdb6f58e36a403e605f6c63b62d6da68c373f99`

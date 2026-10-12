@@ -106,3 +106,43 @@ func parseProcStatOwnership(stat []byte) (int, int, error) {
 	}
 	return parentPID, sessionID, nil
 }
+
+func liveProcessGroupMembers(ctx context.Context, pgid int) ([]int, error) {
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
+		return nil, fmt.Errorf("read process table: %w", err)
+	}
+	var live []int
+	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		pid, err := strconv.Atoi(entry.Name())
+		if err != nil || pid <= 0 {
+			continue
+		}
+		stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+		if processVanished(err) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read process %d group: %w", pid, err)
+		}
+		end := bytes.LastIndexByte(stat, ')')
+		if end < 0 {
+			return nil, fmt.Errorf("malformed proc stat for process %d: missing comm terminator", pid)
+		}
+		fields := bytes.Fields(stat[end+1:])
+		if len(fields) < 3 {
+			return nil, fmt.Errorf("malformed proc stat for process %d: missing group field", pid)
+		}
+		group, err := strconv.Atoi(string(fields[2]))
+		if err != nil {
+			return nil, fmt.Errorf("read process %d group: %w", pid, err)
+		}
+		if group == pgid && string(fields[0]) != "Z" && string(fields[0]) != "X" {
+			live = append(live, pid)
+		}
+	}
+	return live, nil
+}
