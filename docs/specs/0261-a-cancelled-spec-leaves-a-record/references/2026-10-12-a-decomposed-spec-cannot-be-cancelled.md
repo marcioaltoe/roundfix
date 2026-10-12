@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0261-a-cancelled-spec-leaves-a-record
 ---
 
 # A decomposed Spec cannot be cancelled
