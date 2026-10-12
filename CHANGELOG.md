@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.69.0] - 2026-10-12
+
+### The Baseline respects the repository's own choices
+
+- **Better Auth base path.** The new optional `auth.base_path` decision records where a repository mounts Better Auth's routes. When it is recorded, the provider's route exception and the matching HTTP contract exception both cover that path followed by `/*`, and the backend guide names it. When it is absent, the recorded exception stands, and every adopter that records nothing gets byte-identical guides. The interactive setup asks for it only when it is already recorded.
+- **`baseline update --decision <id=value>`.** Records or changes a decision that the repository's profile selects, before the plan is built; repeat the flag for several decisions. The plan and its digest cover the changed Setup Manifest, and the result lists each decision under `declaredDecisions` with its previous value. A decision the profile does not select, or one the profile fixes, `preservation.mode` and a malformed pair exit `2` and write nothing. For example: `roundfix baseline update --decision auth.base_path=/auth`.
+- **Setup Snapshot Difference.** A required external skill that matches its lock but differs from its Setup Snapshot is no longer called trailing, and is no longer restored. Doctor appends `DR-SKILL-DIFFERS-FROM-SNAPSHOT` to the `skills` line without a warning or a next action. The managed refresh lists such a skill under `skills.differing` and keeps it. To restore one, use `roundfix baseline skills restore --profile <id> --skill <name>`. A missing skill, or one that no longer matches its lock, is still restored under `skills.drifted`.
+- **Vendored skills.** The guides now state what to do when a vendored skill diverges from what the repository needs. In order: add a rule that governs over the skill's default; then a repository-authored skill that supplies only what is missing; then a replacement, only when the vendored skill is useless or almost useless. An objective defect goes upstream as a pull request.
+- **Glossary.** Adds Better Auth Base Path, Vendored Skill and Setup Snapshot Difference (ADR-0263, ADR-0264).
+
 ## [0.68.0] - 2026-10-12
 
 ### A cancelled Spec leaves a record
