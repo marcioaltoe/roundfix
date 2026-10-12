@@ -1,1 +1,0 @@
-13 unique settled rows; counts: {"pass": 10, "fail": 1, "environment": 1, "declared": 1, "finding": 0}; original auditor identity and mechanical sections retained; all linked evidence resolves; 48 focused top-level tests and one docscontract test pass; no compiled Go evidence file.
