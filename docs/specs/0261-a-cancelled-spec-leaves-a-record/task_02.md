@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0261-a-cancelled-spec-leaves-a-record
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -157,3 +157,15 @@ file.
 - [_prd.md](_prd.md) — Goal 5; Core Feature 6; User Story 1; User Story 2
 - [_techspec.md](_techspec.md) — Skill and document texts; Baseline versions and derived files; API Contract 1; API Contract 2; API Contract 3; API Contract 4; Surface Transcript 6; Build Order 2
 - ADR-0262; ADR-0247; ADR-0058; ADR-0060; ADR-0250; ADR-0256; ADR-0187; ADR-0189; ADR-0233; ADR-0244
+
+## Result
+
+Implementation evidence for daemon handoff; Task status remains `in_progress`.
+
+- Extended `clause.spec.keep-artifacts-in-spec-folder` in the module source without changing its id, mandatory enforcement, or absent `replaces`; the required module-version recorder passed and rewrote `internal/baseline/module-versions.json`, recording Baseline module version 19. The first `baseline update` rewrote `docs/agents/docs-layout.md` and `docs/agents/setup-context.json` with `File changes: 2`; the second refresh reported `File changes: 0`.
+- `make baseline-digests` rewrote `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md`, `internal/baseline/assets/profiles/standard-typescript-monorepo.json`, `internal/baseline/testdata/catalog.diagnostics.golden.json`, `internal/baseline/testdata/catalog.digest`, `internal/baseline/testdata/catalog.normalized.json`, `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`, `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`, `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`, and `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`.
+- Added `internal/baseline/cancel_clause_test.go` with the three parallel tests for clause text, both rendered guides, and retained/no-unaccounted adopter refresh. Focused check: `go test -count=1 -run '^(TestTheCancelClauseCarriesItsText|TestTheCancelClauseRendersInTheDocsLayoutGuide|TestAnAdopterRetainsTheCancelClause)$' ./internal/baseline` passed.
+- Added the Roundfix `Cancel Command` section, the `archive`, `cancel`, `history`, `supersede` routing row, the delivery refusal sentence, and the archive-spec `Cancelling a Spec` section in canonical skills. `make skills-sync` rewrote `skills/roundfix/SKILL.md`, `skills/roundfix/references/archive.md`, `skills/roundfix/references/deliver.md`, and `skills/archive-spec/SKILL.md`; the owned skill version recorder added Roundfix `0.1.62` and archive-spec `0.0.10` to `skills/testdata/owned-skill-versions.json`. Canonical and distributed skill files are byte-identical, including both `### QA settlement` sections.
+- Added `docs/user-guide/commands/cancel.md`, command index and usage rows, and the archive, supersede and deliver guide sentences. Added the required `guide docs/user-guide/commands/cancel.md` map entry covered by `.agents/skills/roundfix/references/archive.md`. The coverage recorder passed and rewrote `docs/references/behavior-surfaces.json`.
+- Added `Cancel Command` and `Source Return` to `CONTEXT.md`, and revised `Archive Record`, `Supersession`, `Prerequisite Spec` and `Delivery Retry` while preserving every existing `_Avoid_` line.
+- Focused read-only audits passed for generated-guide phrases, canonical/mirror equality, byte-identical QA settlement sections, coverage entry, and `git diff --check`. The complete Task Verification block was left for the Daemon as required.

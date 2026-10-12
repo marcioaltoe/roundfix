@@ -834,6 +834,7 @@ Roundfix has no gateway transport setting.
 | `implement` | Execute a Spec's Task Graph as one Run |
 | `settle` | Recover one failed or uncommitted Task from its kept worktree |
 | `archive` | Archive a completed, QA-passed Spec |
+| `cancel` | Cancel an active Spec with an Archive Record |
 | `release plan` | Classify committed release changes without mutating release state |
 | `profiles` | Show, configure, and validate Agent Selection Profiles |
 | `fetch` | Download Review Issue artifacts for a PR |

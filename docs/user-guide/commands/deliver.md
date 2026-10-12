@@ -57,6 +57,9 @@ before checking delivery authorization or recording a queue. A prerequisite
 must exist in the Specs Root or its resolved archive root; it need not be in
 the queue.
 
+`deliver start` refuses a queue whose Spec requires a cancelled Spec, and
+`deliver retry` refuses a cancelled Spec.
+
 Before creating an item's worktree, the owner fetches the delivery remote's
 default branch and reads `requires` from that refreshed branch. A prerequisite
 is met only when its archived `_prd.md` exists there. An archive present only

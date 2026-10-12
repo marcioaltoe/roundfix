@@ -792,6 +792,15 @@
       ]
     },
     {
+      "id": "guide docs/user-guide/commands/cancel.md",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/cancel.md"
+      ]
+    },
+    {
       "id": "guide docs/user-guide/commands/deliver.md",
       "skills": [
         ".agents/skills/roundfix/references/deliver.md"

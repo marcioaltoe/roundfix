@@ -77,6 +77,15 @@ When files are promoted, the successful confirmation appends
 `; promoted <n> file(s) to docs/references/`.
 Existing archived folders retain their legacy link semantics.
 
+## Cancel Command
+
+`roundfix cancel <slug> --reason <text>` writes an Archive Record with the
+disposition `cancelled` for an active Spec that will not be delivered. It keeps
+the reason, date and completed and pending Tasks, returns each adopted source
+under the Source Return contract, and removes the Spec folder while keeping it
+in Git at `source_revision`. A cancelled Spec never meets a prerequisite, never
+supersedes another Spec, and a Delivery Retry refuses it.
+
 After a successful archive, the command warns when `source_revision` is not an
 ancestor of the default branch. When the delivery Pull Request opens,
 `roundfix archive <slug>` with `--pull-request <n>` stores the delivery pull
