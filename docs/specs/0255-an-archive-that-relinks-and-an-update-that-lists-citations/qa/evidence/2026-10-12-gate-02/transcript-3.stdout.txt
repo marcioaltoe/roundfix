@@ -1,0 +1,24 @@
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:61bb0f8de77e131a1b8eeffbf69bbb16b1c253e275d75b5fe53b7d76d29f88f0
+Current catalog: sha256:61bb0f8de77e131a1b8eeffbf69bbb16b1c253e275d75b5fe53b7d76d29f88f0
+File changes: 0
+Retention evidence: 0
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+History: applied
+History applied: 1 unit(s): wrote 1 Archive Record(s), reduced 0 file(s), removed 2 file(s) (114 bytes) kept in Git at 052b11d74ffe and tag history-full
+History citations: 2
+- cites docs/findings/2026-01-04-gap.md:7 names docs/history/specs/0001-legacy/references/2026-01-01-lesson.md (promoted to docs/references/2026-01-01-lesson.md)
+- cites docs/handoffs/2026-01-03-notes.md:3 names docs/history/specs/0001-legacy/_prd.md
+History tag: created annotated history-full at 052b11d74ffe; push it with git push origin history-full
+Plan Digest: sha256:e6c70e4e169a6b09ab35ee99044364efff19025aeabb57131c558681693f5fa6
+Approved Plan Digest: sha256:e6c70e4e169a6b09ab35ee99044364efff19025aeabb57131c558681693f5fa6

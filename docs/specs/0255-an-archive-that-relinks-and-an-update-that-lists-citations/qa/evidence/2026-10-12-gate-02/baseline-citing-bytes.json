@@ -1,0 +1,10 @@
+{
+  "docs/findings/2026-01-04-gap.md": {
+    "before_sha256": "902a23d77030a3a04dd67e00625456fc7e218a600721d05193f67aff64a101dd",
+    "after_sha256": "902a23d77030a3a04dd67e00625456fc7e218a600721d05193f67aff64a101dd"
+  },
+  "docs/handoffs/2026-01-03-notes.md": {
+    "before_sha256": "5a7a862a2f84ff57c3867b1857e8d8c41d1bf6b16f062809ff1de0531dc46534",
+    "after_sha256": "5a7a862a2f84ff57c3867b1857e8d8c41d1bf6b16f062809ff1de0531dc46534"
+  }
+}

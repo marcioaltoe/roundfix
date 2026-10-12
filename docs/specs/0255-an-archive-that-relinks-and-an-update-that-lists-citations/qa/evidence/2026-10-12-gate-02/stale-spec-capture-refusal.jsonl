@@ -1,0 +1,23 @@
+{"Time":"2026-10-12T10:16:55.405114-03:00","Action":"start","Package":"roundfix/internal/spec"}
+{"Time":"2026-10-12T10:16:55.599165-03:00","Action":"run","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds"}
+{"Time":"2026-10-12T10:16:55.599219-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"=== RUN   TestStaleHistoryCitationsReportsFilesTheTagHolds\n"}
+{"Time":"2026-10-12T10:16:55.599239-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"=== PAUSE TestStaleHistoryCitationsReportsFilesTheTagHolds\n"}
+{"Time":"2026-10-12T10:16:55.599244-03:00","Action":"pause","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds"}
+{"Time":"2026-10-12T10:16:55.59925-03:00","Action":"run","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles"}
+{"Time":"2026-10-12T10:16:55.599257-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"=== RUN   TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles\n"}
+{"Time":"2026-10-12T10:16:55.599261-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"=== PAUSE TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles\n"}
+{"Time":"2026-10-12T10:16:55.599264-03:00","Action":"pause","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles"}
+{"Time":"2026-10-12T10:16:55.599268-03:00","Action":"cont","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds"}
+{"Time":"2026-10-12T10:16:55.599271-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"=== CONT  TestStaleHistoryCitationsReportsFilesTheTagHolds\n"}
+{"Time":"2026-10-12T10:16:55.599275-03:00","Action":"cont","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles"}
+{"Time":"2026-10-12T10:16:55.599278-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"=== CONT  TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles\n"}
+{"Time":"2026-10-12T10:16:55.622395-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"--- PASS: TestStaleHistoryCitationsReportsFilesTheTagHolds (0.02s)\n"}
+{"Time":"2026-10-12T10:16:55.623125-03:00","Action":"pass","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Elapsed":0.02}
+{"Time":"2026-10-12T10:16:55.623137-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"--- PASS: TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles (0.02s)\n"}
+{"Time":"2026-10-12T10:16:55.623142-03:00","Action":"pass","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Elapsed":0.02}
+{"Time":"2026-10-12T10:16:55.623147-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"PASS\n"}
+{"Time":"2026-10-12T10:16:55.689481-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: guard cost: measured 2555 paths; fingerprint took 82.489333ms before and 66.326916ms after\n"}
+{"Time":"2026-10-12T10:16:55.962682-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: repository boundary violated:\n"}
+{"Time":"2026-10-12T10:16:55.962708-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: modified: docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/qa/evidence/2026-10-12-gate-02/stale-spec.jsonl\n"}
+{"Time":"2026-10-12T10:16:55.963256-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"FAIL\troundfix/internal/spec\t0.558s\n"}
+{"Time":"2026-10-12T10:16:55.96328-03:00","Action":"fail","Package":"roundfix/internal/spec","Elapsed":0.558}

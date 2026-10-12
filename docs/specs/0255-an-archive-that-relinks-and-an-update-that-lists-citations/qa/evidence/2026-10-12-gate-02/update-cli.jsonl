@@ -1,0 +1,961 @@
+{"Time":"2026-10-12T10:18:16.250508-03:00","Action":"start","Package":"roundfix/internal/cli"}
+{"Time":"2026-10-12T10:18:16.618706-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing"}
+{"Time":"2026-10-12T10:18:16.618771-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing","Output":"=== RUN   TestBaselineUpdateWithoutABranchPrefixAsksNothing\n"}
+{"Time":"2026-10-12T10:18:16.618786-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing","Output":"=== PAUSE TestBaselineUpdateWithoutABranchPrefixAsksNothing\n"}
+{"Time":"2026-10-12T10:18:16.618791-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing"}
+{"Time":"2026-10-12T10:18:16.618795-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix"}
+{"Time":"2026-10-12T10:18:16.618799-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix","Output":"=== RUN   TestBaselineUpdateKeepsARecordedBranchPrefix\n"}
+{"Time":"2026-10-12T10:18:16.618806-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix","Output":"=== PAUSE TestBaselineUpdateKeepsARecordedBranchPrefix\n"}
+{"Time":"2026-10-12T10:18:16.618809-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix"}
+{"Time":"2026-10-12T10:18:16.618813-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged"}
+{"Time":"2026-10-12T10:18:16.618816-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged","Output":"=== RUN   TestBaselineUpdateRefusesADigestWhoseCitationsChanged\n"}
+{"Time":"2026-10-12T10:18:16.618824-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged","Output":"=== PAUSE TestBaselineUpdateRefusesADigestWhoseCitationsChanged\n"}
+{"Time":"2026-10-12T10:18:16.618827-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged"}
+{"Time":"2026-10-12T10:18:16.61883-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision"}
+{"Time":"2026-10-12T10:18:16.618833-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision","Output":"=== RUN   TestBaselineUpdateNamesTheMissingIncrementalDecision\n"}
+{"Time":"2026-10-12T10:18:16.618872-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision","Output":"=== PAUSE TestBaselineUpdateNamesTheMissingIncrementalDecision\n"}
+{"Time":"2026-10-12T10:18:16.618877-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision"}
+{"Time":"2026-10-12T10:18:16.618885-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion"}
+{"Time":"2026-10-12T10:18:16.618894-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion","Output":"=== RUN   TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion\n"}
+{"Time":"2026-10-12T10:18:16.618898-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion","Output":"=== PAUSE TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion\n"}
+{"Time":"2026-10-12T10:18:16.618901-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion"}
+{"Time":"2026-10-12T10:18:16.618906-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion"}
+{"Time":"2026-10-12T10:18:16.618919-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion","Output":"=== RUN   TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion\n"}
+{"Time":"2026-10-12T10:18:16.618929-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion","Output":"=== PAUSE TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion\n"}
+{"Time":"2026-10-12T10:18:16.618931-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion"}
+{"Time":"2026-10-12T10:18:16.618942-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript"}
+{"Time":"2026-10-12T10:18:16.618944-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript","Output":"=== RUN   TestBaselineUpdateListsHistoryCitationsTranscript\n"}
+{"Time":"2026-10-12T10:18:16.618947-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript","Output":"=== PAUSE TestBaselineUpdateListsHistoryCitationsTranscript\n"}
+{"Time":"2026-10-12T10:18:16.618949-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript"}
+{"Time":"2026-10-12T10:18:16.618951-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript"}
+{"Time":"2026-10-12T10:18:16.618953-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript","Output":"=== RUN   TestBaselineUpdatePromotesOnlyOnRequestTranscript\n"}
+{"Time":"2026-10-12T10:18:16.618956-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript","Output":"=== PAUSE TestBaselineUpdatePromotesOnlyOnRequestTranscript\n"}
+{"Time":"2026-10-12T10:18:16.618958-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript"}
+{"Time":"2026-10-12T10:18:16.618961-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript"}
+{"Time":"2026-10-12T10:18:16.618963-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript","Output":"=== RUN   TestBaselineUpdateReportsStaleHistoryCitationsTranscript\n"}
+{"Time":"2026-10-12T10:18:16.618966-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript","Output":"=== PAUSE TestBaselineUpdateReportsStaleHistoryCitationsTranscript\n"}
+{"Time":"2026-10-12T10:18:16.618969-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript"}
+{"Time":"2026-10-12T10:18:16.618971-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations"}
+{"Time":"2026-10-12T10:18:16.618973-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations","Output":"=== RUN   TestBaselineUpdateHistoryDigestBindsCitations\n"}
+{"Time":"2026-10-12T10:18:16.618976-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations","Output":"=== PAUSE TestBaselineUpdateHistoryDigestBindsCitations\n"}
+{"Time":"2026-10-12T10:18:16.618983-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations"}
+{"Time":"2026-10-12T10:18:16.618991-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion"}
+{"Time":"2026-10-12T10:18:16.618993-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion\n"}
+{"Time":"2026-10-12T10:18:16.619002-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion","Output":"=== PAUSE TestBaselineUpdateRefusesAnInvalidPromotion\n"}
+{"Time":"2026-10-12T10:18:16.619007-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion"}
+{"Time":"2026-10-12T10:18:16.61901-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText"}
+{"Time":"2026-10-12T10:18:16.619012-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText","Output":"=== RUN   TestBaselineUpdateWithoutCitationsKeepsDigestAndText\n"}
+{"Time":"2026-10-12T10:18:16.619014-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText","Output":"=== PAUSE TestBaselineUpdateWithoutCitationsKeepsDigestAndText\n"}
+{"Time":"2026-10-12T10:18:16.619017-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText"}
+{"Time":"2026-10-12T10:18:16.619019-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries"}
+{"Time":"2026-10-12T10:18:16.619021-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries","Output":"=== RUN   TestBaselineUpdateHistoryCitationBoundaries\n"}
+{"Time":"2026-10-12T10:18:16.619023-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries","Output":"=== PAUSE TestBaselineUpdateHistoryCitationBoundaries\n"}
+{"Time":"2026-10-12T10:18:16.619025-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries"}
+{"Time":"2026-10-12T10:18:16.619028-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal"}
+{"Time":"2026-10-12T10:18:16.61903-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal","Output":"=== RUN   TestBaselineUpdateHistoryCitationDetectorFailureIsLocal\n"}
+{"Time":"2026-10-12T10:18:16.619032-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal","Output":"=== PAUSE TestBaselineUpdateHistoryCitationDetectorFailureIsLocal\n"}
+{"Time":"2026-10-12T10:18:16.619034-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal"}
+{"Time":"2026-10-12T10:18:16.619037-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome"}
+{"Time":"2026-10-12T10:18:16.619039-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome","Output":"=== RUN   TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome\n"}
+{"Time":"2026-10-12T10:18:16.619041-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome","Output":"=== PAUSE TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome\n"}
+{"Time":"2026-10-12T10:18:16.619043-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome"}
+{"Time":"2026-10-12T10:18:16.619046-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames"}
+{"Time":"2026-10-12T10:18:16.619048-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames","Output":"=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames\n"}
+{"Time":"2026-10-12T10:18:16.619057-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames","Output":"=== PAUSE TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames\n"}
+{"Time":"2026-10-12T10:18:16.619062-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames"}
+{"Time":"2026-10-12T10:18:16.619064-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619066-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites","Output":"=== RUN   TestBaselineUpdatePlansPendingHistoryWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619068-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites","Output":"=== PAUSE TestBaselineUpdatePlansPendingHistoryWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.61907-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619072-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag"}
+{"Time":"2026-10-12T10:18:16.619075-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag","Output":"=== RUN   TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag\n"}
+{"Time":"2026-10-12T10:18:16.619078-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag","Output":"=== PAUSE TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag\n"}
+{"Time":"2026-10-12T10:18:16.61908-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag"}
+{"Time":"2026-10-12T10:18:16.619082-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest"}
+{"Time":"2026-10-12T10:18:16.619085-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest","Output":"=== RUN   TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest\n"}
+{"Time":"2026-10-12T10:18:16.619087-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest","Output":"=== PAUSE TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest\n"}
+{"Time":"2026-10-12T10:18:16.619089-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest"}
+{"Time":"2026-10-12T10:18:16.619091-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection"}
+{"Time":"2026-10-12T10:18:16.619094-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection","Output":"=== RUN   TestBaselineUpdateNoHistorySkipsTheSection\n"}
+{"Time":"2026-10-12T10:18:16.619096-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection","Output":"=== PAUSE TestBaselineUpdateNoHistorySkipsTheSection\n"}
+{"Time":"2026-10-12T10:18:16.619098-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection"}
+{"Time":"2026-10-12T10:18:16.619102-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges"}
+{"Time":"2026-10-12T10:18:16.619105-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges","Output":"=== RUN   TestBaselineUpdateRefusesUnitsWithUncommittedChanges\n"}
+{"Time":"2026-10-12T10:18:16.619107-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges","Output":"=== PAUSE TestBaselineUpdateRefusesUnitsWithUncommittedChanges\n"}
+{"Time":"2026-10-12T10:18:16.61911-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges"}
+{"Time":"2026-10-12T10:18:16.619115-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag"}
+{"Time":"2026-10-12T10:18:16.619117-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag","Output":"=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag\n"}
+{"Time":"2026-10-12T10:18:16.61912-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag","Output":"=== PAUSE TestBaselineUpdateHistoryHonorsAnExistingTag\n"}
+{"Time":"2026-10-12T10:18:16.619122-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag"}
+{"Time":"2026-10-12T10:18:16.619124-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest"}
+{"Time":"2026-10-12T10:18:16.619126-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest","Output":"=== RUN   TestBaselineUpdateRejectsAStaleHistoryDigest\n"}
+{"Time":"2026-10-12T10:18:16.619128-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest","Output":"=== PAUSE TestBaselineUpdateRejectsAStaleHistoryDigest\n"}
+{"Time":"2026-10-12T10:18:16.61913-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest"}
+{"Time":"2026-10-12T10:18:16.619133-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion"}
+{"Time":"2026-10-12T10:18:16.619135-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion","Output":"=== RUN   TestBaselineUpdateReportsATagFailureBeforeAnyConversion\n"}
+{"Time":"2026-10-12T10:18:16.619137-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion","Output":"=== PAUSE TestBaselineUpdateReportsATagFailureBeforeAnyConversion\n"}
+{"Time":"2026-10-12T10:18:16.619139-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion"}
+{"Time":"2026-10-12T10:18:16.619141-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries"}
+{"Time":"2026-10-12T10:18:16.619143-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries","Output":"=== RUN   TestBaselineUpdateHistoryPlanningBoundaries\n"}
+{"Time":"2026-10-12T10:18:16.619152-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries","Output":"=== PAUSE TestBaselineUpdateHistoryPlanningBoundaries\n"}
+{"Time":"2026-10-12T10:18:16.619155-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries"}
+{"Time":"2026-10-12T10:18:16.619157-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill"}
+{"Time":"2026-10-12T10:18:16.619159-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill","Output":"=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill\n"}
+{"Time":"2026-10-12T10:18:16.619162-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill","Output":"=== PAUSE TestBaselineUpdatePreviewReportsAnOlderOwnedSkill\n"}
+{"Time":"2026-10-12T10:18:16.619164-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill"}
+{"Time":"2026-10-12T10:18:16.619166-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch"}
+{"Time":"2026-10-12T10:18:16.619168-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch","Output":"=== RUN   TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch\n"}
+{"Time":"2026-10-12T10:18:16.619172-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch","Output":"=== PAUSE TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch\n"}
+{"Time":"2026-10-12T10:18:16.619175-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch"}
+{"Time":"2026-10-12T10:18:16.619177-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck"}
+{"Time":"2026-10-12T10:18:16.619179-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck","Output":"=== RUN   TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck\n"}
+{"Time":"2026-10-12T10:18:16.619182-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck","Output":"=== PAUSE TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck\n"}
+{"Time":"2026-10-12T10:18:16.619184-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck"}
+{"Time":"2026-10-12T10:18:16.619186-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:16.619188-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile","Output":"=== RUN   TestBaselineUpdateReachesCurrentWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:16.619191-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile","Output":"=== PAUSE TestBaselineUpdateReachesCurrentWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:16.619193-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:16.619195-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:16.619197-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile","Output":"=== RUN   TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:16.619203-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile","Output":"=== PAUSE TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:16.619206-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:16.619208-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:16.61921-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile","Output":"=== RUN   TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:16.619219-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile","Output":"=== PAUSE TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:16.619221-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:16.619223-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets"}
+{"Time":"2026-10-12T10:18:16.619225-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets","Output":"=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets\n"}
+{"Time":"2026-10-12T10:18:16.619229-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets","Output":"=== PAUSE TestBaselineUpdateRetiredSkillDeletionTargets\n"}
+{"Time":"2026-10-12T10:18:16.619232-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets"}
+{"Time":"2026-10-12T10:18:16.619239-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState"}
+{"Time":"2026-10-12T10:18:16.619241-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState","Output":"=== RUN   TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState\n"}
+{"Time":"2026-10-12T10:18:16.619244-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState","Output":"=== PAUSE TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState\n"}
+{"Time":"2026-10-12T10:18:16.619246-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState"}
+{"Time":"2026-10-12T10:18:16.619248-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills"}
+{"Time":"2026-10-12T10:18:16.61925-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills","Output":"=== RUN   TestBaselineUpdateWithoutSkillsOmitsRetiredSkills\n"}
+{"Time":"2026-10-12T10:18:16.619252-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills","Output":"=== PAUSE TestBaselineUpdateWithoutSkillsOmitsRetiredSkills\n"}
+{"Time":"2026-10-12T10:18:16.619254-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills"}
+{"Time":"2026-10-12T10:18:16.619257-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills"}
+{"Time":"2026-10-12T10:18:16.619259-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills","Output":"=== RUN   TestBaselineUpdateAppliesAndListsRetiredSkills\n"}
+{"Time":"2026-10-12T10:18:16.619262-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills","Output":"=== PAUSE TestBaselineUpdateAppliesAndListsRetiredSkills\n"}
+{"Time":"2026-10-12T10:18:16.619264-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills"}
+{"Time":"2026-10-12T10:18:16.619266-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure"}
+{"Time":"2026-10-12T10:18:16.619268-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure","Output":"=== RUN   TestBaselineUpdateReportsRetiredSkillInspectionFailure\n"}
+{"Time":"2026-10-12T10:18:16.619271-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure","Output":"=== PAUSE TestBaselineUpdateReportsRetiredSkillInspectionFailure\n"}
+{"Time":"2026-10-12T10:18:16.619273-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure"}
+{"Time":"2026-10-12T10:18:16.619275-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON"}
+{"Time":"2026-10-12T10:18:16.619277-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON","Output":"=== RUN   TestBaselineUpdateAppliesManifestPlanAndReportsJSON\n"}
+{"Time":"2026-10-12T10:18:16.619285-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON","Output":"=== PAUSE TestBaselineUpdateAppliesManifestPlanAndReportsJSON\n"}
+{"Time":"2026-10-12T10:18:16.619289-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON"}
+{"Time":"2026-10-12T10:18:16.619291-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves"}
+{"Time":"2026-10-12T10:18:16.619294-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves","Output":"=== RUN   TestBaselineUpdateTextReportsHistoryMoves\n"}
+{"Time":"2026-10-12T10:18:16.619298-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves","Output":"=== PAUSE TestBaselineUpdateTextReportsHistoryMoves\n"}
+{"Time":"2026-10-12T10:18:16.6193-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves"}
+{"Time":"2026-10-12T10:18:16.619303-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput"}
+{"Time":"2026-10-12T10:18:16.619305-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput\n"}
+{"Time":"2026-10-12T10:18:16.619307-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput","Output":"=== PAUSE TestBaselineUpdateUnrecordedManagedRegionTextOutput\n"}
+{"Time":"2026-10-12T10:18:16.619311-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput"}
+{"Time":"2026-10-12T10:18:16.619313-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput"}
+{"Time":"2026-10-12T10:18:16.619315-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput\n"}
+{"Time":"2026-10-12T10:18:16.619317-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput","Output":"=== PAUSE TestBaselineUpdateUnrecordedManagedRegionJSONOutput\n"}
+{"Time":"2026-10-12T10:18:16.619319-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput"}
+{"Time":"2026-10-12T10:18:16.619321-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput"}
+{"Time":"2026-10-12T10:18:16.619323-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput\n"}
+{"Time":"2026-10-12T10:18:16.619326-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput","Output":"=== PAUSE TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput\n"}
+{"Time":"2026-10-12T10:18:16.619329-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput"}
+{"Time":"2026-10-12T10:18:16.619331-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs"}
+{"Time":"2026-10-12T10:18:16.619333-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs","Output":"=== RUN   TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs\n"}
+{"Time":"2026-10-12T10:18:16.619335-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs","Output":"=== PAUSE TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs\n"}
+{"Time":"2026-10-12T10:18:16.619337-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs"}
+{"Time":"2026-10-12T10:18:16.619342-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills"}
+{"Time":"2026-10-12T10:18:16.619345-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills","Output":"=== RUN   TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills\n"}
+{"Time":"2026-10-12T10:18:16.619347-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills","Output":"=== PAUSE TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills\n"}
+{"Time":"2026-10-12T10:18:16.619349-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills"}
+{"Time":"2026-10-12T10:18:16.619353-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified"}
+{"Time":"2026-10-12T10:18:16.619355-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified","Output":"=== RUN   TestBaselineUpdateSkillWarningKeepsApplyAxisVerified\n"}
+{"Time":"2026-10-12T10:18:16.619357-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified","Output":"=== PAUSE TestBaselineUpdateSkillWarningKeepsApplyAxisVerified\n"}
+{"Time":"2026-10-12T10:18:16.619359-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified"}
+{"Time":"2026-10-12T10:18:16.619362-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory"}
+{"Time":"2026-10-12T10:18:16.619364-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory","Output":"=== RUN   TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory\n"}
+{"Time":"2026-10-12T10:18:16.619366-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory","Output":"=== PAUSE TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory\n"}
+{"Time":"2026-10-12T10:18:16.619368-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory"}
+{"Time":"2026-10-12T10:18:16.61937-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage"}
+{"Time":"2026-10-12T10:18:16.619372-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage","Output":"=== RUN   TestBaselineUpdatePassesOfflineSourceToSkillStage\n"}
+{"Time":"2026-10-12T10:18:16.619375-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage","Output":"=== PAUSE TestBaselineUpdatePassesOfflineSourceToSkillStage\n"}
+{"Time":"2026-10-12T10:18:16.619377-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage"}
+{"Time":"2026-10-12T10:18:16.619379-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation"}
+{"Time":"2026-10-12T10:18:16.619381-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation","Output":"=== RUN   TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation\n"}
+{"Time":"2026-10-12T10:18:16.619383-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation","Output":"=== PAUSE TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation\n"}
+{"Time":"2026-10-12T10:18:16.619385-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation"}
+{"Time":"2026-10-12T10:18:16.619389-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill"}
+{"Time":"2026-10-12T10:18:16.619392-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill","Output":"=== RUN   TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill\n"}
+{"Time":"2026-10-12T10:18:16.619402-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill","Output":"=== PAUSE TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill\n"}
+{"Time":"2026-10-12T10:18:16.619404-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill"}
+{"Time":"2026-10-12T10:18:16.619407-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges"}
+{"Time":"2026-10-12T10:18:16.619409-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges","Output":"=== RUN   TestBaselineUpdateIdempotenceReportsZeroFileChanges\n"}
+{"Time":"2026-10-12T10:18:16.619411-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges","Output":"=== PAUSE TestBaselineUpdateIdempotenceReportsZeroFileChanges\n"}
+{"Time":"2026-10-12T10:18:16.619413-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges"}
+{"Time":"2026-10-12T10:18:16.619415-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619417-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites","Output":"=== RUN   TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619427-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites","Output":"=== PAUSE TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619429-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619432-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis"}
+{"Time":"2026-10-12T10:18:16.619434-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis","Output":"=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis\n"}
+{"Time":"2026-10-12T10:18:16.619436-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis","Output":"=== PAUSE TestBaselineUpdateUnresolvedProfileDiagnosis\n"}
+{"Time":"2026-10-12T10:18:16.619438-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis"}
+{"Time":"2026-10-12T10:18:16.61944-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep"}
+{"Time":"2026-10-12T10:18:16.619442-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep","Output":"=== RUN   TestBaselineUpdateFleetSweep\n"}
+{"Time":"2026-10-12T10:18:16.619446-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep","Output":"=== PAUSE TestBaselineUpdateFleetSweep\n"}
+{"Time":"2026-10-12T10:18:16.619448-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep"}
+{"Time":"2026-10-12T10:18:16.61945-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619453-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites","Output":"=== RUN   TestBaselineUpdateNewDecisionRequiresActionWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619457-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites","Output":"=== PAUSE TestBaselineUpdateNewDecisionRequiresActionWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619459-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619461-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision"}
+{"Time":"2026-10-12T10:18:16.619475-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision","Output":"=== RUN   TestBaselineUpdateAdoptsEverySuggestedDecision\n"}
+{"Time":"2026-10-12T10:18:16.619477-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision","Output":"=== PAUSE TestBaselineUpdateAdoptsEverySuggestedDecision\n"}
+{"Time":"2026-10-12T10:18:16.619481-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision"}
+{"Time":"2026-10-12T10:18:16.619483-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest"}
+{"Time":"2026-10-12T10:18:16.619485-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest","Output":"=== RUN   TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest\n"}
+{"Time":"2026-10-12T10:18:16.619488-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest","Output":"=== PAUSE TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest\n"}
+{"Time":"2026-10-12T10:18:16.61949-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest"}
+{"Time":"2026-10-12T10:18:16.619492-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms"}
+{"Time":"2026-10-12T10:18:16.619494-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms","Output":"=== RUN   TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms\n"}
+{"Time":"2026-10-12T10:18:16.619496-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms","Output":"=== PAUSE TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms\n"}
+{"Time":"2026-10-12T10:18:16.619499-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms"}
+{"Time":"2026-10-12T10:18:16.619501-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.619503-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites","Output":"=== RUN   TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619505-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites","Output":"=== PAUSE TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:16.619507-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites"}
+{"Time":"2026-10-12T10:18:16.61951-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract"}
+{"Time":"2026-10-12T10:18:16.619512-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract","Output":"=== RUN   TestBaselineUpdateHelpNamesNonInteractiveContract\n"}
+{"Time":"2026-10-12T10:18:16.619516-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract","Output":"=== PAUSE TestBaselineUpdateHelpNamesNonInteractiveContract\n"}
+{"Time":"2026-10-12T10:18:16.619518-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract"}
+{"Time":"2026-10-12T10:18:16.619524-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency"}
+{"Time":"2026-10-12T10:18:16.619526-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency","Output":"=== RUN   TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency\n"}
+{"Time":"2026-10-12T10:18:16.619529-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency","Output":"=== PAUSE TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency\n"}
+{"Time":"2026-10-12T10:18:16.619531-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency"}
+{"Time":"2026-10-12T10:18:16.619534-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill"}
+{"Time":"2026-10-12T10:18:16.619536-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill","Output":"=== RUN   TestBaselineUpdatePreviewListsATrailingSkill\n"}
+{"Time":"2026-10-12T10:18:16.619538-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill","Output":"=== PAUSE TestBaselineUpdatePreviewListsATrailingSkill\n"}
+{"Time":"2026-10-12T10:18:16.61954-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill"}
+{"Time":"2026-10-12T10:18:16.619542-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest"}
+{"Time":"2026-10-12T10:18:16.619544-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest","Output":"=== RUN   TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest\n"}
+{"Time":"2026-10-12T10:18:16.619549-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest","Output":"=== PAUSE TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest\n"}
+{"Time":"2026-10-12T10:18:16.619552-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest"}
+{"Time":"2026-10-12T10:18:16.619554-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps"}
+{"Time":"2026-10-12T10:18:16.619556-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps","Output":"=== RUN   TestHistorySanitizeConvertsLegacyUnprovenMaps\n"}
+{"Time":"2026-10-12T10:18:16.619559-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps","Output":"=== PAUSE TestHistorySanitizeConvertsLegacyUnprovenMaps\n"}
+{"Time":"2026-10-12T10:18:16.619561-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps"}
+{"Time":"2026-10-12T10:18:16.619563-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine"}
+{"Time":"2026-10-12T10:18:16.619565-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine","Output":"=== RUN   TestHistorySanitizePrintsEachRefusalOnOneLine\n"}
+{"Time":"2026-10-12T10:18:16.61957-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine","Output":"=== PAUSE TestHistorySanitizePrintsEachRefusalOnOneLine\n"}
+{"Time":"2026-10-12T10:18:16.619575-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine"}
+{"Time":"2026-10-12T10:18:16.619578-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit"}
+{"Time":"2026-10-12T10:18:16.61958-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit","Output":"=== RUN   TestHistorySanitizePlanListsEveryRefusedUnit\n"}
+{"Time":"2026-10-12T10:18:16.619583-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit","Output":"=== PAUSE TestHistorySanitizePlanListsEveryRefusedUnit\n"}
+{"Time":"2026-10-12T10:18:16.619585-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit"}
+{"Time":"2026-10-12T10:18:16.619588-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch"}
+{"Time":"2026-10-12T10:18:16.61959-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch","Output":"=== RUN   TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch\n"}
+{"Time":"2026-10-12T10:18:16.619592-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch","Output":"=== PAUSE TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch\n"}
+{"Time":"2026-10-12T10:18:16.619595-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch"}
+{"Time":"2026-10-12T10:18:16.619597-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused"}
+{"Time":"2026-10-12T10:18:16.619599-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused","Output":"=== RUN   TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused\n"}
+{"Time":"2026-10-12T10:18:16.619602-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused","Output":"=== PAUSE TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused\n"}
+{"Time":"2026-10-12T10:18:16.619604-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused"}
+{"Time":"2026-10-12T10:18:16.619606-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit"}
+{"Time":"2026-10-12T10:18:16.619608-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit","Output":"=== RUN   TestHistorySanitizeRefusesAPromotionInARefusedUnit\n"}
+{"Time":"2026-10-12T10:18:16.619611-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit","Output":"=== PAUSE TestHistorySanitizeRefusesAPromotionInARefusedUnit\n"}
+{"Time":"2026-10-12T10:18:16.619613-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit"}
+{"Time":"2026-10-12T10:18:16.619615-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest"}
+{"Time":"2026-10-12T10:18:16.619617-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest","Output":"=== RUN   TestHistorySanitizeRefusesAKindUnitAndPlansTheRest\n"}
+{"Time":"2026-10-12T10:18:16.61962-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest","Output":"=== PAUSE TestHistorySanitizeRefusesAKindUnitAndPlansTheRest\n"}
+{"Time":"2026-10-12T10:18:16.619622-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest"}
+{"Time":"2026-10-12T10:18:16.619625-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes"}
+{"Time":"2026-10-12T10:18:16.619628-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes","Output":"=== RUN   TestHistorySanitizeConvertsTheFourLegacyShapes\n"}
+{"Time":"2026-10-12T10:18:16.619638-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes","Output":"=== PAUSE TestHistorySanitizeConvertsTheFourLegacyShapes\n"}
+{"Time":"2026-10-12T10:18:16.619647-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes"}
+{"Time":"2026-10-12T10:18:16.619651-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary"}
+{"Time":"2026-10-12T10:18:16.619657-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary","Output":"=== RUN   TestHistorySanitizeInventoryRefusalsAndBatchBoundary\n"}
+{"Time":"2026-10-12T10:18:16.619661-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary","Output":"=== PAUSE TestHistorySanitizeInventoryRefusalsAndBatchBoundary\n"}
+{"Time":"2026-10-12T10:18:16.619664-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary"}
+{"Time":"2026-10-12T10:18:16.619667-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits"}
+{"Time":"2026-10-12T10:18:16.619669-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits","Output":"=== RUN   TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits\n"}
+{"Time":"2026-10-12T10:18:16.619672-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits","Output":"=== PAUSE TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits\n"}
+{"Time":"2026-10-12T10:18:16.619674-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits"}
+{"Time":"2026-10-12T10:18:16.619677-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind"}
+{"Time":"2026-10-12T10:18:16.619679-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind","Output":"=== RUN   TestHistorySanitizePromotionSeparatesFolderFromKind\n"}
+{"Time":"2026-10-12T10:18:16.619683-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind","Output":"=== PAUSE TestHistorySanitizePromotionSeparatesFolderFromKind\n"}
+{"Time":"2026-10-12T10:18:16.619686-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind"}
+{"Time":"2026-10-12T10:18:16.619688-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing"}
+{"Time":"2026-10-12T10:18:16.619691-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing","Output":"=== RUN   TestHistorySanitizePlanWritesNothing\n"}
+{"Time":"2026-10-12T10:18:16.619695-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing","Output":"=== PAUSE TestHistorySanitizePlanWritesNothing\n"}
+{"Time":"2026-10-12T10:18:16.619697-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing"}
+{"Time":"2026-10-12T10:18:16.6197-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch"}
+{"Time":"2026-10-12T10:18:16.619702-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch","Output":"=== RUN   TestHistorySanitizeAppliesTheNextBatch\n"}
+{"Time":"2026-10-12T10:18:16.619709-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch","Output":"=== PAUSE TestHistorySanitizeAppliesTheNextBatch\n"}
+{"Time":"2026-10-12T10:18:16.619711-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch"}
+{"Time":"2026-10-12T10:18:16.619713-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag"}
+{"Time":"2026-10-12T10:18:16.619716-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag","Output":"=== RUN   TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag\n"}
+{"Time":"2026-10-12T10:18:16.619718-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag","Output":"=== PAUSE TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag\n"}
+{"Time":"2026-10-12T10:18:16.61972-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag"}
+{"Time":"2026-10-12T10:18:16.619722-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths"}
+{"Time":"2026-10-12T10:18:16.619724-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths","Output":"=== RUN   TestHistorySanitizeRefusesATagWithoutTheBatchPaths\n"}
+{"Time":"2026-10-12T10:18:16.619727-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths","Output":"=== PAUSE TestHistorySanitizeRefusesATagWithoutTheBatchPaths\n"}
+{"Time":"2026-10-12T10:18:16.619729-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths"}
+{"Time":"2026-10-12T10:18:16.619737-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree"}
+{"Time":"2026-10-12T10:18:16.619739-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree","Output":"=== RUN   TestHistorySanitizeRefusesADirtyTree\n"}
+{"Time":"2026-10-12T10:18:16.619741-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree","Output":"=== PAUSE TestHistorySanitizeRefusesADirtyTree\n"}
+{"Time":"2026-10-12T10:18:16.619743-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree"}
+{"Time":"2026-10-12T10:18:16.619746-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey"}
+{"Time":"2026-10-12T10:18:16.619748-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey","Output":"=== RUN   TestHistorySanitizeAdviseFailsOpenWithoutAKey\n"}
+{"Time":"2026-10-12T10:18:16.61975-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey","Output":"=== PAUSE TestHistorySanitizeAdviseFailsOpenWithoutAKey\n"}
+{"Time":"2026-10-12T10:18:16.619753-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey"}
+{"Time":"2026-10-12T10:18:16.619755-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge"}
+{"Time":"2026-10-12T10:18:16.619757-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge","Output":"=== RUN   TestHistorySanitizeAdviseWithAFakeJudge\n"}
+{"Time":"2026-10-12T10:18:16.619759-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge","Output":"=== PAUSE TestHistorySanitizeAdviseWithAFakeJudge\n"}
+{"Time":"2026-10-12T10:18:16.619761-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge"}
+{"Time":"2026-10-12T10:18:16.619763-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences"}
+{"Time":"2026-10-12T10:18:16.619768-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences","Output":"=== RUN   TestHistorySanitizePromotesIntoReferences\n"}
+{"Time":"2026-10-12T10:18:16.61977-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences","Output":"=== PAUSE TestHistorySanitizePromotesIntoReferences\n"}
+{"Time":"2026-10-12T10:18:16.619772-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences"}
+{"Time":"2026-10-12T10:18:16.619775-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors"}
+{"Time":"2026-10-12T10:18:16.619777-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors","Output":"=== RUN   TestHistorySanitizeUsageErrors\n"}
+{"Time":"2026-10-12T10:18:16.619779-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors","Output":"=== PAUSE TestHistorySanitizeUsageErrors\n"}
+{"Time":"2026-10-12T10:18:16.619781-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors"}
+{"Time":"2026-10-12T10:18:16.619783-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot"}
+{"Time":"2026-10-12T10:18:16.619785-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot","Output":"=== RUN   TestHistorySanitizeRefusesAnExternalSpecRoot\n"}
+{"Time":"2026-10-12T10:18:16.61979-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot","Output":"=== PAUSE TestHistorySanitizeRefusesAnExternalSpecRoot\n"}
+{"Time":"2026-10-12T10:18:16.619793-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot"}
+{"Time":"2026-10-12T10:18:16.619795-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending"}
+{"Time":"2026-10-12T10:18:16.619797-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending","Output":"=== RUN   TestHistorySanitizeWithNothingPending\n"}
+{"Time":"2026-10-12T10:18:16.619799-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending","Output":"=== PAUSE TestHistorySanitizeWithNothingPending\n"}
+{"Time":"2026-10-12T10:18:16.619801-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending"}
+{"Time":"2026-10-12T10:18:16.619803-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch"}
+{"Time":"2026-10-12T10:18:16.619806-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch","Output":"=== RUN   TestHistorySanitizePreflightsWholeBatch\n"}
+{"Time":"2026-10-12T10:18:16.619808-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch","Output":"=== PAUSE TestHistorySanitizePreflightsWholeBatch\n"}
+{"Time":"2026-10-12T10:18:16.61981-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch"}
+{"Time":"2026-10-12T10:18:16.619812-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs"}
+{"Time":"2026-10-12T10:18:16.619814-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs","Output":"=== RUN   TestHistorySanitizeFolderCitationsAndKindNamedSlugs\n"}
+{"Time":"2026-10-12T10:18:16.619816-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs","Output":"=== PAUSE TestHistorySanitizeFolderCitationsAndKindNamedSlugs\n"}
+{"Time":"2026-10-12T10:18:16.619818-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs"}
+{"Time":"2026-10-12T10:18:16.619823-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory"}
+{"Time":"2026-10-12T10:18:16.619826-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory","Output":"=== RUN   TestHistorySanitizeAdviceIsAdvisory\n"}
+{"Time":"2026-10-12T10:18:16.619828-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory","Output":"=== PAUSE TestHistorySanitizeAdviceIsAdvisory\n"}
+{"Time":"2026-10-12T10:18:16.61983-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory"}
+{"Time":"2026-10-12T10:18:16.619832-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery"}
+{"Time":"2026-10-12T10:18:16.619834-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery","Output":"=== RUN   TestHistorySanitizeAdviceWithoutAKnownDelivery\n"}
+{"Time":"2026-10-12T10:18:16.619837-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery","Output":"=== PAUSE TestHistorySanitizeAdviceWithoutAKnownDelivery\n"}
+{"Time":"2026-10-12T10:18:16.619839-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery"}
+{"Time":"2026-10-12T10:18:16.619841-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading"}
+{"Time":"2026-10-12T10:18:16.619843-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading","Output":"=== RUN   TestHistorySnapshotSkipsGitMetadataBeforeReading\n"}
+{"Time":"2026-10-12T10:18:16.619845-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading","Output":"=== PAUSE TestHistorySnapshotSkipsGitMetadataBeforeReading\n"}
+{"Time":"2026-10-12T10:18:16.619852-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading"}
+{"Time":"2026-10-12T10:18:16.619855-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing"}
+{"Time":"2026-10-12T10:18:16.619857-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing","Output":"=== CONT  TestBaselineUpdateWithoutABranchPrefixAsksNothing\n"}
+{"Time":"2026-10-12T10:18:16.61986-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory"}
+{"Time":"2026-10-12T10:18:16.619862-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory","Output":"=== CONT  TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory\n"}
+{"Time":"2026-10-12T10:18:16.619864-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit"}
+{"Time":"2026-10-12T10:18:16.619867-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit","Output":"=== CONT  TestHistorySanitizeRefusesAPromotionInARefusedUnit\n"}
+{"Time":"2026-10-12T10:18:16.619929-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest"}
+{"Time":"2026-10-12T10:18:16.619938-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest","Output":"=== CONT  TestBaselineUpdateRejectsAStaleHistoryDigest\n"}
+{"Time":"2026-10-12T10:18:16.619944-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText"}
+{"Time":"2026-10-12T10:18:16.619948-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText","Output":"=== CONT  TestBaselineUpdateWithoutCitationsKeepsDigestAndText\n"}
+{"Time":"2026-10-12T10:18:16.620075-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag"}
+{"Time":"2026-10-12T10:18:16.620114-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag","Output":"=== CONT  TestBaselineUpdateHistoryHonorsAnExistingTag\n"}
+{"Time":"2026-10-12T10:18:16.620132-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/annotated"}
+{"Time":"2026-10-12T10:18:16.620142-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/annotated","Output":"=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag/annotated\n"}
+{"Time":"2026-10-12T10:18:16.62015-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges"}
+{"Time":"2026-10-12T10:18:16.620156-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges","Output":"=== CONT  TestBaselineUpdateRefusesUnitsWithUncommittedChanges\n"}
+{"Time":"2026-10-12T10:18:16.620165-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection"}
+{"Time":"2026-10-12T10:18:16.620201-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection","Output":"=== CONT  TestBaselineUpdateNoHistorySkipsTheSection\n"}
+{"Time":"2026-10-12T10:18:16.62032-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest"}
+{"Time":"2026-10-12T10:18:16.620326-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest","Output":"=== CONT  TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest\n"}
+{"Time":"2026-10-12T10:18:16.62033-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag"}
+{"Time":"2026-10-12T10:18:16.620333-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag","Output":"=== CONT  TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag\n"}
+{"Time":"2026-10-12T10:18:17.783561-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit","Output":"--- PASS: TestHistorySanitizeRefusesAPromotionInARefusedUnit (1.16s)\n"}
+{"Time":"2026-10-12T10:18:17.787456-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAPromotionInARefusedUnit","Elapsed":1.16}
+{"Time":"2026-10-12T10:18:17.791541-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites"}
+{"Time":"2026-10-12T10:18:17.79155-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites","Output":"=== CONT  TestBaselineUpdatePlansPendingHistoryWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:20.362163-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing","Output":"--- PASS: TestBaselineUpdateWithoutABranchPrefixAsksNothing (3.74s)\n"}
+{"Time":"2026-10-12T10:18:20.362194-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutABranchPrefixAsksNothing","Elapsed":3.74}
+{"Time":"2026-10-12T10:18:20.362202-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames"}
+{"Time":"2026-10-12T10:18:20.362207-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames","Output":"=== CONT  TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames\n"}
+{"Time":"2026-10-12T10:18:20.36222-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files"}
+{"Time":"2026-10-12T10:18:20.362239-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files","Output":"=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files\n"}
+{"Time":"2026-10-12T10:18:20.383984-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory","Output":"--- PASS: TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory (3.76s)\n"}
+{"Time":"2026-10-12T10:18:20.384003-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory","Elapsed":3.76}
+{"Time":"2026-10-12T10:18:20.384011-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome"}
+{"Time":"2026-10-12T10:18:20.384015-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome","Output":"=== CONT  TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome\n"}
+{"Time":"2026-10-12T10:18:20.46885-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal"}
+{"Time":"2026-10-12T10:18:20.468885-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal","Output":"=== CONT  TestBaselineUpdateHistoryCitationDetectorFailureIsLocal\n"}
+{"Time":"2026-10-12T10:18:20.4689-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest","Output":"--- PASS: TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest (3.85s)\n"}
+{"Time":"2026-10-12T10:18:20.514444-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest","Elapsed":3.85}
+{"Time":"2026-10-12T10:18:20.514488-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection","Output":"--- PASS: TestBaselineUpdateNoHistorySkipsTheSection (3.89s)\n"}
+{"Time":"2026-10-12T10:18:20.514508-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoHistorySkipsTheSection","Elapsed":3.89}
+{"Time":"2026-10-12T10:18:20.514518-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries"}
+{"Time":"2026-10-12T10:18:20.514527-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries","Output":"=== CONT  TestBaselineUpdateHistoryCitationBoundaries\n"}
+{"Time":"2026-10-12T10:18:20.57192-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText","Output":"--- PASS: TestBaselineUpdateWithoutCitationsKeepsDigestAndText (3.95s)\n"}
+{"Time":"2026-10-12T10:18:20.571977-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutCitationsKeepsDigestAndText","Elapsed":3.95}
+{"Time":"2026-10-12T10:18:20.571994-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms"}
+{"Time":"2026-10-12T10:18:20.572005-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms","Output":"=== CONT  TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms\n"}
+{"Time":"2026-10-12T10:18:20.572015-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms","Output":"--- PASS: TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms (0.00s)\n"}
+{"Time":"2026-10-12T10:18:20.572024-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms","Elapsed":0}
+{"Time":"2026-10-12T10:18:20.572034-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused"}
+{"Time":"2026-10-12T10:18:20.572042-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused","Output":"=== CONT  TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused\n"}
+{"Time":"2026-10-12T10:18:20.645663-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest","Output":"--- PASS: TestBaselineUpdateRejectsAStaleHistoryDigest (4.03s)\n"}
+{"Time":"2026-10-12T10:18:20.649261-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsAStaleHistoryDigest","Elapsed":4.03}
+{"Time":"2026-10-12T10:18:20.649308-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch"}
+{"Time":"2026-10-12T10:18:20.649323-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch","Output":"=== CONT  TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch\n"}
+{"Time":"2026-10-12T10:18:21.248681-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges","Output":"--- PASS: TestBaselineUpdateRefusesUnitsWithUncommittedChanges (4.63s)\n"}
+{"Time":"2026-10-12T10:18:21.256328-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesUnitsWithUncommittedChanges","Elapsed":4.63}
+{"Time":"2026-10-12T10:18:21.256425-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit"}
+{"Time":"2026-10-12T10:18:21.256459-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit","Output":"=== CONT  TestHistorySanitizePlanListsEveryRefusedUnit\n"}
+{"Time":"2026-10-12T10:18:21.293189-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused","Output":"--- PASS: TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused (0.72s)\n"}
+{"Time":"2026-10-12T10:18:21.301413-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused","Elapsed":0.72}
+{"Time":"2026-10-12T10:18:21.305397-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine"}
+{"Time":"2026-10-12T10:18:21.309284-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine","Output":"=== CONT  TestHistorySanitizePrintsEachRefusalOnOneLine\n"}
+{"Time":"2026-10-12T10:18:21.66441-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/annotated","Output":"--- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag/annotated (5.04s)\n"}
+{"Time":"2026-10-12T10:18:21.672623-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/annotated","Elapsed":5.04}
+{"Time":"2026-10-12T10:18:21.672681-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight"}
+{"Time":"2026-10-12T10:18:21.672689-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight","Output":"=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight\n"}
+{"Time":"2026-10-12T10:18:21.750539-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites","Output":"--- PASS: TestBaselineUpdatePlansPendingHistoryWithoutWrites (3.97s)\n"}
+{"Time":"2026-10-12T10:18:21.754296-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePlansPendingHistoryWithoutWrites","Elapsed":3.97}
+{"Time":"2026-10-12T10:18:21.762375-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps"}
+{"Time":"2026-10-12T10:18:21.762391-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps","Output":"=== CONT  TestHistorySanitizeConvertsLegacyUnprovenMaps\n"}
+{"Time":"2026-10-12T10:18:21.762587-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch","Output":"--- PASS: TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch (1.12s)\n"}
+{"Time":"2026-10-12T10:18:21.766492-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch","Elapsed":1.12}
+{"Time":"2026-10-12T10:18:21.770194-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest"}
+{"Time":"2026-10-12T10:18:21.774334-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest","Output":"=== CONT  TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest\n"}
+{"Time":"2026-10-12T10:18:21.774446-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest","Output":"--- PASS: TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest (0.00s)\n"}
+{"Time":"2026-10-12T10:18:21.778515-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRestoresTrailingSkillsThroughExistingRequest","Elapsed":0}
+{"Time":"2026-10-12T10:18:21.782291-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill"}
+{"Time":"2026-10-12T10:18:21.782318-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill","Output":"=== CONT  TestBaselineUpdatePreviewListsATrailingSkill\n"}
+{"Time":"2026-10-12T10:18:21.802552-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag","Output":"--- PASS: TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag (5.18s)\n"}
+{"Time":"2026-10-12T10:18:21.806314-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag","Elapsed":5.18}
+{"Time":"2026-10-12T10:18:21.80634-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency"}
+{"Time":"2026-10-12T10:18:21.80635-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency","Output":"=== CONT  TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency\n"}
+{"Time":"2026-10-12T10:18:22.508963-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine","Output":"--- PASS: TestHistorySanitizePrintsEachRefusalOnOneLine (1.22s)\n"}
+{"Time":"2026-10-12T10:18:22.512323-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePrintsEachRefusalOnOneLine","Elapsed":1.22}
+{"Time":"2026-10-12T10:18:22.512358-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract"}
+{"Time":"2026-10-12T10:18:22.512368-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract","Output":"=== CONT  TestBaselineUpdateHelpNamesNonInteractiveContract\n"}
+{"Time":"2026-10-12T10:18:22.512385-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract","Output":"--- PASS: TestBaselineUpdateHelpNamesNonInteractiveContract (0.00s)\n"}
+{"Time":"2026-10-12T10:18:22.512396-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHelpNamesNonInteractiveContract","Elapsed":0}
+{"Time":"2026-10-12T10:18:22.512406-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites"}
+{"Time":"2026-10-12T10:18:22.512415-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites","Output":"=== CONT  TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:22.564407-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit","Output":"--- PASS: TestHistorySanitizePlanListsEveryRefusedUnit (1.32s)\n"}
+{"Time":"2026-10-12T10:18:22.564806-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanListsEveryRefusedUnit","Elapsed":1.32}
+{"Time":"2026-10-12T10:18:22.569369-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript"}
+{"Time":"2026-10-12T10:18:22.573489-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript","Output":"=== CONT  TestBaselineUpdateListsHistoryCitationsTranscript\n"}
+{"Time":"2026-10-12T10:18:22.593677-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps","Output":"--- PASS: TestHistorySanitizeConvertsLegacyUnprovenMaps (0.84s)\n"}
+{"Time":"2026-10-12T10:18:22.597213-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsLegacyUnprovenMaps","Elapsed":0.84}
+{"Time":"2026-10-12T10:18:22.597517-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion"}
+{"Time":"2026-10-12T10:18:22.597539-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion","Output":"=== CONT  TestBaselineUpdateRefusesAnInvalidPromotion\n"}
+{"Time":"2026-10-12T10:18:22.597553-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/core"}
+{"Time":"2026-10-12T10:18:22.597561-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/core","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/core\n"}
+{"Time":"2026-10-12T10:18:23.082228-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal","Output":"--- PASS: TestBaselineUpdateHistoryCitationDetectorFailureIsLocal (2.61s)\n"}
+{"Time":"2026-10-12T10:18:23.086338-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationDetectorFailureIsLocal","Elapsed":2.61}
+{"Time":"2026-10-12T10:18:23.086374-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations"}
+{"Time":"2026-10-12T10:18:23.086387-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations","Output":"=== CONT  TestBaselineUpdateHistoryDigestBindsCitations\n"}
+{"Time":"2026-10-12T10:18:23.250272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files","Output":"--- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files (2.89s)\n"}
+{"Time":"2026-10-12T10:18:23.254439-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files","Elapsed":2.89}
+{"Time":"2026-10-12T10:18:23.254515-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename"}
+{"Time":"2026-10-12T10:18:23.25453-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename","Output":"=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename\n"}
+{"Time":"2026-10-12T10:18:23.280767-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome","Output":"--- PASS: TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome (2.90s)\n"}
+{"Time":"2026-10-12T10:18:23.284365-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome","Elapsed":2.9}
+{"Time":"2026-10-12T10:18:23.288333-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript"}
+{"Time":"2026-10-12T10:18:23.29233-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript","Output":"=== CONT  TestBaselineUpdateReportsStaleHistoryCitationsTranscript\n"}
+{"Time":"2026-10-12T10:18:23.425485-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries","Output":"--- PASS: TestBaselineUpdateHistoryCitationBoundaries (2.91s)\n"}
+{"Time":"2026-10-12T10:18:23.433358-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryCitationBoundaries","Elapsed":2.91}
+{"Time":"2026-10-12T10:18:23.43746-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript"}
+{"Time":"2026-10-12T10:18:23.445396-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript","Output":"=== CONT  TestBaselineUpdatePromotesOnlyOnRequestTranscript\n"}
+{"Time":"2026-10-12T10:18:25.281566-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency","Output":"--- PASS: TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency (3.48s)\n"}
+{"Time":"2026-10-12T10:18:25.289378-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency","Elapsed":3.48}
+{"Time":"2026-10-12T10:18:25.289394-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills"}
+{"Time":"2026-10-12T10:18:25.2894-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills","Output":"=== CONT  TestBaselineUpdateWithoutSkillsOmitsRetiredSkills\n"}
+{"Time":"2026-10-12T10:18:25.615523-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight","Output":"--- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight (3.95s)\n"}
+{"Time":"2026-10-12T10:18:25.619337-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight","Elapsed":3.95}
+{"Time":"2026-10-12T10:18:25.623515-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag","Output":"--- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag (9.00s)\n"}
+{"Time":"2026-10-12T10:18:25.627449-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryHonorsAnExistingTag","Elapsed":9}
+{"Time":"2026-10-12T10:18:25.627461-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified"}
+{"Time":"2026-10-12T10:18:25.627465-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified","Output":"=== CONT  TestBaselineUpdateSkillWarningKeepsApplyAxisVerified\n"}
+{"Time":"2026-10-12T10:18:26.07809-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites","Output":"--- PASS: TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites (3.57s)\n"}
+{"Time":"2026-10-12T10:18:26.078133-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites","Elapsed":3.57}
+{"Time":"2026-10-12T10:18:26.078147-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills"}
+{"Time":"2026-10-12T10:18:26.078155-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills","Output":"=== CONT  TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills\n"}
+{"Time":"2026-10-12T10:18:26.759985-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/core","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/core (4.17s)\n"}
+{"Time":"2026-10-12T10:18:26.765673-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/core","Elapsed":4.17}
+{"Time":"2026-10-12T10:18:26.777151-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core"}
+{"Time":"2026-10-12T10:18:26.777218-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core\n"}
+{"Time":"2026-10-12T10:18:26.98261-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename","Output":"--- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename (3.73s)\n"}
+{"Time":"2026-10-12T10:18:26.986468-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename","Elapsed":3.73}
+{"Time":"2026-10-12T10:18:26.986515-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames","Output":"--- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames (6.62s)\n"}
+{"Time":"2026-10-12T10:18:26.986565-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames","Elapsed":6.62}
+{"Time":"2026-10-12T10:18:26.986635-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs"}
+{"Time":"2026-10-12T10:18:26.986657-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs","Output":"=== CONT  TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs\n"}
+{"Time":"2026-10-12T10:18:27.007863-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript","Output":"--- PASS: TestBaselineUpdateListsHistoryCitationsTranscript (4.44s)\n"}
+{"Time":"2026-10-12T10:18:27.011394-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsHistoryCitationsTranscript","Elapsed":4.44}
+{"Time":"2026-10-12T10:18:27.011403-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput"}
+{"Time":"2026-10-12T10:18:27.011408-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput","Output":"=== CONT  TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput\n"}
+{"Time":"2026-10-12T10:18:27.066755-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request"}
+{"Time":"2026-10-12T10:18:27.067579-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request","Output":"=== RUN   TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request\n"}
+{"Time":"2026-10-12T10:18:27.373814-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations","Output":"--- PASS: TestBaselineUpdateHistoryDigestBindsCitations (4.29s)\n"}
+{"Time":"2026-10-12T10:18:27.381389-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryDigestBindsCitations","Elapsed":4.29}
+{"Time":"2026-10-12T10:18:27.381565-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput"}
+{"Time":"2026-10-12T10:18:27.381569-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput","Output":"=== CONT  TestBaselineUpdateUnrecordedManagedRegionJSONOutput\n"}
+{"Time":"2026-10-12T10:18:27.38166-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan"}
+{"Time":"2026-10-12T10:18:27.385105-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan\n"}
+{"Time":"2026-10-12T10:18:27.67143-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript","Output":"--- PASS: TestBaselineUpdateReportsStaleHistoryCitationsTranscript (4.39s)\n"}
+{"Time":"2026-10-12T10:18:27.679425-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsStaleHistoryCitationsTranscript","Elapsed":4.39}
+{"Time":"2026-10-12T10:18:27.683354-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput"}
+{"Time":"2026-10-12T10:18:27.683392-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput","Output":"=== CONT  TestBaselineUpdateUnrecordedManagedRegionTextOutput\n"}
+{"Time":"2026-10-12T10:18:27.68724-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan"}
+{"Time":"2026-10-12T10:18:27.691343-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan\n"}
+{"Time":"2026-10-12T10:18:27.795253-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill","Output":"--- PASS: TestBaselineUpdatePreviewListsATrailingSkill (6.03s)\n"}
+{"Time":"2026-10-12T10:18:27.799384-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkill","Elapsed":6.03}
+{"Time":"2026-10-12T10:18:27.803354-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves"}
+{"Time":"2026-10-12T10:18:27.803458-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves","Output":"=== CONT  TestBaselineUpdateTextReportsHistoryMoves\n"}
+{"Time":"2026-10-12T10:18:27.803581-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves","Output":"--- PASS: TestBaselineUpdateTextReportsHistoryMoves (0.00s)\n"}
+{"Time":"2026-10-12T10:18:27.807376-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateTextReportsHistoryMoves","Elapsed":0}
+{"Time":"2026-10-12T10:18:27.811291-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON"}
+{"Time":"2026-10-12T10:18:27.811339-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON","Output":"=== CONT  TestBaselineUpdateAppliesManifestPlanAndReportsJSON\n"}
+{"Time":"2026-10-12T10:18:29.905873-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified","Output":"--- PASS: TestBaselineUpdateSkillWarningKeepsApplyAxisVerified (4.29s)\n"}
+{"Time":"2026-10-12T10:18:29.909696-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillWarningKeepsApplyAxisVerified","Elapsed":4.29}
+{"Time":"2026-10-12T10:18:29.909711-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision"}
+{"Time":"2026-10-12T10:18:29.909717-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision","Output":"=== CONT  TestBaselineUpdateNamesTheMissingIncrementalDecision\n"}
+{"Time":"2026-10-12T10:18:29.953322-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure"}
+{"Time":"2026-10-12T10:18:29.953578-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure","Output":"=== CONT  TestBaselineUpdateReportsRetiredSkillInspectionFailure\n"}
+{"Time":"2026-10-12T10:18:29.957447-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills","Output":"--- PASS: TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills (3.88s)\n"}
+{"Time":"2026-10-12T10:18:30.375748-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills","Elapsed":3.88}
+{"Time":"2026-10-12T10:18:30.375791-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs","Output":"--- PASS: TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs (3.39s)\n"}
+{"Time":"2026-10-12T10:18:30.375804-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs","Elapsed":3.39}
+{"Time":"2026-10-12T10:18:30.375812-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion"}
+{"Time":"2026-10-12T10:18:30.37582-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion","Output":"=== CONT  TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion\n"}
+{"Time":"2026-10-12T10:18:30.436909-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput (3.43s)\n"}
+{"Time":"2026-10-12T10:18:30.444283-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput","Elapsed":3.43}
+{"Time":"2026-10-12T10:18:30.444299-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills"}
+{"Time":"2026-10-12T10:18:30.444306-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills","Output":"=== CONT  TestBaselineUpdateAppliesAndListsRetiredSkills\n"}
+{"Time":"2026-10-12T10:18:30.706609-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan (3.33s)\n"}
+{"Time":"2026-10-12T10:18:30.70671-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan","Elapsed":3.33}
+{"Time":"2026-10-12T10:18:30.706727-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan"}
+{"Time":"2026-10-12T10:18:30.706736-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan\n"}
+{"Time":"2026-10-12T10:18:30.793688-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core (4.03s)\n"}
+{"Time":"2026-10-12T10:18:30.797127-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core","Elapsed":4.03}
+{"Time":"2026-10-12T10:18:30.797176-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/outside_units"}
+{"Time":"2026-10-12T10:18:30.797191-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/outside_units","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/outside_units\n"}
+{"Time":"2026-10-12T10:18:30.94528-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request","Output":"--- PASS: TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request (3.88s)\n"}
+{"Time":"2026-10-12T10:18:30.945495-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request","Elapsed":3.88}
+{"Time":"2026-10-12T10:18:30.953429-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan (3.27s)\n"}
+{"Time":"2026-10-12T10:18:30.953468-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan","Elapsed":3.27}
+{"Time":"2026-10-12T10:18:30.957363-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan"}
+{"Time":"2026-10-12T10:18:30.957372-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan","Output":"=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan\n"}
+{"Time":"2026-10-12T10:18:31.723627-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript","Output":"--- PASS: TestBaselineUpdatePromotesOnlyOnRequestTranscript (8.30s)\n"}
+{"Time":"2026-10-12T10:18:31.729363-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePromotesOnlyOnRequestTranscript","Elapsed":8.3}
+{"Time":"2026-10-12T10:18:31.733423-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion"}
+{"Time":"2026-10-12T10:18:31.737336-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion","Output":"=== CONT  TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion\n"}
+{"Time":"2026-10-12T10:18:32.192418-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON","Output":"--- PASS: TestBaselineUpdateAppliesManifestPlanAndReportsJSON (4.40s)\n"}
+{"Time":"2026-10-12T10:18:32.1964-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesManifestPlanAndReportsJSON","Elapsed":4.4}
+{"Time":"2026-10-12T10:18:32.204277-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:32.208272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile","Output":"=== CONT  TestBaselineUpdateReachesCurrentWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:32.212404-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true"}
+{"Time":"2026-10-12T10:18:32.216276-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true","Output":"=== RUN   TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true\n"}
+{"Time":"2026-10-12T10:18:33.384723-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis"}
+{"Time":"2026-10-12T10:18:33.388577-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis","Output":"=== CONT  TestBaselineUpdateUnresolvedProfileDiagnosis\n"}
+{"Time":"2026-10-12T10:18:33.388644-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure","Output":"--- PASS: TestBaselineUpdateReportsRetiredSkillInspectionFailure (3.43s)\n"}
+{"Time":"2026-10-12T10:18:33.392423-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsRetiredSkillInspectionFailure","Elapsed":3.43}
+{"Time":"2026-10-12T10:18:33.396416-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile"}
+{"Time":"2026-10-12T10:18:33.396582-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile","Output":"=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile\n"}
+{"Time":"2026-10-12T10:18:33.423934-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision","Output":"--- PASS: TestBaselineUpdateNamesTheMissingIncrementalDecision (3.52s)\n"}
+{"Time":"2026-10-12T10:18:33.431421-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNamesTheMissingIncrementalDecision","Elapsed":3.52}
+{"Time":"2026-10-12T10:18:33.431453-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState"}
+{"Time":"2026-10-12T10:18:33.43149-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState","Output":"=== CONT  TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState\n"}
+{"Time":"2026-10-12T10:18:34.924501-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets"}
+{"Time":"2026-10-12T10:18:34.92839-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets","Output":"=== CONT  TestBaselineUpdateRetiredSkillDeletionTargets\n"}
+{"Time":"2026-10-12T10:18:34.928416-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion","Output":"--- PASS: TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion (4.55s)\n"}
+{"Time":"2026-10-12T10:18:34.928423-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion","Elapsed":4.55}
+{"Time":"2026-10-12T10:18:34.928431-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/lock_only"}
+{"Time":"2026-10-12T10:18:34.928436-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/lock_only","Output":"=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/lock_only\n"}
+{"Time":"2026-10-12T10:18:34.928448-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/lock_only","Output":"--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/lock_only (0.00s)\n"}
+{"Time":"2026-10-12T10:18:34.928454-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/lock_only","Elapsed":0}
+{"Time":"2026-10-12T10:18:34.928458-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/two_paths"}
+{"Time":"2026-10-12T10:18:34.928462-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/two_paths","Output":"=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/two_paths\n"}
+{"Time":"2026-10-12T10:18:34.928479-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/two_paths","Output":"--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/two_paths (0.00s)\n"}
+{"Time":"2026-10-12T10:18:34.932557-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/two_paths","Elapsed":0}
+{"Time":"2026-10-12T10:18:34.932569-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock"}
+{"Time":"2026-10-12T10:18:34.932574-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock","Output":"=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock\n"}
+{"Time":"2026-10-12T10:18:34.932581-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock","Output":"--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock (0.00s)\n"}
+{"Time":"2026-10-12T10:18:34.932718-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock","Elapsed":0}
+{"Time":"2026-10-12T10:18:34.936277-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets","Output":"--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets (0.00s)\n"}
+{"Time":"2026-10-12T10:18:34.936293-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRetiredSkillDeletionTargets","Elapsed":0}
+{"Time":"2026-10-12T10:18:34.9363-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest"}
+{"Time":"2026-10-12T10:18:34.936305-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest","Output":"=== CONT  TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest\n"}
+{"Time":"2026-10-12T10:18:34.95254-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/outside_units","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/outside_units (4.16s)\n"}
+{"Time":"2026-10-12T10:18:34.952638-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/outside_units","Elapsed":4.16}
+{"Time":"2026-10-12T10:18:34.960563-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination"}
+{"Time":"2026-10-12T10:18:34.96066-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination\n"}
+{"Time":"2026-10-12T10:18:35.168273-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan (4.46s)\n"}
+{"Time":"2026-10-12T10:18:35.168306-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan","Elapsed":4.46}
+{"Time":"2026-10-12T10:18:35.168318-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput (7.79s)\n"}
+{"Time":"2026-10-12T10:18:35.168326-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionJSONOutput","Elapsed":7.79}
+{"Time":"2026-10-12T10:18:35.168335-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:35.168343-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile","Output":"=== CONT  TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:35.214925-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan (4.27s)\n"}
+{"Time":"2026-10-12T10:18:35.215169-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan","Elapsed":4.27}
+{"Time":"2026-10-12T10:18:35.219392-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput","Output":"--- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput (7.54s)\n"}
+{"Time":"2026-10-12T10:18:35.219412-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnrecordedManagedRegionTextOutput","Elapsed":7.54}
+{"Time":"2026-10-12T10:18:35.219418-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile"}
+{"Time":"2026-10-12T10:18:35.219422-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile","Output":"=== CONT  TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile\n"}
+{"Time":"2026-10-12T10:18:35.425285-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion","Output":"--- PASS: TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion (3.70s)\n"}
+{"Time":"2026-10-12T10:18:35.428157-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion","Elapsed":3.7}
+{"Time":"2026-10-12T10:18:35.428176-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision"}
+{"Time":"2026-10-12T10:18:35.428385-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision","Output":"=== CONT  TestBaselineUpdateAdoptsEverySuggestedDecision\n"}
+{"Time":"2026-10-12T10:18:35.873052-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies"}
+{"Time":"2026-10-12T10:18:35.883273-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies","Output":"=== RUN   TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies\n"}
+{"Time":"2026-10-12T10:18:35.887544-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile","Output":"--- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile (2.50s)\n"}
+{"Time":"2026-10-12T10:18:35.899561-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile","Elapsed":2.5}
+{"Time":"2026-10-12T10:18:35.903437-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity"}
+{"Time":"2026-10-12T10:18:35.911339-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity","Output":"=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity\n"}
+{"Time":"2026-10-12T10:18:39.000022-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination (4.05s)\n"}
+{"Time":"2026-10-12T10:18:39.000066-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination","Elapsed":4.05}
+{"Time":"2026-10-12T10:18:39.000083-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/no_history"}
+{"Time":"2026-10-12T10:18:39.000093-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/no_history","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/no_history\n"}
+{"Time":"2026-10-12T10:18:39.065891-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest","Output":"--- PASS: TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest (4.14s)\n"}
+{"Time":"2026-10-12T10:18:39.065931-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest","Elapsed":4.14}
+{"Time":"2026-10-12T10:18:39.065944-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill"}
+{"Time":"2026-10-12T10:18:39.065953-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill","Output":"=== CONT  TestBaselineUpdatePreviewReportsAnOlderOwnedSkill\n"}
+{"Time":"2026-10-12T10:18:39.065965-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false"}
+{"Time":"2026-10-12T10:18:39.065979-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false","Output":"=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false\n"}
+{"Time":"2026-10-12T10:18:39.07757-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity","Output":"--- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity (3.19s)\n"}
+{"Time":"2026-10-12T10:18:39.077614-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity","Elapsed":3.19}
+{"Time":"2026-10-12T10:18:39.077631-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis","Output":"--- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis (5.69s)\n"}
+{"Time":"2026-10-12T10:18:39.077644-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateUnresolvedProfileDiagnosis","Elapsed":5.69}
+{"Time":"2026-10-12T10:18:39.077671-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck"}
+{"Time":"2026-10-12T10:18:39.077683-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck","Output":"=== CONT  TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck\n"}
+{"Time":"2026-10-12T10:18:39.103949-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision","Output":"--- PASS: TestBaselineUpdateAdoptsEverySuggestedDecision (3.68s)\n"}
+{"Time":"2026-10-12T10:18:39.103986-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAdoptsEverySuggestedDecision","Elapsed":3.68}
+{"Time":"2026-10-12T10:18:39.104002-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch"}
+{"Time":"2026-10-12T10:18:39.104016-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch","Output":"=== CONT  TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch\n"}
+{"Time":"2026-10-12T10:18:39.111519-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills","Output":"--- PASS: TestBaselineUpdateAppliesAndListsRetiredSkills (8.67s)\n"}
+{"Time":"2026-10-12T10:18:39.111542-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateAppliesAndListsRetiredSkills","Elapsed":8.67}
+{"Time":"2026-10-12T10:18:39.111554-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites"}
+{"Time":"2026-10-12T10:18:39.111563-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites","Output":"=== CONT  TestBaselineUpdateNewDecisionRequiresActionWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:39.111571-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills","Output":"--- PASS: TestBaselineUpdateWithoutSkillsOmitsRetiredSkills (13.83s)\n"}
+{"Time":"2026-10-12T10:18:39.111577-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateWithoutSkillsOmitsRetiredSkills","Elapsed":13.83}
+{"Time":"2026-10-12T10:18:39.111581-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged"}
+{"Time":"2026-10-12T10:18:39.111586-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged","Output":"=== CONT  TestBaselineUpdateRefusesADigestWhoseCitationsChanged\n"}
+{"Time":"2026-10-12T10:18:39.230255-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies","Output":"--- PASS: TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies (3.36s)\n"}
+{"Time":"2026-10-12T10:18:39.230303-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies","Elapsed":3.36}
+{"Time":"2026-10-12T10:18:39.276066-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState","Output":"--- PASS: TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState (5.85s)\n"}
+{"Time":"2026-10-12T10:18:39.276089-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState","Elapsed":5.85}
+{"Time":"2026-10-12T10:18:39.276098-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep"}
+{"Time":"2026-10-12T10:18:39.276106-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep","Output":"=== CONT  TestBaselineUpdateFleetSweep\n"}
+{"Time":"2026-10-12T10:18:39.276874-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/manifest-predates-managed-regions"}
+{"Time":"2026-10-12T10:18:39.276909-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/manifest-predates-managed-regions","Output":"=== RUN   TestBaselineUpdateFleetSweep/manifest-predates-managed-regions\n"}
+{"Time":"2026-10-12T10:18:41.765275-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites","Output":"--- PASS: TestBaselineUpdateNewDecisionRequiresActionWithoutWrites (2.66s)\n"}
+{"Time":"2026-10-12T10:18:41.765638-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNewDecisionRequiresActionWithoutWrites","Elapsed":2.66}
+{"Time":"2026-10-12T10:18:41.765665-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries"}
+{"Time":"2026-10-12T10:18:41.765682-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries","Output":"=== CONT  TestBaselineUpdateHistoryPlanningBoundaries\n"}
+{"Time":"2026-10-12T10:18:41.765701-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag"}
+{"Time":"2026-10-12T10:18:41.765711-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag","Output":"=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag\n"}
+{"Time":"2026-10-12T10:18:41.789559-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true","Output":"--- PASS: TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true (9.60s)\n"}
+{"Time":"2026-10-12T10:18:41.78958-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true","Elapsed":9.6}
+{"Time":"2026-10-12T10:18:41.789588-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false"}
+{"Time":"2026-10-12T10:18:41.789595-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false","Output":"=== RUN   TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false\n"}
+{"Time":"2026-10-12T10:18:41.829435-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/no_history","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/no_history (2.83s)\n"}
+{"Time":"2026-10-12T10:18:41.829479-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/no_history","Elapsed":2.83}
+{"Time":"2026-10-12T10:18:41.829495-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/unclean"}
+{"Time":"2026-10-12T10:18:41.829504-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/unclean","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/unclean\n"}
+{"Time":"2026-10-12T10:18:41.895272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile","Output":"--- PASS: TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile (6.68s)\n"}
+{"Time":"2026-10-12T10:18:41.89532-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile","Elapsed":6.68}
+{"Time":"2026-10-12T10:18:41.895343-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix"}
+{"Time":"2026-10-12T10:18:41.895353-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix","Output":"=== CONT  TestBaselineUpdateKeepsARecordedBranchPrefix\n"}
+{"Time":"2026-10-12T10:18:41.950255-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck","Output":"--- PASS: TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck (2.87s)\n"}
+{"Time":"2026-10-12T10:18:41.950301-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck","Elapsed":2.87}
+{"Time":"2026-10-12T10:18:41.950317-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion"}
+{"Time":"2026-10-12T10:18:41.950329-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion","Output":"=== CONT  TestBaselineUpdateReportsATagFailureBeforeAnyConversion\n"}
+{"Time":"2026-10-12T10:18:42.206428-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey"}
+{"Time":"2026-10-12T10:18:42.206469-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey","Output":"=== CONT  TestHistorySanitizeAdviseFailsOpenWithoutAKey\n"}
+{"Time":"2026-10-12T10:18:42.210323-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged","Output":"--- PASS: TestBaselineUpdateRefusesADigestWhoseCitationsChanged (3.10s)\n"}
+{"Time":"2026-10-12T10:18:42.82071-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesADigestWhoseCitationsChanged","Elapsed":3.1}
+{"Time":"2026-10-12T10:18:42.828477-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/manifest-predates-managed-regions","Output":"--- PASS: TestBaselineUpdateFleetSweep/manifest-predates-managed-regions (3.54s)\n"}
+{"Time":"2026-10-12T10:18:42.828493-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/manifest-predates-managed-regions","Elapsed":3.54}
+{"Time":"2026-10-12T10:18:42.828505-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/structural-clauses-missing"}
+{"Time":"2026-10-12T10:18:42.828513-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/structural-clauses-missing","Output":"=== RUN   TestBaselineUpdateFleetSweep/structural-clauses-missing\n"}
+{"Time":"2026-10-12T10:18:42.916412-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch","Output":"--- PASS: TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch (3.81s)\n"}
+{"Time":"2026-10-12T10:18:42.920427-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch","Elapsed":3.81}
+{"Time":"2026-10-12T10:18:42.92056-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading"}
+{"Time":"2026-10-12T10:18:42.924309-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading","Output":"=== CONT  TestHistorySnapshotSkipsGitMetadataBeforeReading\n"}
+{"Time":"2026-10-12T10:18:42.968716-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false","Output":"--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false (3.90s)\n"}
+{"Time":"2026-10-12T10:18:42.97237-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false","Elapsed":3.9}
+{"Time":"2026-10-12T10:18:42.976441-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true"}
+{"Time":"2026-10-12T10:18:42.976541-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true","Output":"=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true\n"}
+{"Time":"2026-10-12T10:18:43.857626-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading","Output":"--- PASS: TestHistorySnapshotSkipsGitMetadataBeforeReading (0.94s)\n"}
+{"Time":"2026-10-12T10:18:43.85768-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySnapshotSkipsGitMetadataBeforeReading","Elapsed":0.94}
+{"Time":"2026-10-12T10:18:43.857697-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery"}
+{"Time":"2026-10-12T10:18:43.861321-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery","Output":"=== CONT  TestHistorySanitizeAdviceWithoutAKnownDelivery\n"}
+{"Time":"2026-10-12T10:18:43.939331-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile","Output":"--- PASS: TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile (8.77s)\n"}
+{"Time":"2026-10-12T10:18:43.943034-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile","Elapsed":8.77}
+{"Time":"2026-10-12T10:18:43.943192-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill"}
+{"Time":"2026-10-12T10:18:43.943215-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill","Output":"=== CONT  TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill\n"}
+{"Time":"2026-10-12T10:18:43.943233-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill","Output":"--- PASS: TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill (0.00s)\n"}
+{"Time":"2026-10-12T10:18:43.943259-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill","Elapsed":0}
+{"Time":"2026-10-12T10:18:43.94327-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory"}
+{"Time":"2026-10-12T10:18:43.943278-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory","Output":"=== CONT  TestHistorySanitizeAdviceIsAdvisory\n"}
+{"Time":"2026-10-12T10:18:43.943287-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/service_failure"}
+{"Time":"2026-10-12T10:18:43.943295-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/service_failure","Output":"=== RUN   TestHistorySanitizeAdviceIsAdvisory/service_failure\n"}
+{"Time":"2026-10-12T10:18:43.98068-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey","Output":"--- PASS: TestHistorySanitizeAdviseFailsOpenWithoutAKey (1.77s)\n"}
+{"Time":"2026-10-12T10:18:43.9807-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseFailsOpenWithoutAKey","Elapsed":1.77}
+{"Time":"2026-10-12T10:18:43.980707-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs"}
+{"Time":"2026-10-12T10:18:43.980711-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs","Output":"=== CONT  TestHistorySanitizeFolderCitationsAndKindNamedSlugs\n"}
+{"Time":"2026-10-12T10:18:44.43275-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery","Output":"--- PASS: TestHistorySanitizeAdviceWithoutAKnownDelivery (0.58s)\n"}
+{"Time":"2026-10-12T10:18:44.436548-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceWithoutAKnownDelivery","Elapsed":0.58}
+{"Time":"2026-10-12T10:18:44.436602-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites"}
+{"Time":"2026-10-12T10:18:44.436615-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites","Output":"=== CONT  TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites\n"}
+{"Time":"2026-10-12T10:18:44.50003-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false","Output":"--- PASS: TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false (2.71s)\n"}
+{"Time":"2026-10-12T10:18:44.500059-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=false","Elapsed":2.71}
+{"Time":"2026-10-12T10:18:44.500072-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile","Output":"--- PASS: TestBaselineUpdateReachesCurrentWithARepositoryProfile (12.31s)\n"}
+{"Time":"2026-10-12T10:18:44.500076-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReachesCurrentWithARepositoryProfile","Elapsed":12.31}
+{"Time":"2026-10-12T10:18:44.500079-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch"}
+{"Time":"2026-10-12T10:18:44.500082-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch","Output":"=== CONT  TestHistorySanitizePreflightsWholeBatch\n"}
+{"Time":"2026-10-12T10:18:44.558754-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/service_failure","Output":"--- PASS: TestHistorySanitizeAdviceIsAdvisory/service_failure (0.62s)\n"}
+{"Time":"2026-10-12T10:18:44.562517-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/service_failure","Elapsed":0.62}
+{"Time":"2026-10-12T10:18:44.562639-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/monthly_ceiling"}
+{"Time":"2026-10-12T10:18:44.562653-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/monthly_ceiling","Output":"=== RUN   TestHistorySanitizeAdviceIsAdvisory/monthly_ceiling\n"}
+{"Time":"2026-10-12T10:18:44.579935-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs","Output":"--- PASS: TestHistorySanitizeFolderCitationsAndKindNamedSlugs (0.60s)\n"}
+{"Time":"2026-10-12T10:18:44.583373-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeFolderCitationsAndKindNamedSlugs","Elapsed":0.6}
+{"Time":"2026-10-12T10:18:44.583403-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending"}
+{"Time":"2026-10-12T10:18:44.583427-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending","Output":"=== CONT  TestHistorySanitizeWithNothingPending\n"}
+{"Time":"2026-10-12T10:18:44.674035-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag","Output":"--- PASS: TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag (2.91s)\n"}
+{"Time":"2026-10-12T10:18:44.67426-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag","Elapsed":2.91}
+{"Time":"2026-10-12T10:18:44.674291-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag"}
+{"Time":"2026-10-12T10:18:44.674301-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag","Output":"=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag\n"}
+{"Time":"2026-10-12T10:18:44.682286-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/unclean","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/unclean (2.85s)\n"}
+{"Time":"2026-10-12T10:18:44.68628-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/unclean","Elapsed":2.85}
+{"Time":"2026-10-12T10:18:44.686355-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/absolute"}
+{"Time":"2026-10-12T10:18:44.686437-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/absolute","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/absolute\n"}
+{"Time":"2026-10-12T10:18:44.775737-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion","Output":"--- PASS: TestBaselineUpdateReportsATagFailureBeforeAnyConversion (2.83s)\n"}
+{"Time":"2026-10-12T10:18:44.779432-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateReportsATagFailureBeforeAnyConversion","Elapsed":2.83}
+{"Time":"2026-10-12T10:18:44.779484-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges"}
+{"Time":"2026-10-12T10:18:44.779489-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges","Output":"=== CONT  TestBaselineUpdateIdempotenceReportsZeroFileChanges\n"}
+{"Time":"2026-10-12T10:18:44.783549-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix","Output":"--- PASS: TestBaselineUpdateKeepsARecordedBranchPrefix (2.89s)\n"}
+{"Time":"2026-10-12T10:18:44.783819-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateKeepsARecordedBranchPrefix","Elapsed":2.89}
+{"Time":"2026-10-12T10:18:44.787418-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot"}
+{"Time":"2026-10-12T10:18:44.787463-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot","Output":"=== CONT  TestHistorySanitizeRefusesAnExternalSpecRoot\n"}
+{"Time":"2026-10-12T10:18:44.80466-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites","Output":"--- PASS: TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites (0.37s)\n"}
+{"Time":"2026-10-12T10:18:44.808641-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites","Elapsed":0.37}
+{"Time":"2026-10-12T10:18:44.808681-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors"}
+{"Time":"2026-10-12T10:18:44.808733-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors","Output":"=== CONT  TestHistorySanitizeUsageErrors\n"}
+{"Time":"2026-10-12T10:18:44.808757-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--apply"}
+{"Time":"2026-10-12T10:18:44.808762-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--apply","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--apply\n"}
+{"Time":"2026-10-12T10:18:44.974327-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending","Output":"--- PASS: TestHistorySanitizeWithNothingPending (0.39s)\n"}
+{"Time":"2026-10-12T10:18:44.977216-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeWithNothingPending","Elapsed":0.39}
+{"Time":"2026-10-12T10:18:44.977245-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences"}
+{"Time":"2026-10-12T10:18:44.977254-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences","Output":"=== CONT  TestHistorySanitizePromotesIntoReferences\n"}
+{"Time":"2026-10-12T10:18:45.649545-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--apply","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--apply (0.84s)\n"}
+{"Time":"2026-10-12T10:18:45.657193-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--apply","Elapsed":0.84}
+{"Time":"2026-10-12T10:18:45.657299-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise"}
+{"Time":"2026-10-12T10:18:45.657313-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--advise\n"}
+{"Time":"2026-10-12T10:18:45.748563-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/monthly_ceiling","Output":"--- PASS: TestHistorySanitizeAdviceIsAdvisory/monthly_ceiling (1.19s)\n"}
+{"Time":"2026-10-12T10:18:45.752141-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory/monthly_ceiling","Elapsed":1.19}
+{"Time":"2026-10-12T10:18:45.752388-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory","Output":"--- PASS: TestHistorySanitizeAdviceIsAdvisory (1.81s)\n"}
+{"Time":"2026-10-12T10:18:45.756306-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviceIsAdvisory","Elapsed":1.81}
+{"Time":"2026-10-12T10:18:45.764437-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge"}
+{"Time":"2026-10-12T10:18:45.768421-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge","Output":"=== CONT  TestHistorySanitizeAdviseWithAFakeJudge\n"}
+{"Time":"2026-10-12T10:18:45.772397-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/reusable_knowledge"}
+{"Time":"2026-10-12T10:18:45.776331-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/reusable_knowledge","Output":"=== RUN   TestHistorySanitizeAdviseWithAFakeJudge/reusable_knowledge\n"}
+{"Time":"2026-10-12T10:18:45.933456-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation"}
+{"Time":"2026-10-12T10:18:45.9371-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation","Output":"=== CONT  TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation\n"}
+{"Time":"2026-10-12T10:18:45.941278-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot","Output":"--- PASS: TestHistorySanitizeRefusesAnExternalSpecRoot (1.15s)\n"}
+{"Time":"2026-10-12T10:18:45.94528-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAnExternalSpecRoot","Elapsed":1.15}
+{"Time":"2026-10-12T10:18:45.94931-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation","Output":"--- PASS: TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation (0.00s)\n"}
+{"Time":"2026-10-12T10:18:45.953343-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation","Elapsed":0}
+{"Time":"2026-10-12T10:18:45.957317-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing"}
+{"Time":"2026-10-12T10:18:45.961476-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing","Output":"=== CONT  TestHistorySanitizePlanWritesNothing\n"}
+{"Time":"2026-10-12T10:18:46.527554-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences","Output":"--- PASS: TestHistorySanitizePromotesIntoReferences (1.55s)\n"}
+{"Time":"2026-10-12T10:18:46.531413-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotesIntoReferences","Elapsed":1.55}
+{"Time":"2026-10-12T10:18:46.531444-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree"}
+{"Time":"2026-10-12T10:18:46.535363-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree","Output":"=== CONT  TestHistorySanitizeRefusesADirtyTree\n"}
+{"Time":"2026-10-12T10:18:46.535378-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/tracked"}
+{"Time":"2026-10-12T10:18:46.535383-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/tracked","Output":"=== RUN   TestHistorySanitizeRefusesADirtyTree/tracked\n"}
+{"Time":"2026-10-12T10:18:46.652333-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/structural-clauses-missing","Output":"--- PASS: TestBaselineUpdateFleetSweep/structural-clauses-missing (3.83s)\n"}
+{"Time":"2026-10-12T10:18:46.652371-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/structural-clauses-missing","Elapsed":3.83}
+{"Time":"2026-10-12T10:18:46.652523-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve"}
+{"Time":"2026-10-12T10:18:46.656093-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve","Output":"=== RUN   TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve\n"}
+{"Time":"2026-10-12T10:18:46.865783-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--advise (1.22s)\n"}
+{"Time":"2026-10-12T10:18:46.865804-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise","Elapsed":1.22}
+{"Time":"2026-10-12T10:18:46.865812-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1"}
+{"Time":"2026-10-12T10:18:46.865815-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1\n"}
+{"Time":"2026-10-12T10:18:47.025948-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/tracked","Output":"--- PASS: TestHistorySanitizeRefusesADirtyTree/tracked (0.50s)\n"}
+{"Time":"2026-10-12T10:18:47.026008-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/tracked","Elapsed":0.5}
+{"Time":"2026-10-12T10:18:47.026276-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/untracked"}
+{"Time":"2026-10-12T10:18:47.026316-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/untracked","Output":"=== RUN   TestHistorySanitizeRefusesADirtyTree/untracked\n"}
+{"Time":"2026-10-12T10:18:47.031103-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1 (0.17s)\n"}
+{"Time":"2026-10-12T10:18:47.031154-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1","Elapsed":0.17}
+{"Time":"2026-10-12T10:18:47.031172-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--promote_x"}
+{"Time":"2026-10-12T10:18:47.031182-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--promote_x","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--promote_x\n"}
+{"Time":"2026-10-12T10:18:47.175697-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch","Output":"--- PASS: TestHistorySanitizePreflightsWholeBatch (2.68s)\n"}
+{"Time":"2026-10-12T10:18:47.179412-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePreflightsWholeBatch","Elapsed":2.68}
+{"Time":"2026-10-12T10:18:47.179432-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths"}
+{"Time":"2026-10-12T10:18:47.179437-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths","Output":"=== CONT  TestHistorySanitizeRefusesATagWithoutTheBatchPaths\n"}
+{"Time":"2026-10-12T10:18:47.323919-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag","Output":"--- PASS: TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag (2.65s)\n"}
+{"Time":"2026-10-12T10:18:47.327077-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag","Elapsed":2.65}
+{"Time":"2026-10-12T10:18:47.32743-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out"}
+{"Time":"2026-10-12T10:18:47.327536-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out","Output":"=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out\n"}
+{"Time":"2026-10-12T10:18:47.331258-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/reusable_knowledge","Output":"--- PASS: TestHistorySanitizeAdviseWithAFakeJudge/reusable_knowledge (1.58s)\n"}
+{"Time":"2026-10-12T10:18:47.331497-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/reusable_knowledge","Elapsed":1.58}
+{"Time":"2026-10-12T10:18:47.331554-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/repository_record"}
+{"Time":"2026-10-12T10:18:47.33156-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/repository_record","Output":"=== RUN   TestHistorySanitizeAdviseWithAFakeJudge/repository_record\n"}
+{"Time":"2026-10-12T10:18:47.39889-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing","Output":"--- PASS: TestHistorySanitizePlanWritesNothing (1.47s)\n"}
+{"Time":"2026-10-12T10:18:47.402053-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePlanWritesNothing","Elapsed":1.47}
+{"Time":"2026-10-12T10:18:47.402069-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag"}
+{"Time":"2026-10-12T10:18:47.402073-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag","Output":"=== CONT  TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag\n"}
+{"Time":"2026-10-12T10:18:47.402088-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/missing"}
+{"Time":"2026-10-12T10:18:47.402092-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/missing","Output":"=== RUN   TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/missing\n"}
+{"Time":"2026-10-12T10:18:47.420792-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/absolute","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/absolute (2.74s)\n"}
+{"Time":"2026-10-12T10:18:47.420833-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/absolute","Elapsed":2.74}
+{"Time":"2026-10-12T10:18:47.420849-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/directory"}
+{"Time":"2026-10-12T10:18:47.420859-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/directory","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/directory\n"}
+{"Time":"2026-10-12T10:18:47.556403-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--promote_x","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--promote_x (0.53s)\n"}
+{"Time":"2026-10-12T10:18:47.556424-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--promote_x","Elapsed":0.53}
+{"Time":"2026-10-12T10:18:47.55643-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_0"}
+{"Time":"2026-10-12T10:18:47.556433-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_0","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch_0\n"}
+{"Time":"2026-10-12T10:18:47.5859-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/untracked","Output":"--- PASS: TestHistorySanitizeRefusesADirtyTree/untracked (0.56s)\n"}
+{"Time":"2026-10-12T10:18:47.585922-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/untracked","Elapsed":0.56}
+{"Time":"2026-10-12T10:18:47.585928-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/staged"}
+{"Time":"2026-10-12T10:18:47.585932-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/staged","Output":"=== RUN   TestHistorySanitizeRefusesADirtyTree/staged\n"}
+{"Time":"2026-10-12T10:18:47.591145-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true","Output":"--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true (4.62s)\n"}
+{"Time":"2026-10-12T10:18:47.594228-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true","Elapsed":4.62}
+{"Time":"2026-10-12T10:18:47.594268-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill","Output":"--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill (8.53s)\n"}
+{"Time":"2026-10-12T10:18:47.594282-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePreviewReportsAnOlderOwnedSkill","Elapsed":8.53}
+{"Time":"2026-10-12T10:18:47.594293-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage"}
+{"Time":"2026-10-12T10:18:47.594301-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage","Output":"=== CONT  TestBaselineUpdatePassesOfflineSourceToSkillStage\n"}
+{"Time":"2026-10-12T10:18:47.595541-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges","Output":"--- PASS: TestBaselineUpdateIdempotenceReportsZeroFileChanges (2.82s)\n"}
+{"Time":"2026-10-12T10:18:47.595589-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateIdempotenceReportsZeroFileChanges","Elapsed":2.82}
+{"Time":"2026-10-12T10:18:47.595607-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch"}
+{"Time":"2026-10-12T10:18:47.595617-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch","Output":"=== CONT  TestHistorySanitizeAppliesTheNextBatch\n"}
+{"Time":"2026-10-12T10:18:47.725542-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary"}
+{"Time":"2026-10-12T10:18:47.729466-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary","Output":"=== CONT  TestHistorySanitizeInventoryRefusalsAndBatchBoundary\n"}
+{"Time":"2026-10-12T10:18:47.72952-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths","Output":"--- PASS: TestHistorySanitizeRefusesATagWithoutTheBatchPaths (0.55s)\n"}
+{"Time":"2026-10-12T10:18:47.73339-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesATagWithoutTheBatchPaths","Elapsed":0.55}
+{"Time":"2026-10-12T10:18:47.737307-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/specs/aaa/link"}
+{"Time":"2026-10-12T10:18:47.737346-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/specs/aaa/link","Output":"=== RUN   TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/specs/aaa/link\n"}
+{"Time":"2026-10-12T10:18:48.017805-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/missing","Output":"--- PASS: TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/missing (0.62s)\n"}
+{"Time":"2026-10-12T10:18:48.021646-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/missing","Elapsed":0.62}
+{"Time":"2026-10-12T10:18:48.021679-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/lightweight"}
+{"Time":"2026-10-12T10:18:48.021689-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/lightweight","Output":"=== RUN   TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/lightweight\n"}
+{"Time":"2026-10-12T10:18:48.053764-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/repository_record","Output":"--- PASS: TestHistorySanitizeAdviseWithAFakeJudge/repository_record (0.72s)\n"}
+{"Time":"2026-10-12T10:18:48.053823-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/repository_record","Elapsed":0.72}
+{"Time":"2026-10-12T10:18:48.053839-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/transient_evidence"}
+{"Time":"2026-10-12T10:18:48.053849-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/transient_evidence","Output":"=== RUN   TestHistorySanitizeAdviseWithAFakeJudge/transient_evidence\n"}
+{"Time":"2026-10-12T10:18:48.297345-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve","Output":"--- PASS: TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve (1.64s)\n"}
+{"Time":"2026-10-12T10:18:48.297603-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve","Elapsed":1.64}
+{"Time":"2026-10-12T10:18:48.297654-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/already-current"}
+{"Time":"2026-10-12T10:18:48.297691-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/already-current","Output":"=== RUN   TestBaselineUpdateFleetSweep/already-current\n"}
+{"Time":"2026-10-12T10:18:48.540429-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/specs/aaa/link","Output":"--- PASS: TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/specs/aaa/link (0.81s)\n"}
+{"Time":"2026-10-12T10:18:48.540633-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/specs/aaa/link","Elapsed":0.81}
+{"Time":"2026-10-12T10:18:48.54071-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/findings/link"}
+{"Time":"2026-10-12T10:18:48.54104-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/findings/link","Output":"=== RUN   TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/findings/link\n"}
+{"Time":"2026-10-12T10:18:48.619677-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_0","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch_0 (1.06s)\n"}
+{"Time":"2026-10-12T10:18:48.623563-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_0","Elapsed":1.06}
+{"Time":"2026-10-12T10:18:48.623573-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_-1"}
+{"Time":"2026-10-12T10:18:48.623579-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_-1","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch_-1\n"}
+{"Time":"2026-10-12T10:18:48.797716-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/staged","Output":"--- PASS: TestHistorySanitizeRefusesADirtyTree/staged (1.21s)\n"}
+{"Time":"2026-10-12T10:18:48.797755-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree/staged","Elapsed":1.21}
+{"Time":"2026-10-12T10:18:48.79778-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree","Output":"--- PASS: TestHistorySanitizeRefusesADirtyTree (2.27s)\n"}
+{"Time":"2026-10-12T10:18:48.797789-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesADirtyTree","Elapsed":2.27}
+{"Time":"2026-10-12T10:18:48.797796-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits"}
+{"Time":"2026-10-12T10:18:48.797804-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits","Output":"=== CONT  TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits\n"}
+{"Time":"2026-10-12T10:18:49.13971-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/lightweight","Output":"--- PASS: TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/lightweight (1.12s)\n"}
+{"Time":"2026-10-12T10:18:49.145661-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/lightweight","Elapsed":1.12}
+{"Time":"2026-10-12T10:18:49.14572-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/not_ancestor"}
+{"Time":"2026-10-12T10:18:49.145735-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/not_ancestor","Output":"=== RUN   TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/not_ancestor\n"}
+{"Time":"2026-10-12T10:18:49.188253-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/transient_evidence","Output":"--- PASS: TestHistorySanitizeAdviseWithAFakeJudge/transient_evidence (1.13s)\n"}
+{"Time":"2026-10-12T10:18:49.188521-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge/transient_evidence","Elapsed":1.13}
+{"Time":"2026-10-12T10:18:49.18857-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge","Output":"--- PASS: TestHistorySanitizeAdviseWithAFakeJudge (3.44s)\n"}
+{"Time":"2026-10-12T10:18:49.188593-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAdviseWithAFakeJudge","Elapsed":3.44}
+{"Time":"2026-10-12T10:18:49.188607-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind"}
+{"Time":"2026-10-12T10:18:49.188611-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind","Output":"=== CONT  TestHistorySanitizePromotionSeparatesFolderFromKind\n"}
+{"Time":"2026-10-12T10:18:49.203529-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch","Output":"--- PASS: TestHistorySanitizeAppliesTheNextBatch (1.61s)\n"}
+{"Time":"2026-10-12T10:18:49.204036-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeAppliesTheNextBatch","Elapsed":1.61}
+{"Time":"2026-10-12T10:18:49.207127-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes"}
+{"Time":"2026-10-12T10:18:49.207141-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes","Output":"=== CONT  TestHistorySanitizeConvertsTheFourLegacyShapes\n"}
+{"Time":"2026-10-12T10:18:49.225539-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/findings/link","Output":"--- PASS: TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/findings/link (0.68s)\n"}
+{"Time":"2026-10-12T10:18:49.225921-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary/docs/history/findings/link","Elapsed":0.68}
+{"Time":"2026-10-12T10:18:49.225951-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary","Output":"--- PASS: TestHistorySanitizeInventoryRefusalsAndBatchBoundary (1.50s)\n"}
+{"Time":"2026-10-12T10:18:49.225963-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeInventoryRefusalsAndBatchBoundary","Elapsed":1.5}
+{"Time":"2026-10-12T10:18:49.225971-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest"}
+{"Time":"2026-10-12T10:18:49.225978-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest","Output":"=== CONT  TestHistorySanitizeRefusesAKindUnitAndPlansTheRest\n"}
+{"Time":"2026-10-12T10:18:49.310634-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_-1","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch_-1 (0.69s)\n"}
+{"Time":"2026-10-12T10:18:49.310669-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_-1","Elapsed":0.69}
+{"Time":"2026-10-12T10:18:49.310684-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_x"}
+{"Time":"2026-10-12T10:18:49.310693-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_x","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch_x\n"}
+{"Time":"2026-10-12T10:18:49.425866-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out","Output":"--- PASS: TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out (2.10s)\n"}
+{"Time":"2026-10-12T10:18:49.425886-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out","Elapsed":2.1}
+{"Time":"2026-10-12T10:18:49.425894-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind"}
+{"Time":"2026-10-12T10:18:49.425899-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind","Output":"=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind\n"}
+{"Time":"2026-10-12T10:18:49.449001-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits","Output":"--- PASS: TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits (0.65s)\n"}
+{"Time":"2026-10-12T10:18:49.585442-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeTagCoverageSelectsOnlyConvertibleUnits","Elapsed":0.65}
+{"Time":"2026-10-12T10:18:49.585462-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/directory","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/directory (2.16s)\n"}
+{"Time":"2026-10-12T10:18:49.585469-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/directory","Elapsed":2.16}
+{"Time":"2026-10-12T10:18:49.585473-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/missing"}
+{"Time":"2026-10-12T10:18:49.585477-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/missing","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/missing\n"}
+{"Time":"2026-10-12T10:18:49.593007-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind","Output":"--- PASS: TestHistorySanitizePromotionSeparatesFolderFromKind (0.41s)\n"}
+{"Time":"2026-10-12T10:18:49.689712-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizePromotionSeparatesFolderFromKind","Elapsed":0.41}
+{"Time":"2026-10-12T10:18:49.692994-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_x","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch_x (0.38s)\n"}
+{"Time":"2026-10-12T10:18:49.693078-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch_x","Elapsed":0.38}
+{"Time":"2026-10-12T10:18:49.693099-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch"}
+{"Time":"2026-10-12T10:18:49.693111-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch\n"}
+{"Time":"2026-10-12T10:18:49.706992-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/not_ancestor","Output":"--- PASS: TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/not_ancestor (0.57s)\n"}
+{"Time":"2026-10-12T10:18:49.707027-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag/not_ancestor","Elapsed":0.57}
+{"Time":"2026-10-12T10:18:49.707038-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag","Output":"--- PASS: TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag (2.31s)\n"}
+{"Time":"2026-10-12T10:18:49.714041-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag","Elapsed":2.31}
+{"Time":"2026-10-12T10:18:49.714082-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/already-current","Output":"--- PASS: TestBaselineUpdateFleetSweep/already-current (1.42s)\n"}
+{"Time":"2026-10-12T10:18:49.714098-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep/already-current","Elapsed":1.42}
+{"Time":"2026-10-12T10:18:49.790181-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage","Output":"--- PASS: TestBaselineUpdatePassesOfflineSourceToSkillStage (2.20s)\n"}
+{"Time":"2026-10-12T10:18:50.022261-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdatePassesOfflineSourceToSkillStage","Elapsed":2.2}
+{"Time":"2026-10-12T10:18:50.022358-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest","Output":"--- PASS: TestHistorySanitizeRefusesAKindUnitAndPlansTheRest (0.80s)\n"}
+{"Time":"2026-10-12T10:18:50.110287-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeRefusesAKindUnitAndPlansTheRest","Elapsed":0.8}
+{"Time":"2026-10-12T10:18:50.110356-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch (0.42s)\n"}
+{"Time":"2026-10-12T10:18:50.110398-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--batch","Elapsed":0.42}
+{"Time":"2026-10-12T10:18:50.11041-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--unknown"}
+{"Time":"2026-10-12T10:18:50.110623-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--unknown","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_--unknown\n"}
+{"Time":"2026-10-12T10:18:50.206367-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes","Output":"--- PASS: TestHistorySanitizeConvertsTheFourLegacyShapes (1.00s)\n"}
+{"Time":"2026-10-12T10:18:50.39858-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeConvertsTheFourLegacyShapes","Elapsed":1}
+{"Time":"2026-10-12T10:18:50.398609-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep","Output":"--- PASS: TestBaselineUpdateFleetSweep (11.12s)\n"}
+{"Time":"2026-10-12T10:18:50.570007-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateFleetSweep","Elapsed":11.12}
+{"Time":"2026-10-12T10:18:50.570033-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--unknown","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_--unknown (0.46s)\n"}
+{"Time":"2026-10-12T10:18:50.57004-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_--unknown","Elapsed":0.46}
+{"Time":"2026-10-12T10:18:50.570055-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_extra"}
+{"Time":"2026-10-12T10:18:50.57006-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_extra","Output":"=== RUN   TestHistorySanitizeUsageErrors/sanitize_extra\n"}
+{"Time":"2026-10-12T10:18:50.638115-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_extra","Output":"--- PASS: TestHistorySanitizeUsageErrors/sanitize_extra (0.07s)\n"}
+{"Time":"2026-10-12T10:18:50.638138-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/sanitize_extra","Elapsed":0.07}
+{"Time":"2026-10-12T10:18:50.638145-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/unknown"}
+{"Time":"2026-10-12T10:18:50.638148-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/unknown","Output":"=== RUN   TestHistorySanitizeUsageErrors/unknown\n"}
+{"Time":"2026-10-12T10:18:50.700869-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/unknown","Output":"--- PASS: TestHistorySanitizeUsageErrors/unknown (0.06s)\n"}
+{"Time":"2026-10-12T10:18:50.700894-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors/unknown","Elapsed":0.06}
+{"Time":"2026-10-12T10:18:50.72609-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/missing","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/missing (1.14s)\n"}
+{"Time":"2026-10-12T10:18:50.726111-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/missing","Elapsed":1.14}
+{"Time":"2026-10-12T10:18:50.726141-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/duplicate"}
+{"Time":"2026-10-12T10:18:50.726146-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/duplicate","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/duplicate\n"}
+{"Time":"2026-10-12T10:18:50.732684-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors","Output":"--- PASS: TestHistorySanitizeUsageErrors (5.93s)\n"}
+{"Time":"2026-10-12T10:18:50.790644-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeUsageErrors","Elapsed":5.93}
+{"Time":"2026-10-12T10:18:50.790668-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind","Output":"--- PASS: TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind (1.36s)\n"}
+{"Time":"2026-10-12T10:18:50.790674-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind","Elapsed":1.36}
+{"Time":"2026-10-12T10:18:50.790679-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/apply_text"}
+{"Time":"2026-10-12T10:18:50.790683-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/apply_text","Output":"=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/apply_text\n"}
+{"Time":"2026-10-12T10:18:51.864669-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/duplicate","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/duplicate (1.14s)\n"}
+{"Time":"2026-10-12T10:18:51.864728-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/duplicate","Elapsed":1.14}
+{"Time":"2026-10-12T10:18:51.864843-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit"}
+{"Time":"2026-10-12T10:18:51.864854-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit","Output":"=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit\n"}
+{"Time":"2026-10-12T10:18:52.18774-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/apply_text","Output":"--- PASS: TestBaselineUpdateHistoryPlanningBoundaries/apply_text (1.40s)\n"}
+{"Time":"2026-10-12T10:18:52.187764-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries/apply_text","Elapsed":1.4}
+{"Time":"2026-10-12T10:18:52.187772-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries","Output":"--- PASS: TestBaselineUpdateHistoryPlanningBoundaries (10.42s)\n"}
+{"Time":"2026-10-12T10:18:52.545569-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateHistoryPlanningBoundaries","Elapsed":10.42}
+{"Time":"2026-10-12T10:18:52.545591-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit (0.68s)\n"}
+{"Time":"2026-10-12T10:18:52.545596-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit","Elapsed":0.68}
+{"Time":"2026-10-12T10:18:52.5456-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion","Output":"--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion (29.95s)\n"}
+{"Time":"2026-10-12T10:18:52.545604-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestBaselineUpdateRefusesAnInvalidPromotion","Elapsed":29.95}
+{"Time":"2026-10-12T10:18:52.545607-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"PASS\n"}
+{"Time":"2026-10-12T10:18:52.613628-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"suiteguard: guard cost: measured 2561 paths; fingerprint took 87.84ms before and 68.015834ms after\n"}
+{"Time":"2026-10-12T10:18:52.615034-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"ok  \troundfix/internal/cli\t36.364s\n"}
+{"Time":"2026-10-12T10:18:52.615052-03:00","Action":"pass","Package":"roundfix/internal/cli","Elapsed":36.365}

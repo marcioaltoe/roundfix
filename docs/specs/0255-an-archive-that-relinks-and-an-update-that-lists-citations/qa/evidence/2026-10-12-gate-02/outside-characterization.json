@@ -1,0 +1,32 @@
+{
+  "source": "docs/references/2026-10-12-live-citations-characterization.md",
+  "origin": "read-only adopter measurement committed before the Task commits",
+  "sha256": "1275517953d9b15d71276126830e84d882f04064e85cb7e27e55a47e848b5ef2",
+  "measured_revision": "544003f1a06597b73505c411a0a03d26e41b04ac^",
+  "history_full": "4b5d2cf2b5a2fc637e76b7e2eceb430a4d756b88",
+  "citing_classes": {
+    "active Specs": 5,
+    "open Backlog Entries": 4,
+    "unresolved Findings": 4,
+    "docs/references": 14,
+    "handoffs": 17,
+    "Baseline guide": 2
+  },
+  "target_classes": {
+    "references": 16,
+    "core": 15,
+    "QA reports": 4,
+    "qa/evidence": 6,
+    "removed handoffs": 2,
+    "directories": 3
+  },
+  "total": 46,
+  "live": 27,
+  "live_share": 0.5869565217391305,
+  "file_targets": 43,
+  "directory_targets": 3,
+  "secondary_links": 10,
+  "measurement_files": 22,
+  "adopter_report_files": 23,
+  "design_check": "27 live citations support bounded promotion/rewrite; warnings cover the other families. Directories are distinguished from the 43 file targets. Ten secondary links demonstrate the normal owner-first archive hazard. CLI rows 05-08 independently reproduced those citation families."
+}

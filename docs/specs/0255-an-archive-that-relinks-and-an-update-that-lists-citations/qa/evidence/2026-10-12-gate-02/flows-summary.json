@@ -1,0 +1,22 @@
+[
+  {
+    "row": "05",
+    "pass": true,
+    "detail": "Surface Transcript 1 matched stdout/stderr/exit exactly; plan was read-only; all three rewrites changed only the declared destination/path and resolve after fresh reads; Git blob IDs match. Collision and dirty-file refusals exited 2 with identical files, index and refs. No-inbound archive exited 0 without promotion/relink suffix or record keys. Evidence: transcript-1.*, archive-*-unchanged.json, archive-record.md.txt, *-relink.diff.txt and archive-blob-proof.json under evidence/2026-10-12-gate-02/."
+  },
+  {
+    "row": "06",
+    "pass": true,
+    "detail": "Surface Transcript 2 matched the native binary form (exit 3, empty stderr; exact Go wrapper was exercised by authored test). Preview preserved files/index/refs, JSON listed two citations and the live offer. Moving line 7 to 8 changed the digest; old confirmation exited 3/category approval and wrote nothing. Evidence: transcript-2.*, preview-json.*, moved-line-*, digest-line-proof.json."
+  },
+  {
+    "row": "07",
+    "pass": true,
+    "detail": "Surface Transcript 3 matched stdout/stderr/exit; requested promotion equals the removed committed blob and is listed in the record. Both citing files stayed byte-identical. Outside-unit promotion exited 2/category invalid with files/index/refs unchanged. Evidence: transcript-3.*, invalid-promotion.*, baseline-citing-bytes.json, baseline-archive-record.md.txt, baseline-promoted-copy.md.txt."
+  },
+  {
+    "row": "08",
+    "pass": true,
+    "detail": "Surface Transcript 4 matched stdout/stderr/exit; two stale targets name history-full restore commands. Fresh JSON reported current/exit 0. No Pending History digest equaled the update with --no-history; changing only stale advice reduced the count without changing state/category/exit/digest. Authored no-citation digest/text compatibility test also passed. Evidence: transcript-4.*, stale-json.*, current-no-history-digest.*, stale-advice-digest.*."
+  }
+]

@@ -1,0 +1,10 @@
+Preflight failed
+
+Reason:
+  promotion destination "/private/tmp/rf0255-flows-6iagx1zq/archive-collision/docs/references/2026-01-01-source.md" already exists
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.

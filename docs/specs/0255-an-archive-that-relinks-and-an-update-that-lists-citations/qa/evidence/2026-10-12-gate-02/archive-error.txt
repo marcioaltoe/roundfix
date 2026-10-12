@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/private/tmp/rf0255-qa-flows.py", line 55, in <module>
+    p=run(['./bin/roundfix','archive','0001-owner'],r,'transcript-1');match(p,1);assert (r/PROMOTION).read_bytes()==before[SOURCE];assert not (r/'docs/specs/0001-owner').exists()
+                                                                      ^^^^^^^^^^
+  File "/private/tmp/rf0255-qa-flows.py", line 40, in match
+    assert p.returncode==code,(num,p.returncode,code,p.stderr.decode());assert p.stderr.decode()==err,(num,'stderr',p.stderr.decode(),err);assert re.match(pat(out),p.stdout.decode()),(num,'stdout',p.stdout.decode(),out)
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (1, 'stderr', 'roundfix: warning: archive leaves docs/handoffs/2026-01-03-notes.md:3 naming removed docs/specs/0001-owner/references/2026-01-01-source.md unrelinked\n', 'roundfix: warning: archive leaves docs/handoffs/2026-01-03-notes.md:<line> naming removed docs/specs/0001-owner/references/2026-01-01-source.md unrelinked\n')

@@ -1,0 +1,21 @@
+{"Time":"2026-10-12T10:18:15.502875-03:00","Action":"start","Package":"roundfix/internal/spec"}
+{"Time":"2026-10-12T10:18:15.697583-03:00","Action":"run","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds"}
+{"Time":"2026-10-12T10:18:15.69765-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"=== RUN   TestStaleHistoryCitationsReportsFilesTheTagHolds\n"}
+{"Time":"2026-10-12T10:18:15.697667-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"=== PAUSE TestStaleHistoryCitationsReportsFilesTheTagHolds\n"}
+{"Time":"2026-10-12T10:18:15.697671-03:00","Action":"pause","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds"}
+{"Time":"2026-10-12T10:18:15.697679-03:00","Action":"run","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles"}
+{"Time":"2026-10-12T10:18:15.697685-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"=== RUN   TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles\n"}
+{"Time":"2026-10-12T10:18:15.697688-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"=== PAUSE TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles\n"}
+{"Time":"2026-10-12T10:18:15.697691-03:00","Action":"pause","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles"}
+{"Time":"2026-10-12T10:18:15.697696-03:00","Action":"cont","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds"}
+{"Time":"2026-10-12T10:18:15.697698-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"=== CONT  TestStaleHistoryCitationsReportsFilesTheTagHolds\n"}
+{"Time":"2026-10-12T10:18:15.697701-03:00","Action":"cont","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles"}
+{"Time":"2026-10-12T10:18:15.697704-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"=== CONT  TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles\n"}
+{"Time":"2026-10-12T10:18:15.72095-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Output":"--- PASS: TestStaleHistoryCitationsReportsFilesTheTagHolds (0.02s)\n"}
+{"Time":"2026-10-12T10:18:15.721541-03:00","Action":"pass","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsReportsFilesTheTagHolds","Elapsed":0.02}
+{"Time":"2026-10-12T10:18:15.721552-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Output":"--- PASS: TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles (0.02s)\n"}
+{"Time":"2026-10-12T10:18:15.721558-03:00","Action":"pass","Package":"roundfix/internal/spec","Test":"TestStaleHistoryCitationsIgnoresDirectoriesAndPresentFiles","Elapsed":0.02}
+{"Time":"2026-10-12T10:18:15.721566-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"PASS\n"}
+{"Time":"2026-10-12T10:18:15.78832-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: guard cost: measured 2560 paths; fingerprint took 82.2095ms before and 66.704042ms after\n"}
+{"Time":"2026-10-12T10:18:15.789107-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"ok  \troundfix/internal/spec\t0.286s\n"}
+{"Time":"2026-10-12T10:18:15.789127-03:00","Action":"pass","Package":"roundfix/internal/spec","Elapsed":0.286}

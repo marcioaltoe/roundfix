@@ -1,0 +1,289 @@
+{
+  "commit_range": "0127bb9d68328cd9aead71dc212619c37d792f8b..68455b6270adca3327b3f8e3c2ed8c210c40c9a4",
+  "tasks": [
+    {
+      "task": "task_01",
+      "commit": "a194f75e582ba3f2b9b3323cc5d6a972b39a4f1f",
+      "changed_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/write-idea/SKILL.md",
+        ".agents/skills/write-prd/SKILL.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-techspec/SKILL.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/baseline.md",
+        "docs/user-guide/commands/deliver.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/baseline.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-idea/SKILL.md",
+        "skills/write-prd/SKILL.md",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-techspec/SKILL.md"
+      ],
+      "declared_or_recorded": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/domain-modeling/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/write-idea/SKILL.md",
+        ".agents/skills/write-prd/SKILL.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-techspec/SKILL.md",
+        "CONTEXT.md",
+        "docs/adr/0083-adopted-sources-move-to-their-owning-spec.md",
+        "docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/baseline.md",
+        "docs/user-guide/commands/deliver.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/baseline.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-idea/SKILL.md",
+        "skills/write-prd/SKILL.md",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-techspec/SKILL.md"
+      ],
+      "recorded_paths": [
+        "docs/references/behavior-surfaces.json"
+      ],
+      "governed_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/write-idea/SKILL.md",
+        ".agents/skills/write-prd/SKILL.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-techspec/SKILL.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/write-idea/SKILL.md",
+        "skills/write-prd/SKILL.md",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-techspec/SKILL.md"
+      ],
+      "undeclared": [],
+      "governed_outside_grant": [],
+      "authorization_revision": "0127bb9d68328cd9aead71dc212619c37d792f8b",
+      "authorization_precedes_task": true
+    },
+    {
+      "task": "task_02",
+      "commit": "fcf2f86f2229938616a53f1cee47e68d2ac820be",
+      "changed_paths": [
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_02.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_relink_test.go",
+        "internal/spec/archive.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/live_citations.go",
+        "internal/spec/live_citations_test.go"
+      ],
+      "declared_or_recorded": [
+        ".agents/skills/roundfix/references/archive.md",
+        "docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md",
+        "docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md",
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_02.md",
+        "docs/user-guide/commands/archive.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_links_test.go",
+        "internal/cli/archive_output_test.go",
+        "internal/cli/archive_plan_test.go",
+        "internal/cli/archive_relink_test.go",
+        "internal/spec/archive.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/archive_record_test.go",
+        "internal/spec/archive_test.go",
+        "internal/spec/history_entries.go",
+        "internal/spec/live_citations.go",
+        "internal/spec/live_citations_test.go"
+      ],
+      "recorded_paths": [],
+      "governed_paths": [
+        "internal/spec/archive.go"
+      ],
+      "undeclared": [],
+      "governed_outside_grant": [],
+      "authorization_revision": "0127bb9d68328cd9aead71dc212619c37d792f8b",
+      "authorization_precedes_task": true
+    },
+    {
+      "task": "task_03",
+      "commit": "e2e889298922b775d147fc56abc89e619e98dd77",
+      "changed_paths": [
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_03.md",
+        "internal/cli/deliver_archive_relink_test.go",
+        "internal/cli/deliver_workflow.go"
+      ],
+      "declared_or_recorded": [
+        ".agents/skills/roundfix/references/deliver.md",
+        "docs/adr/0230-an-archived-spec-keeps-its-relative-links.md",
+        "docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md",
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_03.md",
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver_archive_record_test.go",
+        "internal/cli/deliver_archive_relink_test.go",
+        "internal/cli/deliver_workflow.go"
+      ],
+      "recorded_paths": [],
+      "governed_paths": [],
+      "undeclared": [],
+      "governed_outside_grant": [],
+      "authorization_revision": "0127bb9d68328cd9aead71dc212619c37d792f8b",
+      "authorization_precedes_task": true
+    },
+    {
+      "task": "task_04",
+      "commit": "68455b6270adca3327b3f8e3c2ed8c210c40c9a4",
+      "changed_paths": [
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_04.md",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_citations_test.go",
+        "internal/cli/baseline_update_history.go",
+        "internal/cli/cli.go",
+        "internal/spec/stale_citations.go",
+        "internal/spec/stale_citations_test.go"
+      ],
+      "declared_or_recorded": [
+        ".agents/skills/roundfix/references/baseline.md",
+        "docs/adr/0173-a-baseline-plan-reports-the-citations-its-history-relocations-break.md",
+        "docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md",
+        "docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations/task_04.md",
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_citations_test.go",
+        "internal/cli/baseline_update_history.go",
+        "internal/cli/baseline_update_history_test.go",
+        "internal/cli/baseline_update_test.go",
+        "internal/cli/cli.go",
+        "internal/cli/history.go",
+        "internal/docscontract/publicdocs_test.go",
+        "internal/spec/history_entries.go",
+        "internal/spec/stale_citations.go",
+        "internal/spec/stale_citations_test.go"
+      ],
+      "recorded_paths": [
+        "docs/references/behavior-surfaces.json"
+      ],
+      "governed_paths": [],
+      "undeclared": [],
+      "governed_outside_grant": [],
+      "authorization_revision": "0127bb9d68328cd9aead71dc212619c37d792f8b",
+      "authorization_precedes_task": true
+    }
+  ],
+  "protected_changes": [],
+  "qa_settlement_sections": [
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "identical": true,
+      "sha256": "6d1ad4e828dbfc578110c317bd839ab57483a1ededd209cf89f1bc5e1f6b9ed7"
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "identical": true,
+      "sha256": "6d1ad4e828dbfc578110c317bd839ab57483a1ededd209cf89f1bc5e1f6b9ed7"
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "identical": true,
+      "sha256": "6d1ad4e828dbfc578110c317bd839ab57483a1ededd209cf89f1bc5e1f6b9ed7"
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "identical": true,
+      "sha256": "6d1ad4e828dbfc578110c317bd839ab57483a1ededd209cf89f1bc5e1f6b9ed7"
+    },
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "identical": true,
+      "sha256": "6d1ad4e828dbfc578110c317bd839ab57483a1ededd209cf89f1bc5e1f6b9ed7"
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "identical": true,
+      "sha256": "6d1ad4e828dbfc578110c317bd839ab57483a1ededd209cf89f1bc5e1f6b9ed7"
+    }
+  ],
+  "changed_existing_assertion_files": [],
+  "wording_review": [
+    {
+      "path": "docs/user-guide/commands/archive.md",
+      "retained_phrase": "promote with:",
+      "reason": "Still-valid manual promotion and plan line; new automatic relink documented."
+    },
+    {
+      "path": ".agents/skills/write-idea/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": ".agents/skills/write-techspec/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": ".agents/skills/roundfix/references/archive.md",
+      "retained_phrase": "promote with:",
+      "reason": "Still-valid manual promotion and plan line; new automatic relink documented."
+    },
+    {
+      "path": "skills/write-idea/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": "skills/write-tasks/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": "skills/write-techspec/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": "skills/write-prd/SKILL.md",
+      "retained_phrase": "A secondary Spec links",
+      "adjacent_rule": "Archive Relink"
+    },
+    {
+      "path": "skills/roundfix/references/archive.md",
+      "retained_phrase": "promote with:",
+      "reason": "Still-valid manual promotion and plan line; new automatic relink documented."
+    }
+  ],
+  "issues": []
+}

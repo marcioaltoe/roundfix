@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0255-an-archive-that-relinks-and-an-update-that-lists-citations
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

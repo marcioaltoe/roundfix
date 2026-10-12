@@ -1,0 +1,8 @@
+--- docs/backlog/2026-01-02-follow-up.md (HEAD)
++++ docs/backlog/2026-01-02-follow-up.md (relinked)
+@@ -5,4 +5,4 @@
+ 
+ # Follow-up
+ 
+-[Owner](../specs/0001-owner/_prd.md)
++[Owner](../history/specs/0001-owner.md)

@@ -1,0 +1,8 @@
+--- docs/specs/0002-secondary/task_01.md (HEAD)
++++ docs/specs/0002-secondary/task_01.md (relinked)
+@@ -4,4 +4,4 @@
+ 
+ # Task
+ 
+-Read `docs/specs/0001-owner/references/2026-01-01-source.md`.
++Read `docs/references/2026-01-01-source.md`.

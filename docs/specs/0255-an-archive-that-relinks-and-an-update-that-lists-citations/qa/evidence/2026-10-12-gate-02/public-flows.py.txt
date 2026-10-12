@@ -1,0 +1,105 @@
+from pathlib import Path
+import subprocess,os,tempfile,json,hashlib,re,difflib,shutil,traceback
+ROOT=Path.cwd();S=ROOT/'docs/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations';REPORT=S/'qa/qa-report-2026-10-12-02.md';E=S/'qa/evidence/2026-10-12-gate-02';TEMP=Path(tempfile.mkdtemp(prefix='rf0255-flows-',dir='/private/tmp'));OUT=TEMP/'evidence';OUT.mkdir();HOME=TEMP/'home';HOME.mkdir()
+ENV={'PATH':os.environ['PATH'],'HOME':str(HOME),'TMPDIR':str(TEMP),'GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':'/dev/null','GIT_TERMINAL_PROMPT':'0','LANG':'en_US.UTF-8'}
+COMMANDS=[];SUMMARY=[]
+def run(args,cwd=ROOT,label=None):
+ p=subprocess.run(args,cwd=cwd,env=ENV,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+ if label:
+  (OUT/(label+'.stdout.txt')).write_bytes(p.stdout);(OUT/(label+'.stderr.txt')).write_bytes(p.stderr);(OUT/(label+'.exit.txt')).write_text(str(p.returncode)+'\n')
+ COMMANDS.append({'argv':args,'cwd':str(cwd),'exit':p.returncode,'stdout':p.stdout.decode(),'stderr':p.stderr.decode()});return p
+
+def git(repo,*args):
+ p=run(['git',*args],repo);assert p.returncode==0,(args,p.stderr.decode());return p.stdout
+
+def write(repo,path,data):
+ p=repo/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data.encode() if isinstance(data,str) else data)
+
+def init(name):
+ repo=TEMP/name;repo.mkdir();git(repo,'init','-q');git(repo,'config','user.name','Roundfix QA');git(repo,'config','user.email','qa@example.test');git(repo,'config','commit.gpgsign','false');git(repo,'config','core.hooksPath','/dev/null');write(repo,'.git/info/exclude','/bin/\n');(repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(ROOT/'bin/roundfix');return repo
+
+def commit(repo):git(repo,'add','--all');git(repo,'commit','-qm','Synthetic local QA fixture');return git(repo,'rev-parse','HEAD').decode().strip()
+def snapshot(repo):return {str(p.relative_to(repo)):p.read_bytes() for p in repo.rglob('*') if p.is_file() and '.git' not in p.relative_to(repo).parts and 'bin' not in p.relative_to(repo).parts}
+def digest_snapshot(repo):
+ return {'files':{k:hashlib.sha256(v).hexdigest() for k,v in snapshot(repo).items()},'index':hashlib.sha256((repo/'.git/index').read_bytes()).hexdigest(),'refs':git(repo,'for-each-ref').decode()}
+def finish(row,detail,ok=True):
+ SUMMARY.append({'row':row,'pass':ok,'detail':detail});(OUT/'flows-summary.json').write_text(json.dumps(SUMMARY,indent=2)+'\n');(OUT/'commands.json').write_text(json.dumps(COMMANDS,indent=2)+'\n')
+ for f in OUT.iterdir():shutil.copyfile(f,E/f.name)
+ t=REPORT.read_text();t=t.replace('| '+row+' | pending |','| '+row+' | '+('pass' if ok else 'fail')+' |').replace('| '+row+' | fail |','| '+row+' | '+('pass' if ok else 'fail')+' |');start=t.index('### '+row+'\n');end=t.find('\n### ',start+1);end=len(t) if end<0 else end;part=re.sub(r'Evidence: .*?(?=\n|$)','Evidence: '+detail,t[start:end],count=1);REPORT.write_text(t[:start]+part+t[end:]);print('row',row,'PASS' if ok else 'FAIL',detail,flush=True)
+
+TECH=(S/'_techspec.md').read_text();transcripts=re.findall(r'```transcript\n(.*?)```',TECH,re.S)
+def match(p,num):
+ lines=[line.lstrip() for line in transcripts[num-1].splitlines()];a=lines.index('stdout:');b=lines.index('stderr:');c=next(i for i,x in enumerate(lines) if x.startswith('exit: '));out='\n'.join(lines[a+1:b])+'\n';err='\n'.join(lines[b+1:c]);err=err+'\n' if err else '';code=int(lines[c][6:])
+ if num==2:err='';code=3
+ def pat(text):
+  result=[]
+  for line in text.splitlines(keepends=True):
+   if line=='...\n':result.append(r'(?:[^\n]*\n)*');continue
+   chunks=re.split(r'(<[^>]+>)',line);result.append(''.join(r'[^\n]+' if x.startswith('<') and x.endswith('>') else re.escape(x) for x in chunks))
+  return '\\A'+''.join(result)+'\\Z'
+ assert p.returncode==code,(num,p.returncode,code,p.stderr.decode());assert re.match(pat(err),p.stderr.decode()),(num,'stderr',p.stderr.decode(),err);assert re.match(pat(out),p.stdout.decode()),(num,'stdout',p.stdout.decode(),out)
+
+CONSTRAINTS='## Project Constraints\n\n- Identifier strategy: not applicable. Source: `docs/agents/domain.md`.\n- Authentication and HTTP: not applicable. Source: `docs/agents/agent-instructions.md`.\n- Active ADR obligations: not applicable. Source: `docs/agents/domain.md`.\n- Tooling authority: not applicable. Source: `docs/agents/agent-instructions.md`.\n\n## Success Metrics\n\nNone. Operational fixture.\n'
+SOURCE='docs/specs/0001-owner/references/2026-01-01-source.md';PROMOTION='docs/references/2026-01-01-source.md';RECORD='docs/history/specs/0001-owner.md';HANDOFF='docs/handoffs/2026-01-03-notes.md';PRD='docs/specs/0002-secondary/_prd.md';TASK='docs/specs/0002-secondary/task_01.md';BACKLOG='docs/backlog/2026-01-02-follow-up.md'
+def archive_repo(name,inbound=True):
+ r=init(name);write(r,'docs/agents/domain.md','# Domain\n');write(r,'docs/agents/agent-instructions.md','# Instructions\n');write(r,'docs/specs/0001-owner/_prd.md','---\nstatus: active\ncreated: 2026-01-01\n---\n\n# Owner\n\n'+CONSTRAINTS)
+ write(r,'docs/specs/0001-owner/_tasks.md','---\nschema: spec-tasks/v1\nqa: task_02\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_02\n      file: task_02.md\n      needs: [task_01]\n---\n\n# Tasks\n')
+ for i,typ in [('01','backend'),('02','qa')]:write(r,'docs/specs/0001-owner/task_'+i+'.md','---\ntask: task_'+i+'\nspec: 0001-owner\nstatus: completed\ntype: '+typ+'\n---\n\n# Task\n\n## Verification\n\n- `true`\n')
+ write(r,'docs/specs/0001-owner/qa/qa-report-2026-01-01.md','---\nverdict: pass\n---\n\n# QA Report\n');write(r,SOURCE,b'# Source\n\nPreserve these bytes, including CRLF.\r\n')
+ if inbound:
+  write(r,PRD,'---\nstatus: active\n---\n\n# Secondary\n\n[Source](../0001-owner/references/2026-01-01-source.md#lesson)\n');write(r,TASK,'---\nstatus: pending\n---\n\n# Task\n\nRead `'+SOURCE+'`.\n');write(r,BACKLOG,'---\ntype: feat\nstatus: open\n---\n\n# Follow-up\n\n[Owner](../specs/0001-owner/_prd.md)\n');write(r,HANDOFF,'# Notes\n\n[Source](../specs/0001-owner/references/2026-01-01-source.md)\n')
+ commit(r);return r
+
+try:
+ r=archive_repo('archive-happy');before=snapshot(r);revision=git(r,'rev-parse','HEAD').decode().strip();plan=run(['./bin/roundfix','archive','0001-owner','--plan'],r,'archive-plan');assert plan.returncode==0 and snapshot(r)==before
+ p=run(['./bin/roundfix','archive','0001-owner'],r,'transcript-1');match(p,1);assert (r/PROMOTION).read_bytes()==before[SOURCE];assert not (r/'docs/specs/0001-owner').exists()
+ changes={PRD:(b'../0001-owner/references/2026-01-01-source.md#lesson',b'../../references/2026-01-01-source.md#lesson'),TASK:(SOURCE.encode(),PROMOTION.encode()),BACKLOG:(b'../specs/0001-owner/_prd.md',b'../history/specs/0001-owner.md')}
+ for path,(old,new) in changes.items():
+  actual=(r/path).read_bytes();assert actual==before[path].replace(old,new);(OUT/(Path(path).name+'-relink.diff.txt')).write_text(''.join(difflib.unified_diff(before[path].decode().splitlines(True),actual.decode().splitlines(True),fromfile=path+' (HEAD)',tofile=path+' (relinked)')))
+  # Fresh filesystem read resolves every new relative destination or repository path.
+  if path==TASK:assert (r/PROMOTION).is_file()
+  else:
+   link=re.search(rb'\]\(([^)]+)\)',actual).group(1).decode().split('#')[0];assert ((r/path).parent/link).is_file()
+ assert (r/HANDOFF).read_bytes()==before[HANDOFF];rec=(r/RECORD).read_text();assert PROMOTION in rec and all(x in rec for x in changes) and 'relinked:' in rec;(OUT/'archive-record.md.txt').write_text(rec)
+ sourceblob=git(r,'hash-object','--stdin') if False else hashlib.sha256(before[SOURCE]).hexdigest();promotedblob=git(r,'hash-object',PROMOTION).decode().strip();removedblob=git(r,'rev-parse',revision+':'+SOURCE).decode().strip();assert promotedblob==removedblob;(OUT/'archive-blob-proof.json').write_text(json.dumps({'revision':revision,'removed_blob':removedblob,'promoted_blob':promotedblob,'removed_sha256':sourceblob},indent=2)+'\n')
+ for case in ['collision','dirty']:
+  r=archive_repo('archive-'+case)
+  if case=='collision':write(r,PROMOTION,'Existing destination\n');commit(r)
+  else:write(r,PRD,(r/PRD).read_bytes()+b'\nUncommitted edit.\n')
+  before=digest_snapshot(r);p=run(['./bin/roundfix','archive','0001-owner'],r,'archive-'+case);assert p.returncode==2;assert digest_snapshot(r)==before;assert (r/'docs/specs/0001-owner').is_dir();(OUT/('archive-'+case+'-unchanged.json')).write_text(json.dumps(before,indent=2)+'\n')
+ r=archive_repo('archive-no-inbound',False);p=run(['./bin/roundfix','archive','0001-owner'],r,'archive-no-inbound');assert p.returncode==0 and p.stderr==b'' and b'relinked' not in p.stdout and b'promoted' not in p.stdout;assert 'relinked:' not in (r/RECORD).read_text() and not (r/PROMOTION).exists()
+ finish('05','Surface Transcript 1 matched stdout/stderr/exit exactly; plan was read-only; all three rewrites changed only the declared destination/path and resolve after fresh reads; Git blob IDs match. Collision and dirty-file refusals exited 2 with identical files, index and refs. No-inbound archive exited 0 without promotion/relink suffix or record keys. Evidence: transcript-1.*, archive-*-unchanged.json, archive-record.md.txt, *-relink.diff.txt and archive-blob-proof.json under evidence/2026-10-12-gate-02/.')
+except Exception:
+ (OUT/'archive-error.txt').write_text(traceback.format_exc());finish('05','Public archive reproduction failed; see evidence/2026-10-12-gate-02/archive-error.txt.',False)
+
+try:
+ r=init('baseline-adopted');write(r,'.agents/skills/context7/SKILL.md','# context7\n');write(r,'.agents/skills/exa-web-search/SKILL.md','# exa\n');write(r,'Makefile','verify:\n\t@true\nverify-incremental:\n\t@true\n');commit(r)
+ args=['./bin/roundfix','baseline','plan','--repo',str(r),'--profile','go-cli-tui']
+ for d in ['preservation.mode=greenfield','language.generated=English','verification.gate=make verify','verification.incremental=make verify-incremental','branch.prefix=<type>/','spec.scaffold=true','domain.layout=single-context','triage.external=false','autonomous.enabled=true','runtime.backend=codex gpt-6.1-sol high','runtime.design=claude opus high','secondbrain.enabled=false','repository.extension.enabled=false']:args+=['--decision',d]
+ p=run(args+['--format','json'],label='baseline-fixture-plan');assert p.returncode==0,p.stderr.decode()+p.stdout.decode();plan=json.loads(p.stdout);planfile=TEMP/'baseline-plan.json';planfile.write_bytes(p.stdout)
+ p=run(['./bin/roundfix','baseline','apply','--repo',str(r),'--plan',str(planfile),'--confirm-plan',plan['planDigest'],'--format','json'],label='baseline-fixture-apply');assert p.returncode==0,p.stderr.decode()+p.stdout.decode();commit(r)
+ (r/'docs/specs').mkdir(parents=True,exist_ok=True)
+ lesson='docs/history/specs/0001-legacy/references/2026-01-01-lesson.md';finding='docs/findings/2026-01-04-gap.md';handoff='docs/handoffs/2026-01-03-notes.md';dest='docs/references/2026-01-01-lesson.md'
+ write(r,'docs/history/specs/0001-legacy/_prd.md','---\nspec: 0001-legacy\ncreated: 2026-09-01\n---\n\n# 0001-legacy\n\nPreserved outcome.\n');write(r,lesson,'# Lesson\n\nReusable source bytes.\n');write(r,finding,'---\nstatus: pending\n---\n\n# Gap\n\n[lesson](../history/specs/0001-legacy/references/2026-01-01-lesson.md)\n');write(r,handoff,'# Notes\n\n[PRD](../history/specs/0001-legacy/_prd.md)\n');revision=commit(r)
+ base=['./bin/roundfix','baseline','update','--repo',str(r),'--no-skills'];before=digest_snapshot(r);p=run(base+['--format','text'],label='transcript-2');match(p,2);assert digest_snapshot(r)==before
+ p=run(base+['--format','json'],label='preview-json');assert p.returncode==3;prior=json.loads(p.stdout);assert len(prior['history']['citations'])==2 and prior['history']['citations'][0]['offer']==lesson
+ original=(r/finding).read_bytes();write(r,finding,b'\n'+original);moved=digest_snapshot(r);p=run(base+['--format','json'],label='moved-line-preview');nextplan=json.loads(p.stdout);assert p.returncode==3 and nextplan['planDigest']!=prior['planDigest'] and nextplan['history']['citations'][0]['line']==8
+ p=run(base+['--format','json','--confirm-plan',prior['planDigest']],label='moved-line-refusal');assert p.returncode==3 and json.loads(p.stdout)['category']=='approval' and digest_snapshot(r)==moved;write(r,finding,original)
+ (OUT/'digest-line-proof.json').write_text(json.dumps({'before':prior['planDigest'],'line':7,'after':nextplan['planDigest'],'moved_line':8},indent=2)+'\n')
+ finish('06','Surface Transcript 2 matched the native binary form (exit 3, empty stderr; exact Go wrapper was exercised by authored test). Preview preserved files/index/refs, JSON listed two citations and the live offer. Moving line 7 to 8 changed the digest; old confirmation exited 3/category approval and wrote nothing. Evidence: transcript-2.*, preview-json.*, moved-line-*, digest-line-proof.json.')
+ before=digest_snapshot(r);p=run(base+['--yes','--promote',finding,'--format','json'],label='invalid-promotion');assert p.returncode==2 and json.loads(p.stdout)['category']=='invalid' and digest_snapshot(r)==before
+ source=(r/lesson).read_bytes();citing={x:(r/x).read_bytes() for x in [finding,handoff]};p=run(base+['--yes','--promote',lesson,'--format','text'],label='transcript-3');match(p,3);assert (r/dest).read_bytes()==source
+ for path,data in citing.items():assert (r/path).read_bytes()==data
+ rec=(r/'docs/history/specs/0001-legacy.md').read_text();assert dest in rec and 'relinked:' not in rec;assert git(r,'show',revision+':'+lesson)==(r/dest).read_bytes();(OUT/'baseline-citing-bytes.json').write_text(json.dumps({path:{'before_sha256':hashlib.sha256(data).hexdigest(),'after_sha256':hashlib.sha256((r/path).read_bytes()).hexdigest()} for path,data in citing.items()},indent=2)+'\n');(OUT/'baseline-archive-record.md.txt').write_text(rec);(OUT/'baseline-promoted-copy.md.txt').write_bytes((r/dest).read_bytes())
+ finish('07','Surface Transcript 3 matched stdout/stderr/exit; requested promotion equals the removed committed blob and is listed in the record. Both citing files stayed byte-identical. Outside-unit promotion exited 2/category invalid with files/index/refs unchanged. Evidence: transcript-3.*, invalid-promotion.*, baseline-citing-bytes.json, baseline-archive-record.md.txt, baseline-promoted-copy.md.txt.')
+ before=digest_snapshot(r);p=run(base+['--format','text'],label='transcript-4');match(p,4);assert digest_snapshot(r)==before
+ p=run(base+['--format','json'],label='stale-json');current=json.loads(p.stdout);assert p.returncode==0 and current['state']=='current' and len(current['history']['staleCitations'])==2
+ p=run(base+['--no-history','--format','json'],label='current-no-history-digest');assert p.returncode==0 and json.loads(p.stdout)['planDigest']==current['planDigest']
+ write(r,finding,'# No stale citation\n');p=run(base+['--format','json'],label='stale-advice-digest');changed=json.loads(p.stdout);assert p.returncode==0 and changed['state']==current['state'] and changed.get('category')==current.get('category') and changed['planDigest']==current['planDigest'] and len(changed['history']['staleCitations'])==1
+ finish('08','Surface Transcript 4 matched stdout/stderr/exit; two stale targets name history-full restore commands. Fresh JSON reported current/exit 0. No Pending History digest equaled the update with --no-history; changing only stale advice reduced the count without changing state/category/exit/digest. Authored no-citation digest/text compatibility test also passed. Evidence: transcript-4.*, stale-json.*, current-no-history-digest.*, stale-advice-digest.*.')
+except Exception:
+ (OUT/'baseline-error.txt').write_text(traceback.format_exc())
+ completed={x['row'] for x in SUMMARY}
+ for row in ['06','07','08']:
+  if row not in completed:finish(row,'Public update reproduction failed; see evidence/2026-10-12-gate-02/baseline-error.txt.',False)
+print('Temporary fixture root:',TEMP)

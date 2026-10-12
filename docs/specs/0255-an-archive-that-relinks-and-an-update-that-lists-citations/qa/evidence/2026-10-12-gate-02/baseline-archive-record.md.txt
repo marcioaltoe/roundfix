@@ -1,0 +1,25 @@
+---
+schema: roundfix/archive-record/v1
+spec: 0001-legacy
+title: 0001-legacy
+status: archived
+created: "2026-09-01"
+archived: "2026-10-12"
+disposition: no-qa
+source: docs/history/specs/0001-legacy
+source_revision: 052b11d74ffea9bc4a5112804aa7ed5db5ce0b69
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/2026-01-01-lesson.md
+delivery_commit: 052b11d74ffea9bc4a5112804aa7ed5db5ce0b69
+---
+
+# 0001-legacy
+
+Preserved outcome.

@@ -1,0 +1,10 @@
+Preflight failed
+
+Reason:
+  Spec "0001-owner" cannot archive: docs/specs/0002-secondary/_prd.md has changes not committed at HEAD; commit them so the archive can relink it
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
