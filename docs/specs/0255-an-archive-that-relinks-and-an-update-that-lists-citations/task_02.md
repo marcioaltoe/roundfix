@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0255-an-archive-that-relinks-and-an-update-that-lists-citations
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -144,3 +144,79 @@ repositories.
 - `_prd.md` → Core Feature 1; Core Feature 2; Core Feature 3; Goals; User Story 1; User Story 2; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Interfaces; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; Invariants 1-5; Invariant 10; Surface Transcript 1; Build Order 2
 - ADR-0260; ADR-0247; ADR-0083; ADR-0230
+
+## Result
+
+Implemented the Task 02 Archive Relink slice. The shared classifier, move map,
+byte-preserving rewrite and planner live in `internal/spec/live_citations.go`.
+The planner combines automatic and manual promotions, uses the history
+citation detector and the archive Markdown scanner, and excludes the owner
+folder, History Root and configured archive root. It reads both tracked and
+HEAD paths so staged deletion or removal of a citation cannot hide a dirty
+Live Document. New staged documents without relevant citations remain untouched.
+
+`spec.Archive` plans after eligibility and outward-link checks, then refuses
+promotion collisions and dirty relinked paths before writing. Relinked bytes
+come from HEAD, with both Git status and a byte comparison guarding documents
+other people edit. Read-only Git preflight disables optional index refreshes
+and filesystem monitoring. Writes create the record and promoted copies,
+rewrite Live Documents, and finally remove the owner folder. A write failure
+restores attempted rewrites and removes every created file. Existing manual
+promotion refusal messages retain the caller's original path spelling.
+
+The Archive Record emits sorted promotions and relinked paths; `relinked` is
+optional and follows `promoted`. Parsing accepts it when present. The command
+prints the relink suffix, one warning per remaining citation, and deterministic
+promotion, relink and unrelinked-citation lines in `--plan`.
+
+### Acceptance evidence
+
+- Live citations resolve, promoted bytes survive, and the handoff is warned:
+  `TestArchiveRelinksLiveCitationsTranscript` asserts the entire stdout/stderr/
+  exit transcript, the promoted source's exact bytes, all three Live Document
+  rewrites against their committed bytes, the unchanged handoff and both record
+  lists. The classifier, scanner forms, URL escaping, path boundaries and
+  replacement counts are covered by the new shared-API tests. Configured archive
+  roots and History Root exclusions have additional focused coverage.
+- Collisions and dirty Live Documents refuse without changing files:
+  `TestArchiveRefusesACollidingPromotion` covers occupied destinations and
+  duplicate basenames. `TestArchiveRefusesADirtyLiveDocument` covers unstaged
+  and staged edits, deletions with and without staging, removal of a citation,
+  and a newly staged citing document, asserting the specified refusal and
+  unchanged repository files. `TestArchiveRelinkRestoresFilesAfterALaterWriteFailure`
+  proves restoration after an earlier rewrite succeeds and a later write fails,
+  including removal of the record and promoted copy. A broken Git worktree
+  pointer refuses instead of falling back to non-Git behavior.
+- Archives without inbound citations and outside Git preserve existing behavior:
+  `TestArchiveWithoutInboundCitationsIsUnchanged` compares stdout, stderr and
+  record bytes with the existing archive construction. The record test pins
+  the old rendering and checks optional-field round-trip parsing.
+  `TestPlanArchiveRelinkIsEmptyOutsideAGitWorkTree` and selected existing
+  library archive tests cover the non-Git path. Existing assertions were not
+  changed. `TestArchivePlanListsRelinks` also asserts the added plan lines and
+  proves the plan writes no repository files or provider requests.
+
+### Focused checks
+
+The first focused compile failed with the missing shared API and record field,
+confirming the pre-change signal. After the final implementation edits:
+
+- `rtk proxy go test ./internal/spec -run 'Test(IsLiveDocument|RelinkContent|PlanArchiveRelink|ArchiveRecordRendersRelinked|ArchiveRelinkRestores|ArchiveWritesTheArchiveRecord|ArchiveRecordRoundTrips|ArchiveRollsBackTheRecord|ArchiveKeepsLinksInside)' -count=1`
+  — exit 0, `ok roundfix/internal/spec`.
+- `rtk proxy go test ./internal/cli -run 'TestArchive(RelinksLive|RefusesAColliding|RefusesADirty|WithoutInbound|PlanListsRelinks|RelinkCombines|RelinkAllows|RelinkKeeps|CommandReportsRewritten|ConfirmationNames|PlanWithoutAKeyPrints|IgnoresMarkdown)' -count=1`
+  — exit 0, `ok roundfix/internal/cli`.
+- `rtk proxy git diff --check` — exit 0.
+
+Command tests use disposable repositories and homes with a judge transport
+that rejects every request. No provider request was made.
+
+The declared Verification commands and repository Verification were not run;
+the Daemon owns them and Task settlement. Status, `_tasks.md`, other Task
+files and existing test assertions are unchanged by this implementation.
+No commit, push or pull request was made. Queue staging and exact-retirement
+proof belong to task_03; baseline update citation handling belongs to task_04.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T110224Z_380dd005763aa861`
+- Source commit: `205832921032d8636a2dec4d016031f155017da3`

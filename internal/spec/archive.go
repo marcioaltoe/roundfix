@@ -2,6 +2,7 @@ package spec
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -93,11 +95,13 @@ type ArchiveResult struct {
 	RemovedFiles   int
 	RemovedBytes   int64
 	Promoted       []string
+	Relinked       []string
+	Unrelinked     []HistoryCitation
 }
 
 // Archive keeps the existing completion and QA eligibility policy, then writes
 // an Archive Record and removes the Spec folder. Its bytes remain at the
-// caller's committed SourceRevision; no PRD or link is rewritten.
+// caller's committed SourceRevision. Live Documents are relinked only from HEAD.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	qaOverride, err := validateQAArchiveOverride(req.QAOverride)
 	if err != nil {
@@ -189,6 +193,86 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return ArchiveResult{}, err
 	}
+	ctx := context.Background()
+	var relinkPlan ArchiveRelinkPlan
+	inside, err := archiveGitWorkTree(ctx, req.RepositoryRoot)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
+	if inside {
+		rel := func(path string) (string, error) {
+			value, err := filepath.Rel(req.RepositoryRoot, path)
+			return filepath.ToSlash(value), err
+		}
+		specRootRel, err := rel(req.SpecsRoot)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		archiveRootRel, err := rel(archiveRoot)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		folderRel, err := rel(sourceDir)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		recordRel, err := rel(recordPath)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		relinkPlan, err = PlanArchiveRelink(ctx, req.RepositoryRoot, specRootRel, archiveRootRel, folderRel, recordRel, req.Promote)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		// Keep the caller's spelling for existing --promote refusal messages.
+		manual := make(map[string]bool)
+		for _, path := range req.Promote {
+			manual[filepath.ToSlash(filepath.Clean(path))] = true
+		}
+		for _, path := range relinkPlan.Promote {
+			if !manual[path] {
+				req.Promote = append(req.Promote, path)
+			}
+		}
+	}
+	var relinked []string
+	for path := range relinkPlan.Relinked {
+		relinked = append(relinked, path)
+	}
+	sort.Strings(relinked)
+	originals := make(map[string][]byte)
+	for _, path := range relinked {
+		changes, err := archiveGitRead(ctx, req.RepositoryRoot, "status", "--porcelain", "--untracked-files=all", "--", path)
+		if err != nil {
+			return ArchiveResult{}, fmt.Errorf("inspect archive relink changes %q: %w", path, err)
+		}
+		refuse := func() error {
+			return fmt.Errorf("Spec %q cannot archive: %s has changes not committed at HEAD; commit them so the archive can relink it", req.Slug, path)
+		}
+		if len(bytes.TrimSpace(changes)) > 0 {
+			return ArchiveResult{}, refuse()
+		}
+		head, err := archiveGitRead(ctx, req.RepositoryRoot, "show", "HEAD:"+path)
+		if err != nil {
+			return ArchiveResult{}, fmt.Errorf("read archive relink HEAD %q: %w", path, err)
+		}
+		absolute := filepath.Join(req.RepositoryRoot, filepath.FromSlash(path))
+		info, err := os.Lstat(absolute)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		if !info.Mode().IsRegular() {
+			return ArchiveResult{}, fmt.Errorf("archive relink path %q is not a regular file", path)
+		}
+		current, err := os.ReadFile(absolute)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		if !bytes.Equal(current, head) {
+			return ArchiveResult{}, refuse()
+		}
+		originals[path] = head
+	}
 	var promoted []string
 	copies := make(map[string][]byte)
 	for _, candidate := range req.Promote {
@@ -197,7 +281,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			return ArchiveResult{}, fmt.Errorf("promoted path %q is outside the Spec", candidate)
 		}
 		base := filepath.Base(clean)
-		if (filepath.Dir(clean) == "." && strings.HasPrefix(base, "_") && strings.HasSuffix(base, ".md")) || (strings.HasPrefix(base, "task_") && strings.HasSuffix(base, ".md")) || (strings.HasPrefix(base, "qa-report-") && strings.HasSuffix(base, ".md")) {
+		if archiveCoreArtifact(clean) {
 			return ArchiveResult{}, fmt.Errorf("cannot promote core artifact %q", candidate)
 		}
 		filePath := filepath.Join(sourceDir, clean)
@@ -239,6 +323,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		copies[destination] = content
 		promoted = append(promoted, "docs/references/"+base)
 	}
+	sort.Strings(promoted)
 	archivedOn := archiveDate(req.ArchivedAt)
 	repositoryRoot := req.RepositoryRoot
 	if repositoryRoot == "" {
@@ -267,11 +352,12 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	if err != nil {
 		return ArchiveResult{}, err
 	}
+	record.Relinked = relinked
 	content, err := RenderArchiveRecord(record)
 	if err != nil {
 		return ArchiveResult{}, err
 	}
-	result := ArchiveResult{SourceDir: sourceDir, ArchivedDir: archivedDir, ArchivedOn: archivedOn, QAOverride: qaOverride != nil, RecordPath: recordPath, Promoted: promoted}
+	result := ArchiveResult{SourceDir: sourceDir, ArchivedDir: archivedDir, ArchivedOn: archivedOn, QAOverride: qaOverride != nil, RecordPath: recordPath, Promoted: promoted, Relinked: relinked, Unrelinked: relinkPlan.Unrelinked}
 	if err := filepath.WalkDir(sourceDir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -289,8 +375,13 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	}); err != nil {
 		return ArchiveResult{}, err
 	}
-	var written []string
+	var written, rewritten []string
 	rollback := func(cause error) error {
+		for _, path := range rewritten {
+			if err := os.WriteFile(filepath.Join(req.RepositoryRoot, filepath.FromSlash(path)), originals[path], 0o644); err != nil {
+				cause = errors.Join(cause, fmt.Errorf("restore archive relink %q: %w", path, err))
+			}
+		}
 		for _, path := range written {
 			cause = errors.Join(cause, os.Remove(path))
 		}
@@ -315,6 +406,14 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		path := filepath.Join(req.RepositoryRoot, filepath.FromSlash(destination))
 		if err := write(path, copies[path]); err != nil {
 			return ArchiveResult{}, rollback(fmt.Errorf("copy promotion: %w", err))
+		}
+	}
+	for _, path := range relinked {
+		absolute := filepath.Join(req.RepositoryRoot, filepath.FromSlash(path))
+		// Include a failed write in rollback: it may have truncated the file.
+		rewritten = append(rewritten, path)
+		if err := os.WriteFile(absolute, relinkPlan.Relinked[path], 0o644); err != nil {
+			return ArchiveResult{}, rollback(fmt.Errorf("write archive relink %q: %w", path, err))
 		}
 	}
 	if err := os.RemoveAll(sourceDir); err != nil {

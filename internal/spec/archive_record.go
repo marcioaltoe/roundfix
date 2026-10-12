@@ -44,6 +44,7 @@ type ArchiveRecord struct {
 	QAOverride                     *QAArchiveOverrideRecord
 	SupersededBy                   string
 	ADRs, Sources, Promoted        []string
+	Relinked                       []string
 	Regeneration                   []ArchiveRegeneration
 	PullRequest, DeliveryCommit    string
 	Outcome                        string
@@ -404,6 +405,9 @@ func archiveRecordMapping(r ArchiveRecord) *yaml.Node {
 	}
 	n.Content = append(n.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "regeneration"}, regenNode)
 	add("promoted", list(r.Promoted))
+	if len(r.Relinked) > 0 {
+		add("relinked", r.Relinked)
+	}
 	if r.PullRequest != "" {
 		add("pull_request", r.PullRequest)
 	}
@@ -476,6 +480,11 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 		n := m[k]
 		if err := n.Decode(dst); err != nil {
 			return r, err
+		}
+	}
+	if n, ok := m["relinked"]; ok {
+		if err := n.Decode(&r.Relinked); err != nil {
+			return r, fmt.Errorf("parse archive relinked: %w", err)
 		}
 	}
 	if r.Disposition == ArchiveQAOverride {
