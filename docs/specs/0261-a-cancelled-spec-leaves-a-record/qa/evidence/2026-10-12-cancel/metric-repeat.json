@@ -1,0 +1,27 @@
+{
+  "name": "metric-repeat",
+  "command": [
+    "./bin/roundfix",
+    "cancel",
+    "0261-cancel-fixture",
+    "--reason",
+    "again"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-us3c7sd0/metric-one/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-us3c7sd0/metric-one/home",
+  "exit": 2,
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  unknown active Spec slug \"0261-cancel-fixture\"\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix cancel --help' for usage.\n",
+  "before": {
+    "git_status": " D docs/specs/0261-cancel-fixture/_prd.md\n D docs/specs/0261-cancel-fixture/_tasks.md\n D docs/specs/0261-cancel-fixture/references/_index.md\n D docs/specs/0261-cancel-fixture/references/entry.md\n D docs/specs/0261-cancel-fixture/task_01.md\n D docs/specs/0261-cancel-fixture/task_02.md\n D docs/specs/0261-cancel-fixture/task_03.md\n D docs/specs/0261-cancel-fixture/task_04.md\n D docs/specs/0261-cancel-fixture/task_05.md\n D docs/specs/0261-cancel-fixture/task_06.md\n D docs/specs/0261-cancel-fixture/task_07.md\n D docs/specs/0261-cancel-fixture/task_08.md\n?? docs/backlog/entry.md\n?? docs/history/specs/0261-cancel-fixture.md\n",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "4083291e7801683f6e6c79891a8a04c32c71b218"
+  },
+  "after": {
+    "git_status": " D docs/specs/0261-cancel-fixture/_prd.md\n D docs/specs/0261-cancel-fixture/_tasks.md\n D docs/specs/0261-cancel-fixture/references/_index.md\n D docs/specs/0261-cancel-fixture/references/entry.md\n D docs/specs/0261-cancel-fixture/task_01.md\n D docs/specs/0261-cancel-fixture/task_02.md\n D docs/specs/0261-cancel-fixture/task_03.md\n D docs/specs/0261-cancel-fixture/task_04.md\n D docs/specs/0261-cancel-fixture/task_05.md\n D docs/specs/0261-cancel-fixture/task_06.md\n D docs/specs/0261-cancel-fixture/task_07.md\n D docs/specs/0261-cancel-fixture/task_08.md\n?? docs/backlog/entry.md\n?? docs/history/specs/0261-cancel-fixture.md\n",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "4083291e7801683f6e6c79891a8a04c32c71b218"
+  },
+  "repository_bytes_unchanged": true,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

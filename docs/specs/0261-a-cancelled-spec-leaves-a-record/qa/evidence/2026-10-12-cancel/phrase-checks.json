@@ -1,0 +1,168 @@
+[
+  {
+    "path": ".agents/skills/roundfix/references/archive.md",
+    "phrase": "`roundfix cancel <slug> --reason <text>` writes an Archive Record with the disposition `cancelled`",
+    "pass_": true
+  },
+  {
+    "path": "skills/roundfix/references/archive.md",
+    "phrase": "`roundfix cancel <slug> --reason <text>` writes an Archive Record with the disposition `cancelled`",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/roundfix/references/archive.md",
+    "phrase": "A cancelled Spec never meets a prerequisite, never supersedes another Spec, and a Delivery Retry refuses it",
+    "pass_": true
+  },
+  {
+    "path": "skills/roundfix/references/archive.md",
+    "phrase": "A cancelled Spec never meets a prerequisite, never supersedes another Spec, and a Delivery Retry refuses it",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/roundfix/references/archive.md",
+    "phrase": "## Cancel Command",
+    "pass_": true
+  },
+  {
+    "path": "skills/roundfix/references/archive.md",
+    "phrase": "## Cancel Command",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/roundfix/SKILL.md",
+    "phrase": "| [archive](references/archive.md) | `archive`, `cancel`, `history`, `supersede` |",
+    "pass_": true
+  },
+  {
+    "path": "skills/roundfix/SKILL.md",
+    "phrase": "| [archive](references/archive.md) | `archive`, `cancel`, `history`, `supersede` |",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/roundfix/references/deliver.md",
+    "phrase": "`deliver start` refuses a queue whose Spec requires a cancelled Spec, and `deliver retry` refuses a cancelled Spec",
+    "pass_": true
+  },
+  {
+    "path": "skills/roundfix/references/deliver.md",
+    "phrase": "`deliver start` refuses a queue whose Spec requires a cancelled Spec, and `deliver retry` refuses a cancelled Spec",
+    "pass_": true
+  },
+  {
+    "path": "docs/user-guide/commands/deliver.md",
+    "phrase": "`deliver start` refuses a queue whose Spec requires a cancelled Spec, and `deliver retry` refuses a cancelled Spec",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "phrase": "## Cancelling a Spec",
+    "pass_": true
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "phrase": "## Cancelling a Spec",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "phrase": "A Spec that will not be delivered is cancelled with `roundfix cancel <slug> --reason <text>`, never deleted by hand",
+    "pass_": true
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "phrase": "A Spec that will not be delivered is cancelled with `roundfix cancel <slug> --reason <text>`, never deleted by hand",
+    "pass_": true
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "phrase": "returns each adopted Backlog Entry to `docs/backlog/` with `status: open`",
+    "pass_": true
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "phrase": "returns each adopted Backlog Entry to `docs/backlog/` with `status: open`",
+    "pass_": true
+  },
+  {
+    "path": "docs/user-guide/commands/archive.md",
+    "phrase": "A Spec that will not be delivered is cancelled with `roundfix cancel`",
+    "pass_": true
+  },
+  {
+    "path": "docs/user-guide/commands/supersede.md",
+    "phrase": "A cancelled Spec cannot be the superseding Spec",
+    "pass_": true
+  },
+  {
+    "path": "docs/user-guide/commands/cancel.md",
+    "phrase": "roundfix cancel <slug> --reason <text>",
+    "pass_": true
+  },
+  {
+    "path": "docs/user-guide/commands.md",
+    "phrase": "| `cancel` | [command guide](commands/cancel.md) |",
+    "pass_": true
+  },
+  {
+    "path": "docs/user-guide/usage.md",
+    "phrase": "`cancel`",
+    "pass_": true
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "phrase": "A Spec dropped before delivery is cancelled, never deleted by hand",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Cancel Command",
+    "phrase": "The `roundfix cancel <slug> --reason <text>` command that retires an active Spec which will not be delivered: it writes an Archive Record with the disposition `cancelled`, performs Source Return and removes the Spec folder, which stays in Git at `source_revision`. It refuses while an Active Run or an unfinished Delivery Queue item holds the Spec or an active Spec requires it, never changes a Task status and never commits (ADR-0262).",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Source Return",
+    "phrase": "The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog Entry returns to `docs/backlog/` with `status: open` and no Spec, a Finding returns to `docs/findings/` with `status: pending` and a dated addendum, and every other byte is kept. Other adopted sources stay in Git with the folder (ADR-0262).",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Archive Record",
+    "phrase": "A cancelled Spec's record has the disposition `cancelled` and carries `cancel_reason`, `completed_tasks`, `pending_tasks` and `returned_sources`; only its listed completed Tasks count as completed (ADR-0262).",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Supersession",
+    "phrase": "A cancelled Spec never delivers another Spec's content (ADR-0262).",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Prerequisite Spec",
+    "phrase": "A cancelled Spec's record never meets a prerequisite (ADR-0262).",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Delivery Retry",
+    "phrase": "It refuses a Spec whose Archive Record is `cancelled` (ADR-0262).",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "placement",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Cancel Avoid",
+    "pass_": true
+  },
+  {
+    "path": "CONTEXT.md",
+    "term": "Return Avoid",
+    "pass_": true
+  }
+]

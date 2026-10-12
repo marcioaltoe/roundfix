@@ -1,0 +1,28 @@
+{
+  "name": "reader-sanitize-apply",
+  "command": [
+    "./bin/roundfix",
+    "history",
+    "sanitize",
+    "--apply",
+    "--batch",
+    "1"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-us3c7sd0/metric-one/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-us3c7sd0/metric-one/home",
+  "exit": 0,
+  "stdout": "history sanitize applied 1 unit(s): wrote 1 Archive Record(s), reduced 0 file(s), removed 1 file(s) (80 bytes) kept in Git at 1d1c6d2be84e and tag history-full; promoted 0 file(s) to docs/references/; 0 unit(s) remain\n",
+  "stderr": "",
+  "before": {
+    "git_status": "",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "1d1c6d2be84eadbbbf5313d0d3f771863ab2c87a"
+  },
+  "after": {
+    "git_status": " D docs/history/specs/0001-old/_prd.md\n?? docs/history/specs/0001-old.md\n",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "1d1c6d2be84eadbbbf5313d0d3f771863ab2c87a"
+  },
+  "repository_bytes_unchanged": false,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

@@ -1,0 +1,9 @@
+{"Time":"2026-10-12T15:16:00.774371-03:00","Action":"start","Package":"roundfix/internal/speccheck"}
+{"Time":"2026-10-12T15:16:01.166602-03:00","Action":"run","Package":"roundfix/internal/speccheck","Test":"TestSpecCheckReadsACancelledRecordAndItsReturnedEntry"}
+{"Time":"2026-10-12T15:16:01.166644-03:00","Action":"output","Package":"roundfix/internal/speccheck","Test":"TestSpecCheckReadsACancelledRecordAndItsReturnedEntry","Output":"=== RUN   TestSpecCheckReadsACancelledRecordAndItsReturnedEntry\n"}
+{"Time":"2026-10-12T15:16:01.19241-03:00","Action":"output","Package":"roundfix/internal/speccheck","Test":"TestSpecCheckReadsACancelledRecordAndItsReturnedEntry","Output":"--- PASS: TestSpecCheckReadsACancelledRecordAndItsReturnedEntry (0.03s)\n"}
+{"Time":"2026-10-12T15:16:01.192426-03:00","Action":"pass","Package":"roundfix/internal/speccheck","Test":"TestSpecCheckReadsACancelledRecordAndItsReturnedEntry","Elapsed":0.03}
+{"Time":"2026-10-12T15:16:01.19244-03:00","Action":"output","Package":"roundfix/internal/speccheck","Output":"PASS\n"}
+{"Time":"2026-10-12T15:16:01.265457-03:00","Action":"output","Package":"roundfix/internal/speccheck","Output":"suiteguard: guard cost: measured 2582 paths; fingerprint took 108.103667ms before and 72.990958ms after\n"}
+{"Time":"2026-10-12T15:16:01.267261-03:00","Action":"output","Package":"roundfix/internal/speccheck","Output":"ok  \troundfix/internal/speccheck\t0.493s\n"}
+{"Time":"2026-10-12T15:16:01.267269-03:00","Action":"pass","Package":"roundfix/internal/speccheck","Elapsed":0.493}

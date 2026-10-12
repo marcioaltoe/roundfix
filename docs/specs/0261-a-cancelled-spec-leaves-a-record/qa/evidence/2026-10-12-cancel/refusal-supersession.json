@@ -1,0 +1,27 @@
+{
+  "name": "refusal-supersession",
+  "command": [
+    "./bin/roundfix",
+    "cancel",
+    "0261-cancel-fixture",
+    "--reason",
+    "no consumer"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-supersession/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-supersession/home",
+  "exit": 2,
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  cannot cancel a Spec with a supersession: cancellation destination \"/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-supersession/repo/docs/specs/0261-cancel-fixture/_supersession.md\" already exists\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix cancel --help' for usage.\n",
+  "before": {
+    "git_status": "",
+    "spec_sha256": "d51e90cafefe163fcf8a1c19f7e582b8b1294376fed8165fc31aaddee1de25c6",
+    "head": "9caae204b13eae369ca65ec6a8d807ccb602c14e"
+  },
+  "after": {
+    "git_status": "",
+    "spec_sha256": "d51e90cafefe163fcf8a1c19f7e582b8b1294376fed8165fc31aaddee1de25c6",
+    "head": "9caae204b13eae369ca65ec6a8d807ccb602c14e"
+  },
+  "repository_bytes_unchanged": true,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

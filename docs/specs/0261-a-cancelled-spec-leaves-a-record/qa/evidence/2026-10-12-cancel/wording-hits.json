@@ -1,0 +1,1185 @@
+[
+  {
+    "path": "CONTEXT.md",
+    "line": 117,
+    "text": "**Review Finding Disposition**:",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 144,
+    "text": "_Avoid_: Replacement, duplicate, hand-written disposition",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 147,
+    "text": "The `roundfix cancel <slug> --reason <text>` command that retires an active Spec which will not be delivered: it writes an Archive Record with the disposition `cancelled`, performs Source Return and removes the Spec folder, which stays in Git at `source_revision`. It refuses while an Active Run or an unfinished Delivery Queue item holds the Spec or an active Spec requires it, never changes a Task status and never commits (ADR-0262).",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 370,
+    "text": "**Branch Disposition**:",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 371,
+    "text": "A recorded terminal reason a Run Branch no longer needs integration and may be discarded. A superseded Branch Disposition means every branch commit is already reachable from the target, or a later integrated Run covered the same Tasks.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 566,
+    "text": "The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 653,
+    "text": "**Carry Disposition**:",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 662,
+    "text": "The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it (ADR-0197).",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 766,
+    "text": "The small `<slug>.md` record an archive leaves under the resolved archive root: a file named `NNNN-<slug>.md` whose front matter declares `roundfix/archive-record/v1`; any other Markdown file in that root is not a record. It carries the disposition, QA Report and verdict, promoted references, `source_revision` and, once the delivery pull request is open, `pull_request`; the removed Spec folder stays recoverable in Git at that revision, after a squash merge through Source Revision Recovery. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override (ADR-0248, ADR-0251, ADR-0260, ADR-0261). A cancelled Spec's record has the disposition `cancelled` and carries `cancel_reason`, `completed_tasks`, `pending_tasks` and `returned_sources`; only its listed completed Tasks count as completed (ADR-0262).",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 774,
+    "text": "The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added (ADR-0261). Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict (ADR-0260).",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "CONTEXT.md",
+    "line": 890,
+    "text": "A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "line": 16,
+    "text": "Archive a completed spec by writing `<slug>.md` under the resolved archive root and removing `<resolved-spec-root>/<slug>/`, which stays in Git at the record's `source_revision`. The source is the configured Spec Root; the destination is its resolved archive root \u2014 `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ \u2014 every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "line": 59,
+    "text": "with disposition `cancelled`, returns each adopted Backlog Entry to",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "line": 297,
+    "text": "the QA Report and verdict, its disposition, and `source_revision`, the Git",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/archive-spec/SKILL.md",
+    "line": 306,
+    "text": "Rare, explicit, reversed: Restore the Spec folder from Git at the record's `source_revision` and delete the record. Reopening usually means new work \u2014 prefer a fresh spec that references the archived one.",
+    "allowed": true,
+    "reason": "Allowed: explicit reversal of a previously archived Spec, not deleting a dropped active Spec. Cancelled Specs remain covered by the separate Cancelling a Spec section."
+  },
+  {
+    "path": ".agents/skills/write-tasks/SKILL.md",
+    "line": 318,
+    "text": "- **Missing authority.** A slice would create, edit, rename, move, or delete protected tooling that the PRD and present TechSpec do not authorize with exact bounded files. Name the paths and why they are needed; never widen the boundary yourself.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 115,
+    "text": "`docs/backlog/` holds unresolved `open` intent only. A `promoted` entry is adopted source material and moves to its consuming Spec's `references/` under the adoption contract; it is not a terminal implementation verdict. Every terminal Backlog Entry (`declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/backlog/` as a reduced entry in the same operation that records its terminal status. Its front matter carries the true disposition, any consuming Spec and the reason for closure, and the reduced entry keeps that front matter, the title, the first paragraph and the commit that holds the original intent, in the form the Findings archive rule gives. No absorption license is required for a Backlog Entry. An unknown status is a declaration error, never an inferred terminal disposition.",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 119,
+    "text": "- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only. The single history root `docs/history/` keeps only what a later reader needs, family by family (`docs/history/adr/`, `docs/history/backlog/`, `docs/history/findings/`, `docs/history/specs/`), and Git keeps every full text; `docs/history/handoffs/` and `docs/history/reviews/` hold only what an earlier layout retired there, which a history sanitize removes. Handoffs retire only on the user's explicit confirmation, and when confirmed, every handoff is deleted together and never enters history \u2014 the active `docs/handoffs/` directory is the capture door, never a shelf. Disposition is recorded in the front matter of the reduced entry for Findings and Backlog Entries, lifecycle front matter for ADRs, and the Archive Record or archive stamp for Specs. Rejected, deprecated and superseded ADRs retire whole to `docs/history/adr/`, while a `proposed` ADR stays in `docs/adr/`. A finished orphan Review Artifact retires by deletion and never enters history; a new Round never writes into history. Findings, Backlog Entries and Rollups with a terminal lifecycle status leave their active directory for the matching history family as reduced entries; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`. The preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants; its old paths are historical references and are not required to exist as worktree files. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder. When the runtime offers a history sanitize, such as `roundfix history sanitize --apply --batch <n>`, it replaces each Spec folder an earlier archive left under the history root with its Archive Record, reduces each retired Finding and Backlog Entry to its front matter, title, first paragraph and the revision that holds its full text, and removes retired Review Artifacts and handoffs, one reviewed batch at a time after a tag marks the full history; retired ADRs stay whole.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 173,
+    "text": "- **mandatory**: The active `docs/findings/` directory holds unresolved Findings and unresolved Rollups only. Every terminal Finding or Rollup still in an active family directory (`done`, `deferred`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/findings/` in the same operation that records its terminal status; do not wait for the consuming Spec's implementation, QA, merge, or release. Record the true disposition in the front matter, and write the history copy as a reduced entry: the front matter, the title, the first paragraph, and a final line naming a commit that already holds the full text at its active path, normally the commit before the retirement:",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 179,
+    "text": "An addendum written at retirement is committed in the active file first, so the named commit holds it; the original observation stays in Git and is never rewritten. An unknown status is a declaration error, never an inferred terminal disposition. A Spec-owned adopted reference retains its Spec ownership and travels with that Spec at archive; do not extract it from `references/` merely because its preserved source status is terminal. When absorption actually occurred, the archived Finding or Rollup retains a valid `absorbed_by:` pointer to the active or archived Spec that absorbs its content, or to an unresolved active Rollup:",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 185,
+    "text": "When any terminal Finding has no consuming Spec or Rollup, record a non-empty `closure_reason` and `closure_evidence` source locator instead of inventing an absorber. Its original observation and dated disposition stay in Git; absence of a Spec never prevents a legitimate terminal record from entering history. An invalid existing `absorbed_by` must be repaired, not hidden by these closure fields.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 191,
+    "text": "- **mandatory**: When a Rollup has no unresolved work of its own because its residuals were absorbed by Specs or received an evidenced terminal disposition, record its terminal status, migrate its member links and archive it under `docs/history/findings/`. A linked implementation Spec may still be pending: closure of the routing record does not assert delivery of that Spec. Do not keep a terminal Rollup under `docs/findings/` solely because archived members previously named it.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 204,
+    "text": "- **mandatory**: Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, `_authorization.md`, and `qa/` evidence under the Spec folder. Archive Specs under the resolved archive root (`docs/history/specs/` for the built-in root) after their non-QA Tasks are completed and their QA meets the normal archive eligibility contract, or when an explicit user request or applicable prior user authorization permits a QA Archive Override. A generic archive request alone does not silently waive QA. Perform the override only through the runtime's archive override command, such as `roundfix archive <slug> --qa-override --approval <source> --reason <text>`; that command records the approval source, date, covered Spec revision and actual QA outcome or absence, stamps `qa_override: true` and preserves the reason. Never hand-edit the override stamp or any other archive front matter, because a hand edit skips the command's refusals and provenance. Do not ask again for an already applicable approval. The override may waive the named terminal QA gate's completion/evidence prerequisite for archive, but never changes its Task status or report verdict to completed/pass. Missing, failed, incomplete, stale or malformed QA remains recorded as observed. Non-QA Task completion, self-contained references, safe destination and execution ownership remain required. An archive override is not Implement Clean, QA success, review approval, permission to publish/merge/release or a waiver of required checks. Declared QA decline and qualifying declared-only partial evidence are evaluated under their own contracts, not automatically called overrides. A runtime command without override support must be reported as unsupported rather than given an invented flag. A runtime whose archive leaves an Archive Record, such as `roundfix archive <slug>`, writes `<archive-root>/<slug>.md` and removes the Spec folder in the same change; the folder stays in Git at the record's `source_revision`, so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary, an agent guide or the Secondbrain inbox before or at archive. A Spec dropped before delivery is cancelled, never deleted by hand: a runtime cancel command, such as `roundfix cancel <slug> --reason <text>`, writes an Archive Record with the disposition `cancelled` that keeps the reason, the date and the Tasks completed and pending at that moment, returns each adopted Backlog Entry to `docs/backlog/` with `status: open` and each adopted Finding to `docs/findings/` with `status: pending`, and removes the Spec folder in the same change. It refuses while a Run or a delivery queue item is active for the Spec. A cancelled Spec never meets a prerequisite and never supersedes another Spec. A runtime without a cancel command must report cancellation as unsupported rather than deleting the folder.",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 206,
+    "text": "- **prohibited**: Do not make a test, fixture, or build step read a file under the Spec root or assume that a Spec is still active; Specs archive and may be deleted. A check whose subject is the Spec artifacts themselves is exempt.",
+    "allowed": true,
+    "reason": "Allowed: no enduring dependency on an archived Spec folder; it describes archived history removal, not dropping active decomposed Specs."
+  },
+  {
+    "path": "docs/agents/docs-layout.md",
+    "line": 208,
+    "text": "- **mandatory**: Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner \u2014 the project glossary, an accepted ADR, an agent guide, or `docs/references/` \u2014 before or at archive. The glossary and the agent guides must never reference a Spec.",
+    "allowed": true,
+    "reason": "Allowed: no enduring dependency on an archived Spec folder; it describes archived history removal, not dropping active decomposed Specs."
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "line": 16,
+    "text": "Archive a completed spec by writing `<slug>.md` under the resolved archive root and removing `<resolved-spec-root>/<slug>/`, which stays in Git at the record's `source_revision`. The source is the configured Spec Root; the destination is its resolved archive root \u2014 `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ \u2014 every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "line": 59,
+    "text": "with disposition `cancelled`, returns each adopted Backlog Entry to",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "line": 297,
+    "text": "the QA Report and verdict, its disposition, and `source_revision`, the Git",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/archive-spec/SKILL.md",
+    "line": 306,
+    "text": "Rare, explicit, reversed: Restore the Spec folder from Git at the record's `source_revision` and delete the record. Reopening usually means new work \u2014 prefer a fresh spec that references the archived one.",
+    "allowed": true,
+    "reason": "Allowed: explicit reversal of a previously archived Spec, not deleting a dropped active Spec. Cancelled Specs remain covered by the separate Cancelling a Spec section."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 77,
+    "text": "`Fn`, disposition rules, and exit `1`; a no-findings verdict is `reviewed`",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 150,
+    "text": "`findings-dismissed` with exit `0`, without writing a ledger disposition. If",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 155,
+    "text": "Use `roundfix review dispose` to record one disposition for one finding. A",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 161,
+    "text": "Successful dispositions append one JSON line to",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 162,
+    "text": "`pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 167,
+    "text": "dismissals, invalid fixing commits, and a second disposition. It also refuses",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 179,
+    "text": "`findingItems` in `dispositions`.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 182,
+    "text": "`dismissed` disposition, the reused record reports `findings-dismissed` and",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 184,
+    "text": "standing finding identity without a disposition. A `fixed` disposition never",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 192,
+    "text": "finding with its validation and operator disposition. A fixed or dismissed",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 219,
+    "text": "exactly one operator disposition: dismissed with evidence, or fixed by a",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/review.md",
+    "line": 254,
+    "text": "carried decisions and the alternatives they reject. Specs dropped by the total",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/write-tasks/SKILL.md",
+    "line": 318,
+    "text": "- **Missing authority.** A slice would create, edit, rename, move, or delete protected tooling that the PRD and present TechSpec do not authorize with exact bounded files. Name the paths and why they are needed; never widen the boundary yourself.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/runs.md",
+    "line": 120,
+    "text": "report with its disposition and the revision remain unavailable. It is not",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/runs.md",
+    "line": 122,
+    "text": "JSON adds `archived_specs` entries with `spec`, `disposition` and",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 107,
+    "text": "supersedes it, and unblocking a Spec never requires deleting the evidence of why",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 131,
+    "text": "`## Row carry-forward` section records a **Carry Disposition** for every prior",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 325,
+    "text": "exact source bytes, then proposes one reviewed disposition for each segment:",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 335,
+    "text": "owner, residual disposition, root-pointer effect, before and after identity,",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 338,
+    "text": "reasoned disposition.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 432,
+    "text": "`superseded`, `closed`, and `cancelled` as additional terminal dispositions.",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 476,
+    "text": "records their disposition. Terminal Backlog Entries move to",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 484,
+    "text": "declaration correction; they do not imply a terminal disposition.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/context-driven-development.md",
+    "line": 638,
+    "text": "`sourceBaseline` identity and an ordered `dispositions` array. Each disposition",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/runs.md",
+    "line": 221,
+    "text": "the revision unavailable and retain the archived Spec's disposition.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/archive.md",
+    "line": 23,
+    "text": "the disposition, QA Report and verdict, source revision, and promoted files.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/archive.md",
+    "line": 71,
+    "text": "The Spec folder must match its repository's `HEAD`. Modified, staged, deleted",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 14,
+    "text": "| Archive dispositions 0180\u20130248 | 26 `qa-override`, 2 `partial`, the rest `pass`. Since ADR-0240 (0236+), 4 of 11 Specs still needed an override: 0241, 0242, 0243, 0245 | `docs/history/specs/*.md` |",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 28,
+    "text": "| B01 | `internal/baseline/assets/modules/spec-workflow.json:105` (`clause.spec.verification-two-tiers`) \u2192 `docs/agents/spec-routing.md:23`; also `core.json:422,427` \u2192 `docs/agents/agent-instructions.md:31,33` | contradiction + cost | The clause says \"For each Task, run the selected incremental Verification \u2026 before handoff\". `implement-task` \u00a77 says that in a Daemon-assigned turn the agent runs focused checks and the Daemon runs the declared Verification and the Run gate. Agents follow the Baseline: 74 full-suite runs, 284 agent-minutes, competing for CPU with the Daemon's serialized `verify-changed`. The Daemon's `verify-changed` failed only 6 of 125 times, so the agent-side run caught almost nothing the Daemon would not have caught. | Scope both tier clauses: outside a Run, run the incremental tier before handoff. Inside a Daemon-assigned turn, run focused tests of the changed packages only, because the Daemon runs the Task Verification and the Run Verification (`defaults.verification`) at settlement. Each reworded clause gets a new id that `replaces` the old one (ADR-0222), plus a retention disposition. |",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 30,
+    "text": "| B03 | `docs/agents/autonomous-work.md:5-7`; `decisions.json:261,280` (`runtime.backend` / `runtime.design` defaults) | stale + contradiction | The guide says backend work uses `codex gpt-5.6-sol` and design work uses `claude opus 5 xhigh`. `.roundfixrc.yml` profiles use `gpt-6.1-sol/high`, `opus/high` and `gpt-5.6-luna/max`, plus the light tier (ADR-0238). ADR-0037 and ADR-0049 make Agent Selection Profiles the only source of model choice. Every adopter gets the stale default. | Retire both decisions (with a retention disposition) and render \"Runs use the Agent Selection Profiles of Project Config (`roundfix profiles`); `complexity: low` Tasks without a Governed Path run on the light tier\". If retiring is refused, at least stop rendering a model name. |",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 60,
+    "text": "| Rule | Disposition |",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 62,
+    "text": "| 1, 4, 5, 7, 10, 17, \"consult Secondbrain + Exa\" | Already in `write-tasks` or the Baseline (spec-workflow, go, secondbrain). Delete from the briefing. |",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 69,
+    "text": "| 3 (`### QA settlement` byte-identical), 11 (clause removal needs a retention disposition and a `baseline_update_test` fixture), 12 (canonical `.agents/skills` plus `make skills-sync`), 14 (derived Baseline files only via `make baseline-digests`), 18 (Sanctioned regeneration with explicit `outputs:` for `-record-module-versions`) | Specific to Roundfix. Move to `docs/agents/specific-repository.md` (repository-owned text, no module bump). 18 explains 0245 F2. |",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 80,
+    "text": "2. **Decision values and runtime header.** Record `verification.gate`/`verification.incremental` without `rtk` (B02; setup-context through `baseline update`), and fix the `--adopt-suggested` suggestion and `context-driven-development.md`. Retire `runtime.backend`/`runtime.design` or stop rendering a model (B03): `decisions.json`, the autonomous-work guide template, and a retention disposition. Bump **autonomous-work**; there are decision-version effects on every adopter.",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/2026-10-08-baseline-audit.md",
+    "line": 81,
+    "text": "3. **De-duplicate.** Merge the review-policy clauses (B04), the tracker clauses (B05) and the local-research clauses (B06) with `replaces`, and delete the repository HARD RULE duplicate (B19). Bump **core**, **spec-workflow**, **secondbrain**.",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/reconcile.md",
+    "line": 99,
+    "text": "records a Branch Disposition before removing a Run Branch proven superseded.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/deliver.md",
+    "line": 286,
+    "text": "one disposition, and every path changed from the candidate to the head lies",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/deliver.md",
+    "line": 305,
+    "text": "commit that deleted the active Spec's `_prd.md`. A later operator commit does",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/deliver.md",
+    "line": 348,
+    "text": "one disposition, and every path changed from the candidate to the head lies",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/baseline_skill_contract_test.go",
+    "line": 996,
+    "text": "\t// mechanical rules in internal/speccheck. Nothing was dropped; each is",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/history.md",
+    "line": 8,
+    "text": "that disposition records absent QA rather than inventing a passing verdict.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/history.md",
+    "line": 45,
+    "text": "disposition and delivery (`delivery <12-hex> #<pr>`, `delivery <12-hex>` or",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/reconcile.md",
+    "line": 91,
+    "text": "different disposition, and none of them bypasses the proof above:",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/archive.md",
+    "line": 83,
+    "text": "disposition `cancelled` for an active Spec that will not be delivered. It keeps",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/archive.md",
+    "line": 169,
+    "text": "override or supersession receives the `no-qa` disposition. A failed QA without",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md",
+    "line": 23,
+    "text": "  disposition, so it never depends on the reviewer's memory.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md",
+    "line": 32,
+    "text": "  operator disposition: fixed by a commit the head contains, or dismissed with",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md",
+    "line": 49,
+    "text": "round 2 is the final correction, with the operator dispositions that close it.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 28,
+    "text": "deletions under its `source`, with reason `archived-spec-source`, and keeps",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 87,
+    "text": "`Fn`, disposition rules, and exit `1`; a no-findings verdict is `reviewed`",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 162,
+    "text": "`findings-dismissed` with exit `0`, without writing a ledger disposition. If",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 167,
+    "text": "Use `roundfix review dispose` to record one disposition for one finding. A",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 173,
+    "text": "Successful dispositions append one JSON line to",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 174,
+    "text": "`pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 179,
+    "text": "dismissals, invalid fixing commits, and a second disposition. It also refuses",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 191,
+    "text": "`findingItems` in `dispositions`.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 194,
+    "text": "`dismissed` disposition, the reused record reports `findings-dismissed` and",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 196,
+    "text": "standing finding identity without a disposition. A `fixed` disposition never",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 204,
+    "text": "finding with its validation and operator disposition. A fixed or dismissed",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 231,
+    "text": "exactly one operator disposition: dismissed with evidence, or fixed by a",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/review.md",
+    "line": 260,
+    "text": "carried decisions and the alternatives they reject. Specs dropped by the total",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md",
+    "line": 1,
+    "text": "# A decomposed Spec dropped without a record (2026-10-12)",
+    "allowed": true,
+    "reason": "Allowed: attributed adopter event and explicitly dated pre-change parser characterization at 7a8b7f70, followed by the current cancelled design."
+  },
+  {
+    "path": "docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md",
+    "line": 9,
+    "text": "and dropped eight open Specs that already had Task Graphs. One of them had 5",
+    "allowed": true,
+    "reason": "Allowed: attributed adopter event and explicitly dated pre-change parser characterization at 7a8b7f70, followed by the current cancelled design."
+  },
+  {
+    "path": "docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md",
+    "line": 45,
+    "text": "- The record parser accepts only the dispositions `pass`, `partial`,",
+    "allowed": true,
+    "reason": "Allowed: attributed adopter event and explicitly dated pre-change parser characterization at 7a8b7f70, followed by the current cancelled design."
+  },
+  {
+    "path": "docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md",
+    "line": 61,
+    "text": "what the `cancelled` disposition does. Both keep \"replaced by another",
+    "allowed": true,
+    "reason": "Allowed: attributed adopter event and explicitly dated pre-change parser characterization at 7a8b7f70, followed by the current cancelled design."
+  },
+  {
+    "path": "docs/adr/0115-a-superseded-run-branch-is-discarded-through-roundfix.md",
+    "line": 24,
+    "text": "Roundfix therefore owns a disposition for a Run Branch that has been superseded:",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0115-a-superseded-run-branch-is-discarded-through-roundfix.md",
+    "line": 30,
+    "text": "The disposition is a separate, named act rather than a widening of `reconcile`.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": ".agents/skills/roundfix/references/spec-delivery.md",
+    "line": 148,
+    "text": "   record finding dispositions. With explicit `none`, record that review was",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/baseline.md",
+    "line": 64,
+    "text": "Normative Clause. Each clause must have an explicit disposition. An",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/baseline.md",
+    "line": 74,
+    "text": "| Semantic retention | Every applicable prior Normative Clause has an accounted disposition. |",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/user-guide/commands/cancel.md",
+    "line": 8,
+    "text": "Archive Record with disposition `cancelled`, the reason, the date and the",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md",
+    "line": 24,
+    "text": "- identity: the slug, title, creation and archive dates and the disposition",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md",
+    "line": 58,
+    "text": "  completion follows from the disposition.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": ".agents/skills/setup-context-driven/SKILL.md",
+    "line": 141,
+    "text": "  disposition per Source Baseline Entry.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/adr/0210-an-evidence-snapshot-records-one-digest-per-declared-input.md",
+    "line": 33,
+    "text": "under a moved input changed. A disposition names the declared input, not the",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 77,
+    "text": "`Fn`, disposition rules, and exit `1`; a no-findings verdict is `reviewed`",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 150,
+    "text": "`findings-dismissed` with exit `0`, without writing a ledger disposition. If",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 155,
+    "text": "Use `roundfix review dispose` to record one disposition for one finding. A",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 161,
+    "text": "Successful dispositions append one JSON line to",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 162,
+    "text": "`pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 167,
+    "text": "dismissals, invalid fixing commits, and a second disposition. It also refuses",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 179,
+    "text": "`findingItems` in `dispositions`.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 182,
+    "text": "`dismissed` disposition, the reused record reports `findings-dismissed` and",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 184,
+    "text": "standing finding identity without a disposition. A `fixed` disposition never",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 192,
+    "text": "finding with its validation and operator disposition. A fixed or dismissed",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 219,
+    "text": "exactly one operator disposition: dismissed with evidence, or fixed by a",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/review.md",
+    "line": 254,
+    "text": "carried decisions and the alternatives they reject. Specs dropped by the total",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/archive.md",
+    "line": 83,
+    "text": "disposition `cancelled` for an active Spec that will not be delivered. It keeps",
+    "allowed": true,
+    "reason": "Allowed: current cancellation guidance or unrelated terminal lifecycle with cancellation recorded."
+  },
+  {
+    "path": "skills/roundfix/references/archive.md",
+    "line": 169,
+    "text": "override or supersession receives the `no-qa` disposition. A failed QA without",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/adr/0212-a-merged-spec-supersedes-its-runs-spec-directory-work-and-declared-leftovers.md",
+    "line": 32,
+    "text": "and `--discard-superseded` keeps its own Branch Disposition (ADR-0115). An",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "skills/roundfix/references/reconcile.md",
+    "line": 99,
+    "text": "records a Branch Disposition before removing a Run Branch proven superseded.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/spec-delivery.md",
+    "line": 148,
+    "text": "   record finding dispositions. With explicit `none`, record that review was",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/deliver.md",
+    "line": 348,
+    "text": "one disposition, and every path changed from the candidate to the head lies",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 564,
+    "text": "      \"TestPreservationRequiresEveryDisposition\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 1396,
+    "text": "      \"TestReconcileKeepsTheApplyActionForAMergedRunWithASupersededDisposition\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 1530,
+    "text": "      \"TestReviewCeilingClosedRecordRequiresDispositionEvidence\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 1531,
+    "text": "      \"TestReviewCeilingClosesOnDispositions\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 1581,
+    "text": "      \"TestReviewDisposeRefusesASecondDisposition\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 1637,
+    "text": "      \"TestReviewRecordsDroppedSpecs\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 2515,
+    "text": "      \"TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 2516,
+    "text": "      \"TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 2517,
+    "text": "      \"TestRunDispositionCharacterizationStoppedRunLeavesTasksPending\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 2518,
+    "text": "      \"TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 2682,
+    "text": "      \"TestWriteBranchDispositionRecordSurvivesDiscard\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 3210,
+    "text": "      \"TestArchiveRecordRefusesAnOverrideDispositionWithoutATrueOverride\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 3731,
+    "text": "      \"TestRowCarryRecordsOneDispositionPerPriorRow\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 3741,
+    "text": "      \"TestRowCarryWithoutDispositionsRendersTodaysBytes\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4292,
+    "text": "      \"TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4300,
+    "text": "      \"TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4303,
+    "text": "      \"TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4304,
+    "text": "      \"TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4305,
+    "text": "      \"TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4306,
+    "text": "      \"TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/references/coverage-record.json",
+    "line": 4310,
+    "text": "      \"TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved\",",
+    "allowed": true,
+    "reason": "Allowed: dated evidence, audit, structured record or test-name inventory; no current instruction to delete a dropped Spec."
+  },
+  {
+    "path": "docs/adr/0111-an-unobserved-verification-is-unknown-not-a-verdict.md",
+    "line": 31,
+    "text": "question and belongs to the Spec that owns Run terminal disposition.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "skills/setup-context-driven/SKILL.md",
+    "line": 141,
+    "text": "  disposition per Source Baseline Entry.",
+    "allowed": true,
+    "reason": "Allowed: another domain's disposition or removal rule, or archive/review history handling; no dropped-Spec deletion directive."
+  },
+  {
+    "path": "skills/roundfix/references/runs.md",
+    "line": 221,
+    "text": "the revision unavailable and retain the archived Spec's disposition.",
+    "allowed": true,
+    "reason": "Allowed after contextual inspection: archive eligibility, historical source deletion, or generic scoped file mutation; no complete archive-disposition list or dropped-Spec deletion directive."
+  },
+  {
+    "path": "docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md",
+    "line": 43,
+    "text": "matter carries the disposition, and it keeps its title, its first paragraph",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0195-rows-that-read-the-gate-or-the-commits-are-observed-on-every-pass.md",
+    "line": 24,
+    "text": "Every row of the previous report now receives a recorded carry disposition in",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+    "line": 11,
+    "text": "On 2026-10-10 an adopter dropped eight Specs that already had Task Graphs, one",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+    "line": 15,
+    "text": "the folders, and what the dropped Spec delivered has no history",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+    "line": 16,
+    "text": "(`docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md`).",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+    "line": 20,
+    "text": "disposition `cancelled`. The record keeps the reason, the date, and the Tasks",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+    "line": 53,
+    "text": "This extends ADR-0247 and ADR-0248, which list the dispositions, and ADR-0193:",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+    "line": 73,
+    "text": "archive disposition\", so every reader of a repository with a cancelled record",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0232-merge-evidence-releases-the-runs-and-item-branches-of-a-merged-spec.md",
+    "line": 49,
+    "text": "`--discard-superseded` keeps its Branch Disposition (ADR-0115). This refines",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md",
+    "line": 19,
+    "text": "disposition `fail`, which `ParseArchiveRecord` refuses. The adopter cannot",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md",
+    "line": 36,
+    "text": "**The `failed-qa` disposition.** A folder whose newest QA Report says `fail`",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md",
+    "line": 37,
+    "text": "and that carries no override receives the disposition `failed-qa`. The record",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md",
+    "line": 45,
+    "text": "disposition.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md",
+    "line": 65,
+    "text": "later. The record readers that branch on disposition were checked, and only",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0174-a-pre-pr-review-reads-the-final-message-and-keeps-a-record-per-checkout.md",
+    "line": 33,
+    "text": "from the checkout path. The disposition ledger stays shared, because every",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0174-a-pre-pr-review-reads-the-final-message-and-keeps-a-record-per-checkout.md",
+    "line": 34,
+    "text": "disposition already names its repository and reviewed head.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0064-baseline-readoption-uses-byte-exhaustive-structural-inventory.md",
+    "line": 11,
+    "text": "Baseline Readoption partitions every nonblank byte in bounded agent-instruction carriers into deterministic Source Baseline Entries, then requires an explicit classification and individual disposition for each entry before mutation. The scanner never infers normative meaning: exact source bytes, ordered entry digests, decisions, destinations, reasons, and proposed Repository-Specific Normative Rules all enter the Change Plan digest, trading a larger decision set for omission-proof, stale-safe adoption of unknown historical states.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md",
+    "line": 46,
+    "text": "  a QA Report, an override nor a supersession gets the new disposition",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md",
+    "line": 80,
+    "text": "the disposition `no-qa`. Git history is not rewritten and the pack does not",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0161-a-merged-spec-releases-its-runs-on-the-merged-head.md",
+    "line": 13,
+    "text": "The delivery owner releases the Spec's Runs after it records the merge. `--discard-superseded` remains the separate recorded act ADR-0115 requires; cleanup does not absorb that command or bypass its Branch Disposition.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0192-a-conflict-confined-to-declared-derived-paths-is-resolved-by-regeneration.md",
+    "line": 17,
+    "text": "one side's bytes dropped another Spec's decision.",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0227-a-review-through-claude-keeps-its-verdict-and-fits-its-window.md",
+    "line": 53,
+    "text": "its verdict, and its findings follow the normal disposition path. The Claude",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  },
+  {
+    "path": "docs/adr/0233-a-skill-version-raise-is-regenerated-at-merge-and-a-review-only-correction-returns-to-review.md",
+    "line": 44,
+    "text": "  has one disposition (fixed by a commit the head contains, or dismissed with",
+    "allowed": true,
+    "reason": "Allowed: immutable accepted decision; ADR-0262 expressly extends earlier archive decisions, rather than rewriting them."
+  }
+]

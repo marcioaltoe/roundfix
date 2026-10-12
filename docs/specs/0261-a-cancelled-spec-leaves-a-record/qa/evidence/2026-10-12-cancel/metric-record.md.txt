@@ -1,0 +1,37 @@
+---
+schema: roundfix/archive-record/v1
+spec: 0261-cancel-fixture
+title: Cancel fixture
+status: archived
+created: "2026-10-10"
+archived: "2026-10-12"
+disposition: cancelled
+source: docs/specs/0261-cancel-fixture
+source_revision: 4083291e7801683f6e6c79891a8a04c32c71b218
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+cancel_reason: no consumer
+completed_tasks:
+  - task_01
+  - task_02
+  - task_03
+  - task_04
+  - task_05
+pending_tasks:
+  - task_06
+  - task_07
+  - task_08
+returned_sources:
+  - docs/backlog/entry.md
+adrs: []
+sources:
+  - entry.md
+regeneration: []
+promoted: []
+---
+
+# Cancel fixture
+
+No consumer needs this work.

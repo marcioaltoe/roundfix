@@ -1,0 +1,25 @@
+{
+  "name": "reader-sanitize-plan",
+  "command": [
+    "./bin/roundfix",
+    "history",
+    "sanitize"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-us3c7sd0/metric-one/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-us3c7sd0/metric-one/home",
+  "exit": 0,
+  "stdout": "history sanitize plan: 1 unit(s) pending; 1 file(s) (80 bytes) leave docs/history\nfolder docs/history/specs/0001-old: removes 1 file(s) (80 bytes) and writes docs/history/specs/0001-old.md (452 bytes, no-qa, delivery 1d1c6d2be84e)\napply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)\n",
+  "stderr": "",
+  "before": {
+    "git_status": "",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "1d1c6d2be84eadbbbf5313d0d3f771863ab2c87a"
+  },
+  "after": {
+    "git_status": "",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "1d1c6d2be84eadbbbf5313d0d3f771863ab2c87a"
+  },
+  "repository_bytes_unchanged": true,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

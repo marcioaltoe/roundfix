@@ -1,0 +1,160 @@
+[
+  {
+    "package": "./internal/spec",
+    "command": [
+      "rtk",
+      "proxy",
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestACancelledArchiveRecordRoundTrips|TestArchivedTaskCompletedForACancelledRecord|TestCancelKeepsObservedQAAndTaskGraphOrder|TestCancelLeavesOtherAdoptedSourcesInTheFolder|TestCancelRecordsCompletedAndPendingTasks|TestCancelRefusalsWriteNothing|TestCancelRelinksLiveCitations|TestCancelReturnsAnAdoptedBacklogEntryAsOpen|TestCancelReturnsAnAdoptedFindingAsPending|TestCancelRollsBackAFailedWrite|TestCancelWithoutATaskGraph|TestOnlyACancelledRecordCarriesCancelFields)$",
+      "./internal/spec"
+    ],
+    "exit": 0,
+    "required": [
+      "TestCancelRecordsCompletedAndPendingTasks",
+      "TestCancelReturnsAnAdoptedBacklogEntryAsOpen",
+      "TestCancelReturnsAnAdoptedFindingAsPending",
+      "TestCancelLeavesOtherAdoptedSourcesInTheFolder",
+      "TestCancelWithoutATaskGraph",
+      "TestCancelRefusalsWriteNothing",
+      "TestCancelRollsBackAFailedWrite",
+      "TestCancelRelinksLiveCitations",
+      "TestCancelKeepsObservedQAAndTaskGraphOrder",
+      "TestACancelledArchiveRecordRoundTrips",
+      "TestOnlyACancelledRecordCarriesCancelFields",
+      "TestArchivedTaskCompletedForACancelledRecord"
+    ],
+    "missing": []
+  },
+  {
+    "package": "./internal/cli",
+    "command": [
+      "rtk",
+      "proxy",
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestArchiveCommandLeavesTheArchiveRecord|TestCancelAcceptsAMergedQueueItem|TestCancelArgumentRefusalsFollowContractOrder|TestCancelReclaimsAnOrphanedRun|TestCancelRefusalsLeaveTheTreeUnchanged|TestCancelRefusesEveryUnfinishedQueueStage|TestCancelRefusesMalformedRequires|TestCancelRefusesOccupiedSourceDestination|TestCancelRefusesOutsideGit|TestCancelTranscriptCancelsASpecWithSources|TestCancelTranscriptPrintsHelp|TestCancelTranscriptRefusesARequiringSpec|TestCancelTranscriptRefusesAnActiveRun|TestCancelTranscriptRefusesAnUnfinishedQueueItem|TestCancelTranscriptWarnsAboutAParkedItemAndACitation|TestCancelWarnsAboutACitationOnAPartlyRelinkedLine|TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine|TestCancelWithoutATaskGraph|TestCancelWriteFailureUsesExitOne|TestDeliverRetryRefusesACancelledSpec|TestDeliverStartRefusesARequiredCancelledSpec|TestHistorySanitizeLeavesACancelledRecord|TestPrerequisitesCountAnArchiveRecord|TestReviewDiffOmitsTheRemovedSpecFolder|TestReviewReadsACancelledArchiveRecord|TestRootHelpNamesTheCancelCommand|TestRunCausesReportACancelledRecord|TestSupersedeAcceptsAnArchiveRecord|TestSupersedeAcceptsOtherArchiveRecordDispositions|TestSupersedeRefusesACancelledDeliverer)$",
+      "./internal/cli"
+    ],
+    "exit": 0,
+    "required": [
+      "TestCancelTranscriptCancelsASpecWithSources",
+      "TestCancelTranscriptWarnsAboutAParkedItemAndACitation",
+      "TestCancelTranscriptRefusesAnUnfinishedQueueItem",
+      "TestCancelTranscriptRefusesAnActiveRun",
+      "TestCancelTranscriptRefusesARequiringSpec",
+      "TestCancelTranscriptPrintsHelp",
+      "TestCancelRefusesEveryUnfinishedQueueStage",
+      "TestCancelRefusalsLeaveTheTreeUnchanged",
+      "TestRootHelpNamesTheCancelCommand",
+      "TestCancelAcceptsAMergedQueueItem",
+      "TestCancelRefusesMalformedRequires",
+      "TestCancelReclaimsAnOrphanedRun",
+      "TestCancelRefusesOccupiedSourceDestination",
+      "TestCancelWriteFailureUsesExitOne",
+      "TestCancelArgumentRefusalsFollowContractOrder",
+      "TestCancelRefusesOutsideGit",
+      "TestCancelWithoutATaskGraph",
+      "TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine",
+      "TestCancelWarnsAboutACitationOnAPartlyRelinkedLine",
+      "TestSupersedeRefusesACancelledDeliverer",
+      "TestDeliverStartRefusesARequiredCancelledSpec",
+      "TestDeliverRetryRefusesACancelledSpec",
+      "TestReviewReadsACancelledArchiveRecord",
+      "TestRunCausesReportACancelledRecord",
+      "TestHistorySanitizeLeavesACancelledRecord",
+      "TestSupersedeAcceptsOtherArchiveRecordDispositions",
+      "TestArchiveCommandLeavesTheArchiveRecord",
+      "TestSupersedeAcceptsAnArchiveRecord",
+      "TestPrerequisitesCountAnArchiveRecord",
+      "TestReviewDiffOmitsTheRemovedSpecFolder"
+    ],
+    "missing": []
+  },
+  {
+    "package": "./internal/speccheck",
+    "command": [
+      "rtk",
+      "proxy",
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestSpecCheckReadsACancelledRecordAndItsReturnedEntry)$",
+      "./internal/speccheck"
+    ],
+    "exit": 0,
+    "required": [
+      "TestSpecCheckReadsACancelledRecordAndItsReturnedEntry"
+    ],
+    "missing": []
+  },
+  {
+    "package": "./internal/baseline",
+    "command": [
+      "rtk",
+      "proxy",
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestAnAdopterRetainsTheCancelClause|TestTheCancelClauseCarriesItsText|TestTheCancelClauseRendersInTheDocsLayoutGuide)$",
+      "./internal/baseline"
+    ],
+    "exit": 0,
+    "required": [
+      "TestTheCancelClauseCarriesItsText",
+      "TestTheCancelClauseRendersInTheDocsLayoutGuide",
+      "TestAnAdopterRetainsTheCancelClause"
+    ],
+    "missing": []
+  },
+  {
+    "package": "./internal/docscontract",
+    "command": [
+      "rtk",
+      "proxy",
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-tags",
+      "docscontract",
+      "-run",
+      "^(TestTheSkillCoverageMapIsCurrent)$",
+      "./internal/docscontract"
+    ],
+    "exit": 0,
+    "required": [
+      "TestTheSkillCoverageMapIsCurrent"
+    ],
+    "missing": []
+  },
+  {
+    "package": "./skills",
+    "command": [
+      "rtk",
+      "proxy",
+      "go",
+      "test",
+      "-count=1",
+      "-json",
+      "-run",
+      "^(TestEveryOwnedSkillVersionIsRecorded)$",
+      "./skills"
+    ],
+    "exit": 0,
+    "required": [
+      "TestEveryOwnedSkillVersionIsRecorded"
+    ],
+    "missing": []
+  }
+]

@@ -1,0 +1,8 @@
+---
+status: promoted # keep comment
+spec: 0261-cancel-fixture # keep comment
+---
+
+# Entry
+
+Intent and provenance remain exact.

@@ -1,0 +1,9 @@
+{
+  "completed_tasks": "[task_01, task_02, task_03, task_04, task_05]",
+  "pending_tasks": "[task_06, task_07, task_08]",
+  "cancel_reason": "no consumer",
+  "archived": "2026-10-12",
+  "byte_comparison_outside_status_spec": true,
+  "before_sha256": "10c9645256bc20c43263aeb159d86bd78d57762b75f5d41d57cc62639e6ca2cc",
+  "returned_sha256": "b5f32f1fa2c50b8c3625ed5c15013205c48c70927fbf019c9e0ec8eb2f9b5ff8"
+}

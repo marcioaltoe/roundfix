@@ -1,0 +1,27 @@
+{
+  "name": "transcript-1",
+  "command": [
+    "./bin/roundfix",
+    "cancel",
+    "0261-cancel-fixture",
+    "--reason",
+    "no consumer"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-c4nfey97/transcript-1/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-c4nfey97/transcript-1/home",
+  "exit": 0,
+  "stdout": "cancelled 0261-cancel-fixture -> docs/history/specs/0261-cancel-fixture.md; 5 completed Task(s), 3 pending; removed 13 file(s) (2821 bytes) kept in Git at 01c180a037c3\nreturned docs/backlog/entry.md as open\nreturned docs/findings/finding.md as pending\n",
+  "stderr": "",
+  "before": {
+    "git_status": "",
+    "spec_sha256": "e08bcb6bc3aa1bc0ecda66c3dcac8ad091173b7fcff5759e3a57e67ef40722d0",
+    "head": "01c180a037c3f3d9e32a539e95a8b9df5f556bc9"
+  },
+  "after": {
+    "git_status": " D docs/specs/0261-cancel-fixture/_prd.md\n D docs/specs/0261-cancel-fixture/_tasks.md\n D docs/specs/0261-cancel-fixture/references/_index.md\n D docs/specs/0261-cancel-fixture/references/entry.md\n D docs/specs/0261-cancel-fixture/references/finding.md\n D docs/specs/0261-cancel-fixture/task_01.md\n D docs/specs/0261-cancel-fixture/task_02.md\n D docs/specs/0261-cancel-fixture/task_03.md\n D docs/specs/0261-cancel-fixture/task_04.md\n D docs/specs/0261-cancel-fixture/task_05.md\n D docs/specs/0261-cancel-fixture/task_06.md\n D docs/specs/0261-cancel-fixture/task_07.md\n D docs/specs/0261-cancel-fixture/task_08.md\n?? docs/backlog/entry.md\n?? docs/findings/finding.md\n?? docs/history/specs/0261-cancel-fixture.md\n",
+    "spec_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "head": "01c180a037c3f3d9e32a539e95a8b9df5f556bc9"
+  },
+  "repository_bytes_unchanged": false,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "refusal-source-missing",
+  "command": [
+    "./bin/roundfix",
+    "cancel",
+    "0261-cancel-fixture",
+    "--reason",
+    "no consumer"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-source-missing/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-source-missing/home",
+  "exit": 2,
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  stat indexed cancellation path \"references/entry.md\": lstat /private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-source-missing/repo/docs/specs/0261-cancel-fixture/references/entry.md: no such file or directory\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix cancel --help' for usage.\n",
+  "before": {
+    "git_status": "",
+    "spec_sha256": "4b882bb6d6fc53d44a7970d0c6965d8a020a91ff33cf208101ef6ad5623a0d43",
+    "head": "d110565b55165be4a40b49bca2a08cd487309d4f"
+  },
+  "after": {
+    "git_status": "",
+    "spec_sha256": "4b882bb6d6fc53d44a7970d0c6965d8a020a91ff33cf208101ef6ad5623a0d43",
+    "head": "d110565b55165be4a40b49bca2a08cd487309d4f"
+  },
+  "repository_bytes_unchanged": true,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

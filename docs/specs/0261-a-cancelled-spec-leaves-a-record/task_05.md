@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0261-a-cancelled-spec-leaves-a-record
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

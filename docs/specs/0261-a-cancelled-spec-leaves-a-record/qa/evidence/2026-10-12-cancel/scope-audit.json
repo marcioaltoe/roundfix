@@ -1,0 +1,322 @@
+{
+  "commit_range": "7cee52134ce36025e9cf66a3bacdbde42aed2698..b412a32d9e4e2f2c300c619cf088358802b9e9ab",
+  "tasks": [
+    {
+      "task": "task_02",
+      "commit": "40e65f388772b97aae05d86216e6c3bf9fdef511",
+      "command": "git diff-tree --no-commit-id --name-only -r 40e65f388772b97aae05d86216e6c3bf9fdef511",
+      "actual_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        "CONTEXT.md",
+        "docs/agents/docs-layout.md",
+        "docs/agents/setup-context.json",
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_02.md",
+        "docs/user-guide/commands.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/cancel.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/supersede.md",
+        "docs/user-guide/usage.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+        "internal/baseline/assets/modules/spec-workflow.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/cancel_clause_test.go",
+        "internal/baseline/module-versions.json",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/domain-modeling/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        "CONTEXT.md",
+        "docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md",
+        "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+        "docs/agents/docs-layout.md",
+        "docs/agents/setup-context.json",
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_02.md",
+        "docs/user-guide/commands.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/cancel.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/supersede.md",
+        "docs/user-guide/usage.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+        "internal/baseline/assets/modules/spec-workflow.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/cancel_clause_test.go",
+        "internal/baseline/module-versions.json",
+        "internal/baseline/reduced_retirement_clauses_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "outside": []
+    },
+    {
+      "task": "task_01",
+      "commit": "a3ef66e1f372721ea70d5c3d220c439479f5df6f",
+      "command": "git diff-tree --no-commit-id --name-only -r a3ef66e1f372721ea70d5c3d220c439479f5df6f",
+      "actual_paths": [
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_01.md",
+        "internal/spec/archive_reader.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/archive_record_cancelled_test.go",
+        "internal/spec/cancel.go",
+        "internal/spec/cancel_test.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md",
+        "docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md",
+        "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+        "docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md",
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_01.md",
+        "internal/spec/archive.go",
+        "internal/spec/archive_reader.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/archive_record_cancelled_test.go",
+        "internal/spec/archive_record_test.go",
+        "internal/spec/cancel.go",
+        "internal/spec/cancel_test.go",
+        "internal/spec/supersession.go"
+      ],
+      "outside": []
+    },
+    {
+      "task": "task_04",
+      "commit": "ec26061f0f15b144d86613741188e753b7c71ee3",
+      "command": "git diff-tree --no-commit-id --name-only -r ec26061f0f15b144d86613741188e753b7c71ee3",
+      "actual_paths": [
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_04.md",
+        "internal/cli/cancelled_record_readers_test.go",
+        "internal/cli/deliver.go",
+        "internal/cli/supersede.go",
+        "internal/speccheck/cancelled_record_test.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0193-a-spec-names-its-prerequisites-and-the-owner-waits-for-them.md",
+        "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_04.md",
+        "internal/cli/archive_record_readers_test.go",
+        "internal/cli/archive_record_test.go",
+        "internal/cli/cancelled_record_readers_test.go",
+        "internal/cli/deliver.go",
+        "internal/cli/history_test.go",
+        "internal/cli/review_archived_spec_test.go",
+        "internal/cli/supersede.go",
+        "internal/runcause/report.go",
+        "internal/speccheck/backlog_test.go",
+        "internal/speccheck/cancelled_record_test.go"
+      ],
+      "outside": []
+    },
+    {
+      "task": "task_03",
+      "commit": "b412a32d9e4e2f2c300c619cf088358802b9e9ab",
+      "command": "git diff-tree --no-commit-id --name-only -r b412a32d9e4e2f2c300c619cf088358802b9e9ab",
+      "actual_paths": [
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_03.md",
+        "internal/cli/cancel.go",
+        "internal/cli/cancel_test.go",
+        "internal/cli/cli.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_03.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_record_test.go",
+        "internal/cli/cancel.go",
+        "internal/cli/cancel_test.go",
+        "internal/cli/cli.go",
+        "internal/cli/reopen.go",
+        "internal/cli/settle.go",
+        "internal/spec/history_entries.go",
+        "internal/spec/requires.go",
+        "internal/speccheck/active_spec_paths.go",
+        "internal/store/delivery.go"
+      ],
+      "outside": []
+    }
+  ],
+  "governed": {
+    ".agents/skills/archive-spec/SKILL.md": true,
+    ".agents/skills/roundfix/SKILL.md": true,
+    ".agents/skills/roundfix/references/archive.md": true,
+    ".agents/skills/roundfix/references/deliver.md": true,
+    "CONTEXT.md": false,
+    "docs/agents/docs-layout.md": true,
+    "docs/agents/setup-context.json": true,
+    "docs/references/behavior-surfaces.json": false,
+    "docs/references/skill-coverage.json": false,
+    "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_01.md": false,
+    "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_02.md": false,
+    "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_03.md": false,
+    "docs/specs/0261-a-cancelled-spec-leaves-a-record/task_04.md": false,
+    "docs/user-guide/commands.md": false,
+    "docs/user-guide/commands/archive.md": false,
+    "docs/user-guide/commands/cancel.md": false,
+    "docs/user-guide/commands/deliver.md": false,
+    "docs/user-guide/commands/supersede.md": false,
+    "docs/user-guide/usage.md": false,
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md": true,
+    "internal/baseline/assets/modules/spec-workflow.json": true,
+    "internal/baseline/assets/profiles/standard-typescript-monorepo.json": true,
+    "internal/baseline/cancel_clause_test.go": false,
+    "internal/baseline/module-versions.json": false,
+    "internal/baseline/testdata/catalog.diagnostics.golden.json": false,
+    "internal/baseline/testdata/catalog.digest": false,
+    "internal/baseline/testdata/catalog.normalized.json": false,
+    "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json": false,
+    "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json": false,
+    "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json": false,
+    "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json": false,
+    "internal/cli/cancel.go": false,
+    "internal/cli/cancel_test.go": false,
+    "internal/cli/cancelled_record_readers_test.go": false,
+    "internal/cli/cli.go": false,
+    "internal/cli/deliver.go": false,
+    "internal/cli/supersede.go": false,
+    "internal/spec/archive_reader.go": false,
+    "internal/spec/archive_record.go": false,
+    "internal/spec/archive_record_cancelled_test.go": false,
+    "internal/spec/cancel.go": false,
+    "internal/spec/cancel_test.go": false,
+    "internal/speccheck/cancelled_record_test.go": false,
+    "skills/archive-spec/SKILL.md": true,
+    "skills/roundfix/SKILL.md": true,
+    "skills/roundfix/references/archive.md": false,
+    "skills/roundfix/references/deliver.md": false,
+    "skills/testdata/owned-skill-versions.json": false
+  },
+  "bounds": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/archive.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    "docs/agents/docs-layout.md",
+    "docs/agents/setup-context.json",
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+    "internal/baseline/assets/modules/spec-workflow.json",
+    "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+    "skills/archive-spec/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "unbounded": [],
+  "protected_changes": [],
+  "source_baseline_changes": [],
+  "settlement_sections": [
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "sha256": "d2a013d8face5772656bddde7be937763e465b2651ea9159007a93f7ec2d3dc2",
+      "unchanged_from_base": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "sha256": "d2a013d8face5772656bddde7be937763e465b2651ea9159007a93f7ec2d3dc2",
+      "unchanged_from_base": true
+    },
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "sha256": "d2a013d8face5772656bddde7be937763e465b2651ea9159007a93f7ec2d3dc2",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "sha256": "d2a013d8face5772656bddde7be937763e465b2651ea9159007a93f7ec2d3dc2",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "sha256": "d2a013d8face5772656bddde7be937763e465b2651ea9159007a93f7ec2d3dc2",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "sha256": "d2a013d8face5772656bddde7be937763e465b2651ea9159007a93f7ec2d3dc2",
+      "unchanged_from_base": true
+    }
+  ],
+  "mirrors": [
+    {
+      "path": "archive-spec/SKILL.md",
+      "byte_identical": true
+    },
+    {
+      "path": "roundfix/SKILL.md",
+      "byte_identical": true
+    },
+    {
+      "path": "roundfix/references/archive.md",
+      "byte_identical": true
+    },
+    {
+      "path": "roundfix/references/deliver.md",
+      "byte_identical": true
+    }
+  ],
+  "baseline_plans": [
+    {
+      "command": [
+        "./bin/roundfix",
+        "baseline",
+        "update",
+        "--repo",
+        ".",
+        "--no-skills",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "state": "current",
+      "cwd": "/private/tmp/roundfix-scope-qa-ecw5dooz/repo"
+    },
+    {
+      "command": [
+        "./bin/roundfix",
+        "baseline",
+        "update",
+        "--repo",
+        ".",
+        "--no-skills",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "state": "current",
+      "cwd": "/private/tmp/roundfix-scope-qa-ecw5dooz/repo"
+    }
+  ],
+  "errors": []
+}

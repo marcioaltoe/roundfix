@@ -1,0 +1,27 @@
+{
+  "reference": "docs/references/2026-10-12-a-decomposed-spec-dropped-without-a-record.md",
+  "sha256": "85153420f454e80c9399f9d103019887152ce67a4da0bda4f0e848790a9b013f",
+  "sources": [
+    {
+      "source": "adopter event 2026-10-10",
+      "provenance": "Secondbrain triaged Inbox Entry and Vortex mirrored planning document, both named by the reference",
+      "observation": "Eight decomposed Specs dropped; one had five completed and three pending Tasks; seven were all pending; folders deleted without Archive Records",
+      "comparison": "The live metric fixture reproduces the one eight-Task Spec, not eight Tasks conflated with eight Specs",
+      "supports_design": true
+    },
+    {
+      "source": "PEP 1",
+      "url": "https://peps.python.org/pep-0001/",
+      "observation": "Preserves rejected/withdrawn proposals as records and distinguishes Withdrawn from Superseded",
+      "access": "Quoted committed reference; no network request",
+      "supports_design": true
+    },
+    {
+      "source": "GitHub Changelog 2022-05-19",
+      "url": "https://github.blog/changelog/2022-05-19-the-new-github-issues-may-19th-update/",
+      "observation": "Issue closure distinguishes complete from not-planned",
+      "access": "Quoted committed reference; no network request",
+      "supports_design": true
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "command": "ReadQAReportFile + QAReportEligibility (read-only)",
+  "exit": 0,
+  "parsed": {
+    "Verdict": "pass",
+    "Hollow": false,
+    "AuditingBinary": "0.67.0 (7cee5213, built 2026-10-12 14:12:39 -0300)",
+    "AuditorStaleness": "current: commit ancestry: build commit does not predate the delivery base",
+    "UserFlowBinary": "roundfix 0.67.0 (b412a32d-dirty, built 2026-10-12 15:13:44 -0300)",
+    "RowsBlockedEnvironment": 1,
+    "RowsBlockedPrePullRequest": 1,
+    "RowsBlockedNetworkDenied": 0,
+    "RowsSkipped": 0,
+    "RowsBlockedFinding": 0,
+    "RowsBlockedDeclared": 0,
+    "RowsBlockedPrecondition": 0,
+    "Precondition": {
+      "CheckName": "",
+      "Reason": ""
+    }
+  }
+}

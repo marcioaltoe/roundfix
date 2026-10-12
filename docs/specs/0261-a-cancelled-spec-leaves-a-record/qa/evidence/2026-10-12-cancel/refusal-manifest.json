@@ -1,0 +1,27 @@
+{
+  "name": "refusal-manifest",
+  "command": [
+    "./bin/roundfix",
+    "cancel",
+    "0261-cancel-fixture",
+    "--reason",
+    "no consumer"
+  ],
+  "cwd": "/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-manifest/repo",
+  "home": "/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-manifest/home",
+  "exit": 2,
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  read cancellation Task Graph: Task Graph manifest \"/private/tmp/roundfix-cancel-qa-us3c7sd0/refusal-manifest/repo/docs/specs/0261-cancel-fixture/_tasks.md\": invalid frontmatter: missing YAML frontmatter opening marker\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix cancel --help' for usage.\n",
+  "before": {
+    "git_status": "",
+    "spec_sha256": "51053d533f6ffe8d4b78298128fbec9185806163556758b725df4e95ee7958cf",
+    "head": "8f04694e76297743fd21f1db7f70048aadbf06b8"
+  },
+  "after": {
+    "git_status": "",
+    "spec_sha256": "51053d533f6ffe8d4b78298128fbec9185806163556758b725df4e95ee7958cf",
+    "head": "8f04694e76297743fd21f1db7f70048aadbf06b8"
+  },
+  "repository_bytes_unchanged": true,
+  "binary_sha256": "94b2de52c58866a4cd8f9587dea98a8f286d980b8224349d7aca0f52cc1572cc"
+}

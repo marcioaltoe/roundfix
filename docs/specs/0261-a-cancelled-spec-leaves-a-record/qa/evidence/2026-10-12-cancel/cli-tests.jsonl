@@ -1,0 +1,465 @@
+{"Time":"2026-10-12T15:15:57.460865-03:00","Action":"start","Package":"roundfix/internal/cli"}
+{"Time":"2026-10-12T15:15:57.987525-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987569-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord","Output":"=== RUN   TestPrerequisitesCountAnArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987584-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord","Output":"=== PAUSE TestPrerequisitesCountAnArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987586-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987587-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder"}
+{"Time":"2026-10-12T15:15:57.987588-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder","Output":"=== RUN   TestReviewDiffOmitsTheRemovedSpecFolder\n"}
+{"Time":"2026-10-12T15:15:57.987589-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder","Output":"=== PAUSE TestReviewDiffOmitsTheRemovedSpecFolder\n"}
+{"Time":"2026-10-12T15:15:57.987597-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder"}
+{"Time":"2026-10-12T15:15:57.987598-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987599-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"=== RUN   TestArchiveCommandLeavesTheArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987606-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"=== PAUSE TestArchiveCommandLeavesTheArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987607-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987613-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987613-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord","Output":"=== RUN   TestSupersedeAcceptsAnArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987615-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord","Output":"=== PAUSE TestSupersedeAcceptsAnArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987616-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987624-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources"}
+{"Time":"2026-10-12T15:15:57.987628-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources","Output":"=== RUN   TestCancelTranscriptCancelsASpecWithSources\n"}
+{"Time":"2026-10-12T15:15:57.98766-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources","Output":"=== PAUSE TestCancelTranscriptCancelsASpecWithSources\n"}
+{"Time":"2026-10-12T15:15:57.987662-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources"}
+{"Time":"2026-10-12T15:15:57.987664-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation"}
+{"Time":"2026-10-12T15:15:57.987665-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation","Output":"=== RUN   TestCancelTranscriptWarnsAboutAParkedItemAndACitation\n"}
+{"Time":"2026-10-12T15:15:57.987672-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation","Output":"=== PAUSE TestCancelTranscriptWarnsAboutAParkedItemAndACitation\n"}
+{"Time":"2026-10-12T15:15:57.987673-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation"}
+{"Time":"2026-10-12T15:15:57.987675-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem"}
+{"Time":"2026-10-12T15:15:57.987676-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem","Output":"=== RUN   TestCancelTranscriptRefusesAnUnfinishedQueueItem\n"}
+{"Time":"2026-10-12T15:15:57.987693-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem","Output":"=== PAUSE TestCancelTranscriptRefusesAnUnfinishedQueueItem\n"}
+{"Time":"2026-10-12T15:15:57.987697-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem"}
+{"Time":"2026-10-12T15:15:57.9877-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun"}
+{"Time":"2026-10-12T15:15:57.987701-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun","Output":"=== RUN   TestCancelTranscriptRefusesAnActiveRun\n"}
+{"Time":"2026-10-12T15:15:57.987702-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun","Output":"=== PAUSE TestCancelTranscriptRefusesAnActiveRun\n"}
+{"Time":"2026-10-12T15:15:57.987703-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun"}
+{"Time":"2026-10-12T15:15:57.987711-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec"}
+{"Time":"2026-10-12T15:15:57.987713-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec","Output":"=== RUN   TestCancelTranscriptRefusesARequiringSpec\n"}
+{"Time":"2026-10-12T15:15:57.987714-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec","Output":"=== PAUSE TestCancelTranscriptRefusesARequiringSpec\n"}
+{"Time":"2026-10-12T15:15:57.987716-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec"}
+{"Time":"2026-10-12T15:15:57.987718-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp"}
+{"Time":"2026-10-12T15:15:57.987721-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp","Output":"=== RUN   TestCancelTranscriptPrintsHelp\n"}
+{"Time":"2026-10-12T15:15:57.987729-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp","Output":"=== PAUSE TestCancelTranscriptPrintsHelp\n"}
+{"Time":"2026-10-12T15:15:57.987731-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp"}
+{"Time":"2026-10-12T15:15:57.987732-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage"}
+{"Time":"2026-10-12T15:15:57.987733-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage\n"}
+{"Time":"2026-10-12T15:15:57.987734-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage\n"}
+{"Time":"2026-10-12T15:15:57.987735-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage"}
+{"Time":"2026-10-12T15:15:57.987736-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged"}
+{"Time":"2026-10-12T15:15:57.987737-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged","Output":"=== RUN   TestCancelRefusalsLeaveTheTreeUnchanged\n"}
+{"Time":"2026-10-12T15:15:57.98774-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged","Output":"=== PAUSE TestCancelRefusalsLeaveTheTreeUnchanged\n"}
+{"Time":"2026-10-12T15:15:57.987741-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged"}
+{"Time":"2026-10-12T15:15:57.987742-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand"}
+{"Time":"2026-10-12T15:15:57.987743-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand","Output":"=== RUN   TestRootHelpNamesTheCancelCommand\n"}
+{"Time":"2026-10-12T15:15:57.987745-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand","Output":"=== PAUSE TestRootHelpNamesTheCancelCommand\n"}
+{"Time":"2026-10-12T15:15:57.987745-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand"}
+{"Time":"2026-10-12T15:15:57.987746-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem"}
+{"Time":"2026-10-12T15:15:57.987747-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem","Output":"=== RUN   TestCancelAcceptsAMergedQueueItem\n"}
+{"Time":"2026-10-12T15:15:57.987748-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem","Output":"=== PAUSE TestCancelAcceptsAMergedQueueItem\n"}
+{"Time":"2026-10-12T15:15:57.987749-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem"}
+{"Time":"2026-10-12T15:15:57.987759-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires"}
+{"Time":"2026-10-12T15:15:57.987759-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires","Output":"=== RUN   TestCancelRefusesMalformedRequires\n"}
+{"Time":"2026-10-12T15:15:57.98776-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires","Output":"=== PAUSE TestCancelRefusesMalformedRequires\n"}
+{"Time":"2026-10-12T15:15:57.987761-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires"}
+{"Time":"2026-10-12T15:15:57.987763-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun"}
+{"Time":"2026-10-12T15:15:57.987763-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun","Output":"=== RUN   TestCancelReclaimsAnOrphanedRun\n"}
+{"Time":"2026-10-12T15:15:57.987765-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun","Output":"=== PAUSE TestCancelReclaimsAnOrphanedRun\n"}
+{"Time":"2026-10-12T15:15:57.987765-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun"}
+{"Time":"2026-10-12T15:15:57.987775-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination"}
+{"Time":"2026-10-12T15:15:57.987776-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination","Output":"=== RUN   TestCancelRefusesOccupiedSourceDestination\n"}
+{"Time":"2026-10-12T15:15:57.987778-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination","Output":"=== PAUSE TestCancelRefusesOccupiedSourceDestination\n"}
+{"Time":"2026-10-12T15:15:57.987778-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination"}
+{"Time":"2026-10-12T15:15:57.987788-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne"}
+{"Time":"2026-10-12T15:15:57.987792-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne","Output":"=== RUN   TestCancelWriteFailureUsesExitOne\n"}
+{"Time":"2026-10-12T15:15:57.987797-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne","Output":"=== PAUSE TestCancelWriteFailureUsesExitOne\n"}
+{"Time":"2026-10-12T15:15:57.987801-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne"}
+{"Time":"2026-10-12T15:15:57.987808-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder"}
+{"Time":"2026-10-12T15:15:57.987809-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder\n"}
+{"Time":"2026-10-12T15:15:57.98781-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder\n"}
+{"Time":"2026-10-12T15:15:57.987811-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder"}
+{"Time":"2026-10-12T15:15:57.987812-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit"}
+{"Time":"2026-10-12T15:15:57.987813-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit","Output":"=== RUN   TestCancelRefusesOutsideGit\n"}
+{"Time":"2026-10-12T15:15:57.987814-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit","Output":"=== PAUSE TestCancelRefusesOutsideGit\n"}
+{"Time":"2026-10-12T15:15:57.987815-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit"}
+{"Time":"2026-10-12T15:15:57.987816-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph"}
+{"Time":"2026-10-12T15:15:57.987817-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph","Output":"=== RUN   TestCancelWithoutATaskGraph\n"}
+{"Time":"2026-10-12T15:15:57.987819-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph","Output":"=== PAUSE TestCancelWithoutATaskGraph\n"}
+{"Time":"2026-10-12T15:15:57.98782-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph"}
+{"Time":"2026-10-12T15:15:57.987821-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine"}
+{"Time":"2026-10-12T15:15:57.987821-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine","Output":"=== RUN   TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine\n"}
+{"Time":"2026-10-12T15:15:57.987836-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine","Output":"=== PAUSE TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine\n"}
+{"Time":"2026-10-12T15:15:57.987837-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine"}
+{"Time":"2026-10-12T15:15:57.987839-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine"}
+{"Time":"2026-10-12T15:15:57.98784-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine","Output":"=== RUN   TestCancelWarnsAboutACitationOnAPartlyRelinkedLine\n"}
+{"Time":"2026-10-12T15:15:57.987848-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine","Output":"=== PAUSE TestCancelWarnsAboutACitationOnAPartlyRelinkedLine\n"}
+{"Time":"2026-10-12T15:15:57.987849-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine"}
+{"Time":"2026-10-12T15:15:57.98785-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer"}
+{"Time":"2026-10-12T15:15:57.987851-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer","Output":"=== RUN   TestSupersedeRefusesACancelledDeliverer\n"}
+{"Time":"2026-10-12T15:15:57.987852-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer","Output":"=== PAUSE TestSupersedeRefusesACancelledDeliverer\n"}
+{"Time":"2026-10-12T15:15:57.987853-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer"}
+{"Time":"2026-10-12T15:15:57.987854-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec"}
+{"Time":"2026-10-12T15:15:57.987855-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec","Output":"=== RUN   TestDeliverStartRefusesARequiredCancelledSpec\n"}
+{"Time":"2026-10-12T15:15:57.987856-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec","Output":"=== PAUSE TestDeliverStartRefusesARequiredCancelledSpec\n"}
+{"Time":"2026-10-12T15:15:57.987857-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec"}
+{"Time":"2026-10-12T15:15:57.987859-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec"}
+{"Time":"2026-10-12T15:15:57.987859-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec","Output":"=== RUN   TestDeliverRetryRefusesACancelledSpec\n"}
+{"Time":"2026-10-12T15:15:57.98786-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec","Output":"=== PAUSE TestDeliverRetryRefusesACancelledSpec\n"}
+{"Time":"2026-10-12T15:15:57.987861-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec"}
+{"Time":"2026-10-12T15:15:57.987863-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987864-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord","Output":"=== RUN   TestReviewReadsACancelledArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987913-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord","Output":"=== PAUSE TestReviewReadsACancelledArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.987916-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.987917-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord"}
+{"Time":"2026-10-12T15:15:57.987917-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord","Output":"=== RUN   TestRunCausesReportACancelledRecord\n"}
+{"Time":"2026-10-12T15:15:57.98792-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord","Output":"=== PAUSE TestRunCausesReportACancelledRecord\n"}
+{"Time":"2026-10-12T15:15:57.987921-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord"}
+{"Time":"2026-10-12T15:15:57.987923-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord"}
+{"Time":"2026-10-12T15:15:57.987924-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord","Output":"=== RUN   TestHistorySanitizeLeavesACancelledRecord\n"}
+{"Time":"2026-10-12T15:15:57.987925-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord","Output":"=== PAUSE TestHistorySanitizeLeavesACancelledRecord\n"}
+{"Time":"2026-10-12T15:15:57.987926-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord"}
+{"Time":"2026-10-12T15:15:57.987927-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions"}
+{"Time":"2026-10-12T15:15:57.987928-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions\n"}
+{"Time":"2026-10-12T15:15:57.987935-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions","Output":"=== PAUSE TestSupersedeAcceptsOtherArchiveRecordDispositions\n"}
+{"Time":"2026-10-12T15:15:57.987936-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions"}
+{"Time":"2026-10-12T15:15:57.988075-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord"}
+{"Time":"2026-10-12T15:15:57.988078-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord","Output":"=== CONT  TestPrerequisitesCountAnArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:57.988083-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun"}
+{"Time":"2026-10-12T15:15:57.988084-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun","Output":"=== CONT  TestCancelReclaimsAnOrphanedRun\n"}
+{"Time":"2026-10-12T15:15:57.988087-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec"}
+{"Time":"2026-10-12T15:15:57.988088-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec","Output":"=== CONT  TestCancelTranscriptRefusesARequiringSpec\n"}
+{"Time":"2026-10-12T15:15:57.988093-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem"}
+{"Time":"2026-10-12T15:15:57.988094-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem","Output":"=== CONT  TestCancelTranscriptRefusesAnUnfinishedQueueItem\n"}
+{"Time":"2026-10-12T15:15:57.988119-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer"}
+{"Time":"2026-10-12T15:15:57.988123-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer","Output":"=== CONT  TestSupersedeRefusesACancelledDeliverer\n"}
+{"Time":"2026-10-12T15:15:57.988144-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord"}
+{"Time":"2026-10-12T15:15:57.988147-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord","Output":"=== CONT  TestRunCausesReportACancelledRecord\n"}
+{"Time":"2026-10-12T15:15:57.988176-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun"}
+{"Time":"2026-10-12T15:15:57.988186-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun","Output":"=== CONT  TestCancelTranscriptRefusesAnActiveRun\n"}
+{"Time":"2026-10-12T15:15:57.988191-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions"}
+{"Time":"2026-10-12T15:15:57.988193-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions","Output":"=== CONT  TestSupersedeAcceptsOtherArchiveRecordDispositions\n"}
+{"Time":"2026-10-12T15:15:57.988196-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/pass"}
+{"Time":"2026-10-12T15:15:57.988197-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/pass","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions/pass\n"}
+{"Time":"2026-10-12T15:15:57.988274-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord"}
+{"Time":"2026-10-12T15:15:57.988279-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord","Output":"=== CONT  TestHistorySanitizeLeavesACancelledRecord\n"}
+{"Time":"2026-10-12T15:15:57.988296-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec"}
+{"Time":"2026-10-12T15:15:57.988298-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec","Output":"=== CONT  TestDeliverRetryRefusesACancelledSpec\n"}
+{"Time":"2026-10-12T15:15:57.988299-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/parked_queue"}
+{"Time":"2026-10-12T15:15:57.9883-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/parked_queue","Output":"=== RUN   TestDeliverRetryRefusesACancelledSpec/parked_queue\n"}
+{"Time":"2026-10-12T15:15:57.988302-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_present"}
+{"Time":"2026-10-12T15:15:57.988303-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_present","Output":"=== RUN   TestPrerequisitesCountAnArchiveRecord/source_present\n"}
+{"Time":"2026-10-12T15:15:57.98831-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_present"}
+{"Time":"2026-10-12T15:15:57.988311-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_present","Output":"=== RUN   TestRunCausesReportACancelledRecord/source_present\n"}
+{"Time":"2026-10-12T15:15:58.089221-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/pass","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions/pass (0.10s)\n"}
+{"Time":"2026-10-12T15:15:58.089238-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/pass","Elapsed":0.1}
+{"Time":"2026-10-12T15:15:58.089249-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/partial"}
+{"Time":"2026-10-12T15:15:58.089258-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/partial","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions/partial\n"}
+{"Time":"2026-10-12T15:15:58.135255-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer","Output":"--- PASS: TestSupersedeRefusesACancelledDeliverer (0.15s)\n"}
+{"Time":"2026-10-12T15:15:58.135276-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeRefusesACancelledDeliverer","Elapsed":0.15}
+{"Time":"2026-10-12T15:15:58.13528-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord"}
+{"Time":"2026-10-12T15:15:58.13529-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord","Output":"=== CONT  TestSupersedeAcceptsAnArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:58.166739-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/parked_queue","Output":"--- PASS: TestDeliverRetryRefusesACancelledSpec/parked_queue (0.18s)\n"}
+{"Time":"2026-10-12T15:15:58.166759-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/parked_queue","Elapsed":0.18}
+{"Time":"2026-10-12T15:15:58.166764-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/absent"}
+{"Time":"2026-10-12T15:15:58.166766-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/absent","Output":"=== RUN   TestDeliverRetryRefusesACancelledSpec/absent\n"}
+{"Time":"2026-10-12T15:15:58.194196-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem","Output":"--- PASS: TestCancelTranscriptRefusesAnUnfinishedQueueItem (0.21s)\n"}
+{"Time":"2026-10-12T15:15:58.194211-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnUnfinishedQueueItem","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:58.194215-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord"}
+{"Time":"2026-10-12T15:15:58.194216-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord","Output":"=== CONT  TestReviewReadsACancelledArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:58.196348-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/partial","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions/partial (0.11s)\n"}
+{"Time":"2026-10-12T15:15:58.196364-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/partial","Elapsed":0.11}
+{"Time":"2026-10-12T15:15:58.196387-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/qa-override"}
+{"Time":"2026-10-12T15:15:58.19639-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/qa-override","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions/qa-override\n"}
+{"Time":"2026-10-12T15:15:58.196912-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun","Output":"--- PASS: TestCancelTranscriptRefusesAnActiveRun (0.21s)\n"}
+{"Time":"2026-10-12T15:15:58.196922-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesAnActiveRun","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:58.196926-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources"}
+{"Time":"2026-10-12T15:15:58.196928-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources","Output":"=== CONT  TestCancelTranscriptCancelsASpecWithSources\n"}
+{"Time":"2026-10-12T15:15:58.238883-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec","Output":"--- PASS: TestCancelTranscriptRefusesARequiringSpec (0.25s)\n"}
+{"Time":"2026-10-12T15:15:58.238911-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptRefusesARequiringSpec","Elapsed":0.25}
+{"Time":"2026-10-12T15:15:58.238917-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand"}
+{"Time":"2026-10-12T15:15:58.238919-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand","Output":"=== CONT  TestRootHelpNamesTheCancelCommand\n"}
+{"Time":"2026-10-12T15:15:58.350768-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun","Output":"--- PASS: TestCancelReclaimsAnOrphanedRun (0.36s)\n"}
+{"Time":"2026-10-12T15:15:58.351787-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelReclaimsAnOrphanedRun","Elapsed":0.36}
+{"Time":"2026-10-12T15:15:58.351804-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires"}
+{"Time":"2026-10-12T15:15:58.351839-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires","Output":"=== CONT  TestCancelRefusesMalformedRequires\n"}
+{"Time":"2026-10-12T15:15:58.372721-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/qa-override","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions/qa-override (0.18s)\n"}
+{"Time":"2026-10-12T15:15:58.373282-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/qa-override","Elapsed":0.18}
+{"Time":"2026-10-12T15:15:58.374085-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/failed-qa"}
+{"Time":"2026-10-12T15:15:58.374098-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/failed-qa","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions/failed-qa\n"}
+{"Time":"2026-10-12T15:15:58.459272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand","Output":"--- PASS: TestRootHelpNamesTheCancelCommand (0.22s)\n"}
+{"Time":"2026-10-12T15:15:58.459342-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRootHelpNamesTheCancelCommand","Elapsed":0.22}
+{"Time":"2026-10-12T15:15:58.459348-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem"}
+{"Time":"2026-10-12T15:15:58.459369-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem","Output":"=== CONT  TestCancelAcceptsAMergedQueueItem\n"}
+{"Time":"2026-10-12T15:15:58.490333-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/absent","Output":"--- PASS: TestDeliverRetryRefusesACancelledSpec/absent (0.32s)\n"}
+{"Time":"2026-10-12T15:15:58.490364-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/absent","Elapsed":0.32}
+{"Time":"2026-10-12T15:15:58.490373-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/malformed"}
+{"Time":"2026-10-12T15:15:58.490376-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/malformed","Output":"=== RUN   TestDeliverRetryRefusesACancelledSpec/malformed\n"}
+{"Time":"2026-10-12T15:15:58.580229-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord","Output":"--- PASS: TestHistorySanitizeLeavesACancelledRecord (0.59s)\n"}
+{"Time":"2026-10-12T15:15:58.58025-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestHistorySanitizeLeavesACancelledRecord","Elapsed":0.59}
+{"Time":"2026-10-12T15:15:58.580254-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit"}
+{"Time":"2026-10-12T15:15:58.580256-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit","Output":"=== CONT  TestCancelRefusesOutsideGit\n"}
+{"Time":"2026-10-12T15:15:58.595455-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/failed-qa","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions/failed-qa (0.22s)\n"}
+{"Time":"2026-10-12T15:15:58.595511-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/failed-qa","Elapsed":0.22}
+{"Time":"2026-10-12T15:15:58.595539-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/superseded"}
+{"Time":"2026-10-12T15:15:58.595544-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/superseded","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions/superseded\n"}
+{"Time":"2026-10-12T15:15:58.617839-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_present","Output":"--- PASS: TestRunCausesReportACancelledRecord/source_present (0.63s)\n"}
+{"Time":"2026-10-12T15:15:58.617855-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_present","Elapsed":0.63}
+{"Time":"2026-10-12T15:15:58.617858-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_absent"}
+{"Time":"2026-10-12T15:15:58.61786-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_absent","Output":"=== RUN   TestRunCausesReportACancelledRecord/source_absent\n"}
+{"Time":"2026-10-12T15:15:58.665859-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_present","Output":"--- PASS: TestPrerequisitesCountAnArchiveRecord/source_present (0.68s)\n"}
+{"Time":"2026-10-12T15:15:58.665907-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_present","Elapsed":0.68}
+{"Time":"2026-10-12T15:15:58.665912-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_absent"}
+{"Time":"2026-10-12T15:15:58.665915-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_absent","Output":"=== RUN   TestPrerequisitesCountAnArchiveRecord/source_absent\n"}
+{"Time":"2026-10-12T15:15:58.689957-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/malformed","Output":"--- PASS: TestDeliverRetryRefusesACancelledSpec/malformed (0.20s)\n"}
+{"Time":"2026-10-12T15:15:58.689981-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec/malformed","Elapsed":0.2}
+{"Time":"2026-10-12T15:15:58.689986-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec","Output":"--- PASS: TestDeliverRetryRefusesACancelledSpec (0.70s)\n"}
+{"Time":"2026-10-12T15:15:58.690007-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverRetryRefusesACancelledSpec","Elapsed":0.7}
+{"Time":"2026-10-12T15:15:58.69001-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine"}
+{"Time":"2026-10-12T15:15:58.690012-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine","Output":"=== CONT  TestCancelWarnsAboutACitationOnAPartlyRelinkedLine\n"}
+{"Time":"2026-10-12T15:15:58.694647-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord","Output":"--- PASS: TestSupersedeAcceptsAnArchiveRecord (0.56s)\n"}
+{"Time":"2026-10-12T15:15:58.694663-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsAnArchiveRecord","Elapsed":0.56}
+{"Time":"2026-10-12T15:15:58.694666-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine"}
+{"Time":"2026-10-12T15:15:58.694667-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine","Output":"=== CONT  TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine\n"}
+{"Time":"2026-10-12T15:15:58.707804-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires","Output":"--- PASS: TestCancelRefusesMalformedRequires (0.36s)\n"}
+{"Time":"2026-10-12T15:15:58.707818-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesMalformedRequires","Elapsed":0.36}
+{"Time":"2026-10-12T15:15:58.707821-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph"}
+{"Time":"2026-10-12T15:15:58.707822-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph","Output":"=== CONT  TestCancelWithoutATaskGraph\n"}
+{"Time":"2026-10-12T15:15:58.726895-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources","Output":"--- PASS: TestCancelTranscriptCancelsASpecWithSources (0.53s)\n"}
+{"Time":"2026-10-12T15:15:58.726917-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptCancelsASpecWithSources","Elapsed":0.53}
+{"Time":"2026-10-12T15:15:58.726922-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec"}
+{"Time":"2026-10-12T15:15:58.726924-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec","Output":"=== CONT  TestDeliverStartRefusesARequiredCancelledSpec\n"}
+{"Time":"2026-10-12T15:15:58.730022-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/superseded","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions/superseded (0.14s)\n"}
+{"Time":"2026-10-12T15:15:58.730034-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/superseded","Elapsed":0.14}
+{"Time":"2026-10-12T15:15:58.730038-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/no-qa"}
+{"Time":"2026-10-12T15:15:58.730039-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/no-qa","Output":"=== RUN   TestSupersedeAcceptsOtherArchiveRecordDispositions/no-qa\n"}
+{"Time":"2026-10-12T15:15:58.73603-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit","Output":"--- PASS: TestCancelRefusesOutsideGit (0.16s)\n"}
+{"Time":"2026-10-12T15:15:58.736045-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOutsideGit","Elapsed":0.16}
+{"Time":"2026-10-12T15:15:58.736049-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne"}
+{"Time":"2026-10-12T15:15:58.736051-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne","Output":"=== CONT  TestCancelWriteFailureUsesExitOne\n"}
+{"Time":"2026-10-12T15:15:58.817671-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem","Output":"--- PASS: TestCancelAcceptsAMergedQueueItem (0.36s)\n"}
+{"Time":"2026-10-12T15:15:58.817934-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelAcceptsAMergedQueueItem","Elapsed":0.36}
+{"Time":"2026-10-12T15:15:58.817946-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder"}
+{"Time":"2026-10-12T15:15:58.817966-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder\n"}
+{"Time":"2026-10-12T15:15:58.81797-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug"}
+{"Time":"2026-10-12T15:15:58.817972-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder/missing_slug\n"}
+{"Time":"2026-10-12T15:15:58.817975-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder/missing_slug\n"}
+{"Time":"2026-10-12T15:15:58.817977-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug"}
+{"Time":"2026-10-12T15:15:58.817982-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug"}
+{"Time":"2026-10-12T15:15:58.817984-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug\n"}
+{"Time":"2026-10-12T15:15:58.817986-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug\n"}
+{"Time":"2026-10-12T15:15:58.817989-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug"}
+{"Time":"2026-10-12T15:15:58.817991-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason"}
+{"Time":"2026-10-12T15:15:58.817996-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder/blank_reason\n"}
+{"Time":"2026-10-12T15:15:58.817998-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder/blank_reason\n"}
+{"Time":"2026-10-12T15:15:58.818-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason"}
+{"Time":"2026-10-12T15:15:58.818002-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected"}
+{"Time":"2026-10-12T15:15:58.818004-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected\n"}
+{"Time":"2026-10-12T15:15:58.818006-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected\n"}
+{"Time":"2026-10-12T15:15:58.818008-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected"}
+{"Time":"2026-10-12T15:15:58.81801-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument"}
+{"Time":"2026-10-12T15:15:58.818013-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument\n"}
+{"Time":"2026-10-12T15:15:58.818015-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument\n"}
+{"Time":"2026-10-12T15:15:58.818016-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument"}
+{"Time":"2026-10-12T15:15:58.818025-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug"}
+{"Time":"2026-10-12T15:15:58.818028-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug","Output":"=== RUN   TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug\n"}
+{"Time":"2026-10-12T15:15:58.81803-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug","Output":"=== PAUSE TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug\n"}
+{"Time":"2026-10-12T15:15:58.818031-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug"}
+{"Time":"2026-10-12T15:15:58.818033-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination"}
+{"Time":"2026-10-12T15:15:58.818035-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination","Output":"=== CONT  TestCancelRefusesOccupiedSourceDestination\n"}
+{"Time":"2026-10-12T15:15:58.844235-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/no-qa","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions/no-qa (0.11s)\n"}
+{"Time":"2026-10-12T15:15:58.844254-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions/no-qa","Elapsed":0.11}
+{"Time":"2026-10-12T15:15:58.84426-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions","Output":"--- PASS: TestSupersedeAcceptsOtherArchiveRecordDispositions (0.86s)\n"}
+{"Time":"2026-10-12T15:15:58.844263-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSupersedeAcceptsOtherArchiveRecordDispositions","Elapsed":0.86}
+{"Time":"2026-10-12T15:15:58.844265-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage"}
+{"Time":"2026-10-12T15:15:58.844267-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage\n"}
+{"Time":"2026-10-12T15:15:58.84427-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued"}
+{"Time":"2026-10-12T15:15:58.844272-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/queued\n"}
+{"Time":"2026-10-12T15:15:58.844274-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/queued\n"}
+{"Time":"2026-10-12T15:15:58.844276-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued"}
+{"Time":"2026-10-12T15:15:58.844279-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running"}
+{"Time":"2026-10-12T15:15:58.844281-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/running\n"}
+{"Time":"2026-10-12T15:15:58.844283-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/running\n"}
+{"Time":"2026-10-12T15:15:58.844284-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running"}
+{"Time":"2026-10-12T15:15:58.844286-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing"}
+{"Time":"2026-10-12T15:15:58.844288-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/reviewing\n"}
+{"Time":"2026-10-12T15:15:58.844293-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/reviewing\n"}
+{"Time":"2026-10-12T15:15:58.844295-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing"}
+{"Time":"2026-10-12T15:15:58.844297-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving"}
+{"Time":"2026-10-12T15:15:58.844298-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/archiving\n"}
+{"Time":"2026-10-12T15:15:58.8443-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/archiving\n"}
+{"Time":"2026-10-12T15:15:58.844302-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving"}
+{"Time":"2026-10-12T15:15:58.844305-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating"}
+{"Time":"2026-10-12T15:15:58.844306-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/gating\n"}
+{"Time":"2026-10-12T15:15:58.844308-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/gating\n"}
+{"Time":"2026-10-12T15:15:58.84431-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating"}
+{"Time":"2026-10-12T15:15:58.844312-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing"}
+{"Time":"2026-10-12T15:15:58.844313-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/publishing\n"}
+{"Time":"2026-10-12T15:15:58.844315-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/publishing\n"}
+{"Time":"2026-10-12T15:15:58.844325-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing"}
+{"Time":"2026-10-12T15:15:58.844327-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking"}
+{"Time":"2026-10-12T15:15:58.844329-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/checking\n"}
+{"Time":"2026-10-12T15:15:58.844335-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/checking\n"}
+{"Time":"2026-10-12T15:15:58.844337-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking"}
+{"Time":"2026-10-12T15:15:58.844339-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging"}
+{"Time":"2026-10-12T15:15:58.84434-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging","Output":"=== RUN   TestCancelRefusesEveryUnfinishedQueueStage/merging\n"}
+{"Time":"2026-10-12T15:15:58.844349-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging","Output":"=== PAUSE TestCancelRefusesEveryUnfinishedQueueStage/merging\n"}
+{"Time":"2026-10-12T15:15:58.844351-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging"}
+{"Time":"2026-10-12T15:15:58.844353-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation"}
+{"Time":"2026-10-12T15:15:58.844355-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation","Output":"=== CONT  TestCancelTranscriptWarnsAboutAParkedItemAndACitation\n"}
+{"Time":"2026-10-12T15:15:58.89712-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec","Output":"--- PASS: TestDeliverStartRefusesARequiredCancelledSpec (0.17s)\n"}
+{"Time":"2026-10-12T15:15:58.897141-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverStartRefusesARequiredCancelledSpec","Elapsed":0.17}
+{"Time":"2026-10-12T15:15:58.897152-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord"}
+{"Time":"2026-10-12T15:15:58.897158-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"=== CONT  TestArchiveCommandLeavesTheArchiveRecord\n"}
+{"Time":"2026-10-12T15:15:58.897578-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false"}
+{"Time":"2026-10-12T15:15:58.897581-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false","Output":"=== RUN   TestArchiveCommandLeavesTheArchiveRecord/false\n"}
+{"Time":"2026-10-12T15:15:58.978754-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_absent","Output":"--- PASS: TestRunCausesReportACancelledRecord/source_absent (0.36s)\n"}
+{"Time":"2026-10-12T15:15:58.978768-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord/source_absent","Elapsed":0.36}
+{"Time":"2026-10-12T15:15:58.978771-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord","Output":"--- PASS: TestRunCausesReportACancelledRecord (0.99s)\n"}
+{"Time":"2026-10-12T15:15:58.978779-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunCausesReportACancelledRecord","Elapsed":0.99}
+{"Time":"2026-10-12T15:15:58.978781-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp"}
+{"Time":"2026-10-12T15:15:58.978782-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp","Output":"=== CONT  TestCancelTranscriptPrintsHelp\n"}
+{"Time":"2026-10-12T15:15:58.996737-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord","Output":"--- PASS: TestReviewReadsACancelledArchiveRecord (0.80s)\n"}
+{"Time":"2026-10-12T15:15:58.996754-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewReadsACancelledArchiveRecord","Elapsed":0.8}
+{"Time":"2026-10-12T15:15:58.996757-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder"}
+{"Time":"2026-10-12T15:15:58.996758-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder","Output":"=== CONT  TestReviewDiffOmitsTheRemovedSpecFolder\n"}
+{"Time":"2026-10-12T15:15:58.996759-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_present"}
+{"Time":"2026-10-12T15:15:58.99676-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_present","Output":"=== RUN   TestReviewDiffOmitsTheRemovedSpecFolder/source_present\n"}
+{"Time":"2026-10-12T15:15:59.070849-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp","Output":"--- PASS: TestCancelTranscriptPrintsHelp (0.09s)\n"}
+{"Time":"2026-10-12T15:15:59.070886-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptPrintsHelp","Elapsed":0.09}
+{"Time":"2026-10-12T15:15:59.070894-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged"}
+{"Time":"2026-10-12T15:15:59.070896-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged","Output":"=== CONT  TestCancelRefusalsLeaveTheTreeUnchanged\n"}
+{"Time":"2026-10-12T15:15:59.070898-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason"}
+{"Time":"2026-10-12T15:15:59.070899-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason","Output":"=== RUN   TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason\n"}
+{"Time":"2026-10-12T15:15:59.070903-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason","Output":"=== PAUSE TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason\n"}
+{"Time":"2026-10-12T15:15:59.070903-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason"}
+{"Time":"2026-10-12T15:15:59.070907-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec"}
+{"Time":"2026-10-12T15:15:59.070907-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec","Output":"=== RUN   TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec\n"}
+{"Time":"2026-10-12T15:15:59.070909-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec","Output":"=== PAUSE TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec\n"}
+{"Time":"2026-10-12T15:15:59.070909-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec"}
+{"Time":"2026-10-12T15:15:59.070975-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted"}
+{"Time":"2026-10-12T15:15:59.070985-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted","Output":"=== RUN   TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted\n"}
+{"Time":"2026-10-12T15:15:59.071082-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted","Output":"=== PAUSE TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted\n"}
+{"Time":"2026-10-12T15:15:59.07109-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted"}
+{"Time":"2026-10-12T15:15:59.071124-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession"}
+{"Time":"2026-10-12T15:15:59.071128-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession","Output":"=== RUN   TestCancelRefusalsLeaveTheTreeUnchanged/supersession\n"}
+{"Time":"2026-10-12T15:15:59.071156-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession","Output":"=== PAUSE TestCancelRefusalsLeaveTheTreeUnchanged/supersession\n"}
+{"Time":"2026-10-12T15:15:59.071165-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession"}
+{"Time":"2026-10-12T15:15:59.071191-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin"}
+{"Time":"2026-10-12T15:15:59.071195-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin","Output":"=== RUN   TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin\n"}
+{"Time":"2026-10-12T15:15:59.071199-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin","Output":"=== PAUSE TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin\n"}
+{"Time":"2026-10-12T15:15:59.071201-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin"}
+{"Time":"2026-10-12T15:15:59.071244-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug"}
+{"Time":"2026-10-12T15:15:59.071247-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder/missing_slug\n"}
+{"Time":"2026-10-12T15:15:59.082915-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine","Output":"--- PASS: TestCancelWarnsAboutACitationOnAPartlyRelinkedLine (0.39s)\n"}
+{"Time":"2026-10-12T15:15:59.083108-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelWarnsAboutACitationOnAPartlyRelinkedLine","Elapsed":0.39}
+{"Time":"2026-10-12T15:15:59.083116-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph","Output":"--- PASS: TestCancelWithoutATaskGraph (0.38s)\n"}
+{"Time":"2026-10-12T15:15:59.083462-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelWithoutATaskGraph","Elapsed":0.38}
+{"Time":"2026-10-12T15:15:59.08347-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected"}
+{"Time":"2026-10-12T15:15:59.083472-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected\n"}
+{"Time":"2026-10-12T15:15:59.083476-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug"}
+{"Time":"2026-10-12T15:15:59.083478-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug\n"}
+{"Time":"2026-10-12T15:15:59.08476-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne","Output":"--- PASS: TestCancelWriteFailureUsesExitOne (0.35s)\n"}
+{"Time":"2026-10-12T15:15:59.084779-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelWriteFailureUsesExitOne","Elapsed":0.35}
+{"Time":"2026-10-12T15:15:59.084784-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument"}
+{"Time":"2026-10-12T15:15:59.084786-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument\n"}
+{"Time":"2026-10-12T15:15:59.161034-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine","Output":"--- PASS: TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine (0.47s)\n"}
+{"Time":"2026-10-12T15:15:59.161048-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine","Elapsed":0.47}
+{"Time":"2026-10-12T15:15:59.161051-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason"}
+{"Time":"2026-10-12T15:15:59.161052-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder/blank_reason\n"}
+{"Time":"2026-10-12T15:15:59.165779-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_absent","Output":"--- PASS: TestPrerequisitesCountAnArchiveRecord/source_absent (0.50s)\n"}
+{"Time":"2026-10-12T15:15:59.165807-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord/source_absent","Elapsed":0.5}
+{"Time":"2026-10-12T15:15:59.165812-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord","Output":"--- PASS: TestPrerequisitesCountAnArchiveRecord (1.18s)\n"}
+{"Time":"2026-10-12T15:15:59.165815-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestPrerequisitesCountAnArchiveRecord","Elapsed":1.18}
+{"Time":"2026-10-12T15:15:59.165817-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug"}
+{"Time":"2026-10-12T15:15:59.165819-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug","Output":"=== CONT  TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug\n"}
+{"Time":"2026-10-12T15:15:59.178588-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination","Output":"--- PASS: TestCancelRefusesOccupiedSourceDestination (0.36s)\n"}
+{"Time":"2026-10-12T15:15:59.178601-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesOccupiedSourceDestination","Elapsed":0.36}
+{"Time":"2026-10-12T15:15:59.178605-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued"}
+{"Time":"2026-10-12T15:15:59.178611-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/queued\n"}
+{"Time":"2026-10-12T15:15:59.207379-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder/missing_slug (0.13s)\n"}
+{"Time":"2026-10-12T15:15:59.207392-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/missing_slug","Elapsed":0.13}
+{"Time":"2026-10-12T15:15:59.207396-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating"}
+{"Time":"2026-10-12T15:15:59.207398-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/gating\n"}
+{"Time":"2026-10-12T15:15:59.2074-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation","Output":"--- PASS: TestCancelTranscriptWarnsAboutAParkedItemAndACitation (0.36s)\n"}
+{"Time":"2026-10-12T15:15:59.207402-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelTranscriptWarnsAboutAParkedItemAndACitation","Elapsed":0.36}
+{"Time":"2026-10-12T15:15:59.207402-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging"}
+{"Time":"2026-10-12T15:15:59.207403-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/merging\n"}
+{"Time":"2026-10-12T15:15:59.221259-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected (0.14s)\n"}
+{"Time":"2026-10-12T15:15:59.22128-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/reason_before_unexpected","Elapsed":0.14}
+{"Time":"2026-10-12T15:15:59.221285-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking"}
+{"Time":"2026-10-12T15:15:59.221287-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/checking\n"}
+{"Time":"2026-10-12T15:15:59.233273-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument (0.15s)\n"}
+{"Time":"2026-10-12T15:15:59.233287-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unexpected_argument","Elapsed":0.15}
+{"Time":"2026-10-12T15:15:59.23329-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing"}
+{"Time":"2026-10-12T15:15:59.233291-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/publishing\n"}
+{"Time":"2026-10-12T15:15:59.269666-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug (0.19s)\n"}
+{"Time":"2026-10-12T15:15:59.269692-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/unsafe_slug","Elapsed":0.19}
+{"Time":"2026-10-12T15:15:59.269697-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing"}
+{"Time":"2026-10-12T15:15:59.269699-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/reviewing\n"}
+{"Time":"2026-10-12T15:15:59.315707-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving"}
+{"Time":"2026-10-12T15:15:59.315748-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/archiving\n"}
+{"Time":"2026-10-12T15:15:59.315756-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder/blank_reason (0.15s)\n"}
+{"Time":"2026-10-12T15:15:59.330258-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/blank_reason","Elapsed":0.15}
+{"Time":"2026-10-12T15:15:59.330279-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug (0.16s)\n"}
+{"Time":"2026-10-12T15:15:59.330286-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder/flag_without_slug","Elapsed":0.16}
+{"Time":"2026-10-12T15:15:59.330289-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder","Output":"--- PASS: TestCancelArgumentRefusalsFollowContractOrder (0.00s)\n"}
+{"Time":"2026-10-12T15:15:59.330293-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelArgumentRefusalsFollowContractOrder","Elapsed":0}
+{"Time":"2026-10-12T15:15:59.330295-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running"}
+{"Time":"2026-10-12T15:15:59.330297-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running","Output":"=== CONT  TestCancelRefusesEveryUnfinishedQueueStage/running\n"}
+{"Time":"2026-10-12T15:15:59.332739-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false","Output":"--- PASS: TestArchiveCommandLeavesTheArchiveRecord/false (0.44s)\n"}
+{"Time":"2026-10-12T15:15:59.332758-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/false","Elapsed":0.44}
+{"Time":"2026-10-12T15:15:59.333304-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true"}
+{"Time":"2026-10-12T15:15:59.333309-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true","Output":"=== RUN   TestArchiveCommandLeavesTheArchiveRecord/true\n"}
+{"Time":"2026-10-12T15:15:59.374238-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/queued (0.20s)\n"}
+{"Time":"2026-10-12T15:15:59.374256-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/queued","Elapsed":0.2}
+{"Time":"2026-10-12T15:15:59.374259-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason"}
+{"Time":"2026-10-12T15:15:59.374261-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason","Output":"=== CONT  TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason\n"}
+{"Time":"2026-10-12T15:15:59.416242-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/gating (0.21s)\n"}
+{"Time":"2026-10-12T15:15:59.416268-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/gating","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:59.416273-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession"}
+{"Time":"2026-10-12T15:15:59.416275-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession","Output":"=== CONT  TestCancelRefusalsLeaveTheTreeUnchanged/supersession\n"}
+{"Time":"2026-10-12T15:15:59.418434-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/merging (0.21s)\n"}
+{"Time":"2026-10-12T15:15:59.418453-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/merging","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:59.418458-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin"}
+{"Time":"2026-10-12T15:15:59.418459-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin","Output":"=== CONT  TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin\n"}
+{"Time":"2026-10-12T15:15:59.431275-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/publishing (0.20s)\n"}
+{"Time":"2026-10-12T15:15:59.43131-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/publishing","Elapsed":0.2}
+{"Time":"2026-10-12T15:15:59.431315-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted"}
+{"Time":"2026-10-12T15:15:59.431317-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted","Output":"=== CONT  TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted\n"}
+{"Time":"2026-10-12T15:15:59.442846-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_present","Output":"--- PASS: TestReviewDiffOmitsTheRemovedSpecFolder/source_present (0.45s)\n"}
+{"Time":"2026-10-12T15:15:59.442866-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_present","Elapsed":0.45}
+{"Time":"2026-10-12T15:15:59.44294-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_absent"}
+{"Time":"2026-10-12T15:15:59.442943-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_absent","Output":"=== RUN   TestReviewDiffOmitsTheRemovedSpecFolder/source_absent\n"}
+{"Time":"2026-10-12T15:15:59.449309-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/checking (0.23s)\n"}
+{"Time":"2026-10-12T15:15:59.449362-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/checking","Elapsed":0.23}
+{"Time":"2026-10-12T15:15:59.449372-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec"}
+{"Time":"2026-10-12T15:15:59.449374-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec","Output":"=== CONT  TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec\n"}
+{"Time":"2026-10-12T15:15:59.480923-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/reviewing (0.21s)\n"}
+{"Time":"2026-10-12T15:15:59.50564-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/reviewing","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:59.505673-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason","Output":"--- PASS: TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason (0.13s)\n"}
+{"Time":"2026-10-12T15:15:59.522384-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/missing_reason","Elapsed":0.13}
+{"Time":"2026-10-12T15:15:59.522401-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/archiving (0.21s)\n"}
+{"Time":"2026-10-12T15:15:59.54086-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/archiving","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:59.540881-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage/running (0.21s)\n"}
+{"Time":"2026-10-12T15:15:59.540889-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage/running","Elapsed":0.21}
+{"Time":"2026-10-12T15:15:59.540891-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage","Output":"--- PASS: TestCancelRefusesEveryUnfinishedQueueStage (0.00s)\n"}
+{"Time":"2026-10-12T15:15:59.584508-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusesEveryUnfinishedQueueStage","Elapsed":0}
+{"Time":"2026-10-12T15:15:59.584529-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec","Output":"--- PASS: TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec (0.14s)\n"}
+{"Time":"2026-10-12T15:15:59.595964-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/unknown_Spec","Elapsed":0.14}
+{"Time":"2026-10-12T15:15:59.595983-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted","Output":"--- PASS: TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted (0.17s)\n"}
+{"Time":"2026-10-12T15:15:59.604022-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/uncommitted","Elapsed":0.17}
+{"Time":"2026-10-12T15:15:59.604046-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin","Output":"--- PASS: TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin (0.19s)\n"}
+{"Time":"2026-10-12T15:15:59.652069-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/non-Markdown_pin","Elapsed":0.19}
+{"Time":"2026-10-12T15:15:59.652084-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true","Output":"--- PASS: TestArchiveCommandLeavesTheArchiveRecord/true (0.32s)\n"}
+{"Time":"2026-10-12T15:15:59.652087-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord/true","Elapsed":0.32}
+{"Time":"2026-10-12T15:15:59.652089-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Output":"--- PASS: TestArchiveCommandLeavesTheArchiveRecord (0.75s)\n"}
+{"Time":"2026-10-12T15:15:59.662767-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestArchiveCommandLeavesTheArchiveRecord","Elapsed":0.75}
+{"Time":"2026-10-12T15:15:59.662782-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession","Output":"--- PASS: TestCancelRefusalsLeaveTheTreeUnchanged/supersession (0.25s)\n"}
+{"Time":"2026-10-12T15:15:59.662792-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged/supersession","Elapsed":0.25}
+{"Time":"2026-10-12T15:15:59.662794-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged","Output":"--- PASS: TestCancelRefusalsLeaveTheTreeUnchanged (0.00s)\n"}
+{"Time":"2026-10-12T15:15:59.728038-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestCancelRefusalsLeaveTheTreeUnchanged","Elapsed":0}
+{"Time":"2026-10-12T15:15:59.728055-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_absent","Output":"--- PASS: TestReviewDiffOmitsTheRemovedSpecFolder/source_absent (0.29s)\n"}
+{"Time":"2026-10-12T15:15:59.728099-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder/source_absent","Elapsed":0.29}
+{"Time":"2026-10-12T15:15:59.728106-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder","Output":"--- PASS: TestReviewDiffOmitsTheRemovedSpecFolder (0.73s)\n"}
+{"Time":"2026-10-12T15:15:59.728161-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestReviewDiffOmitsTheRemovedSpecFolder","Elapsed":0.73}
+{"Time":"2026-10-12T15:15:59.728164-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"PASS\n"}
+{"Time":"2026-10-12T15:15:59.826424-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"suiteguard: guard cost: measured 2580 paths; fingerprint took 100.5875ms before and 98.235125ms after\n"}
+{"Time":"2026-10-12T15:15:59.82812-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"ok  \troundfix/internal/cli\t2.367s\n"}
+{"Time":"2026-10-12T15:15:59.828143-03:00","Action":"pass","Package":"roundfix/internal/cli","Elapsed":2.367}

@@ -1,0 +1,3 @@
+package main
+import("encoding/json";"os";"roundfix/internal/spec")
+func main(){r,e:=spec.ReadQAReportFile(os.Args[1]);if e!=nil{panic(e)};if e=spec.QAReportEligibility(os.Args[2],r);e!=nil{panic(e)};if e=json.NewEncoder(os.Stdout).Encode(r);e!=nil{panic(e)}}
