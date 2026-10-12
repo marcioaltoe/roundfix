@@ -122,3 +122,36 @@ func TestRecordArchivePullRequestChangesOnlyThatField(t *testing.T) {
 		}
 	})
 }
+
+func TestRecordArchivePullRequestRefusesASymlinkedRecord(t *testing.T) {
+	t.Parallel()
+	r := ArchiveRecord{
+		Spec: "0256-fixture", Title: "Archive fixture", Created: "2026-10-01", Archived: "2026-10-12",
+		Disposition: ArchivePass, Source: "docs/specs/0256-fixture", SourceRevision: strings.Repeat("a", 40),
+		QATask: "task_qa", QAReport: "qa/qa-report-2026-10-12.md", QAVerdict: VerdictPass,
+		Outcome: "The outcome stays unchanged.",
+	}
+	original, err := RenderArchiveRecord(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	if err := os.WriteFile(outside, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(t.TempDir(), "0256-fixture.md")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := RecordArchivePullRequest(link, "42")
+	if err == nil || changed || !strings.Contains(err.Error(), "symbolic link") {
+		t.Fatalf("changed=%v err=%v, want a symbolic link refusal", changed, err)
+	}
+	after, err := os.ReadFile(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(after, original) {
+		t.Fatal("the symlink target changed")
+	}
+}

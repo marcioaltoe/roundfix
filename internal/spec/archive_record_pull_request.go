@@ -15,6 +15,11 @@ func RecordArchivePullRequest(recordPath, number string) (bool, error) {
 	if !archivePullRequestNumber.MatchString(number) {
 		return false, fmt.Errorf("pull request number must match ^[1-9][0-9]{0,9}$")
 	}
+	// Never write through a symbolic link: the record must be the file in the
+	// archive root, as the Archive Command requires of the paths it writes.
+	if info, err := os.Lstat(recordPath); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		return false, fmt.Errorf("Archive Record %s is a symbolic link; refusing to write through it", recordPath)
+	}
 	content, err := os.ReadFile(recordPath)
 	if err != nil {
 		return false, fmt.Errorf("read Archive Record: %w", err)
