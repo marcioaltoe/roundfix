@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0257-the-baseline-respects-the-repository
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -103,3 +103,74 @@ Context and this Task file.
 - `_prd.md` → Goal 2; User Stories 1 and 3; Core Feature 2; Success Metric 1
 - `_techspec.md` → API Contract 3; API Contract 4; Interfaces; Skill and document texts; Invariant 3; Testing Approach; Build Order 2
 - ADR-0263; ADR-0118; ADR-0256
+
+
+## Result
+
+Implemented the declared-decision slice for Daemon Verification. Task status,
+Subtasks and Acceptance Criteria remain for Daemon settlement.
+
+`baseline.DeclareManifestDecisions` now overlays declared values after Setup
+Manifest resolution and before planning, using the resolved built-in or
+repository-owned Profile and the plan's existing normalization. It preserves
+the prior manifest for recorded-value evidence, recomputes unresolved required
+decisions, and rejects profile-fixed decisions and `preservation.mode` before
+planning. The update accepts repeatable `--decision` values through the existing
+inline value parser, reports an always-present `declaredDecisions` array and
+compact JSON text lines, and uses its existing confirmation and Plan Digest
+contract for the resulting managed refresh.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused-check evidence |
+| --- | --- |
+| `/auth` is recorded and moves the backend guide and HTTP exception | `TestBaselineUpdateDeclaresTheBetterAuthBasePath` adopts a temporary Standard TypeScript repository, previews without writes, applies `--decision auth.base_path=/auth --yes`, checks the recorded path and provider scope, exactly one matching HTTP exception, both `/auth/*` guide occurrences and the base-path sentence, no `/api/auth/*`, and a second update reporting `current` with zero file changes. |
+| A declaration preview writes nothing and lists the declaration | `TestBaselineUpdateRecordsADeclaredDecision` checks JSON values and previous recorded values, exact text lines, repeated declarations, empty arrays without declarations, unchanged repository bytes, distinct digests for changed values, rejection of an earlier digest for a different declaration, and application of the confirmed preview digest. It also covers a new required decision without `--adopt-suggested`, remaining suggestions, and a repository-owned Profile. |
+| Every undeclarable input exits `2` without writes | `TestBaselineUpdateRefusesAnUndeclarableDecision` checks malformed pairs, empty identifiers and invalid empty values, unknown and unselected decisions, changed and identical profile-fixed values, `preservation.mode`, invalid typed values, duplicates, a valid declaration followed by an invalid declaration, and seven invalid Better Auth paths. Each checks category `invalid` and unchanged repository bytes. |
+| Help, command reference and skill name `--decision` | The new help subtest checks all three synopsis surfaces and the exact option description. Both references contain the TechSpec's authored paragraph. The Behavior Surface Record was regenerated, and skill sync plus the generated version record keep the canonical and distributed Roundfix skill at `0.1.64`. |
+
+### Focused checks and regeneration
+
+- Before implementation,
+  `go test ./internal/cli -run '^TestBaselineUpdateRecordsADeclaredDecision$/changed_recorded_decision$' -count=1`
+  exited `1`: the update refused the undefined `--decision` flag with CLI exit
+  `2`. This established the missing behavior.
+- After implementation,
+  `go test ./internal/cli -run '^TestBaselineUpdate(RecordsADeclaredDecision|DeclaresTheBetterAuthBasePath|RefusesAnUndeclarableDecision)/' -count=1`
+  exited `0`, including the new-decision, confirmation, Better Auth and refusal
+  cases.
+- Final focused regression run:
+  `go test ./internal/cli -run '^TestBaselineUpdate' -count=1` exited `0`.
+  An earlier run passed its assertions but suiteguard rejected a concurrently
+  regenerated behavior record; the final run followed regeneration with a
+  stable repository and passed the guard.
+- `go test ./internal/baseline -run '^TestResolveManifestInput' -count=1`
+  exited `0`.
+- Ran `make skills-sync`,
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then `make skills-sync`; all exited `0`. Repeated after the final paragraph
+  formatting so the recorded version and mirror describe the final content.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited `0` after the final help and guide edits.
+- The repository-required `make baseline-digests` exited `0` with
+  `changed: false`; no catalog, module or Baseline derived-artifact diff remains.
+- `git diff --check` exited `0`; `gofmt -l` listed no changed Go file.
+
+### Sabotage
+
+A temporary Go overlay replaced the `preservation.mode` refusal with
+`continue`, causing the update to silently accept that prohibited input. Ran
+`go test -overlay <temporary-overlay.json> ./internal/cli -run '^TestBaselineUpdateRefusesAnUndeclarableDecision$/preservation_mode$' -count=1`.
+The test exited `1` and failed at `refusal exit=0`: the sabotaged update returned
+`ok: true`, state `verified`, and empty stderr. The overlay was removed; no
+repository source was changed by the sabotage. The final focused regression
+run above exercised the original refusal again.
+
+### Scope and handoff
+
+The initial worktree change was the Daemon's Task 02 status. Final changed
+paths are confined to this Task's declared Context and this Task file. No
+other Task or Task Graph change, catalog/module change, `baseline plan`
+behavior change, commit, push or Pull Request was made. The Task's authored
+Verification commands and the repository Verification were not run; both
+remain Daemon-owned. No follow-up implementation was added to this slice.

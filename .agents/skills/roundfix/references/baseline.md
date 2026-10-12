@@ -40,9 +40,20 @@ preview that restore; `--no-skills` skips it.
 `--yes` approves the Plan Digest computed in that invocation;
 `--confirm-plan <digest>` approves a previously reviewed digest, and the two
 flags are mutually exclusive. `--adopt-suggested` explicitly adopts and reports
-suggestions only for decisions absent from the manifest. `--no-skills` skips the
-Repository Skill Set refresh. `--skills-source-dir <path>` selects an offline
-Git checkout or bare object store for external skill restoration. `--repo`
+suggestions only for decisions absent from the manifest.
+
+`--decision <id=value>` records or changes a decision the repository's profile
+selects before the plan is built; repeat it for several decisions. The value is
+parsed as `baseline plan --decision` parses it, the plan and its digest cover
+the changed Setup Manifest, and the result lists each one under
+`declaredDecisions` with its previously recorded value. A decision the profile
+does not select or fixes, `preservation.mode`, or a malformed pair exits `2` and
+writes nothing. A declared decision also answers a new decision without
+`--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
+`roundfix baseline update --decision auth.base_path=/auth`.
+
+`--no-skills` skips the Repository Skill Set refresh.
+`--skills-source-dir <path>` selects an offline Git checkout or bare object store for external skill restoration. `--repo`
 defaults to the current directory, and `--format` accepts `text` or `json`.
 
 Update exits `0` when the repository is current or an approved refresh applied

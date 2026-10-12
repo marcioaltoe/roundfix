@@ -33,6 +33,7 @@ type baselineUpdateRequest struct {
 	confirmation    string
 	yes             bool
 	adoptSuggested  bool
+	decisions       []baseline.DecisionValue
 	skipSkills      bool
 	skipHistory     bool
 	promote         []string
@@ -97,6 +98,7 @@ type baselineUpdateResult struct {
 	Retention                []baseline.RetentionEvidence         `json:"retention"`
 	ClauseDelta              *baseline.ClauseDelta                `json:"clauseDelta,omitempty"`
 	Warnings                 []baseline.Finding                   `json:"warnings"`
+	DeclaredDecisions        []baseline.DeclaredDecision          `json:"declaredDecisions"`
 	NewDecisions             []baseline.DecisionSuggestion        `json:"newDecisions"`
 	AdoptedSuggestions       []baseline.DecisionSuggestion        `json:"adoptedSuggestions"`
 	UnresolvedProfile        *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
@@ -195,6 +197,15 @@ func runBaselineUpdateCommandWithSkillsStage(
 			jsonOutput, stdout, stderr,
 		)
 	}
+	input, declared, err := baseline.DeclareManifestDecisions(input, request.decisions, catalog)
+	if err != nil {
+		return writeBaselineUpdateFailure(
+			result, err, "invalid",
+			"correct the declared decisions and rerun roundfix baseline update",
+			exitPreflight, jsonOutput, stdout, stderr,
+		)
+	}
+	result.DeclaredDecisions = declared
 	result.NewDecisions = append(result.NewDecisions, input.NewDecisions...)
 	if len(input.NewDecisions) != 0 && !request.adoptSuggested {
 		ids := baselineUpdateDecisionIDs(input.NewDecisions)
@@ -407,6 +418,15 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 	flags.StringVar(&request.confirmation, "confirm-plan", "", "Exact Plan Digest reviewed in a previous invocation")
 	flags.BoolVar(&request.yes, "yes", false, "Approve the Plan Digest computed in this invocation")
 	flags.BoolVar(&request.adoptSuggested, "adopt-suggested", false, "Adopt catalog suggestions for decisions absent from the Setup Manifest")
+	flags.Func("decision", "Record or change a decision as id=value; repeat for several decisions", func(raw string) error {
+		id, value, ok := strings.Cut(raw, "=")
+		id = strings.TrimSpace(id)
+		if !ok || id == "" {
+			return fmt.Errorf("invalid --decision %q; expected id=value", raw)
+		}
+		request.decisions = append(request.decisions, baseline.DecisionValue{ID: id, Value: parseBaselineInlineDecision(value)})
+		return nil
+	})
 	flags.Func("promote", "Repository-relative file in a selected legacy folder to copy to docs/references/", func(path string) error { request.promote = append(request.promote, path); return nil })
 	flags.BoolVar(&request.skipHistory, "no-history", false, "Skip Pending History planning and conversion")
 	flags.BoolVar(&request.skipSkills, "no-skills", false, "Skip the Repository Skill Set refresh")
@@ -457,6 +477,7 @@ func newBaselineUpdateResult() baselineUpdateResult {
 		FileChanges:        []baseline.FileChange{},
 		Retention:          []baseline.RetentionEvidence{},
 		Warnings:           []baseline.Finding{},
+		DeclaredDecisions:  []baseline.DeclaredDecision{},
 		NewDecisions:       []baseline.DecisionSuggestion{},
 		AdoptedSuggestions: []baseline.DecisionSuggestion{},
 		Skills: baselineUpdateSkillsResult{
@@ -805,6 +826,22 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 			return fmt.Errorf("encode clause delta counts: %w", err)
 		}
 		fmt.Fprintf(stdout, "Clause delta: %s\n", data)
+	}
+	fmt.Fprintf(stdout, "Declared decisions: %d\n", len(result.DeclaredDecisions))
+	for _, decision := range result.DeclaredDecisions {
+		value, err := json.Marshal(decision.Value)
+		if err != nil {
+			return fmt.Errorf("encode declared decision %q: %w", decision.ID, err)
+		}
+		recorded := "none"
+		if decision.Recorded != nil {
+			data, err := json.Marshal(decision.Recorded)
+			if err != nil {
+				return fmt.Errorf("encode recorded decision %q: %w", decision.ID, err)
+			}
+			recorded = string(data)
+		}
+		fmt.Fprintf(stdout, "- %s=%s (recorded: %s)\n", decision.ID, value, recorded)
 	}
 	for _, decision := range result.NewDecisions {
 		value, err := json.Marshal(decision.SuggestedValue)

@@ -102,6 +102,7 @@ func (err *unresolvedProfileDiagnosisError) Unwrap() error {
 
 // ManifestInput is a stored Setup Manifest projected into plan inputs.
 type ManifestInput struct {
+	profile              ResolvedProfile
 	State                ManifestInputState           `json:"state"`
 	Incompatibility      ManifestInputIncompatibility `json:"incompatibility,omitempty"`
 	ProfileID            string                       `json:"profileId,omitempty"`
@@ -184,6 +185,7 @@ func ResolveManifestInput(root string, catalog *Catalog) (input ManifestInput, e
 			&unresolvedProfileDiagnosisError{diagnosis: diagnosis, cause: err},
 		)
 	}
+	input.profile = profile
 	input.ProfileDigestChanged = manifest.ProfileDigest != profile.Digest
 
 	decisions, missing, err := resolveManifestDecisionValues(manifest, profile, catalog)
@@ -306,4 +308,83 @@ func resolveDecisionSuggestions(ids []string, catalog *Catalog) ([]DecisionSugge
 		return suggestions[i].ID < suggestions[j].ID
 	})
 	return suggestions, nil
+}
+
+// DeclaredDecision reports one decision recorded or changed by an update.
+type DeclaredDecision struct {
+	ID       string `json:"id"`
+	Value    any    `json:"value"`
+	Recorded any    `json:"recorded"` // Previous recorded value, or null.
+}
+
+// DeclareManifestDecisions overlays declarations on resolved manifest input and
+// normalizes them as a plan does. It never writes the repository or mutates the
+// prior manifest, which remains the source of recorded-value evidence.
+func DeclareManifestDecisions(input ManifestInput, declared []DecisionValue, catalog *Catalog) (ManifestInput, []DeclaredDecision, error) {
+	reports := make([]DeclaredDecision, 0, len(declared))
+	if len(declared) == 0 {
+		return input, reports, nil
+	}
+	if catalog == nil {
+		return input, nil, errors.New("declare Setup Manifest decisions: catalog is required")
+	}
+	if input.State != ManifestInputResolved && input.State != ManifestInputIncomplete {
+		return input, nil, errors.New("declare Setup Manifest decisions: resolved manifest input is required")
+	}
+	profile := input.profile
+	manifest := input.Manifest
+	manifest.Decisions = make(map[string]ManifestDecision, len(input.Manifest.Decisions)+len(declared))
+	for id, stored := range input.Manifest.Decisions {
+		stored.Value = cloneJSONValue(stored.Value)
+		manifest.Decisions[id] = stored
+	}
+	seen := make(map[string]struct{}, len(declared))
+	for _, decision := range declared {
+		id := strings.TrimSpace(decision.ID)
+		if id == "" {
+			return input, nil, errors.New("declare Setup Manifest decisions: decision id is required")
+		}
+		if id == "preservation.mode" {
+			return input, nil, errors.New("declare Setup Manifest decisions: preservation.mode cannot be changed by an update")
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return input, nil, fmt.Errorf("declare Setup Manifest decisions: duplicate decision %q", id)
+		}
+		seen[id] = struct{}{}
+		if _, fixed := profile.Values[id]; fixed {
+			return input, nil, fmt.Errorf("declare Setup Manifest decisions: decision %q is fixed by profile %q", id, profile.ID)
+		}
+		var recorded any
+		if stored, exists := input.Manifest.Decisions[id]; exists {
+			recorded = cloneJSONValue(stored.Value)
+		}
+		reports = append(reports, DeclaredDecision{ID: id, Recorded: recorded})
+		manifest.Decisions[id] = ManifestDecision{Value: cloneJSONValue(decision.Value)}
+	}
+	decisions, missing, err := resolveManifestDecisionValues(manifest, profile, catalog)
+	if err != nil {
+		return input, nil, fmt.Errorf("declare Setup Manifest decisions: %w", err)
+	}
+	suggestions, err := resolveDecisionSuggestions(missing, catalog)
+	if err != nil {
+		return input, nil, fmt.Errorf("declare Setup Manifest decisions: %w", err)
+	}
+	values := make(map[string]any, len(decisions))
+	explicit := make([]DecisionValue, 0, len(decisions))
+	for _, decision := range decisions {
+		values[decision.ID] = decision.Value
+		if _, fixed := profile.Values[decision.ID]; !fixed {
+			explicit = append(explicit, decision)
+		}
+	}
+	for index := range reports {
+		reports[index].Value = cloneJSONValue(values[reports[index].ID])
+	}
+	input.Decisions = explicit
+	input.NewDecisions = suggestions
+	input.State = ManifestInputResolved
+	if len(missing) != 0 {
+		input.State = ManifestInputIncomplete
+	}
+	return input, reports, nil
 }

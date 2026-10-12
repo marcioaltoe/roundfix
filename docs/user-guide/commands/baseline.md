@@ -2,6 +2,7 @@
 
 ```text
 roundfix baseline [--repo <path>] [--format <text|json>]
+roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
 roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
 roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
 roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -116,6 +117,21 @@ reconcile payloads carry `setup: null` because it names no single snapshot.
 resolvable and names the searched `.roundfix/baseline/profiles/<id>.json`
 path. `restore.snapshot-conflict` names a skill whose embedded snapshot
 contracts disagree; no contract is chosen by catalog order.
+
+The managed refresh previews its Plan without writing. `--yes` approves the
+Plan Digest computed in that invocation; `--confirm-plan <digest>` approves a
+previously reviewed digest. `--adopt-suggested` explicitly adopts and reports
+suggestions only for decisions absent from the manifest.
+
+`--decision <id=value>` records or changes a decision the repository's profile
+selects before the plan is built; repeat it for several decisions. The value is
+parsed as `baseline plan --decision` parses it, the plan and its digest cover
+the changed Setup Manifest, and the result lists each one under
+`declaredDecisions` with its previously recorded value. A decision the profile
+does not select or fixes, `preservation.mode`, or a malformed pair exits `2` and
+writes nothing. A declared decision also answers a new decision without
+`--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
+`roundfix baseline update --decision auth.base_path=/auth`.
 
 The managed refresh (`roundfix baseline update`) also restores a required
 external skill that matches its lock but trails its Setup Snapshot. Its
