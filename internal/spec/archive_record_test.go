@@ -220,8 +220,9 @@ func TestReadArchivedSpecReadsRecordAndLegacyFolder(t *testing.T) {
 	if err != nil || record.Form != ArchivedRecord {
 		t.Fatalf("record=%+v err=%v", record, err)
 	}
+	// Known-slug reads keep legacy names; enumeration requires a numbered record name.
 	slugs, err := ArchivedSpecSlugs(root)
-	if err != nil || !reflect.DeepEqual(slugs, []string{"demo"}) {
+	if err != nil || len(slugs) != 0 {
 		t.Fatalf("slugs=%v err=%v", slugs, err)
 	}
 	writeFile(t, ArchiveRecordPath(root, "other"), string(bytes))

@@ -29,6 +29,10 @@
       {
         "version": "0.0.8",
         "digest": "89442ead735a2b45279164995971fc474754f323d6f9f5dda11428de2b1c56dc"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "4d62e3ea12c0539800f2ae3c44ddb3671a25f8664a7fd1d3e7ee5917bdb62356"
       }
     ],
     "brainstorming": [
@@ -387,6 +391,14 @@
       {
         "version": "0.1.59",
         "digest": "f27812ac55e40366e735443756f1718b1b56c14bbcea7b39ee8fa39cefe45ce0"
+      },
+      {
+        "version": "0.1.60",
+        "digest": "5e1082c7cf287cf367a3932f443c6fcef9ac6bdb7a0b01900d828dfc97c9f5b0"
+      },
+      {
+        "version": "0.1.61",
+        "digest": "971d42707397a94c620ecf83256e291eefcc131f4f91e63284061319be8903db"
       }
     ],
     "setup-context-driven": [

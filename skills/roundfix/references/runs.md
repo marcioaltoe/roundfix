@@ -193,10 +193,14 @@ roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <te
 ```
 
 Read-only: explains failed Verification attempts and corrective Tasks in this
-repository's terminal Spec Runs, without writes or network requests. Dates
-bound Run creation times at UTC midnight, since inclusive and until exclusive;
-omitting an end leaves it open. SQLite may create WAL sidecars while opening
-the database read-only; database, lock and artifact logs stay unchanged.
+repository's terminal Spec Runs. The command changes no repository file and no
+Git ref. When an Archive Record's `source_revision` is missing locally and the
+record names its pull request, Source Revision Recovery fetches that pull
+request's head from the configured remote and adds the missing Git objects.
+Dates bound Run creation times at UTC midnight, since inclusive and until
+exclusive; omitting an end leaves it open. SQLite may create WAL sidecars while
+opening the database read-only; database, lock and artifact logs stay
+unchanged.
 
 The first embedded signature that matches determines one of five classes:
 `scope-or-authorization`, `shared-section-contract`, `repository-convention`,
@@ -210,6 +214,11 @@ names the Spec in `specs_not_found`. Triggers are `pre-pr-review`, `qa-gate`,
 Run counts, and the table digest. Exit `0` includes empty results and an absent
 database, `2` means invalid usage or no Git repository, and `1` means an
 unreadable database.
+
+An Archive Record supplies the graph and Task files from Git at its
+`source_revision`. The reader first fetches `refs/pull/<N>/head` when the
+commit is absent; only when that fetch fails does the Run causes report mark
+the revision unavailable and retain the archived Spec's disposition.
 
 An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>`
 creation time predates the configured Run Retention cutoff, the diagnostic

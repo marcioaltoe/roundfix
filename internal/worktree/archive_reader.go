@@ -27,6 +27,8 @@ func archivedSourceAtHead(ctx context.Context, runner gitRunner, root, head, slu
 		return head, archived.Path, nil
 	}
 	r := archived.Record
+	// Recovery is best effort; the original check below owns the unavailable diagnostic.
+	_, _ = spec.EnsureSourceRevision(ctx, root, "origin", r, head, archived.Path)
 	if _, err := runner.Run(ctx, root, "cat-file", "-e", r.SourceRevision+"^{commit}"); err != nil {
 		return "", "", fmt.Errorf("source_revision %s is unavailable; keep the worktree for Spec %s: %w", r.SourceRevision, slug, err)
 	}

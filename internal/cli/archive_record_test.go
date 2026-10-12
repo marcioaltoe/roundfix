@@ -44,6 +44,10 @@ func commitArchiveFixture(t *testing.T) {
 	if root.External {
 		repo = root.Path
 	}
+	// Existing archive fixtures assert no ancestry warning, so archive them
+	// on the conventional default branch. Branch warnings have their own
+	// local-origin fixtures in archive_pull_request_test.go.
+	gittest.Run(t, repo, "checkout", "-B", "main")
 	if strings.TrimSpace(gittest.Run(t, repo, "status", "--porcelain")) == "" {
 		return
 	}

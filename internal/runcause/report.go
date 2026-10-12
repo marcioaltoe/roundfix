@@ -31,6 +31,7 @@ type Request struct {
 	Reader                 Reader
 	RepositoryRoot         string
 	SpecsRoot, ArchiveRoot string
+	PushRemote             string
 	Since, Until           time.Time
 }
 
@@ -311,6 +312,16 @@ func findGraph(ctx context.Context, req Request, slug string) (*spec.CauseGraph,
 		return nil, metadata, fmt.Errorf("resolve cause archive repository: %w", err)
 	}
 	repository = strings.TrimSpace(repository)
+	recordPath, err := filepath.Rel(repository, archived.Path)
+	if err != nil {
+		return nil, metadata, fmt.Errorf("locate cause archive record: %w", err)
+	}
+	if _, err := spec.EnsureSourceRevision(ctx, repository, req.PushRemote, r, "HEAD", filepath.ToSlash(recordPath)); err != nil {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, metadata, nil
+	}
 	if _, err := git.RunGit(ctx, repository, "cat-file", "-e", r.SourceRevision+"^{commit}"); err != nil {
 		if ctx.Err() != nil {
 			return nil, nil, ctx.Err()

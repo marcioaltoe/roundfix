@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.8
+  version: 0.0.9
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.8
+version: 0.0.9
 ---
 
 # Archive Spec
@@ -33,6 +33,11 @@ two promotions share a basename, or when a Live Document to be rewritten has
 changes not committed at `HEAD`. Citations in files that are not Live
 Documents, or citations that remain after rewriting, are warnings naming the
 file, line and target; the archive leaves those files unchanged.
+
+### Squash merges
+
+A squash merge keeps `source_revision` only in the pull request's head ref; the
+record names that pull request in `pull_request`.
 
 ### QA settlement
 

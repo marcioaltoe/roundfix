@@ -2,17 +2,21 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/judge"
+	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
@@ -21,6 +25,7 @@ var archiveUsage = `Usage:
   roundfix archive <slug>
   roundfix archive <slug> --qa-override --approval <source> --reason <text>
   roundfix archive <slug> --plan
+  roundfix archive <slug> --pull-request <number>
 
 Archives a Spec after verifying either every Task is completed and the newest
 QA Report has verdict: pass (or a partial verdict covered only by declared
@@ -40,6 +45,7 @@ Options:
   --qa-override  Archive despite failed, missing, or unreadable QA evidence
   --approval     Source of the maintainer authority for the override
   --reason       Reason the unmet QA prerequisite is being waived
+  --pull-request Store the delivery pull request number in the Archive Record
 
 Exit codes:
   0  archived
@@ -47,12 +53,13 @@ Exit codes:
 `
 
 type archiveCommandRequest struct {
-	slug       string
-	qaOverride bool
-	approval   string
-	reason     string
-	plan       bool
-	promote    []string
+	slug        string
+	qaOverride  bool
+	approval    string
+	reason      string
+	plan        bool
+	promote     []string
+	pullRequest string
 }
 
 func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -90,6 +97,20 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
+	revisionRoot := loaded.GitRoot
+	if resolvedSpecsRoot.External {
+		revisionRoot = resolvedSpecsRoot.Path
+	}
+	if req.pullRequest != "" {
+		recordOnly, err := recordArchiveCommandPullRequest(ctx, req, resolvedSpecsRoot, revisionRoot, loaded.GitRoot, stdout)
+		if err != nil {
+			printPreflightFailure("archive", err, stderr)
+			return exitPreflight
+		}
+		if recordOnly {
+			return exitOK
+		}
+	}
 	pins, err := speccheck.ActiveSpecPathPins(loaded.GitRoot, resolvedSpecsRoot.Path, req.slug)
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
@@ -120,10 +141,6 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		}
 		printPreflightFailure("archive", fmt.Errorf("Spec %q cannot archive with a Glossary Gap: %s", req.slug, strings.Join(reasons, "; ")), stderr)
 		return exitPreflight
-	}
-	revisionRoot := loaded.GitRoot
-	if resolvedSpecsRoot.External {
-		revisionRoot = resolvedSpecsRoot.Path
 	}
 	repositoryRoot, err := gitOutput(ctx, revisionRoot, "rev-parse", "--show-toplevel")
 	if err != nil {
@@ -163,6 +180,12 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
+	if req.pullRequest != "" {
+		if _, err := spec.RecordArchivePullRequest(result.RecordPath, req.pullRequest); err != nil {
+			fmt.Fprintf(stderr, "%s: archive completed but could not record pull request: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+	}
 	rel, err := filepathRelSlash(loaded.GitRoot, result.RecordPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: archive completed but could not format path: %v\n", app.Name, err)
@@ -175,6 +198,10 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	if len(result.Relinked) > 0 {
 		suffix += fmt.Sprintf("; relinked %d file(s)", len(result.Relinked))
 	}
+	if req.pullRequest != "" {
+		suffix += "; pull request " + req.pullRequest
+	}
+	warnArchiveSourceRevision(ctx, revisionRoot, revision, req.pullRequest, stderr)
 	for _, citation := range result.Unrelinked {
 		fmt.Fprintf(stderr, "%s: warning: archive leaves %s:%d naming removed %s unrelinked\n", app.Name, citation.Path, citation.Line, citation.Target)
 	}
@@ -184,6 +211,108 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		fmt.Fprintf(stdout, "archived %s -> %s%s\n", req.slug, rel, suffix)
 	}
 	return exitOK
+}
+
+// archiveDefaultRef uses origin/HEAD when present and the conventional current
+// branch name otherwise, matching Preflight Validation's default detection.
+func archiveDefaultRef(ctx context.Context, repo string) (ref, display string) {
+	branch, err := gitOutput(ctx, repo, "symbolic-ref", "--short", "HEAD")
+	if err != nil {
+		branch = ""
+	}
+	detection := preflight.DetectDefaultBranch(ctx, repo, branch, nil)
+	switch detection.Source {
+	case preflight.DefaultBranchFromOriginHead:
+		return "refs/remotes/origin/" + detection.Name, "origin/" + detection.Name
+	case preflight.DefaultBranchFromNameMatch:
+		return "refs/heads/" + detection.Name, detection.Name
+	default:
+		return "", ""
+	}
+}
+
+// recordArchiveCommandPullRequest decides the record-only form before any
+// active-Spec checks. A default-branch record is never rewritten.
+func recordArchiveCommandPullRequest(ctx context.Context, req archiveCommandRequest, root roundconfig.SpecsRoot, repo, outputRoot string, stdout io.Writer) (bool, error) {
+	ref, display := archiveDefaultRef(ctx, repo)
+	if ref == "" {
+		return false, errors.New("the default branch is unknown; cannot record a pull request")
+	}
+	if _, err := gitOutput(ctx, repo, "rev-parse", "--verify", ref+"^{commit}"); err != nil {
+		return false, fmt.Errorf("resolve default branch %s: %w", display, err)
+	}
+	specDir := filepath.Join(root.Path, req.slug)
+	if _, err := os.Lstat(specDir); err == nil {
+		return false, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("stat active Spec: %w", err)
+	}
+	recordPath := spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug)
+	if _, err := os.Lstat(recordPath); errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("stat Archive Record: %w", err)
+	}
+	if len(req.promote) > 0 || req.qaOverride || req.approval != "" || req.reason != "" {
+		return true, errors.New("record-only --pull-request cannot be combined with --promote, --qa-override, --approval or --reason")
+	}
+	repositoryRoot, err := gitOutput(ctx, repo, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return true, err
+	}
+	recordRel, err := filepathRelSlash(repositoryRoot, recordPath)
+	if err != nil {
+		return true, err
+	}
+	// ls-tree distinguishes an absent path from an unreadable default ref.
+	entry, err := gitOutput(ctx, repositoryRoot, "ls-tree", ref, "--", recordRel)
+	if err != nil {
+		return true, fmt.Errorf("read default-branch Archive Record: %w", err)
+	}
+	if entry != "" {
+		return true, fmt.Errorf("Archive Record %s is already on %s; an archived record stays byte-identical", recordRel, display)
+	}
+	archived, err := spec.ReadArchivedSpec(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug)
+	if err != nil {
+		return true, fmt.Errorf("read Archive Record: %w", err)
+	}
+	if archived.Form != spec.ArchivedRecord {
+		return true, errors.New("--pull-request requires an Archive Record")
+	}
+	rel, err := filepathRelSlash(outputRoot, recordPath)
+	if err != nil {
+		return true, err
+	}
+	changed, err := spec.RecordArchivePullRequest(recordPath, req.pullRequest)
+	if err != nil {
+		return true, err
+	}
+	if changed {
+		fmt.Fprintf(stdout, "recorded pull request %s in %s\n", req.pullRequest, rel)
+	} else {
+		fmt.Fprintf(stdout, "%s already records pull request %s\n", rel, req.pullRequest)
+	}
+	return true, nil
+}
+
+func warnArchiveSourceRevision(ctx context.Context, repo, revision, number string, stderr io.Writer) {
+	ref, display := archiveDefaultRef(ctx, repo)
+	if ref == "" {
+		fmt.Fprintf(stderr, "%s: warning: the default branch is unknown, so source_revision %.12s was not checked\n", app.Name, revision)
+		return
+	}
+	if _, err := gitOutput(ctx, repo, "merge-base", "--is-ancestor", revision, ref); err != nil {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+			fmt.Fprintf(stderr, "%s: warning: source_revision %.12s could not be checked against %s: %v\n", app.Name, revision, display, err)
+			return
+		}
+		if number == "" {
+			fmt.Fprintf(stderr, "%s: warning: source_revision %.12s is not an ancestor of %s; a squash merge keeps it only in the pull request's head ref, so record the pull request with --pull-request once it opens\n", app.Name, revision, display)
+		} else {
+			fmt.Fprintf(stderr, "%s: warning: source_revision %.12s is not an ancestor of %s; readers recover it from refs/pull/%s/head\n", app.Name, revision, display, number)
+		}
+	}
 }
 
 func filepathRelSlash(base string, target string) (string, error) {
@@ -212,6 +341,7 @@ func parseArchiveCommand(args []string) (archiveCommandRequest, error) {
 	flags.BoolVar(&req.plan, "plan", false, "Plan the archive without changing the repository")
 	flags.StringVar(&req.approval, "approval", "", "Override approval source")
 	flags.StringVar(&req.reason, "reason", "", "Override reason")
+	flags.StringVar(&req.pullRequest, "pull-request", "", "Store the delivery pull request number in the Archive Record")
 	flags.Func("promote", "Promote a Spec-relative file to docs/references/ (repeatable)", func(value string) error { req.promote = append(req.promote, value); return nil })
 	if err := flags.Parse(args[1:]); err != nil {
 		return req, validationError{message: err.Error()}
@@ -221,17 +351,29 @@ func parseArchiveCommand(args []string) (archiveCommandRequest, error) {
 	}
 	req.approval = strings.TrimSpace(req.approval)
 	req.reason = strings.TrimSpace(req.reason)
+	if filepath.Base(req.slug) != req.slug || req.slug == "." || req.slug == ".." {
+		return req, validationError{message: fmt.Sprintf("unsafe Spec slug %q", req.slug)}
+	}
+	var pullRequestSet bool
 	var approvalSet bool
 	var reasonSet bool
 	flags.Visit(func(parsed *flag.Flag) {
 		switch parsed.Name {
+		case "pull-request":
+			pullRequestSet = true
 		case "approval":
 			approvalSet = true
 		case "reason":
 			reasonSet = true
 		}
 	})
+	if pullRequestSet && !regexp.MustCompile(`^[1-9][0-9]{0,9}$`).MatchString(req.pullRequest) {
+		return req, validationError{message: "--pull-request requires a positive integer matching ^[1-9][0-9]{0,9}$"}
+	}
 	if req.plan {
+		if pullRequestSet {
+			return req, validationError{message: "--pull-request cannot be combined with --plan"}
+		}
 		if len(req.promote) > 0 {
 			return req, validationError{message: "--plan cannot be combined with --promote"}
 		}

@@ -154,7 +154,9 @@ Per Spec, in order:
    only declared-unreachable unmet rows fully covered by the Spec's
    declarations —
    run `roundfix archive <slug>` on the branch, pass the repository gate,
-   then push and open the Pull Request. An archive-eligible `partial` Report
+   then push and open the Pull Request; after the pull request opens, run
+   `roundfix archive <slug> --pull-request <n>`, commit the record and push
+   before judging checks. An archive-eligible `partial` Report
    now settles the terminal `qa` Task completed, because settlement applies the same
    declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.

@@ -1796,6 +1796,13 @@ func archivedTaskContextExists(repoRoot, specsRoot, refPath string) bool {
 			continue
 		}
 		record := archived.Record
+		recordPath, err := filepath.Rel(repoRoot, archived.Path)
+		if err != nil {
+			continue
+		}
+		if _, err := spec.EnsureSourceRevision(context.Background(), repoRoot, "origin", record, "HEAD", filepath.ToSlash(recordPath)); err != nil {
+			continue
+		}
 		cmd := exec.CommandContext(context.Background(), "git", "-C", repoRoot, "cat-file", "-e", record.SourceRevision+"^{commit}")
 		if cmd.Run() != nil {
 			continue

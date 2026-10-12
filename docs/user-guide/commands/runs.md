@@ -93,7 +93,10 @@ This read-only command reports failed Verification attempts and corrective
 Tasks for this repository's terminal Spec Runs, oldest first. The window
 uses Run creation dates: `--since` includes its UTC midnight and `--until`
 excludes its UTC midnight. Omit either flag for an open end. The command
-writes nothing and makes no network request. SQLite may create the WAL and
+changes no repository file and no Git ref. When an Archive Record's
+`source_revision` is missing locally and the record names its pull request,
+Source Revision Recovery fetches that pull request's head from the configured
+remote and adds the missing Git objects. SQLite may create the WAL and
 shared-memory sidecars when opening a WAL database read-only; the database,
 lock and artifact logs stay unchanged.
 
@@ -112,8 +115,10 @@ first Run in the window. Their title and Overview determine the trigger:
 `pre-pr-review`, `qa-gate`, `verification`, or `unknown`, in that order.
 
 An Archive Record supplies the graph and Task files from Git at its
-`source_revision`. If that commit is absent, the Spec stays archived in the
-report with its disposition; it is not listed under `specs_not_found`.
+`source_revision`. The reader first fetches `refs/pull/<N>/head` when the
+commit is absent; only when that fetch fails does the Spec stay archived in the
+report with its disposition and the revision remain unavailable. It is not
+listed under `specs_not_found`.
 JSON adds `archived_specs` entries with `spec`, `disposition` and
 `source_available`. Text reports the unavailable revision. Corrective
 classification remains unknown without the graph.
