@@ -22,15 +22,15 @@ import (
 )
 
 type doctorDependencies struct {
-	readiness        func(context.Context, roundconfig.Loaded) []CheckResult
-	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	healthChecker    func(roundconfig.Loaded, string) HealthChecker
-	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
-	resolveExternal  func(string) ([]string, bool, error)
-	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
-	trailingSkills   func(string, []string) ([]string, error)
-	residue          func(context.Context, string) []CheckResult
-	storage          func(context.Context, roundconfig.Loaded) []CheckResult
+	readiness           func(context.Context, roundconfig.Loaded) []CheckResult
+	loadConfig          func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	healthChecker       func(roundconfig.Loaded, string) HealthChecker
+	profileReadiness    func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
+	resolveExternal     func(string) ([]string, bool, error)
+	checkSkills         func(context.Context, string, []string) (skills.RepositoryReadiness, error)
+	snapshotDifferences func(string, []string) ([]string, error)
+	residue             func(context.Context, string) []CheckResult
+	storage             func(context.Context, roundconfig.Loaded) []CheckResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -45,11 +45,11 @@ func defaultDoctorDependencies() doctorDependencies {
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
 			return proveProfileSelections(ctx, config, categories, workDir, commandDependenciesForContext(ctx).newEngineCollaborators().runner)
 		},
-		resolveExternal: resolveExternalSkillRequirement,
-		checkSkills:     skills.CheckRepositoryWithExternal,
-		trailingSkills:  trailingManifestSkills,
-		residue:         defaultDoctorResidueResults,
-		storage:         defaultDoctorStorageResults,
+		resolveExternal:     resolveExternalSkillRequirement,
+		checkSkills:         skills.CheckRepositoryWithExternal,
+		snapshotDifferences: manifestSnapshotDifferences,
+		residue:             defaultDoctorResidueResults,
+		storage:             defaultDoctorStorageResults,
 	}
 }
 
@@ -129,19 +129,12 @@ func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies,
 			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
 			if manifestOK {
 				result := doctorSkillReadinessResult(skillReadiness, skillErr)
-				if dependencies.trailingSkills != nil {
-					names, comparisonErr := dependencies.trailingSkills(repositoryRoot, snapshotComparableSkills(external, skillReadiness, skillErr))
+				if dependencies.snapshotDifferences != nil {
+					names, comparisonErr := dependencies.snapshotDifferences(repositoryRoot, snapshotComparableSkills(external, skillReadiness, skillErr))
 					if comparisonErr != nil {
 						result.Detail += "; snapshot comparison unavailable: " + comparisonErr.Error()
 					} else if len(names) != 0 {
-						if result.Status != CheckStatusFailed {
-							result.Status = CheckStatusWarn
-						}
-						result.Detail += "; DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: " + strings.Join(names, ", ")
-						if result.NextAction != "" {
-							result.NextAction += " && "
-						}
-						result.NextAction += "roundfix baseline update"
+						result.Detail += "; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: " + strings.Join(names, ", ")
 					}
 				}
 				return result
@@ -339,8 +332,8 @@ func formatResidueDuration(duration time.Duration) string {
 
 const doctorSetupManifestPath = "docs/agents/setup-context.json"
 
-// trailingManifestSkills uses the same Profile the restore command selects.
-func trailingManifestSkills(root string, required []string) ([]string, error) {
+// manifestSnapshotDifferences uses the same Profile the restore command selects.
+func manifestSnapshotDifferences(root string, required []string) ([]string, error) {
 	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath)))
 	if err != nil {
 		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
@@ -351,7 +344,7 @@ func trailingManifestSkills(root string, required []string) ([]string, error) {
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
 	}
-	return baseline.TrailingSetupSkills(root, manifest.Profile, required)
+	return baseline.SetupSnapshotDifferences(root, manifest.Profile, required)
 }
 
 func snapshotComparableSkills(required []string, readiness skills.RepositoryReadiness, checkErr error) []string {

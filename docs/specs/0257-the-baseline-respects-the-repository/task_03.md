@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0257-the-baseline-respects-the-repository
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -122,3 +122,139 @@ Context, the coverage record its command rewrites, and this Task file.
 - `_prd.md` → Goal 3; User Story 4; Core Features 3 and 5; Success Metric 3
 - `_techspec.md` → API Contract 5; API Contract 6; Interfaces; Current behavior; Skill and document texts; Invariants 4, 5 and 10; Testing Approach; Build Order 3
 - ADR-0264; ADR-0221; ADR-0224; ADR-0256
+
+## Result
+
+Implemented the task_03 slice for Daemon Verification. Task status remains
+Daemon-owned; the Agent did not run authored Verification or repository
+Verification, commit, push or open a pull request.
+
+### Implementation
+
+- Renamed the comparison to `SetupSnapshotDifferences`, its callers and both
+  dependency fields. The comparison's profile resolution, digest comparison,
+  missing-tree handling, sorting and deduplication are unchanged.
+- Doctor appends the API Contract 5 detail suffix without changing readiness
+  status, next action or exit code. `snapshotComparableSkills` is unchanged.
+- The preview and skills stage report the API Contract 6 reason under the
+  always-present `skills.differing` array. Text prints `Skills differing` and
+  its entries after the drifted list and the existing optional outdated and
+  retired sections, before History. A difference alone yields
+  `current`; the skills stage never includes it in the restore set. Missing
+  and lock-mismatched skills still use the existing preview/confirmation
+  restore request and offline source parameter.
+- Renamed the six tests specified by the TechSpec. Kept the two protected
+  test names and the strict repository snapshot assertion; its failure
+  message now names a difference and the deliberate per-skill restore.
+- Updated both command guides and the canonical Roundfix skill references,
+  synced their mirrors, and generated the Roundfix skill version `0.1.65`.
+  Added the ADR-0221 addendum and advanced `updated_at`; added the exact
+  Setup Snapshot Difference glossary entry with its ADR-0264 link through
+  domain-modeling. Setup Snapshots, lock comparison and the restore command
+  were not changed.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Doctor exits `0`, names the difference, and does not warn for a difference alone | `TestDoctorNamesASetupSnapshotDifferenceWithoutWarning` passes with the exact `skills: ok` line and exit `0`. `TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills` compares status and next action directly with readiness and covers mixed missing/lock-mismatched skills and an unavailable profile. The repository-profile Doctor test also passes. |
+| Preview is `current` with `skills.differing`; `--yes` preserves the copy | `TestBaselineUpdatePreviewListsASetupSnapshotDifference` passes for JSON and text, checks the exact reason and line order, proves previews change no repository bytes, checks the empty array with `--no-skills`, and runs the real skills stage under `--yes`: the differing skill's bytes and whole-folder hash stay identical. `TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile` passes for a repository-owned profile. |
+| Missing skills still restore | `TestBaselineUpdateKeepsASetupSnapshotDifference` passes for difference alone, a missing skill and a lock-mismatched skill. The latter two each restore only `golang-cli`, with the existing two-request confirmation and offline source. Its fake restore fails immediately if `testing-boss`, the differing skill, is requested. The repository-profile stage test installs every missing owned skill while keeping the external difference. |
+| No live retired code, wording or function name | Local inspection found zero matches for the three retired strings and `TrailingSetupSkills` under all five named roots. Both canonical references contain the new code and are byte-identical to their mirrors; the entry-file pair also matches. |
+| CONTEXT defines Setup Snapshot Difference | Local inspection found the definition beside Repository Skill Set, the required unknown-order and deliberate-restore semantics, and a resolving ADR-0264 link. ADR-0221 contains its required dated addendum. |
+
+### Focused checks and generation
+
+Commands below are focused implementation checks or explicitly required
+record/generation commands, not the Task's authored Verification commands.
+
+- Red starting point:
+  `go test ./internal/cli -run '^TestDoctorNamesASetupSnapshotDifferenceWithoutWarning$' -count=1`
+  exited `1` before the behavior change: it printed `skills: warn`, the
+  retired code and `next: roundfix baseline update`, while the new test
+  expected the informational line.
+- Initial focused CLI check:
+  `go test ./internal/cli -run '^(TestDoctorNamesASetupSnapshotDifferenceWithoutWarning|TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills|TestBaselineUpdatePreviewListsASetupSnapshotDifference|TestBaselineUpdateKeepsASetupSnapshotDifference|TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile|TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile|TestDoctorComparesARepositoryProfileWithItsSnapshot|TestBaselineUpdateReachesCurrentWithARepositoryProfile)$' -count=1`
+  exited `0` before the Verification Feedback repair below.
+- Focused comparison/strictness check:
+  `go test ./internal/baseline -run '^(TestSetupSnapshotDifferencesCompare|TestSkillSnapshotProfileNamesTheRepositoryPath|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot)' -count=1`
+  exited `0`.
+- `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then `make skills-sync` each exited `0`. The generator raised both
+  Roundfix version fields and recorded the new digest.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+  generated the coverage record. The first invocation's test body passed,
+  then suiteguard exited `1` for the record write; see the follow-up below.
+  A second generator invocation against the generated record exited `0`,
+  demonstrating byte-stable regeneration. The only removed recorded test
+  names are the six intended renames. The generator also records tests
+  already present before this Task that the old record did not contain;
+  no record was hand-edited.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited `0` and changed only the two updated guide fingerprints in the
+  Behavior Surface Record.
+- `make baseline-digests` exited `0`, reported `changed:false`, and left no
+  Baseline digest or golden changes.
+- Local terminology/glossary/addendum/mirror inspection and
+  `git diff --check` passed. Changed-file postflight restricts all changes
+  to this Task's Context and this Task file; the initial dirty path was only
+  the Daemon-owned `status: in_progress` change in this Task file.
+
+### Sabotage evidence
+
+A temporary Go overlay outside the repository added
+`drifted = append(drifted, differing...)` immediately before the stage's
+restore loop, deliberately putting the unordered difference back into the
+restore set. The command
+`go test -overlay /private/tmp/roundfix-0257-task03-sabotage/overlay.json ./internal/cli -run '^TestBaselineUpdateKeepsASetupSnapshotDifference$' -count=1`
+exited `1`. All three scenarios failed with
+`restore called for the differing skill`. The overlay changed no repository
+source. The final focused CLI check above ran without the overlay and exited
+`0`.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact:
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261012T194228Z_1d1cb31ee8783296/verification/batch-003-attempt-1.log`.
+The Daemon's `make verify-changed` run and the initial broader focused CLI
+check both identified the same text-order regression in
+`TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState` and
+`TestBaselineUpdatePreviewReportsAnOlderOwnedSkill`. The diagnostic body is
+not reproduced here.
+
+API Contract 6 requires the differing section after the drifted list; it does
+not require immediate adjacency. The renderer now prints it after the
+existing optional outdated and retired sections, still after drifted and
+before History. Every differing heading and entry remains present, including
+`Skills differing: 0`, and both prior transcript fragments remain intact.
+The repair changes only `internal/cli/baseline_update.go` and
+`internal/cli/doctor_trailing_skills_test.go`, plus this Result. The initial
+recommendation to revise the other test files is superseded by this repair;
+neither file needs an edit.
+
+Extended `TestBaselineUpdatePreviewListsASetupSnapshotDifference` with a
+real-command preview containing a differing external skill, an older owned
+skill and a retired skill together. It asserts all three contiguous report
+sections and proves that the preview changes no repository bytes. An initial
+fixture run exposed a missing temporary directory for the retired skill;
+the fixture now creates that directory before writing its skill file.
+No top-level test names changed, so the generated coverage record needs no
+new entries.
+
+Final focused repair check:
+`go test ./internal/cli -run '^(TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState|TestBaselineUpdatePreviewReportsAnOlderOwnedSkill|TestBaselineUpdatePreviewListsASetupSnapshotDifference|TestBaselineUpdateKeepsASetupSnapshotDifference|TestDoctorNamesASetupSnapshotDifferenceWithoutWarning|TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills|TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile|TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile|TestDoctorComparesARepositoryProfileWithItsSnapshot)$' -count=1`
+exited `0`. This covers both diagnostic failures, both older-owned-skill
+scenarios, the combined preview, informational Doctor output, repository
+profiles, byte preservation and the missing/lock-mismatched restore contract.
+The repair did not rerun `make verify-changed` or any authored Verification
+command. The Daemon owns the next configured Verification run and Task status.
+
+### Remaining follow-up outside this Task's bounded Context
+
+- `internal/spec/coverage_test.go` writes its generated record without
+  declaring the sanctioned regeneration command to suiteguard. This is why
+  the first coverage-record generation reports a boundary violation even
+  though the Spec explicitly authorizes that command and output. The record
+  was generated correctly and the no-change invocation passes, but the
+  generator's missing declaration still needs a separate authorized repair.

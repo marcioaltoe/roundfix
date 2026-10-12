@@ -990,6 +990,10 @@ _Avoid_: Runtime, Review Source, plugin
 The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
 _Avoid_: Installed skills, plugin set, global skill set
 
+**Setup Snapshot Difference**:
+A required external skill that is installed and matches its `skills-lock.json` entry but whose tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Doctor names it without a warning and the managed refresh keeps it; only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
+_Avoid_: Trailing skill, outdated skill, stale skill
+
 **Interactive Input**:
 The TUI flow that collects command parameters before a Run starts.
 _Avoid_: Wizard, form, setup screen

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-02T00:00:00Z
-updated_at: 2026-10-02T00:00:00Z
+updated_at: 2026-10-12T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -33,3 +33,10 @@ Doctor on upgrade for this alone. A repository that edits an upstream skill by
 hand now sees it as trailing, which is true. The comparison reads only local
 files and the snapshot embedded in the binary; restoring needs the source
 commit, from the network or from `--source-dir`, as before.
+
+## Addendum — 2026-10-12
+
+ADR-0264 replaces the trailing classification and the automatic restore above.
+A lock-matching skill that differs from its Setup Snapshot is a Setup Snapshot
+Difference, reported with `DR-SKILL-DIFFERS-FROM-SNAPSHOT` and never restored
+unasked. The lock rule and the comparison stay.

@@ -47,7 +47,7 @@ func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
 	}
 }
 
-func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testing.T) {
+func TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile(t *testing.T) {
 	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
@@ -57,17 +57,17 @@ func TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile(t *testi
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatal(err)
 	}
-	if code != exitUnverified || stderr != "" || result.State != "plan_ready" {
+	if code != exitOK || stderr != "" || result.State != "current" {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
 	}
 	found := false
-	for _, drift := range result.Skills.Drifted {
-		if drift.Skill == "testing-boss" && strings.Contains(drift.Reason, "trails its Setup Snapshot") {
+	for _, difference := range result.Skills.Differing {
+		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile "+baselineRepositoryProfileTestID+" --skill testing-boss" {
 			found = true
 		}
 	}
-	if !found {
-		t.Fatalf("trailing skill absent from preview: %s", out)
+	if !found || len(result.Skills.Drifted) != 0 {
+		t.Fatalf("differing skill absent from preview: %s", out)
 	}
 	if before != baselinePlanTestTree(t, root) {
 		t.Fatal("preview changed repository bytes")
@@ -84,31 +84,30 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 			t.Fatal(err)
 		}
 	}
-	var requests []baseline.SkillsRestoreRequest
+	beforeSkill := mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))
 	result, err := runBaselineUpdateSkillsStageWith(t.Context(), baselineUpdateSkillsRequest{
 		Repository: root, ProfileID: baselineRepositoryProfileTestID,
 	}, baselineUpdateSkillsDependencies{
-		resolveProjectRoot: defaultResolveSkillsProjectRoot,
-		install:            skills.Install,
-		ownedNames:         skills.Names,
-		resolveExternal:    resolveExternalSkillRequirement,
-		checkRepository:    skills.CheckRepositoryWithExternal,
-		trailingSkills:     baseline.TrailingSetupSkills,
+		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
+		install:             skills.Install,
+		ownedNames:          skills.Names,
+		resolveExternal:     resolveExternalSkillRequirement,
+		checkRepository:     skills.CheckRepositoryWithExternal,
+		snapshotDifferences: baseline.SetupSnapshotDifferences,
 		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
-			requests = append(requests, request)
-			return baseline.SkillsRestorePayload{Applied: true}, nil
+			t.Fatalf("restore called for a lock-matching difference: %+v", request)
+			return baseline.SkillsRestorePayload{}, nil
 		},
 	})
 	wantInstalled := slices.Clone(skills.Names())
 	slices.Sort(wantInstalled)
 	if err != nil || result.Status != baselineUpdateSkillsVerified ||
 		result.InstalledCount != len(wantInstalled) || !slices.Equal(result.Installed, wantInstalled) ||
-		!slices.Equal(result.Restored, []string{"testing-boss"}) || len(result.Drifted) != 0 {
+		len(result.Restored) != 0 || len(result.Differing) != 1 || result.Differing[0].Skill != "testing-boss" || len(result.Drifted) != 0 {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
-	if len(requests) != 1 || requests[0].Repository != root || requests[0].ProfileID != baselineRepositoryProfileTestID ||
-		!slices.Equal(requests[0].Skills, []string{"testing-boss"}) {
-		t.Fatalf("restore requests=%+v", requests)
+	if !bytes.Equal(beforeSkill, mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))) {
+		t.Fatal("skills refresh changed the differing skill's bytes")
 	}
 	readiness, err := skills.CheckRepository(t.Context(), root)
 	if err != nil || !readiness.Ready() {
@@ -122,7 +121,7 @@ func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
 	editRepositoryProfileTestSkill(t, root)
 	before := baselinePlanTestTree(t, root)
 	result := repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
-	if result.Status != CheckStatusWarn || !strings.Contains(result.Detail, "DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: testing-boss") ||
+	if result.Status != CheckStatusOK || result.NextAction != "" || !strings.Contains(result.Detail, "DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: testing-boss") ||
 		strings.Contains(result.Detail, "snapshot comparison unavailable") {
 		t.Fatalf("Doctor skills=%+v", result)
 	}
@@ -246,7 +245,7 @@ func runRepositoryProfileCommand(t *testing.T, args ...string) (string, string, 
 func editRepositoryProfileTestSkill(t *testing.T, root string) {
 	t.Helper()
 	path := filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md")
-	mustWrite(t, path, string(mustReadBytes(t, path))+"\nOld upstream installation fixture.\n")
+	mustWrite(t, path, string(mustReadBytes(t, path))+"\nDifferent upstream installation fixture.\n")
 	lockPath := filepath.Join(root, "skills-lock.json")
 	var lock map[string]any
 	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
