@@ -1,8 +1,0 @@
-{"Time":"2026-10-12T15:16:06.843594-03:00","Action":"start","Package":"roundfix/skills"}
-{"Time":"2026-10-12T15:16:07.107523-03:00","Action":"run","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded"}
-{"Time":"2026-10-12T15:16:07.107564-03:00","Action":"output","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded","Output":"=== RUN   TestEveryOwnedSkillVersionIsRecorded\n"}
-{"Time":"2026-10-12T15:16:07.109437-03:00","Action":"output","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded","Output":"--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)\n"}
-{"Time":"2026-10-12T15:16:07.109445-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded","Elapsed":0}
-{"Time":"2026-10-12T15:16:07.109464-03:00","Action":"output","Package":"roundfix/skills","Output":"PASS\n"}
-{"Time":"2026-10-12T15:16:07.110173-03:00","Action":"output","Package":"roundfix/skills","Output":"ok  \troundfix/skills\t0.266s\n"}
-{"Time":"2026-10-12T15:16:07.110186-03:00","Action":"pass","Package":"roundfix/skills","Elapsed":0.267}

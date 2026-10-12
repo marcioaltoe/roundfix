@@ -1,6 +1,0 @@
-package main
-import("context";"fmt";"os";"strconv";"roundfix/internal/store")
-func must(e error){if e!=nil{panic(e)}}
-func main(){ctx:=context.Background();h,r,s,mode:=os.Args[1],os.Args[2],os.Args[3],os.Args[4];d,e:=store.Open(ctx,h);must(e);defer d.Close()
-if mode=="active" || mode=="terminal" {pid,e:=strconv.Atoi(os.Args[5]);must(e);run,e:=d.CreateRun(ctx,store.CreateRunRequest{Kind:store.KindImplement,GitRoot:r,SpecSlug:s,LocalBranch:"roundfix/run-qa-fixture",OwnerPID:pid});must(e);if mode=="terminal"{_,e=d.CompleteRun(ctx,run.ID,store.StateFailed);must(e)};fmt.Print(run.ID);return}
-q,e:=d.CreateDeliveryQueue(ctx,r,[]string{s});must(e);i:=q.Items[0];i.Stage=store.DeliveryStage(mode);must(d.UpdateDeliveryQueueItem(ctx,r,i));fmt.Print(i.Stage)}

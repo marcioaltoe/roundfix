@@ -1,8 +1,0 @@
----
-status: open # keep comment
-spec: null # keep comment
----
-
-# Entry
-
-Intent and provenance remain exact.
