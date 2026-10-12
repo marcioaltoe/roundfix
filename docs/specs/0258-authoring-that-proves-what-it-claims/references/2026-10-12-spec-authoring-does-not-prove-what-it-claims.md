@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0258-authoring-that-proves-what-it-claims
 ---
 
 # Spec authoring does not prove what it claims
