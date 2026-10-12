@@ -5590,6 +5590,7 @@ embedded Baseline catalog.
                            [--adopt-suggested]
                            [--no-skills]
                            [--no-history]
+                           [--promote <path> ...]
                            [--skills-source-dir <path>]
 
 Reads the repository's Setup Manifest, resolves its recorded Baseline Profile
@@ -5614,6 +5615,11 @@ The update also plans the Pending History, converts every selected unit on
 approval, and creates an annotated history-full tag when absent. Push that tag
 with git push origin history-full. --no-history skips history planning and conversion.
 
+History Citations bind the digest, Live Documents offer --promote to copy a cited
+file to docs/references/, and Stale History Citations name targets history-full holds.
+Promotions copy committed history at the planned revision into references read by
+every later Spec, and never overwrite an existing file or rewrite a citing file.
+
 JSON output uses roundfix/baseline-update-result/v1.
 
 Exit codes:
@@ -5631,6 +5637,8 @@ Options:
   --adopt-suggested  Adopt and report suggestions only for decisions absent from the manifest
   --no-skills        Skip the Repository Skill Set refresh
   --no-history       Skip Pending History planning and conversion
+  --promote          Copy a selected folder file to docs/references/; repeatable,
+                      incompatible with --no-history
   --skills-source-dir
                       Offline Git checkout or bare object store for external skill restoration
 `

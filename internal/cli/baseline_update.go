@@ -35,6 +35,7 @@ type baselineUpdateRequest struct {
 	adoptSuggested  bool
 	skipSkills      bool
 	skipHistory     bool
+	promote         []string
 	skillsSourceDir string
 }
 
@@ -251,6 +252,10 @@ func runBaselineUpdateCommandWithSkillsStage(
 		historyPlan = planBaselineUpdateHistory(ctx, request.repo, environment)
 	}
 	result.History = historyPlan.Report
+	if err := historyPlan.promote(request.promote); err != nil {
+		return writeBaselineUpdateFailure(result, err, "invalid", "correct --promote and rerun roundfix baseline update", exitPreflight, jsonOutput, stdout, stderr)
+	}
+	result.History = historyPlan.Report
 	result.PlanDigest, err = historyPlan.digest(plan.PlanDigest)
 	if err != nil {
 		return writeBaselineUpdateOperationFailure(result, err, jsonOutput, stdout, stderr)
@@ -358,7 +363,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.History, err = applyBaselineUpdateHistory(ctx, request.repo, historyPlan)
 	if err != nil {
 		result.State = "failed"
-		return writeBaselineUpdateFailure(result, err, "history", "restore the History Root with git restore --staged --worktree -- "+historyPlan.historyRoot+" and git clean -fd -- "+historyPlan.historyRoot+", then rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+		return writeBaselineUpdateFailure(result, err, "history", "restore the History Root with git restore --staged --worktree -- "+historyPlan.historyRoot+" docs/references and git clean -fd -- "+historyPlan.historyRoot+" docs/references, then rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
 	}
 	if request.skipSkills {
 		result.Skills.Status = baselineUpdateSkillsSkipped
@@ -402,6 +407,7 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 	flags.StringVar(&request.confirmation, "confirm-plan", "", "Exact Plan Digest reviewed in a previous invocation")
 	flags.BoolVar(&request.yes, "yes", false, "Approve the Plan Digest computed in this invocation")
 	flags.BoolVar(&request.adoptSuggested, "adopt-suggested", false, "Adopt catalog suggestions for decisions absent from the Setup Manifest")
+	flags.Func("promote", "Repository-relative file in a selected legacy folder to copy to docs/references/", func(path string) error { request.promote = append(request.promote, path); return nil })
 	flags.BoolVar(&request.skipHistory, "no-history", false, "Skip Pending History planning and conversion")
 	flags.BoolVar(&request.skipSkills, "no-skills", false, "Skip the Repository Skill Set refresh")
 	flags.StringVar(&request.skillsSourceDir, "skills-source-dir", "", "Offline Git checkout or bare object store for external skill restoration")
@@ -414,6 +420,9 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 		return baselineUpdateRequest{}, validationError{
 			message: fmt.Sprintf("unexpected argument %q; run '%s baseline update --help' for usage", remaining[0], app.Name),
 		}
+	}
+	if request.skipHistory && len(request.promote) > 0 {
+		return request, validationError{message: fmt.Sprintf("promotion %q: --promote cannot be used with --no-history", request.promote[0])}
 	}
 	request.repo = strings.TrimSpace(request.repo)
 	request.format = strings.TrimSpace(request.format)

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -16,14 +17,25 @@ import (
 )
 
 type baselineUpdateHistory struct {
-	Status   string                         `json:"status"`
-	Message  string                         `json:"message,omitempty"`
-	Revision string                         `json:"revision,omitempty"`
-	Tag      *baselineUpdateHistoryTag      `json:"tag,omitempty"`
-	Units    []baselineUpdateHistoryUnit    `json:"units"`
-	Refused  []baselineUpdateHistoryRefusal `json:"refused"`
-	Applied  *baselineUpdateHistoryApplied  `json:"applied,omitempty"`
+	Status         string                          `json:"status"`
+	Message        string                          `json:"message,omitempty"`
+	Revision       string                          `json:"revision,omitempty"`
+	Tag            *baselineUpdateHistoryTag       `json:"tag,omitempty"`
+	Units          []baselineUpdateHistoryUnit     `json:"units"`
+	Refused        []baselineUpdateHistoryRefusal  `json:"refused"`
+	Applied        *baselineUpdateHistoryApplied   `json:"applied,omitempty"`
+	Citations      []baselineUpdateHistoryCitation `json:"citations"`
+	StaleCitations []baselineUpdateHistoryCitation `json:"staleCitations"`
 }
+type baselineUpdateHistoryCitation struct {
+	Path       string `json:"path"`
+	Line       int    `json:"line"`
+	Target     string `json:"target"`
+	Live       bool   `json:"live"`
+	Offer      string `json:"offer,omitempty"`
+	PromotedTo string `json:"promotedTo,omitempty"`
+}
+
 type baselineUpdateHistoryTag struct {
 	Name        string `json:"name"`
 	Action      string `json:"action"`
@@ -51,14 +63,17 @@ type baselineUpdateHistoryApplied struct {
 	Bytes   int64 `json:"bytes"`
 }
 type baselineUpdateHistoryPlan struct {
-	Report      baselineUpdateHistory
-	selected    []historyUnit
-	root        string
-	historyRoot string
+	Report         baselineUpdateHistory
+	selected       []historyUnit
+	root           string
+	historyRoot    string
+	archiveRoot    string
+	specRootRel    string
+	archiveRootRel string
 }
 
 func newBaselineUpdateHistory(status string) baselineUpdateHistory {
-	return baselineUpdateHistory{Status: status, Units: []baselineUpdateHistoryUnit{}, Refused: []baselineUpdateHistoryRefusal{}}
+	return baselineUpdateHistory{Status: status, Units: []baselineUpdateHistoryUnit{}, Refused: []baselineUpdateHistoryRefusal{}, Citations: []baselineUpdateHistoryCitation{}, StaleCitations: []baselineUpdateHistoryCitation{}}
 }
 
 func planBaselineUpdateHistory(ctx context.Context, repo string, environment commandEnvironment) baselineUpdateHistoryPlan {
@@ -68,6 +83,10 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 		p.Report.Message = historyRefusalLine(err)
 		p.Report.Units = []baselineUpdateHistoryUnit{}
 		p.selected = nil
+		p.Report.Citations = []baselineUpdateHistoryCitation{}
+		if p.Report.Tag != nil && p.Report.Tag.Action == "create" {
+			p.Report.Tag = nil
+		}
 		return p
 	}
 	root, err := gitOutput(ctx, repo, "rev-parse", "--show-toplevel")
@@ -97,6 +116,7 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 		return blocked(err)
 	}
 	p.historyRoot = filepath.ToSlash(filepath.Dir(archiveRel))
+	p.archiveRoot, p.specRootRel, p.archiveRootRel = archive, specRel, archiveRel
 	units, err := historyInventory(root, archive)
 	if err != nil {
 		return blocked(err)
@@ -206,7 +226,161 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 			p.Report.Tag = &baselineUpdateHistoryTag{Name: "history-full", Action: "create", Commit: revision, PushCommand: "git push origin history-full"}
 		}
 	}
+	if err := p.listCitations(ctx); err != nil {
+		return blocked(err)
+	}
+	if tagPaths != nil {
+		stale, err := spec.StaleHistoryCitations(ctx, root, p.historyRoot, tagPaths)
+		if err != nil {
+			// Stale reporting is advisory; even its failure leaves the plan intact.
+			p.Report.Message = historyRefusalLine(err)
+		} else {
+			for _, c := range stale {
+				p.Report.StaleCitations = append(p.Report.StaleCitations, p.citation(c))
+			}
+		}
+	}
 	return p
+}
+
+func (p baselineUpdateHistoryPlan) citation(c spec.HistoryCitation) baselineUpdateHistoryCitation {
+	return baselineUpdateHistoryCitation{Path: c.Path, Line: c.Line, Target: c.Target, Live: spec.IsLiveDocument(c.Path, p.specRootRel, p.archiveRootRel)}
+}
+
+func (p *baselineUpdateHistoryPlan) listCitations(ctx context.Context) error {
+	var removed, folders []string
+	promotable := map[string]string{}
+	for _, u := range p.selected {
+		if u.folder {
+			removed = append(removed, u.files...)
+			folders = append(folders, u.conversion.Folder+"/")
+			for _, file := range u.files {
+				if !baselineHistoryCoreArtifact(strings.TrimPrefix(file, u.conversion.Folder+"/")) {
+					promotable[file] = file
+				}
+			}
+		} else if u.kind.Action == "remove" {
+			removed = append(removed, u.files...)
+		}
+	}
+	if len(removed) == 0 && len(folders) == 0 {
+		return nil
+	}
+	citations, err := spec.HistoryCitations(ctx, p.root, removed)
+	if err != nil {
+		return err
+	}
+	folderCitations, err := spec.HistoryCitations(ctx, p.root, folders)
+	if err != nil {
+		return err
+	}
+	type location struct {
+		path string
+		line int
+	}
+	lines := map[location]bool{}
+	for _, c := range citations {
+		lines[location{c.Path, c.Line}] = true
+	}
+	for _, c := range folderCitations {
+		if !lines[location{c.Path, c.Line}] {
+			citations = append(citations, c)
+		}
+	}
+	for _, c := range citations {
+		report := p.citation(c)
+		if report.Live {
+			report.Offer = promotable[c.Target]
+		}
+		p.Report.Citations = append(p.Report.Citations, report)
+	}
+	return nil
+}
+
+// This is the core-artifact refusal set of PlanLegacyConversion, folder-relative.
+func baselineHistoryCoreArtifact(path string) bool {
+	base := filepath.Base(path)
+	return (filepath.Dir(path) == "." && strings.HasPrefix(base, "_") && strings.HasSuffix(base, ".md")) || (strings.HasPrefix(base, "task_") && strings.HasSuffix(base, ".md")) || (strings.HasPrefix(base, "qa-report-") && strings.HasSuffix(base, ".md"))
+}
+
+func (p *baselineUpdateHistoryPlan) promote(paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
+	promotions := map[string][]string{}
+	destinations := map[string]bool{}
+	for _, path := range paths {
+		if filepath.IsAbs(path) || filepath.ToSlash(filepath.Clean(path)) != path || strings.Contains(path, "\\") {
+			return fmt.Errorf("promotion must be a clean repository-relative file: %q", path)
+		}
+		for _, refused := range p.Report.Refused {
+			if strings.HasPrefix(path, refused.Unit+"/") {
+				return fmt.Errorf("promotion %q is in refused unit %s: %s", path, refused.Unit, refused.Reason)
+			}
+		}
+		found := false
+		for _, u := range p.selected {
+			if !u.folder || !strings.HasPrefix(path, u.conversion.Folder+"/") {
+				continue
+			}
+			relative := strings.TrimPrefix(path, u.conversion.Folder+"/")
+			if baselineHistoryCoreArtifact(relative) {
+				return fmt.Errorf("cannot promote core artifact %q", path)
+			}
+			for _, file := range u.files {
+				if path == file {
+					found = true
+					break
+				}
+			}
+			if !found {
+				break
+			}
+			destination := "docs/references/" + filepath.Base(path)
+			if destinations[destination] {
+				return fmt.Errorf("promotion %q has duplicate destination %s", path, destination)
+			}
+			if _, err := os.Lstat(filepath.Join(p.root, destination)); !os.IsNotExist(err) {
+				if err != nil {
+					return fmt.Errorf("promotion %q: inspect destination %s: %w", path, destination, err)
+				}
+				return fmt.Errorf("promotion %q: destination %s already exists", path, destination)
+			}
+			destinations[destination] = true
+			promotions[u.name] = append(promotions[u.name], path)
+			break
+		}
+		if !found {
+			return fmt.Errorf("promotion %q is outside selected legacy folder files", path)
+		}
+	}
+	for i := range p.selected {
+		u := &p.selected[i]
+		if len(promotions[u.name]) == 0 {
+			continue
+		}
+		c := u.conversion
+		// Selected files are committed at Revision. Their copies become references
+		// read by every later Spec; PlanLegacyConversion never overwrites a destination.
+		converted, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: p.root, ArchiveRoot: p.archiveRoot, Slug: u.name, SourceRevision: p.Report.Revision, Delivery: spec.LegacyDelivery{Commit: c.Record.DeliveryCommit, PullRequest: c.Record.PullRequest, Date: c.Record.Archived}, Promote: promotions[u.name]})
+		if err != nil {
+			return fmt.Errorf("promotion %q: %w", strings.Join(promotions[u.name], ", "), err)
+		}
+		u.conversion = &converted
+	}
+	promoted := map[string]string{}
+	for _, paths := range promotions {
+		for _, path := range paths {
+			promoted[path] = "docs/references/" + filepath.Base(path)
+		}
+	}
+	for i := range p.Report.Citations {
+		c := &p.Report.Citations[i]
+		if destination := promoted[c.Target]; destination != "" {
+			c.Offer, c.PromotedTo = "", destination
+		}
+	}
+	return nil
 }
 
 func baselineHistoryTree(ctx context.Context, root, revision string) (map[string]bool, error) {
@@ -232,24 +406,35 @@ func (p baselineUpdateHistoryPlan) digest(baselinePlanDigest string) (string, er
 		Record       string   `json:"record,omitempty"`
 		RecordDigest string   `json:"recordDigest,omitempty"`
 		BytesAfter   *int64   `json:"bytesAfter,omitempty"`
+		Promoted     []string `json:"promoted,omitempty"`
+	}
+	type digestCitation struct {
+		Path   string `json:"path"`
+		Line   int    `json:"line"`
+		Target string `json:"target"`
 	}
 	payload := struct {
-		Revision string       `json:"revision"`
-		Action   string       `json:"action"`
-		Commit   string       `json:"commit"`
-		Units    []digestUnit `json:"units"`
+		Revision  string           `json:"revision"`
+		Action    string           `json:"action"`
+		Commit    string           `json:"commit"`
+		Units     []digestUnit     `json:"units"`
+		Citations []digestCitation `json:"citations,omitempty"`
 	}{Revision: p.Report.Revision, Action: p.Report.Tag.Action, Commit: p.Report.Tag.Commit, Units: []digestUnit{}}
 	for i, u := range p.selected {
 		d := digestUnit{Unit: p.Report.Units[i].Unit, Action: p.Report.Units[i].Action, Paths: append([]string(nil), u.files...)}
 		sort.Strings(d.Paths)
 		if c := u.conversion; c != nil {
 			d.Record = c.RecordPath
+			d.Promoted = c.Promoted
 			sum := sha256.Sum256(c.Rendered)
 			d.RecordDigest = hex.EncodeToString(sum[:])
 		} else {
 			d.BytesAfter = &u.kind.BytesAfter
 		}
 		payload.Units = append(payload.Units, d)
+	}
+	for _, c := range p.Report.Citations {
+		payload.Citations = append(payload.Citations, digestCitation{Path: c.Path, Line: c.Line, Target: c.Target})
 	}
 	data, err := json.Marshal(payload)
 	if err != nil {
@@ -310,11 +495,11 @@ func applyBaselineUpdateHistory(ctx context.Context, repo string, p baselineUpda
 }
 
 func printBaselineUpdateHistory(w io.Writer, h baselineUpdateHistory) {
-	if h.Status != "pending" && h.Status != "applied" && h.Status != "blocked" && len(h.Refused) == 0 {
+	if h.Status != "pending" && h.Status != "applied" && h.Status != "blocked" && len(h.Refused) == 0 && len(h.Citations) == 0 && len(h.StaleCitations) == 0 && h.Message == "" {
 		return
 	}
 	fmt.Fprintf(w, "History: %s\n", h.Status)
-	if h.Status == "blocked" {
+	if h.Message != "" {
 		fmt.Fprintf(w, "History result: %s\n", h.Message)
 	}
 	if h.Status == "pending" {
@@ -344,6 +529,27 @@ func printBaselineUpdateHistory(w io.Writer, h baselineUpdateHistory) {
 		fmt.Fprintf(w, "History refused: %d\n", len(h.Refused))
 		for _, r := range h.Refused {
 			fmt.Fprintf(w, "- refused %s: %s\n", r.Unit, r.Reason)
+		}
+	}
+	if len(h.Citations) > 0 {
+		fmt.Fprintf(w, "History citations: %d\n", len(h.Citations))
+		for _, c := range h.Citations {
+			fmt.Fprintf(w, "- cites %s:%d names %s", c.Path, c.Line, c.Target)
+			switch {
+			case c.PromotedTo != "":
+				fmt.Fprintf(w, " (promoted to %s)", c.PromotedTo)
+			case c.Offer != "":
+				fmt.Fprintf(w, " (live; promote with --promote %s)", c.Offer)
+			case c.Live:
+				fmt.Fprint(w, " (live)")
+			}
+			fmt.Fprintln(w)
+		}
+	}
+	if len(h.StaleCitations) > 0 {
+		fmt.Fprintf(w, "History stale citations: %d\n", len(h.StaleCitations))
+		for _, c := range h.StaleCitations {
+			fmt.Fprintf(w, "- cites %s:%d names %s; history-full holds it: git show history-full:%s\n", c.Path, c.Line, c.Target, c.Target)
 		}
 	}
 	if h.Tag != nil {
