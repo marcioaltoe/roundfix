@@ -79,8 +79,9 @@ Existing archived folders retain their legacy link semantics.
 
 After a successful archive, the command warns when `source_revision` is not an
 ancestor of the default branch. When the delivery Pull Request opens,
-`roundfix archive <slug> --pull-request <n>` stores the delivery pull request
-in the Archive Record, including a record the current branch already added.
+`roundfix archive <slug>` with `--pull-request <n>` stores the delivery pull
+request in the Archive Record, including a record the current branch already
+added.
 
 Refusals exit `2` through Preflight Validation, name the first unmet condition
 on stderr, and leave the active Spec folder in place. Every refusal outside the

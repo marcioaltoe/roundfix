@@ -193,10 +193,14 @@ roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <te
 ```
 
 Read-only: explains failed Verification attempts and corrective Tasks in this
-repository's terminal Spec Runs, without writes or network requests. Dates
-bound Run creation times at UTC midnight, since inclusive and until exclusive;
-omitting an end leaves it open. SQLite may create WAL sidecars while opening
-the database read-only; database, lock and artifact logs stay unchanged.
+repository's terminal Spec Runs. The command changes no repository file and no
+Git ref. When an Archive Record's `source_revision` is missing locally and the
+record names its pull request, Source Revision Recovery fetches that pull
+request's head from the configured remote and adds the missing Git objects.
+Dates bound Run creation times at UTC midnight, since inclusive and until
+exclusive; omitting an end leaves it open. SQLite may create WAL sidecars while
+opening the database read-only; database, lock and artifact logs stay
+unchanged.
 
 The first embedded signature that matches determines one of five classes:
 `scope-or-authorization`, `shared-section-contract`, `repository-convention`,

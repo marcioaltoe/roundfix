@@ -93,7 +93,10 @@ This read-only command reports failed Verification attempts and corrective
 Tasks for this repository's terminal Spec Runs, oldest first. The window
 uses Run creation dates: `--since` includes its UTC midnight and `--until`
 excludes its UTC midnight. Omit either flag for an open end. The command
-writes nothing and makes no network request. SQLite may create the WAL and
+changes no repository file and no Git ref. When an Archive Record's
+`source_revision` is missing locally and the record names its pull request,
+Source Revision Recovery fetches that pull request's head from the configured
+remote and adds the missing Git objects. SQLite may create the WAL and
 shared-memory sidecars when opening a WAL database read-only; the database,
 lock and artifact logs stay unchanged.
 
