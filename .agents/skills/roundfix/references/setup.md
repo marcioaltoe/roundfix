@@ -104,6 +104,11 @@ skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
 
+When a required external skill matches its lock but differs from its Setup
+Snapshot, the `skills` line keeps its status and appends
+`DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>`;
+nothing is restored.
+
 ## Migration check
 
 The synopsis is `roundfix migrate [--check]`. With `--check`, the migration

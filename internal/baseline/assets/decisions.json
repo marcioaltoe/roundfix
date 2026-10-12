@@ -255,6 +255,23 @@
       ]
     },
     {
+      "id": "auth.base_path",
+      "version": 1,
+      "optional": true,
+      "type": "string",
+      "default": "/api/auth",
+      "requiresCapabilities": ["capability.stack.better-auth"],
+      "summary": "The path where the repository mounts Better Auth's routes, its basePath option; the provider-owned route exception covers that path.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {"artifact": "guide.backend", "template": "template.guide.backend", "token": "auth.base_path"}
+          ]
+        }
+      ]
+    },
+    {
       "id": "runtime.backend",
       "version": 2,
       "type": "string",

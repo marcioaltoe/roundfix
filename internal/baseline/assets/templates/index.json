@@ -204,10 +204,10 @@
     },
     {
       "id": "template.guide.backend",
-      "version": 3,
+      "version": 4,
       "kind": "guide",
       "path": "guides/backend.md",
-      "tokens": ["artifact.rules", "http.contract", "auth.provider", "workspace.location"]
+      "tokens": ["artifact.rules", "http.contract", "auth.provider", "auth.base_path", "workspace.location"]
     },
     {
       "id": "template.guide.frontend",

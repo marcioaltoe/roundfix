@@ -962,6 +962,10 @@ _Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
 The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
 _Avoid_: HTTP profile, universal REST rule, inferred route style
 
+**Better Auth Base Path**:
+The path under which a repository mounts Better Auth's routes, the value of Better Auth's `basePath` option, recorded as the optional `auth.base_path` decision. When it is recorded, the provider's route exception and the matching HTTP Contract Decision exception cover that path followed by `/*`; when it is absent, the recorded exception stands, and Better Auth's own default is `/api/auth` ([ADR-0263](docs/adr/0263-the-better-auth-base-path-is-a-repository-decision-a-baseline-update-records.md)).
+_Avoid_: Auth prefix, API prefix, auth scope
+
 **Formatter-Stable Output**:
 Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
 _Avoid_: Renderer-canonical output, format-after-apply fixup
@@ -985,6 +989,14 @@ _Avoid_: Runtime, Review Source, plugin
 **Repository Skill Set**:
 The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
 _Avoid_: Installed skills, plugin set, global skill set
+
+**Vendored Skill**:
+A skill a repository installs from an upstream source and never edits locally, because the next sync replaces its folder. A divergence is corrected in order: a rule that governs over the skill's default, then a repository-authored skill that supplies only what is missing, then a repository-authored replacement only when the vendored skill is useless or almost useless; an objective defect goes upstream as a pull request ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
+_Avoid_: Forked skill, local skill copy, edited upstream skill
+
+**Setup Snapshot Difference**:
+A required external skill that is installed and matches its `skills-lock.json` entry but whose tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Doctor names it without a warning and the managed refresh keeps it; only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
+_Avoid_: Trailing skill, outdated skill, stale skill
 
 **Interactive Input**:
 The TUI flow that collects command parameters before a Run starts.

@@ -6,11 +6,11 @@ This setup-owned guide is generated from the active modules. Activate every
 matching skill before governed work; repository-authored dispatch extensions
 may add stricter triggers.
 
-- **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule.
+- **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule. Read a skill's bundled files from the directory where the skill is installed, never from a fixed absolute path the skill names.
 
 - **mandatory**: When a matching skill can be started only by a person, because its metadata turns off model invocation, ask the person to run it instead of activating it or carrying out its workflow yourself.
 
-- **prohibited**: Do not edit a skill the repository installs from an upstream source; its upstream owns its text. State a correction as a Repository-Specific Normative Rule, which governs over the skill's default.
+- **prohibited**: Do not edit a skill the repository installs from an upstream source; its upstream owns its text, and the next sync replaces the folder. When such a skill diverges from what the repository needs, choose in this order. First, state the correction as a rule that governs over the skill's default, in the Baseline or as a Repository-Specific Normative Rule; this is the answer to a convention difference such as the package manager, the test runner, or a library choice. Second, add a repository-authored skill that supplies or overrides only what is missing and leaves the upstream skill installed. Third, replace the upstream skill with a repository-authored one only when it is useless or almost useless to the repository. Send an objective upstream defect to the upstream as a pull request; a defect never justifies the third choice.
 
 - **mandatory**: Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles.
 

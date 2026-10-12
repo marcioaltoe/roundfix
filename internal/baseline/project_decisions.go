@@ -6,10 +6,12 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 const (
 	authProviderDecisionID = "auth.provider"
+	authBasePathDecisionID = "auth.base_path"
 	httpContractDecisionID = "http.contract"
 )
 
@@ -31,6 +33,19 @@ func normalizeProjectDecisions(
 
 	httpIndex := decisionValueIndex(normalized, httpContractDecisionID)
 	authIndex := decisionValueIndex(normalized, authProviderDecisionID)
+	basePathIndex := decisionValueIndex(normalized, authBasePathDecisionID)
+	var basePath string
+	if basePathIndex >= 0 {
+		var err error
+		basePath, err = normalizeAuthBasePath(normalized[basePathIndex].Value)
+		if err != nil {
+			return nil, err
+		}
+		if authIndex < 0 {
+			return nil, errors.New("auth.base_path requires auth.provider")
+		}
+		normalized[basePathIndex].Value = basePath
+	}
 	if httpIndex < 0 && authIndex < 0 {
 		return normalized, nil
 	}
@@ -60,6 +75,13 @@ func normalizeProjectDecisions(
 		if err != nil {
 			return nil, projectDecisionError(fmt.Errorf("normalize %q: %w", authProviderDecisionID, err))
 		}
+		if basePathIndex >= 0 {
+			recorded := value.RouteException
+			contract.Exceptions = slices.DeleteFunc(contract.Exceptions, func(exception HTTPException) bool {
+				return equalHTTPExceptions(exception, recorded)
+			})
+			value.RouteException.Scope = basePath + "/*"
+		}
 		provider = &value
 	}
 
@@ -74,6 +96,22 @@ func normalizeProjectDecisions(
 		normalized[authIndex].Value = authProviderValue(*provider)
 	}
 	return normalized, nil
+}
+
+func normalizeAuthBasePath(value any) (string, error) {
+	const message = "auth.base_path must be an absolute path with at least one segment and no trailing slash, wildcard, query, fragment or whitespace"
+	path, ok := value.(string)
+	if !ok || len(path) < 2 || !strings.HasPrefix(path, "/") ||
+		strings.HasSuffix(path, "/") || strings.Contains(path, "//") ||
+		strings.ContainsAny(path, "*?#`") || validateStructuredRenderText("Better Auth base path", path, false) != nil {
+		return "", errors.New(message)
+	}
+	for _, character := range path {
+		if unicode.IsSpace(character) || unicode.IsControl(character) {
+			return "", errors.New(message)
+		}
+	}
+	return path, nil
 }
 
 func projectDecisionError(err error) error {

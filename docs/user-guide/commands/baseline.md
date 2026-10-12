@@ -2,6 +2,7 @@
 
 ```text
 roundfix baseline [--repo <path>] [--format <text|json>]
+roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
 roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
 roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
 roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -117,13 +118,29 @@ resolvable and names the searched `.roundfix/baseline/profiles/<id>.json`
 path. `restore.snapshot-conflict` names a skill whose embedded snapshot
 contracts disagree; no contract is chosen by catalog order.
 
-The managed refresh (`roundfix baseline update`) also restores a required
-external skill that matches its lock but trails its Setup Snapshot. Its
-read-only preview lists the skill under `Skills drifted` with a restore action,
-even when managed guidance is current. Rerun with `--yes` or the preview's
-`--confirm-plan` digest to restore it through the existing immutable snapshot
-restore path. `--skills-source-dir` supplies an offline source commit as for
-other external restorations; `--no-skills` skips the comparison and restore.
+The managed refresh previews its Plan without writing. `--yes` approves the
+Plan Digest computed in that invocation; `--confirm-plan <digest>` approves a
+previously reviewed digest. `--adopt-suggested` explicitly adopts and reports
+suggestions only for decisions absent from the manifest.
+
+`--decision <id=value>` records or changes a decision the repository's profile
+selects before the plan is built; repeat it for several decisions. The value is
+parsed as `baseline plan --decision` parses it, the plan and its digest cover
+the changed Setup Manifest, and the result lists each one under
+`declaredDecisions` with its previously recorded value. A decision the profile
+does not select or fixes, `preservation.mode`, or a malformed pair exits `2` and
+writes nothing. A declared decision also answers a new decision without
+`--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
+`roundfix baseline update --decision auth.base_path=/auth`.
+
+Doctor reports `DR-SKILL-DIFFERS-FROM-SNAPSHOT` when a required upstream skill
+is present and matches its lock but differs from the embedded Setup Snapshot.
+Newer or older is unknown, so the `skills` line keeps its readiness status and
+gains no next action. The managed refresh lists such a skill under
+`skills.differing`, keeps it, and never restores it unasked; restore one
+deliberately with `roundfix baseline skills restore --profile <id> --skill <name>`.
+A missing skill, or one that no longer matches its lock, is still restored under
+`skills.drifted`.
 
 When Pending History exists, the managed refresh adds a `History` section to
 the plan. Text lists each planned history unit and its result, then prints

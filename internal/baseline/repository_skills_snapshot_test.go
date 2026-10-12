@@ -40,11 +40,11 @@ func TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot(t *testing.T) {
 		required = append(required, name)
 	}
 	sort.Strings(required)
-	trailing, err := TrailingSetupSkills(repoRoot, manifest.Profile, required)
+	differing, err := SetupSnapshotDifferences(repoRoot, manifest.Profile, required)
 	if err != nil {
 		t.Fatalf("compare required skills with the Setup Snapshot: %v", err)
 	}
-	for _, name := range trailing {
-		t.Errorf("required skill %q trails the Setup Snapshot; run roundfix baseline update", name)
+	for _, name := range differing {
+		t.Errorf("required skill %q differs from the Setup Snapshot; restore deliberately with roundfix baseline skills restore --profile %s --skill %s", name, manifest.Profile, name)
 	}
 }

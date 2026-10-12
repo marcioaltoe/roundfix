@@ -10,7 +10,7 @@ import (
 	"roundfix/skills"
 )
 
-func TestTrailingSetupSkillsComparesTheInstalledTreeWithTheSnapshot(t *testing.T) {
+func TestSetupSnapshotDifferencesCompareTheInstalledTreeWithTheSnapshot(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 	if _, err := skills.Install(t.Context(), skills.InstallRequest{Target: "project", ProjectDir: root}); err != nil {
@@ -43,16 +43,16 @@ func TestTrailingSetupSkillsComparesTheInstalledTreeWithTheSnapshot(t *testing.T
 			t.Fatal(err)
 		}
 	}
-	const trailing = "testing-boss"
-	dir := filepath.Join(root, ".agents", "skills", trailing)
+	const differing = "testing-boss"
+	dir := filepath.Join(root, ".agents", "skills", differing)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("older installed upstream tree\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("different installed upstream tree\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	entries := map[string]any{}
-	for _, name := range []string{matching, trailing} {
+	for _, name := range []string{matching, differing} {
 		hash, err := skills.SkillFolderHash(t.Context(), filepath.Join(root, ".agents", "skills", name))
 		if err != nil {
 			t.Fatal(err)
@@ -66,30 +66,30 @@ func TestTrailingSetupSkillsComparesTheInstalledTreeWithTheSnapshot(t *testing.T
 	if err := os.WriteFile(filepath.Join(root, "skills-lock.json"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	readiness, err := skills.CheckRepositoryWithExternal(t.Context(), root, []string{matching, trailing})
+	readiness, err := skills.CheckRepositoryWithExternal(t.Context(), root, []string{matching, differing})
 	if err != nil || !readiness.Ready() {
 		t.Fatalf("lock readiness = %+v, error = %v", readiness, err)
 	}
-	got, err := TrailingSetupSkills(root, profile.ID, []string{trailing, "golang-context", matching, "roundfix"})
+	got, err := SetupSnapshotDifferences(root, profile.ID, []string{differing, "golang-context", matching, "roundfix"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, []string{trailing}) {
-		t.Fatalf("trailing = %v", got)
+	if !reflect.DeepEqual(got, []string{differing}) {
+		t.Fatalf("differing = %v", got)
 	}
 	// A second installed difference proves sorting and duplicate elimination.
 	secondDir := filepath.Join(root, ".agents", "skills", "golang-context")
 	if err := os.MkdirAll(secondDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(secondDir, "SKILL.md"), []byte("old context skill\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(secondDir, "SKILL.md"), []byte("different context skill\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got, err = TrailingSetupSkills(root, profile.ID, []string{trailing, "golang-context", trailing, matching})
-	if err != nil || !reflect.DeepEqual(got, []string{"golang-context", trailing}) {
-		t.Fatalf("sorted trailing = %v, error = %v", got, err)
+	got, err = SetupSnapshotDifferences(root, profile.ID, []string{differing, "golang-context", differing, matching})
+	if err != nil || !reflect.DeepEqual(got, []string{"golang-context", differing}) {
+		t.Fatalf("sorted differing = %v, error = %v", got, err)
 	}
-	if _, err := TrailingSetupSkills(root, "unknown-profile", []string{trailing}); err == nil {
+	if _, err := SetupSnapshotDifferences(root, "unknown-profile", []string{differing}); err == nil {
 		t.Fatal("unknown profile must make snapshot comparison unavailable")
 	}
 }

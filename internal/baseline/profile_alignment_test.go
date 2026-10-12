@@ -1325,7 +1325,7 @@ func TestDivergenceRendersProbe(t *testing.T) {
 	if betterAuth.CapabilityResolution.SelectedTechnology != "Better Auth" ||
 		betterAuth.CapabilityResolution.RepositoryRemediation == "" ||
 		betterAuth.CapabilityResolution.ProfileAdaptation == "" ||
-		!slices.Equal(betterAuth.CapabilityResolution.RemovedDecisions, []string{"auth.provider"}) {
+		!slices.Equal(betterAuth.CapabilityResolution.RemovedDecisions, []string{"auth.provider", "auth.base_path"}) {
 		t.Fatalf("Better Auth resolution = %+v", betterAuth.CapabilityResolution)
 	}
 

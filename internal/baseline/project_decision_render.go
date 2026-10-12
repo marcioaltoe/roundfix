@@ -39,6 +39,13 @@ func renderProjectDecision(
 		return renderHTTPContract(value, declaration)
 	case authProviderDecisionID:
 		return renderAuthProvider(value)
+	case authBasePathDecisionID:
+		path, err := normalizeAuthBasePath(value)
+		if err != nil {
+			return "", err
+		}
+		return "\n\nThe recorded Better Auth base path is " + markdownCode(path) +
+			", the value of Better Auth's `basePath` option.", nil
 	default:
 		return "`" + renderDecisionValue(value) + "`", nil
 	}
@@ -235,6 +242,8 @@ func markdownCode(value string) string {
 
 func renderUnrecordedProjectDecision(decisionID string, declaration document) (string, error) {
 	switch decisionID {
+	case authBasePathDecisionID:
+		return "", nil
 	case branchPrefixDecisionID:
 		return strings.Join([]string{
 			"No branch prefix is recorded. Name new work branches `<type>/<description>`,",

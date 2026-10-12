@@ -149,7 +149,7 @@ func TestSkillSnapshotProfileNamesTheRepositoryPath(t *testing.T) {
 	if !errors.As(err, &resolution) {
 		t.Fatalf("resolution error was not wrapped: %v", err)
 	}
-	_, compareErr := TrailingSetupSkills(root, "missing-profile", nil)
+	_, compareErr := SetupSnapshotDifferences(root, "missing-profile", nil)
 	if compareErr == nil || !strings.HasPrefix(compareErr.Error(), "load profile for snapshot comparison: ") || !strings.Contains(compareErr.Error(), ".roundfix/baseline/profiles/missing-profile.json") {
 		t.Fatalf("comparison error = %v", compareErr)
 	}
@@ -216,7 +216,7 @@ func TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill(t *testing.T) {
 	}
 }
 
-func TestTrailingSetupSkillsComparesARepositoryProfile(t *testing.T) {
+func TestSetupSnapshotDifferencesCompareARepositoryProfile(t *testing.T) {
 	t.Parallel()
 	root, catalog, id := snapshotProfileFixture(t)
 	profile, err := loadSkillSnapshotProfile(root, id, catalog)
@@ -241,9 +241,9 @@ func TestTrailingSetupSkillsComparesARepositoryProfile(t *testing.T) {
 		}
 	}
 	const edited = "testing-boss"
-	writeInspectionFile(t, root, ".agents/skills/"+edited+"/SKILL.md", "older installed upstream tree\n")
-	got, err := TrailingSetupSkills(root, id, []string{edited, matching, edited, "golang-context", "roundfix"})
+	writeInspectionFile(t, root, ".agents/skills/"+edited+"/SKILL.md", "different installed upstream tree\n")
+	got, err := SetupSnapshotDifferences(root, id, []string{edited, matching, edited, "golang-context", "roundfix"})
 	if err != nil || !reflect.DeepEqual(got, []string{edited}) {
-		t.Fatalf("trailing = %v, error = %v", got, err)
+		t.Fatalf("differing = %v, error = %v", got, err)
 	}
 }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "rust",
-  "version": 4,
+  "version": 5,
   "kind": "language-runtime",
   "title": "Rust repository guidance",
   "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
@@ -55,9 +55,9 @@
   "supportingGuides": [{"id": "guide.rust", "version": 3, "path": "docs/agents/rust.md", "template": "template.guide.rust", "rules": ["rule.rust.current-docs", "rule.rust.cargo-gates", "rule.rust.library-and-entry-point"], "references": []}],
   "repositoryExtensions": [],
   "rules": [
-    {"id": "rule.rust.current-docs", "version": 3, "coverage": ["coverage.rust", "coverage.research", "coverage.dependencies"], "clauses": [
+    {"id": "rule.rust.current-docs", "version": 4, "coverage": ["coverage.rust", "coverage.research", "coverage.dependencies"], "clauses": [
       {"id": "clause.rust.change-manifests-through-cargo", "enforcement": "mandatory", "guidance": "Change dependencies through Cargo commands such as `cargo add`, `cargo remove`, and `cargo update`, and commit `Cargo.toml` and `Cargo.lock` together."},
-      {"id": "clause.rust.read-current-docs", "enforcement": "mandatory", "guidance": "Use current authoritative crate and toolchain documentation before changing Rust APIs, configuration, or dependencies."}
+      {"id": "clause.rust.read-current-docs", "enforcement": "mandatory", "guidance": "Use current authoritative crate and toolchain documentation before changing Rust APIs, configuration, or dependencies. Follow the edition the crate's `Cargo.toml` declares, not the one a skill example assumes: under edition 2024, `std::env::set_var` and `std::env::remove_var` are `unsafe`, and each call needs an `unsafe` block whose `// SAFETY:` comment states why no other thread reads or writes the environment at that point."}
     ]},
     {"id": "rule.rust.cargo-gates", "version": 3, "coverage": ["coverage.rust", "coverage.cli", "coverage.verification-integrity"], "clauses": [
       {"id": "clause.rust.iterate-with-focused-cargo-commands", "enforcement": "mandatory", "guidance": "Use focused `cargo check`, `cargo test`, and lint commands while iterating, then run the selected repository Verification."},

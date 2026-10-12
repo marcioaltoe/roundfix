@@ -125,18 +125,21 @@ The skills counts come from the repository's Repository Skill Set.
 Doctor also compares each installed required external skill that matches its
 lock with the `treeDigest` pinned by the Setup Snapshot for the Setup Manifest's
 profile. This offline comparison uses the restore command's portable tree
-digest. A difference adds `DR-SKILL-TRAILS-SNAPSHOT` and the sorted skill names:
+digest. A Setup Snapshot Difference appends the exact detail suffix
+`; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <sorted names>`:
 
 ```text
-skills: warn (<counts>; DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: <names>; next: roundfix baseline update)
+skills: ok (<counts>; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>)
 ```
 
-Trailing alone leaves Doctor's exit code at `0`. If skill readiness already
-fails, the finding is appended to the `failed` line with the managed refresh
-next action. Missing and outdated skills are excluded from this comparison.
+When a required external skill matches its lock but differs from its Setup
+Snapshot, the `skills` line keeps its status and appends
+`DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>`;
+nothing is restored. Doctor's exit code and the next action stay what readiness
+set. Missing and lock-mismatched skills are excluded from this comparison.
 When the manifest's profile cannot resolve, the line says
 `snapshot comparison unavailable` and keeps its readiness status. With no
-trailing skills, Repository Skill Set readiness and its existing text stay
+differences, Repository Skill Set readiness and its existing text stay
 unchanged.
 
 The comparison accepts repository-owned Baseline Profiles and uses their

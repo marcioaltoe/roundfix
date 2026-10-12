@@ -73,7 +73,7 @@ func TestTheCoreGuidesStateThePromotedRules(t *testing.T) {
 					"- **prohibited**: Do not route a database change through a migration, script, seed, or test to avoid that authorization. The repository's committed migrate and seed commands run against a disposable local database are exempt.",
 				}},
 				{guide: "docs/agents/skill-dispatch.md", must: []string{
-					"- **prohibited**: Do not edit a skill the repository installs from an upstream source; its upstream owns its text. State a correction as a Repository-Specific Normative Rule, which governs over the skill's default.",
+					"- **prohibited**: Do not edit a skill the repository installs from an upstream source; its upstream owns its text, and the next sync replaces the folder. When such a skill diverges from what the repository needs, choose in this order. First, state the correction as a rule that governs over the skill's default, in the Baseline or as a Repository-Specific Normative Rule; this is the answer to a convention difference such as the package manager, the test runner, or a library choice. Second, add a repository-authored skill that supplies or overrides only what is missing and leaves the upstream skill installed. Third, replace the upstream skill with a repository-authored one only when it is useless or almost useless to the repository. Send an objective upstream defect to the upstream as a pull request; a defect never justifies the third choice.",
 				}},
 			}
 			if profile == "standard-typescript-monorepo" {

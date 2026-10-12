@@ -64,7 +64,7 @@ Usage:
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
   roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
-  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--no-history] [--skills-source-dir <path>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5553,7 +5553,7 @@ explicit post-QA authority.
 	case "baseline":
 		return `Usage:
   roundfix baseline [--repo <path>] [--format <text|json>]
-  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--no-history] [--skills-source-dir <path>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5591,7 +5591,7 @@ embedded Baseline catalog.
 		return `Usage:
   roundfix baseline update [--repo <path>] [--format <text|json>]
                            [--yes | --confirm-plan <digest>]
-                           [--adopt-suggested]
+                           [--adopt-suggested] [--decision <id=value> ...]
                            [--no-skills]
                            [--no-history]
                            [--promote <path> ...]
@@ -5606,7 +5606,10 @@ digest reviewed in a previous invocation. The two forms are mutually exclusive.
 
 A repository without a Setup Manifest requires first adoption. A decision the
 manifest does not carry requires action unless --adopt-suggested explicitly
-selects the catalog suggestion; every adopted suggestion is reported.
+selects the catalog suggestion or --decision declares a value; every adopted
+suggestion and declared decision is reported. --decision records or changes a
+selected decision before planning; profile-fixed decisions and preservation.mode
+are refused.
 
 After an approved guidance apply, the command reinstalls the binary-carried
 Roundfix skills and restores missing or drifted external Repository Skill Set
@@ -5639,6 +5642,7 @@ Options:
   --yes              Approve the Plan Digest computed in this invocation
   --confirm-plan     Exact Plan Digest reviewed in a previous invocation
   --adopt-suggested  Adopt and report suggestions only for decisions absent from the manifest
+  --decision         Record or change a decision as id=value; repeat for several decisions
   --no-skills        Skip the Repository Skill Set refresh
   --no-history       Skip Pending History planning and conversion
   --promote          Copy a selected folder file to docs/references/; repeatable,
