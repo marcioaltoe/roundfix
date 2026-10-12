@@ -1,5 +1,0 @@
-Source: https://marketplace.visualstudio.com/items?itemName=TarasErmolenko.fix-refs-vscode
-Title: MD Links — Visual Studio Marketplace
-Observed through the public page during this QA run.
-The “How it works” passage describes an AST-based fixer that changes link URL tokens while preserving the surrounding document bytes. The rename section preserves labels, formatting, titles, fragments and queries. The delete section and fixRefs.warnOnDelete setting warn about remaining inbound links, allowing a manual decision.
-Assessment: these published behaviors support destination-only rewrites and warnings for unrelinked citations. Roundfix’s promoted-source policy differs: copies retain their original bytes and outward links, as ADR-0247 requires. Row 05 independently checks the rewrite against committed bytes and the unchanged warned handoff.

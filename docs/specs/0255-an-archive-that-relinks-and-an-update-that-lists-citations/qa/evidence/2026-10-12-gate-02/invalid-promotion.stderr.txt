@@ -1,1 +1,0 @@
-roundfix: baseline update failed: promotion "docs/findings/2026-01-04-gap.md" is outside selected legacy folder files

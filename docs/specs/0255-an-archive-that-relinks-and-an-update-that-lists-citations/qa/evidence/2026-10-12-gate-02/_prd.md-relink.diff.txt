@@ -1,8 +1,0 @@
---- docs/specs/0002-secondary/_prd.md (HEAD)
-+++ docs/specs/0002-secondary/_prd.md (relinked)
-@@ -4,4 +4,4 @@
- 
- # Secondary
- 
--[Source](../0001-owner/references/2026-01-01-source.md#lesson)
-+[Source](../../references/2026-01-01-source.md#lesson)

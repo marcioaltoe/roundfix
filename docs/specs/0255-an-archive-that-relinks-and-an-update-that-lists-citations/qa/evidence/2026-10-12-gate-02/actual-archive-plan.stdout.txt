@@ -1,6 +1,0 @@
-archive plan for 0255-an-archive-that-relinks-and-an-update-that-lists-citations: removes 105 file(s) (2229239 bytes) and writes docs/history/specs/0255-an-archive-that-relinks-and-an-update-that-lists-citations.md
-core 13 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-12-01.md, qa/qa-report-2026-10-12-02.md, qa/qa-report-2026-10-12.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 90 file(s) (2084250 bytes) under qa/evidence/
-candidate references/2026-10-12-an-archive-breaks-links-other-specs-make-into-its-references.md 1716 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
-candidate references/2026-10-12-baseline-update-sanitizes-history-without-reporting-the-citations-it-breaks.md 2142 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
-promote with: roundfix archive 0255-an-archive-that-relinks-and-an-update-that-lists-citations --promote <path>
