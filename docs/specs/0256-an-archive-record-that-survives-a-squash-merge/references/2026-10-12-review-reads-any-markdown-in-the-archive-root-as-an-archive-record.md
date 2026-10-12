@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0256-an-archive-record-that-survives-a-squash-merge
 ---
 
 # `review` reads any Markdown file in the archive root as an Archive Record
