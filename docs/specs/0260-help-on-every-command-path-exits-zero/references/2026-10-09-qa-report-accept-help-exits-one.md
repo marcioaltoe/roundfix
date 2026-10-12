@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-09
-spec: null
+spec: 0260-help-on-every-command-path-exits-zero
 ---
 
 # `roundfix qa-report accept --help` exits 1
