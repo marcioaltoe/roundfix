@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0257-the-baseline-respects-the-repository
 ---
 
 # A skill newer than the Setup Snapshot is reported as trailing, and the remedy downgrades it
