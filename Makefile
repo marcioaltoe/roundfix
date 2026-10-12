@@ -8,7 +8,14 @@ GO := go
 GO_HUMAN := $(RTK) go
 GOFMT := gofmt
 
-GOCACHE ?= $(CURDIR)/.gocache
+ifeq ($(origin GOCACHE),undefined)
+GOCACHE := $(shell root="$${TMPDIR:-/tmp}"; cache="$${root%/}/roundfix-go-build-$$(id -u)"; \
+	if mkdir -p "$$cache" 2>/dev/null && probe=$$(mktemp "$$cache/.write-test.XXXXXX" 2>/dev/null) && rm -f "$$probe" 2>/dev/null; then \
+		printf '%s' "$$cache"; \
+	else \
+		printf '%s' "$(CURDIR)/.gocache"; \
+	fi)
+endif
 export GOCACHE
 
 APP := roundfix
