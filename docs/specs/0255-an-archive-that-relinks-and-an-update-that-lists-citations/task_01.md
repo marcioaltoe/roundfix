@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0255-an-archive-that-relinks-and-an-update-that-lists-citations
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -126,3 +126,50 @@ through phrase, mirror and version checks.
 - `_prd.md` → Core Feature 7; User Story 6; Goals; Acceptance evidence
 - `_techspec.md` → Build Order 1; API Contract 3; API Contract 4; API Contract 5; API Contract 6; API Contract 7; API Contract 8; API Contract 9; API Contract 10
 - ADR-0260; ADR-0083; ADR-0247; ADR-0254
+
+## Result
+
+Implementation evidence for the daemon handoff:
+
+- Glossary: `CONTEXT.md` now defines Live Document, Archive Relink, History
+  Citation and Stale History Citation with ADR-0260 references. Archive Record
+  names its optional `relinked` list, Archive Command names Archive Relink,
+  and Managed Refresh names History Citations, the Plan Digest and repeatable
+  `--promote`.
+- Skills and mirrors: the four authoring skills and archive-spec now describe
+  the owner's Archive Relink; the Roundfix Skill and archive, baseline and
+  deliver references describe the new surfaces. `make skills-sync` completed,
+  and a focused equality check reported `canonical/mirror equality: ok`.
+- Baseline adopter guidance: both baseline references list the History Citation
+  and Stale History Citation text forms, JSON fields, promotion refusals and
+  the `git show history-full:<path>` restoration procedure.
+- Version evidence: `GOCACHE=/private/tmp/roundfix-task-0255-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  completed with `1 passed in 1 packages`; it recorded the next versions and
+  digests for the six changed owned skills.
+- Focused hygiene: `git diff --check` completed successfully; the changed
+  documentation and generated version record contain no whitespace errors.
+- Verification feedback repair: Attempt 1 of `make verify-changed` passed all
+  earlier packages and checks, then failed only because
+  `TestTheSkillCoverageMapIsCurrent` reported stale fingerprints for the
+  archive, baseline and deliver guides. The repository-authorized record
+  command
+  `GOCACHE=/private/tmp/roundfix-task-0255-gocache go test -count=1 -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' ./internal/docscontract -record-skill-coverage`
+  regenerated `docs/references/behavior-surfaces.json`, and the focused
+  follow-up
+  `GOCACHE=/private/tmp/roundfix-task-0255-gocache go test -count=1 -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' ./internal/docscontract`
+  passed with `1 passed in 1 packages`.
+
+The Task-declared Verification commands, including the QA settlement contract
+test, remain for the Daemon as required by the execution invariants. No Task
+status was changed, and no commit, push or PR was created.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/references/behavior-surfaces.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T110224Z_380dd005763aa861`
+- Source commit: `314f67220c0bf1ad3e0fe49b099783d0eaa681c3`

@@ -83,6 +83,12 @@ is represented at the recorded merged head. A Run it cannot prove stays in
 place, and `deliver status` names the Run and its reason in the item's cleanup
 warning.
 
+The archive commit also carries the promoted copies and every relinked file
+named by the Archive Record. The queue accepts a relinked file only when it is
+outside the archived folder and History Root, existed at the parent, and its
+bytes equal the archive's rewrite of the parent's bytes under the same citation
+moves; an extra or altered relinked file fails the archive proof.
+
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
 one of those operations, `deliver start` exits `2`, names every refused Spec

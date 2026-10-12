@@ -79,6 +79,41 @@ the Baseline Plan or change the update's state. A repository-wide history
 precondition such as an invalid tag can make the history section `blocked` with
 its one-line result while the Baseline Plan keeps its existing behavior.
 
+For each selected unit, the history section also lists every History Citation
+that the removal breaks:
+
+```
+History citations: <n>
+- cites <path>:<line> names <target>
+- cites <path>:<line> names <target> (live)
+- cites <path>:<line> names <target> (live; promote with --promote <target>)
+- cites <path>:<line> names <target> (promoted to docs/references/<basename>)
+History stale citations: <n>
+- cites <path>:<line> names <target>; history-full holds it: git show history-full:<target>
+```
+
+The citation list is in report order and is part of the Plan Digest. JSON
+always includes `history.citations` and `history.staleCitations` as arrays.
+Each citation has `path`, `line`, `target` and `live`; `offer` is present
+for a Live Document promotion offer and `promotedTo` is present when the
+target was promoted. Stale History Citations are advice: they do not enter the
+digest, state, category or exit code.
+
+Pass repeatable `--promote <path>` values to copy named files from selected
+Legacy Archive Folders to `docs/references/` during apply. A value must be a
+clean repository-relative file inside a selected folder, outside every Refused
+Unit, not a core artifact, unique by basename among the promotions, and absent
+from `docs/references/`. `--promote` with `--no-history`, an invalid value,
+a refused unit or an occupied destination exits 2 with category `invalid`
+and writes nothing. The update never rewrites a citing file.
+
+Adopter note: if an earlier `roundfix baseline update` or Sanitize Batch
+already broke citations, run `roundfix baseline update` with the History Full
+Tag present and read the `History stale citations` lines. Restore a target you
+keep with `git show history-full:<path>` into `docs/references/` before
+fixing the link. Specs already written to link an owner's copy need nothing,
+because the owner's archive performs an Archive Relink.
+
 JSON always includes a `history` object. Its status is `skipped`, `current`,
 `pending`, `applied` or `blocked`; it carries the selected units, Refused Units,
 tag action and apply result when those values exist. When units are selected,

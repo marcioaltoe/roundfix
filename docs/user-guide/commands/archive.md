@@ -15,7 +15,8 @@ archive records the declarations' `satisfied-by` actions under `unproven` in
 the Archive Record, so it names what was never verified. It writes
 `docs/history/specs/<slug>.md` for the built-in Spec Root, or
 `<specs.root>/_archived/<slug>.md` for another configured root, then removes
-`<specs.root>/<slug>/`. The PRD and relative links are never rewritten.
+`<specs.root>/<slug>/`. The archive performs an Archive Relink before writing:
+Live Document citations are rewritten to promoted copies or the Archive Record.
 The original folder's bytes stay in Git at the record's `source_revision`. The
 Archive Record is the small `<slug>.md` file under the archive root; it names
 the disposition, QA Report and verdict, source revision, and promoted files.
@@ -38,6 +39,28 @@ candidate references/<file>.md <bytes> bytes: no advice (<KEY_VARIABLE> is not s
 promote with: roundfix archive <slug> --promote <path>
 ```
 
+The Archive Record lists changed citing files under its optional `relinked`
+key. A cited non-core file that a Live Document references is promoted
+automatically to `docs/references/<basename>`; citations of the folder or a
+core artifact target the Archive Record. Citations in non-Live Documents are
+left unchanged and reported as unrelinked.
+
+The archive refuses without changing files when a promotion destination exists,
+when two promotions share a basename, or when a Live Document to be rewritten
+has changes not committed at `HEAD`. A Git planning failure in a work tree
+also refuses. Its `--plan` output adds these lines before `promote with:`:
+
+```
+promotes <file> to docs/references/<basename>
+relinks <path>: <n> citation(s)
+leaves <path>:<line> naming <target> unrelinked
+```
+
+An unrelinked citation writes
+`roundfix: warning: archive leaves <path>:<line> naming removed <target> unrelinked`
+to stderr. When the archive changes one or more Live Documents, the success
+line appends `; relinked <m> file(s)` after the promotion suffix.
+
 The Spec folder must match its repository's `HEAD`. Modified, staged, deleted
 or untracked Spec files cause exit `2`; commit them before archiving so the
 recorded revision holds every removed file. For an external Spec Root, this
@@ -50,7 +73,8 @@ archived <slug> -> docs/history/specs/<slug>.md; removed <n> file(s) (<b> bytes)
 ```
 
 When files are promoted, the successful confirmation appends
-`; promoted <n> file(s) to docs/references/`.
+`; promoted <n> file(s) to docs/references/`; relinked files add the suffix
+`; relinked <m> file(s)`.
 
 An override inserts ` with QA override` after the slug. An existing Archive
 Record or legacy folder for the same slug refuses the archive before any file

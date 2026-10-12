@@ -110,6 +110,12 @@ warning. This cleanup proves a squash merge onto a default branch that moved
 during the item by comparing the merge commit with Git's merge of the candidate
 into its first parent.
 
+The archive commit also carries the promoted copies and every relinked file
+named by the Archive Record. The queue accepts a relinked file only when it is
+outside the archived folder and History Root, existed at the parent, and its
+bytes equal the archive's rewrite of the parent's bytes under the same citation
+moves; an extra or altered relinked file fails the archive proof.
+
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
 one of those operations, `deliver start` exits `2`, names every refused Spec

@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Write TechSpec
@@ -32,6 +32,9 @@ Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's 
   post-adoption path in the owning Spec with a destination relative to `_techspec.md`,
   never at the pre-adoption path kept in the reference index. A secondary Spec
   links the primary owner's copy and adopts nothing.
+  The owner's archive performs an Archive Relink: it promotes that copy to
+  `docs/references/` and rewrites the secondary Spec's links, so the source
+  keeps one owner and the secondary Spec needs no copy (ADR-0260, ADR-0083).
 
 ## Sources that share a context
 
