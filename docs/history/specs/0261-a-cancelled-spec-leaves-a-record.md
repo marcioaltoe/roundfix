@@ -24,6 +24,7 @@ regeneration:
       - internal/baseline/module-versions.json
   - command: make skills-sync
 promoted: []
+pull_request: "498"
 ---
 
 # A cancelled Spec leaves a record
