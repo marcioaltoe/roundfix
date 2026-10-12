@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.68.0] - 2026-10-12
+
+### A cancelled Spec leaves a record
+
+- **Cancel Command.** `roundfix cancel <slug> --reason <text>` retires an active Spec that will not be delivered. It writes one Archive Record with the disposition `cancelled`, the reason, the date and the Tasks completed and pending, then removes the committed Spec folder, which stays in Git at the record's `source_revision`. Any citation of the Spec's files from a Live Document is relinked as `roundfix archive` does. The command creates no Run, never changes a Task status, and never commits or pushes.
+- **Source Return.** Each adopted Backlog Entry goes back to `docs/backlog/` with `status: open`, and each adopted Finding goes back to `docs/findings/` with `status: pending` and a dated addendum. Every other byte is kept.
+- **Refusals.** Cancel refuses while an Active Run or an unfinished Delivery Queue item holds the Spec, while an active Spec requires it, when the Spec carries a supersession, and when the Spec folder has uncommitted changes.
+- **A cancelled record never counts as delivery.** It meets no Delivery Queue prerequisite, supersedes nothing, and `roundfix deliver retry` refuses it. Only the Tasks it lists as completed count as completed.
+- **Glossary.** Adds Cancel Command and Source Return. Revises Archive Record, Supersession, Prerequisite Spec and Delivery Retry (ADR-0262).
+
 ## [0.67.0] - 2026-10-12
 
 ### An Archive Record that survives a squash merge
