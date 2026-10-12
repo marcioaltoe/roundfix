@@ -193,6 +193,16 @@
       ]
     },
     {
+      "id": "command cancel",
+      "skills": [
+        ".agents/skills/roundfix/references/archive.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/cancel.md",
+        "internal/cli/cancel.go"
+      ]
+    },
+    {
       "id": "command deliver plan",
       "skills": [
         ".agents/skills/roundfix/references/deliver.md"

@@ -13,6 +13,7 @@
     "command baseline skills reconcile": "sha256:556c32beaabbe90cb0a7a58637113df7d449f0890e1972e5a7c68b2294e8fad1",
     "command baseline skills restore": "sha256:fcb558ea62f494a5d991f6520fc7f4bfffb223dbabf0fa192569de0381a1b108",
     "command baseline update": "sha256:d982e4df41f94592a5e03709ec2a65f2ff4060d30f307bdbc5e5305c3babde76",
+    "command cancel": "sha256:ce63b06925c1d6b41d36d46f0d50d91f271c9ec8fc05d399a46776c533ef6e1b",
     "command deliver plan": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
     "command deliver resume": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
     "command deliver retry": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0261-a-cancelled-spec-leaves-a-record
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -107,3 +107,67 @@ through whole-transcript tests over temporary repositories and homes.
 - [_prd.md](_prd.md) — Goal 1; Goal 4; User Story 1; User Story 4; Core Feature 1; Core Feature 4; Core Feature 6; Success Metric 1; Success Metric 2
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 2; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Surface Transcript 6; Integration Points; Testing Approach; Build Order 3
 - ADR-0262; ADR-0184; ADR-0256; ADR-0259
+
+## Result
+
+Implemented the Cancel Command within this Task's CLI slice. Dispatch and
+root help name `cancel`, and command help matches Surface Transcript 6.
+Preflight checks arguments, the Git working tree, the active folder,
+non-Markdown directory pins, committed Spec bytes, the Active Run, the
+Delivery Queue and active Specs' `requires`, before calling `spec.Cancel`.
+The Run Database is opened only if it exists; orphan reclaim uses the same
+helper as `settle`. Every unfinished queue stage refuses; `merged` permits
+cancellation and `parked` permits it with the prescribed warning.
+
+Success prints the cancellation summary and returned sources, followed on
+stderr by the parked-item warning and citation advice. Advice originates in
+`spec.HistoryCitations` over the planned removed files and folder, collected
+before the folder cut because the helper reads tracked working-tree files.
+The shared Archive Relink plan filters citations that will remain, including
+code examples on a line whose other link is relinked. The returned
+`RemovedPaths` limits the warnings to paths actually removed. Validation
+errors use exit 2; existing Cancel mutation-operation labels distinguish
+write/removal failures for exit 1 without changing `internal/spec`.
+
+Added the `command cancel` coverage entry and generated the Behavior Surface
+Record with the required record command. The cancel user guide, Supersede
+Command, delivery implementation and Spec library were not changed.
+
+### Focused checks
+
+- Before command implementation,
+  `go test ./internal/cli -run '^TestCancelTranscriptPrintsHelp$' -count=1`
+  exited 1 with `unknown command "cancel"`, establishing the missing surface.
+- After the final code and test edits,
+  `go test ./internal/cli -run '^(TestCancel|TestRootHelpNamesTheCancelCommand|TestRunHelp|TestRunCommandHelp|TestHelpTokenAsAFlagValueIsNotHelp|TestLeadingHelpTokenPrintsUsage)' -count=1`
+  exited 0 (`ok roundfix/internal/cli`). This selects every Cancel test and
+  the directly related existing help checks.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 after the final command edit (`ok roundfix/internal/docscontract`)
+  and generated only the new Cancel surface entry. This is Requirement 5's
+  implementation generator, not a run of the declared Verification commands.
+- `git diff --check` exited 0. Commands were executed with `rtk proxy` for
+  exact output; the configured sandbox root contains a symlink, so the
+  executor required approved execution for workspace access.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Six whole Surface Transcripts | All six prescribed `TestCancelTranscript...` tests compare complete stdout, stderr and exit code to independent transcript expectations, substituting only fixture names, file counts, byte counts, revision and Run ID. All passed in the focused selection. |
+| Every unfinished stage refuses; parked only warns | `TestCancelRefusesEveryUnfinishedQueueStage` covers queued, running, reviewing, archiving, gating, publishing, checking and merging. Transcript 2 asserts parked warning order; `TestCancelAcceptsAMergedQueueItem` asserts merged produces no warning or commit. All passed. |
+| Refusals preserve the working tree | `TestCancelRefusalsLeaveTheTreeUnchanged` covers missing reason, unknown Spec, uncommitted bytes, supersession and a non-Markdown pin. Its shared assertion compares the whole file snapshot, `git status --porcelain --untracked-files=all` and a SHA-256 digest of Spec paths and bytes. The queue, Active Run, requiring Spec, malformed requires, occupied Source Return destination and argument refusals use the same assertion. All passed. |
+| Root help and coverage | `TestRootHelpNamesTheCancelCommand` asserts both new lines immediately after the archive lines; the whole command-help transcript passes. The sanctioned coverage record command passed and wrote the new Behavior Surface entry. |
+
+Additional passing checks cover an absent Run Database, orphaned Run reclaim,
+non-Git refusal, whitespace-normalized reasons, cancellation without a Task
+Graph, exit 1 with unchanged bytes after a destination-creation failure,
+History/untracked citation exclusions, one warning per line, and a surviving
+citation on a partly relinked line. The last case initially reproduced a
+missing warning and passes with the shared relink-plan filter.
+
+The pre-existing Task status remains `in_progress`. Only this `## Result`
+was appended to the Task file. No Task Graph or other Task file was changed.
+No commit, push, Pull Request, selected repository Verification or declared
+Task Verification was run. The Daemon owns Verification and settlement;
+reader-command changes remain task_04's slice.
