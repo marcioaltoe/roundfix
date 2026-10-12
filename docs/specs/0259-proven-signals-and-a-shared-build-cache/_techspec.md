@@ -52,7 +52,7 @@ clean it: a cleaned entry is a cache miss, never a wrong build.
   `.agents/skills/roundfix/references/setup.md`,
   `.agents/skills/roundfix/references/storage.md`, `.roundfixrc.yml`,
   `Makefile`, `docs/agents/specific-repository.md`,
-  `skills/roundfix/SKILL.md`. Source:
+  `internal/gittest/gittest.go`, `skills/roundfix/SKILL.md`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`;
   Spec-contained authorization record:
   `docs/specs/0259-proven-signals-and-a-shared-build-cache/_authorization.md`.

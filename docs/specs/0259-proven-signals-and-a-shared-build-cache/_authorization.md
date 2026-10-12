@@ -10,6 +10,7 @@ paths:
   - .roundfixrc.yml
   - Makefile
   - docs/agents/specific-repository.md
+  - internal/gittest/gittest.go
   - skills/roundfix/SKILL.md
 operations:
   - implement
@@ -40,12 +41,16 @@ Baseline source, guides and `.roundfixrc.yml` ("Autorizar os dois").
 The governed set was measured on the authoring branch at `7a8b7f70` with
 `GovernedPath`, through a `go test -overlay` probe in `internal/speccheck`
 that wrote nothing to the repository, against every file the Tasks declare.
-Seven of them are governed.
+Seven of them are governed. The 2026-10-12 amendment adds an eighth,
+`internal/gittest/gittest.go`, that `spec check --strict` reported governed.
 
 ## Why each governed path is unavoidable
 
 - `Makefile` holds the `GOCACHE` default that task_03 changes from the
   worktree's `.gocache` to the shared cache with that fallback.
+- `internal/gittest/gittest.go` holds `Harden` and `InitRepo`, which task_02
+  makes write `core.fsmonitor = false` and `core.untrackedCache = false`, so no
+  fixture repository starts a filesystem monitor that becomes Helper Residue.
 - `docs/agents/specific-repository.md` gains, outside every setup marker, the
   rule for signals and helper lifelines (task_02) and the shared cache line
   (task_03), so whoever writes the next test or build meets them.

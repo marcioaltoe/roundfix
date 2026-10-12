@@ -73,7 +73,7 @@ reads. No Verification here depends on another Spec's artifacts.
   `.agents/skills/roundfix/references/setup.md`,
   `.agents/skills/roundfix/references/storage.md`, `.roundfixrc.yml`,
   `Makefile`, `docs/agents/specific-repository.md`,
-  `skills/roundfix/SKILL.md`. No CI workflow,
+  `internal/gittest/gittest.go`, `skills/roundfix/SKILL.md`. No CI workflow,
   lint, formatter or module file change. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`;
   Spec-contained authorization record:
