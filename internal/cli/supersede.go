@@ -163,12 +163,15 @@ func knownDelivererSpec(root roundconfig.SpecsRoot, slug string) (bool, error) {
 		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed _prd.md in the active Spec Root: %v", slug, err)}
 	}
 
-	_, err = spec.ReadArchivedSpec(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), slug)
+	archived, err := spec.ReadArchivedSpec(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), slug)
 	if errors.Is(err, spec.ErrNotArchived) {
 		return false, nil
 	}
 	if err != nil {
 		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed archive: %v", slug, err)}
+	}
+	if archived.Form == spec.ArchivedRecord && archived.Record.Disposition == spec.ArchiveCancelled {
+		return false, validationError{message: fmt.Sprintf("superseding Spec %q is cancelled; a cancelled Spec delivers no content", slug)}
 	}
 	return true, nil
 }
