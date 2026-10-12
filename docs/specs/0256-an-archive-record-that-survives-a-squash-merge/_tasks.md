@@ -18,7 +18,10 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_02, task_04]
+      needs: [task_02, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
 ---
 
 # Tasks — An Archive Record that survives a squash merge
@@ -29,9 +32,10 @@ graph:
 | task_02 | Archive-root readers read only real records and recover a squash-dropped source revision                | backend | high       | task_01          |
 | task_03 | The Archive Command records the pull request and warns about a squash-dropped revision                  | backend | medium     | task_01          |
 | task_04 | The Delivery Queue records the pull request in a Pull Request Record Commit                              | backend | high       | task_03          |
-| task_05 | Run the final QA gate                                                                                  | qa      | high       | task_02, task_04 |
+| task_05 | Run the final QA gate                                                                                  | qa      | high       | task_02, task_04, task_06 |
+| task_06 | The runs guidance admits Source Revision Recovery and the delivery texts match the TechSpec (corrective, QA-001/QA-002 of 2026-10-12) | docs | low | task_04 |
 
-Waves: 1 → task_01 · 2 → task_02, task_03 · 3 → task_04 · 4 → task_05
+Waves: 1 → task_01 · 2 → task_02, task_03 · 3 → task_04 · 4 → task_06 · 5 → task_05
 
 task_01 writes every skill, guide and glossary text first, so each code Task
 depends on the Task that documents its surface, and the owned skills' versions
