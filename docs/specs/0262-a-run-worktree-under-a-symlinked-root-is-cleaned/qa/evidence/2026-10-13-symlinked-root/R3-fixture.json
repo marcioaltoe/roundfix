@@ -1,9 +1,0 @@
-{
-  "branch": "roundfix/run-run_20261013T154132Z_bbef9effd1514a82",
-  "home": "/private/tmp/rf262-binary-h0wzzgm1/home",
-  "merged_head": "ad1a68e078d43fd72b5816f59e7c648cdaa62137",
-  "repo": "/private/tmp/rf262-binary-h0wzzgm1/repo",
-  "resolved": "/private/tmp/rf262-binary-h0wzzgm1/real/repo-ff5e6434/run_20261013T154132Z_bbef9effd1514a82",
-  "run_id": "run_20261013T154132Z_bbef9effd1514a82",
-  "worktree": "/private/tmp/rf262-binary-h0wzzgm1/linked/repo-ff5e6434/run_20261013T154132Z_bbef9effd1514a82"
-}
