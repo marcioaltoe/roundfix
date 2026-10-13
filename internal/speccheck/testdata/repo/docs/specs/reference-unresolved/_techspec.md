@@ -6,3 +6,15 @@
 - Authentication and HTTP: not applicable — this fixture opens no transport. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: not applicable — this fixture cites no ADR. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — this fixture changes no repository tooling. Source: `docs/agents/agent-instructions.md`.
+
+## Coverage Map
+
+Deviations from the PRD: None.
+
+## Absence Evidence
+
+None. This fixture declares no new component.
+
+## ADR Alternatives
+
+None. This fixture lists no ADR under Active ADR obligations.

@@ -9,5 +9,15 @@
 
 ## Coverage Map
 
+Deviations from the PRD: None.
+
 - Story 1 → story implementation.
 - Core Features 1-4 → feature implementation.
+
+## Absence Evidence
+
+None. This fixture declares no new component.
+
+## ADR Alternatives
+
+None. This fixture lists no ADR under Active ADR obligations.

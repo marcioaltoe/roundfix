@@ -58,6 +58,9 @@ const (
 
 var (
 	citationCoverageDetectorCodes = []string{
+		CodeAbsenceUnproven,
+		CodeADRAlternativesUnrelated,
+		CodeCoverageUnread,
 		CodeTranscriptUndeclared,
 		CodeTranscriptMalformed,
 		CodeTranscriptUngated,
@@ -1011,7 +1014,11 @@ func detectCitationCoverageAndReferences(
 		units = append(units, coverageUnitsDeclaredIn(contractDeclaration.units, techSpecDisplayPath)...)
 		units = append(units, detectTranscripts(result, horizon, techSpecContent, techSpecDisplayPath)...)
 		detectCoverageMap(result, units, techSpecContent, techSpecDisplayPath)
+		detectTechSpecProof(result, prdContent, techSpecContent, prdDisplayPath, techSpecDisplayPath)
 	} else {
+		for _, code := range techSpecProofCodes {
+			addSkip(result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+		}
 		addSkip(result, CodeTranscriptUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeTranscriptMalformed, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))

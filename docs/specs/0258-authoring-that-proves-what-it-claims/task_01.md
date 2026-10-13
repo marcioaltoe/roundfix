@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0258-authoring-that-proves-what-it-claims
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -97,3 +97,50 @@ new detector tests and the consuming suites.
 - [_prd.md](_prd.md) — Goals 1-3 and 5; User Stories 1-3 and 5; Core Features 1-3 and 5; Success Metric 1; Success Metric 4
 - [_techspec.md](_techspec.md) — Interfaces; Data Models; API Contract 1; API Contract 2; API Contract 3; API Contract 5; Invariants 1-7; Testing Approach; Build Order 1
 - ADR-0265; ADR-0093; ADR-0094; ADR-0156; ADR-0259
+
+## Result
+
+Implemented the TechSpec-stage structural proofs in `authoring_proof.go`:
+`SC-ABSENCE-UNPROVEN`, `SC-ADR-ALTERNATIVES-UNRELATED` and
+`SC-COVERAGE-UNREAD`. The detector runs in the full sweep and TechSpec stage,
+with named skips at the PRD stage and when required artifacts are absent.
+It has no commit-horizon dependency, strips fenced examples while preserving
+line positions, and never executes an Absence Evidence command.
+
+The six declared fixture TechSpecs now carry the three proofs. Their original
+coverage entries and citation declarations remain intact. The three corpus
+pins include the new codes at zero; the golden and its characterization carry
+an identical appended sentence, with every earlier count preserved.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Missing Absence Evidence, ADR line or Deviations line is a gap; present declarations are clean for that code. | `TestAbsenceEvidenceGapFollowsTheSection`, `TestADRAlternativesGapNamesEachListedADR` and `TestCoverageCrossReadGapFollowsTheDeviationsLine` pass their missing/present cases. ADR obligations are collected from both artifacts, deduplicated and located at the obligations row and TechSpec section. |
+| An Absence Evidence item without a command or result is a gap. | The absence test passes missing-command, plain-command, blank-command, missing-result and two-incomplete-item cases, plus complete and wrapped items. `None.` requires its reason in the same paragraph. A marker command remains unexecuted in both entry points. |
+| A deviation bullet naming no PRD unit is a gap. | The cross-read test passes unidentified-deviation and API-Contract-only cases; named User Story, Core Feature and Success Metric bullets produce no finding. Bullets before the declaration and declarations outside Coverage Map do not satisfy it. |
+| Strict mode refuses gaps; absent TechSpecs list the codes as skipped. | `TestTechSpecProofRunsAtTheTechSpecStageAndInTheFullSweep` passes at TechSpec, full and Tasks stages, proves PRD-stage and absent-artifact skips, and exercises `PromoteGaps` plus error rendering for each code. The existing CLI strict-promotion test passes unchanged. |
+| Every fix names its section or line and skill rule. | `TestTechSpecProofFixesNameTheSectionAndTheSkillRule` passes for `## Absence Evidence` / "Absence evidence", `## ADR Alternatives` / "Rejected alternatives", and `Deviations from the PRD:` / "Coverage cross-read", each naming write-techspec. |
+| Existing checker, command and settlement behavior is preserved. | Focused existing clean-fixture, citation/coverage-location, authoring-stage, mechanical-precondition, CLI and settlement tests pass unchanged. Complete declared suites remain for Daemon Verification; no full-suite result is claimed here. |
+
+### Focused checks
+
+- Red baseline: `go test -count=1 -run 'Test(AbsenceEvidence|ADRAlternatives|CoverageCrossRead|TechSpecProof)' ./internal/speccheck` exited 1 before the detector existed; all five new top-level tests failed on missing findings.
+- Final checker selection: `go test -count=1 -v -run 'Test(AbsenceEvidence|ADRAlternatives|CoverageCrossRead|TechSpecProof|CheckCleanFixture|StageScope|CheckCitationCoverageErrorLocations|GateAcceptsItsOwnDeclaredTerm|GateRefusalNamesThePreconditionThatStoppedIt|MechanicalCorpusNonRegression|MechanicalStageStoresThePreconditionRefusalForTheReport)' ./internal/speccheck` exited 0. All five new tests and selected existing regressions passed, including fenced obligations, shorter and unclosed fences, and absent-PRD skips.
+- Consumer selection: `go test -count=1 -run 'Test(RunSpecCheckGapStrictPromotion|SpecCheckStageExitsZeroWithoutAFinding|SpecCheckWithoutStageIsUnchanged|SettlementRefusesASpecConsistencyFindingTheTaskIntroduced|SettlementIgnoresASpecConsistencyFindingPresentAtStart)$' ./internal/cli ./internal/daemon` exited 0 for both packages.
+- Compilation only: `go test -tags docscontract -run '^$' ./internal/docscontract ./internal/spec` exited 0, reporting no tests to run. This checks compilation, not corpus or characterization behavior.
+- A Python JSON/source inspection confirmed the three new codes are the only added corpus counts, all are zero, all earlier counts match HEAD, the characterization map equals the golden, and their update texts are identical. Source inspection confirmed all five top-level tests start with `t.Parallel()`.
+- `git diff --check` exited 0.
+
+### Handoff boundary
+
+Task status and all checkboxes remain untouched. The pre-existing task-file
+status change is Daemon-owned. No authored Verification command, selected
+repository Verification, full test suite, commit, push or Pull Request was
+run. Consumer detection, skills and public documentation remain the later
+Tasks' slices. No additional follow-up was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T122525Z_1c1258fdf2b03bd6`
+- Source commit: `e87f54c952ab695f8db00c11c11cd268704d8d81`
