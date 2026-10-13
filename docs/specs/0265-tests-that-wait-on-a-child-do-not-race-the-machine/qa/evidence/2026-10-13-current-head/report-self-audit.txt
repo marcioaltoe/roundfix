@@ -1,1 +1,0 @@
-PASS: one frontmatter and one seeded report; 15 closed rows (14 pass, one pre-PR block); exact coverage source set; 15 typed input declarations; 43 evidence links resolved; preserved auditor fields and mechanical seed; no compiled evidence or Agent evidence_snapshots; unchanged audited HEAD, Run branch and tracked repository tree.
