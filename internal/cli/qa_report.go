@@ -38,6 +38,10 @@ func runQAReportCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		fmt.Fprintf(stderr, "Run '%s qa-report --help' for usage.\n", app.Name)
 		return exitPreflight
 	}
+	if commandWantsHelp(args[1:]) {
+		fmt.Fprint(stdout, qaReportUsage)
+		return exitOK
+	}
 	if len(args) != 2 || strings.TrimSpace(args[1]) == "" {
 		fmt.Fprintf(stderr, "%s: qa-report accept requires exactly one report path\n", app.Name)
 		fmt.Fprintf(stderr, "Run '%s qa-report --help' for usage.\n", app.Name)
