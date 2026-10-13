@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.75.0] - 2026-10-13
+
+### Archive and cancel keep what Git ignores
+
+- **Ignored Spec Files are refused.** `roundfix archive` and `roundfix cancel` now refuse with exit `2`, writing nothing, while Git ignores a file under the Spec folder. Before, both removed such files and counted them as kept in Git, though no commit held them. The refusal lists every ignored file by its sorted, repository-relative path, including files inside ignored directories. Remove each file or commit it with `git add -f`, then retry. Uncommitted changes keep their existing refusal and are reported first. With an external Spec Root, the command reads that root's repository and its ignore rules.
+- **Folder Removal Recovery.** When the final removal of the Spec folder fails, the command keeps the Archive Record and every other write, prints nothing on standard output and exits `1`. Before, archive reported "No side effects" with exit `2`. Standard error names the record, the remaining folder and the cause, then prints the command that finishes the removal: `chmod -R u+w '<folder>' && rm -rf '<folder>'`, quoted for a POSIX shell. `--pull-request` is still recorded. Retrying the command refuses because the record already exists.
+- **Glossary.** Adds Ignored Spec File and Folder Removal Recovery, and revises Cancel Command (ADR-0269).
+
 ## [0.74.0] - 2026-10-13
 
 ### A Run Worktree under a symlinked root is cleaned
