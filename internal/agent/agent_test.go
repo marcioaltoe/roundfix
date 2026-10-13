@@ -19,6 +19,7 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/testwait"
 )
 
 func TestSessionRefForRunNamesRoundfixSession(t *testing.T) {
@@ -1065,11 +1066,7 @@ func TestConsoleDisplaySinkSerializesConcurrentPublish(t *testing.T) {
 		firstDone <- sink.Publish(context.Background(), first)
 	}()
 
-	select {
-	case <-writer.firstEntered:
-	case <-time.After(time.Second):
-		t.Fatal("timed out waiting for first write")
-	}
+	testwait.Until(t, "first write", writer.firstEntered, firstDone)
 
 	secondDone := make(chan error, 1)
 	go func() {

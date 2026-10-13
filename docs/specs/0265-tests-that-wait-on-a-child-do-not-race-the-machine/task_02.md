@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0265-tests-that-wait-on-a-child-do-not-race-the-machine
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -89,3 +89,68 @@ the race detector.
 - `_prd.md` → Goals; Core Feature 3; Success Metric 1; Success Metric 4
 - `_techspec.md` → Current behavior; Interfaces; API Contract 4; API Contract 6; Invariant 1; Testing Approach; Build Order 2
 - ADR-0271; ADR-0089; ADR-0259; ADR-0266; ADR-0125
+
+
+## Result
+
+Implemented the Task 02 slice for TechSpec inventory rows 15–21. The Daemon
+retains Task status and declared Verification ownership.
+
+### Implementation
+
+- `ACPXRunner.cleanupTimeout` supplies the three disposable-session cleanup
+  contexts through `disposableCleanupTimeout()`. Zero and negative values use
+  the existing `acpxPreflightCleanupTimeout`; the production constant remains
+  5 s. A positive value is returned unchanged.
+- Child-backed test runners receive `testwait.Bound(t)`, including the shared
+  fake ACPX harness and its fresh-runner replacement. The shared harness and
+  blocking harness use the test deadline as stop grace; the unused 20 ms
+  harness fallback is removed. Existing fake-clock cancellation assertions,
+  close ordering, warning assertions and cleanup assertions remain intact.
+- The opt-in real ACPX request helper receives the test so its stop grace uses
+  `testwait.Bound(t)`. Its process-table inspection also uses that bound.
+- The immediate-exit fixture emits its startup output before exiting with
+  status 23. The nested waiter reads that first output before starting the
+  measured span; the existing 9 s death-detection assertion remains. The test
+  now calls `t.Parallel()` first.
+- The console sink test waits for its first write with `testwait.Until`, also
+  observing an early publish failure. Its serialized-output assertion remains.
+  No Sequential Test, signal operation or written executable was added.
+
+### Focused checks
+
+- Initial regression check:
+  `go test -race -count=1 -timeout=2m -run '^TestDisposableCleanupTimeoutDefaultsToTheProductionValue$' ./internal/agent`
+  exited 1 before the runner implementation: unknown `cleanupTimeout` field
+  and absent `disposableCleanupTimeout` method.
+- After implementation:
+  `go test -count=1 -race -shuffle=on -timeout=10m -v ./internal/agent`
+  exited 0; package time 83.791 s; shuffle seed `1791867458742324000`.
+  Raw output: `/tmp/roundfix-task02-agent-race.log`.
+- `git diff --check` exited 0.
+- The Task's declared Verification, `make verify`, and `make verify-changed`
+  were not run: the Daemon owns those checks.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| A runner without the dependency keeps the production 5 s cleanup timeout | `TestDisposableCleanupTimeoutDefaultsToTheProductionValue` passed under `-race`, including parallel zero, negative and positive cases. The default cases assert the unchanged production constant. All three cleanup sites call the new method. |
+| Fake ACPX children have no unasserted real 2 s or 5 s stop/cleanup bound | The shared harness, child-backed runner constructors and fresh-runner replacement receive `testwait.Bound(t)`. The cancellation tests retain their fake-clock assertions. The package race run exercises the selection, probe, fallback and sealed tests sharing those fixtures. |
+| Cancel, cleanup, sealed, fixture-death and console-sink tests pass under `-race` | The package run passed `TestACPXRunCancelsPromptCooperatively`, `TestACPXRunClosesSessionAfterCancelGracePeriod`, `TestACPXRunCancellationCommandFailuresWarnAndContinue`, `TestProveExactSelectionCancelCleanup`, `TestProveExactSelectionTimeoutCleanup`, `TestACPXProbeCancellationStillClosesDisposableSession`, `TestACPXProbeFallbackCancellationStillClosesCandidateSession`, `TestSealedACPXPromptCancellationCancelsAndClosesSession`, `TestSpawnedFixtureDeathFailsFast`, and `TestConsoleDisplaySinkSerializesConcurrentPublish`. |
+
+### Limits and follow-up
+
+`TestRealACPXCommandOverrideRoundTripCancelCrashResume` compiled in the race run
+but kept its existing opt-in skip because `ROUNDFIX_REAL_ACPX` was not enabled;
+no live ACPX round trip is claimed. The initial shell sandbox rejected the
+worktree's symlinked writable root; focused work and checks used its approved
+resolved filesystem path. The assigned task file's pre-existing
+`status: in_progress` delta is preserved. No other Task file or Task Graph was
+edited, and no commit, push or pull request was created. No out-of-slice work
+was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T045342Z_a78df1f6c39a67e2`
+- Source commit: `c3857f7877ce607f863c4a62656601d772a9d9fe`

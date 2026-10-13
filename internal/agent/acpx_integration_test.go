@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/testwait"
 )
 
 const realACPXIntegrationEnv = "ROUNDFIX_REAL_ACPX"
@@ -49,25 +51,33 @@ func spawnedFixtureWaitDuration(output string) (time.Duration, bool) {
 const spawnedFixtureDeathBudget = agentWaitBudget / 10
 
 func TestSpawnedFixtureDeathFailsFast(t *testing.T) {
+	t.Parallel()
+
 	const fixtureName = "immediate-exit acpx fixture"
 	if os.Getenv(spawnedFixtureDeathTestEnv) == "fixture" {
+		fmt.Println("fixture started")
 		os.Exit(23)
 	}
 	if os.Getenv(spawnedFixtureDeathTestEnv) == "wait" {
 		cmd := exec.Command(os.Args[0], "-test.run=^TestSpawnedFixtureDeathFailsFast$")
 		cmd.Env = environmentForTest(spawnedFixtureDeathTestEnv + "=fixture")
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			t.Fatalf("read %s output: %v", fixtureName, err)
+		}
 		if err := cmd.Start(); err != nil {
 			t.Fatalf("start %s: %v", fixtureName, err)
 		}
+		// Exclude fixture startup from the asserted death-detection span.
+		if _, err := bufio.NewReader(stdout).ReadString('\n'); err != nil {
+			waitErr := cmd.Wait()
+			t.Fatalf("read %s first output: %v (exit: %v)", fixtureName, err, waitErr)
+		}
+		waitStarted := time.Now()
 		fixtureExit := make(chan error, 1)
 		go func() {
 			fixtureExit <- cmd.Wait()
 		}()
-		// The claim under test is how long the wait takes, not how long a nested
-		// `go test` process takes to start and tear down. Report the wait itself
-		// so the parent measures that; Cleanup still runs after the Fatalf that
-		// waitForFile raises.
-		waitStarted := time.Now()
 		t.Cleanup(func() {
 			fmt.Printf("%s%s\n", spawnedFixtureWaitPrefix, time.Since(waitStarted))
 		})
@@ -116,7 +126,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 		t.Skipf("acpx is required for real acpx integration: %v", err)
 	}
 
-	runner := &ACPXRunner{Command: acpxPath}
+	runner := &ACPXRunner{cleanupTimeout: testwait.Bound(t), Command: acpxPath}
 	if err := runner.Probe(context.Background(), ProbeRequest{}); err != nil {
 		t.Skipf("acpx %s or newer is required for real acpx integration: %v", MinimumACPXVersion, err)
 	}
@@ -137,7 +147,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	})
 
 	roundTripSink := newCaptureSink("")
-	roundTrip, err := runner.Run(context.Background(), realACPXRequest(dir, runtime, session, 1, "round-trip hello"), roundTripSink)
+	roundTrip, err := runner.Run(context.Background(), realACPXRequest(t, dir, runtime, session, 1, "round-trip hello"), roundTripSink)
 	if err != nil {
 		t.Fatalf("round-trip prompt through real acpx: %v", err)
 	}
@@ -155,7 +165,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	cancelSink := newCaptureSink("prompt-blocked")
 	cancelErr := make(chan error, 1)
 	go func() {
-		_, err := runner.Run(cancelCtx, realACPXRequest(dir, runtime, session, 2, "block-until-cancel"), cancelSink)
+		_, err := runner.Run(cancelCtx, realACPXRequest(t, dir, runtime, session, 2, "block-until-cancel"), cancelSink)
 		cancelErr <- err
 	}()
 	select {
@@ -182,14 +192,14 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	}
 	waitForLogLine(t, helperLog, "cancel echo-session")
 
-	_, crashErr := runner.Run(context.Background(), realACPXRequest(dir, runtime, session, 3, "crash-adapter"), newCaptureSink(""))
+	_, crashErr := runner.Run(context.Background(), realACPXRequest(t, dir, runtime, session, 3, "crash-adapter"), newCaptureSink(""))
 	if crashErr == nil {
 		t.Fatal("expected induced adapter crash to fail the prompt Run")
 	}
 	waitForLogLine(t, helperLog, "crash echo-session")
 
 	resumeSink := newCaptureSink("")
-	resumed, err := runner.Run(context.Background(), realACPXRequest(dir, runtime, session, 4, "after-crash"), resumeSink)
+	resumed, err := runner.Run(context.Background(), realACPXRequest(t, dir, runtime, session, 4, "after-crash"), resumeSink)
 	if err != nil {
 		t.Fatalf("expected next Work Item to succeed after adapter crash: %v", err)
 	}
@@ -212,7 +222,8 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	assertRealACPXForceStopClosesLiveSession(t, runner, runtime, forceSession, dir, helperLog)
 }
 
-func realACPXRequest(dir string, runtime RuntimeSpec, session SessionRef, batch int, prompt string) ExecuteRequest {
+func realACPXRequest(t *testing.T, dir string, runtime RuntimeSpec, session SessionRef, batch int, prompt string) ExecuteRequest {
+	t.Helper()
 	return ExecuteRequest{
 		Runtime:   runtime,
 		Session:   session,
@@ -221,7 +232,7 @@ func realACPXRequest(dir string, runtime RuntimeSpec, session SessionRef, batch 
 		LogPath:   filepath.Join(dir, "runs", "run-real-acpx", "agent", fmt.Sprintf("batch-%03d.log", batch)),
 		Prompt:    prompt,
 		GitRoot:   dir,
-		StopGrace: 2 * time.Second,
+		StopGrace: testwait.Bound(t),
 	}
 }
 
@@ -232,7 +243,7 @@ func assertRealACPXForceStopClosesLiveSession(t *testing.T, runner *ACPXRunner, 
 	sink := newCaptureSink("prompt-blocked")
 	errCh := make(chan error, 1)
 	go func() {
-		_, err := runner.Run(runCtx, realACPXRequest(dir, runtime, session, 5, "block-until-cancel"), sink)
+		_, err := runner.Run(runCtx, realACPXRequest(t, dir, runtime, session, 5, "block-until-cancel"), sink)
 		errCh <- err
 	}()
 	select {
@@ -316,7 +327,7 @@ func assertNoRealACPXOrphans(t *testing.T, sessionName string, helperLog string)
 	defer ticker.Stop()
 	for {
 		helperPIDs := liveEchoAgentPIDs(helperLog)
-		ownerLines, err := realACPXOwnerLines(sessionName)
+		ownerLines, err := realACPXOwnerLines(t, sessionName)
 		if err != nil {
 			t.Fatalf("inspect real acpx owner processes: %v", err)
 		}
@@ -362,8 +373,9 @@ func processAlive(pid int) bool {
 	return err == nil || errors.Is(err, syscall.EPERM)
 }
 
-func realACPXOwnerLines(sessionName string) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+func realACPXOwnerLines(t *testing.T, sessionName string) ([]string, error) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), testwait.Bound(t))
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "ps", "-axo", "pid=,command=")
 	output, err := cmd.Output()
