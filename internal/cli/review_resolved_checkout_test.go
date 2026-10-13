@@ -75,6 +75,11 @@ func TestTheCorrectionProofRefusesARecordOfAnotherCheckout(t *testing.T) {
 	disposeSymlinkedReviewFinding(t, fixture, head)
 	record.Repository = sibling
 	writeDispositionRecordFile(t, filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewRecordFileName), record)
+	headPath, ok := reviewHeadRecordPath(fixture.artifactDir, fixture.repository, record.HeadCommit)
+	if !ok {
+		t.Fatal("candidate is not a full commit name")
+	}
+	writeDispositionRecordFile(t, headPath, record)
 	result := proveSymlinkedReviewCorrection(t, fixture, record.HeadCommit, head, true)
 	if result.Accepted || !strings.Contains(result.Reason, "review record must name the item worktree") {
 		t.Fatalf("proof=%+v, want refusal of another checkout's record", result)

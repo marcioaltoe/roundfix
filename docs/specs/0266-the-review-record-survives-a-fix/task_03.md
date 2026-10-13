@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0266-the-review-record-survives-a-fix
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -118,3 +118,58 @@ accepted.
 - `_prd.md` → Goals; User Story 2; Core Feature 3; Success Metric 2
 - `_techspec.md` → Current behavior; API Contract 3; API Contract 4; Invariant 3; Invariant 4; Data Models; Testing Approach; Build Order 3
 - ADR-0272; ADR-0197; ADR-0233; ADR-0259; ADR-0271
+
+
+## Result
+
+Implemented this Task's slice for Daemon Verification. Task status, Subtasks
+and Acceptance Criteria checkboxes are unchanged; settlement belongs to the
+Daemon.
+
+`persistReviewRecord` encodes once, atomically writes the current record, and
+then writes the identical bytes to `heads/<head commit>.json` for a non-reused
+`reviewed`, `findings`, `findings-dismissed` or `ceiling-closed` verdict.
+`reviewHeadRecordPath` admits only 40 or 64 lowercase hexadecimal characters.
+Both record destinations use a temporary file, mode `0644`, and rename in a
+`0755` directory. Reused, blocked, omitted and invalid-head records leave
+existing head records untouched.
+
+`ProveReviewCorrection` now uses `readReviewRecordAtHead` to prefer the parked
+candidate's head record. When that file is absent, the current record is used
+only if it names the candidate. Missing evidence refuses with the existing
+record reason and no error; other read errors and proof checks retain their
+behavior. The next round, reuse and disposition still read the current record.
+The sibling-checkout refusal fixture now writes the sibling record to both
+locations so its unchanged assertion covers the preferred record.
+
+### Focused evidence
+
+Before production changes,
+`go test -count=1 -run 'TestASecondReviewRoundKeeps|TestTheCorrectionProofAcceptsAfterASecondRound' ./internal/cli`
+exited `1`: the candidate's head record was absent after round 2, and the
+proof refused with the existing record reason.
+
+After the final production edit:
+
+- `go test -race -count=1 -v -run 'Test(ASecondReviewRoundKeeps|TheCorrectionProofAcceptsAfterASecondRound|AReusedBlockedOrOmitted|TheCorrectionProofReadsTheCurrent|TheCorrectionProofRefusesWithoutARecord|ReviewHeadRecordPath)' ./internal/cli`
+  exited `0`; all six required tests and their subtests passed under the race
+  detector (`ok roundfix/internal/cli`, 2.616 s).
+- `go test -count=1 -run '^Test(Review(RecordsLive|InOneCheckout|Dispose|IgnoresARecordAtTheShared|Lineage|RoundTwo|Ceiling|BlockedRoundTwo|Reports|KeepsStanding|IgnoresA|AsksAgain|NeverReuses|RecordRefuses|CorrectionRequires)|AReviewOnlyCorrection|ACorrection|TheCorrectionProof(Finds|RefusesA)|ReviewCheckoutDirIs)' ./internal/cli`
+  exited `0` (`ok roundfix/internal/cli`, 3.901 s). This focused selection covers
+  the affected existing checkout, disposition, lineage, head-bound and
+  correction behavior, including task_02's sibling-checkout refusal.
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Round 2 preserves the candidate's findings and the proof accepts afterwards | `TestASecondReviewRoundKeepsTheFirstRoundsRecord` compares the candidate's full record, including its original findingItems, with round 1; confirms the fix's record and current record match round 2 with identical bytes; and checks file/directory permissions. `TestTheCorrectionProofAcceptsAfterASecondRoundUnderASymlinkedWorktreeRoot` accepts the docs-only correction using the link spelling after disposal and round 2. |
+| Reused, blocked and omitted records write no head record | `TestAReusedBlockedOrOmittedReviewWritesNoReviewedHeadRecord` checks each exclusion against an existing head and a new head, preserving the former byte-identically and leaving the latter absent while still persisting the current record. `TestReviewHeadRecordPathRefusesANonCommitName` covers all four required invalid names, accepts SHA-1/SHA-256 names, and checks nonempty invalid names preserve existing head files. |
+| An older parked item is still proved from its current record | `TestTheCorrectionProofReadsTheCurrentRecordWithoutAHeadRecord` accepts the symlinked correction with no heads directory and leaves that directory absent. `TestTheCorrectionProofRefusesWithoutARecordOfTheCandidate` confirms another current head or no current record produces the exact existing refusal reason without an error. |
+
+All six new top-level tests call `t.Parallel()` first. No sleep, timer or
+short real-time wait budget was added. Changes are confined to `review.go`,
+`deliver_review_correction.go`, the new `review_head_record_test.go`, the
+permitted fixture change in `review_resolved_checkout_test.go`, and this
+Result section. No public flag, record field, output schema, exit code, gc
+rule or `internal/delivery` file changed. Declared Task Verification and the
+repository gates were not run; the Daemon owns them. No commit, push or Pull
+Request was made. No follow-up implementation is included.

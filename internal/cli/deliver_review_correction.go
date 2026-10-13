@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -29,7 +30,10 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 	if err != nil {
 		return delivery.ReviewCorrection{}, err
 	}
-	record, err := readReviewRecord(filepath.Join(reviewCheckoutDir(artifactDir, workDir), reviewRecordFileName))
+	record, err := readReviewRecordAtHead(artifactDir, workDir, candidate)
+	if errors.Is(err, os.ErrNotExist) {
+		return refuse("review record must name the item worktree and parked candidate with outcome findings")
+	}
 	if err != nil {
 		return delivery.ReviewCorrection{}, fmt.Errorf("read review correction record: %w", err)
 	}
