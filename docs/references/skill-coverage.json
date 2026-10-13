@@ -455,7 +455,7 @@
         "docs/user-guide/commands/reconcile.md",
         "internal/cli/reconcile.go"
       ],
-      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
+      "review": "2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
     },
     {
       "id": "command release plan",
@@ -737,7 +737,8 @@
       "sources": [
         "internal/config/*.go",
         "docs/user-guide/configuration.md"
-      ]
+      ],
+      "review": "2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
     },
     {
       "id": "exit codes",
@@ -932,7 +933,8 @@
       ],
       "sources": [
         "docs/user-guide/commands/reconcile.md"
-      ]
+      ],
+      "review": "2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
     },
     {
       "id": "guide docs/user-guide/commands/reopen.md",
@@ -1094,7 +1096,8 @@
       ],
       "sources": [
         "docs/user-guide/configuration.md"
-      ]
+      ],
+      "review": "2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
     },
     {
       "id": "guide docs/user-guide/context-driven-development.md",

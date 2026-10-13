@@ -714,6 +714,9 @@ retention rule of every durable table.
 
 ## Local state
 
+When `worktree.location` is a symbolic link, a recorded Run Worktree is
+resolved within its Worktree Root.
+
 - Run Database: `~/.roundfix/roundfix.db`
 - Run Worktrees: `<worktree.location>/<repo-slug>/<run-id>` (spec Runs only)
 - Task Worktrees: `<worktree.location>/<repo-slug>/<run-id>.<task_id>`

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0262-a-run-worktree-under-a-symlinked-root-is-cleaned
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -107,3 +107,87 @@ code changes.
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 4; Core Feature 4; Core Feature 5; Success Metric 1; Success Metric 3; Skills
 - `_techspec.md` → API Contract 3; API Contract 4; Invariant 4; Testing Approach; Build Order 3
 - ADR-0268; ADR-0053; ADR-0256; ADR-0259
+
+## Result
+
+Implemented the task_03 consumer tests and reclaim documentation. Task status,
+Subtasks and Acceptance Criteria remain for Daemon settlement.
+
+### Implementation evidence
+
+- The three CLI tests create a Run Worktree with `worktree.Create` under a
+  symbolic-linked temporary location, persist its original link spelling in
+  the Run Database and assert that Git registers the different resolved path.
+  The fixture commits Run work, merges it into `main`, removes the recorded
+  target branch and persists the Delivery Queue merge record.
+- `TestReconcileClassifiesARunUnderASymlinkedWorktreeRoot` reads the command's
+  JSON report: the Run is `safe`, its reported path retains the recorded
+  spelling and no result refuses it as `recorded Run Worktree path is unsafe`.
+  Dry-run leaves its directory and branch intact.
+- `TestReconcileApplyReleasesARunUnderASymlinkedWorktreeRoot` invokes the full
+  repository scan with `--apply`, requires exit 0 and empty stderr, and checks
+  the `released` action plus absence of the directory, Git registration and
+  Run Branch.
+- `TestReleaseMergedSpecRunsCleansUnderASymlinkedWorktreeRoot` calls
+  `releaseMergedSpecRuns` with the merged head, requires nil (the consumer
+  produces no cleanup failure to warn about), and checks removal of all three
+  Git surfaces.
+- `TestClassifySupersededBranchUnderASymlinkedWorktreeRoot` persists a terminal
+  implement Run with the link spelling and merges its commit into its target.
+  The disposition is superseded and reachable, inventories that commit, keeps
+  the recorded path and has an empty refusal reason, including no
+  `worktree condition failed` refusal.
+- Every new top-level test calls `t.Parallel()` first. Fixtures use temporary
+  homes, real local Git repositories and the existing hermetic Git helpers;
+  they add no real-time allowance.
+- The reconcile guide documents Worktree Root resolution, retained refusal
+  of repository/worktree directory links, and inspection followed by
+  `roundfix reconcile --apply` to reclaim Runs kept by earlier versions. The
+  configuration guide names the same resolution rule beside the Run and Task
+  Worktree path list.
+- Four Coverage Reviews name `Spec 0262 task_03` for `command reconcile`, both
+  changed guides and `config keys`. Each records the linked-location rule,
+  unchanged flags, keys, output and exit codes, and why skill text is unchanged.
+  The sanctioned generator changed only the two guide fingerprints in the
+  Behavior Surface Record.
+
+### Focused checks
+
+- Pre-change inspection found both requested test files absent, no
+  `resolved within its Worktree Root` text in either guide and zero
+  `Spec 0262 task_03` reviews.
+- `go test -count=1 -race -shuffle=on -v -run SymlinkedWorktreeRoot ./internal/cli ./internal/daemon`
+  — final run exited 0; all four new tests reported PASS, with no race
+  diagnostics. This proves acceptance criteria 1 and 2 through the real
+  consumers and provides focused consumer-package evidence for criterion 3.
+- The first two focused runs exposed a fixture mismatch: an ordinary
+  still-present target with reachable Run commits makes CLI dry-run report
+  branch disposition as `superseded`. Adding a merge record alone did not
+  change the target-ancestry precedence. The final fixture models the merged
+  Spec's removed target, making the merge-record proof determine `safe`;
+  production code and the required assertion were not changed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  — exited 0. This is the explicitly required record-generation operation;
+  the Skill Coverage Map and regenerated Behavior Surface Record agreed.
+- `rg -n -i 'symbolic|symlink' docs/user-guide CONTEXT.md docs/agents .agents/skills/roundfix/references skills/roundfix/references`
+  — reviewed every match; found no blanket refusal of links in recorded Run
+  Worktree paths. Other link restrictions concern Spec/artifact staging,
+  Review Roots, cache paths or executable discovery and do not contradict
+  this rule. No skill file changes were needed.
+- `gofmt -w internal/cli/reconcile_symlinked_root_test.go internal/daemon/reconcile_symlinked_root_test.go`
+  — exited 0 before the final focused test run.
+
+- `git diff --check` — exited 0. Final scope inspection found exactly the
+  seven task_03 paths and confirmed that authored Task content, apart from
+  the pre-existing Daemon status and appended Result, is unchanged.
+
+
+### Daemon handoff
+
+The consuming-suite commands in `## Verification`, their report assertions,
+and the repository Verification were not run in this Agent turn; the Daemon
+owns those gates and acceptance-criterion settlement. The broader-suite part
+of criterion 3 remains for that Verification. No production code in
+`internal/cli`, `internal/daemon` or `internal/delivery`, skill file, Task
+Graph or other Task file was changed. No commit, push or pull request was
+made. No follow-up implementation is required by the focused evidence.
