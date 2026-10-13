@@ -28,13 +28,13 @@ func darwinProcessEnvironment(pid int) ([]byte, string, error) {
 
 func parseDarwinProcessArguments(raw []byte, pid int) ([]byte, string, error) {
 	if len(raw) < 4 {
-		return nil, "", fmt.Errorf("short process arguments for pid %d", pid)
+		return nil, "", fmt.Errorf("%w: short process arguments for pid %d", errResidueProcessChanging, pid)
 	}
 	argc := int(binary.NativeEndian.Uint32(raw[:4]))
 	raw = raw[4:]
 	end := bytes.IndexByte(raw, 0)
 	if end < 0 {
-		return nil, "", fmt.Errorf("missing executable for pid %d", pid)
+		return nil, "", fmt.Errorf("%w: missing executable for pid %d", errResidueProcessChanging, pid)
 	}
 	executable := string(raw[:end])
 	raw = bytes.TrimLeft(raw[end+1:], "\x00")
@@ -42,7 +42,7 @@ func parseDarwinProcessArguments(raw []byte, pid int) ([]byte, string, error) {
 	for range argc {
 		end = bytes.IndexByte(raw, 0)
 		if end < 0 {
-			return nil, "", fmt.Errorf("short argument list for pid %d", pid)
+			return nil, "", fmt.Errorf("%w: short argument list for pid %d", errResidueProcessChanging, pid)
 		}
 		arguments = append(arguments, string(raw[:end]))
 		raw = raw[end+1:]
@@ -60,6 +60,7 @@ func helperResidue(mark string, self int) ([]residueProcess, error) {
 		return nil, fmt.Errorf("read process table: %w", err)
 	}
 	var residue []residueProcess
+	var unreadable residueReadErrors
 	for _, process := range processes {
 		pid := int(process.Proc.P_pid)
 		if pid <= 0 || pid == self || process.Eproc.Ucred.Uid != uint32(os.Geteuid()) || process.Proc.P_stat == 5 || process.Proc.P_flag&0x2000 != 0 {
@@ -75,13 +76,17 @@ func helperResidue(mark string, self int) ([]residueProcess, error) {
 			if readErr == nil && (errors.Is(err, unix.EIO) || errors.Is(err, unix.EINVAL)) {
 				// XNU's sysctl_procargsx may lose the referenced argument memory to
 				// exit/exec before kern.proc.pid reflects that transition.
-				return nil, fmt.Errorf("%w: read process %d environment: %w", errResidueProcessChanging, pid, err)
+				err = fmt.Errorf("%w: %w", errResidueProcessChanging, err)
 			}
-			return nil, fmt.Errorf("read process %d environment: %w", pid, err)
+			unreadable = append(unreadable, residueReadError{PID: pid, Err: err})
+			continue
 		}
 		if environmentHasMark(environment, mark) {
 			residue = append(residue, residueProcess{pid, command})
 		}
+	}
+	if len(unreadable) != 0 {
+		return residue, unreadable
 	}
 	return residue, nil
 }

@@ -5,16 +5,24 @@ import "context"
 // RemoveRegisteredWorktree removes a registered Git worktree without forcing
 // dirty or locked work through the repository administration lock.
 func RemoveRegisteredWorktree(ctx context.Context, gitRoot, path string) error {
-	_, err := runWorktreeCommand(ctx, execGitRunner{}, gitRoot, "worktree", "remove", path)
+	return removeRegisteredWorktree(ctx, execGitRunner{}, gitRoot, path)
+}
+
+func removeRegisteredWorktree(ctx context.Context, runner gitRunner, gitRoot, path string) error {
+	_, err := runWorktreeCommand(ctx, runner, gitRoot, "worktree", "remove", path)
 	return err
 }
 
 // AddDetachedWorktree adds a detached Git worktree through the repository
 // administration lock.
 func AddDetachedWorktree(ctx context.Context, repository, path, revision string) error {
+	return addDetachedWorktree(ctx, execGitRunner{}, repository, path, revision)
+}
+
+func addDetachedWorktree(ctx context.Context, runner gitRunner, repository, path, revision string) error {
 	_, err := runWorktreeCommand(
 		ctx,
-		execGitRunner{},
+		runner,
 		repository,
 		"worktree", "add", "--detach", path, revision,
 	)

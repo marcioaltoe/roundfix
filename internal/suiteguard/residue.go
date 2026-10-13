@@ -46,20 +46,52 @@ func environmentHasMark(environment []byte, mark string) bool {
 	return false
 }
 
+type residueReadError struct {
+	PID int
+	Err error
+}
+
+// residueReadErrors retains per-process failures alongside readable residue.
+// A process-table failure is returned separately and still makes the scan unavailable.
+type residueReadErrors []residueReadError
+
+func (errs residueReadErrors) Error() string {
+	return fmt.Sprintf("read process %d environment: %v", errs[0].PID, errs[0].Err)
+}
+
+func (errs residueReadErrors) Unwrap() []error {
+	causes := make([]error, len(errs))
+	for i, err := range errs {
+		causes[i] = err.Err
+	}
+	return causes
+}
+
 func checkHelperResidue(mark string, output io.Writer) bool {
+	return checkHelperResidueWithScan(mark, output, helperResidue)
+}
+
+func checkHelperResidueWithScan(mark string, output io.Writer, scan func(string, int) ([]residueProcess, error)) bool {
 	deadline := time.Now().Add(helperResidueGrace)
 	for {
-		processes, err := helperResidue(mark, os.Getpid())
+		processes, err := scan(mark, os.Getpid())
 		if err != nil {
-			// Argument memory can disappear before the process table records exit.
-			// Retry that transition inside the same grace, never extend the grace
-			// and never silently omit an unreadable live process from a scan.
-			if errors.Is(err, errResidueProcessChanging) && time.Until(deadline) > 0 {
+			var unreadable residueReadErrors
+			if !errors.As(err, &unreadable) {
+				fmt.Fprintf(output, "suiteguard: helper residue check unavailable: %v\n", err)
+				return false
+			}
+			// Argument memory can change before the process table records exit.
+			// Retry unreadable processes inside the same grace while retaining
+			// readable residue, then report each skip without signalling it.
+			if time.Until(deadline) > 0 {
 				time.Sleep(min(50*time.Millisecond, time.Until(deadline)))
 				continue
 			}
-			fmt.Fprintf(output, "suiteguard: helper residue check unavailable: %v\n", err)
-			return false
+			sort.Slice(unreadable, func(i, j int) bool { return unreadable[i].PID < unreadable[j].PID })
+			for _, process := range unreadable {
+				fmt.Fprintf(output, "suiteguard: helper residue check skipped an unreadable process: pid %d: %v\n", process.PID, process.Err)
+			}
 		}
 		if len(processes) == 0 {
 			return false
