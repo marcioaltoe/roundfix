@@ -68,7 +68,13 @@ accepted.
 5. MUST keep every existing test passing unchanged, including
    `deliver_review_correction_test.go`, `review_record_checkout_test.go`,
    `review_lineage_test.go`, `review_head_bound_test.go` and
-   `review_disposition_test.go`, and task_02's tests.
+   `review_disposition_test.go`, and task_02's tests, with one exception:
+   `TestTheCorrectionProofRefusesARecordOfAnotherCheckout` in
+   `internal/cli/review_resolved_checkout_test.go` replaces only the current
+   record, and the proof now prefers the candidate's Reviewed Head Record. Its
+   fixture MUST also write the sibling-checkout record as the candidate's
+   Reviewed Head Record, so the test keeps refusing the record the proof
+   reads; its assertion and refusal text stay unchanged.
 6. MUST run the new tests once with `-race` (ADR-0259), give no wait a real
    time bound (ADR-0271), and MUST NOT change any command's output, flag,
    field or exit code, or `internal/delivery`.
@@ -100,6 +106,7 @@ accepted.
 - interface: `internal/cli/review.go`
 - interface: `internal/cli/deliver_review_correction.go`
 - creates: `internal/cli/review_head_record_test.go`
+- interface: `internal/cli/review_resolved_checkout_test.go`
 
 ## Verification
 
