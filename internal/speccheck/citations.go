@@ -58,6 +58,7 @@ const (
 
 var (
 	citationCoverageDetectorCodes = []string{
+		CodeConsumersUnproven,
 		CodeAbsenceUnproven,
 		CodeADRAlternativesUnrelated,
 		CodeCoverageUnread,
@@ -1037,6 +1038,9 @@ func detectCitationCoverageAndReferences(
 		return err
 	}
 	if graphPresent {
+		if err := detectConsumerDeclarations(result, repoRoot, graph); err != nil {
+			return err
+		}
 		detectTranscriptGate(result, repoRoot, graph, units)
 		if err := detectWaveCollisions(result, repoRoot, graph); err != nil {
 			return err
@@ -1048,6 +1052,7 @@ func detectCitationCoverageAndReferences(
 		manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md"))
 		addSkip(result, CodeTranscriptUngated, manifestDisplayPath)
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
+		addSkip(result, CodeConsumersUnproven, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 		addSkip(result, CodeVerifyWrapFragile, manifestDisplayPath)

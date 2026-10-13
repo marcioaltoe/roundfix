@@ -13,6 +13,10 @@ complexity: low
 - creates: `generated/client.go`
 - interface: `missing/guide.md`
 
+## Consumers
+
+None. This fixture changes no shared contract.
+
 ## Verification
 
 - `true`

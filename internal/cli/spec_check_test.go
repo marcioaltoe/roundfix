@@ -938,6 +938,10 @@ complexity: low
 
 # Task 01: Exercise Verification reporting
 
+## Consumers
+
+None. This fixture exercises Verification reporting without changing a shared contract.
+
 ## Verification
 
 `)

@@ -8,6 +8,10 @@ complexity: low
 
 # Task 01: Reference most PRD coverage
 
+## Consumers
+
+None. This fixture changes no shared contract.
+
 ## Verification
 
 - `true`
