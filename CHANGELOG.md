@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.70.0] - 2026-10-13
+
+### Help on every command path exits zero
+
+- **`qa-report accept --help` and `-h`.** They print the `qa-report` usage and exit `0`. Before, the flag was read as a report path and refused with exit `1`. A report path, no path, two paths or a blank path keep their behavior.
+- **`baseline capabilities`, `baseline skills` and `baseline assets` with `--help`, `-h` or `help`.** They print the `baseline` usage, which lists their commands, and exit `0` instead of the usage error with exit `2`. `baseline capabilities check`, `baseline skills restore`, `baseline skills reconcile` and `baseline assets sync` keep their own help. A bare group still exits `2` with today's usage error.
+- **Every command path is tested.** A repository test asks `--help` and `-h` of every command path and group prefix named by the root usage, and requires the usage on standard output, nothing on standard error and exit `0`. A new command that forgets its help fails `make test`.
+- **Behavior Surface Record.** Each command path is fingerprinted from its own help. The fallback to the nearest ancestor whose help succeeds is removed, so the contract fails when a command's help does not exit `0`. The record's bytes do not change.
+- **Skill.** The `roundfix` skill no longer says `accept` has no `--help`.
+
 ## [0.69.0] - 2026-10-12
 
 ### The Baseline respects the repository's own choices
