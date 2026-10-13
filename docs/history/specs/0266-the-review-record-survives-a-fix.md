@@ -21,6 +21,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "527"
 ---
 
 # The review record survives a fix
