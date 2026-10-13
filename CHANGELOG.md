@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.76.0] - 2026-10-13
+
+### Baseline group usage errors name their own help
+
+- **`baseline capabilities`, `baseline skills` and `baseline assets`.** Run bare or with a command they do not have, they still exit `2`, but the usage error names the group once and points at the group's own help, which lists its commands: `roundfix: baseline skills requires the restore or reconcile command` followed by `Run 'roundfix baseline skills --help' for usage.` Before, the message read `baseline baseline <group> failed: ...` and pointed at `roundfix baseline profile --help`, which does not list the group's commands.
+- **Unknown `baseline` command.** `roundfix baseline nope` now prints `roundfix: unknown baseline command "nope"` and points at `roundfix baseline --help`.
+- **Unchanged.** `baseline profile` errors, every help text and the Behavior Surface Record keep their bytes. A repository test asserts that every group usage error names its group once and points at a help that exits `0` and lists the group's commands.
+- **Skill.** The `roundfix` skill describes the bare-group usage error.
+
 ## [0.75.0] - 2026-10-13
 
 ### Archive and cancel keep what Git ignores
