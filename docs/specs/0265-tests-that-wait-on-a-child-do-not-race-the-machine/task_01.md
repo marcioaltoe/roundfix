@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0265-tests-that-wait-on-a-child-do-not-race-the-machine
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -101,3 +101,66 @@ and every changed test passes under the race detector with its assertions.
 - `_prd.md` → Goals; Core Feature 1; Core Feature 2; Success Metric 1; Non-Goals / Out of Scope
 - `_techspec.md` → Current behavior; 0259 overlap; API Contract 1; API Contract 2; API Contract 3; Invariants 2-4; Build Order 1
 - ADR-0271; ADR-0213; ADR-0259; ADR-0266; ADR-0125
+
+
+## Result
+
+Implemented the task_01 test slice for Daemon Verification. The pre-existing
+`status: in_progress` remains unchanged; Subtasks, Acceptance Criteria and
+Verification remain authored as received.
+
+### Implementation
+
+- Detach phases that are not asserted use `testwait.Bound(t)` through
+  `detachTestBound`, defined in `implement_test.go` to preserve the protected
+  detach import block. The monitor-report test uses the production handshake
+  and Run-creation constants. Both asserted 50 ms limits remain.
+- The two timeout child modes wait on an unwritten sentinel through the existing
+  owner-watching wait. Run creation reads
+  `ROUNDFIX_DETACH_TEST_RUN_CREATION_DELAY`, defaults to 750 ms, and receives the
+  liveness budget from the parent, after writing its liveness byte.
+- Attach cancels synchronously when its output contains `Following live events.`;
+  the inside-budget Run uses one hour. Force Stop observes the terminal Run and
+  owner exit through `testwait`, and joins its cancelled monitor at teardown.
+- The forge probe keeps its asserted 250 ms deadline and
+  `context.DeadlineExceeded`, with the child's 30 s sleep as its elapsed ceiling.
+  Its second probe waits for a nonempty PID file, cancels, asserts
+  `context.Canceled` and the child's death, and joins the probe goroutine.
+- Dispose parents wait through `testwait.Poll`; children receive the parent's
+  test deadline minus the `testwait` margin as an RFC3339Nano environment value.
+  All fifteen selected top-level tests call `t.Parallel()` first.
+
+### Focused checks
+
+The following focused implementation check ran once, independently of the
+Daemon's authored Verification:
+
+```sh
+rtk proxy go test -race -count=1 -parallel 16 -v -run '^(TestRunDetachedCommandTimesOutWaitingForLiveness|TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline|TestRunDetachedCommandTimesOutWaitingForRunCreation|TestRunDetachedCommandReportsInvalidLivenessHandshake|TestRunDetachedCommandReportsMalformedRunCreationHandshake|TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput|TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent|TestRunDetachedCommandReportsSilentChildExitBeforeHandshake|TestRunImplementDetachSurvivesCallerProcessGroupKill|TestImplementRunBudgetBoundsSetupAndIntegration|TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion|TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner|TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken|TestConcurrentDisposeOfOneFindingAppendsOnce|TestConcurrentDisposeOfTwoFindingsBothSucceed)$' ./internal/cli
+```
+
+Exit 0; all fifteen selected tests and their subtests reported PASS, with no
+race diagnostic or Helper Residue. Package duration: 12.217 s. The monitor-report
+test took 10.08 s; the inside-budget subtest took 0.40 s.
+
+A read-only `rtk proxy python3 -` audit compared the working tree to `HEAD` and
+exited 0. It found the pre-change 500 ms/1 s detach budgets, finite 2 s child
+sleeps and short CLI waits in `HEAD`, then checked the resulting contracts and
+protected regions byte-for-byte.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Unasserted detach budgets use the test deadline, except production budgets in row 1 | Audit confirmed the deadline helper delegates to `testwait.Bound(t)`, production constants in row 1, removal of the old injected budgets and retention of both 50 ms limits. |
+| Rows 1–8 preserve every assertion and pass under the race detector | Audit compared all eight test bodies against `HEAD`, permitting only the budget substitutions; every other byte matched. All eight selected tests reported PASS in the focused race check. |
+| Rows 9–14 pass without the unasserted short waits or 10 s Run Budget | All seven selected tests reported PASS. Audit confirmed event-driven attach/probe cancellation, deadline-bound Force Stop and barriers, and the one-hour Run Budget. The existing 2 s owner-helper cleanup remains outside the changed waits. |
+| No production file or protected 0259 region changes | Audit confirmed exactly five test files plus this Task changed; the detach imports, existing constants, survivor struct, teardown test, owner environment line, survivor identity read, ignore-sentinel mode, sentinel owner check and terminate method matched `HEAD`. The caller kill and Force Stop helper also matched. No signal, executable or Sequential Test was added. |
+
+The sandbox could not initialize because its writable worktree root contains a
+symlink. Approved escalated execution was used for the scoped reads, edits and
+focused check. No declared Verification, repository gate, commit, push or pull
+request was run. No follow-up implementation was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T045342Z_a78df1f6c39a67e2`
+- Source commit: `40c3edddce2ab676d9a3cbf7f4f1432b82e8b74b`
