@@ -146,9 +146,8 @@ func detectCoverageCrossRead(result *Result, content []byte, display string) {
 		}
 	}
 	line := sectionLineContaining(content, section, prefix)
-	if declaration >= 0 && strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(lines[declaration]), prefix)) == "None." {
-		return
-	}
+	// None. ends the declaration, but a deviation bullet after it must still name a PRD unit.
+	none := declaration >= 0 && strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(lines[declaration]), prefix)) == "None."
 	bullets := 0
 	if declaration >= 0 {
 		for index := declaration + 1; index < len(lines); index++ {
@@ -169,7 +168,7 @@ func detectCoverageCrossRead(result *Result, content []byte, display string) {
 			})
 		}
 	}
-	if bullets == 0 {
+	if bullets == 0 && !none {
 		summary := display + " Coverage Map has no Deviations from the PRD: line"
 		if declaration >= 0 {
 			summary = display + " Deviations from the PRD: line has neither None. nor a following bullet"

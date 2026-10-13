@@ -134,6 +134,7 @@ func TestCoverageCrossReadGapFollowsTheDeviationsLine(t *testing.T) {
 		{"prose remainder", "## Coverage Map\n\nDeviations from the PRD: The shape changes.\n", 1},
 		{"unidentified deviation", "## Coverage Map\n\nDeviations from the PRD:\n\n- Aggregate per-request records.\n", 1},
 		{"contract is not a PRD unit", "## Coverage Map\n\nDeviations from the PRD:\n\n- API Contract 1 changes.\n", 1},
+		{"none followed by unidentified deviation", "## Coverage Map\n\nDeviations from the PRD: None.\n\n- Aggregate per-request records.\n", 1},
 		{"two unidentified deviations", "## Coverage Map\n\nDeviations from the PRD:\n\n- First change.\n- Second change.\n", 2},
 		{"bullet before line", "## Coverage Map\n\n- User Story 1 → detector.\n\nDeviations from the PRD:\n", 1},
 		{"line outside map", "## Notes\n\nDeviations from the PRD: None.\n", 1},
