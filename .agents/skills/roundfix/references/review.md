@@ -67,7 +67,13 @@ reviewer's final message. The answer file keeps every message, separated by a
 blank line. The record `pre-pr-review.json` and answer
 `pre-pr-review-answer.txt` live under `pre-pr-review/<checkout key>/` in the
 Artifact Directory, and the review record's `answerPath` names that answer
-file. Roundfix never reads another checkout's record. Roundfix sets
+file. Roundfix never reads another checkout's record.
+
+The checkout key is named from the resolved checkout path. Each non-reused
+`reviewed`, `findings`, `findings-dismissed` or `ceiling-closed` verdict also
+keeps a Reviewed Head Record at `heads/<head commit>.json`. A later round never
+replaces it at another head; a reused, blocked or omitted record writes none.
+Roundfix sets
 `answerPath` only when the prompt reached a reviewer; a pre-prompt failure has
 no answer path or answer file.
 
@@ -246,7 +252,12 @@ says that an archived Spec is never corrected in place, and tells the operator
 to author a corrective Spec with its own authorization and QA gate. Delivery
 parks that review as `corrective-spec-required`; a no-findings verdict prints
 no corrective-Spec line. The queue resumes without a corrective Spec when the
-correction answers only the review in the archived Spec's own records.
+correction answers only the review in the Reviewed Head Record of the parked
+candidate: each changed path must be under an archived Spec named by the
+blocker or among the paths its Tasks declared (`creates:`, `interface:` and
+recorded paths read at the recorded revision). Review round 2 and the
+repository checks still follow. Any other path requires a corrective Spec, and
+the refusal names that path.
 
 Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
 truncated, the prompt includes `[Spec context truncated]` and the record sets

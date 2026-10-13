@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0266-the-review-record-survives-a-fix
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -115,3 +115,34 @@ contract.
 - `_prd.md` → Goals; User Story 3; User Story 4; Core Feature 5; Core Feature 6
 - `_techspec.md` → API Contract 5; API Contract 6; Coverage Map; Build Order 1
 - ADR-0272; ADR-0256; ADR-0189; ADR-0233; ADR-0244
+
+## Result
+
+Implementation and focused evidence for the acceptance criteria:
+
+- The review and deliver user guides and both Roundfix skill reference copies
+  now describe the resolved checkout key, `heads/<head commit>.json`, the
+  Reviewed Head Record, the parked-candidate retry proof, declared paths
+  (`creates:`, `interface:` and recorded paths at the recorded revision), the
+  second review round and repository checks, and the corrective-Spec refusal.
+  The focused wording sweep found no remaining copy of the superseded retry
+  sentence.
+- `make skills-sync` completed and kept the canonical and embedded Roundfix
+  skill copies aligned. `go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` completed
+  with one passing package and recorded Roundfix `0.1.72`.
+- `CONTEXT.md` now defines **Reviewed Head Record** beside **Pre-PR Review
+  Record**, links both to ADR-0272, uses `kept per checkout under its resolved
+  path`, and avoids Spec references and the prohibited synonyms. The required
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` completed with
+  one passing package and updated only the review and deliver Behavior Surface
+  fingerprints. `git diff --check` completed cleanly.
+
+The Daemon still owns Task Verification and status settlement; the declared
+Verification commands were not run in this turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T210730Z_2a123460a7430d58`
+- Source commit: `3c59a84d52f916d303f94b920f33c2379558e819`
