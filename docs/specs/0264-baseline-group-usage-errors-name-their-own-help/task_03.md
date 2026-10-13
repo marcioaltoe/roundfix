@@ -44,7 +44,9 @@ an Agent Session, reads a credential, or reads or writes the real
    pointer it fails naming a `baseline` group.
 5. MUST record that `baseline profile` with an unknown command keeps today's
    text and exit 2, that `docs/references/behavior-surfaces.json` is
-   byte-identical to its bytes at `3820bdd4`, and that the existing
+   byte-identical to its bytes at the delivery base (the merge base of the
+   audited head with `main`), which later Specs may have changed, and that the
+   existing
    `baseline_profile_test.go` cases pass (Invariant 5).
 6. MUST record, as evidence this Spec did not author, each source of
    `_prd.md` → Acceptance evidence, through the passages `_prd.md` quotes: the
