@@ -559,6 +559,10 @@
       {
         "version": "0.0.13",
         "digest": "1fc2c645419861da134e2647f5a3c79d4f5f62e570df4990e347c6068a816e04"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "8876631421a52ddf4051e242929544c4020cc0013d3b6e7143496c95b456f8ff"
       }
     ],
     "write-techspec": [
@@ -597,6 +601,14 @@
       {
         "version": "0.0.10",
         "digest": "5b5d1e23844d79f23a62a46ae9bb4b934bf3d05e19fc865986ef599fe01af2da"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "d218c1cfbb3c6eea220340d102ee6f7f7285f06050101a0971eacdedf59576a2"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "7fb1a69098605290cd0a5efb04a0aee5b93ccc74dd9d5c7de534a2211f76d1b5"
       }
     ]
   }

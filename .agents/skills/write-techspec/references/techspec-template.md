@@ -66,7 +66,26 @@ created: YYYY-MM-DD
 ## Coverage Map
 
 <!-- One line per PRD goal, user story, Core Feature and Success Metric → the component(s) that satisfy it.
-     Format: `Story 3 → ImportScheduler, ImportStatusView`. An unmapped item is a design hole. -->
+     Format: `Story 3 → ImportScheduler, ImportStatusView`. An unmapped item is a design hole.
+     Deviation cross-read: `Deviations from the PRD: None.` or one bullet per PRD unit
+     the TechSpec delivers in another shape, naming the unit and the reason. -->
+
+Deviations from the PRD: None.
+
+## Absence Evidence
+
+<!-- One numbered item per component the TechSpec declares new. Include the component,
+     the search command that proved it absent, and the result. Use `None.` followed
+     by the reason when no component is new. -->
+
+1. <component> — command: `<search command>`; result: <what the search found>
+
+## ADR Alternatives
+
+<!-- One line for each ADR listed under Active ADR obligations. State how the design
+     relates to the alternatives that ADR rejected. -->
+
+- ADR-NNNN: <relation to the rejected alternatives>
 
 ## Integration Points
 

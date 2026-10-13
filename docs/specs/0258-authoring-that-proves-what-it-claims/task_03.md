@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0258-authoring-that-proves-what-it-claims
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -88,3 +88,37 @@ Context and this Task file.
 - [_prd.md](_prd.md) — Goals 1-4; User Stories 1-4; Core Features 1-4; Success Metric 2
 - [_techspec.md](_techspec.md) — Skill and document texts; Invariants 1-7; Testing Approach; Build Order 3
 - ADR-0265; ADR-0258
+
+## Result
+
+Implemented the authoring proof rules in the canonical `write-techspec` and
+`write-tasks` skills and templates, added the
+`TestAuthoringSkillsStateTheProofRules` contract test, and recorded the raised
+skill versions. The canonical and distributed copies are synchronized.
+
+Focused implementation evidence:
+
+- `rtk proxy make skills-sync` — completed before version recording and after
+  the final content/version update.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed and recorded `write-tasks` at `0.0.14` and `write-techspec` at `0.0.11`.
+- `rtk proxy go test -count=1 ./skills -run '^TestAuthoringSkillsStateTheProofRules$'` — passed.
+- `rtk proxy git diff --check` — passed.
+- `cmp` checks for both skill files and both templates — passed for all four
+  canonical/mirror pairs.
+
+Acceptance evidence:
+
+- `write-techspec` contains the Proof of what the Spec claims section with
+  Absence Evidence, ADR Alternatives, Coverage Cross-Read, and all three
+  finding codes.
+- `write-tasks` contains the Consumer Declaration, Integration Checkpoint,
+  whole-package exception, Coverage Cross-Read process rule, and
+  `SC-CONSUMERS-UNPROVEN`.
+- Both templates contain the requested sections and Coverage Map guidance.
+- Both skill versions are raised and the final sync leaves every canonical
+  copy byte-identical to its mirror.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T122525Z_1c1258fdf2b03bd6`
+- Source commit: `d148925f8ec07fa7df5b03b7d1713b30952ac957`

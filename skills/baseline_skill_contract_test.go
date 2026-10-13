@@ -797,6 +797,69 @@ func TestWriteTasksSkillStatesTheDeclaredPathRules(t *testing.T) {
 	}
 }
 
+func TestAuthoringSkillsStateTheProofRules(t *testing.T) {
+	t.Parallel()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	tests := []struct {
+		name     string
+		path     string
+		required []string
+	}{
+		{
+			name: "write-techspec skill",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-techspec", "SKILL.md"),
+			required: []string{
+				"## Proof of what the Spec claims",
+				"Absence Evidence",
+				"ADR Alternatives",
+				"Coverage Cross-Read",
+				"SC-ABSENCE-UNPROVEN",
+				"SC-ADR-ALTERNATIVES-UNRELATED",
+				"SC-COVERAGE-UNREAD",
+				"Deviations from the PRD:",
+			},
+		},
+		{
+			name: "write-techspec template",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-techspec", "references", "techspec-template.md"),
+			required: []string{
+				"## Absence Evidence",
+				"## ADR Alternatives",
+				"Deviations from the PRD: None.",
+			},
+		},
+		{
+			name: "write-tasks skill",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "SKILL.md"),
+			required: []string{
+				"## Consumers of a shared contract",
+				"Consumer Declaration",
+				"Integration Checkpoint",
+				"A suite that consumes a Shared Contract the Task changes is the exception",
+				"SC-CONSUMERS-UNPROVEN",
+				"Read the TechSpec's Coverage Cross-Read first",
+			},
+		},
+		{
+			name: "write-tasks template",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "references", "task-template.md"),
+			required: []string{
+				"## Consumers",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			content := string(readBaselineSkillContractFile(t, test.path))
+			for _, required := range test.required {
+				if !strings.Contains(content, required) {
+					t.Errorf("%s missing %q", test.name, required)
+				}
+			}
+		})
+	}
+}
+
 func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
