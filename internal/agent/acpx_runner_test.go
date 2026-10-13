@@ -21,6 +21,7 @@ import (
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/suiteguard"
+	"roundfix/internal/testwait"
 )
 
 const (
@@ -2174,7 +2175,7 @@ func TestACPXCancelSessionInvokesSessionCancel(t *testing.T) {
 		fakeACPXInvokes+"="+invocationsPath,
 	)
 
-	err := (&ACPXRunner{Command: os.Args[0], Environment: environment, codexSpawn: codexSpawnDependencies{goos: "linux"}}).CancelSession(context.Background(), RuntimeSpec{
+	err := (&ACPXRunner{cleanupTimeout: testwait.Bound(t), Command: os.Args[0], Environment: environment, codexSpawn: codexSpawnDependencies{goos: "linux"}}).CancelSession(context.Background(), RuntimeSpec{
 		ID:       "codex",
 		Protocol: ProtocolACP,
 	}, SessionRef{
@@ -2561,7 +2562,7 @@ func TestACPXRunReappliesSelectionForFreshRunnerSessionResume(t *testing.T) {
 	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1"); err != nil {
 		t.Fatalf("first run: %v", err)
 	}
-	harness.runner = &ACPXRunner{Command: os.Args[0], Environment: harness.runner.Environment, codexSpawn: codexSpawnDependencies{goos: "linux"}}
+	harness.runner = &ACPXRunner{cleanupTimeout: testwait.Bound(t), Command: os.Args[0], Environment: harness.runner.Environment, codexSpawn: codexSpawnDependencies{goos: "linux"}}
 	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1"); err != nil {
 		t.Fatalf("resumed run: %v", err)
 	}
@@ -3164,6 +3165,28 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 	}
 }
 
+func TestDisposableCleanupTimeoutDefaultsToTheProductionValue(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name    string
+		timeout time.Duration
+		want    time.Duration
+	}{
+		{name: "zero", want: acpxPreflightCleanupTimeout},
+		{name: "negative", timeout: -time.Second, want: acpxPreflightCleanupTimeout},
+		{name: "positive", timeout: time.Hour, want: time.Hour},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			runner := &ACPXRunner{cleanupTimeout: tt.timeout}
+			if got := runner.disposableCleanupTimeout(); got != tt.want {
+				t.Fatalf("disposable cleanup timeout = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestACPXRunnerCancellationClockDefaultsToRealTimer(t *testing.T) {
 	t.Parallel()
 
@@ -3345,7 +3368,8 @@ func TestWorkStartedBoundaryPublishesOnFirstAgentOutput(t *testing.T) {
 	dir := t.TempDir()
 	messageLine := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`)
 	runner := &ACPXRunner{
-		Command: os.Args[0],
+		cleanupTimeout: testwait.Bound(t),
+		Command:        os.Args[0],
 		Environment: environmentForTest(
 			fakeACPXEnv+"=1",
 			fakeACPXStdout+"="+messageLine+acpxPromptResponseLine("end_turn"),
@@ -3419,7 +3443,8 @@ func TestWorkStartedBoundaryIgnoresInertSessionSetup(t *testing.T) {
 	dir := t.TempDir()
 	messageLine := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`)
 	runner := &ACPXRunner{
-		Command: os.Args[0],
+		cleanupTimeout: testwait.Bound(t),
+		Command:        os.Args[0],
 		Environment: environmentForTest(
 			fakeACPXEnv+"=1",
 			fakeACPXStdout+"="+messageLine+acpxPromptResponseLine("end_turn"),
@@ -3960,7 +3985,8 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	writeACPXConfigAtHomeForTest(t, homeDir, config)
 	return &fakeACPXHarness{
 		runner: &ACPXRunner{
-			Command: os.Args[0],
+			cleanupTimeout: testwait.Bound(t),
+			Command:        os.Args[0],
 			Environment: environmentForTest(
 				"HOME="+homeDir,
 				fakeAdapterDirEnv+"="+adapterDir,
@@ -3974,6 +4000,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 			},
 			codexSpawn: codexSpawnDependencies{goos: "linux"},
 		},
+		stopGrace:       testwait.Bound(t),
 		gitRoot:         dir,
 		adapterDir:      adapterDir,
 		invocationsPath: invocationsPath,
@@ -4209,7 +4236,7 @@ func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHar
 	harness := newFakeACPXHarness(t)
 	harness.milestones = newFakeACPXMilestones(t, harness.gitRoot)
 	harness.startedPath = harness.milestones.promptStarted
-	harness.stopGrace = 2 * time.Second
+	harness.stopGrace = testwait.Bound(t)
 	harness.setEnv(fakeACPXBlock, "1")
 	harness.setEnv(fakeACPXStarted, harness.startedPath)
 	harness.setEnv(fakeACPXCanceled, harness.milestones.cancelCompleted)
@@ -4433,10 +4460,6 @@ func (harness *fakeACPXHarness) run(ctx context.Context, runtime RuntimeSpec, se
 }
 
 func (harness *fakeACPXHarness) runWithSink(ctx context.Context, runtime RuntimeSpec, sessionName string, sink runevent.Sink) (ExecuteResult, error) {
-	stopGrace := harness.stopGrace
-	if stopGrace <= 0 {
-		stopGrace = 20 * time.Millisecond
-	}
 	return harness.runner.Run(ctx, ExecuteRequest{
 		Runtime:   selectedRuntime(runtime),
 		RunID:     "run-acpx",
@@ -4444,7 +4467,7 @@ func (harness *fakeACPXHarness) runWithSink(ctx context.Context, runtime Runtime
 		LogPath:   filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
 		Prompt:    "prompt",
 		GitRoot:   harness.gitRoot,
-		StopGrace: stopGrace,
+		StopGrace: harness.stopGrace,
 		Session:   SessionRef{Name: sessionName},
 	}, sink)
 }
@@ -4476,8 +4499,9 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 		logPath = ""
 	}
 	runner := &ACPXRunner{
-		Command:     os.Args[0],
-		Environment: environment,
+		cleanupTimeout: testwait.Bound(t),
+		Command:        os.Args[0],
+		Environment:    environment,
 		Now: func() time.Time {
 			return time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 		},
@@ -4517,7 +4541,7 @@ func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) ([][]st
 		fakeACPXStdout+"="+version+"\n",
 	)
 
-	err := (&ACPXRunner{Command: os.Args[0], Environment: environment}).Probe(context.Background(), ProbeRequest{Runtime: runtime})
+	err := (&ACPXRunner{cleanupTimeout: testwait.Bound(t), Command: os.Args[0], Environment: environment}).Probe(context.Background(), ProbeRequest{Runtime: runtime})
 	return readJSONInvocations(t, invocationsPath), err
 }
 

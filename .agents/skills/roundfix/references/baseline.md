@@ -161,6 +161,10 @@ never executes them. It also never installs dependencies, connects to live
 infrastructure, follows unsafe links, mutates nested instruction carriers, or
 lets ACP proposals authorize writes.
 
+`roundfix baseline capabilities --help`, `roundfix baseline skills --help` and
+`roundfix baseline assets --help`, or `-h`, print the `baseline` usage,
+which lists their commands, and exit `0`.
+
 Re-check Repository Capability evidence without changing the repository:
 
 ```text

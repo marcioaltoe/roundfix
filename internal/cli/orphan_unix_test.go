@@ -24,10 +24,11 @@ import (
 
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	"roundfix/internal/testwait"
 )
 
 func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *testing.T) {
-	// Sequential: its five-second observation deadline missed under the race detector while it ran in parallel (0254 QA F4).
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
 	ownerIdentity, err := store.OwnerProcessIdentity(context.Background(), pid)
@@ -59,9 +60,14 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 		err        error
 	}
 	observed := make(chan observation, 1)
-	monitorCtx, cancelMonitor := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancelMonitor()
+	monitorCtx, cancelMonitor := context.WithCancel(t.Context())
+	monitorDone := make(chan struct{})
+	defer func() {
+		cancelMonitor()
+		<-monitorDone
+	}()
 	go func() {
+		defer close(monitorDone)
 		reader, err := store.OpenReader(monitorCtx, homeDir)
 		if err != nil {
 			observed <- observation{err: err}
@@ -102,23 +108,19 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 	if code != exitOK {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 	}
-	terminal := <-observed
+	terminal := testwait.Until(t, "terminal Run observation", observed, (<-chan error)(nil))
 	if terminal.err != nil {
 		t.Fatalf("observe terminal Run: %v", terminal.err)
 	}
 	if terminal.ownerAlive {
 		t.Fatalf("Run %s reached Stopped while owner process %d was alive", active.ID, pid)
 	}
-	select {
-	case err := <-ownerWait:
-		// Force stop signals the owner with SIGKILL, so a killed exit is the
-		// contract being met. Requiring a clean exit passed only when the owner
-		// happened to exit on its own before the signal arrived.
-		if err != nil && !ownerKilledBySignal(err, syscall.SIGKILL) {
-			t.Fatalf("owner process exit: %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatalf("owner process %d did not exit", pid)
+	ownerErr := testwait.Until(t, "force-stopped owner process exit", ownerWait, (<-chan error)(nil))
+	// Force stop signals the owner with SIGKILL, so a killed exit is the
+	// contract being met. Requiring a clean exit passed only when the owner
+	// happened to exit on its own before the signal arrived.
+	if ownerErr != nil && !ownerKilledBySignal(ownerErr, syscall.SIGKILL) {
+		t.Fatalf("owner process exit: %v", ownerErr)
 	}
 	if store.ProcessAlive(pid) {
 		t.Fatalf("owner process %d remained alive after force stop", pid)
@@ -245,16 +247,12 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 	if code != exitOK {
 		t.Fatalf("legacy force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 	}
-	select {
-	case err := <-ownerWait:
-		// Force stop signals the owner with SIGKILL, so a killed exit is the
-		// contract being met. Requiring a clean exit passed only when the owner
-		// happened to exit on its own before the signal arrived.
-		if err != nil && !ownerKilledBySignal(err, syscall.SIGKILL) {
-			t.Fatalf("owner process exit: %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatalf("owner process %d did not exit", pid)
+	ownerErr := testwait.Until(t, "force-stopped owner process exit", ownerWait, (<-chan error)(nil))
+	// Force stop signals the owner with SIGKILL, so a killed exit is the
+	// contract being met. Requiring a clean exit passed only when the owner
+	// happened to exit on its own before the signal arrived.
+	if ownerErr != nil && !ownerKilledBySignal(ownerErr, syscall.SIGKILL) {
+		t.Fatalf("owner process exit: %v", ownerErr)
 	}
 	if store.ProcessAlive(pid) {
 		t.Fatalf("owner process %d remained alive after legacy force stop", pid)

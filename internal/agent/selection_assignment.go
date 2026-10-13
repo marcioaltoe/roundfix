@@ -159,7 +159,7 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 	}
 	setupCancel()
 
-	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), acpxPreflightCleanupTimeout)
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), runner.disposableCleanupTimeout())
 	defer cleanupCancel()
 	cleanupErr := runner.closeDisposableSession(cleanupCtx, request.Runtime, sessionName, workDir)
 	if setupErr != nil && cleanupErr != nil {

@@ -1484,21 +1484,25 @@ func runImplementCommandAsync(t *testing.T, ctx context.Context, args ...string)
 	return resultCh
 }
 
-// attachDetachBudget bounds one attach invocation against an Active Run. It is
-// not free the way the budgets above are: attach exits its follow loop when
-// this context expires, so the value is roughly what the test costs.
-//
-// It is also doing two jobs, which is the defect the finding above records.
-// store.OpenReader must stat the file, open SQLite against a live writer, ping
-// it, and read the migration version inside this same deadline, and only the
-// follow-loop bound is what the assertion is about. The literal it replaced was
-// 200ms; under CI load the open alone exceeded that and surfaced as
-// "context deadline exceeded" nowhere near the behaviour under test.
-//
-// Widening it buys margin, it does not separate the concerns. The real fix is a
-// deadline per concern, which lives in attach's own path; the finding stays open
-// until that lands. Keep this modest so the cost stays a fraction of one test.
-const attachDetachBudget = 2 * time.Second
+// detachTestBound keeps the detach fixture's import block independent of the
+// survivor teardown changes while using the enclosing test's deadline.
+func detachTestBound(t *testing.T) time.Duration {
+	t.Helper()
+	return testwait.Bound(t)
+}
+
+type attachFollowCancelWriter struct {
+	bytes.Buffer
+	cancel context.CancelFunc
+}
+
+func (writer *attachFollowCancelWriter) Write(content []byte) (int, error) {
+	n, err := writer.Buffer.Write(content)
+	if strings.Contains(writer.String(), "Following live events.") {
+		writer.cancel()
+	}
+	return n, err
+}
 
 func waitImplementCommandResult(t *testing.T, resultCh <-chan implementCommandResult) implementCommandResult {
 	t.Helper()
@@ -1934,11 +1938,11 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		waitForDetachDeathTestKill(t, record)
 	}
 
-	var attachStdout bytes.Buffer
+	attachCtx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	attachStdout := attachFollowCancelWriter{cancel: cancel}
 	var attachStderr bytes.Buffer
-	attachCtx, cancel := context.WithTimeout(context.Background(), attachDetachBudget)
 	attachCode := runCLIContext(t, attachCtx, []string{"attach", runID}, &attachStdout, &attachStderr)
-	cancel()
 	if attachCode != exitOK {
 		t.Fatalf("expected attach to detach cleanly from active Run, got %d stderr=%q stdout=%q", attachCode, attachStderr.String(), attachStdout.String())
 	}
@@ -6423,7 +6427,7 @@ func TestImplementRunBudgetBoundsSetupAndIntegration(t *testing.T) {
 
 	t.Run("inside budget", func(t *testing.T) {
 		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Finish within budget"}})
-		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: 10s\n")
+		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: 1h\n")
 		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 		gitImplement(t, repoDir, "commit", "-m", "configure ample budget")
 		runner := &implementFakeRunner{gitRoot: repoDir, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}

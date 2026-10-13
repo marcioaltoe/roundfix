@@ -447,6 +447,10 @@ _Avoid_: Unmarked test, serial test, parallel exception
 A package whose top-level tests each call `t.Parallel()` as their first statement or are Sequential Tests, with a repository rule enforcing both the declaration and a ceiling on Sequential Tests that may only fall; files under a `docscontract` or `repocontract` build constraint are excluded ([ADR-0259](docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md)).
 _Avoid_: Parallel suite, concurrent package, fast package
 
+**Real-Time Budget**:
+A wall-clock allowance below ten seconds that a test gives work it does not control: a child process, a goroutine or Git; an asserted allowance races work that blocks until cancellation or the test binary's exit ([ADR-0271](docs/adr/0271-a-test-bounds-by-real-time-only-what-it-asserts.md)).
+_Avoid_: Run Budget, test deadline, arbitrary timeout
+
 **Contract Relevance**:
 The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary`. The selector's summary line names each `relevant` contract it leaves out and each `boundary` contract. The Full Contract Run ignores Contract Relevance (ADR-0252, ADR-0253).
 _Avoid_: test tags, impact map, test filter

@@ -78,6 +78,7 @@ type Dependencies struct {
 	GH                GHRunner
 	Sink              runevent.Sink
 	Now               func() time.Time
+	BudgetTimer       func(time.Duration) (<-chan time.Time, func() bool) // nil uses time.NewTimer
 	Progress          io.Writer
 }
 

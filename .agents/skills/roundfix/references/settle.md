@@ -142,7 +142,8 @@ declarations, applying the shared archive and settlement eligibility policy.
 It writes no files and produces no stdout; exit status is the machine-readable
 result. Exit `0` means acceptable, `1` means missing, unreadable, or
 unacceptable, and `2` means a usage error. Read its usage through
-`roundfix qa-report --help`; `accept` has no `--help`.
+`roundfix qa-report accept --help` or `-h`, which prints it and exits `0`
+without reading a report.
 
 A `pending` verdict, a report with no QA row, and empty or duplicated front
 matter are refused. The pre-PR Pull Request row recorded as

@@ -919,6 +919,7 @@ func (runner *taskFakeRunner) EndSession(context.Context, agent.RuntimeSpec, age
 }
 
 type budgetDeadlineRunner struct {
+	started       chan struct{}
 	mu            sync.Mutex
 	runs          []string
 	cancellations int
@@ -932,6 +933,9 @@ func (runner *budgetDeadlineRunner) Run(ctx context.Context, req agent.ExecuteRe
 	runner.mu.Lock()
 	runner.runs = append(runner.runs, taskID)
 	runner.mu.Unlock()
+	if runner.started != nil {
+		close(runner.started)
+	}
 	<-ctx.Done()
 	runner.mu.Lock()
 	runner.cancellations++
@@ -947,6 +951,31 @@ func (runner *budgetDeadlineRunner) snapshot() ([]string, int) {
 	runner.mu.Lock()
 	defer runner.mu.Unlock()
 	return append([]string(nil), runner.runs...), runner.cancellations
+}
+
+// budgetDefaultTimerRunner settles task_00 only once task_01 is blocking.
+// Its settlement renews the allowance to a deadline already past in real time.
+type budgetDefaultTimerRunner struct {
+	budgetDeadlineRunner
+	gitRoot string
+	clock   *budgetTestClock
+	maximum time.Duration
+}
+
+func (runner *budgetDefaultTimerRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
+	if taskIDFromPrompt(req.Prompt) != "task_00" {
+		return runner.budgetDeadlineRunner.Run(ctx, req, sink)
+	}
+	select {
+	case <-runner.started:
+	case <-ctx.Done():
+		return agent.ExecuteResult{}, agent.StopError{Err: ctx.Err()}
+	}
+	runner.clock.Set(time.Now().Add(-2 * runner.maximum))
+	if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, "task_00"), spec.StatusCompleted); err != nil {
+		return agent.ExecuteResult{}, err
+	}
+	return agent.ExecuteResult{}, nil
 }
 
 func taskIDFromPrompt(prompt string) string {
@@ -7672,6 +7701,41 @@ func TestTaskCycleRefusesToStartWorkPastItsBudget(t *testing.T) {
 	}
 }
 
+func TestTaskBudgetWatchdogUsesTheRealTimerByDefault(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_00"}, {id: "task_01"}})
+	startedAt := time.Now()
+	const maximum = time.Hour
+	clock := &budgetTestClock{now: startedAt}
+	runner := &budgetDefaultTimerRunner{
+		budgetDeadlineRunner: budgetDeadlineRunner{started: make(chan struct{})},
+		gitRoot:              fixture.gitRoot, clock: clock, maximum: maximum,
+	}
+	engine := fixture.engineWithTaskWorktrees(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree, newFakeTaskWorktrees())
+	engine.deps.Now = clock.Now
+	if engine.deps.BudgetTimer != nil {
+		t.Fatal("default engine unexpectedly supplies a BudgetTimer")
+	}
+	plan := budgetedPlan(fixture.plan(), startedAt, maximum)
+	plan.Concurrency = 2
+
+	result, err := engine.TaskCycle(t.Context(), plan)
+
+	if !errors.Is(err, context.DeadlineExceeded) || result.TerminalOutcome != store.StateBudgetExceeded {
+		t.Fatalf("expected Run Budget deadline, got result=%+v err=%v", result, err)
+	}
+	if !result.BudgetDeadline.Before(time.Now()) || result.BudgetRenewedBy != "task_00" {
+		t.Fatalf("budget = deadline %s renewed by %q, want past deadline renewed by task_00", result.BudgetDeadline, result.BudgetRenewedBy)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("completed Tasks = %d, want renewing task_00 settlement", result.Completed)
+	}
+	runs, cancellations := runner.snapshot()
+	if got := strings.Join(runs, ","); got != "task_01" || cancellations != 1 {
+		t.Fatalf("blocking Tasks = %q cancellations=%d, want task_01 cancelled once", got, cancellations)
+	}
+}
+
 func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -7682,21 +7746,39 @@ func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
 		{name: "termination unprovable", cancelErr: errors.New("termination could not be proved")},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}, {id: "task_02"}})
-			runner := &budgetDeadlineRunner{cancelErr: test.cancelErr}
+			runner := &budgetDeadlineRunner{cancelErr: test.cancelErr, started: make(chan struct{})}
 			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
-			engine.deps.Now = time.Now
+			startedAt := time.Now()
+			engine.deps.Now = func() time.Time { return startedAt }
+			timerCh := make(chan time.Time, 1)
+			engine.deps.BudgetTimer = func(time.Duration) (<-chan time.Time, func() bool) {
+				return timerCh, func() bool { return true }
+			}
 			plan := fixture.plan()
-			plan.RunStartedAt = time.Now()
+			plan.RunStartedAt = startedAt
 			plan.BudgetEnabled = true
-			// Worktree setup does real Git work before the first Task starts, and
-			// the budget now bounds that setup too. A hundred milliseconds was
-			// spent by a loaded CI machine before any Task began, which made this
-			// case report no Agent Task at all; three seconds leaves the setup
-			// thirty times the margin it actually needed there.
-			plan.MaxRunDuration = 3 * time.Second
+			plan.MaxRunDuration = time.Hour
 
-			result, err := engine.TaskCycle(context.Background(), plan)
+			ctx, cancel := context.WithCancel(t.Context())
+			type cycleResult struct {
+				result TaskCycleResult
+				err    error
+			}
+			resultCh := make(chan cycleResult, 1)
+			ended := make(chan struct{})
+			go func() {
+				defer close(ended)
+				result, err := engine.TaskCycle(ctx, plan)
+				resultCh <- cycleResult{result: result, err: err}
+			}()
+			defer func() { cancel(); <-ended }()
+
+			testwait.Until(t, "task_01 to start before budget expiry", runner.started, ended)
+			timerCh <- startedAt.Add(plan.MaxRunDuration)
+			finished := testwait.Until[cycleResult, struct{}](t, "Run Budget to cancel task_01", resultCh, nil)
+			result, err := finished.result, finished.err
 
 			if !errors.Is(err, context.DeadlineExceeded) {
 				t.Fatalf("expected Run Budget deadline, got result=%+v err=%v", result, err)

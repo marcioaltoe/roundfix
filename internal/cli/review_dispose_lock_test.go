@@ -13,10 +13,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/testwait"
 )
 
 const concurrentDisposeProcessCount = 32
 const reviewDisposeStartBarrierEnv = "ROUNDFIX_REVIEW_DISPOSE_START_BARRIER"
+const reviewDisposeStartDeadlineEnv = "ROUNDFIX_REVIEW_DISPOSE_START_DEADLINE"
 
 func init() {
 	readyPath := os.Getenv(reviewDisposeStartBarrierEnv)
@@ -28,7 +31,11 @@ func init() {
 		os.Exit(97)
 	}
 	releasePath := filepath.Join(filepath.Dir(readyPath), "release")
-	deadline := time.Now().Add(10 * time.Second)
+	deadline, err := time.Parse(time.RFC3339Nano, os.Getenv(reviewDisposeStartDeadlineEnv))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parse review dispose start deadline: %v\n", err)
+		os.Exit(97)
+	}
 	for {
 		if _, err := os.Stat(releasePath); err == nil {
 			return
@@ -169,7 +176,10 @@ func newReviewDisposeProcess(
 	commandArgs := append([]string{"review", "dispose"}, args...)
 	command := exec.CommandContext(t.Context(), os.Args[0], commandArgs...)
 	command.Dir = fixture.repository
-	command.Env = cliHelperEnv(t, "", map[string]string{reviewDisposeStartBarrierEnv: barrierReadyPath})
+	command.Env = cliHelperEnv(t, "", map[string]string{
+		reviewDisposeStartBarrierEnv:  barrierReadyPath,
+		reviewDisposeStartDeadlineEnv: time.Now().Add(testwait.Bound(t)).Format(time.RFC3339Nano),
+	})
 	command.Stdout = stdout
 	command.Stderr = stderr
 	return command
@@ -190,8 +200,7 @@ func (barrier reviewDisposeStartBarrier) readyPath(index int) string {
 
 func (barrier reviewDisposeStartBarrier) release(t *testing.T, processCount int) {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for {
+	testwait.Poll(t, "review dispose processes at start barrier", (<-chan error)(nil), func() (bool, string) {
 		entries, err := os.ReadDir(barrier.directory)
 		if err != nil {
 			t.Fatalf("read review dispose start barrier: %v", err)
@@ -202,14 +211,8 @@ func (barrier reviewDisposeStartBarrier) release(t *testing.T, processCount int)
 				ready++
 			}
 		}
-		if ready == processCount {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("review dispose start barrier has %d ready processes, want %d", ready, processCount)
-		}
-		time.Sleep(time.Millisecond)
-	}
+		return ready == processCount, fmt.Sprintf("%d ready processes, want %d", ready, processCount)
+	})
 	if err := os.WriteFile(filepath.Join(barrier.directory, "release"), nil, 0o600); err != nil {
 		t.Fatalf("release review dispose processes: %v", err)
 	}

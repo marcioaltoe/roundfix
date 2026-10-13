@@ -702,7 +702,6 @@ func TestTryWriteBootstrapReleaseReturnsWithoutAReader(t *testing.T) {
 func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
 	t.Parallel()
 	worktreeDir := t.TempDir()
-	startedPath := filepath.Join(worktreeDir, "bootstrap.started")
 	releasePath := filepath.Join(worktreeDir, "bootstrap.release")
 	if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
 		t.Fatalf("create bootstrap release FIFO: %v: %s", err, output)
@@ -710,22 +709,11 @@ func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
 	const timeout = time.Second
 	command := "printf started > bootstrap.started; read release < bootstrap.release"
 	resultCh := make(chan error, 1)
-	ended := make(chan struct{})
 	go func() {
-		resultCh <- runBootstrap(context.Background(), worktreeDir, BootstrapSpec{Command: command, Timeout: timeout}, io.Discard)
-		close(ended)
+		resultCh <- runBootstrap(t.Context(), worktreeDir, BootstrapSpec{Command: command, Timeout: timeout}, io.Discard)
 	}()
 
-	testwait.Poll(t, "bootstrap command to start", ended, func() (bool, string) {
-		if _, err := os.Stat(startedPath); err == nil {
-			return true, "start marker exists"
-		} else if errors.Is(err, os.ErrNotExist) {
-			return false, "start marker does not exist"
-		} else {
-			t.Fatalf("inspect bootstrap start marker: %v", err)
-			return false, "start marker could not be inspected"
-		}
-	})
+	// The asserted timeout may expire before the shell writes its marker.
 	err := testwait.Until[error, struct{}](t, "bootstrap command timeout", resultCh, nil)
 
 	var bootstrapErr *BootstrapError
