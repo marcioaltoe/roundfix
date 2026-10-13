@@ -44,6 +44,18 @@ _Avoid_: Open run, live run
 A user's explicit request to end an Active Run before it reaches another terminal outcome.
 _Avoid_: Pause, retry, failure
 
+**Proven Signal**:
+A signal sent only to the process whose identity was recorded when its PID was learned, or to its process group after proving the leader or the continued presence of live members. A different identity means the recorded process ended and receives no signal ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
+_Avoid_: Safe kill, PID kill, best-effort signal
+
+**Helper Lifeline**:
+A test helper's connection to its owning test binary, whose loss ends the helper even when test cleanup cannot run ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
+_Avoid_: Owner PID probe, cleanup promise
+
+**Helper Residue**:
+A live process carrying a test binary's ownership mark after that package's tests and cleanup grace have ended. It is a test-suite isolation violation, distinct from Process Residue, which concerns a process that outlived its Run ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
+_Avoid_: Process Residue, orphan helper, zombie
+
 **Force Stop**:
 The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation
@@ -830,8 +842,12 @@ _Avoid_: Archive move, file migration, relocation payload
 A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
 _Avoid_: Broken link, dangling reference, link check
 
+**Worktree Build Cache**:
+A repository-declared directory of rebuildable build output retained in a Run Worktree, Task Worktree or Delivery Queue item worktree. It becomes reclaimable when its Run is terminal or its item is merged; active work keeps it. See [ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md).
+_Avoid_: Run artifacts, shared build cache
+
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, and reports what it freed. A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention (ADR-0255).
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, removes declared Worktree Build Caches from ended worktrees, and reports what it freed. See [ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md). A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention (ADR-0255).
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:

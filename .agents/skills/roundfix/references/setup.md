@@ -173,3 +173,19 @@ config: defaults.model is deprecated and ignored; use profiles.<category>.prefer
 
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
+
+## Worktree Build Caches
+
+When `worktree.caches` declares rebuildable directories, `storage:` adds
+`; Worktree Build Caches reclaimable: <n> (<bytes> bytes)` before `; next:`.
+Doctor measures only declared caches in ended worktrees under the configured
+worktree location, never follows a cache symlink or a resolved escape, and
+writes nothing. The byte walk stops after two seconds total; an unfinished
+walk reports `at least <bytes> bytes` and continues no background measurement.
+A cache count greater than zero reports `found` and names `roundfix gc`.
+Read errors report `partial`; storage never reports `failed` or changes the
+exit code. With no declared cache, the storage line stays byte-identical.
+
+```text
+storage: found (Runs reclaimable: 0; Run Database free bytes: 0; Worktree Build Caches reclaimable: 1 (11 bytes); next: roundfix gc)
+```

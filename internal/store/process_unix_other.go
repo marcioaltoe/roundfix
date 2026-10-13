@@ -14,3 +14,7 @@ func processStartIdentity(_ context.Context, _ int) (string, error) {
 func processTreePIDs(_ int, _ string) ([]int, error) {
 	return nil, ErrOwnerProcessUnsupported
 }
+
+func liveProcessGroupMembers(_ context.Context, _ int) ([]int, error) {
+	return nil, ErrOwnerProcessUnsupported
+}

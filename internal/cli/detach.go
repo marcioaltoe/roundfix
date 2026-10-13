@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/store"
 )
 
 const (
@@ -230,6 +232,12 @@ func runDetachedCommandWithReport(
 		_ = os.Remove(tempPath)
 		return exitPreflight
 	}
+	leaderIdentity, identityErr := store.OwnerProcessIdentity(context.Background(), cmd.Process.Pid)
+	if identityErr != nil {
+		// Without proof the group operation must refuse. The owned Process
+		// handle remains available for child-only teardown.
+		leaderIdentity = ""
+	}
 	_ = writePipe.Close()
 	_ = tempFile.Close()
 
@@ -240,18 +248,18 @@ func runDetachedCommandWithReport(
 
 	liveness, ok := waitDetachedHandshakeEvent(handshakeCh, timeouts.liveness)
 	if !ok {
-		return handleDetachedHandshakeTimeout(cmd, stderr, tempPath, detachPhaseLiveness, timeouts.liveness)
+		return handleDetachedHandshakeTimeout(cmd, leaderIdentity, stderr, tempPath, detachPhaseLiveness, timeouts.liveness)
 	}
 	if liveness.phase != detachPhaseLiveness || liveness.handshake.err != nil {
-		return handleDetachedHandshakeFailure(cmd, stderr, tempPath, detachPhaseLiveness, detachHandshakeFailureCause(detachPhaseLiveness, liveness))
+		return handleDetachedHandshakeFailure(cmd, leaderIdentity, stderr, tempPath, detachPhaseLiveness, detachHandshakeFailureCause(detachPhaseLiveness, liveness))
 	}
 
 	created, ok := waitDetachedHandshakeEvent(handshakeCh, timeouts.runCreation)
 	if !ok {
-		return handleDetachedHandshakeTimeout(cmd, stderr, tempPath, detachPhaseRunCreation, timeouts.runCreation)
+		return handleDetachedHandshakeTimeout(cmd, leaderIdentity, stderr, tempPath, detachPhaseRunCreation, timeouts.runCreation)
 	}
 	if created.phase != detachPhaseRunCreation || created.handshake.err != nil {
-		return handleDetachedHandshakeFailure(cmd, stderr, tempPath, detachPhaseRunCreation, detachHandshakeFailureCause(detachPhaseRunCreation, created))
+		return handleDetachedHandshakeFailure(cmd, leaderIdentity, stderr, tempPath, detachPhaseRunCreation, detachHandshakeFailureCause(detachPhaseRunCreation, created))
 	}
 	if err := cmd.Process.Release(); err != nil {
 		printPreflightFailure(req.name, fmt.Errorf("release Detached Run child: %w", err), stderr)
@@ -372,9 +380,9 @@ func printDetachedReport(stdout io.Writer, runID string, consoleLog string) {
 	fmt.Fprintf(stdout, "Stop: roundfix stop %s\n", runID)
 }
 
-func handleDetachedHandshakeTimeout(cmd *exec.Cmd, stderr io.Writer, tempPath string, phase detachHandshakePhase, timeout time.Duration) int {
+func handleDetachedHandshakeTimeout(cmd *exec.Cmd, leaderIdentity string, stderr io.Writer, tempPath string, phase detachHandshakePhase, timeout time.Duration) int {
 	waitCh := startDetachedProcessWait(cmd)
-	killDetachedProcess(cmd)
+	killDetachedProcess(cmd, leaderIdentity)
 	waitErr, waited := waitDetachedProcess(waitCh, detachWaitTimeout)
 	if !waited {
 		waitErr = errors.New("child did not exit after kill")
@@ -397,11 +405,11 @@ func printDetachedHandshakeTimeout(stderr io.Writer, phase detachHandshakePhase,
 	}
 }
 
-func handleDetachedHandshakeFailure(cmd *exec.Cmd, stderr io.Writer, tempPath string, phase detachHandshakePhase, cause error) int {
+func handleDetachedHandshakeFailure(cmd *exec.Cmd, leaderIdentity string, stderr io.Writer, tempPath string, phase detachHandshakePhase, cause error) int {
 	waitCh := startDetachedProcessWait(cmd)
 	waitErr, waited := waitDetachedProcess(waitCh, detachWaitTimeout)
 	if !waited {
-		killDetachedProcess(cmd)
+		killDetachedProcess(cmd, leaderIdentity)
 		waitErr, waited = waitDetachedProcess(waitCh, detachWaitTimeout)
 		if !waited {
 			waitErr = errors.New("child did not exit after kill")
@@ -472,11 +480,11 @@ func waitDetachedProcess(waitCh <-chan error, timeout time.Duration) (error, boo
 	}
 }
 
-func killDetachedProcess(cmd *exec.Cmd) {
+func killDetachedProcess(cmd *exec.Cmd, leaderIdentity string) {
 	if cmd == nil || cmd.Process == nil {
 		return
 	}
-	if killDetachedProcessGroup(cmd) {
+	if killDetachedProcessGroup(cmd, leaderIdentity) {
 		return
 	}
 	_ = cmd.Process.Kill()

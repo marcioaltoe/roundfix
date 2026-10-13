@@ -18,12 +18,12 @@ func defaultDoctorStorageResults(ctx context.Context, loaded roundconfig.Loaded)
 	databasePath := store.DatabasePath(loaded.HomeDir)
 	if _, err := os.Stat(databasePath); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return []CheckResult{doctorStorageOKResult("no Run Database")}
+			return []CheckResult{doctorStorageWithBuildCaches(doctorStorageOKResult("no Run Database"), loaded, worktreeBuildCacheScan{})}
 		}
 		return []CheckResult{doctorStoragePartialResult(fmt.Errorf("stat Run Database: %w", err))}
 	}
 
-	runStore, err := store.OpenReader(ctx, loaded.HomeDir)
+	runStore, err := openGCStore(ctx, true, loaded.HomeDir)
 	if err != nil {
 		return []CheckResult{doctorStoragePartialResult(err)}
 	}
@@ -38,7 +38,7 @@ func defaultDoctorStorageResults(ctx context.Context, loaded roundconfig.Loaded)
 	return []CheckResult{result}
 }
 
-func readDoctorStorageResult(ctx context.Context, runStore *store.Store, loaded roundconfig.Loaded, now time.Time) CheckResult {
+func readDoctorRunStorageResult(ctx context.Context, runStore *store.Store, loaded roundconfig.Loaded, now time.Time) CheckResult {
 	freeBytes, err := runStore.FreeBytes(ctx)
 	if err != nil {
 		return doctorStoragePartialResult(err)
@@ -135,4 +135,43 @@ func doctorStoragePartialResult(err error) CheckResult {
 		Status: CheckStatusPartial,
 		Detail: fmt.Sprintf("could not read Run Database: %v", err),
 	}
+}
+
+func readDoctorStorageResult(ctx context.Context, runStore *store.Store, loaded roundconfig.Loaded, now time.Time) CheckResult {
+	result := readDoctorRunStorageResult(ctx, runStore, loaded, now)
+	if len(loaded.Config.Worktree.Caches) == 0 || result.Status == CheckStatusPartial {
+		return result
+	}
+	scan, err := scanWorktreeBuildCaches(ctx, runStore, loaded, doctorWorktreeBuildCacheBudget)
+	if err != nil {
+		return CheckResult{Name: HealthCheckStorage, Status: CheckStatusPartial, Detail: fmt.Sprintf("%s; could not read Worktree Build Caches: %v", result.Detail, err)}
+	}
+	return doctorStorageWithBuildCaches(result, loaded, scan)
+}
+
+func doctorStorageWithBuildCaches(result CheckResult, loaded roundconfig.Loaded, scan worktreeBuildCacheScan) CheckResult {
+	if len(loaded.Config.Worktree.Caches) == 0 {
+		return result
+	}
+	bytes := fmt.Sprintf("%d bytes", scan.Bytes)
+	if scan.Bounded {
+		bytes = "at least " + bytes
+	}
+	clause := fmt.Sprintf("; Worktree Build Caches reclaimable: %d (%s)", len(scan.Reclaimable), bytes)
+	detail, next, hasNext := strings.Cut(result.Detail, "; next: ")
+	if len(scan.Reclaimable) > 0 {
+		result.Status = CheckStatusFound
+		detail = strings.TrimPrefix(detail, "nothing to reclaim; ")
+		if next == "" {
+			next = "roundfix gc"
+		} else if next == "roundfix gc compact" {
+			next = "roundfix gc and " + next
+		}
+		hasNext = true
+	}
+	result.Detail = detail + clause
+	if hasNext {
+		result.Detail += "; next: " + next
+	}
+	return result
 }

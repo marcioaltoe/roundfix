@@ -5,6 +5,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -63,18 +64,23 @@ func runDetachFixtureDeathTest(t *testing.T, innerTest string, survivor bool) {
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start inner test binary: %v", err)
 	}
+	callerIdentity, err := store.OwnerProcessIdentity(t.Context(), cmd.Process.Pid)
+	if err != nil {
+		t.Fatalf("record inner test binary identity: %v", err)
+	}
 	ended := make(chan error, 1)
 	go func() { ended <- cmd.Wait() }()
 	ownerPID := 0
+	ownerIdentity := ""
 	reaped := false
 	t.Cleanup(func() {
 		// On a failed owner-watch assertion, reclaim only our recorded group.
-		killDetachFixtureGroup(t, cmd.Process.Pid)
+		killDetachFixtureGroup(t, cmd.Process.Pid, callerIdentity)
 		if !reaped {
 			_ = testwait.Until(t, "inner test binary exit", ended, (<-chan error)(nil))
 		}
 		if ownerPID > 0 {
-			killDetachFixtureGroup(t, ownerPID)
+			killDetachFixtureGroup(t, ownerPID, ownerIdentity)
 		}
 	})
 	testwait.Poll(t, "live recorded detached fixture PID", ended, func() (bool, string) {
@@ -113,7 +119,8 @@ func runDetachFixtureDeathTest(t *testing.T, innerTest string, survivor bool) {
 	if err != nil {
 		t.Fatalf("record fixture %d start identity: %v", ownerPID, err)
 	}
-	killDetachFixtureGroup(t, cmd.Process.Pid)
+	ownerIdentity = identity
+	killDetachFixtureGroup(t, cmd.Process.Pid, callerIdentity)
 	waitErr := testwait.Until(t, "killed inner test binary", ended, (<-chan error)(nil))
 	reaped = true
 	var exitErr *exec.ExitError
@@ -129,20 +136,12 @@ func runDetachFixtureDeathTest(t *testing.T, innerTest string, survivor bool) {
 	waitForDetachFixtureExit(t, ownerPID, identity)
 }
 
-func killDetachFixtureGroup(t *testing.T, pid int) {
+func killDetachFixtureGroup(t *testing.T, pid int, identity string) {
 	t.Helper()
 	if pid <= 0 || pid == os.Getpid() {
 		t.Fatalf("refuse to signal invalid fixture process group %d", pid)
 	}
-	err := syscall.Kill(-pid, syscall.SIGKILL)
-	switch {
-	case err == nil, errors.Is(err, syscall.ESRCH):
-	case errors.Is(err, syscall.EPERM):
-		live, readErr := detachFixtureGroupLiveMembers(pid)
-		if readErr != nil || len(live) != 0 {
-			t.Errorf("kill fixture process group %d: %v; live members=%v; reading error=%v", pid, err, live, readErr)
-		}
-	default:
+	if _, err := store.SignalProvenProcessGroup(context.Background(), pid, identity, syscall.SIGKILL); err != nil {
 		t.Errorf("kill fixture process group %d: %v", pid, err)
 	}
 }
@@ -199,6 +198,10 @@ func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
 		t.Fatalf("start fixture cat: %v", err)
 	}
 	pid := cmd.Process.Pid
+	identity, err := store.OwnerProcessIdentity(t.Context(), pid)
+	if err != nil {
+		t.Fatalf("record fixture %d start identity: %v", pid, err)
+	}
 	reaped := false
 	reap := func() error {
 		ended := make(chan error, 1)
@@ -209,7 +212,7 @@ func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		if !reaped {
-			killDetachFixtureGroup(t, pid)
+			killDetachFixtureGroup(t, pid, identity)
 			if err := reap(); err != nil {
 				t.Logf("reap fixture cat after cleanup: %v", err)
 			}
@@ -222,10 +225,7 @@ func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
 	if err != nil || !slices.Contains(live, pid) {
 		t.Fatalf("live fixture group %d: members=%v error=%v; want child listed", pid, live, err)
 	}
-	identity, err := store.OwnerProcessIdentity(t.Context(), pid)
-	if err != nil {
-		t.Fatalf("record fixture %d start identity: %v", pid, err)
-	}
+
 	if ended, observation := detachFixtureEnded(t, pid, identity); ended {
 		t.Fatalf("live fixture %d reported ended: %s", pid, observation)
 	}

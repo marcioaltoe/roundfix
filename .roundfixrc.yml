@@ -197,6 +197,9 @@ specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
   root: "docs/specs"
 worktree:
+  # Rebuildable output in ended worktrees, reported by Doctor and reclaimed by GC.
+  caches:
+    - .gocache
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
   location: "~/.roundfix/worktrees"
   # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.

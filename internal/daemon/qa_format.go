@@ -136,11 +136,15 @@ func (engine *Engine) formatQADirectory(ctx context.Context, plan TaskPlan, ordi
 	diagnostics := &qaFormatDiagnostics{}
 	args := append([]string{"-c", plan.FormatCommand + ` "$@"`, "roundfix-format"}, names...)
 	command := exec.CommandContext(runCtx, "sh", args...)
-	configureQAFormatProcess(command)
+	recordIdentity := configureQAFormatProcess(command)
 	command.Dir = root
 	command.Stdout, command.Stderr = diagnostics, diagnostics
 	command.WaitDelay = time.Second
-	runErr := command.Run()
+	runErr := command.Start()
+	recordIdentity()
+	if runErr == nil {
+		runErr = command.Wait()
+	}
 	runContextErr := runCtx.Err()
 	cancel()
 	stopped := finish()

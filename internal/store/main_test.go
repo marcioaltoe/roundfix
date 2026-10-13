@@ -13,5 +13,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// A helper belongs to the spawning package's mark, not to a new
+	// package run. In particular, tree-middle hands off a waiting child.
+	if os.Getenv("ROUNDFIX_OWNER_PROCESS_HELPER") != "" {
+		os.Exit(m.Run())
+	}
 	os.Exit(suiteguard.Main(m, filepath.Join("..", "..")))
 }

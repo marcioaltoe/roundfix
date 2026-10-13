@@ -1,4 +1,4 @@
-// Package suiteguard detects repository writes made by a package's tests.
+// Package suiteguard detects repository writes and helper processes left by tests.
 package suiteguard
 
 import (
@@ -79,7 +79,14 @@ func run(runTests func() int, repoRoot string, output io.Writer) int {
 		return 1
 	}
 
+	mark, markErr := markTestBinary()
+	if markErr != nil {
+		fmt.Fprintf(output, "suiteguard: helper residue check unavailable: %v\n", markErr)
+	}
 	testCode := runTests()
+	if markErr == nil && checkHelperResidue(mark, output) {
+		testCode = 1
+	}
 
 	afterStarted := time.Now()
 	after, err := fingerprint(root, rules)

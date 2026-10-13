@@ -174,7 +174,7 @@ func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
 }
 
 func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
-	// Sequential: its item-binary child was killed by a signal (exit -1) while it ran in parallel with the package (0254 verification); the sender is not yet identified.
+	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	setCommandEnvForTest(t, "DELIVERY_ITEM_PROBE_EXIT", "2")
 	setCommandEnvForTest(t, cliTestHelperEnv, "1")

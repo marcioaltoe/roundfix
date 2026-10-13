@@ -268,14 +268,19 @@ func TestCLIForceStopOwnerProcessHelper(t *testing.T) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
 	defer signal.Stop(signals)
+	lifeline := cliHelperLifeline()
 	fmt.Fprintln(os.Stdout, "ready")
-	<-signals
+	select {
+	case <-signals:
+	case <-lifeline:
+	}
 }
 
 func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestCLIForceStopOwnerProcessHelper$")
 	cmd.Env = append(os.Environ(), "ROUNDFIX_CLI_FORCE_STOP_OWNER_HELPER=1")
+	keepCLIHelperLifeline(t, cmd)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("open owner process stdout: %v", err)

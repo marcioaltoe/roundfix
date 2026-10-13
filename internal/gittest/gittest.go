@@ -64,7 +64,8 @@ func IsolatedEnv() []string {
 }
 
 // InitRepo creates a disposable repository at the absolute repoPath and
-// disables its automatic maintenance. Extra arguments are passed to git init,
+// disables its automatic maintenance and filesystem monitor. Extra arguments
+// are passed to git init,
 // for example "--bare" or "-b", "main".
 func InitRepo(t *testing.T, repoPath string, args ...string) {
 	t.Helper()
@@ -77,7 +78,7 @@ func InitRepo(t *testing.T, repoPath string, args ...string) {
 }
 
 // hardenSnippet is the config fragment Harden appends. Git's config file is
-// plain INI, so appending a section is equivalent to three `git config`
+// plain INI, so appending a section is equivalent to five `git config`
 // invocations — and the whole suite creates hundreds of disposable
 // repositories, so at four subprocess spawns per repository the bootstrap cost
 // was mostly process creation, not git work. Measured across the suite, kernel
@@ -87,10 +88,12 @@ func InitRepo(t *testing.T, repoPath string, args ...string) {
 // "git maintenance run --auto" at all; gc.auto disables the older automatic
 // "git gc --auto" threshold that the maintenance gc task also consults; and
 // maintenance.autoDetach keeps any maintenance that still starts in the
-// foreground, so it cannot outlive the git command that started it.
-const hardenSnippet = "[maintenance]\n\tauto = false\n\tautoDetach = false\n[gc]\n\tauto = 0\n"
+// foreground, so it cannot outlive the git command that started it. Disabling
+// fsmonitor and untrackedCache also prevents a global configuration from
+// starting a detached filesystem monitor or hiding a same-size rewrite.
+const hardenSnippet = "[core]\n\tfsmonitor = false\n\tuntrackedCache = false\n[maintenance]\n\tauto = false\n\tautoDetach = false\n[gc]\n\tauto = 0\n"
 
-// Harden disables Git's automatic maintenance for the repository at repoPath
+// Harden disables Git's automatic maintenance and filesystem monitor at repoPath
 // by appending directly to its config file. Use it for repositories that were
 // not created through InitRepo, such as clones.
 func Harden(t *testing.T, repoPath string) {
@@ -104,6 +107,8 @@ func Harden(t *testing.T, repoPath string) {
 			// A worktree or separate git dir: let git resolve the config
 			// location rather than guessing.
 			for _, setting := range [][2]string{
+				{"core.fsmonitor", "false"},
+				{"core.untrackedCache", "false"},
 				{"maintenance.auto", "false"},
 				{"gc.auto", "0"},
 				{"maintenance.autoDetach", "false"},

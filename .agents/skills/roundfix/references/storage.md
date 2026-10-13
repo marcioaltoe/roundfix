@@ -110,3 +110,35 @@ database bytes. It writes nothing. `roundfix gc` runs the same sweep without a
 budget; its section reports removed Runs and rows, reclaimed artifact bytes,
 compaction and measured database bytes before and after. A guarded compaction
 refusal appears as `skipped (<reason>)` and still exits `0`.
+
+## Worktree Build Caches
+
+`worktree.caches` declares rebuildable directories in User Config or Project
+Config, with an empty default. After its Run Retention section,
+`roundfix gc --dry-run` prints the declared entries, reclaimable directory
+count, bytes, kept count and paths, without writing:
+
+```text
+  Worktree Build Caches declared: .gocache
+  Worktree Build Caches reclaimable: 1
+  Worktree Build Cache bytes reclaimable: 11
+  Worktree Build Caches kept: 1
+  Reclaimable Worktree Build Caches:
+    <worktree>/.gocache
+```
+
+The live report uses `Worktree Build Caches removed`,
+`Worktree Build Cache bytes reclaimed` and `Removed Worktree Build Caches`.
+It counts only directories it actually removed. GC rereads ownership state
+immediately before each removal and removes only the declared directory.
+A removal failure is diagnosed on stderr; other removals proceed, and the
+command exits `1` with the report of successful removals.
+
+A terminal Run's recorded Run Worktree and retained sibling Task Worktrees,
+and a Delivery Queue item worktree at stage `merged`, are eligible regardless
+of retention age. Active Runs and items in any other stage keep their caches.
+GC skips worktrees outside `worktree.location`, declared paths that are
+symlinks, and paths that resolve outside their worktree. Source files, Git
+metadata, the user's checkout cache and the shared Go build cache stay intact.
+With `worktree.caches: []`, GC output stays byte-identical. `gc compact` and
+`gc sanitize` retain their separate scopes.

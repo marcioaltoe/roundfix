@@ -346,6 +346,8 @@ worktree:
   # List only files that are already gitignored.
   # Empty copies no files.
   copy: []
+  # Rebuildable directories Doctor reports and GC removes from ended worktrees.
+  caches: []
   # Command run in each new worktree after copy and before Agent work; empty disables it.
   bootstrap: ""
   # Maximum time before the bootstrap command fails the owning Run or Task.
@@ -433,6 +435,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `verification.format` | `""` | Optional Format Command for regular files under a Spec's `qa/` directory at the imported-pass and QA Report commit boundaries; Project Config replaces User Config. |
 | `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
 | `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
+| `worktree.caches` | `[]` | Declares rebuildable directories of ended worktrees for Doctor and GC. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
@@ -837,3 +840,29 @@ command once in declaration order through the Verification executor. Logs are
 under the artifact directory's `delivery/<slug>/derived-regeneration-<n>.log`.
 Declare only files that can be regenerated; a regeneration that changes an
 undeclared path aborts the merge and parks the item.
+
+## Worktree Build Caches
+
+`worktree.caches` accepts a list of clean, relative, slash-separated directory
+paths in User Config or Project Config. It defaults to `[]`; Project Config
+replaces the User Config list, and duplicate entries collapse. Absolute paths,
+empty paths, `.` or `..` segments, `.git` and paths under `.git` are refused
+with a configuration error naming the key and the entry.
+
+```yaml
+worktree:
+  caches:
+    - .gocache
+```
+
+Declare only rebuildable output. Doctor reports these caches in ended
+worktrees, and `roundfix gc --dry-run` lists them without writing.
+`roundfix gc` removes only the declared directories, retaining worktree source
+files. Ended worktrees belong to terminal Runs (including retained sibling
+Task Worktrees) or merged Delivery Queue items. Active Runs and every other
+item stage keep their caches. Paths outside `worktree.location`, symlink
+cache entries and resolved escapes are skipped. The cache in your own checkout
+and the shared Go build cache are outside this reclamation.
+
+See [Doctor](commands/doctor.md) for its bounded storage measurement and
+[GC](commands/gc.md) for the reclamation report.

@@ -5,14 +5,21 @@
 package suiteguard_test
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
 	"roundfix/internal/suiteguard"
+	"roundfix/internal/testwait"
 )
 
 const (
@@ -126,6 +133,46 @@ func TestGuardFixture(t *testing.T) {
 	}
 
 	switch mode {
+	case "helper":
+		fmt.Fprintln(os.Stdout, "ready")
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		os.Exit(0)
+	case "residue", "ended":
+		reader, writer, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		command := exec.Command(os.Args[0], "-test.run=^TestGuardFixture$")
+		command.Env = append(environmentWithout(os.Environ(), fixtureModeEnv), fixtureModeEnv+"=helper")
+		command.Stdin = reader
+		command.Stderr = os.Stderr
+		stdout, err := command.StdoutPipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := command.Start(); err != nil {
+			t.Fatal(err)
+		}
+		_ = reader.Close()
+		scanner := bufio.NewScanner(stdout)
+		if !scanner.Scan() || scanner.Text() != "ready" {
+			t.Fatalf("helper readiness: %q, %v", scanner.Text(), scanner.Err())
+		}
+		fmt.Fprintf(os.Stdout, "fixture helper pid: %d\n", command.Process.Pid)
+		if mode == "ended" {
+			if err := writer.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if err := command.Wait(); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			// Retain the writer until the guard runs. EOF at process exit cannot
+			// rescue a missing guard: its ten-second scan happens before that exit.
+			residueFixtureWriter = writer
+		}
+	case "mark":
+		fmt.Fprintf(os.Stdout, "fixture mark: %d:%s\n", os.Getpid(), os.Getenv("SUITEGUARD_TEST_BINARY"))
 	case "violating":
 		mustWrite(t, filepath.Join(root, "created.txt"), "created")
 		mustWrite(t, filepath.Join(root, "modified.txt"), "after")
@@ -230,4 +277,64 @@ func repositoryRoot(t *testing.T) string {
 		t.Fatalf("resolve repository root: %v", err)
 	}
 	return root
+}
+
+var residueFixtureWriter *os.File
+
+func TestGuardReportsAndKillsHelperResidue(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+		t.Skip("process table unavailable on this platform")
+	}
+	output, exitCode := runGuardedFixture(t, t.TempDir(), "residue", "")
+	t.Log(output)
+	if exitCode != 1 {
+		t.Fatalf("guard exit = %d, want 1; output:\n%s", exitCode, output)
+	}
+	match := regexp.MustCompile(`fixture helper pid: ([0-9]+)`).FindStringSubmatch(output)
+	if len(match) != 2 {
+		t.Fatalf("missing helper PID:\n%s", output)
+	}
+	pid, err := strconv.Atoi(match[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := fmt.Sprintf("suiteguard: helper residue: pid %d: ", pid)
+	if strings.Count(output, want) != 1 {
+		t.Fatalf("want one residue diagnostic %q:\n%s", want, output)
+	}
+	testwait.Poll(t, "reported helper to be dead", (<-chan error)(nil), func() (bool, string) {
+		// An unreaped orphan is dead too; it cannot retain the lifeline or work.
+		command := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "stat=")
+		state, err := command.Output()
+		if err != nil {
+			var exitError *exec.ExitError
+			if !errors.As(err, &exitError) || exitError.ExitCode() != 1 {
+				t.Fatalf("read helper process state: %v", err)
+			}
+			return true, "process absent"
+		}
+		if len(strings.TrimSpace(string(state))) == 0 {
+			return true, "process absent"
+		}
+		return strings.HasPrefix(strings.TrimSpace(string(state)), "Z"), string(state)
+	})
+}
+
+func TestGuardPassesWhenEveryHelperEnded(t *testing.T) {
+	t.Parallel()
+	output, exitCode := runGuardedFixture(t, t.TempDir(), "ended", "")
+	if exitCode != 0 || strings.Contains(output, "suiteguard: helper residue:") {
+		t.Fatalf("guard exit = %d, output:\n%s", exitCode, output)
+	}
+	t.Log(output)
+}
+
+func TestGuardMarksItsTestBinary(t *testing.T) {
+	t.Parallel()
+	output, exitCode := runGuardedFixture(t, t.TempDir(), "mark", "")
+	match := regexp.MustCompile(`fixture mark: ([0-9]+):([0-9]+)\.([0-9a-f]{16})\n`).FindStringSubmatch(output)
+	if exitCode != 0 || len(match) != 4 || match[1] != match[2] {
+		t.Fatalf("invalid binary mark, exit %d:\n%s", exitCode, output)
+	}
 }

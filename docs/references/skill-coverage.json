@@ -306,9 +306,10 @@
       "sources": [
         "docs/user-guide/commands/doctor.md",
         "internal/cli/doctor.go",
-        "internal/cli/doctor_storage.go"
+        "internal/cli/doctor_storage.go",
+        "internal/cli/worktree_build_cache.go"
       ],
-      "review": "2026-10-09 — Spec 0254 task_06 routes process-global reads through commandDependencies with today's read as the default; no command behavior, flag, output or exit code changes"
+      "review": "2026-10-12 — Spec 0259 task_04 reports declared Worktree Build Caches with a two-second measurement budget; undeclared cache output stays byte-identical"
     },
     {
       "id": "command events",
@@ -336,7 +337,8 @@
       ],
       "sources": [
         "docs/user-guide/commands/gc.md",
-        "internal/cli/gc.go"
+        "internal/cli/gc.go",
+        "internal/cli/worktree_build_cache.go"
       ]
     },
     {
@@ -482,7 +484,8 @@
       "sources": [
         "docs/user-guide/commands/resolve.md",
         "internal/cli/detach.go"
-      ]
+      ],
+      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
     },
     {
       "id": "command review",
@@ -684,7 +687,8 @@
       "sources": [
         "docs/user-guide/commands/watch.md",
         "internal/cli/detach.go"
-      ]
+      ],
+      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
     },
     {
       "id": "command window clear",
@@ -828,7 +832,8 @@
       ],
       "sources": [
         "docs/user-guide/commands/detached-runs.md"
-      ]
+      ],
+      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
     },
     {
       "id": "guide docs/user-guide/commands/doctor.md",

@@ -75,3 +75,21 @@ func processTreePIDs(ownerPID int, _ string) ([]int, error) {
 	}
 	return descendantProcessPIDs(ownerPID, parents), nil
 }
+
+// SZOMB and P_WEXIT from Darwin's sys/proc.h exclude unreaped and exiting members.
+func liveProcessGroupMembers(ctx context.Context, pgid int) ([]int, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	group, err := unix.SysctlKinfoProcSlice("kern.proc.pgrp", pgid)
+	if err != nil {
+		return nil, fmt.Errorf("read process group %d: %w", pgid, err)
+	}
+	var live []int
+	for _, process := range group {
+		if process.Proc.P_stat != 5 && process.Proc.P_flag&0x2000 == 0 {
+			live = append(live, int(process.Proc.P_pid))
+		}
+	}
+	return live, nil
+}
