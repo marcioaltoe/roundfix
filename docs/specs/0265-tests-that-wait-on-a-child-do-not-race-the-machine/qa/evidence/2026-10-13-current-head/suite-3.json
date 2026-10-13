@@ -1,0 +1,20 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-parallel",
+    "16",
+    "-skip",
+    "^(TestBudgetExceededRunRecordsItsReason|TestRemoveRegisteredWorktreeWaitsForTheAdminLock|TestAddDetachedWorktreeWaitsForTheAdminLock|TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate)$",
+    "./..."
+  ],
+  "exit": 0,
+  "wall_seconds": 261.284,
+  "fail_lines": 0,
+  "kill_or_minus1_lines": 0,
+  "meta": "suite-3.meta",
+  "output": "suite-3.log",
+  "burners": 20,
+  "burner_survivors": []
+}

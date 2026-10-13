@@ -1,0 +1,9 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "archive",
+    "0265-tests-that-wait-on-a-child-do-not-race-the-machine",
+    "--plan"
+  ],
+  "exit": 0
+}

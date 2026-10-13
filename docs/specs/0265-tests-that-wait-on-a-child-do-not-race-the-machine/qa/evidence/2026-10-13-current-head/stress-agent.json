@@ -1,0 +1,49 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=50",
+    "-parallel",
+    "16",
+    "-timeout=60m",
+    "-v",
+    "-run",
+    "^(TestACPXRunCancelsPromptCooperatively|TestACPXRunClosesSessionAfterCancelGracePeriod|TestACPXRunCancellationCommandFailuresWarnAndContinue|TestProveExactSelectionCancelCleanup|TestProveExactSelectionTimeoutCleanup|TestACPXProbeCancellationStillClosesDisposableSession|TestACPXProbeFallbackCancellationStillClosesCandidateSession|TestSealedACPXPromptCancellationCancelsAndClosesSession|TestRealACPXCommandOverrideRoundTripCancelCrashResume|TestSpawnedFixtureDeathFailsFast|TestConsoleDisplaySinkSerializesConcurrentPublish)$",
+    "./internal/agent"
+  ],
+  "exit": 0,
+  "wall_seconds": 669.51,
+  "fail_lines": 0,
+  "kill_or_minus1_lines": 0,
+  "meta": "stress-agent.meta",
+  "output": "stress-agent.log",
+  "burners": 20,
+  "burner_survivors": [],
+  "pass_counts": {
+    "TestACPXRunCancelsPromptCooperatively": 50,
+    "TestACPXRunClosesSessionAfterCancelGracePeriod": 50,
+    "TestACPXRunCancellationCommandFailuresWarnAndContinue": 50,
+    "TestProveExactSelectionCancelCleanup": 50,
+    "TestProveExactSelectionTimeoutCleanup": 50,
+    "TestACPXProbeCancellationStillClosesDisposableSession": 50,
+    "TestACPXProbeFallbackCancellationStillClosesCandidateSession": 50,
+    "TestSealedACPXPromptCancellationCancelsAndClosesSession": 50,
+    "TestRealACPXCommandOverrideRoundTripCancelCrashResume": 50,
+    "TestSpawnedFixtureDeathFailsFast": 50,
+    "TestConsoleDisplaySinkSerializesConcurrentPublish": 50
+  },
+  "skip_counts": {
+    "TestACPXRunCancelsPromptCooperatively": 0,
+    "TestACPXRunClosesSessionAfterCancelGracePeriod": 0,
+    "TestACPXRunCancellationCommandFailuresWarnAndContinue": 0,
+    "TestProveExactSelectionCancelCleanup": 0,
+    "TestProveExactSelectionTimeoutCleanup": 0,
+    "TestACPXProbeCancellationStillClosesDisposableSession": 0,
+    "TestACPXProbeFallbackCancellationStillClosesCandidateSession": 0,
+    "TestSealedACPXPromptCancellationCancelsAndClosesSession": 0,
+    "TestRealACPXCommandOverrideRoundTripCancelCrashResume": 0,
+    "TestSpawnedFixtureDeathFailsFast": 0,
+    "TestConsoleDisplaySinkSerializesConcurrentPublish": 0
+  }
+}

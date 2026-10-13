@@ -1,0 +1,31 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=50",
+    "-parallel",
+    "16",
+    "-timeout=60m",
+    "-v",
+    "-run",
+    "^(TestRetentionScanOutsideWriteTransaction|TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents)$",
+    "./internal/store"
+  ],
+  "exit": 0,
+  "wall_seconds": 20.53,
+  "fail_lines": 0,
+  "kill_or_minus1_lines": 0,
+  "meta": "stress-store.meta",
+  "output": "stress-store.log",
+  "burners": 20,
+  "burner_survivors": [],
+  "pass_counts": {
+    "TestRetentionScanOutsideWriteTransaction": 50,
+    "TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents": 50
+  },
+  "skip_counts": {
+    "TestRetentionScanOutsideWriteTransaction": 0,
+    "TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents": 0
+  }
+}

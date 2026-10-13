@@ -1,0 +1,49 @@
+from pathlib import Path
+import os, subprocess, json, time, re
+out=Path(__file__).resolve().parent
+report=out.parent.parent/'qa-report-2026-10-13.md'
+info=json.loads((out/'environment.json').read_text())
+env=os.environ.copy(); env.update(HOME=info['home'],RUSTUP_HOME=info['rustup_home'],CARGO_HOME=info['cargo_home'],GOCACHE=info['gocache'],GOMODCACHE=info['gomodcache'])
+names={
+'2': ('cli', ['TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline','TestRunDetachedCommandTimesOutWaitingForRunCreation','TestRunDetachedCommandTimesOutWaitingForLiveness','TestRunDetachedCommandReportsInvalidLivenessHandshake','TestRunDetachedCommandReportsMalformedRunCreationHandshake','TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput','TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent','TestRunDetachedCommandReportsSilentChildExitBeforeHandshake','TestRunImplementDetachSurvivesCallerProcessGroupKill','TestImplementRunBudgetBoundsSetupAndIntegration','TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion','TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner','TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken','TestConcurrentDisposeOfOneFindingAppendsOnce','TestConcurrentDisposeOfTwoFindingsBothSucceed']),
+'3': ('agent',['TestACPXRunCancelsPromptCooperatively','TestACPXRunClosesSessionAfterCancelGracePeriod','TestACPXRunCancellationCommandFailuresWarnAndContinue','TestProveExactSelectionCancelCleanup','TestProveExactSelectionTimeoutCleanup','TestACPXProbeCancellationStillClosesDisposableSession','TestACPXProbeFallbackCancellationStillClosesCandidateSession','TestSealedACPXPromptCancellationCancelsAndClosesSession','TestRealACPXCommandOverrideRoundTripCancelCrashResume','TestSpawnedFixtureDeathFailsFast','TestConsoleDisplaySinkSerializesConcurrentPublish']),
+'4': ('spec',['TestSourceRevisionRecoveryCancelsTheFetchProcess']),
+'5': ('worktree',['TestRunBootstrapReturnsBootstrapErrorOnTimeout']),
+'6': ('daemon',['TestTaskCycleEndsRunAtBudgetDeadline']),
+'7': ('store',['TestRetentionScanOutsideWriteTransaction','TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents'])}
+def update(row,status,obs):
+ s=report.read_text(); s=re.sub(r'(?m)^\| '+row+r' \| [^|]+ \|', '| '+row+' | '+status+' |',s)
+ pattern=r'(### '+row+r'\n.*?Observation: )[^\n]*'
+ s=re.sub(pattern,lambda m:m[1]+obs,s,flags=re.S); report.write_text(s)
+def window(label,args,extra=None):
+ meta=out/(label+'.meta'); log=out/(label+'.log'); start=time.monotonic(); e=env.copy(); e.update(extra or {})
+ print('START',label,flush=True)
+ with log.open('w') as f: p=subprocess.run(['bash',str(out/'load-window.sh.txt'),str(meta),str(2*info['ncpu']),*args],stdout=f,stderr=subprocess.STDOUT,env=e)
+ elapsed=time.monotonic()-start; text=log.read_text(); data={'command':args,'exit':p.returncode,'wall_seconds':round(elapsed,3),'fail_lines':len(re.findall(r'--- FAIL',text)),'kill_or_minus1_lines':len(re.findall(r'signal: killed|exited -1',text)),'meta':meta.name,'output':log.name}
+ pids=[int(x) for x in re.findall(r'^burner_pid=(\d+)$',meta.read_text(),re.M)]; survivors=[]
+ for pid in pids:
+  try: os.kill(pid,0); survivors.append(pid)
+  except ProcessLookupError: pass
+ data['burners']=len(pids); data['burner_survivors']=survivors
+ (out/(label+'.json')).write_text(json.dumps(data,indent=2)+'\n')
+ print('END',label,json.dumps(data),flush=True); return text,data
+update('1','pass','Daemon supplied `make verify-changed`: pass, exit 0; diagnostics removed on success. This is a recorded static gate fact, not an Agent rerun.')
+for row in ['2','4','5','6','7','3']:
+ package,tests=names[row]; label='stress-'+package; args=['go','test','-race','-count=50','-parallel','16','-timeout=60m','-v','-run','^('+'|'.join(tests)+')$','./internal/'+package]
+ text,data=window(label,args,{'ROUNDFIX_REAL_ACPX':'1'} if row=='3' else None)
+ passes={name:len(re.findall(r'--- PASS: '+re.escape(name)+r' \(',text)) for name in tests}; skips={name:len(re.findall(r'--- SKIP: '+re.escape(name)+r' ',text)) for name in tests}; data.update(pass_counts=passes,skip_counts=skips)
+ (out/(label+'.json')).write_text(json.dumps(data,indent=2)+'\n')
+ success=data['exit']==0 and data['fail_lines']==0 and all(n==50 for n in passes.values()) and not any(skips.values()) and data['burners']==20 and not data['burner_survivors']
+ update(row,'pass' if success else 'fail','`'+label+'`: exit '+str(data['exit'])+'; `--- FAIL` lines '+str(data['fail_lines'])+'; wall '+str(data['wall_seconds'])+' s; selected-test pass counts '+json.dumps(passes)+'; skip counts '+json.dumps(skips)+'; 20 burners joined, survivors '+str(data['burner_survivors'])+'. Evidence: [command/results](evidence/2026-10-13-current-head/'+label+'.json), [load and PIDs](evidence/2026-10-13-current-head/'+label+'.meta), [full output](evidence/2026-10-13-current-head/'+label+'.log).')
+merged='Sequential: shares process-wide wall-clock scheduling' not in Path('internal/daemon/task_engine_test.go').read_text()
+skip='^(TestBudgetExceededRunRecordsItsReason|TestRemoveRegisteredWorktreeWaitsForTheAdminLock|TestAddDetachedWorktreeWaitsForTheAdminLock|TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate)$'
+summaries=[]
+for iteration in range(1,4):
+ label='suite-'+str(iteration); args=['go','test','-count=1','-parallel','16']
+ if not merged: args.extend(['-skip',skip])
+ args.append('./...'); text,data=window(label,args); summaries.append(data)
+ success=data['exit']==0 and data['kill_or_minus1_lines']==0 and not data['burner_survivors']
+ update('8','pending' if success and iteration<3 else 'pass' if success else 'fail','Completed '+str(iteration)+' suite(s); skipped 0259-owned tests per Requirements 4/13: '+('none' if merged else '`'+skip+'`')+'. Measurements '+json.dumps(summaries)+'. Full output and per-window load/PIDs: '+', '.join('[suite '+str(n)+'](evidence/2026-10-13-current-head/suite-'+str(n)+'.log), [metadata](evidence/2026-10-13-current-head/suite-'+str(n)+'.meta)' for n in range(1,iteration+1))+'.')
+ if not success:
+  print('STOPPED suite sequence at first failure; no retry',flush=True); break
+print('LOAD CHECKS FINISHED',flush=True)

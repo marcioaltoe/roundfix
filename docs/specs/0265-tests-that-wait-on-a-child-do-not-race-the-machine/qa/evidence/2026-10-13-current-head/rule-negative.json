@@ -1,0 +1,13 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "^TestEveryRealTimeBudgetIsWithinItsFileCeiling$",
+    "./internal/testfixture"
+  ],
+  "cwd": "/private/tmp/roundfix-0265-negative-t4a5pdcp",
+  "exit": 1
+}

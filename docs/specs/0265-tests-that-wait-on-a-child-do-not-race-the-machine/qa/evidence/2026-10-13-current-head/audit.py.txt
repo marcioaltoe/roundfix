@@ -1,0 +1,58 @@
+from pathlib import Path
+import subprocess,json,re,hashlib,os
+out=Path(__file__).resolve().parent
+root=Path.cwd(); spec=Path('docs/specs/0265-tests-that-wait-on-a-child-do-not-race-the-machine'); info=json.loads((out/'environment.json').read_text()); base=info['base']; head=info['head']
+def git(*args):return subprocess.check_output(['git',*args],text=True)
+def body(text,name):
+ start=re.search(r'(?m)^func (?:\([^\n]*\) )?'+re.escape(name)+r'\(',text).start(); end=text.find('\nfunc ',start+1); return text[start:end if end!=-1 else len(text)]
+def fail_if(condition,msg):
+ if condition:raise AssertionError(msg)
+def update(row,obs):
+ p=spec/'qa/qa-report-2026-10-13.md'; s=p.read_text(); s=re.sub(r'(?m)^\| '+row+r' \| [^|]+ \|','| '+row+' | pass |',s); s=re.sub(r'(### '+row+r'\n.*?Observation: )[^\n]*',lambda m:m[1]+obs,s,flags=re.S); p.write_text(s)
+production=[p for p in git('diff','--name-only',base,head).splitlines() if p.endswith('.go') and not p.endswith('_test.go')]
+allowed=['internal/agent/acpx_runner.go','internal/agent/fallback.go','internal/agent/selection_assignment.go','internal/agent/sealed.go','internal/daemon/engine.go','internal/daemon/task_engine.go']
+fail_if(sorted(production)!=sorted(allowed),'unexpected production paths '+repr(production))
+literals={}; pattern=r'\b\d+(?:\.\d+)?\s*\*\s*time\.(?:Nanosecond|Microsecond|Millisecond|Second|Minute|Hour)\b'
+for path in production:
+ before=git('show',base+':'+path); after=git('show',head+':'+path); old=re.findall(pattern,before); new=re.findall(pattern,after); fail_if(old!=new,'production duration literal changed in '+path); literals[path]=old
+runner=git('show',head+':internal/agent/acpx_runner.go'); fail_if(re.search(r'acpxPreflightCleanupTimeout\s*= 5 \* time.Second',runner) is None,'cleanup constant moved'); fail_if('return acpxPreflightCleanupTimeout' not in body(runner,'disposableCleanupTimeout'),'cleanup default absent')
+watch=git('show',head+':internal/daemon/task_engine.go'); fail_if('timer := time.NewTimer(duration)' not in watch or 'newTimer(time.Until(deadline))' not in watch,'real timer default/duration absent')
+(out/'production-audit.json').write_text(json.dumps({'base':base,'head':head,'paths':production,'duration_literals_unchanged':literals,'cleanup_default_seconds':5,'budget_timer_default':'time.NewTimer(time.Until(deadline))'},indent=2)+'\n'); (out/'production.diff').write_text(git('diff',base,head,'--',*production))
+print('PASS production diff: six exact paths; all duration literals unchanged; dependency defaults retained')
+path='internal/cli/detach_test.go'; old=git('show',base+':'+path); new=git('show',head+':'+path)
+tests=['TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline','TestRunDetachedCommandTimesOutWaitingForRunCreation','TestRunDetachedCommandTimesOutWaitingForLiveness','TestRunDetachedCommandReportsInvalidLivenessHandshake','TestRunDetachedCommandReportsMalformedRunCreationHandshake','TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput','TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent','TestRunDetachedCommandReportsSilentChildExitBeforeHandshake']
+def projection(text):
+ text=re.sub(r'(?m)^\tstdout, stderr, code := runDetachParentForTest\([^\n]*\)\n','',text)
+ text=re.sub(r'(?m)^(\s*(?:liveness|runCreation):\s*)[^,\n]+,',r'\1<phase-budget>,',text)
+ return text
+assertions={}
+for name in tests:
+ a,b=projection(body(old,name)),projection(body(new,name)); fail_if(a!=b,'non-budget bytes changed in '+name); assertions[name]=hashlib.sha256(a.encode()).hexdigest()
+(out/'assertion-audit.json').write_text(json.dumps({'base':base,'head':head,'normalized_only':'parent phase-budget assignment and review-refusal phase values','unchanged_test_body_sha256':assertions},indent=2)+'\n'); update('11','Read-only byte comparison passed for all eight bodies after excluding only phase-budget injection lines. Every remaining byte (exit status, stdout, stderr, diagnostic strings and assertions) matches the delivery base. Evidence: [assertion audit](evidence/2026-10-13-current-head/assertion-audit.json).')
+print('PASS assertion audit: eight bodies match outside exact budget-injection sites')
+protected=[]
+for name in ['TestDetachedChildIsTerminatedAtTeardown','waitForDetachTestSentinel','terminate']:
+ fail_if(body(old,name)!=body(new,name),'protected detach function '+name); protected.append(path+':'+name)
+old_prefix=old[:old.index('func TestRunDetachedCommandTimesOutWaitingForLiveness')]; new_prefix=new[:new.index('func TestRunDetachedCommandTimesOutWaitingForLiveness')]; new_prefix=new_prefix.replace('\tdetachTestRunCreationDelayEnv      = "ROUNDFIX_DETACH_TEST_RUN_CREATION_DELAY"\n',''); fail_if(old_prefix!=new_prefix,'protected imports/constants/survivor struct changed')
+a,b=body(old,'runDetachParentForTest'),body(new,'runDetachParentForTest'); b=b.replace('\t\tchildEnvironment = withEnvValue(childEnvironment, detachTestRunCreationDelayEnv, livenessTimeout.String())\n','').replace('\tif childMode == detachTestChildSleepBeforeLiveness || childMode == detachTestChildSlowRunCreation {\n\t\tchildEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, filepath.Join(t.TempDir(), "never-release"))\n\t}\n',''); fail_if(a!=b,'parent owner/survivor bytes changed'); protected.append(path+':runDetachParentForTest owner/survivor regions')
+a,b=body(old,'runDetachTestChild'),body(new,'runDetachTestChild'); a=a[a.index('\tcase detachTestChildIgnoreSentinel:'):]; b=b[b.index('\tcase detachTestChildIgnoreSentinel:'):]; fail_if(a!=b,'ignore-sentinel/child tail changed'); protected.append(path+':ignore-sentinel and tail')
+path='internal/cli/implement_test.go'; old=git('show',base+':'+path); new=git('show',head+':'+path); name='TestRunImplementDetachSurvivesCallerProcessGroupKill'; a,b=body(old,name),body(new,name); a=a[:a.index('\tvar attachStdout bytes.Buffer')]; b=b[:b.index('\tattachCtx, cancel :=')]; fail_if(a!=b,'caller-kill section changed'); protected.append(path+':caller kill')
+path='internal/cli/orphan_unix_test.go'; fail_if(body(git('show',base+':'+path),'TestCLIForceStopOwnerProcessHelper')!=body(git('show',head+':'+path),'TestCLIForceStopOwnerProcessHelper'),'owner helper changed'); protected.append(path+':owner helper')
+path='internal/daemon/task_engine_test.go'; old=git('show',base+':'+path); new=git('show',head+':'+path); name='TestBudgetExceededRunRecordsItsReason'; fail_if(old[old.index('func '+name):]!=new[new.index('func '+name):],'0259 budget test/tail changed'); protected.append(path+':budget-exceeded test and tail')
+logs=git('log','--reverse','--format=%H',base+'..'+head).splitlines(); audits=[]; changed=set()
+for commit in logs:
+ message=git('show','-s','--format=%B',commit); match=re.search(r'(?m)^Roundfix-Task: (task_\d+)\s*$',message)
+ if not match:continue
+ task=match[1]; taskpath=spec/(task+'.md'); artifact=taskpath.read_text(); declared=set(re.findall(r'(?m)^- (?:creates|interface): `([^`]+)`',artifact)); recorded=artifact.split('## Recorded paths',1)[1].split('\n## ',1)[0] if '## Recorded paths' in artifact else ''; declared.update(re.findall(r'`([^`]+)`',recorded)); declared.add(str(taskpath)); actual=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines(); changed.update(actual); extra=set(actual)-declared; fail_if(bool(extra),task+' undeclared '+repr(sorted(extra))); audits.append({'task':task,'commit':commit,'actual_paths':actual,'declarations':sorted(declared),'undeclared':[]})
+for path in ['Makefile','go.mod','go.sum','internal/testfixture/parallel_tests_test.go']:
+ fail_if(git('rev-parse',base+':'+path).strip()!=git('rev-parse',head+':'+path).strip(),'forbidden change '+path)
+for prefix in ['.github/workflows','.agents/skills','skills','internal/baseline/assets/modules']:
+ fail_if(bool(git('diff','--name-only',base,head,'--',prefix).strip()),'forbidden changes '+prefix)
+authorization=spec/'_authorization.md'; auth_revision='bc74a39c2c24a077c525cac389ca8ab341903fbf'; task4=next(x for x in audits if x['task']=='task_04')['commit']; subprocess.run(['git','merge-base','--is-ancestor',auth_revision,task4],check=True); fail_if(str(authorization) in next(x for x in audits if x['task']=='task_04')['actual_paths'],'authority folded into consuming task')
+fail_if(git('show',head+':'+str(authorization))!=git('show',auth_revision+':'+str(authorization)),'operative authority changed'); fail_if('status: approved' not in authorization.read_text() or '  - docs/agents/specific-repository.md' not in authorization.read_text(),'missing grant')
+(out/'scope-audit.json').write_text(json.dumps({'base':base,'head':head,'task_commits':audits,'changed_paths':sorted(changed),'protected_regions_unchanged':protected,'authorization_revision':auth_revision,'task4_commit':task4,'governed_candidates':[p for p in changed if p=='docs/agents/specific-repository.md'],'forbidden_paths_unchanged':True},indent=2)+'\n')
+print('PASS scope audit: all five Task commits within declarations; protected regions and forbidden paths unchanged; authority precedes Task 04')
+probe='package speccheck\nimport "testing"\nfunc TestQA0265ActualGovernedPaths(t *testing.T) {\n t.Parallel()\n'
+for path in sorted(changed):probe+=' if got := GovernedPath('+json.dumps(path)+'); got != '+str(path=='docs/agents/specific-repository.md').lower()+' { t.Errorf("GovernedPath(%s) = %v", '+json.dumps(path)+', got) }\n'
+probe+='}\n'; (out/'governed-probe.go.txt').write_text(probe); (out/'governed-overlay.json').write_text(json.dumps({'Replace':{str(root/'internal/speccheck/qa0265_probe_test.go'):str(out/'governed-probe.go.txt')}})+'\n')
+term=Path('CONTEXT.md').read_text(); start=term.index('**Real-Time Budget**:'); end=term.index('\n\n**',start); definition=term[start:end]; fail_if('ADR-0271' not in definition or '_Avoid_:' not in definition or 'docs/specs/' in definition,'glossary definition mismatch'); fail_if(term.index('**Parallel Test Package**:')>start,'glossary order mismatch'); (out/'glossary.txt').write_text(definition+'\nDeclared glossary: adds Real-Time Budget; other TechSpec bold labels are expressly not terms. No additional domain term found.\n'); print('PASS glossary: linked ADR-0271, correct placement, Avoid line, no Spec link')

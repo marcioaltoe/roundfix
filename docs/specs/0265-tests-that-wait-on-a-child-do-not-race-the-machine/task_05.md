@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0265-tests-that-wait-on-a-child-do-not-race-the-machine
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

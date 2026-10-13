@@ -1,0 +1,15 @@
+{
+  "base": "bc74a39c2c24a077c525cac389ca8ab341903fbf",
+  "head": "bb877c3719a5a138a470cadb0884fb960d8ed122",
+  "normalized_only": "parent phase-budget assignment and review-refusal phase values",
+  "unchanged_test_body_sha256": {
+    "TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline": "2cbddd99d6e305cfe418650a448c6426d5168c893b6a7c3948160886749ad9c8",
+    "TestRunDetachedCommandTimesOutWaitingForRunCreation": "df57271d5b1aae8990389eb7707f57dedc4ed50a251cf02a0528348135a756f2",
+    "TestRunDetachedCommandTimesOutWaitingForLiveness": "bfc98f85d2944963be249eef769bba610aefe1fb63d5ea26246ca020308e2189",
+    "TestRunDetachedCommandReportsInvalidLivenessHandshake": "42e704a62973c86911895eeea50f9e86ed435663d583ea34e702c5f2ba6a83dc",
+    "TestRunDetachedCommandReportsMalformedRunCreationHandshake": "5d73fc5ab826cfc558303e6e59075c22b1194e9dcc9687fcd966293ff974fb62",
+    "TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput": "f7a6f6882b29a099c6defebedac7db29ce7b871a01bd63497f8302bd7729c377",
+    "TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent": "e900cc2bb737564d2c1d850e980ed0f2f30246ed11b80d7e85b39bfe9085db15",
+    "TestRunDetachedCommandReportsSilentChildExitBeforeHandshake": "4690ab376a6b41e212f2c87918f97ffe66eb1aa1fdd254eb85043c3b0b95e9c5"
+  }
+}

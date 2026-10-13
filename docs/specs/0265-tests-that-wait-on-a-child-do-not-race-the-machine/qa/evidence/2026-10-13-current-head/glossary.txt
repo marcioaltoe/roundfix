@@ -1,0 +1,4 @@
+**Real-Time Budget**:
+A wall-clock allowance below ten seconds that a test gives work it does not control: a child process, a goroutine or Git; an asserted allowance races work that blocks until cancellation or the test binary's exit ([ADR-0271](docs/adr/0271-a-test-bounds-by-real-time-only-what-it-asserts.md)).
+_Avoid_: Run Budget, test deadline, arbitrary timeout
+Declared glossary: adds Real-Time Budget; other TechSpec bold labels are expressly not terms. No additional domain term found.

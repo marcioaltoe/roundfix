@@ -1,0 +1,29 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=50",
+    "-parallel",
+    "16",
+    "-timeout=60m",
+    "-v",
+    "-run",
+    "^(TestSourceRevisionRecoveryCancelsTheFetchProcess)$",
+    "./internal/spec"
+  ],
+  "exit": 0,
+  "wall_seconds": 122.052,
+  "fail_lines": 0,
+  "kill_or_minus1_lines": 0,
+  "meta": "stress-spec.meta",
+  "output": "stress-spec.log",
+  "burners": 20,
+  "burner_survivors": [],
+  "pass_counts": {
+    "TestSourceRevisionRecoveryCancelsTheFetchProcess": 50
+  },
+  "skip_counts": {
+    "TestSourceRevisionRecoveryCancelsTheFetchProcess": 0
+  }
+}

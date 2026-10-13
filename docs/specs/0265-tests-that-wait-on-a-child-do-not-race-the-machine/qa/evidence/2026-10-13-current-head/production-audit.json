@@ -1,0 +1,31 @@
+{
+  "base": "bc74a39c2c24a077c525cac389ca8ab341903fbf",
+  "head": "bb877c3719a5a138a470cadb0884fb960d8ed122",
+  "paths": [
+    "internal/agent/acpx_runner.go",
+    "internal/agent/fallback.go",
+    "internal/agent/sealed.go",
+    "internal/agent/selection_assignment.go",
+    "internal/daemon/engine.go",
+    "internal/daemon/task_engine.go"
+  ],
+  "duration_literals_unchanged": {
+    "internal/agent/acpx_runner.go": [
+      "30 * time.Second",
+      "5 * time.Second"
+    ],
+    "internal/agent/fallback.go": [],
+    "internal/agent/sealed.go": [
+      "5 * time.Minute"
+    ],
+    "internal/agent/selection_assignment.go": [],
+    "internal/daemon/engine.go": [
+      "100 * time.Millisecond"
+    ],
+    "internal/daemon/task_engine.go": [
+      "10 * time.Second"
+    ]
+  },
+  "cleanup_default_seconds": 5,
+  "budget_timer_default": "time.NewTimer(time.Until(deadline))"
+}
