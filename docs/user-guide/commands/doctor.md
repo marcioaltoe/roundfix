@@ -208,3 +208,19 @@ gh: warn (gh <version>; DR-GH-UNREACHABLE: could not confirm the github.com logi
 git: ok (<version> >= 2.23.0)
 remote: warn (origin: github.com/<owner/repo>; DR-REMOTE-UNREACHABLE: git ls-remote origin failed: read did not answer; next: re-run roundfix doctor when github.com is reachable)
 ```
+
+## Worktree Build Caches
+
+When `worktree.caches` declares rebuildable directories, `storage:` adds
+`; Worktree Build Caches reclaimable: <n> (<bytes> bytes)` before `; next:`.
+Doctor measures only declared caches in ended worktrees under the configured
+worktree location, never follows a cache symlink or a resolved escape, and
+writes nothing. The byte walk stops after two seconds total; an unfinished
+walk reports `at least <bytes> bytes` and continues no background measurement.
+A cache count greater than zero reports `found` and names `roundfix gc`.
+Read errors report `partial`; storage never reports `failed` or changes the
+exit code. With no declared cache, the storage line stays byte-identical.
+
+```text
+storage: found (Runs reclaimable: 0; Run Database free bytes: 0; Worktree Build Caches reclaimable: 1 (11 bytes); next: roundfix gc)
+```

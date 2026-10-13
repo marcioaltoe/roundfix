@@ -838,8 +838,12 @@ _Avoid_: Archive move, file migration, relocation payload
 A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
 _Avoid_: Broken link, dangling reference, link check
 
+**Worktree Build Cache**:
+A repository-declared directory of rebuildable build output retained in a Run Worktree, Task Worktree or Delivery Queue item worktree. It becomes reclaimable when its Run is terminal or its item is merged; active work keeps it. See [ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md).
+_Avoid_: Run artifacts, shared build cache
+
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, and reports what it freed. A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention (ADR-0255).
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, removes declared Worktree Build Caches from ended worktrees, and reports what it freed. See [ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md). A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention (ADR-0255).
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:

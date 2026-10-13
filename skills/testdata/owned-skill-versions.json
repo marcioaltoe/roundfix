@@ -423,6 +423,10 @@
       {
         "version": "0.1.66",
         "digest": "449363a3d8177a17ff765c9442de96d07d9bdbf7b2770383ee1742fe1f7fc5e3"
+      },
+      {
+        "version": "0.1.67",
+        "digest": "64614ddff0af98faf8c7e6f7fc0b6a750c80cbf282247a0455f3218025e7b813"
       }
     ],
     "setup-context-driven": [

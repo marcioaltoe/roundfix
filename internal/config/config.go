@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -170,6 +171,7 @@ type Worktree struct {
 	Concurrency      int
 	Location         string
 	Copy             []string
+	Caches           []string
 	Bootstrap        string
 	BootstrapTimeout time.Duration
 }
@@ -436,6 +438,7 @@ type worktreeOverlay struct {
 	Concurrency      *int           `yaml:"concurrency"`
 	Location         *string        `yaml:"location"`
 	Copy             *[]string      `yaml:"copy"`
+	Caches           *[]string      `yaml:"caches"`
 	Bootstrap        *string        `yaml:"bootstrap"`
 	BootstrapTimeout *durationValue `yaml:"bootstrap_timeout"`
 }
@@ -639,7 +642,7 @@ func (overlay *worktreeOverlay) UnmarshalYAML(node *yaml.Node) error {
 		for index := 0; index < len(node.Content); index += 2 {
 			key := node.Content[index].Value
 			switch key {
-			case "concurrency", "location", "copy", "bootstrap", "bootstrap_timeout":
+			case "concurrency", "location", "copy", "caches", "bootstrap", "bootstrap_timeout":
 			default:
 				return fmt.Errorf("worktree.%s is not a supported config key", key)
 			}
@@ -956,6 +959,8 @@ worktree:
   # Repository-relative untracked files copied into each Run Worktree.
   # Empty copies no files.
   copy: []
+  # Rebuildable directories in ended worktrees reported by Doctor and removed by GC.
+  caches: []
   # Command run once after copy before Agent work; empty disables bootstrap.
   bootstrap: ""
   # Maximum time allowed for each worktree bootstrap command.
@@ -1127,6 +1132,11 @@ func Validate(config Config) error {
 	}
 	if config.Worktree.BootstrapTimeout <= 0 {
 		return errors.New("worktree.bootstrap_timeout must be greater than 0")
+	}
+	for _, entry := range config.Worktree.Caches {
+		if err := validateWorktreeCachePath(entry); err != nil {
+			return err
+		}
 	}
 	for _, path := range config.Worktree.Copy {
 		if err := validateWorktreeCopyPath(path); err != nil {
@@ -1848,6 +1858,14 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		if overlay.Worktree.Copy != nil {
 			config.Worktree.Copy = append([]string(nil), (*overlay.Worktree.Copy)...)
 		}
+		if overlay.Worktree.Caches != nil {
+			config.Worktree.Caches = nil
+			for _, entry := range *overlay.Worktree.Caches {
+				if !slices.Contains(config.Worktree.Caches, entry) {
+					config.Worktree.Caches = append(config.Worktree.Caches, entry)
+				}
+			}
+		}
 		if overlay.Worktree.Bootstrap != nil {
 			config.Worktree.Bootstrap = *overlay.Worktree.Bootstrap
 		}
@@ -2030,4 +2048,12 @@ func isSupportedPrePRReviewProvider(provider string) bool {
 
 func invalidPrePRReviewProviderError(provider string) error {
 	return fmt.Errorf("pre_pr_review.provider %q is invalid; supported values: codex, claude, coderabbit, none", provider)
+}
+
+func validateWorktreeCachePath(entry string) error {
+	if !fs.ValidPath(entry) || entry == "." || strings.Contains(entry, `\`) || (len(entry) > 1 && entry[1] == ':') ||
+		entry == ".git" || strings.HasPrefix(entry, ".git/") {
+		return fmt.Errorf("worktree.caches entry %q must be a clean repository-relative directory outside .git with no .. segment", entry)
+	}
+	return nil
 }

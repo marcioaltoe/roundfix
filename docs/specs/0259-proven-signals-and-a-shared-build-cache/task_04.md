@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0259-proven-signals-and-a-shared-build-cache
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -126,3 +126,129 @@ items and worktrees.
 - `_prd.md` → Goals; User Story 5; Core Feature 7; Core Feature 8; Success Metric 5; User Experience
 - `_techspec.md` → API Contract 8; API Contract 9; API Contract 10; API Contract 11; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Invariants 5-6; Testing Approach; Build Order 4
 - ADR-0266; ADR-0172; ADR-0171; ADR-0255
+
+## Result
+
+### Implementation
+
+- Added `worktree.caches` to User and Project Config, empty by default, with
+  duplicate collapse, strict path validation naming the key and offending
+  entry, and a commented template declaration. This repository declares
+  `.gocache`.
+- Added shared discovery through the existing Run listing and Delivery Queue
+  readers. Terminal Run Worktrees, retained sibling Task Worktrees (including
+  when the Run Worktree is absent), and merged item worktrees are eligible.
+  Any unfinished owner protects the worktree, including physical aliases.
+  Lexical and physical containment checks skip outside worktrees, cache
+  symlinks, resolved escapes and aliases into Git metadata.
+- Doctor uses the existing read-only/immutable reader selection, so an idle
+  database gains no SQLite sidecars. Its cache byte walk reads directory
+  entries in batches and stops synchronously at a shared two-second deadline,
+  reporting a lower bound without leaving a background walk. Storage remains
+  a notice (`found` or `partial`), never a readiness failure.
+- GC appends the cache block after Run Retention. The dry run writes nothing;
+  live GC measures and then rereads all ownership states and revalidates the
+  path immediately before removing only the declared cache directory. It
+  continues other candidates after an error, prints only successful cache
+  removals and their bytes, diagnoses failures on stderr and exits 1.
+- Updated the three user guides, the skill's setup and storage references,
+  both skill copies, the version record and coverage records. Added Worktree
+  Build Cache and revised GC Command in `CONTEXT.md`, linked to ADR-0266.
+  The recorded Roundfix skill version is now `0.1.67`.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Doctor reports an ended cache with bytes; dry GC lists it without changing bytes | `TestDoctorStorageReportsWorktreeBuildCaches` asserts the exact storage transcript; `TestGCDryRunListsWorktreeBuildCaches` asserts the complete dry report with only timestamp/path placeholders varying. Both compare every file's bytes and the directory entries in the temporary home before and after. |
+| Live GC removes ended caches, keeps active work, skips symlink escapes | `TestGCRemovesWorktreeBuildCachesOfEndedWorktrees` asserts the full live transcript, source-file preservation and repeat-GC zero reclamation. `TestGCKeepsWorktreeBuildCachesOfWorkInProgress` covers every nonmerged queue stage plus an Active Run. Escape, physical-alias, Git-metadata, retained-Task-Worktree and post-scan ownership-change tests exercise the safety checks. `TestBuildCacheGCContinuesAfterAPathFailure` proves exit 1, stderr diagnostics and successful other removals. |
+| No declared cache preserves Doctor and GC output | `TestDoctorStorageIsUnchangedWithoutDeclaredCaches` asserts the exact prior storage line; `TestGCIsUnchangedWithoutDeclaredCaches` asserts the independently authored complete prior dry and live reports. Existing Doctor storage and `TestRunGC*` checks were also included unchanged in the focused run. |
+| Guides and skill describe the key; skill version raised and recorded | All five required documentation surfaces name `worktree.caches` under their own headings. The sanctioned version recorder raised both skill version fields to `0.1.67`; canonical/mirror byte comparison passed. The Behavior Surface recorder passed, and the Doctor and GC source lists now include `internal/cli/worktree_build_cache.go`. |
+
+`TestDoctorStorageBoundsTheWorktreeBuildCacheWalk` advances the existing
+command clock across the budget and asserts the exact `at least 0 bytes`
+storage line. `TestBuildCacheBudgetReportsMeasuredLowerBound` interrupts after
+counting real file bytes and verifies the positive lower bound.
+`TestBuildCacheMeasurementHonorsCancellation` proves synchronous cancellation;
+`TestBuildCacheDoctorReportsUnreadablePathsAsPartial` proves a read error keeps
+Doctor's exit code at zero.
+
+### Focused checks and required regeneration
+
+All Go commands below used
+`GOCACHE=/private/tmp/roundfix-task04-gocache`.
+
+- `go test -count=1 -run 'WorktreeCaches|BuildCache|WithoutDeclaredCaches|^TestDoctorStorage|^TestRunGC' ./internal/config ./internal/cli`
+  — exit 0, both packages passed.
+- `go test -race -shuffle=20261012 -count=1 -run 'WorktreeCaches|BuildCache|WithoutDeclaredCaches|^TestDoctorStorage|^TestRunGC|^TestLoadAppliesWorktreeConfigHierarchy$|^TestInit|^TestProfileGeneratedConfigUsesCompleteProfilesSchema$' ./internal/config ./internal/cli`
+  — exit 0, both packages passed with the race detector and shuffled tests.
+- `make skills-sync` — exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0 after mirror synchronization; recorded `0.1.67`.
+- `make baseline-digests` — exit 0; reported `changed:false`, no derived
+  Baseline files changed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  — exit 0; regenerated the Behavior Surface Record through its owner.
+- `git diff --check` — exit 0.
+- Focused path and artifact inspection — all 21 changed paths are declared in
+  this Task's context; the setup reference, storage reference and `SKILL.md`
+  pairs are byte-identical; all five required documentation surfaces name
+  `worktree.caches`.
+
+Initial focused attempts exposed fixture mistakes (the `CompleteRun` result
+shape and mandatory Artifact Directory), discovery's default Active-only
+state filter, and idle-reader sidecar creation. They were corrected at their
+source before the final focused checks. The first version-record attempt
+refused an unsynchronized mirror; `make skills-sync` resolved it before the
+successful record command.
+
+### Daemon handoff
+
+The only pre-existing worktree change was the Daemon's `status: in_progress`
+transition in this Task file. That status is preserved. No other Task file,
+Task Graph, Verification section or QA settlement text was edited. No command
+from the Task's Verification section, selected repository Verification,
+incremental Verification or full suite was run. Required artifact recording
+commands were run as implementation work. No commit, push or pull request was
+created. Declared Verification and Task settlement remain Daemon-owned.
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon's diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261012T221735Z_f00baa2097cf9b98/verification/batch-004-attempt-1.log`
+and the related store controller and test. The reported failure of
+`make verify-changed` is the `changed` subtest of
+`TestOwnerProcessControllerReprovesBeforeForceKill` in
+`internal/store/process_signal_unix_test.go`, owned by Task 01.
+
+The controller reaches its stop deadline while waiting for graceful absence,
+before the identity re-proof. This test uses the real timer path with a 20 ms
+grace, a 100 ms overall stop window and a 5 ms polling interval. Its changed
+identity stub is read after that wait, while its absence stub remains false.
+`waitForAbsence` selects between the grace timer and the stop context, so the
+observed deadline expiration prevents this subtest from reaching the behavior
+it intends to assert. Scheduling sensitivity is a likely explanation; the
+artifact does not establish why execution was delayed.
+
+No cache implementation defect is identified in that diagnostic. No store
+source or test is changed by this Task, and changing the controller or its
+signal test would cross the explicit Task 04 boundary. Follow-up for the
+Daemon/Supervisor: route the timing-sensitive identity re-proof test to its
+Task 01 owner; preserve its identity-change and no-forced-signal assertions
+when repairing it. A whole-gate passing result has not been established.
+
+Fresh focused check:
+
+- `GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run 'WorktreeCaches|BuildCache|WithoutDeclaredCaches' ./internal/config ./internal/cli`
+  — exit 0, both changed packages passed.
+- `git diff --check` — exit 0 after updating this evidence.
+
+This feedback turn updates only this Result section. Task status stays
+Daemon-owned and unchanged. No declared Verification or configured full gate
+was rerun, and no commit, push or pull request was created. Task 04's
+implementation is handed back with the out-of-slice gate failure recorded.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261012T221735Z_f00baa2097cf9b98`
+- Source commit: `9479226c8b49427d6dd5cea97b1cc6eedd44bb80`

@@ -62,6 +62,9 @@ type gcReport struct {
 	JournalRows   int
 	ArtifactBytes int64
 	RunRetention  runRetentionReport
+	CacheDeclared []string
+	BuildCaches   worktreeBuildCacheScan
+	cacheReport   bool
 }
 
 type gcArtifactDir struct {
@@ -234,6 +237,9 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 
 	report, err := runGC(ctx, opts, loaded)
 	if err != nil {
+		if report.cacheReport {
+			printGCReport(stdout, report)
+		}
 		fmt.Fprintf(stderr, "%s: gc failed: %v\n", app.Name, err)
 		return exitRunFailed
 	}
@@ -736,6 +742,7 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (repo
 	if err != nil {
 		return report, err
 	}
+	report.CacheDeclared = loaded.Config.Worktree.Caches
 	report.RunRetention = runRetentionReport{retentionDays: loaded.Config.Store.RunRetentionDays, cutoff: commandDependenciesForContext(ctx).gc.now().UTC().Add(-time.Duration(loaded.Config.Store.RunRetentionDays) * 24 * time.Hour), compaction: "not needed"}
 	exists, err := gcDatabaseExists(loaded.HomeDir)
 	if err != nil || !exists {
@@ -746,8 +753,18 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (repo
 		return report, err
 	}
 	defer func() { err = errors.Join(err, runStore.Close()) }()
+	var cacheErr error
+	if len(report.CacheDeclared) > 0 {
+		report.BuildCaches, cacheErr = scanWorktreeBuildCaches(ctx, runStore, loaded, 0)
+		report.cacheReport = true
+		if !opts.dryRun {
+			var removalErr error
+			report.BuildCaches, removalErr = removeWorktreeBuildCaches(ctx, runStore, loaded, report.BuildCaches)
+			cacheErr = errors.Join(cacheErr, removalErr)
+		}
+	}
 	report.RunRetention, err = sweepRunDatabase(ctx, runStore, loaded, runRetentionOptions{dryRun: opts.dryRun})
-	return report, err
+	return report, errors.Join(cacheErr, err)
 }
 
 func runGCJournal(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
@@ -1078,7 +1095,10 @@ func gcFilterArtifactDirs(dirs []gcArtifactDir, runIDs []string) []gcArtifactDir
 }
 
 func printGCReport(stdout io.Writer, report gcReport) {
-	defer printRunRetentionReport(stdout, report.RunRetention, report.DryRun)
+	defer func() {
+		printRunRetentionReport(stdout, report.RunRetention, report.DryRun)
+		printWorktreeBuildCacheReport(stdout, report.CacheDeclared, report.BuildCaches, report.DryRun)
+	}()
 	if report.Skipped {
 		if report.DryRun {
 			fmt.Fprintln(stdout, "GC dry-run")
