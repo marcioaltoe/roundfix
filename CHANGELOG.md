@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.73.0] - 2026-10-13
+
+### Authoring that proves what it claims
+
+- **Four new `spec check` gaps.** Every active Spec, whatever its age, is now held to four proofs, and `--strict` turns each gap into an error:
+  - `SC-ABSENCE-UNPROVEN`: the TechSpec has no `## Absence Evidence`, or an item lacks the search command or its result. Write `None.` with a reason when no component is new.
+  - `SC-ADR-ALTERNATIVES-UNRELATED`: an ADR listed under Active ADR obligations has no `- ADR-NNNN: <relation>` line under `## ADR Alternatives`.
+  - `SC-COVERAGE-UNREAD`: the Coverage Map has no `Deviations from the PRD:` line, or a deviation bullet names no User Story, Core Feature or Success Metric. A bullet after `None.` is checked too.
+  - `SC-CONSUMERS-UNPROVEN`: a pending non-QA Task has no `## Consumers` section, or names a consuming suite that neither its Verification nor a valid `checkpoint: task_NN` runs.
+- **Upgrade step.** Before an active Spec's next Run, add the sections and lines each finding names. Each finding's fix names the section and the skill rule that requires it.
+- **Skills.** `write-techspec` and `write-tasks` state the four rules and their templates carry the new sections; the `roundfix` skill and the `spec` command reference list the codes.
+- **Glossary.** Adds Absence Evidence, ADR Alternatives, Coverage Cross-Read, Consumer Declaration, Shared Contract and Integration Checkpoint (ADR-0265).
+- This release ships with a QA override: the QA found no defect, but could not read four outside publications that the Spec's authorization kept offline.
+
 ## [0.72.0] - 2026-10-13
 
 ### Proven signals and a shared build cache
