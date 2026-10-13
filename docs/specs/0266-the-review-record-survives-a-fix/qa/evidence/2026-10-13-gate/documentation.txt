@@ -1,0 +1,41 @@
+$ rg -n -i checkout path|record.{0,50}replac|replac.{0,50}record|only.{0,40}archived|archived.{0,60}only|paths.{0,35}archived docs/user-guide CONTEXT.md docs/agents .agents/skills/roundfix/references skills/roundfix/references
+docs/agents/specific-repository.md:64:- A reworded Baseline clause keeps its identity. A removed clause is named in the `replaces` list of the clause that absorbs it, with the same enforcement, so the Source Baseline transition (`classifySourceClauseTransition` in `internal/baseline/plan.go`) records it `replaced`. A new clause in a rule the Standard TypeScript profile requires needs a Source Baseline row, so prefer extending an existing clause. A Task that removes a clause declares `internal/cli/baseline_update_test.go` and `internal/baseline/plan_test.go` when their fleet fixtures pin it.
+skills/roundfix/references/review.md:72:The checkout key is named from the resolved checkout path. Each non-reused
+skills/roundfix/references/review.md:140:C5 applies to files under an archived Spec only when its `_prd.md` at the
+.agents/skills/roundfix/references/review.md:72:The checkout key is named from the resolved checkout path. Each non-reused
+.agents/skills/roundfix/references/review.md:140:C5 applies to files under an archived Spec only when its `_prd.md` at the
+.agents/skills/roundfix/references/deliver.md:354:When no candidate is recorded, only an item the operator archived with the QA
+skills/roundfix/references/deliver.md:354:When no candidate is recorded, only an item the operator archived with the QA
+docs/user-guide/commands/review.md:82:The checkout key is named from the resolved checkout path. Each non-reused
+docs/user-guide/commands/review.md:151:C5 applies to an Archive Record or files under a legacy archived Spec only
+docs/user-guide/run-database-lifecycle.md:15:| `interactive_defaults` | Interactive Input | Keep one current value per key, replacing it when Interactive Input records a newer value. No age-based retention applies. |
+docs/user-guide/run-database-lifecycle.md:25:| `run_retention_sweeps` | Run Retention lifecycle | Keep one row recording the last completed sweep and its window, replacing it after each completed sweep (ADR-0255). |
+docs/user-guide/commands/deliver.md:65:is met only when its archived `_prd.md` exists there. An archive present only
+docs/user-guide/commands/deliver.md:292:When no candidate is recorded, only an item the operator archived with the QA
+docs/user-guide/context-driven-development.md:691:paths with that scope. Completed and archived legacy Specs remain
+EXIT: 0
+
+docs/user-guide/commands/review.md: required phrases present; superseded retry sentence absent
+
+.agents/skills/roundfix/references/review.md: required phrases present; superseded retry sentence absent
+
+skills/roundfix/references/review.md: required phrases present; superseded retry sentence absent
+
+review reference mirrors: byte-identical
+
+docs/user-guide/commands/deliver.md: required phrases present; superseded retry sentence absent
+
+.agents/skills/roundfix/references/deliver.md: required phrases present; superseded retry sentence absent
+
+skills/roundfix/references/deliver.md: required phrases present; superseded retry sentence absent
+
+deliver reference mirrors: byte-identical
+
+Glossary assertions: {
+  "Reviewed Head Record": "The copy of a Pre-PR Review Record kept under the head it reviewed, written for\nevery verdict that is not a reuse and never replaced by a later round at\nanother head. A Delivery Retry's correction proof reads it for the parked\ncandidate. See\n[ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).\n_Avoid_: round record, review history",
+  "Pre-PR Review Record": "The record of one Pre-PR Review, kept per checkout under its resolved path. Its\nverdict is read from the reviewer's final message. See\n[ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).\n_Avoid_: Review Source Evidence, shared review state, reviewer transcript"
+}
+
+PRD/TechSpec Glossary Declarations introduce only Reviewed Head Record and revise Pre-PR Review Record; other bold headings are declared not terms. Strict precondition reports no glossary gap.
+
+All sweep candidates reviewed: C5 archive matching, no-candidate operator recovery, prerequisite archive proof, generic Baseline clause replacement, Run retention and task scope are separate contracts. None asserts lexical review keying, loss of an earlier head record or archive-only retry corrections.

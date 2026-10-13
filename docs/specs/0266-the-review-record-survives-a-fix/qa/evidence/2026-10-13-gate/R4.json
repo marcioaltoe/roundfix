@@ -1,0 +1,37 @@
+{
+  "row": "R4",
+  "exit": 0,
+  "missing": [],
+  "selected": [
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview",
+    "TestARecordedPathCountsAsDeclared",
+    "TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths"
+  ],
+  "passing_subtests": [
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview",
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder",
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record",
+    "TestARecordedPathCountsAsDeclared",
+    "TestARecordedPathCountsAsDeclared/legacy-folder",
+    "TestARecordedPathCountsAsDeclared/archive-record",
+    "TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-folder-task",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-record-task",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection/missing-source-revision",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context"
+  ]
+}

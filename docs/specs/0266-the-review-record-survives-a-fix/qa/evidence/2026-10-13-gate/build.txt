@@ -1,0 +1,6 @@
+$ make build
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=81c889f9-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-13 19:27:09 -0300'" -o bin/roundfix ./cmd/roundfix
+
+STDERR:
+
+EXIT: 0

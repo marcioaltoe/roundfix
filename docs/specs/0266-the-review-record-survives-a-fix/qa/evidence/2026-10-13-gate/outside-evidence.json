@@ -1,0 +1,47 @@
+{
+  "stackoverflow": {
+    "source": "https://stackoverflow.com/questions/53396610",
+    "answer": "https://stackoverflow.com/a/53403512",
+    "fetch": "https://api.stackexchange.com/2.3/questions/53396610/answers?site=stackoverflow&filter=withbody",
+    "exit": 0,
+    "accepted_answer_id": 53403512,
+    "excerpt": "On Unix systems, that means it resolves all symlinks",
+    "passage_present": true,
+    "supports_design": true,
+    "parity": "HTML fetch returned challenge; same accepted answer recovered through the public Stack Exchange API",
+    "command": [
+      "rtk",
+      "proxy",
+      "curl-cffi",
+      "get",
+      "https://api.stackexchange.com/2.3/questions/53396610/answers?site=stackoverflow&filter=withbody",
+      "--impersonate",
+      "chrome",
+      "--timeout",
+      "30",
+      "--body"
+    ]
+  },
+  "git_for_windows": {
+    "source": "https://github.com/git-for-windows/git/issues/2114",
+    "fetch": "https://api.github.com/repos/git-for-windows/git/issues/2114",
+    "exit": 0,
+    "title": "git rev-parse --show-toplevel fails to resolve all junctions",
+    "excerpt": "share the proper components in common",
+    "passage_present": true,
+    "supports_design": true,
+    "parity": "Windows junctions are distinct from this macOS symlink measurement; the issue corroborates mismatched path-component identities, not every Unix behavior",
+    "command": [
+      "rtk",
+      "proxy",
+      "curl-cffi",
+      "get",
+      "https://api.github.com/repos/git-for-windows/git/issues/2114",
+      "--impersonate",
+      "chrome",
+      "--timeout",
+      "30",
+      "--body"
+    ]
+  }
+}

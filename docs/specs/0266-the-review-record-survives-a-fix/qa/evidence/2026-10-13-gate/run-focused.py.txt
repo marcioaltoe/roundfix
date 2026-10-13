@@ -1,0 +1,35 @@
+import json,re,subprocess,sys
+from pathlib import Path
+out=Path(__file__).parent
+row=sys.argv[1]
+names={
+'R2':['TestReviewCheckoutDirIsOneForEverySpellingOfACheckout','TestTheCorrectionProofFindsTheRecordUnderASymlinkedWorktreeRoot','TestTheCorrectionProofRefusesACodeFixUnderASymlinkedWorktreeRoot','TestTheCorrectionProofRefusesARecordOfAnotherCheckout'],
+'R3':['TestASecondReviewRoundKeepsTheFirstRoundsRecord','TestTheCorrectionProofAcceptsAfterASecondRoundUnderASymlinkedWorktreeRoot','TestAReusedBlockedOrOmittedReviewWritesNoReviewedHeadRecord','TestTheCorrectionProofReadsTheCurrentRecordWithoutAHeadRecord','TestTheCorrectionProofRefusesWithoutARecordOfTheCandidate','TestReviewHeadRecordPathRefusesANonCommitName','TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord','TestACorrectionOutsideTheArchivedSpecIsRefused','TestACorrectionWithAnUndisposedFindingIsRefused','TestACorrectionThatDoesNotDescendIsRefused','TestReviewCorrectionRequiresTheParkedReviewRecord'],
+'R4':['TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview','TestARecordedPathCountsAsDeclared','TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath','TestDeclaredPathsAreReadAtTheRecordedRevision','TestUnreadableDeclaredPathsRefuseTheCorrection','TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths'],
+'DOC':['TestEveryOwnedSkillVersionIsRecorded','TestTheSkillCoverageMapIsCurrent']}
+selected=names[row]; pattern='^('+'|'.join(selected)+')$'
+cmd=['go','test','-count=1','-v','-run',pattern]
+if row!='DOC':cmd+=['-race']
+if row=='R4':cmd+=['./internal/cli','./internal/spec']
+elif row=='DOC':cmd+=['-tags','docscontract','./skills','./internal/docscontract']
+else:cmd+=['./internal/cli']
+r=subprocess.run(cmd,text=True,capture_output=True)
+log='$ '+' '.join(cmd)+'\n'+r.stdout+'\nSTDERR:\n'+r.stderr+'\nEXIT: '+str(r.returncode)+'\n'
+missing=[n for n in selected if not re.search(r'--- PASS: '+re.escape(n)+r' ',r.stdout)]
+if row=='R4':
+ for n in ['TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record','TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder']:
+  if not re.search(r'--- PASS: '+re.escape(n)+r' ',r.stdout):missing.append(n)
+if row=='R2':
+ files=['internal/cli/'+n for n in ['review.go','review_lineage.go','review_validation.go','deliver_review_correction.go']]
+ scan=['rg','-n',r'[.]Repository *(==|!=)|filepath[.]Clean[(][A-Za-z.]*Repository[)]',*files]
+ s=subprocess.run(scan,text=True,capture_output=True)
+ log+='\n$ '+' '.join(scan)+'\n'+s.stdout+s.stderr+'SCAN EXIT: '+str(s.returncode)+'\n'
+ if s.returncode!=1:missing.append('empty lexical comparison sweep')
+ refs=subprocess.run(['rg','-n',r'[.]Repository|sameReviewCheckout',*files],text=True,capture_output=True)
+ log+='\nRepository comparison inventory:\n'+refs.stdout
+log+='\nMISSING: '+repr(missing)+'\n'
+(out/(row+'.txt')).write_text(log)
+result={'row':row,'exit':r.returncode,'missing':missing,'selected':selected,'passing_subtests':re.findall(r'--- PASS: (\S+)',r.stdout)}
+(out/(row+'.json')).write_text(json.dumps(result,indent=2)+'\n')
+print(json.dumps(result))
+raise SystemExit(0 if r.returncode==0 and not missing else 1)

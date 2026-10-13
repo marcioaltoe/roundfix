@@ -1,0 +1,142 @@
+{
+  "head": "81c889f92b02882f2463f79b7042a2b5e6f3444b",
+  "base": "fd2f46f200f2fffe6181e7fb6dcf5342b4a60e22",
+  "tasks": [
+    {
+      "commit": "70d5be00ce0fb8cac12727a2b3230ffc770f7f05",
+      "task": "task_01",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/review.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0266-the-review-record-survives-a-fix/task_01.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/review.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/review.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declarations": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/review.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/review.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/review.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    },
+    {
+      "commit": "daced992a1e84971547625571b85ce71b6dc20f0",
+      "task": "task_02",
+      "paths": [
+        "docs/specs/0266-the-review-record-survives-a-fix/task_02.md",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/review.go",
+        "internal/cli/review_lineage.go",
+        "internal/cli/review_resolved_checkout_test.go",
+        "internal/cli/review_validation.go"
+      ],
+      "declarations": [
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/review.go",
+        "internal/cli/review_lineage.go",
+        "internal/cli/review_resolved_checkout_test.go",
+        "internal/cli/review_validation.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "commit": "8eb2e0a2178771d1fbed2c9359d050cfdc33d61e",
+      "task": null,
+      "paths": [
+        "docs/specs/0266-the-review-record-survives-a-fix/task_03.md"
+      ],
+      "classification": "pre-Task planning declaration adjustment"
+    },
+    {
+      "commit": "c3ab03c033eed366ad5a002f40149483c27c62e2",
+      "task": "task_03",
+      "paths": [
+        "docs/specs/0266-the-review-record-survives-a-fix/task_03.md",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/review.go",
+        "internal/cli/review_head_record_test.go",
+        "internal/cli/review_resolved_checkout_test.go"
+      ],
+      "declarations": [
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/review.go",
+        "internal/cli/review_head_record_test.go",
+        "internal/cli/review_resolved_checkout_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "commit": "81c889f92b02882f2463f79b7042a2b5e6f3444b",
+      "task": "task_04",
+      "paths": [
+        "docs/specs/0266-the-review-record-survives-a-fix/task_04.md",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/review_declared_correction_test.go",
+        "internal/spec/declared_paths.go",
+        "internal/spec/declared_paths_test.go"
+      ],
+      "declarations": [
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/review_declared_correction_test.go",
+        "internal/spec/declared_paths.go",
+        "internal/spec/declared_paths_test.go"
+      ],
+      "undeclared": []
+    }
+  ],
+  "all_changed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/review.md",
+    "CONTEXT.md",
+    "docs/references/behavior-surfaces.json",
+    "docs/specs/0266-the-review-record-survives-a-fix/task_01.md",
+    "docs/specs/0266-the-review-record-survives-a-fix/task_02.md",
+    "docs/specs/0266-the-review-record-survives-a-fix/task_03.md",
+    "docs/specs/0266-the-review-record-survives-a-fix/task_04.md",
+    "docs/user-guide/commands/deliver.md",
+    "docs/user-guide/commands/review.md",
+    "internal/cli/deliver_review_correction.go",
+    "internal/cli/review.go",
+    "internal/cli/review_declared_correction_test.go",
+    "internal/cli/review_head_record_test.go",
+    "internal/cli/review_lineage.go",
+    "internal/cli/review_resolved_checkout_test.go",
+    "internal/cli/review_validation.go",
+    "internal/spec/declared_paths.go",
+    "internal/spec/declared_paths_test.go",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/deliver.md",
+    "skills/roundfix/references/review.md",
+    "skills/testdata/owned-skill-versions.json"
+  ],
+  "governed_changed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/review.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "bounded_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/review.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "issues": [],
+  "worktree_delta": "?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/DOC.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/R2.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/R3.initial.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/R3.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/R4.initial.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/R4.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/R5.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/public-flow.py.txt\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/run-focused.py.txt\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/scope-audit.py.txt\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/scope-input.json\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/evidence/2026-10-13-gate/scope-probe.go.txt\n?? docs/specs/0266-the-review-record-survives-a-fix/qa/qa-report-2026-10-13.md"
+}

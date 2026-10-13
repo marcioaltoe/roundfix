@@ -1,0 +1,101 @@
+$ go test -count=1 -v -run ^(TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview|TestARecordedPathCountsAsDeclared|TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath|TestDeclaredPathsAreReadAtTheRecordedRevision|TestUnreadableDeclaredPathsRefuseTheCorrection|TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths)$ -race ./internal/cli ./internal/spec
+=== RUN   TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview
+=== PAUSE TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview
+=== RUN   TestARecordedPathCountsAsDeclared
+=== PAUSE TestARecordedPathCountsAsDeclared
+=== RUN   TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath
+=== PAUSE TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision
+=== RUN   TestUnreadableDeclaredPathsRefuseTheCorrection
+=== PAUSE TestUnreadableDeclaredPathsRefuseTheCorrection
+=== CONT  TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview
+=== CONT  TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision
+=== RUN   TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record
+=== CONT  TestUnreadableDeclaredPathsRefuseTheCorrection
+=== CONT  TestARecordedPathCountsAsDeclared
+=== RUN   TestUnreadableDeclaredPathsRefuseTheCorrection/missing-source-revision
+=== RUN   TestARecordedPathCountsAsDeclared/archive-record
+=== PAUSE TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record
+=== PAUSE TestUnreadableDeclaredPathsRefuseTheCorrection/missing-source-revision
+=== PAUSE TestARecordedPathCountsAsDeclared/archive-record
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record
+=== RUN   TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-record-task
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record
+=== PAUSE TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-record-task
+=== RUN   TestARecordedPathCountsAsDeclared/legacy-folder
+=== RUN   TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder
+=== PAUSE TestARecordedPathCountsAsDeclared/legacy-folder
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder
+=== CONT  TestARecordedPathCountsAsDeclared/archive-record
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder
+=== PAUSE TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder
+=== CONT  TestARecordedPathCountsAsDeclared/legacy-folder
+=== CONT  TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record
+=== RUN   TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-folder-task
+=== CONT  TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder
+=== PAUSE TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-folder-task
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record
+=== CONT  TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-folder-task
+=== CONT  TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-record-task
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit
+=== CONT  TestUnreadableDeclaredPathsRefuseTheCorrection/missing-source-revision
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit
+--- PASS: TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview (0.00s)
+    --- PASS: TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder (1.05s)
+    --- PASS: TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record (1.29s)
+--- PASS: TestARecordedPathCountsAsDeclared (0.00s)
+    --- PASS: TestARecordedPathCountsAsDeclared/legacy-folder (1.03s)
+    --- PASS: TestARecordedPathCountsAsDeclared/archive-record (1.30s)
+--- PASS: TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath (1.31s)
+--- PASS: TestUnreadableDeclaredPathsRefuseTheCorrection (0.00s)
+    --- PASS: TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-folder-task (1.08s)
+    --- PASS: TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-record-task (1.31s)
+    --- PASS: TestUnreadableDeclaredPathsRefuseTheCorrection/missing-source-revision (1.32s)
+--- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision (0.00s)
+    --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder (0.00s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree (1.08s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit (0.60s)
+    --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record (0.00s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree (1.31s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit (0.74s)
+PASS
+suiteguard: guard cost: measured 2649 paths; fingerprint took 153.809416ms before and 123.034167ms after
+ok  	roundfix/internal/cli	3.459s
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context
+--- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths (0.00s)
+    --- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter (0.00s)
+    --- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path (0.00s)
+    --- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context (0.00s)
+PASS
+suiteguard: guard cost: measured 2649 paths; fingerprint took 163.128958ms before and 121.020791ms after
+ok  	roundfix/internal/spec	1.431s
+
+STDERR:
+
+EXIT: 0
+
+MISSING: []

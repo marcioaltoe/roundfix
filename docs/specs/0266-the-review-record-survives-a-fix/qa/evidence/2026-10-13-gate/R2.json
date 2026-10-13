@@ -1,0 +1,19 @@
+{
+  "row": "R2",
+  "exit": 0,
+  "missing": [],
+  "selected": [
+    "TestReviewCheckoutDirIsOneForEverySpellingOfACheckout",
+    "TestTheCorrectionProofFindsTheRecordUnderASymlinkedWorktreeRoot",
+    "TestTheCorrectionProofRefusesACodeFixUnderASymlinkedWorktreeRoot",
+    "TestTheCorrectionProofRefusesARecordOfAnotherCheckout"
+  ],
+  "passing_subtests": [
+    "TestReviewCheckoutDirIsOneForEverySpellingOfACheckout",
+    "TestTheCorrectionProofRefusesARecordOfAnotherCheckout",
+    "TestTheCorrectionProofFindsTheRecordUnderASymlinkedWorktreeRoot",
+    "TestTheCorrectionProofFindsTheRecordUnderASymlinkedWorktreeRoot/default-artifact-directory",
+    "TestTheCorrectionProofFindsTheRecordUnderASymlinkedWorktreeRoot/explicit-artifact-directory",
+    "TestTheCorrectionProofRefusesACodeFixUnderASymlinkedWorktreeRoot"
+  ]
+}

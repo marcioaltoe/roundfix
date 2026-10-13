@@ -1,0 +1,3 @@
+package main
+import("encoding/json";"os";"roundfix/internal/spec")
+func main(){dir:="docs/specs/0266-the-review-record-survives-a-fix";report,err:=spec.ReadQAReport(dir);if err!=nil{panic(err)};if err=spec.QAReportEligibility(dir,report);err!=nil{panic(err)};if report.Verdict!="pass"||report.Hollow||report.RowsBlockedEnvironment!=1||report.RowsBlockedPrePullRequest!=1||report.RowsSkipped!=0||report.RowsBlockedFinding!=0||report.RowsBlockedDeclared!=0{panic("unexpected parsed QA metadata")};if err=json.NewEncoder(os.Stdout).Encode(report);err!=nil{panic(err)}}

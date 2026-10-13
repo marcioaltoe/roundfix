@@ -1,0 +1,207 @@
+cwd: None
+$ git init -b main /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+STDOUT:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main/.git/
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git config user.name QA Fixture
+STDOUT:
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git config user.email qa@example.invalid
+STDOUT:
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git config core.hooksPath /dev/null
+STDOUT:
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git add review.txt
+STDOUT:
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git commit -m test: create disposable QA base
+STDOUT:
+[main (root-commit) b645793] test: create disposable QA base
+ 1 file changed, 1 insertion(+)
+ create mode 100644 review.txt
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git rev-parse HEAD
+STDOUT:
+b645793f0da22bdfee9205b1dbae304ba5f35cec
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git add review.txt
+STDOUT:
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git commit -m test: create disposable QA candidate
+STDOUT:
+[main 5cb15b6] test: create disposable QA candidate
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git worktree add -b test/qa-linked /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/link/repo-slug/item
+STDOUT:
+HEAD is now at 5cb15b6 test: create disposable QA candidate
+
+STDERR:
+Preparing worktree (new branch 'test/qa-linked')
+
+EXIT: 0
+
+cwd: None
+$ git --version
+STDOUT:
+git version 2.56.0
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+$ git worktree list --porcelain
+STDOUT:
+worktree /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/main
+HEAD 5cb15b6bf489bf67e62d7cf8a937deced0a486d3
+branch refs/heads/main
+
+worktree /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+HEAD 5cb15b6bf489bf67e62d7cf8a937deced0a486d3
+branch refs/heads/test/qa-linked
+
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/link/repo-slug/item
+$ git rev-parse --show-toplevel
+STDOUT:
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+$ git rev-parse --show-toplevel
+STDOUT:
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/link/repo-slug/item
+$ ./bin/roundfix review --base b645793f0da22bdfee9205b1dbae304ba5f35cec
+STDOUT:
+{"diffBytes":0,"omittedPaths":[],"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item","baseCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","baseTipCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","headCommit":"5cb15b6bf489bf67e62d7cf8a937deced0a486d3","provider":"none","source":"project","outcome":"omitted","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false}
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/link/repo-slug/item
+$ ./bin/roundfix review dispose F1 --fixed-by HEAD
+STDOUT:
+
+STDERR:
+roundfix: review dispose refused: pre-pr review record outcome is "omitted", not findings
+
+EXIT: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+$ ./bin/roundfix review --base b645793f0da22bdfee9205b1dbae304ba5f35cec
+STDOUT:
+{"diffBytes":0,"omittedPaths":[],"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item","baseCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","baseTipCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","headCommit":"5cb15b6bf489bf67e62d7cf8a937deced0a486d3","provider":"none","source":"project","outcome":"omitted","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false}
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+$ ./bin/roundfix review dispose F1 --fixed-by HEAD
+STDOUT:
+
+STDERR:
+roundfix: review dispose refused: pre-pr review record outcome is "omitted", not findings
+
+EXIT: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/link/repo-slug/item
+$ ./bin/roundfix review --base b645793f0da22bdfee9205b1dbae304ba5f35cec
+STDOUT:
+{"diffBytes":0,"omittedPaths":[],"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item","baseCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","baseTipCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","headCommit":"5cb15b6bf489bf67e62d7cf8a937deced0a486d3","provider":"none","source":"project","outcome":"omitted","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false}
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/link/repo-slug/item
+$ ./bin/roundfix review dispose F1 --fixed-by HEAD
+STDOUT:
+
+STDERR:
+roundfix: review dispose refused: pre-pr review record outcome is "omitted", not findings
+
+EXIT: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+$ ./bin/roundfix review --base b645793f0da22bdfee9205b1dbae304ba5f35cec
+STDOUT:
+{"diffBytes":0,"omittedPaths":[],"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item","baseCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","baseTipCommit":"b645793f0da22bdfee9205b1dbae304ba5f35cec","headCommit":"5cb15b6bf489bf67e62d7cf8a937deced0a486d3","provider":"none","source":"project","outcome":"omitted","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false}
+
+STDERR:
+
+EXIT: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+$ ./bin/roundfix review dispose F1 --fixed-by HEAD
+STDOUT:
+
+STDERR:
+roundfix: review dispose refused: pre-pr review record outcome is "omitted", not findings
+
+EXIT: 2
+
+Independent Git measurement: git version 2.56.0; both spellings report /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-public-puh7druq/real/repo-slug/item
+
+CLI uses only audited binary target /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0266-the-review-record-survives-a-fix-01f78105bd92f395-76a1448e-096e7321/run_20261013T214348Z_2ba6216d89c5b1cf/bin/roundfix; provider none; fresh processes and persisted record re-read; temporary fixtures removed on exit.

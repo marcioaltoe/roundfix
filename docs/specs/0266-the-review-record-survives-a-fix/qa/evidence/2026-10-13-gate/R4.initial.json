@@ -1,0 +1,37 @@
+{
+  "row": "R4",
+  "exit": 1,
+  "missing": [],
+  "selected": [
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview",
+    "TestARecordedPathCountsAsDeclared",
+    "TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths"
+  ],
+  "passing_subtests": [
+    "TestUnreadableDeclaredPathsRefuseTheCorrection",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-folder-task",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection/unparsable-record-task",
+    "TestUnreadableDeclaredPathsRefuseTheCorrection/missing-source-revision",
+    "TestARecordedPathCountsAsDeclared",
+    "TestARecordedPathCountsAsDeclared/legacy-folder",
+    "TestARecordedPathCountsAsDeclared/archive-record",
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview",
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/legacy-folder",
+    "TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview/archive-record",
+    "TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree",
+    "TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context",
+    "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path"
+  ]
+}

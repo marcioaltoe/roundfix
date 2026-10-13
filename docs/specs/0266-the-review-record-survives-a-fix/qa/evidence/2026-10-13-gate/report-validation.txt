@@ -1,0 +1,5 @@
+$ go run -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf266-report-koon13vs/overlay.json ./cmd/verify-select
+{"Verdict":"pass","Hollow":false,"AuditingBinary":"0.76.0 (8eb2e0a2, built 2026-10-13 18:42:49 -0300)","AuditorStaleness":"current: commit ancestry: build commit does not predate the delivery base","UserFlowBinary":"roundfix 0.76.0 (81c889f9-dirty, built 2026-10-13 19:27:09 -0300)","RowsBlockedEnvironment":1,"RowsBlockedPrePullRequest":1,"RowsBlockedNetworkDenied":0,"RowsSkipped":0,"RowsBlockedFinding":0,"RowsBlockedDeclared":0,"RowsBlockedPrecondition":0,"Precondition":{"CheckName":"","Reason":""}}
+EXIT: 0
+Structure: 8 unique rows; exact coverage sources; nonempty typed input blocks; original auditor fields preserved; 7 pass and 1 pre-PR block; no pending/skipped/finding/declared rows.
+Every local evidence link resolves; runnable evidence uses non-compiled extensions; no evidence is ignored by Git; only one QA report exists; no staged or tracked delta.

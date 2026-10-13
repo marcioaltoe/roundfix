@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0266-the-review-record-survives-a-fix
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
