@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0262-a-run-worktree-under-a-symlinked-root-is-cleaned
 reason: null
 ---
 
