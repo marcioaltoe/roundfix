@@ -1,0 +1,120 @@
+{"Time":"2026-10-13T10:39:04.541257-03:00","Action":"start","Package":"roundfix/skills"}
+{"Time":"2026-10-13T10:39:04.822819-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync"}
+{"Time":"2026-10-13T10:39:04.82305-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync","Output":"=== RUN   TestAuthorialSkillSync\n"}
+{"Time":"2026-10-13T10:39:04.823083-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync","Output":"=== PAUSE TestAuthorialSkillSync\n"}
+{"Time":"2026-10-13T10:39:04.823093-03:00","Action":"pause","Package":"roundfix/skills","Test":"TestAuthorialSkillSync"}
+{"Time":"2026-10-13T10:39:04.823104-03:00","Action":"run","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules"}
+{"Time":"2026-10-13T10:39:04.823112-03:00","Action":"output","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules","Output":"=== RUN   TestWriteTasksSkillStatesTheDeclaredPathRules\n"}
+{"Time":"2026-10-13T10:39:04.823128-03:00","Action":"output","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules","Output":"=== PAUSE TestWriteTasksSkillStatesTheDeclaredPathRules\n"}
+{"Time":"2026-10-13T10:39:04.823138-03:00","Action":"pause","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules"}
+{"Time":"2026-10-13T10:39:04.823145-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules"}
+{"Time":"2026-10-13T10:39:04.823154-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules","Output":"=== RUN   TestAuthoringSkillsStateTheProofRules\n"}
+{"Time":"2026-10-13T10:39:04.823167-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules","Output":"=== PAUSE TestAuthoringSkillsStateTheProofRules\n"}
+{"Time":"2026-10-13T10:39:04.823175-03:00","Action":"pause","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules"}
+{"Time":"2026-10-13T10:39:04.823184-03:00","Action":"run","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded"}
+{"Time":"2026-10-13T10:39:04.823192-03:00","Action":"output","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded","Output":"=== RUN   TestEveryOwnedSkillVersionIsRecorded\n"}
+{"Time":"2026-10-13T10:39:04.825998-03:00","Action":"output","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded","Output":"--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826033-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestEveryOwnedSkillVersionIsRecorded","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826048-03:00","Action":"run","Package":"roundfix/skills","Test":"TestSettlementGuidanceIsOneTable"}
+{"Time":"2026-10-13T10:39:04.826053-03:00","Action":"output","Package":"roundfix/skills","Test":"TestSettlementGuidanceIsOneTable","Output":"=== RUN   TestSettlementGuidanceIsOneTable\n"}
+{"Time":"2026-10-13T10:39:04.82606-03:00","Action":"output","Package":"roundfix/skills","Test":"TestSettlementGuidanceIsOneTable","Output":"--- PASS: TestSettlementGuidanceIsOneTable (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826064-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestSettlementGuidanceIsOneTable","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826068-03:00","Action":"cont","Package":"roundfix/skills","Test":"TestAuthorialSkillSync"}
+{"Time":"2026-10-13T10:39:04.826071-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync","Output":"=== CONT  TestAuthorialSkillSync\n"}
+{"Time":"2026-10-13T10:39:04.826081-03:00","Action":"cont","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules"}
+{"Time":"2026-10-13T10:39:04.826084-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules","Output":"=== CONT  TestAuthoringSkillsStateTheProofRules\n"}
+{"Time":"2026-10-13T10:39:04.826088-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/roundfix"}
+{"Time":"2026-10-13T10:39:04.826143-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/roundfix","Output":"=== RUN   TestAuthorialSkillSync/roundfix\n"}
+{"Time":"2026-10-13T10:39:04.826192-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_skill"}
+{"Time":"2026-10-13T10:39:04.826205-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_skill","Output":"=== RUN   TestAuthoringSkillsStateTheProofRules/write-techspec_skill\n"}
+{"Time":"2026-10-13T10:39:04.826226-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_skill","Output":"--- PASS: TestAuthoringSkillsStateTheProofRules/write-techspec_skill (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826237-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_skill","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826246-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_template"}
+{"Time":"2026-10-13T10:39:04.826254-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_template","Output":"=== RUN   TestAuthoringSkillsStateTheProofRules/write-techspec_template\n"}
+{"Time":"2026-10-13T10:39:04.826263-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_template","Output":"--- PASS: TestAuthoringSkillsStateTheProofRules/write-techspec_template (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826271-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-techspec_template","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826278-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_skill"}
+{"Time":"2026-10-13T10:39:04.826285-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_skill","Output":"=== RUN   TestAuthoringSkillsStateTheProofRules/write-tasks_skill\n"}
+{"Time":"2026-10-13T10:39:04.826294-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_skill","Output":"--- PASS: TestAuthoringSkillsStateTheProofRules/write-tasks_skill (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826309-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_skill","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826324-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_template"}
+{"Time":"2026-10-13T10:39:04.826333-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_template","Output":"=== RUN   TestAuthoringSkillsStateTheProofRules/write-tasks_template\n"}
+{"Time":"2026-10-13T10:39:04.826341-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_template","Output":"--- PASS: TestAuthoringSkillsStateTheProofRules/write-tasks_template (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826349-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules/write-tasks_template","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826369-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules","Output":"--- PASS: TestAuthoringSkillsStateTheProofRules (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.826378-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthoringSkillsStateTheProofRules","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.826385-03:00","Action":"cont","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules"}
+{"Time":"2026-10-13T10:39:04.826392-03:00","Action":"output","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules","Output":"=== CONT  TestWriteTasksSkillStatesTheDeclaredPathRules\n"}
+{"Time":"2026-10-13T10:39:04.826423-03:00","Action":"output","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules","Output":"--- PASS: TestWriteTasksSkillStatesTheDeclaredPathRules (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.830369-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestWriteTasksSkillStatesTheDeclaredPathRules","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.830399-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/roundfix","Output":"--- PASS: TestAuthorialSkillSync/roundfix (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.830406-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/roundfix","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.830411-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-idea"}
+{"Time":"2026-10-13T10:39:04.830415-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-idea","Output":"=== RUN   TestAuthorialSkillSync/write-idea\n"}
+{"Time":"2026-10-13T10:39:04.830943-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-idea","Output":"--- PASS: TestAuthorialSkillSync/write-idea (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.830954-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-idea","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.830958-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-prd"}
+{"Time":"2026-10-13T10:39:04.830961-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-prd","Output":"=== RUN   TestAuthorialSkillSync/write-prd\n"}
+{"Time":"2026-10-13T10:39:04.831515-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-prd","Output":"--- PASS: TestAuthorialSkillSync/write-prd (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.831566-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-prd","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.831583-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-techspec"}
+{"Time":"2026-10-13T10:39:04.831592-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-techspec","Output":"=== RUN   TestAuthorialSkillSync/write-techspec\n"}
+{"Time":"2026-10-13T10:39:04.833809-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-techspec","Output":"--- PASS: TestAuthorialSkillSync/write-techspec (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.833828-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-techspec","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.833833-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-tasks"}
+{"Time":"2026-10-13T10:39:04.833836-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-tasks","Output":"=== RUN   TestAuthorialSkillSync/write-tasks\n"}
+{"Time":"2026-10-13T10:39:04.83384-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-tasks","Output":"--- PASS: TestAuthorialSkillSync/write-tasks (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.833843-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/write-tasks","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.833846-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/setup-context-driven"}
+{"Time":"2026-10-13T10:39:04.833848-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/setup-context-driven","Output":"=== RUN   TestAuthorialSkillSync/setup-context-driven\n"}
+{"Time":"2026-10-13T10:39:04.836137-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/setup-context-driven","Output":"--- PASS: TestAuthorialSkillSync/setup-context-driven (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.836159-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/setup-context-driven","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.836172-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-task"}
+{"Time":"2026-10-13T10:39:04.836176-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-task","Output":"=== RUN   TestAuthorialSkillSync/implement-task\n"}
+{"Time":"2026-10-13T10:39:04.836578-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-task","Output":"--- PASS: TestAuthorialSkillSync/implement-task (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.836615-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-task","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.836631-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-spec"}
+{"Time":"2026-10-13T10:39:04.836639-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-spec","Output":"=== RUN   TestAuthorialSkillSync/implement-spec\n"}
+{"Time":"2026-10-13T10:39:04.837163-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-spec","Output":"--- PASS: TestAuthorialSkillSync/implement-spec (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.837178-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/implement-spec","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.837184-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/brainstorming"}
+{"Time":"2026-10-13T10:39:04.837199-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/brainstorming","Output":"=== RUN   TestAuthorialSkillSync/brainstorming\n"}
+{"Time":"2026-10-13T10:39:04.838542-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/brainstorming","Output":"--- PASS: TestAuthorialSkillSync/brainstorming (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.83856-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/brainstorming","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.838572-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/business-analyst"}
+{"Time":"2026-10-13T10:39:04.838576-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/business-analyst","Output":"=== RUN   TestAuthorialSkillSync/business-analyst\n"}
+{"Time":"2026-10-13T10:39:04.83858-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/business-analyst","Output":"--- PASS: TestAuthorialSkillSync/business-analyst (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.83859-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/business-analyst","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.838593-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/archive-spec"}
+{"Time":"2026-10-13T10:39:04.838597-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/archive-spec","Output":"=== RUN   TestAuthorialSkillSync/archive-spec\n"}
+{"Time":"2026-10-13T10:39:04.838963-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/archive-spec","Output":"--- PASS: TestAuthorialSkillSync/archive-spec (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.838973-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/archive-spec","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.838977-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/qa-gate"}
+{"Time":"2026-10-13T10:39:04.838981-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/qa-gate","Output":"=== RUN   TestAuthorialSkillSync/qa-gate\n"}
+{"Time":"2026-10-13T10:39:04.839582-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/qa-gate","Output":"--- PASS: TestAuthorialSkillSync/qa-gate (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.839599-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/qa-gate","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.839612-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/evidence-gate"}
+{"Time":"2026-10-13T10:39:04.839615-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/evidence-gate","Output":"=== RUN   TestAuthorialSkillSync/evidence-gate\n"}
+{"Time":"2026-10-13T10:39:04.840698-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/evidence-gate","Output":"--- PASS: TestAuthorialSkillSync/evidence-gate (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.840709-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/evidence-gate","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.840713-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go-cli-typescript-bun.json"}
+{"Time":"2026-10-13T10:39:04.840716-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go-cli-typescript-bun.json","Output":"=== RUN   TestAuthorialSkillSync/go-cli-typescript-bun.json\n"}
+{"Time":"2026-10-13T10:39:04.84072-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go-cli-typescript-bun.json","Output":"--- PASS: TestAuthorialSkillSync/go-cli-typescript-bun.json (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.840724-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go-cli-typescript-bun.json","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.840727-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go.json"}
+{"Time":"2026-10-13T10:39:04.840729-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go.json","Output":"=== RUN   TestAuthorialSkillSync/go.json\n"}
+{"Time":"2026-10-13T10:39:04.841116-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go.json","Output":"--- PASS: TestAuthorialSkillSync/go.json (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.841125-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/go.json","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.841129-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/rust.json"}
+{"Time":"2026-10-13T10:39:04.841132-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/rust.json","Output":"=== RUN   TestAuthorialSkillSync/rust.json\n"}
+{"Time":"2026-10-13T10:39:04.841295-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/rust.json","Output":"--- PASS: TestAuthorialSkillSync/rust.json (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.841308-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/rust.json","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.841311-03:00","Action":"run","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/typescript.json"}
+{"Time":"2026-10-13T10:39:04.84132-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/typescript.json","Output":"=== RUN   TestAuthorialSkillSync/typescript.json\n"}
+{"Time":"2026-10-13T10:39:04.8418-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/typescript.json","Output":"--- PASS: TestAuthorialSkillSync/typescript.json (0.00s)\n"}
+{"Time":"2026-10-13T10:39:04.841815-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync/typescript.json","Elapsed":0}
+{"Time":"2026-10-13T10:39:04.853527-03:00","Action":"output","Package":"roundfix/skills","Test":"TestAuthorialSkillSync","Output":"--- PASS: TestAuthorialSkillSync (0.03s)\n"}
+{"Time":"2026-10-13T10:39:04.853588-03:00","Action":"pass","Package":"roundfix/skills","Test":"TestAuthorialSkillSync","Elapsed":0.03}
+{"Time":"2026-10-13T10:39:04.853615-03:00","Action":"output","Package":"roundfix/skills","Output":"PASS\n"}
+{"Time":"2026-10-13T10:39:04.853761-03:00","Action":"output","Package":"roundfix/skills","Output":"ok  \troundfix/skills\t0.310s\n"}
+{"Time":"2026-10-13T10:39:04.853808-03:00","Action":"pass","Package":"roundfix/skills","Elapsed":0.313}

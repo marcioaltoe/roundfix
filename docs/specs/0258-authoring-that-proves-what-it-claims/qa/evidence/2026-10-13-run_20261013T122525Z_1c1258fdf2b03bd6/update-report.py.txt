@@ -1,0 +1,16 @@
+import re
+from pathlib import Path
+E=Path(__file__).resolve().parent
+REPORT=E.parents[1]/'qa-report-2026-10-13.md'
+def update(rid,status,observation):
+    text=REPORT.read_text()
+    text=re.sub(r'(?m)^\| '+rid+r' \| [^|]* \|',f'| {rid} | {status} |',text)
+    start=text.index('### '+rid+'\n')
+    end=text.find('\n### ',start+1)
+    if end<0:end=text.index('\n## Findings',start)
+    block=text[start:end]
+    marker=block.index('```\n\n',block.index('```yaml'))+len('```\n\n')
+    text=text[:start]+block[:marker]+observation+'\n'+text[end:]
+    REPORT.write_text(text)
+def link(name):
+    return f'[{name}](evidence/{E.name}/{name})'

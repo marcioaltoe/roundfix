@@ -1,0 +1,16 @@
+{"Time":"2026-10-13T10:39:24.538955-03:00","Action":"start","Package":"roundfix/internal/docscontract"}
+{"Time":"2026-10-13T10:39:24.885871-03:00","Action":"run","Package":"roundfix/internal/docscontract","Test":"TestCheckCorpusGolden"}
+{"Time":"2026-10-13T10:39:24.886011-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestCheckCorpusGolden","Output":"=== RUN   TestCheckCorpusGolden\n"}
+{"Time":"2026-10-13T10:39:25.38074-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestCheckCorpusGolden","Output":"--- PASS: TestCheckCorpusGolden (0.49s)\n"}
+{"Time":"2026-10-13T10:39:25.380812-03:00","Action":"pass","Package":"roundfix/internal/docscontract","Test":"TestCheckCorpusGolden","Elapsed":0.49}
+{"Time":"2026-10-13T10:39:25.380839-03:00","Action":"run","Package":"roundfix/internal/docscontract","Test":"TestCheckActiveCorpusHasNoErrors"}
+{"Time":"2026-10-13T10:39:25.380851-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestCheckActiveCorpusHasNoErrors","Output":"=== RUN   TestCheckActiveCorpusHasNoErrors\n"}
+{"Time":"2026-10-13T10:39:25.723178-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestCheckActiveCorpusHasNoErrors","Output":"--- PASS: TestCheckActiveCorpusHasNoErrors (0.34s)\n"}
+{"Time":"2026-10-13T10:39:25.723251-03:00","Action":"pass","Package":"roundfix/internal/docscontract","Test":"TestCheckActiveCorpusHasNoErrors","Elapsed":0.34}
+{"Time":"2026-10-13T10:39:25.72327-03:00","Action":"run","Package":"roundfix/internal/docscontract","Test":"TestTheSkillCoverageMapIsCurrent"}
+{"Time":"2026-10-13T10:39:25.723279-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestTheSkillCoverageMapIsCurrent","Output":"=== RUN   TestTheSkillCoverageMapIsCurrent\n"}
+{"Time":"2026-10-13T10:39:25.780324-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestTheSkillCoverageMapIsCurrent","Output":"--- PASS: TestTheSkillCoverageMapIsCurrent (0.06s)\n"}
+{"Time":"2026-10-13T10:39:25.780383-03:00","Action":"pass","Package":"roundfix/internal/docscontract","Test":"TestTheSkillCoverageMapIsCurrent","Elapsed":0.06}
+{"Time":"2026-10-13T10:39:25.780415-03:00","Action":"output","Package":"roundfix/internal/docscontract","Output":"PASS\n"}
+{"Time":"2026-10-13T10:39:25.781441-03:00","Action":"output","Package":"roundfix/internal/docscontract","Output":"ok  \troundfix/internal/docscontract\t1.242s\n"}
+{"Time":"2026-10-13T10:39:25.7815-03:00","Action":"pass","Package":"roundfix/internal/docscontract","Elapsed":1.2429999999999999}

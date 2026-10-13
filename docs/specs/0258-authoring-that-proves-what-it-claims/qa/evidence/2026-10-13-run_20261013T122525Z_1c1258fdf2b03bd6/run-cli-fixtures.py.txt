@@ -1,0 +1,81 @@
+import os, json, subprocess, tempfile, re
+from pathlib import Path
+E = Path(__file__).resolve().parent
+R = Path.cwd()
+scratch = Path(tempfile.mkdtemp(prefix='0258-qa-cli-'))
+disposable_home = scratch/'home'
+disposable_home.mkdir()
+env = dict(os.environ, HOME=str(disposable_home), GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null')
+base = '''# Structural proof fixture
+
+## Project Constraints
+
+- Identifier strategy: not applicable. No identifier changes. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable. No transport changes. Source: `docs/agents/agent-instructions.md`.
+- Active ADR obligations: not applicable. No ADR is cited. Source: `docs/agents/domain.md`.
+- Tooling authority: not applicable. No tooling changes. Source: `docs/agents/agent-instructions.md`.
+
+'''
+absence = '## Absence Evidence\n\nNone. No component is new.\n\n'
+coverage = '## Coverage Map\n\nDeviations from the PRD: None.\n\n'
+qa_command = re.search(r'\n- `(.*)`\n', (R/'docs/specs/0258-authoring-that-proves-what-it-claims/task_05.md').read_text().split('## Verification')[1]).group(1).replace('0258-authoring-that-proves-what-it-claims', 'proof')
+results = []
+def write(root, rel, content):
+    p = root/rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(content)
+def fixture(name, tech, adr=False, tasks=None):
+    root = scratch/name
+    root.mkdir()
+    subprocess.run(['git','init','-q',str(root)],env=env,check=True)
+    (root/'bin').mkdir()
+    (root/'bin/roundfix').symlink_to(R/'bin/roundfix')
+    constraints = base.replace('not applicable. No ADR is cited.', 'applicable. ADR-0001 governs this fixture.') if adr else base
+    write(root,'docs/agents/domain.md','# Fixture domain guide\n')
+    write(root,'docs/agents/agent-instructions.md','# Fixture agent guide\n')
+    write(root,'docs/adr/0001-fixture.md','# Fixture decision\n\nA fixture decision about structurally declared contracts.\n')
+    write(root,'docs/specs/proof/_prd.md','---\nstatus: active\n---\n\n'+constraints+'## Success Metrics\n\nNone. No outcome is measured.\n')
+    write(root,'docs/specs/proof/_techspec.md',constraints+'## API Contracts\n\nNone. No public interface changes.\n\n'+tech)
+    if tasks:
+        write(root,'internal/cli/placeholder.txt','Suite path only; never executed.\n')
+        manifest = '---\nschema: spec-tasks/v1\nspec: proof\nqa: task_03\ngraph:\n  nodes:\n'
+        for tid,status,kind,needs,section,cmd in tasks:
+            manifest += f'    - id: {tid}\n      file: {tid}.md\n      needs: [{", ".join(needs)}]\n'
+            command = qa_command if kind == 'qa' else cmd
+            write(root,f'docs/specs/proof/{tid}.md',f'---\ntask: {tid}\nspec: proof\nstatus: {status}\ntype: {kind}\ncomplexity: low\n---\n\n# Task fixture\n\n{section}\n## Verification\n\n- `{command}`\n')
+        write(root,'docs/specs/proof/_tasks.md',manifest+'---\n\n# Task Graph\n')
+    return root
+codes = {3:'SC-ABSENCE-UNPROVEN',4:'SC-ADR-ALTERNATIVES-UNRELATED',5:'SC-COVERAGE-UNREAD',6:'SC-CONSUMERS-UNPROVEN'}
+def observe(row,name,root,bad,stage='techspec'):
+    observations=[]
+    for strict in [False,True]:
+        for fmt in ['text','json']:
+            cmd=['./bin/roundfix','spec','check','proof','--stage',stage,'--format',fmt]+(['--strict'] if strict else [])
+            p=subprocess.run(cmd,cwd=root,env=env,text=True,capture_output=True)
+            observations.append({'command':cmd,'cwd':str(root),'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr})
+    log=E/f'cli-{name}.json'
+    log.write_text(json.dumps({'row':row,'name':name,'target_code':codes[row],'expected_gap':bad,'observations':observations},indent=2))
+    results.append({'row':row,'name':name,'code':codes[row],'bad':bad,'evidence':log.name,'exits':[o['exit'] for o in observations]})
+    (E/'cli-results.json').write_text(json.dumps(results,indent=2))
+    print(json.dumps(results[-1]),flush=True)
+none='## Consumers\n\nNone. No Shared Contract changes.\n'
+consumer='## Consumers\n\n- report — consumers: `./internal/cli`\n'
+def tasks(section,cmd='test -f task-output.txt',status='pending',checkpoint=False):
+    graph=[('task_01',status,'backend',[],section,cmd),('task_02','pending','backend',['task_01'],none,'test -f checkpoint-output.txt'),('task_03','pending','qa',['task_02'],'',qa_command)]
+    if checkpoint:
+        graph[2]=('task_03','pending','qa',['task_02','task_04'],'',qa_command)
+        graph.append(('task_04','pending','backend',[],none,'go test ./internal/cli && test -f other-output.txt'))
+    return graph
+for name,tech,bad in [('absence-missing',coverage,True),('absence-present',coverage+absence,False),('absence-no-result',coverage+'## Absence Evidence\n\n1. component — command: `touch authored-marker.txt`;\n',True),('absence-command-present',coverage+'## Absence Evidence\n\n1. component — command: `touch authored-marker.txt`; result: no match.\n',False),('absence-fenced',coverage+'```markdown\n'+absence+'```\n',True)]:
+    root=fixture(name,tech)
+    observe(3,name,root,bad)
+    assert not (root/'authored-marker.txt').exists()
+for name,section,bad in [('adr-missing','',True),('adr-present','## ADR Alternatives\n\n- ADR-0001: No rejected alternative is taken.\n',False),('adr-fenced','```markdown\n## ADR Alternatives\n\n- ADR-0001: No rejected alternative is taken.\n```\n',True)]:
+    observe(4,name,fixture(name,coverage+absence+section,adr=True),bad)
+for name,section,bad in [('coverage-missing','## Coverage Map\n',True),('coverage-unnamed','## Coverage Map\n\nDeviations from the PRD:\n\n- Aggregate records on purpose.\n',True),('coverage-named','## Coverage Map\n\nDeviations from the PRD:\n\n- User Story 1 is delivered as aggregated records.\n',False),('coverage-none',coverage,False),('coverage-fenced','## Coverage Map\n\n```markdown\nDeviations from the PRD: None.\n```\n',True)]:
+    observe(5,name,fixture(name,section+absence),bad)
+for name,ts,bad in [('consumer-missing',tasks(''),True),('consumer-none',tasks(none),False),('consumer-unrun-suite',tasks(consumer),True),('consumer-own-suite',tasks(consumer,'go test ./internal/cli && test -f task-output.txt'),False),('consumer-checkpoint-outside',tasks(consumer+'\n- checkpoint: task_04\n',checkpoint=True),True),('consumer-checkpoint-valid',tasks(consumer+'\n- checkpoint: task_02\n'),False),('consumer-completed',tasks('',status='completed'),False),('consumer-fenced',tasks('```markdown\n'+none+'```\n'),True)]:
+    if name == 'consumer-checkpoint-valid':
+        ts[1]=('task_02','pending','backend',['task_01'],none,'go test ./internal/cli && test -f checkpoint-output.txt')
+    observe(6,name,fixture(name,coverage+absence,tasks=ts),bad,stage='tasks')
+(E/'scratch-path.txt').write_text(str(scratch)+'\n')

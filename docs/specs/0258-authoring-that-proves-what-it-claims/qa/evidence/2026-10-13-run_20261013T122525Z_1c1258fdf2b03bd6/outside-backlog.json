@@ -1,0 +1,36 @@
+{
+  "source": "docs/specs/0258-authoring-that-proves-what-it-claims/references/2026-10-12-spec-authoring-does-not-prove-what-it-claims.md",
+  "origin": "Operator measurements in fluxus; adopted existing Backlog Entry, not a prototype written by this Spec. Original triaged Secondbrain paths are recorded in its Evidence section.",
+  "source_at_base": true,
+  "comparisons": [
+    {
+      "gap": 1,
+      "original_observation": "Fluxus 0021 moved endpoint/trigger routes and left consuming suites red after green Task Verification.",
+      "answer": "Consumers of a shared contract requires literal consuming suites in Task Verification or an in-path Integration Checkpoint.",
+      "code": "SC-CONSUMERS-UNPROVEN",
+      "fresh_evidence": "cli-consumer-unrun-suite.json and cli-consumer-checkpoint-outside.json"
+    },
+    {
+      "gap": 2,
+      "original_observation": "Fluxus 0028 ordered a quarantine already present with eight tests; implementation lowered its threshold and removed tests.",
+      "answer": "Absence evidence requires a recorded search command and result for each new component.",
+      "code": "SC-ABSENCE-UNPROVEN",
+      "fresh_evidence": "cli-absence-missing.json and cli-absence-no-result.json"
+    },
+    {
+      "gap": 3,
+      "original_observation": "Fluxus 0020 adopted the exact timeout alternative a prior ADR rejected.",
+      "answer": "Rejected alternatives requires a relation for every listed ADR.",
+      "code": "SC-ADR-ALTERNATIVES-UNRELATED",
+      "fresh_evidence": "cli-adr-missing.json and cli-adr-present.json"
+    },
+    {
+      "gap": 4,
+      "original_observation": "A mapped per-request PRD promise was deliberately aggregated by its TechSpec.",
+      "answer": "Coverage Cross-Read requires the deviations line and named PRD units.",
+      "code": "SC-COVERAGE-UNREAD",
+      "fresh_evidence": "cli-coverage-unnamed.json and cli-coverage-named.json"
+    }
+  ],
+  "limit": "The rules expose absent structure; this gate does not prove the four classes disappear from future Specs or re-read the other repository."
+}

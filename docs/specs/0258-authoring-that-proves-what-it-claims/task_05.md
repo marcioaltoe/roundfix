@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0258-authoring-that-proves-what-it-claims
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,33 @@
+{
+  "checks": [
+    {
+      "code": "SC-ABSENCE-UNPROVEN",
+      "fix": "Add or repair ## Absence Evidence with None. and a reason, or numbered items with command: in backticks and result: text, following the write-techspec rule \"Absence evidence\".",
+      "valid_fix": true
+    },
+    {
+      "code": "SC-ADR-ALTERNATIVES-UNRELATED",
+      "fix": "Add - ADR-0001: <relation> under ## ADR Alternatives, following the write-techspec rule \"Rejected alternatives\".",
+      "valid_fix": true
+    },
+    {
+      "code": "SC-COVERAGE-UNREAD",
+      "fix": "Add or repair the Deviations from the PRD: line in ## Coverage Map with None. or bullets naming PRD units, following the write-techspec rule \"Coverage cross-read\".",
+      "valid_fix": true
+    },
+    {
+      "code": "SC-CONSUMERS-UNPROVEN",
+      "fix": "Add or repair ## Consumers with None. and a reason, or literal suites in the Task's Verification or a valid checkpoint's Verification, following the write-tasks rule \"Consumers of a shared contract\".",
+      "valid_fix": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "all_codes_and_exact_adopter_paragraph": true
+    },
+    {
+      "path": "docs/user-guide/commands/spec.md",
+      "all_codes_and_exact_adopter_paragraph": true
+    }
+  ],
+  "failures": []
+}

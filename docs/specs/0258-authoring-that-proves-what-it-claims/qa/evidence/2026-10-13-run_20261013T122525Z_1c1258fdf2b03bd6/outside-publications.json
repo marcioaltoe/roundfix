@@ -1,0 +1,50 @@
+[
+  {
+    "row": "12",
+    "source": "Ian Robinson, Consumer-Driven Contracts: A Service Evolution Pattern (2006), martinfowler.com",
+    "prd_claim_to_verify": "Consumer feedback on breaking provider changes.",
+    "source_reached": false,
+    "network_attempted": false,
+    "cause": "The operative Spec authorization forbids every QA network connection. No externally stored copy exists in the local Spec bundle.",
+    "authorization": "docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md",
+    "restriction": "No test, Verification command or QA row opens a network connection, reads or writes the real `~/.roundfix`, or reads another repository.",
+    "support_revalidated": false,
+    "unblocking": "Maintainer authorizes read-only published-source lookup for this QA, or supplies original publication passages as independently sourced local evidence. This is not a sandbox network-denial observation."
+  },
+  {
+    "row": "13",
+    "source": "Elmar Juergens, Why and How to Control Cloning in Software Artifacts (TU M\u00fcnchen, 2011)",
+    "prd_claim_to_verify": "Faults during changes to unnoticed clones; direct applicability to absence evidence remains unvalidated.",
+    "source_reached": false,
+    "network_attempted": false,
+    "cause": "The operative Spec authorization forbids every QA network connection. No externally stored copy exists in the local Spec bundle.",
+    "authorization": "docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md",
+    "restriction": "No test, Verification command or QA row opens a network connection, reads or writes the real `~/.roundfix`, or reads another repository.",
+    "support_revalidated": false,
+    "unblocking": "Maintainer authorizes read-only published-source lookup for this QA, or supplies original publication passages as independently sourced local evidence. This is not a sandbox network-denial observation."
+  },
+  {
+    "row": "14",
+    "source": "Olaf Zimmermann, The Markdown ADR (MADR) Template Explained and Distilled (2022)",
+    "prd_claim_to_verify": "Considered Options enumerating investigated alternatives.",
+    "source_reached": false,
+    "network_attempted": false,
+    "cause": "The operative Spec authorization forbids every QA network connection. No externally stored copy exists in the local Spec bundle.",
+    "authorization": "docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md",
+    "restriction": "No test, Verification command or QA row opens a network connection, reads or writes the real `~/.roundfix`, or reads another repository.",
+    "support_revalidated": false,
+    "unblocking": "Maintainer authorizes read-only published-source lookup for this QA, or supplies original publication passages as independently sourced local evidence. This is not a sandbox network-denial observation."
+  },
+  {
+    "row": "15",
+    "source": "Gotel and Finkelstein, An Analysis of the Requirements Traceability Problem (ICRE 1994)",
+    "prd_claim_to_verify": "Forward/backward requirement traceability.",
+    "source_reached": false,
+    "network_attempted": false,
+    "cause": "The operative Spec authorization forbids every QA network connection. No externally stored copy exists in the local Spec bundle.",
+    "authorization": "docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md",
+    "restriction": "No test, Verification command or QA row opens a network connection, reads or writes the real `~/.roundfix`, or reads another repository.",
+    "support_revalidated": false,
+    "unblocking": "Maintainer authorizes read-only published-source lookup for this QA, or supplies original publication passages as independently sourced local evidence. This is not a sandbox network-denial observation."
+  }
+]

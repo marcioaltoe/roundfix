@@ -1,0 +1,44 @@
+import subprocess,re,json,hashlib
+from pathlib import Path
+R=Path.cwd();S=Path('docs/specs/0258-authoring-that-proves-what-it-claims');base='b2ff2ffc1873741fd8d740bb23a07e64d85ef341';head='61dd75d054e73d0c3675c04db4aa2035214959aa'
+def git(*args):
+ p=subprocess.run(['git',*args],capture_output=True,text=True)
+ if p.returncode:raise RuntimeError((args,p.stderr))
+ return p.stdout
+source=Path('internal/speccheck/governed.go').read_text()
+patterns=re.findall(r'regexp.MustCompile\(\s*`([^`]*)`',source)
+exact=set(re.findall(r'"([^"]+)"',source.split('paths: exactGovernedPaths(')[1].split('),')[0]))
+def governed(path):return path in exact or any(re.search(p,path) for p in patterns)
+auth=Path(S/'_authorization.md').read_text();bounded=set(re.findall(r'^  - (.+)$',auth.split('paths:')[1].split('operations:')[0],re.M));fail=[];rows=[]
+commits=git('rev-list','--reverse',base+'..'+head).splitlines()
+for commit in commits:
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines()
+ task_paths=[p for p in paths if p.startswith(str(S)+'/task_')]
+ assert len(task_paths)==1,(commit,task_paths)
+ task_path=task_paths[0];task=git('show',commit+':'+task_path)
+ declared=set(re.findall(r'^- (?:interface|creates|instruction): `([^`]+)`',task,re.M))|{task_path}
+ if '## Recorded paths' in task:declared|=set(re.findall(r'`([^`]+)`',task.split('## Recorded paths')[1].split('\n## ')[0]))
+ undeclared=[p for p in paths if p not in declared]
+ governed_paths=[p for p in paths if governed(p)]
+ unbounded=[p for p in governed_paths if p not in bounded]
+ for issue,values in [('undeclared',undeclared),('unbounded',unbounded)]:
+  if values:fail.append({'commit':commit,'issue':issue,'paths':values})
+ auth_at_commit=git('show',commit+':'+str(S/'_authorization.md'))
+ if auth_at_commit!=auth:fail.append({'commit':commit,'issue':'authorization changed'})
+ p=subprocess.run(['git','merge-base','--is-ancestor',base,commit]);assert p.returncode==0
+ rows.append({'task':Path(task_path).stem,'commit':commit,'command':'git diff-tree --no-commit-id --name-only -r '+commit,'paths':paths,'declared':sorted(declared),'governed_paths':governed_paths,'undeclared':undeclared,'unbounded':unbounded,'authorization_revision':base,'authorization_folded':str(S/'_authorization.md') in paths})
+allpaths=git('diff','--name-only',base,head).splitlines()
+protected=[p for p in allpaths if p in ['go.mod','go.sum','.roundfixrc.yml','Makefile'] or p.startswith(('.github/workflows/','internal/baseline/assets/modules/','docs/agents/','docs/history/')) or (p.endswith('.go') and not p.endswith('_test.go') and not p.startswith('internal/speccheck/')) or (p.startswith('docs/specs/') and not p.startswith(str(S)+'/'))]
+if protected:fail.append({'issue':'protected paths changed','paths':protected})
+def settlement(text):
+ m=re.search(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',text,re.M|re.S);return m.group(0) if m else None
+settlements=[]
+for tree in ['.agents/skills','skills']:
+ for p in sorted(Path(tree).glob('*/SKILL.md')):
+  current=settlement(p.read_text());old=settlement(git('show',base+':'+str(p)))
+  if current or old:
+   same=current==old;settlements.append({'path':str(p),'byte_identical':same,'sha256':hashlib.sha256((current or '').encode()).hexdigest()})
+   if not same:fail.append({'issue':'settlement changed','path':str(p)})
+raw_delta=git('diff','--name-only').splitlines();status=git('status','--porcelain')
+result={'base':base,'head':head,'commits':rows,'changed_paths':allpaths,'protected_changes':protected,'settlement_sections':settlements,'tracked_delta':raw_delta,'status':status,'failures':fail,'chronology':'Authorization committed at base before every Task. No prerequisite or consequent fix declaration; no additional fix commit in range. Seeded mechanical consequent-fix skip retained.'}
+Path('/tmp/0258-scope.json').write_text(json.dumps(result,indent=2));print(json.dumps({'task_commits':len(rows),'changed_paths':len(allpaths),'governed_paths':sorted(set(p for row in rows for p in row['governed_paths'])),'settlements':len(settlements),'failures':fail},indent=2))

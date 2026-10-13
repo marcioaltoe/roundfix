@@ -1,0 +1,169 @@
+{"Time":"2026-10-13T10:44:29.893684-03:00","Action":"start","Package":"roundfix/internal/cli"}
+{"Time":"2026-10-13T10:44:30.374404-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant"}
+{"Time":"2026-10-13T10:44:30.374462-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant","Output":"=== RUN   TestDeliverPlanApprovesAnExplicitEmptyPathsGrant\n"}
+{"Time":"2026-10-13T10:44:30.37448-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant","Output":"=== PAUSE TestDeliverPlanApprovesAnExplicitEmptyPathsGrant\n"}
+{"Time":"2026-10-13T10:44:30.374493-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant"}
+{"Time":"2026-10-13T10:44:30.374497-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant"}
+{"Time":"2026-10-13T10:44:30.374501-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant","Output":"=== RUN   TestDeliverPlanRefusesANullPathsGrant\n"}
+{"Time":"2026-10-13T10:44:30.374509-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant","Output":"=== PAUSE TestDeliverPlanRefusesANullPathsGrant\n"}
+{"Time":"2026-10-13T10:44:30.374518-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant"}
+{"Time":"2026-10-13T10:44:30.374522-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec"}
+{"Time":"2026-10-13T10:44:30.374525-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec","Output":"=== RUN   TestDeliverPlanReportsAnApprovedAndABlockedSpec\n"}
+{"Time":"2026-10-13T10:44:30.374528-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec","Output":"=== PAUSE TestDeliverPlanReportsAnApprovedAndABlockedSpec\n"}
+{"Time":"2026-10-13T10:44:30.374531-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec"}
+{"Time":"2026-10-13T10:44:30.374534-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved"}
+{"Time":"2026-10-13T10:44:30.374536-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved","Output":"=== RUN   TestDeliverPlanExitsZeroWhenEverySpecIsApproved\n"}
+{"Time":"2026-10-13T10:44:30.37454-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved","Output":"=== PAUSE TestDeliverPlanExitsZeroWhenEverySpecIsApproved\n"}
+{"Time":"2026-10-13T10:44:30.374542-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved"}
+{"Time":"2026-10-13T10:44:30.374545-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts"}
+{"Time":"2026-10-13T10:44:30.374548-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts","Output":"=== RUN   TestDeliverPlanJSONCarriesTheSameFacts\n"}
+{"Time":"2026-10-13T10:44:30.37455-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts","Output":"=== PAUSE TestDeliverPlanJSONCarriesTheSameFacts\n"}
+{"Time":"2026-10-13T10:44:30.374553-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts"}
+{"Time":"2026-10-13T10:44:30.374564-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises"}
+{"Time":"2026-10-13T10:44:30.374567-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises","Output":"=== RUN   TestDeliverPlanNamesSharedProductionPremises\n"}
+{"Time":"2026-10-13T10:44:30.374588-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises","Output":"=== PAUSE TestDeliverPlanNamesSharedProductionPremises\n"}
+{"Time":"2026-10-13T10:44:30.374594-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises"}
+{"Time":"2026-10-13T10:44:30.374596-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides"}
+{"Time":"2026-10-13T10:44:30.374601-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides","Output":"=== RUN   TestDeliverPlanIgnoresSharedTestsAndGuides\n"}
+{"Time":"2026-10-13T10:44:30.374603-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides","Output":"=== PAUSE TestDeliverPlanIgnoresSharedTestsAndGuides\n"}
+{"Time":"2026-10-13T10:44:30.374608-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides"}
+{"Time":"2026-10-13T10:44:30.374611-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun"}
+{"Time":"2026-10-13T10:44:30.374613-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun","Output":"=== RUN   TestDeliverPlanListsIntentThatIsNotApprovedToRun\n"}
+{"Time":"2026-10-13T10:44:30.374615-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun","Output":"=== PAUSE TestDeliverPlanListsIntentThatIsNotApprovedToRun\n"}
+{"Time":"2026-10-13T10:44:30.374617-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun"}
+{"Time":"2026-10-13T10:44:30.374619-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing"}
+{"Time":"2026-10-13T10:44:30.374621-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing","Output":"=== RUN   TestDeliverPlanWritesNothing\n"}
+{"Time":"2026-10-13T10:44:30.374626-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing","Output":"=== PAUSE TestDeliverPlanWritesNothing\n"}
+{"Time":"2026-10-13T10:44:30.374628-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing"}
+{"Time":"2026-10-13T10:44:30.37463-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec"}
+{"Time":"2026-10-13T10:44:30.374632-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec","Output":"=== RUN   TestDeliverPlanDefaultsToEveryActiveSpec\n"}
+{"Time":"2026-10-13T10:44:30.374641-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec","Output":"=== PAUSE TestDeliverPlanDefaultsToEveryActiveSpec\n"}
+{"Time":"2026-10-13T10:44:30.374646-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec"}
+{"Time":"2026-10-13T10:44:30.374649-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug"}
+{"Time":"2026-10-13T10:44:30.374651-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug","Output":"=== RUN   TestDeliverPlanRefusesAnUnknownSlug\n"}
+{"Time":"2026-10-13T10:44:30.374653-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug","Output":"=== PAUSE TestDeliverPlanRefusesAnUnknownSlug\n"}
+{"Time":"2026-10-13T10:44:30.374655-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug"}
+{"Time":"2026-10-13T10:44:30.374657-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag"}
+{"Time":"2026-10-13T10:44:30.37466-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag","Output":"=== RUN   TestDeliverPlanRefusesAnUnknownFlag\n"}
+{"Time":"2026-10-13T10:44:30.374665-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag","Output":"=== PAUSE TestDeliverPlanRefusesAnUnknownFlag\n"}
+{"Time":"2026-10-13T10:44:30.374667-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag"}
+{"Time":"2026-10-13T10:44:30.374677-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText"}
+{"Time":"2026-10-13T10:44:30.37468-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText","Output":"=== RUN   TestRunSpecCheckCleanText\n"}
+{"Time":"2026-10-13T10:44:30.374682-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText","Output":"=== PAUSE TestRunSpecCheckCleanText\n"}
+{"Time":"2026-10-13T10:44:30.374684-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText"}
+{"Time":"2026-10-13T10:44:30.374686-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification"}
+{"Time":"2026-10-13T10:44:30.374688-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification","Output":"=== RUN   TestSpecCheckRunVerification\n"}
+{"Time":"2026-10-13T10:44:30.37469-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification","Output":"=== PAUSE TestSpecCheckRunVerification\n"}
+{"Time":"2026-10-13T10:44:30.374692-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification"}
+{"Time":"2026-10-13T10:44:30.374695-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary"}
+{"Time":"2026-10-13T10:44:30.3747-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary","Output":"=== RUN   TestSpecCheckClassifiesTheGateBoundary\n"}
+{"Time":"2026-10-13T10:44:30.374704-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary","Output":"=== PAUSE TestSpecCheckClassifiesTheGateBoundary\n"}
+{"Time":"2026-10-13T10:44:30.374707-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary"}
+{"Time":"2026-10-13T10:44:30.374709-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior"}
+{"Time":"2026-10-13T10:44:30.374711-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior","Output":"=== RUN   TestRunSpecAuditPreservesSpecCheckBehavior\n"}
+{"Time":"2026-10-13T10:44:30.374719-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior","Output":"=== PAUSE TestRunSpecAuditPreservesSpecCheckBehavior\n"}
+{"Time":"2026-10-13T10:44:30.374721-03:00","Action":"pause","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior"}
+{"Time":"2026-10-13T10:44:30.374724-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant"}
+{"Time":"2026-10-13T10:44:30.374726-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant","Output":"=== CONT  TestDeliverPlanApprovesAnExplicitEmptyPathsGrant\n"}
+{"Time":"2026-10-13T10:44:30.374728-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing"}
+{"Time":"2026-10-13T10:44:30.37473-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing","Output":"=== CONT  TestDeliverPlanWritesNothing\n"}
+{"Time":"2026-10-13T10:44:30.374733-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText"}
+{"Time":"2026-10-13T10:44:30.374735-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText","Output":"=== CONT  TestRunSpecCheckCleanText\n"}
+{"Time":"2026-10-13T10:44:30.374741-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec"}
+{"Time":"2026-10-13T10:44:30.374744-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec","Output":"=== CONT  TestDeliverPlanDefaultsToEveryActiveSpec\n"}
+{"Time":"2026-10-13T10:44:30.374746-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug"}
+{"Time":"2026-10-13T10:44:30.374749-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug","Output":"=== CONT  TestDeliverPlanRefusesAnUnknownSlug\n"}
+{"Time":"2026-10-13T10:44:30.374752-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification"}
+{"Time":"2026-10-13T10:44:30.374754-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification","Output":"=== CONT  TestSpecCheckRunVerification\n"}
+{"Time":"2026-10-13T10:44:30.374791-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary"}
+{"Time":"2026-10-13T10:44:30.374827-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary","Output":"=== CONT  TestSpecCheckClassifiesTheGateBoundary\n"}
+{"Time":"2026-10-13T10:44:30.374851-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error"}
+{"Time":"2026-10-13T10:44:30.374869-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error","Output":"=== RUN   TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error\n"}
+{"Time":"2026-10-13T10:44:30.374888-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior"}
+{"Time":"2026-10-13T10:44:30.374896-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior","Output":"=== CONT  TestRunSpecAuditPreservesSpecCheckBehavior\n"}
+{"Time":"2026-10-13T10:44:30.374903-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts"}
+{"Time":"2026-10-13T10:44:30.374909-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts","Output":"=== CONT  TestDeliverPlanJSONCarriesTheSameFacts\n"}
+{"Time":"2026-10-13T10:44:30.374923-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec"}
+{"Time":"2026-10-13T10:44:30.374935-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec","Output":"=== RUN   TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec\n"}
+{"Time":"2026-10-13T10:44:30.375744-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag"}
+{"Time":"2026-10-13T10:44:30.375763-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag","Output":"=== CONT  TestDeliverPlanRefusesAnUnknownFlag\n"}
+{"Time":"2026-10-13T10:44:30.52715-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error","Output":"--- PASS: TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error (0.15s)\n"}
+{"Time":"2026-10-13T10:44:30.527978-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error","Elapsed":0.15}
+{"Time":"2026-10-13T10:44:30.528004-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input"}
+{"Time":"2026-10-13T10:44:30.528013-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input","Output":"=== RUN   TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input\n"}
+{"Time":"2026-10-13T10:44:30.532304-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag","Output":"--- PASS: TestDeliverPlanRefusesAnUnknownFlag (0.16s)\n"}
+{"Time":"2026-10-13T10:44:30.53234-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownFlag","Elapsed":0.16}
+{"Time":"2026-10-13T10:44:30.532352-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun"}
+{"Time":"2026-10-13T10:44:30.532359-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun","Output":"=== CONT  TestDeliverPlanListsIntentThatIsNotApprovedToRun\n"}
+{"Time":"2026-10-13T10:44:30.538476-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug","Output":"--- PASS: TestDeliverPlanRefusesAnUnknownSlug (0.16s)\n"}
+{"Time":"2026-10-13T10:44:30.53852-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesAnUnknownSlug","Elapsed":0.16}
+{"Time":"2026-10-13T10:44:30.538535-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides"}
+{"Time":"2026-10-13T10:44:30.538544-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides","Output":"=== CONT  TestDeliverPlanIgnoresSharedTestsAndGuides\n"}
+{"Time":"2026-10-13T10:44:30.563465-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior","Output":"--- PASS: TestRunSpecAuditPreservesSpecCheckBehavior (0.19s)\n"}
+{"Time":"2026-10-13T10:44:30.563508-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunSpecAuditPreservesSpecCheckBehavior","Elapsed":0.19}
+{"Time":"2026-10-13T10:44:30.563524-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises"}
+{"Time":"2026-10-13T10:44:30.563532-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises","Output":"=== CONT  TestDeliverPlanNamesSharedProductionPremises\n"}
+{"Time":"2026-10-13T10:44:30.563563-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText","Output":"--- PASS: TestRunSpecCheckCleanText (0.19s)\n"}
+{"Time":"2026-10-13T10:44:30.563575-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestRunSpecCheckCleanText","Elapsed":0.19}
+{"Time":"2026-10-13T10:44:30.563584-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec"}
+{"Time":"2026-10-13T10:44:30.563591-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec","Output":"=== CONT  TestDeliverPlanReportsAnApprovedAndABlockedSpec\n"}
+{"Time":"2026-10-13T10:44:30.712793-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input","Output":"--- PASS: TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input (0.19s)\n"}
+{"Time":"2026-10-13T10:44:30.712812-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input","Elapsed":0.19}
+{"Time":"2026-10-13T10:44:30.713405-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes"}
+{"Time":"2026-10-13T10:44:30.71344-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes","Output":"=== RUN   TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes\n"}
+{"Time":"2026-10-13T10:44:30.713467-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes","Output":"--- PASS: TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes (0.00s)\n"}
+{"Time":"2026-10-13T10:44:30.713476-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes","Elapsed":0}
+{"Time":"2026-10-13T10:44:30.713486-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary","Output":"--- PASS: TestSpecCheckClassifiesTheGateBoundary (0.34s)\n"}
+{"Time":"2026-10-13T10:44:30.713494-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckClassifiesTheGateBoundary","Elapsed":0.34}
+{"Time":"2026-10-13T10:44:30.713502-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved"}
+{"Time":"2026-10-13T10:44:30.713509-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved","Output":"=== CONT  TestDeliverPlanExitsZeroWhenEverySpecIsApproved\n"}
+{"Time":"2026-10-13T10:44:30.740358-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant","Output":"--- PASS: TestDeliverPlanApprovesAnExplicitEmptyPathsGrant (0.36s)\n"}
+{"Time":"2026-10-13T10:44:30.740375-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanApprovesAnExplicitEmptyPathsGrant","Elapsed":0.36}
+{"Time":"2026-10-13T10:44:30.74038-03:00","Action":"cont","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant"}
+{"Time":"2026-10-13T10:44:30.740384-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant","Output":"=== CONT  TestDeliverPlanRefusesANullPathsGrant\n"}
+{"Time":"2026-10-13T10:44:30.766661-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing","Output":"--- PASS: TestDeliverPlanWritesNothing (0.39s)\n"}
+{"Time":"2026-10-13T10:44:30.791824-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanWritesNothing","Elapsed":0.39}
+{"Time":"2026-10-13T10:44:30.791871-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec","Output":"--- PASS: TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec (0.42s)\n"}
+{"Time":"2026-10-13T10:44:30.792006-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec","Elapsed":0.42}
+{"Time":"2026-10-13T10:44:30.792255-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD"}
+{"Time":"2026-10-13T10:44:30.792277-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD","Output":"=== RUN   TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD\n"}
+{"Time":"2026-10-13T10:44:30.888256-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec","Output":"--- PASS: TestDeliverPlanDefaultsToEveryActiveSpec (0.51s)\n"}
+{"Time":"2026-10-13T10:44:30.888282-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanDefaultsToEveryActiveSpec","Elapsed":0.51}
+{"Time":"2026-10-13T10:44:30.888289-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun","Output":"--- PASS: TestDeliverPlanListsIntentThatIsNotApprovedToRun (0.36s)\n"}
+{"Time":"2026-10-13T10:44:30.931241-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanListsIntentThatIsNotApprovedToRun","Elapsed":0.36}
+{"Time":"2026-10-13T10:44:30.931261-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts","Output":"--- PASS: TestDeliverPlanJSONCarriesTheSameFacts (0.56s)\n"}
+{"Time":"2026-10-13T10:44:30.989486-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanJSONCarriesTheSameFacts","Elapsed":0.56}
+{"Time":"2026-10-13T10:44:30.98953-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides","Output":"--- PASS: TestDeliverPlanIgnoresSharedTestsAndGuides (0.45s)\n"}
+{"Time":"2026-10-13T10:44:30.991204-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanIgnoresSharedTestsAndGuides","Elapsed":0.45}
+{"Time":"2026-10-13T10:44:30.991231-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant","Output":"--- PASS: TestDeliverPlanRefusesANullPathsGrant (0.25s)\n"}
+{"Time":"2026-10-13T10:44:31.001401-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanRefusesANullPathsGrant","Elapsed":0.25}
+{"Time":"2026-10-13T10:44:31.00142-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises","Output":"--- PASS: TestDeliverPlanNamesSharedProductionPremises (0.44s)\n"}
+{"Time":"2026-10-13T10:44:31.007658-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanNamesSharedProductionPremises","Elapsed":0.44}
+{"Time":"2026-10-13T10:44:31.007676-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec","Output":"--- PASS: TestDeliverPlanReportsAnApprovedAndABlockedSpec (0.44s)\n"}
+{"Time":"2026-10-13T10:44:31.044291-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanReportsAnApprovedAndABlockedSpec","Elapsed":0.44}
+{"Time":"2026-10-13T10:44:31.044315-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD","Output":"--- PASS: TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD (0.25s)\n"}
+{"Time":"2026-10-13T10:44:31.044322-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD","Elapsed":0.25}
+{"Time":"2026-10-13T10:44:31.044332-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails"}
+{"Time":"2026-10-13T10:44:31.044336-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails","Output":"=== RUN   TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails\n"}
+{"Time":"2026-10-13T10:44:31.075223-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved","Output":"--- PASS: TestDeliverPlanExitsZeroWhenEverySpecIsApproved (0.36s)\n"}
+{"Time":"2026-10-13T10:44:31.193351-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestDeliverPlanExitsZeroWhenEverySpecIsApproved","Elapsed":0.36}
+{"Time":"2026-10-13T10:44:31.193378-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails","Output":"--- PASS: TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails (0.15s)\n"}
+{"Time":"2026-10-13T10:44:31.193386-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails","Elapsed":0.15}
+{"Time":"2026-10-13T10:44:31.193391-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag"}
+{"Time":"2026-10-13T10:44:31.1934-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag","Output":"=== RUN   TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag\n"}
+{"Time":"2026-10-13T10:44:31.281794-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag","Output":"--- PASS: TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag (0.09s)\n"}
+{"Time":"2026-10-13T10:44:31.281817-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag","Elapsed":0.09}
+{"Time":"2026-10-13T10:44:31.281824-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source"}
+{"Time":"2026-10-13T10:44:31.281827-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source","Output":"=== RUN   TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source\n"}
+{"Time":"2026-10-13T10:44:31.432317-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source","Output":"--- PASS: TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source (0.15s)\n"}
+{"Time":"2026-10-13T10:44:31.432336-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source","Elapsed":0.15}
+{"Time":"2026-10-13T10:44:31.432343-03:00","Action":"run","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown"}
+{"Time":"2026-10-13T10:44:31.432346-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown","Output":"=== RUN   TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown\n"}
+{"Time":"2026-10-13T10:44:31.56312-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown","Output":"--- PASS: TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown (0.13s)\n"}
+{"Time":"2026-10-13T10:44:31.563142-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown","Elapsed":0.13}
+{"Time":"2026-10-13T10:44:31.563148-03:00","Action":"output","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification","Output":"--- PASS: TestSpecCheckRunVerification (1.19s)\n"}
+{"Time":"2026-10-13T10:44:31.563152-03:00","Action":"pass","Package":"roundfix/internal/cli","Test":"TestSpecCheckRunVerification","Elapsed":1.19}
+{"Time":"2026-10-13T10:44:31.563156-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"PASS\n"}
+{"Time":"2026-10-13T10:44:31.63767-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"suiteguard: guard cost: measured 2648 paths; fingerprint took 82.359667ms before and 69.891166ms after\n"}
+{"Time":"2026-10-13T10:44:31.638953-03:00","Action":"output","Package":"roundfix/internal/cli","Output":"ok  \troundfix/internal/cli\t1.745s\n"}
+{"Time":"2026-10-13T10:44:31.63897-03:00","Action":"pass","Package":"roundfix/internal/cli","Elapsed":1.745}

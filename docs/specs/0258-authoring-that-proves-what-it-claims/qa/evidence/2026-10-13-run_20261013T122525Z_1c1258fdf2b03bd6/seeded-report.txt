@@ -1,0 +1,44 @@
+---
+verdict: pending
+auditing_binary: "0.72.0 (b2ff2ffc, built 2026-10-13 09:24:15 -0300)"
+auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"
+rows_blocked_environment: 0
+rows_blocked_finding: 0
+rows_blocked_declared: 0
+---
+
+# QA Report
+
+## Performed repairs
+
+None.
+
+## Assigned repair failures
+
+None.
+
+## Authorization audit inputs
+
+| Task | Commit | Outcome | Record | Revision | Detail |
+| --- | --- | --- | --- | --- | --- |
+| task_03 | d148925f8ec07fa7df5b03b7d1713b30952ac957 | granted | docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md | b2ff2ffc1873741fd8d740bb23a07e64d85ef341 | operative grant |
+| task_01 | e87f54c952ab695f8db00c11c11cd268704d8d81 | granted | docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md | b2ff2ffc1873741fd8d740bb23a07e64d85ef341 | operative grant |
+| task_02 | 44b415ea9b8ab940dade207d747e3b3948639590 | granted | docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md | b2ff2ffc1873741fd8d740bb23a07e64d85ef341 | operative grant |
+| task_04 | 61dd75d054e73d0c3675c04db4aa2035214959aa | granted | docs/specs/0258-authoring-that-proves-what-it-claims/_authorization.md | b2ff2ffc1873741fd8d740bb23a07e64d85ef341 | operative grant |
+
+## Mechanical findings
+
+None.
+
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+
+## Mechanical skips
+
+| Detector | Missing artifact |
+| --- | --- |
+| consequent-fix commit order | consequent-fix declaration |
+| QA Report structure | QA Report |
+| QA evidence paths | QA Report |

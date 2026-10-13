@@ -1,0 +1,15 @@
+{"Time":"2026-10-13T10:39:21.903782-03:00","Action":"start","Package":"roundfix/internal/spec"}
+{"Time":"2026-10-13T10:39:22.264438-03:00","Action":"run","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095"}
+{"Time":"2026-10-13T10:39:22.264527-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095","Output":"=== RUN   TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095\n"}
+{"Time":"2026-10-13T10:39:22.264557-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095","Output":"=== PAUSE TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095\n"}
+{"Time":"2026-10-13T10:39:22.264567-03:00","Action":"pause","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095"}
+{"Time":"2026-10-13T10:39:22.264575-03:00","Action":"cont","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095"}
+{"Time":"2026-10-13T10:39:22.264583-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095","Output":"=== CONT  TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095\n"}
+{"Time":"2026-10-13T10:39:22.264727-03:00","Action":"output","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095","Output":"--- PASS: TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095 (0.00s)\n"}
+{"Time":"2026-10-13T10:39:22.264766-03:00","Action":"pass","Package":"roundfix/internal/spec","Test":"TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095","Elapsed":0}
+{"Time":"2026-10-13T10:39:22.264783-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"PASS\n"}
+{"Time":"2026-10-13T10:39:22.37957-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: guard cost: measured 2614 paths; fingerprint took 130.972334ms before and 108.502083ms after\n"}
+{"Time":"2026-10-13T10:39:22.787043-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: repository boundary violated:\n"}
+{"Time":"2026-10-13T10:39:22.787844-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"suiteguard: modified: docs/specs/0258-authoring-that-proves-what-it-claims/qa/evidence/2026-10-13-run_20261013T122525Z_1c1258fdf2b03bd6/tests-05.jsonl\n"}
+{"Time":"2026-10-13T10:39:22.788268-03:00","Action":"output","Package":"roundfix/internal/spec","Output":"FAIL\troundfix/internal/spec\t0.884s\n"}
+{"Time":"2026-10-13T10:39:22.788338-03:00","Action":"fail","Package":"roundfix/internal/spec","Elapsed":0.885}

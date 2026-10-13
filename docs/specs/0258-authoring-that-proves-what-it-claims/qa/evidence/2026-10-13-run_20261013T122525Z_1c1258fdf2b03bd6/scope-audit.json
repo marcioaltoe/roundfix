@@ -1,0 +1,261 @@
+{
+  "base": "b2ff2ffc1873741fd8d740bb23a07e64d85ef341",
+  "head": "61dd75d054e73d0c3675c04db4aa2035214959aa",
+  "commits": [
+    {
+      "task": "task_03",
+      "commit": "d148925f8ec07fa7df5b03b7d1713b30952ac957",
+      "command": "git diff-tree --no-commit-id --name-only -r d148925f8ec07fa7df5b03b7d1713b30952ac957",
+      "paths": [
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-tasks/references/task-template.md",
+        ".agents/skills/write-techspec/SKILL.md",
+        ".agents/skills/write-techspec/references/techspec-template.md",
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_03.md",
+        "skills/baseline_skill_contract_test.go",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-tasks/references/task-template.md",
+        "skills/write-techspec/SKILL.md",
+        "skills/write-techspec/references/techspec-template.md"
+      ],
+      "declared": [
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-tasks/references/task-template.md",
+        ".agents/skills/write-techspec/SKILL.md",
+        ".agents/skills/write-techspec/references/techspec-template.md",
+        "docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md",
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_03.md",
+        "skills/baseline_skill_contract_test.go",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-tasks/references/task-template.md",
+        "skills/write-techspec/SKILL.md",
+        "skills/write-techspec/references/techspec-template.md"
+      ],
+      "governed_paths": [
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-tasks/references/task-template.md",
+        ".agents/skills/write-techspec/SKILL.md",
+        ".agents/skills/write-techspec/references/techspec-template.md",
+        "skills/baseline_skill_contract_test.go",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-techspec/SKILL.md",
+        "skills/write-techspec/references/techspec-template.md"
+      ],
+      "undeclared": [],
+      "unbounded": [],
+      "authorization_revision": "b2ff2ffc1873741fd8d740bb23a07e64d85ef341",
+      "authorization_folded": false
+    },
+    {
+      "task": "task_01",
+      "commit": "e87f54c952ab695f8db00c11c11cd268704d8d81",
+      "command": "git diff-tree --no-commit-id --name-only -r e87f54c952ab695f8db00c11c11cd268704d8d81",
+      "paths": [
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_01.md",
+        "internal/docscontract/corpus_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/authoring_proof.go",
+        "internal/speccheck/authoring_proof_test.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/testdata/repo/docs/specs/citation-dirty/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/clean/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/coverage-unmapped/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/coverage-untasked/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/reference-unresolved/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/vocabulary-missing/_techspec.md"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md",
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_01.md",
+        "internal/docscontract/corpus_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/authoring_proof.go",
+        "internal/speccheck/authoring_proof_test.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/testdata/repo/docs/specs/citation-dirty/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/clean/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/coverage-unmapped/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/coverage-untasked/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/reference-unresolved/_techspec.md",
+        "internal/speccheck/testdata/repo/docs/specs/vocabulary-missing/_techspec.md"
+      ],
+      "governed_paths": [
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/coherence.go"
+      ],
+      "undeclared": [],
+      "unbounded": [],
+      "authorization_revision": "b2ff2ffc1873741fd8d740bb23a07e64d85ef341",
+      "authorization_folded": false
+    },
+    {
+      "task": "task_02",
+      "commit": "44b415ea9b8ab940dade207d747e3b3948639590",
+      "command": "git diff-tree --no-commit-id --name-only -r 44b415ea9b8ab940dade207d747e3b3948639590",
+      "paths": [
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_02.md",
+        "internal/cli/deliver_plan_test.go",
+        "internal/cli/spec_check_test.go",
+        "internal/docscontract/corpus_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/consumers.go",
+        "internal/speccheck/consumers_test.go",
+        "internal/speccheck/testdata/repo/docs/specs/coverage-untasked/task_01.md",
+        "internal/speccheck/testdata/repo/docs/specs/reference-unresolved/task_01.md"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md",
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_02.md",
+        "internal/cli/deliver_plan_test.go",
+        "internal/cli/spec_check_test.go",
+        "internal/docscontract/corpus_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/consumers.go",
+        "internal/speccheck/consumers_test.go",
+        "internal/speccheck/testdata/repo/docs/specs/coverage-untasked/task_01.md",
+        "internal/speccheck/testdata/repo/docs/specs/reference-unresolved/task_01.md"
+      ],
+      "governed_paths": [
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/coherence.go"
+      ],
+      "undeclared": [],
+      "unbounded": [],
+      "authorization_revision": "b2ff2ffc1873741fd8d740bb23a07e64d85ef341",
+      "authorization_folded": false
+    },
+    {
+      "task": "task_04",
+      "commit": "61dd75d054e73d0c3675c04db4aa2035214959aa",
+      "command": "git diff-tree --no-commit-id --name-only -r 61dd75d054e73d0c3675c04db4aa2035214959aa",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_04.md",
+        "docs/user-guide/commands/spec.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        ".agents/skills/domain-modeling/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "CONTEXT.md",
+        "docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0258-authoring-that-proves-what-it-claims/task_04.md",
+        "docs/user-guide/commands/spec.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "governed_paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "undeclared": [],
+      "unbounded": [],
+      "authorization_revision": "b2ff2ffc1873741fd8d740bb23a07e64d85ef341",
+      "authorization_folded": false
+    }
+  ],
+  "changed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/spec.md",
+    ".agents/skills/write-tasks/SKILL.md",
+    ".agents/skills/write-tasks/references/task-template.md",
+    ".agents/skills/write-techspec/SKILL.md",
+    ".agents/skills/write-techspec/references/techspec-template.md",
+    "CONTEXT.md",
+    "docs/references/behavior-surfaces.json",
+    "docs/specs/0258-authoring-that-proves-what-it-claims/task_01.md",
+    "docs/specs/0258-authoring-that-proves-what-it-claims/task_02.md",
+    "docs/specs/0258-authoring-that-proves-what-it-claims/task_03.md",
+    "docs/specs/0258-authoring-that-proves-what-it-claims/task_04.md",
+    "docs/user-guide/commands/spec.md",
+    "internal/cli/deliver_plan_test.go",
+    "internal/cli/spec_check_test.go",
+    "internal/docscontract/corpus_test.go",
+    "internal/docscontract/testdata/corpus-golden.json",
+    "internal/spec/archive_layout_characterization_test.go",
+    "internal/speccheck/authoring_proof.go",
+    "internal/speccheck/authoring_proof_test.go",
+    "internal/speccheck/citations.go",
+    "internal/speccheck/coherence.go",
+    "internal/speccheck/consumers.go",
+    "internal/speccheck/consumers_test.go",
+    "internal/speccheck/testdata/repo/docs/specs/citation-dirty/_techspec.md",
+    "internal/speccheck/testdata/repo/docs/specs/clean/_techspec.md",
+    "internal/speccheck/testdata/repo/docs/specs/coverage-unmapped/_techspec.md",
+    "internal/speccheck/testdata/repo/docs/specs/coverage-untasked/_techspec.md",
+    "internal/speccheck/testdata/repo/docs/specs/coverage-untasked/task_01.md",
+    "internal/speccheck/testdata/repo/docs/specs/reference-unresolved/_techspec.md",
+    "internal/speccheck/testdata/repo/docs/specs/reference-unresolved/task_01.md",
+    "internal/speccheck/testdata/repo/docs/specs/vocabulary-missing/_techspec.md",
+    "skills/baseline_skill_contract_test.go",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/spec.md",
+    "skills/testdata/owned-skill-versions.json",
+    "skills/write-tasks/SKILL.md",
+    "skills/write-tasks/references/task-template.md",
+    "skills/write-techspec/SKILL.md",
+    "skills/write-techspec/references/techspec-template.md"
+  ],
+  "protected_changes": [],
+  "settlement_sections": [
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "byte_identical": true,
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c"
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "byte_identical": true,
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c"
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "byte_identical": true,
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c"
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "byte_identical": true,
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c"
+    },
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "byte_identical": true,
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c"
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "byte_identical": true,
+      "sha256": "7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c"
+    }
+  ],
+  "tracked_delta": [],
+  "status": "?? docs/specs/0258-authoring-that-proves-what-it-claims/qa/\n",
+  "failures": [],
+  "chronology": "Authorization committed at base before every Task. No prerequisite or consequent fix declaration; no additional fix commit in range. Seeded mechanical consequent-fix skip retained."
+}

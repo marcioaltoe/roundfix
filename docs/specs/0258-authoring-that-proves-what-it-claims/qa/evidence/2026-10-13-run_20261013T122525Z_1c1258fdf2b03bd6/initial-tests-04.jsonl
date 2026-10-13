@@ -1,0 +1,47 @@
+{"Time":"2026-10-13T10:39:19.679246-03:00","Action":"start","Package":"roundfix/internal/daemon"}
+{"Time":"2026-10-13T10:39:20.085949-03:00","Action":"run","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced"}
+{"Time":"2026-10-13T10:39:20.08606-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced","Output":"=== RUN   TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced\n"}
+{"Time":"2026-10-13T10:39:20.086091-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced","Output":"=== PAUSE TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced\n"}
+{"Time":"2026-10-13T10:39:20.086102-03:00","Action":"pause","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced"}
+{"Time":"2026-10-13T10:39:20.086111-03:00","Action":"run","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart"}
+{"Time":"2026-10-13T10:39:20.086119-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart","Output":"=== RUN   TestSettlementIgnoresASpecConsistencyFindingPresentAtStart\n"}
+{"Time":"2026-10-13T10:39:20.086128-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart","Output":"=== PAUSE TestSettlementIgnoresASpecConsistencyFindingPresentAtStart\n"}
+{"Time":"2026-10-13T10:39:20.086136-03:00","Action":"pause","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart"}
+{"Time":"2026-10-13T10:39:20.086144-03:00","Action":"run","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork"}
+{"Time":"2026-10-13T10:39:20.086151-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork","Output":"=== RUN   TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork\n"}
+{"Time":"2026-10-13T10:39:20.086159-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork","Output":"=== PAUSE TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork\n"}
+{"Time":"2026-10-13T10:39:20.086166-03:00","Action":"pause","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork"}
+{"Time":"2026-10-13T10:39:20.086174-03:00","Action":"run","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck"}
+{"Time":"2026-10-13T10:39:20.086188-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck","Output":"=== RUN   TestSpecConsistencyCheckerErrorFailsTheCheck\n"}
+{"Time":"2026-10-13T10:39:20.086207-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck","Output":"=== PAUSE TestSpecConsistencyCheckerErrorFailsTheCheck\n"}
+{"Time":"2026-10-13T10:39:20.086215-03:00","Action":"pause","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck"}
+{"Time":"2026-10-13T10:39:20.086223-03:00","Action":"run","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline"}
+{"Time":"2026-10-13T10:39:20.086231-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline","Output":"=== RUN   TestSpecConsistencyRepairKeepsTheTaskStartBaseline\n"}
+{"Time":"2026-10-13T10:39:20.086251-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline","Output":"=== PAUSE TestSpecConsistencyRepairKeepsTheTaskStartBaseline\n"}
+{"Time":"2026-10-13T10:39:20.086259-03:00","Action":"pause","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline"}
+{"Time":"2026-10-13T10:39:20.086276-03:00","Action":"cont","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced"}
+{"Time":"2026-10-13T10:39:20.086283-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced","Output":"=== CONT  TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced\n"}
+{"Time":"2026-10-13T10:39:20.08629-03:00","Action":"cont","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck"}
+{"Time":"2026-10-13T10:39:20.086296-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck","Output":"=== CONT  TestSpecConsistencyCheckerErrorFailsTheCheck\n"}
+{"Time":"2026-10-13T10:39:20.086302-03:00","Action":"cont","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart"}
+{"Time":"2026-10-13T10:39:20.086308-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart","Output":"=== CONT  TestSettlementIgnoresASpecConsistencyFindingPresentAtStart\n"}
+{"Time":"2026-10-13T10:39:20.086314-03:00","Action":"cont","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork"}
+{"Time":"2026-10-13T10:39:20.08632-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork","Output":"=== CONT  TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork\n"}
+{"Time":"2026-10-13T10:39:20.086327-03:00","Action":"cont","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline"}
+{"Time":"2026-10-13T10:39:20.086333-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline","Output":"=== CONT  TestSpecConsistencyRepairKeepsTheTaskStartBaseline\n"}
+{"Time":"2026-10-13T10:39:20.321335-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork","Output":"--- PASS: TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork (0.23s)\n"}
+{"Time":"2026-10-13T10:39:20.380938-03:00","Action":"pass","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork","Elapsed":0.23}
+{"Time":"2026-10-13T10:39:20.381015-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart","Output":"--- PASS: TestSettlementIgnoresASpecConsistencyFindingPresentAtStart (0.29s)\n"}
+{"Time":"2026-10-13T10:39:20.401217-03:00","Action":"pass","Package":"roundfix/internal/daemon","Test":"TestSettlementIgnoresASpecConsistencyFindingPresentAtStart","Elapsed":0.29}
+{"Time":"2026-10-13T10:39:20.401269-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck","Output":"--- PASS: TestSpecConsistencyCheckerErrorFailsTheCheck (0.32s)\n"}
+{"Time":"2026-10-13T10:39:20.402114-03:00","Action":"pass","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyCheckerErrorFailsTheCheck","Elapsed":0.32}
+{"Time":"2026-10-13T10:39:20.402158-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced","Output":"--- PASS: TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced (0.32s)\n"}
+{"Time":"2026-10-13T10:39:20.416952-03:00","Action":"pass","Package":"roundfix/internal/daemon","Test":"TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced","Elapsed":0.32}
+{"Time":"2026-10-13T10:39:20.417008-03:00","Action":"output","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline","Output":"--- PASS: TestSpecConsistencyRepairKeepsTheTaskStartBaseline (0.33s)\n"}
+{"Time":"2026-10-13T10:39:20.417047-03:00","Action":"pass","Package":"roundfix/internal/daemon","Test":"TestSpecConsistencyRepairKeepsTheTaskStartBaseline","Elapsed":0.33}
+{"Time":"2026-10-13T10:39:20.417071-03:00","Action":"output","Package":"roundfix/internal/daemon","Output":"PASS\n"}
+{"Time":"2026-10-13T10:39:20.566248-03:00","Action":"output","Package":"roundfix/internal/daemon","Output":"suiteguard: guard cost: measured 2613 paths; fingerprint took 135.139875ms before and 141.589083ms after\n"}
+{"Time":"2026-10-13T10:39:21.058657-03:00","Action":"output","Package":"roundfix/internal/daemon","Output":"suiteguard: repository boundary violated:\n"}
+{"Time":"2026-10-13T10:39:21.058728-03:00","Action":"output","Package":"roundfix/internal/daemon","Output":"suiteguard: modified: docs/specs/0258-authoring-that-proves-what-it-claims/qa/evidence/2026-10-13-run_20261013T122525Z_1c1258fdf2b03bd6/tests-04.jsonl\n"}
+{"Time":"2026-10-13T10:39:21.059603-03:00","Action":"output","Package":"roundfix/internal/daemon","Output":"FAIL\troundfix/internal/daemon\t1.380s\n"}
+{"Time":"2026-10-13T10:39:21.059637-03:00","Action":"fail","Package":"roundfix/internal/daemon","Elapsed":1.38}

@@ -1,0 +1,35 @@
+import json,subprocess
+from pathlib import Path
+source=Path(__file__).with_name('run-cli-fixtures.py.txt').read_text()
+exec(compile(source.split('for name,tech,bad in ')[0],str(Path(__file__).with_name('run-cli-fixtures.py.txt')),'exec'))
+# Missing -> present observations share one repository and every unrelated byte.
+for row in [3,4,5,6]:
+    name=f'recovery-{row}'
+    tech=coverage+absence
+    ts=None
+    if row==3:tech=coverage
+    if row==5:tech='## Coverage Map\n\n'+absence
+    if row==6:ts=tasks('')
+    root=fixture(name,tech,adr=(row==4),tasks=ts)
+    observe(row,name+'-missing',root,True,stage='tasks' if row==6 else 'techspec')
+    p=root/'docs/specs/proof/_techspec.md'
+    if row==3:p.write_text(p.read_text()+absence)
+    if row==4:p.write_text(p.read_text()+'## ADR Alternatives\n\n- ADR-0001: No rejected alternative is taken.\n')
+    if row==5:p.write_text(p.read_text().replace('## Coverage Map\n','## Coverage Map\n\nDeviations from the PRD: None.\n'))
+    if row==6:
+        p=root/'docs/specs/proof/task_01.md';p.write_text(p.read_text().replace('## Verification',none+'\n## Verification'))
+    observe(row,name+'-repaired',root,False,stage='tasks' if row==6 else 'techspec')
+root=fixture('absent-techspec',coverage+absence)
+(root/'docs/specs/proof/_techspec.md').unlink()
+checks=[]
+for stage,codeset in [('techspec',[codes[3],codes[4],codes[5]]),('prd',[codes[3],codes[4],codes[5],codes[6]])]:
+    cmd=['./bin/roundfix','spec','check','proof','--stage',stage,'--strict','--format','json']
+    p=subprocess.run(cmd,cwd=root,env=env,text=True,capture_output=True);data=json.loads(p.stdout)
+    checks.append({'command':cmd,'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr,'expected_skips':codeset,'all_skipped':all(code in [s['code'] for s in data['skipped']] for code in codeset),'no_target_findings':not any(f['code'] in codeset for f in data['findings'])})
+root=fixture('consumer-stage-skip',coverage+absence,tasks=tasks(''))
+for stage in ['prd','techspec']:
+    cmd=['./bin/roundfix','spec','check','proof','--stage',stage,'--strict','--format','json']
+    p=subprocess.run(cmd,cwd=root,env=env,text=True,capture_output=True);data=json.loads(p.stdout)
+    checks.append({'command':cmd,'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr,'expected_skips':[codes[6]],'all_skipped':codes[6] in [s['code'] for s in data['skipped']],'no_target_findings':not any(f['code']==codes[6] for f in data['findings'])})
+(E/'cli-skip-confirmation.json').write_text(json.dumps(checks,indent=2))
+print(json.dumps({'skips':len(checks),'valid':all(x['exit']==0 and x['all_skipped'] and x['no_target_findings'] for x in checks)}))
