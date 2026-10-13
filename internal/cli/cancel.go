@@ -30,8 +30,8 @@ source_revision. cancel creates no Run, never changes a Task status, and
 never commits or pushes.
 
 Refuses while an Active Run or an unfinished Delivery Queue item holds the
-Spec, while an active Spec requires it, and for a Spec that carries a
-supersession.
+Spec, while an active Spec requires it, while Git ignores a file under the
+Spec folder, and for a Spec that carries a supersession.
 
 Options:
   --reason  Why the Spec is cancelled, recorded in the Archive Record
@@ -97,16 +97,24 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return refuse(err)
 	}
-	changes, err := gitOutput(ctx, revisionRoot, "status", "--porcelain", "--untracked-files=all", "--", folder)
+	status, err := readSpecFolderStatus(ctx, repositoryRoot, folder)
 	if err != nil {
 		return refuse(err)
 	}
-	if strings.TrimSpace(changes) != "" {
-		rel, err := filepathRelSlash(repositoryRoot, folder)
+	statusFolder := folder
+	if len(status.Changes) == 0 && len(status.Ignored) > 0 {
+		// Match Git's physical root without changing the uncommitted refusal.
+		statusFolder, err = filepath.EvalSymlinks(folder)
 		if err != nil {
-			return refuse(err)
+			return refuse(fmt.Errorf("resolve ignored Spec folder: %w", err))
 		}
-		return refuse(fmt.Errorf("Spec %q has changes not committed at HEAD under %s; commit them before cancel so the Archive Record's source_revision holds the Spec", slug, rel))
+	}
+	folderRel, err := filepathRelSlash(repositoryRoot, statusFolder)
+	if err != nil {
+		return refuse(err)
+	}
+	if err := refuseSpecFolderStatus("cancel", slug, folderRel, status); err != nil {
+		return refuse(err)
 	}
 	parked, err := checkCancelWork(ctx, loaded.HomeDir, loaded.GitRoot, slug, stderr)
 	if err != nil {
@@ -126,10 +134,6 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return refuse(err)
 	}
 	if err := ctx.Err(); err != nil {
-		return refuse(err)
-	}
-	folderRel, err := filepathRelSlash(repositoryRoot, folder)
-	if err != nil {
 		return refuse(err)
 	}
 	recordRel, err := filepathRelSlash(loaded.GitRoot, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), slug))

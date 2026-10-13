@@ -131,6 +131,7 @@ The removed bytes stay in Git at the record's source_revision. The destination
 is docs/history/specs/<slug>.md for the built-in root, otherwise
 <spec-root>/_archived/<slug>.md.
 archive creates no Run and never pushes.
+Refuses, writing nothing, while the Spec folder has uncommitted changes or Git ignores a file under it.
 
 The QA override requires an approval source and reason, still requires every
 non-QA Task completed, preserves the QA Task and Reports unchanged, and records

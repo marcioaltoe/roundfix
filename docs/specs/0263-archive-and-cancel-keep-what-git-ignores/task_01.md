@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0263-archive-and-cancel-keep-what-git-ignores
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,91 @@ repositories: the refusal transcripts match and the tree stays byte-identical.
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Core Feature 3; Success Metric 1; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 4; Surface Transcript 1; Surface Transcript 2; Interfaces; Data Models; Invariants 1, 2, 5 and 6; Testing Approach; Build Order 1
 - ADR-0269; ADR-0247; ADR-0262
+
+## Result
+
+Implemented the refusal half of the 2026-10-12 Backlog Entry. Archive and
+cancel now share `readSpecFolderStatus` and `refuseSpecFolderStatus`: one raw
+NUL-separated porcelain-v1 status call, with renames disabled and every
+untracked and ignored file enumerated. Non-ignored changes keep the previous
+reason and precedence; otherwise ignored paths are sorted, listed and refused
+through Preflight Validation before any write. Ignored-folder display resolves
+symbolic-link path aliases against Git's physical repository root; the
+existing uncommitted-folder display is preserved.
+
+Both help texts and user guides describe the refusal and how to remove or
+commit the files. The coverage map names the helper for both commands, and
+the sanctioned record command regenerated only the archive and cancel command
+and guide fingerprints. Help exit-code lines and `internal/spec` destination
+parent checks were not changed; folder removal recovery and skill/glossary
+changes remain the later Tasks' slices.
+
+### Focused implementation evidence
+
+Before the guard change,
+`go test -count=1 ./internal/cli -run '^(TestArchiveRefusesIgnoredSpecFiles|TestCancelRefusesIgnoredSpecFiles)$'`
+exited 1: both commands exited 0, removed the three ignored files and claimed
+their bytes were kept in Git. This reproduced the recorded defect in disposable
+repositories.
+
+After the final implementation edits:
+
+- `go test -count=1 ./internal/cli -run '^(TestArchiveRefusesIgnoredSpecFiles|TestCancelRefusesIgnoredSpecFiles|TestSpecFolderStatus.*)$'`
+  exited 0. The four required new tests and the additional raw-path test ran.
+- `go test -count=1 ./internal/cli -run '^(TestRunArchiveHelp|TestCancelTranscriptPrintsHelp|TestArchiveCommandRefusesUncommittedSpecChanges|TestCancelRefusalsLeaveTheTreeUnchanged|TestRunArchiveUsesConfiguredExternalSpecRoot|TestArchiveCommandLeavesTheArchiveRecord|TestCancelTranscriptCancelsASpecWithSources)$'`
+  exited 0. These selected existing tests cover the help changes, prior
+  uncommitted refusals, external-root success, and ordinary archive and cancel
+  writes including Source Return.
+- Required regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 after the final source and guide edits.
+- `git diff --check` exited 0 before this Result was appended.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Three ignored files refuse without changes | `TestArchiveRefusesIgnoredSpecFiles` and `TestCancelRefusesIgnoredSpecFiles` assert each full Surface Transcript, empty stdout and exit 2. Each compares all repository file bytes, the Spec folder hash, and `git status --porcelain --untracked-files=all --ignored`, checks all three ignored files remain, and checks no Archive Record or Run Database exists. The fixture ignores both logs and the `out/` directory, proving individual files are enumerated inside an ignored directory. |
+| Uncommitted changes refuse first | `TestSpecFolderStatusRefusesUncommittedChangesFirst` checks both commands against the existing reason byte for byte with modified, staged, deleted, untracked and renamed files alongside ignored files. It also checks file bytes and Git status remain unchanged. |
+| External Specs Root honors its own ignore rules | `TestSpecFolderStatusReadsTheExternalSpecsRootRepository` checks both commands with the ignore rules committed only in the external repository and no project `.gitignore`. It asserts the same repository-relative refusal, unchanged files and Git status in both repositories, and no record under the external archive root. |
+| Help and guides describe the refusal | All three help tests pass (including the additional full archive help transcript checked in the feedback repair below). Both guides contain `remove each file or commit it with git add -f`; both coverage entries name the helper. The sanctioned generator passed and changed only the two commands' and two guides' recorded fingerprints. |
+
+`TestSpecFolderStatusPreservesRawPaths` additionally proves the first modified
+entry's leading status space is not trimmed and paths with a leading space,
+tab or newline stay unquoted and intact.
+
+The Task's declared Verification commands, the selected repository
+Verification and the full archive/cancel suite were not run by this Agent; the Daemon owns
+those checks and settlement. Task status and the Task Graph were not edited.
+No commit, push or pull request was made. The assigned work is handed back for
+Daemon Verification, without a terminal Task verdict.
+
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261013T163453Z_215d9dc7373d8dae/verification/batch-001-attempt-1.log`.
+It identified `TestArchiveHelpNamesThePullRequestOption`: its full archive
+help expectation omitted this Task's newly required refusal sentence.
+
+Added exactly that sentence to the expected transcript in
+`internal/cli/archive_pull_request_test.go`. This additional changed path owns
+another full transcript of the same public help surface; the test continues
+to compare all stdout, stderr and exit code. Production behavior and help
+exit-code lines were not changed in this repair.
+
+Focused check:
+`go test -count=1 ./internal/cli -run '^(TestArchiveHelpNamesThePullRequestOption|TestRunArchiveHelp|TestCancelTranscriptPrintsHelp)$'`
+exited 0. All three help tests pass with the authored refusal line. The
+previously recorded guard and generator evidence concerns unchanged sources.
+
+Declared Verification was not rerun by this Agent. Task status remains
+Daemon-owned, and no other Task or the Task Graph was edited. The repair is
+handed back for the Daemon's next Verification attempt, without a terminal
+Task verdict. No commit, push or pull request was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/archive_pull_request_test.go`

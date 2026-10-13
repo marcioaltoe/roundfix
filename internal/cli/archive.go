@@ -35,6 +35,7 @@ The removed bytes stay in Git at the record's source_revision. The destination
 is docs/history/specs/<slug>.md for the built-in root, otherwise
 <spec-root>/_archived/<slug>.md.
 archive creates no Run and never pushes.
+Refuses, writing nothing, while the Spec folder has uncommitted changes or Git ignores a file under it.
 
 The QA override requires an approval source and reason, still requires every
 non-QA Task completed, preserves the QA Task and Reports unchanged, and records
@@ -153,14 +154,28 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return exitPreflight
 	}
 	specDir := filepath.Join(resolvedSpecsRoot.Path, req.slug)
-	changes, err := gitOutput(ctx, revisionRoot, "status", "--porcelain", "--untracked-files=all", "--", specDir)
+	status, err := readSpecFolderStatus(ctx, repositoryRoot, specDir)
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	if strings.TrimSpace(changes) != "" {
-		rel, _ := filepathRelSlash(repositoryRoot, specDir)
-		printPreflightFailure("archive", fmt.Errorf("Spec %q has changes not committed at HEAD under %s; commit them before archive so the Archive Record's source_revision holds the Spec", req.slug, rel), stderr)
+	statusFolder := specDir
+	if len(status.Changes) == 0 && len(status.Ignored) > 0 {
+		// Git reports the physical repository root; the configured root may
+		// contain a symlink. Keep the existing uncommitted refusal unchanged.
+		statusFolder, err = filepath.EvalSymlinks(specDir)
+		if err != nil {
+			printPreflightFailure("archive", fmt.Errorf("resolve ignored Spec folder: %w", err), stderr)
+			return exitPreflight
+		}
+	}
+	folderRel, err := filepathRelSlash(repositoryRoot, statusFolder)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	if err := refuseSpecFolderStatus("archive", req.slug, folderRel, status); err != nil {
+		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
 	var qaOverride *spec.QAArchiveOverride

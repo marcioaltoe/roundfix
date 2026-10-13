@@ -213,8 +213,8 @@ source_revision. cancel creates no Run, never changes a Task status, and
 never commits or pushes.
 
 Refuses while an Active Run or an unfinished Delivery Queue item holds the
-Spec, while an active Spec requires it, and for a Spec that carries a
-supersession.
+Spec, while an active Spec requires it, while Git ignores a file under the
+Spec folder, and for a Spec that carries a supersession.
 
 Options:
   --reason  Why the Spec is cancelled, recorded in the Archive Record

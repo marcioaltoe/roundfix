@@ -73,6 +73,12 @@ or untracked Spec files cause exit `2`; commit them before archiving so the
 recorded revision holds every removed file. For an external Spec Root, this
 revision comes from that root's repository.
 
+The archive also refuses with exit `2`, writing nothing, while Git ignores a
+file under the Spec folder. It lists every ignored file by its sorted,
+repository-relative path, including files inside ignored directories. To
+continue, remove each file or commit it with git add -f, then retry.
+Uncommitted changes keep their existing refusal and are reported first.
+
 A normal archive prints:
 
 ```text

@@ -697,6 +697,7 @@ func TestRunArchiveHelp(t *testing.T) {
 		"removes the committed Spec folder",
 		"archive creates no Run and",
 		"never pushes",
+		"Refuses, writing nothing, while the Spec folder has uncommitted changes or Git ignores a file under it.",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("expected help to contain %q, got %q", want, stdout.String())
