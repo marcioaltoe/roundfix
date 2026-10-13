@@ -97,6 +97,15 @@ reads a credential.
     cargo homes, so a tool installed through rustup keeps its default
     toolchain; the suites only read them (addendum 2026-10-12, QA F3 of the
     Report at `9479226c`).
+15. MUST run each suite of Requirement 6 as the authored command exactly,
+    without `-v`, `GOFLAGS=-v` or other added instrumentation, and MUST write
+    its raw output only to a temporary directory outside the checkout, copying
+    it into the evidence directory after the command has ended; nothing is
+    created or changed under the checkout while a suite runs. For
+    Requirement 3 it retains every suiteguard line the non-verbose output
+    emits and records each package that emits none as such (addendum 2026-10-12, QA F5 of the Report at `8e658da9`: the live log in
+    the checkout made six package guards refuse the run, and `-v` exposed
+    passing fixtures' expected residue lines to the count).
 
 ## Subtasks
 
