@@ -303,6 +303,7 @@ Deviations from the PRD: None.
 - ADR-0252: no rejected alternative is taken; Task Verification names consumers the selective gate does not select.
 - ADR-0253: no rejected alternative is taken; the Full Contract Run stays on main and before a release, and Task Verification names consumers earlier.
 - ADR-0259: no rejected alternative is taken; every new test is parallel and none needs a sequential reason.
+- ADR-0271: no rejected alternative is taken; the detector tests read files and give no child, goroutine or Git a real-time allowance.
 - ADR-0256: its rejected model-judging alternative stays rejected; the skills Task updates the command reference with the user guide.
 - ADR-0257: no rejected alternative is taken; agents still run focused tests and the Daemon runs the declared Verification.
 - ADR-0258: no rejected alternative is taken; this Spec adds skill rules and checks, and no Baseline clause.

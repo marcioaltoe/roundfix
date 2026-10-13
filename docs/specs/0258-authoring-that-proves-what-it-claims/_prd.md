@@ -61,7 +61,9 @@ first Task. No Verification of this Spec reads another Spec's artifacts.
   later still. ADR-0184 asks a TechSpec for its Surface Transcripts; this Spec
   declares none, because no command output format changes. ADR-0259: "A test
   runs in parallel unless it names why it cannot", so every new test calls
-  `t.Parallel()` first.
+  `t.Parallel()` first. ADR-0271: "A test bounds by real time only what it
+  asserts"; the new detectors read files and wait on no child, goroutine or
+  Git, so no new test carries a Real-Time Budget.
   ADR-0257: "the Daemon runs the Task's declared Verification and the
   repository Verification at settlement", so the Task's own Verification is
   where its consumers must run. ADR-0258: "Each rerun class becomes an
