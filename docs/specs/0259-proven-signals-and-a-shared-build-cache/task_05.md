@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0259-proven-signals-and-a-shared-build-cache
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
