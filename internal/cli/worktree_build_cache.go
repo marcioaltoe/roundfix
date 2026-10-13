@@ -150,9 +150,22 @@ func safeWorktreeBuildCachePath(loaded roundconfig.Loaded, worktree, entry strin
 	if err != nil {
 		return "", fmt.Errorf("resolve Worktree Build Cache %q: %w", path, err)
 	}
-	gitDir := filepath.Join(physicalWorktree, ".git")
-	if !worktreeBuildCacheWithin(physicalWorktree, physical) || physical == gitDir || worktreeBuildCacheWithin(gitDir, physical) {
+	if !worktreeBuildCacheWithin(physicalWorktree, physical) {
 		return "", nil
+	}
+	// Git metadata is protected under its own name and wherever a linked .git resolves.
+	gitDirs := []string{filepath.Join(physicalWorktree, ".git")}
+	resolvedGitDir, err := filepath.EvalSymlinks(gitDirs[0])
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("resolve Git metadata of %q: %w", worktree, err)
+	}
+	if err == nil {
+		gitDirs = append(gitDirs, resolvedGitDir)
+	}
+	for _, gitDir := range gitDirs {
+		if physical == gitDir || worktreeBuildCacheWithin(gitDir, physical) {
+			return "", nil
+		}
 	}
 	return path, nil
 }

@@ -449,6 +449,27 @@ func TestBuildCacheDiscoveryPreservesGitMetadataThroughAnAlias(t *testing.T) {
 	assertPathExists(t, filepath.Join(gitDir, "cache", "index"))
 }
 
+func TestBuildCacheDiscoveryPreservesGitMetadataBehindALinkedGitDirectory(t *testing.T) {
+	t.Parallel()
+	f := newBuildCacheFixture(t)
+	gitDir := filepath.Join(f.ended.WorkDir, ".git")
+	if err := os.RemoveAll(gitDir); err != nil {
+		t.Fatal(err)
+	}
+	metadata := filepath.Join(f.ended.WorkDir, "metadata")
+	mustMkdir(t, filepath.Join(metadata, "cache"))
+	mustWrite(t, filepath.Join(metadata, "cache", "index"), "Git metadata")
+	if err := os.Symlink("metadata", gitDir); err != nil {
+		t.Fatal(err)
+	}
+	f.loaded.Config.Worktree.Caches = []string{"metadata/cache"}
+	report, err := runGC(t.Context(), gcOptions{}, f.loaded)
+	if err != nil || len(report.BuildCaches.Reclaimable) != 0 {
+		t.Fatalf("linked Git directory report = %#v %v", report.BuildCaches, err)
+	}
+	assertPathExists(t, filepath.Join(metadata, "cache", "index"))
+}
+
 func TestBuildCacheBudgetReportsMeasuredLowerBound(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
