@@ -1,0 +1,38 @@
+package main
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "os"
+ "os/exec"
+ "path/filepath"
+ "strings"
+ "roundfix/internal/speccheck"
+ "roundfix/internal/store"
+ "roundfix/internal/worktree"
+)
+func must(err error) { if err != nil { panic(err) } }
+func git(dir string, args ...string) string {
+ c := exec.Command("git", append([]string{"-C",dir},args...)...)
+ b,err:=c.CombinedOutput(); if err!=nil { panic(fmt.Sprintf("git %v: %v: %s",args,err,b)) }; return strings.TrimSpace(string(b))
+}
+func main() {
+ if os.Args[1]=="governed" { for _,p:=range os.Args[2:] { fmt.Printf("%s governed=%v\n",p,speccheck.GovernedPath(p)) }; return }
+ ctx:=context.Background(); home,repo,location:=os.Args[2],os.Args[3],os.Args[4]
+ s,err:=store.Open(ctx,home); must(err)
+ head:=git(repo,"rev-parse","HEAD"); target:="fix/qa-symlinked-root"; slug:="qa-symlinked-root"
+ git(repo,"branch",target,head)
+ run,err:=s.CreateRun(ctx,store.CreateRunRequest{Kind:store.KindImplement,GitRoot:repo,LocalBranch:target,HeadSHA:head,SpecSlug:slug,Agent:"codex"}); must(err)
+ ref,err:=worktree.Create(ctx,worktree.CreateOptions{UserRoot:repo,Location:location,RunID:run.ID,HeadSHA:head}); must(err)
+ run,err=s.SetRunWorkDir(ctx,run.ID,ref.Path); must(err)
+ must(os.WriteFile(filepath.Join(ref.Path,"feature.txt"),[]byte("delivered\n"),0600))
+ git(ref.Path,"add","feature.txt")
+ git(ref.Path,"commit","-m","feat: settle task_01","-m","Roundfix-Spec: "+slug+"\nRoundfix-Task: task_01")
+ git(repo,"merge","--ff-only",ref.Branch); merged:=git(repo,"rev-parse","HEAD"); git(repo,"branch","-d",target)
+ _,err=s.CompleteRun(ctx,run.ID,store.StateClean); must(err)
+ queue,err:=s.CreateDeliveryQueue(ctx,repo,[]string{slug}); must(err)
+ item:=queue.Items[0]; item.Stage=store.DeliveryStageMerged; item.Branch=target; item.CandidateCommits=[]string{head,merged}; item.PullRequestNumber="fixture-only"; item.MergeCommit=merged
+ must(s.UpdateDeliveryQueueItem(ctx,repo,item)); must(s.Close())
+ resolved,err:=filepath.EvalSymlinks(ref.Path); must(err)
+ must(json.NewEncoder(os.Stdout).Encode(map[string]string{"run_id":run.ID,"worktree":ref.Path,"resolved":resolved,"branch":ref.Branch,"repo":repo,"home":home,"merged_head":merged}))
+}

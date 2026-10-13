@@ -1,0 +1,7 @@
+make build: exit 0
+Initial tracked source clean; seeded qa/ untracked.
+./bin/roundfix --version: exit 0
+roundfix 0.73.0 (c8c84a84-dirty, built 2026-10-13 12:33:22 -0300)
+./bin/roundfix spec check 0262-a-run-worktree-under-a-symlinked-root-is-cleaned --strict: exit 0
+No findings. Authored Verification commands were not executed.
+Skipped: SC-FINDING-LIFECYCLE; SC-ROLLUP-MEMBER; vocabulary documentation detector; SC-REF-UNRESOLVED. Exact causes are recorded in Scope and environment.

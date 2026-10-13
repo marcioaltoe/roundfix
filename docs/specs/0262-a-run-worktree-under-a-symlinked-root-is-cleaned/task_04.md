@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0262-a-run-worktree-under-a-symlinked-root-is-cleaned
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

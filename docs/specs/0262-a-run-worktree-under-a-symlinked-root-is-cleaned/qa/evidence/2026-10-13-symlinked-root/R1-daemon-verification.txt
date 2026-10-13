@@ -1,0 +1,6 @@
+Source: Daemon QA prompt, audited candidate c8c84a8456b704e28da0cb2b67eb594b052a9f3a
+Command: make verify-changed
+Verdict: pass
+Exit: 0
+Diagnostics: removed on success
+QA action: recorded supervised result; did not rerun.
