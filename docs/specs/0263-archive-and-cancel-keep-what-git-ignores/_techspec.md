@@ -45,7 +45,7 @@ never has to undo a partial `os.RemoveAll`.
   waits for the skills that describe a changed surface". ADR-0244: "A Spec
   declares the domain terms it introduces". ADR-0257: "Inside a Run the Daemon
   is the only full gate". ADR-0258: "A Spec is authored against the QA rerun
-  classes". ADR-0259: "A test runs in parallel unless it names why it cannot".
+  classes". ADR-0259: "A test runs in parallel unless it names why it cannot". ADR-0271: "A test bounds by real time only what it asserts"; the new tests give no child, goroutine or Git a real-time allowance they do not assert.
   Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: the cycle
   AF grant of 2026-10-12 ("Sim, como no AE") and the 2026-09-30 skills grant
@@ -288,6 +288,7 @@ Deviations from the PRD: None.
 - ADR-0257: no rejected alternative is taken; agents run focused tests and the Daemon runs the declared Verification.
 - ADR-0258: no rejected alternative is taken; the Spec declares every file and break it touches.
 - ADR-0259: no rejected alternative is taken; every new test calls `t.Parallel()` first.
+- ADR-0271: no rejected alternative is taken; the new tests bound by real time only what they assert, and no test file gains a Real-Time Budget.
 
 ## Integration Points
 

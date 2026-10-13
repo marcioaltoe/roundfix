@@ -56,7 +56,7 @@ Verification here depends on another Spec's artifacts.
   a changed surface". ADR-0244: "A Spec declares the domain terms it
   introduces". ADR-0257: "Inside a Run the Daemon is the only full gate".
   ADR-0258: "A Spec is authored against the QA rerun classes". ADR-0259: "A
-  test runs in parallel unless it names why it cannot". Source:
+  test runs in parallel unless it names why it cannot". ADR-0271: "A test bounds by real time only what it asserts"; the new tests give no child, goroutine or Git a real-time allowance they do not assert. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: the cycle
   AF grant of 2026-10-12 ("Sim, como no AE", carrying the cycle AE "Concedo"
