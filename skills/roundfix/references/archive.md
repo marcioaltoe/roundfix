@@ -37,6 +37,9 @@ that edits its own record remain refusals.
 
 Archive refuses a Spec with a Glossary Gap, also under a QA Archive Override.
 
+Archive also refuses while Git ignores any file under the Spec folder. It lists
+each ignored file and writes nothing. The operator must remove each file or commit it with git add -f, then retry.
+
 Use `roundfix archive <slug>` after a Spec's Tasks are completed and the newest
 QA Report is acceptable under the one declared-acceptance eligibility policy:
 either `verdict: pass` with no disallowed blocked rows, or a `partial` verdict
@@ -77,6 +80,10 @@ When files are promoted, the successful confirmation appends
 `; promoted <n> file(s) to docs/references/`.
 Existing archived folders retain their legacy link semantics.
 
+If the final folder removal fails, Archive keeps every write, exits `1`, and
+prints the command that finishes the removal:
+`chmod -R u+w '<folder>' && rm -rf '<folder>'`.
+
 ## Cancel Command
 
 `roundfix cancel <slug> --reason <text>` writes an Archive Record with the
@@ -85,6 +92,11 @@ the reason, date and completed and pending Tasks, returns each adopted source
 under the Source Return contract, and removes the Spec folder while keeping it
 in Git at `source_revision`. A cancelled Spec never meets a prerequisite, never
 supersedes another Spec, and a Delivery Retry refuses it.
+
+Cancel also refuses while Git ignores any file under the Spec folder. It lists
+each ignored file and writes nothing. The operator must remove each file or commit it with git add -f, then retry. If the final folder removal fails, Cancel
+keeps every write, exits `1`, and prints the command that finishes the removal:
+`chmod -R u+w '<folder>' && rm -rf '<folder>'`.
 
 After a successful archive, the command warns when `source_revision` is not an
 ancestor of the default branch. When the delivery Pull Request opens,

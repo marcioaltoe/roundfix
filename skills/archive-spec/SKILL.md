@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.10
+  version: 0.0.11
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.10
+version: 0.0.11
 ---
 
 # Archive Spec
@@ -61,6 +61,17 @@ with disposition `cancelled`, returns each adopted Backlog Entry to
 `docs/findings/` with `status: pending`, then removes the Spec folder while its
 bytes stay in Git at `source_revision`. A cancelled record never meets a
 prerequisite, never supersedes another Spec and is refused by Delivery Retry.
+
+## Ignored files and a failed removal
+
+The Archive Command and the Cancel Command refuse while Git ignores any file
+under the Spec folder. Each command lists every ignored file and writes
+nothing. The operator must remove each file or commit it with git add -f, then
+retry.
+
+If the final removal of the Spec folder fails, both commands keep every write,
+exit `1`, and print the command that finishes the removal:
+`chmod -R u+w '<folder>' && rm -rf '<folder>'`.
 
 ## Preconditions — verify, don't trust
 

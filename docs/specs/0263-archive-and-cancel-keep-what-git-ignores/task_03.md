@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0263-archive-and-cancel-keep-what-git-ignores
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -83,3 +83,37 @@ version record.
 - `_prd.md` → Core Feature 3; Glossary
 - `_techspec.md` → API Contract 1; API Contract 3; Build Order 3
 - ADR-0269; ADR-0256; ADR-0244
+
+## Result
+
+Implementation evidence:
+
+- The Roundfix archive reference now documents the ignored-file refusal and
+  forward folder-removal recovery under both the Archive Command and Cancel
+  Command. The archive-spec skill has the new `## Ignored files and a failed
+  removal` section. The required phrases are present in both source skills and
+  their mirrors.
+- `CONTEXT.md` now defines **Ignored Spec File** near **Cancel Command** and
+  **Folder Removal Recovery** near **Archive Record**, with ADR-0269 links.
+- `make skills-sync` exited 0 and regenerated the embedded mirrors.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` exited 0 (`1 passed in 1 packages`). It raised and
+  recorded `archive-spec` as `0.0.11` and `roundfix` as `0.1.70`; the recorder
+  wrote their digests to `skills/testdata/owned-skill-versions.json`.
+
+Focused checks:
+
+- Phrase, heading, glossary and ADR checks passed for the source files.
+- The two source/mirror pairs compare byte-identically.
+- The `### QA settlement` section in the archive-spec source remains
+  unchanged from `HEAD`.
+
+Acceptance-criterion evidence:
+
+1. Both skills contain the refusal phrase and `chmod -R u+w`; each mirror
+   matches its source.
+2. Both skill versions are raised and recorded by the repository recorder.
+3. `CONTEXT.md` defines both requested terms and links each to ADR-0269.
+
+The implementation is ready for the Daemon's declared Verification and
+settlement. Task status remains Daemon-owned.
