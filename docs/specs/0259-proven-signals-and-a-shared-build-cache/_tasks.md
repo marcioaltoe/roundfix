@@ -18,6 +18,9 @@ graph:
       needs: [task_02]
     - id: task_05
       file: task_05.md
+      needs: [task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
       needs: [task_03, task_04]
 ---
 
@@ -29,9 +32,10 @@ graph:
 | task_02 | No test helper outlives its test binary                            | test    | high       | task_01          |
 | task_03 | make shares one Go build cache that the sandbox can write          | infra   | medium     | task_02          |
 | task_04 | doctor reports and gc reclaims Worktree Build Caches               | backend | high       | task_02          |
-| task_05 | Run the final QA gate                                              | qa      | high       | task_03, task_04 |
+| task_05 | Run the final QA gate                                              | qa      | high       | task_03, task_04, task_06 |
+| task_06 | The residue scan survives an unreadable process, and the disposal lock tests wait on a synchronization point (corrective 1 of 2) | test | medium | task_03, task_04 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03, task_04 · 4 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03, task_04 · 4 → task_06 · 5 → task_05
 
 task_02 changes the helpers and teardowns task_01 converts and extends task_01's
 rule allowlist, and both edit `CONTEXT.md`, so they run in series. task_03 shares

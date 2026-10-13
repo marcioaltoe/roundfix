@@ -86,6 +86,17 @@ reads a credential.
 12. MUST NOT accept a row whose only evidence is that a file was read. It MUST
     NOT read or write `~/.roundfix`, signal a process it did not start, use a
     broad `pkill`, send any request to a provider, or start a workflow.
+13. MUST run every command, including the qa-gate skill's `archive --plan`
+    observation, with `ROUNDFIX_TYPESAFE_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`,
+    `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`,
+    `TYPESAFE_API_KEY` and `OPENROUTER_API_KEY` removed from its environment,
+    so no judge selects a credential (addendum 2026-10-12, QA F4 of the Report
+    at `9479226c`).
+14. MUST run the ten suites of Requirement 6 with a temporary `HOME` and with
+    `RUSTUP_HOME` and `CARGO_HOME` set to the operator's existing rustup and
+    cargo homes, so a tool installed through rustup keeps its default
+    toolchain; the suites only read them (addendum 2026-10-12, QA F3 of the
+    Report at `9479226c`).
 
 ## Subtasks
 
