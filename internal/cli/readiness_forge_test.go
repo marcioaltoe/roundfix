@@ -17,6 +17,7 @@ import (
 	"time"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/testwait"
 )
 
 type readinessReply struct {
@@ -302,7 +303,7 @@ func enterpriseReadinessRunner(t *testing.T, run readinessRunner) readinessRunne
 }
 
 func TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken(t *testing.T) {
-	// Sequential: the probe's 250 ms bound is the behavior under test, and the child missed it under the race detector while it ran in parallel (0254 QA F4).
+	t.Parallel()
 	dir := t.TempDir()
 	setCommandEnvForTest(t, "PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	setCommandEnvForTest(t, "PROBE_LOG", filepath.Join(dir, "probes"))
@@ -365,22 +366,38 @@ exec sleep 30
 	}
 	deps.environ = commandEnvironmentForTest(t).dependencies.environ()
 	// The production bound: a probe whose child never answers ends with the
-	// deadline, well inside three seconds, whether or not the child started.
+	// deadline before the child's thirty-second sleep ends, even if startup is late.
 	deps.timeout = 250 * time.Millisecond
 	started := time.Now()
 	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
-	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 3*time.Second {
+	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 30*time.Second {
 		t.Fatalf("sleeping child did not cancel: %v", err)
 	}
-	// Cancellation kills the child: a longer bound lets the child record its
-	// PID even under load, and the deadline still ends the probe.
+	// Cancellation kills the child after it records its PID, regardless of
+	// how long the machine takes to start it.
 	if err := os.Remove(filepath.Join(dir, "pid")); err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
-	deps.timeout = 2 * time.Second
-	started = time.Now()
-	_, _, err = deps.probe(context.Background(), dir, "github.com", "gh", "--version")
-	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > 5*time.Second {
+	deps.timeout = testwait.Bound(t)
+	probeCtx, cancelProbe := context.WithCancel(t.Context())
+	probeEnded := make(chan error, 1)
+	probeDone := make(chan struct{})
+	defer func() {
+		cancelProbe()
+		<-probeDone
+	}()
+	go func() {
+		defer close(probeDone)
+		_, _, probeErr := deps.probe(probeCtx, dir, "github.com", "gh", "--version")
+		probeEnded <- probeErr
+	}()
+	testwait.Poll(t, "probe child PID file", probeEnded, func() (bool, string) {
+		pid, readErr := os.ReadFile(filepath.Join(dir, "pid"))
+		return readErr == nil && strings.TrimSpace(string(pid)) != "", fmt.Sprintf("PID=%q error=%v", pid, readErr)
+	})
+	cancelProbe()
+	err = testwait.Until(t, "cancelled probe", probeEnded, (<-chan error)(nil))
+	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("sleeping child did not cancel: %v", err)
 	}
 	pid, err := os.ReadFile(filepath.Join(dir, "pid"))

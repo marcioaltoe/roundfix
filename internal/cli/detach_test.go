@@ -29,6 +29,7 @@ const (
 	detachTestOwnerPIDEnv              = "ROUNDFIX_DETACH_TEST_OWNER_PID"
 	detachTestPIDPathEnv               = "ROUNDFIX_DETACH_TEST_PID_PATH"
 	detachTestSentinelPathEnv          = "ROUNDFIX_DETACH_TEST_SENTINEL_PATH"
+	detachTestRunCreationDelayEnv      = "ROUNDFIX_DETACH_TEST_RUN_CREATION_DELAY"
 )
 
 type detachTestSurvivor struct {
@@ -40,7 +41,7 @@ type detachTestSurvivor struct {
 
 func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSleepBeforeLiveness, 50*time.Millisecond, time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSleepBeforeLiveness, 50*time.Millisecond, detachTestBound(t))
 
 	if code != exitRunFailed {
 		t.Fatalf("expected liveness timeout exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
@@ -60,7 +61,7 @@ func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
 
 func TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, 500*time.Millisecond, 2*time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, detachHandshakeTimeout, detachRunCreationTimeout)
 
 	if code != exitOK {
 		t.Fatalf("expected detach success exit %d, got %d stdout=%q stderr=%q", exitOK, code, stdout, stderr)
@@ -87,7 +88,7 @@ func TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline(t 
 
 func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSlowRunCreation, 500*time.Millisecond, 50*time.Millisecond)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSlowRunCreation, detachTestBound(t), 50*time.Millisecond)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected Run-creation timeout exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
@@ -107,7 +108,7 @@ func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
 
 func TestRunDetachedCommandReportsInvalidLivenessHandshake(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildInvalidLiveness, time.Second, time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildInvalidLiveness, detachTestBound(t), detachTestBound(t))
 
 	if code != exitRunFailed {
 		t.Fatalf("expected invalid liveness exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
@@ -127,7 +128,7 @@ func TestRunDetachedCommandReportsInvalidLivenessHandshake(t *testing.T) {
 
 func TestRunDetachedCommandReportsMalformedRunCreationHandshake(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildMalformedRunCreated, time.Second, time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildMalformedRunCreated, detachTestBound(t), detachTestBound(t))
 
 	if code != exitRunFailed {
 		t.Fatalf("expected malformed run creation exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
@@ -147,7 +148,7 @@ func TestRunDetachedCommandReportsMalformedRunCreationHandshake(t *testing.T) {
 
 func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitTwoWithOutput, time.Second, time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitTwoWithOutput, detachTestBound(t), detachTestBound(t))
 
 	if code != exitPreflight {
 		t.Fatalf("expected child exit code %d, got %d stdout=%q stderr=%q", exitPreflight, code, stdout, stderr)
@@ -171,8 +172,8 @@ func TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent(t *testing.T) {
 		t.Run(command, func(t *testing.T) {
 			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 				dependencies.detachTimeouts = detachPhaseTimeouts{
-					liveness:    time.Second,
-					runCreation: time.Second,
+					liveness:    detachTestBound(t),
+					runCreation: detachTestBound(t),
 				}
 			})
 			artifactParent := t.TempDir()
@@ -211,7 +212,7 @@ func TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent(t *testing.T) {
 
 func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
 	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitOneSilently, time.Second, time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitOneSilently, detachTestBound(t), detachTestBound(t))
 
 	if code != exitRunFailed {
 		t.Fatalf("expected child exit code %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
@@ -277,6 +278,7 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 	childEnvironment = withEnvValue(childEnvironment, detachTestOwnerPIDEnv, strconv.Itoa(os.Getpid()))
 	var survivor *detachTestSurvivor
 	if childMode == detachTestChildRunCreated {
+		childEnvironment = withEnvValue(childEnvironment, detachTestRunCreationDelayEnv, livenessTimeout.String())
 		survivor = newDetachTestSurvivor(t)
 		childEnvironment = withEnvValue(childEnvironment, detachTestPIDPathEnv, survivor.pidPath)
 		childEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, survivor.sentinelPath)
@@ -288,6 +290,9 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 				t.Errorf("remove detached child teardown directory: %v", err)
 			}
 		})
+	}
+	if childMode == detachTestChildSleepBeforeLiveness || childMode == detachTestChildSlowRunCreation {
+		childEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, filepath.Join(t.TempDir(), "never-release"))
 	}
 	code := runDetachedCommand(
 		[]string{"implement", "--detach"},
@@ -311,8 +316,7 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 func runDetachTestChild(mode string) int {
 	switch mode {
 	case detachTestChildSleepBeforeLiveness:
-		time.Sleep(2 * time.Second)
-		return exitOK
+		return waitForDetachTestSentinel()
 	case detachTestChildSlowRunCreation:
 		handshake, ok := writeDetachTestLiveness()
 		if !ok {
@@ -321,8 +325,7 @@ func runDetachTestChild(mode string) int {
 		defer func() {
 			_ = handshake.Close()
 		}()
-		time.Sleep(2 * time.Second)
-		return exitOK
+		return waitForDetachTestSentinel()
 	case detachTestChildRunCreated:
 		if !recordDetachTestSurvivor() {
 			return exitRunFailed
@@ -334,7 +337,16 @@ func runDetachTestChild(mode string) int {
 		defer func() {
 			_ = handshake.Close()
 		}()
-		time.Sleep(750 * time.Millisecond)
+		delay := 750 * time.Millisecond
+		if value := os.Getenv(detachTestRunCreationDelayEnv); value != "" {
+			var err error
+			delay, err = time.ParseDuration(value)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "parse detached test Run creation delay: %v\n", err)
+				return exitRunFailed
+			}
+		}
+		time.Sleep(delay)
 		consoleLog := filepath.Join(filepath.Dir(os.Getenv(detachConsoleTempEnv)), detachTestRunID, "console.log")
 		if _, err := fmt.Fprintf(handshake, "%s\t%s\n", detachTestRunID, consoleLog); err != nil {
 			return exitRunFailed

@@ -61,9 +61,7 @@ func TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents(t *testing.T)
 		t.Fatalf("acquire independent write lock: %v", err)
 	}
 
-	pruneCtx, cancel := context.WithTimeout(ctx, 250*time.Millisecond)
-	defer cancel()
-	result, err := runStore.PruneTerminalRuns(pruneCtx, cutoff)
+	result, err := runStore.PruneTerminalRuns(t.Context(), cutoff)
 	if err != nil {
 		t.Fatalf("prune empty terminal Run while write lock is held: %v", err)
 	}

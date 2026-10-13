@@ -92,7 +92,7 @@ func (runner *ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime Ru
 	}
 	setupCancel()
 
-	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), acpxPreflightCleanupTimeout)
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), runner.disposableCleanupTimeout())
 	defer cleanupCancel()
 	cleanupErr := runner.closeDisposableSession(cleanupCtx, candidate, sessionName, workDir)
 	if cleanupErr != nil {

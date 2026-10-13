@@ -14,6 +14,9 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 - A top-level test in a Parallel Test Package calls `t.Parallel()` as its first statement or carries a `// Sequential: <reason>` comment naming the process-wide state it changes; the Parallel Test Package rule in `internal/testfixture` enforces it.
 - Keep the project KISS: prefer the smallest behavior that satisfies the
   documented product contract.
+- A test bounds by real time only the budget it asserts; every other wait ends
+  on the event its assertion reads or the test deadline. The Real-Time Budget rule
+  in `internal/testfixture` holds each test file to a ceiling that only falls.
 - **NEVER** copy names, branding, package names, comments, examples, or
   generated artifacts from reference projects into this repository.
 - **HARD RULE — repository contracts validate at the pull request boundary**:

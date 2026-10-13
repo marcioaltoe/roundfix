@@ -106,7 +106,7 @@ func (runner *ACPXRunner) RunSealedPrompt(
 
 	cleanupCtx, cleanupCancel := context.WithTimeout(
 		context.WithoutCancel(ctx),
-		acpxPreflightCleanupTimeout,
+		runner.disposableCleanupTimeout(),
 	)
 	defer cleanupCancel()
 	if ctx.Err() != nil ||

@@ -379,7 +379,13 @@ func (budget *taskCycleBudget) expiredAt(now time.Time) bool {
 	return budget.expired
 }
 
-func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelCauseFunc) {
+func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelCauseFunc, newTimer func(time.Duration) (<-chan time.Time, func() bool)) {
+	if newTimer == nil {
+		newTimer = func(duration time.Duration) (<-chan time.Time, func() bool) {
+			timer := time.NewTimer(duration)
+			return timer.C, timer.Stop
+		}
+	}
 	for {
 		budget.mu.Lock()
 		deadline := budget.deadline
@@ -394,15 +400,15 @@ func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelC
 			}
 		}
 
-		timer := time.NewTimer(time.Until(deadline))
+		timer, stop := newTimer(time.Until(deadline))
 		select {
 		case <-ctx.Done():
-			stopTaskCycleBudgetTimer(timer)
+			stopTaskCycleBudgetTimer(timer, stop)
 			return
 		case <-changed:
-			stopTaskCycleBudgetTimer(timer)
+			stopTaskCycleBudgetTimer(timer, stop)
 			continue
-		case <-timer.C:
+		case <-timer:
 			budget.mu.Lock()
 			current := budget.deadline
 			if current.Equal(deadline) {
@@ -417,12 +423,12 @@ func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelC
 	}
 }
 
-func stopTaskCycleBudgetTimer(timer *time.Timer) {
-	if timer.Stop() {
+func stopTaskCycleBudgetTimer(timer <-chan time.Time, stop func() bool) {
+	if stop() {
 		return
 	}
 	select {
-	case <-timer.C:
+	case <-timer:
 	default:
 	}
 }
@@ -471,7 +477,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 	watchdogDone := make(chan struct{})
 	go func() {
 		defer close(watchdogDone)
-		plan.runBudget.watch(cycleCtx, cancelCycle)
+		plan.runBudget.watch(cycleCtx, cancelCycle, engine.deps.BudgetTimer)
 	}()
 	defer func() {
 		cancelCycle(context.Canceled)

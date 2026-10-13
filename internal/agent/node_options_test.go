@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"roundfix/internal/testfixture"
+	"roundfix/internal/testwait"
 )
 
 func TestAgentNodeOptionsDropsAMissingPreload(t *testing.T) {
@@ -107,7 +108,7 @@ func main() {
 	environment := []string{"NODE_OPTIONS=--require=" + missing + " --max-old-space-size=4096", "CODEX_PATH=/dirty", "CLAUDECODE=1", "KEEP=kept", "OUTPUT=" + output, "ACPX_TEST_SCRIPT=" + scriptPath}
 	original := append([]string(nil), environment...)
 	var notices bytes.Buffer
-	runner := &ACPXRunner{Command: command, Environment: environment, Notices: &notices}
+	runner := &ACPXRunner{cleanupTimeout: testwait.Bound(t), Command: command, Environment: environment, Notices: &notices}
 	for range 2 {
 		if err := runner.Probe(context.Background(), ProbeRequest{}); err != nil {
 			t.Fatal(err)
