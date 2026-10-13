@@ -1,0 +1,13 @@
+{
+  "declarations": {
+    "_prd.md": true,
+    "_techspec.md": true
+  },
+  "terms": {
+    "Behavior Surface": true,
+    "Behavior Surface Record": true,
+    "Baseline Command": true
+  },
+  "introduced_terms": [],
+  "conclusion": "No new domain term; printer/helper identifiers and ordinary group/help wording name no new domain entity."
+}

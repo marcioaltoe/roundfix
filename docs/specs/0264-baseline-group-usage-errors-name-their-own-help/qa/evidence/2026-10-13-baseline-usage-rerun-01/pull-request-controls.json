@@ -1,0 +1,27 @@
+{
+  "candidate": "4af8655e7e55dd0725933e6b08c61b19d2b30844",
+  "target_branch": "roundfix/deliver-0264-baseline-group-usage-errors-name-their-own-help-8e5db501ec0318d2",
+  "open_pull_request": null,
+  "source": "Daemon assignment: none open",
+  "approval": {
+    "delivery_authority": "Spec _authorization.md approved cycle AF, carries AE grant",
+    "operative": true,
+    "pr_review_approval": "None obtained"
+  },
+  "checks": {
+    "command": "make verify-changed",
+    "verdict": "pass",
+    "exit": 0,
+    "head": "4af8655e7e55dd0725933e6b08c61b19d2b30844",
+    "source": "Daemon-provided outside-sandbox result",
+    "remote_checks": "No Pull Request"
+  },
+  "unresolved_threads": "None: no open Pull Request exists",
+  "merge_ready": "No current-candidate Review Source acceptance exists yet",
+  "review_artifact_ancestry": {
+    "claimed_head": "4af8655e7e55dd0725933e6b08c61b19d2b30844",
+    "artifact": "None provided for this head; no accepted-review ancestry claim is made"
+  },
+  "unblocking": "Delivery owner obtains current-candidate review, opens the target-branch Pull Request and observes its required controls.",
+  "equivalent_evidence": "Recorded maintainer delivery authority and Daemon repository Verification; remaining expected pre-PR control states recorded explicitly."
+}

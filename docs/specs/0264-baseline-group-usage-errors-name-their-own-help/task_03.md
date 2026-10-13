@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0264-baseline-group-usage-errors-name-their-own-help
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

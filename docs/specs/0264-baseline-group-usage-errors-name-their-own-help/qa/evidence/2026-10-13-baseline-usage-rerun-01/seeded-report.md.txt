@@ -1,0 +1,56 @@
+---
+verdict: pending
+auditing_binary: "0.75.0 (4af8655e, built 2026-10-13 16:11:25 -0300)"
+auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"
+rows_blocked_environment: 0
+rows_blocked_finding: 0
+rows_blocked_declared: 0
+---
+
+# QA Report
+
+## Performed repairs
+
+None.
+
+## Assigned repair failures
+
+None.
+
+## Authorization audit inputs
+
+| Task | Commit | Outcome | Record | Revision | Detail |
+| --- | --- | --- | --- | --- | --- |
+| task_01 | da15a910f3b2a4bccf3938660af04be88c5be5b0 | granted | docs/specs/0264-baseline-group-usage-errors-name-their-own-help/_authorization.md | 58c6d9e27467038c4ab234cb5c15a9e2f6c23fc5 | operative grant |
+
+## Mechanical findings
+
+None.
+
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+| 10 | carried (established by: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/qa/qa-report-2026-10-13.md; head: 68370e1a0c0a542c24ff52c003eb48b9a437b879) | outside-evidence row |
+
+## Mechanical skips
+
+| Detector | Missing artifact |
+| --- | --- |
+| consequent-fix commit order | consequent-fix declaration |
+
+## Row carry-forward
+
+| Prior row | Disposition |
+| --- | --- |
+| 1 | re-run: always observed: repository Verification |
+| 2 | re-run: input moved: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md |
+| 3 | re-run: input moved: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md |
+| 4 | re-run: input moved: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md |
+| 5 | re-run: input moved: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md |
+| 6 | re-run: input moved: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md |
+| 7 | re-run: input moved: docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md |
+| 8 | re-run: not pass |
+| 9 | re-run: always observed: commit_range input |
+| 10 | carried |
+| 11 | re-run: not pass |

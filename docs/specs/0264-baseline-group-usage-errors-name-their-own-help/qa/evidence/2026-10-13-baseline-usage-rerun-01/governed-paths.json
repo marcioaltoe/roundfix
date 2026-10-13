@@ -1,0 +1,12 @@
+{
+  ".agents/skills/roundfix/SKILL.md": true,
+  ".agents/skills/roundfix/references/baseline.md": true,
+  "docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_01.md": false,
+  "docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_02.md": false,
+  "internal/cli/baseline_group_usage_test.go": false,
+  "internal/cli/baseline_profile.go": false,
+  "internal/cli/command_help_test.go": false,
+  "skills/roundfix/SKILL.md": true,
+  "skills/roundfix/references/baseline.md": false,
+  "skills/testdata/owned-skill-versions.json": false
+}

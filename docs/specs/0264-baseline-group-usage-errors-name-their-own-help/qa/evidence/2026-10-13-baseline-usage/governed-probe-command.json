@@ -1,0 +1,21 @@
+{
+  "command": [
+    "go",
+    "run",
+    "./cmd/qa-0264",
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    "docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_01.md",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/baseline.md",
+    "skills/testdata/owned-skill-versions.json",
+    "docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_02.md",
+    "internal/cli/baseline_group_usage_test.go",
+    "internal/cli/baseline_profile.go",
+    "internal/cli/command_help_test.go"
+  ],
+  "cwd": "/private/tmp/roundfix-0264-qa-zrtrl13_/sabotaged-tree",
+  "exit": 0,
+  "stdout": "{\".agents/skills/roundfix/SKILL.md\":true,\".agents/skills/roundfix/references/baseline.md\":true,\"docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_01.md\":false,\"docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_02.md\":false,\"internal/cli/baseline_group_usage_test.go\":false,\"internal/cli/baseline_profile.go\":false,\"internal/cli/command_help_test.go\":false,\"skills/roundfix/SKILL.md\":true,\"skills/roundfix/references/baseline.md\":false,\"skills/testdata/owned-skill-versions.json\":false}\n",
+  "stderr": ""
+}

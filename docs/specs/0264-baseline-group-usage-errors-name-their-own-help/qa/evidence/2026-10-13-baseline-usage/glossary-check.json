@@ -1,0 +1,17 @@
+{
+  "PRD_declaration_none": true,
+  "TechSpec_declaration_none": true,
+  "domain_rule": "docs/agents/domain.md requires canonical terms and a glossary entry for a newly introduced domain term",
+  "terms_checked": [
+    "Behavior Surface",
+    "Behavior Surface Record",
+    "Baseline Command"
+  ],
+  "existing_definitions": {
+    "Behavior Surface": true,
+    "Behavior Surface Record": true,
+    "Baseline Command": true
+  },
+  "new_terms_in_actual_diff": [],
+  "reason": "The change rewrites dispatcher diagnostics and documents existing group/help behavior; it adds no domain entity, lifecycle, stored format, or new public concept. Printer/test-helper Go identifiers are implementation names, not glossary terms."
+}

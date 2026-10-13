@@ -1,0 +1,34 @@
+{
+  "criterion": "task_03 Requirement 5: Behavior Surface Record byte-identical to 3820bdd4",
+  "command": [
+    "git",
+    "show",
+    "3820bdd4:docs/references/behavior-surfaces.json"
+  ],
+  "historical_sha256": "a4418b9fcf3da8a507454b8d678a326c1c4f06de0ae5e518a68b99d20e55fecb",
+  "delivery_base_sha256": "80cc2d18633ba442494a3fd2ae7445f59d8a7f0d294af4c6e517b3395e5ad35c",
+  "audited_sha256": "80cc2d18633ba442494a3fd2ae7445f59d8a7f0d294af4c6e517b3395e5ad35c",
+  "historical_bytes_equal": false,
+  "delivery_bytes_equal": true,
+  "changed_surface_count": 11,
+  "changed_surfaces": [
+    "command archive",
+    "command cancel",
+    "config keys",
+    "guide docs/user-guide/commands/archive.md",
+    "guide docs/user-guide/commands/cancel.md",
+    "guide docs/user-guide/commands/detached-runs.md",
+    "guide docs/user-guide/commands/doctor.md",
+    "guide docs/user-guide/commands/gc.md",
+    "guide docs/user-guide/commands/reconcile.md",
+    "guide docs/user-guide/commands/spec.md",
+    "guide docs/user-guide/configuration.md"
+  ],
+  "intervening_record_commits": [
+    "059ae44bef623a1dfaf7b05cdecbeafa8499919a feat: deliver 0263-archive-and-cancel-keep-what-git-ignores (#520)",
+    "726b49be167ae542048895960c9be37028dc8da7 feat: deliver 0262-a-run-worktree-under-a-symlinked-root-is-cleaned (#517)",
+    "fc3964fcba21175168351095567135015e53476e feat: deliver 0258-authoring-that-proves-what-it-claims (#514)",
+    "db281987a31dd2ad733eb8e80a81dddec31017da feat: deliver 0259-proven-signals-and-a-shared-build-cache (#512)"
+  ],
+  "delivery_range_diff": ""
+}

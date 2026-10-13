@@ -1,0 +1,3 @@
+package main
+import("encoding/json";"os";"roundfix/internal/speccheck")
+func main(){ result:=map[string]bool{}; for _,path:=range os.Args[1:] { result[path]=speccheck.GovernedPath(path) }; if err:=json.NewEncoder(os.Stdout).Encode(result);err!=nil{panic(err)} }

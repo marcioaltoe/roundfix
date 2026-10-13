@@ -1,0 +1,132 @@
+import os, pathlib, subprocess, json, re, textwrap, shlex, sys, hashlib, io, tarfile, shutil
+ROOT=pathlib.Path.cwd()
+SLUG='0264-baseline-group-usage-errors-name-their-own-help'
+SP=ROOT/'docs/specs'/SLUG
+QA=SP/'qa'
+EV=QA/'evidence/2026-10-13-baseline-usage-rerun-01'
+CTX=json.loads((EV/'context.json').read_text())
+TMP=pathlib.Path(CTX['temp'])
+REPORT=QA/'qa-report-2026-10-13-01.md'
+ENV=dict(os.environ,HOME=str(TMP/'home'),GOPATH='/Users/marcio/go',GOMODCACHE='/Users/marcio/go/pkg/mod',GOPROXY='off',GOTOOLCHAIN='local',GOCACHE=str(pathlib.Path(os.environ.get('TMPDIR','/tmp'))/('roundfix-go-build-'+str(os.getuid()))))
+HEAD=CTX['head']; BASE=CTX['base']
+def save(name,obj):
+ (EV/name).write_text(json.dumps(obj,indent=2)+'\n')
+def run(args,cwd=ROOT,env=ENV):
+ p=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True)
+ result=dict(command=args,cwd=str(cwd),exit=p.returncode,stdout=p.stdout,stderr=p.stderr)
+ if args[0]==CTX['binary']:
+  result.update(command='./bin/roundfix '+shlex.join(args[1:]),executable=CTX['binary'],HOME=ENV['HOME'])
+ return result
+def cli(*args): return run([CTX['binary'],*args],TMP/'cwd')
+def git(*args):
+ r=run(['git',*args]); assert r['exit']==0,r; return r['stdout']
+def observe(row,status,body):
+ s=REPORT.read_text(); start=s.index('## Results\n'); end=s.index('\n## ',start+1); table=s[start:end]; table=re.sub(r'(?m)^(\| '+str(row)+r' \| )[^|]+( \|)',lambda m:m[1]+status+m[2],table); s=s[:start]+table+s[end:]
+ a='<!-- observation-'+str(row)+' -->'; b='<!-- end-observation-'+str(row)+' -->'
+ s=s[:s.index(a)+len(a)]+'\n'+body+'\n'+s[s.index(b):]; REPORT.write_text(s)
+ print('row',row,status,flush=True)
+def link(name): return '['+name+'](evidence/2026-10-13-baseline-usage-rerun-01/'+name+')'
+def paths(helptext):
+ out=[]
+ def add(words):
+  for i in range(1,len(words)+1):
+   p=' '.join(words[:i])
+   if p not in out: out.append(p)
+ for line in helptext.splitlines():
+  if not line.startswith('  roundfix '): continue
+  words=[]
+  for token in line[len('  roundfix '):].split():
+   if token.startswith(('-','[','(','<')):
+    if words and token.startswith('<') and token.endswith('>') and '|' in token:
+     for alternative in token[1:-1].split('|'): add(words+[alternative])
+     words=[]
+    break
+   words.append(token)
+  add(words)
+ return out
+def groups():
+ r=cli('--help'); save('root-help.json',r); assert r['exit']==0 and not r['stderr']
+ ps=paths(r['stdout']); gs={p:[c for c in ps if c.startswith(p+' ')] for p in ps if any(c.startswith(p+' ') for c in ps)}
+ return ps,gs
+def check_pointer(observed,children):
+ results=[]
+ for pointer in re.findall(r"'roundfix ([^']+) --help'",observed['stderr']):
+  h=cli(*shlex.split(pointer),'--help'); missing=[p for p in children if 'roundfix '+p not in h['stdout']]; results.append(dict(pointer=pointer,observed=h,missing_commands=missing,pass_=h['exit']==0 and not h['stderr'] and not missing))
+ return results
+def flows():
+ ps,gs=groups(); source=(SP/'_techspec.md').read_text(); blocks=re.findall(r'```transcript\n(.*?)\n\s*```',source,re.S); assert len(blocks)==6
+ for number,block in enumerate(blocks,1):
+  lines=textwrap.dedent(block).splitlines(); args=shlex.split(lines[0][2:])[1:]; a=lines.index('stdout:'); b=lines.index('stderr:'); c=next(i for i,l in enumerate(lines) if l.startswith('exit:'))
+  expected=dict(stdout='\n'.join(lines[a+1:b])+ ('\n' if b>a+1 else ''),stderr='\n'.join(lines[b+1:c])+ ('\n' if c>b+1 else ''),exit=int(lines[c].split(':')[1]))
+  observed=cli(*args); group=' '.join(args[:2]) if args[1]!='prune' else 'baseline'; confirm=check_pointer(observed,gs[group]); ok=all(observed[k]==expected[k] for k in expected) and bool(confirm) and all(x['pass_'] for x in confirm)
+  name='transcript-'+str(number)+'.json'; save(name,dict(transcript=number,expected=expected,observed=observed,confirmation=confirm,pass_=ok)); observe(number+1,'pass' if ok else 'fail','Actor: operator/agent; CLI. `./bin/roundfix '+shlex.join(args)+'` from the empty temporary cwd/HOME. Independent stdout/stderr/exit comparison '+('passed' if ok else 'failed')+'; exit '+str(observed['exit'])+', stdout '+str(len(observed['stdout'].encode()))+' bytes. Following the printed help in a new process exits 0, emits no stderr and lists every descendant command ('+str(len(gs[group]))+'). Parsing/help has no persistence requirement. Evidence: '+link(name)+'.')
+ state={p.name:list(str(x.relative_to(p)) for x in p.rglob('*')) for p in [TMP/'home',TMP/'cwd']}; save('flow-state.json',state); print('isolated state',state,flush=True)
+def metrics():
+ ps,gs=groups(); calls=[]
+ for group in sorted(gs):
+  o=cli(*group.split(),'no-such-command'); words=o['stderr'].split(); repeated=[words[i] for i in range(1,len(words)) if words[i]==words[i-1]]; confirms=check_pointer(o,gs[group]); ok=o['exit']!=0 and not repeated and all(x['pass_'] for x in confirms)
+  calls.append(dict(group=group,observed=o,repeated_words=repeated,confirmation=confirms,pass_=ok))
+ for group in ['baseline capabilities','baseline skills','baseline assets']:
+  o=cli(*group.split()); words=o['stderr'].split(); repeated=[words[i] for i in range(1,len(words)) if words[i]==words[i-1]]; confirms=check_pointer(o,gs[group]); ok=o['exit']!=0 and not repeated and all(x['pass_'] for x in confirms)
+  calls.append(dict(group=group,observed=o,repeated_words=repeated,confirmation=confirms,pass_=ok))
+ sweep=dict(groups=len(gs),paths=len(ps),calls=len(calls),failures=[c for c in calls if not c['pass_']],observations=calls); save('group-sweep.json',sweep)
+ ancestry=run(['git','merge-base','--is-ancestor','73ff013c7f3bdd73ff78812e50c7e11d78afa3f8',HEAD]); save('prerequisite-ancestry.json',ancestry)
+ headtest=run(['go','test','-count=1','-v','-run','^(TestBaselineGroupUsageTranscripts|TestEveryGroupUsageErrorPointsAtItsCommands)$','./internal/cli']); save('head-tests.json',headtest); print('head guard exit',headtest['exit'],flush=True)
+ scratch=TMP/'scratch'; scratch.mkdir(exist_ok=True)
+ archive=subprocess.run(['git','archive',HEAD],cwd=ROOT,capture_output=True); assert archive.returncode==0
+ with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar: tar.extractall(scratch,filter='data')
+ src=scratch/'internal/cli/baseline_profile.go'; before=src.read_text(); target='fmt.Fprintf(stderr, "Run \'%s %s --help\' for usage.\\n", app.Name, commandPath)'; assert before.count(target)==1
+ src.write_text(before.replace(target,'fmt.Fprintf(stderr, "Run \'%s %s --help\' for usage.\\n", app.Name, "baseline profile")'))
+ sabotage=run(['go','test','-count=1','-v','-run','^TestEveryGroupUsageErrorPointsAtItsCommands$','./internal/cli'],scratch)
+ sabotage['mutation']='Only printBaselineUsageError help pointer changed to baseline profile --help in temporary tracked-tree copy.'; sabotage['expected_failure']=sabotage['exit']==1 and 'help is missing command' in sabotage['stdout'] and 'roundfix baseline' in sabotage['stdout']; save('sabotage.json',sabotage); src.write_text(before); print('sabotage exit',sabotage['exit'],'expected',sabotage['expected_failure'],flush=True)
+ terms=['Behavior Surface','Behavior Surface Record','Baseline Command']; context=(ROOT/'CONTEXT.md').read_text(); declarations={n:bool(re.search(r'## Glossary\s+None\.',(SP/n).read_text())) for n in ['_prd.md','_techspec.md']}; glossary=dict(declarations=declarations,terms={t:('**'+t+'**:') in context for t in terms},introduced_terms=[],conclusion='No new domain term; printer/helper identifiers and ordinary group/help wording name no new domain entity.'); save('glossary-check.json',glossary)
+ ok=len(gs)>=12 and not sweep['failures'] and ancestry['exit']==0 and headtest['exit']==0 and sabotage['expected_failure'] and all(declarations.values()) and all(glossary['terms'].values())
+ observe(1,'pass' if ok else 'fail','Actor: maintainer. `make build` passed; `git merge-base --is-ancestor 73ff013c7f3bdd73ff78812e50c7e11d78afa3f8 '+HEAD+'` exits '+str(ancestry['exit'])+' and establishes merged Spec 0260 (#506). `make verify-changed`: Daemon-provided pass (exit 0), never rerun. Success Metric 1: '+str(len(gs))+' groups, '+str(len(ps))+' command paths, '+str(len(calls))+' invalid/bare calls, '+str(len(sweep['failures']))+' failing calls. Existing review group prints no pointer; API Contract 3 permits this. Success Metric 2: head class guard and six transcript tests exit '+str(headtest['exit'])+'; temporary-copy pointer sabotage exits '+str(sabotage['exit'])+' and names baseline groups with missing commands. Scratch source restored; audited source never changed. Glossary check: PRD/TechSpec declare None.; existing terms resolve in CONTEXT.md and no new term requires entry. Parser/help flows are stateless. Evidence: '+', '.join(link(x) for x in ['prerequisite-ancestry.json','group-sweep.json','head-tests.json','sabotage.json','glossary-check.json'])+'.')
+def profile():
+ old={'unknown': {'exit': 2, 'stdout': '', 'stderr': 'roundfix: baseline profile failed: unknown baseline profile command "no-such-command"\nRun \'roundfix baseline profile --help\' for usage.\n'}, 'help': {'exit': 0, 'stderr': '', 'stdout': 'Usage:\n  roundfix baseline profile init --id <id> [--from <built-in-id>]\n  roundfix baseline profile show <id> [--format <text|json>]\n  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]\n\nCommands:\n  init      Create one repository-owned profile from an embedded built-in profile.\n  show      Resolve one built-in or repository-owned profile.\n  validate  Validate one profile ID, one repository profile path, or all repository profiles.\n'}}
+ o=cli('baseline','profile','no-such-command'); h=cli('baseline','profile','--help'); match=all(o[k]==old['unknown'][k] for k in ['exit','stdout','stderr']) and all(h[k]==old['help'][k] for k in ['exit','stdout','stderr']); save('profile-flow.json',dict(unknown=o,help=h,unchanged=match))
+ basebytes=subprocess.run(['git','show',BASE+':docs/references/behavior-surfaces.json'],cwd=ROOT,capture_output=True); assert basebytes.returncode==0; current=(ROOT/'docs/references/behavior-surfaces.json').read_bytes(); equal=basebytes.stdout==current
+ save('behavior-record.json',dict(base=BASE,head=HEAD,byte_identical=equal,base_sha256=hashlib.sha256(basebytes.stdout).hexdigest(),head_sha256=hashlib.sha256(current).hexdigest()))
+ fingerprints=[]
+ for surface,expected in json.loads(current)['surfaces'].items():
+  if not surface.startswith('command '): continue
+  observed=cli(*surface[len('command '):].split(),'--help'); digest='sha256:'+hashlib.sha256(observed['stdout'].encode()).hexdigest(); fingerprints.append(dict(surface=surface,expected=expected,actual=digest,observed=observed,pass_=expected==digest and observed['exit']==0 and not observed['stderr']))
+ save('help-fingerprints.json',dict(count=len(fingerprints),failures=[x for x in fingerprints if not x['pass_']],observations=fingerprints))
+ testfile=(ROOT/'internal/cli/baseline_profile_test.go').read_text(); tests=re.findall(r'^func (Test\w+)\(',testfile,re.M); selection='^('+'|'.join(tests)+')$'; test=run(['go','test','-count=1','-v','-run',selection,'./internal/cli']); save('profile-tests.json',dict(tests=tests,**test)); namedpass=all('--- PASS: '+t+' ' in test['stdout'] for t in tests)
+ baseprofile=subprocess.run(['git','show',BASE+':internal/cli/baseline_profile_test.go'],cwd=ROOT,capture_output=True); unchanged=baseprofile.returncode==0 and baseprofile.stdout==testfile.encode()
+ ok=match and equal and all(x['pass_'] for x in fingerprints) and test['exit']==0 and namedpass and unchanged
+ observe(8,'pass' if ok else 'fail','Actor: operator/maintainer. `./bin/roundfix baseline profile no-such-command` retains the prior exact two-line stderr, empty stdout and exit 2; independent `baseline profile --help` retains stdout, no stderr and exit 0. The Behavior Surface Record is byte-identical to delivery merge base `'+BASE+'`, SHA-256 `'+hashlib.sha256(current).hexdigest()+'` at both revisions. All '+str(len(fingerprints))+' recorded command-help surfaces exit 0 with empty stderr and match their recorded stdout fingerprints. All '+str(len(tests))+' existing profile tests ran unchanged and '+('passed' if test['exit']==0 and namedpass else 'failed')+'. The profile test file equals its delivery-base bytes. Evidence: '+', '.join(link(x) for x in ['profile-flow.json','behavior-record.json','help-fingerprints.json','profile-tests.json'])+'. No state persists in these help/parser flows.')
+
+def audit():
+ taskcommits={'task_01':'da15a910f3b2a4bccf3938660af04be88c5be5b0','task_02':'0aad3d0b96a2fd5d3541747bfcd4fa483906653c'}
+ records=[]; changed=[]
+ for task,commit in taskcommits.items():
+  content=(SP/(task+'.md')).read_text(); authored=content.split('## Result')[0]; declared=re.findall(r'^- (?:interface|creates): `([^`]+)`',authored,re.M); recorded=[]
+  if '## Recorded paths' in content:
+   section=content.split('## Recorded paths',1)[1].split('\n## ',1)[0]; recorded=re.findall(r'`([^`]+)`',section)
+  actual=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines(); assigned=str((SP/(task+'.md')).relative_to(ROOT)); unlisted=sorted(set(actual)-set(declared)-set(recorded)-{assigned})
+  records.append(dict(task=task,commit=commit,declared=declared,recorded_paths=recorded,actual=actual,unlisted=unlisted)); changed.extend(actual)
+ scratch=TMP/'scratch'; probe=scratch/'zqa-probe'; probe.mkdir(exist_ok=True); go='package main\nimport("encoding/json";"os";"roundfix/internal/speccheck")\nfunc main(){ result:=map[string]bool{}; for _,path:=range os.Args[1:] { result[path]=speccheck.GovernedPath(path) }; if err:=json.NewEncoder(os.Stdout).Encode(result);err!=nil{panic(err)} }\n'; (probe/'main.go').write_text(go); (EV/'governed-probe.go.txt').write_text(go)
+ governed=run(['go','run','./zqa-probe',*sorted(set(changed))],scratch); save('governed-probe-command.json',governed); assert governed['exit']==0,governed; classifications=json.loads(governed['stdout']); save('governed-paths.json',classifications)
+ auth=(SP/'_authorization.md').read_text(); fm=auth.split('---')[1]; allowed=re.findall(r'^  - (.+)$',fm.split('paths:',1)[1].split('operations:',1)[0],re.M); overbounds=sorted(p for p,g in classifications.items() if g and p not in allowed)
+ authrel=str((SP/'_authorization.md').relative_to(ROOT)); unchanged=git('show',BASE+':'+authrel)==auth; grant_ancestor=run(['git','merge-base','--is-ancestor',BASE,taskcommits['task_01']+'^'])
+ protected=['docs/user-guide','docs/references/skill-coverage.json','docs/references/behavior-surfaces.json','internal/cli/cli_test.go','Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml']; delta=git('diff','--name-only',BASE,HEAD,'--',*protected).splitlines()
+ commit=taskcommits['task_02']; path='internal/cli/command_help_test.go'; before=git('show',commit+'^:'+path); after=git('show',commit+':'+path)
+ old='"roundfix: baseline baseline " + group.name + " failed: baseline " + group.name + " requires the " + group.command + " command\\nRun \'roundfix baseline profile --help\' for usage.\\n"'
+ new='"roundfix: baseline " + group.name + " requires the " + group.command + " command\\nRun \'roundfix baseline " + group.name + " --help\' for usage.\\n"'
+ exact=before.count(old)==1 and before.replace(old,new)==after; patch=git('diff',commit+'^',commit,'--',path); (EV/'command-help-diff.patch.txt').write_text(patch)
+ profpath='internal/cli/baseline_profile.go'; beforeimpl=git('show',BASE+':'+profpath); nowimpl=(ROOT/profpath).read_text(); tailmarker='type baselineCapabilitiesCheckRequest struct {'; tail_equal=beforeimpl.split(tailmarker,1)[1]==nowimpl.split(tailmarker,1)[1]
+ mirrors={p:(ROOT/'.agents/skills/roundfix'/p).read_bytes()==(ROOT/'skills/roundfix'/p).read_bytes() for p in ['SKILL.md','references/baseline.md']}; sentence='names the group once on standard error'; phrase=all(sentence in ' '.join((ROOT/p).read_text().split()) for p in ['.agents/skills/roundfix/references/baseline.md','skills/roundfix/references/baseline.md']); tracked_delta=git('diff','--name-only','HEAD').splitlines()
+ skilltest=run(['go','test','-count=1','-v','-run','^TestEveryOwnedSkillVersionIsRecorded$','./skills']); save('skill-version-test.json',skilltest)
+ ok=not any(r['unlisted'] for r in records) and not overbounds and unchanged and grant_ancestor['exit']==0 and not delta and exact and tail_equal and all(mirrors.values()) and phrase and not tracked_delta and skilltest['exit']==0
+ evidence=dict(base=BASE,head=HEAD,task_commits=records,governed_paths=classifications,grant_paths=allowed,unbounded=overbounds,authorization_unchanged=unchanged,grant_ancestor=grant_ancestor,seeded_authorization_outcome='task_01 granted at operative revision '+BASE,protected_paths=protected,protected_delta=delta,command_help_change_exact=exact,profile_implementation_tail_unchanged=tail_equal,mirrors=mirrors,required_phrase=phrase,tracked_worktree_delta=tracked_delta,skill_version_test_exit=skilltest['exit'],pass_=ok); save('scope-audit.json',evidence)
+ observe(9,'pass' if ok else 'fail','Actor: maintainer. `git diff-tree --no-commit-id --name-only -r <commit>` on both Task commits shows '+str(len(records[0]['actual']))+' task_01 paths and '+str(len(records[1]['actual']))+' task_02 paths, all declared or the assigned Task file; no Recorded paths or undeclared path. Canonical `speccheck.GovernedPath` classifies exactly the three granted skill paths and finds no unbounded path. The seeded granted task_01 authorization stays operative at `'+BASE+'`; its unchanged record precedes the Task commit. Protected paths have an empty delivery-range diff. An exact before/after replacement proves command_help_test.go changed only the designated group stderr expression; helper and other rows retain bytes. All implementation after the dispatcher/printer remains identical to the base. Both skill/reference mirrors match, the required phrase is present and the owned-skill version check passes. Tracked worktree delta is empty. Evidence: '+', '.join(link(x) for x in ['scope-audit.json','governed-paths.json','governed-probe-command.json','command-help-diff.patch.txt','skill-version-test.json'])+'.')
+
+def pullrequest():
+ authority=(SP/'_authorization.md').read_text(); operative='status: approved' in authority and '  - merge' in authority and 'consuming: '+SLUG in authority
+ controls=dict(candidate=HEAD,target_branch='roundfix/deliver-0264-baseline-group-usage-errors-name-their-own-help-8e5db501ec0318d2',open_pull_request=None,source='Daemon assignment: none open',approval=dict(delivery_authority='Spec _authorization.md approved cycle AF, carries AE grant',operative=operative,pr_review_approval='None obtained'),checks=dict(command='make verify-changed',verdict='pass',exit=0,head=HEAD,source='Daemon-provided outside-sandbox result',remote_checks='No Pull Request'),unresolved_threads='None: no open Pull Request exists',merge_ready='No current-candidate Review Source acceptance exists yet',review_artifact_ancestry=dict(claimed_head=HEAD,artifact='None provided for this head; no accepted-review ancestry claim is made'),unblocking='Delivery owner obtains current-candidate review, opens the target-branch Pull Request and observes its required controls.',equivalent_evidence='Recorded maintainer delivery authority and Daemon repository Verification; remaining expected pre-PR control states recorded explicitly.')
+ save('pull-request-controls.json',controls)
+ observe(11,'blocked (environment: no open Pull Request)','Actor: maintainer; Pull Request row. The Daemon confirms no open Pull Request on the Spec target branch. Approval: operative approved delivery authority in _authorization.md; no PR review approval has been obtained. Checks/status: Daemon `make verify-changed` passes, exit 0, at `'+HEAD+'`; remote checks await a PR. Unresolved threads: none, because no PR exists. Merge-Ready acceptance: no current-candidate Review Source acceptance yet. Review-artifact ancestry: no artifact provided; the claimed candidate is exactly `'+HEAD+'`, with no claim that it is approved or Merge-Ready. These are the expected pre-PR observations authored by task_03 Requirement 9; all five controls are accounted for. Unblocking the actual journey requires the delivery owner to obtain current-candidate review and observe target-branch PR controls after opening it. No Run-branch PR query or publication was attempted. Evidence: '+link('pull-request-controls.json')+'.')
+
+if __name__=='__main__':
+ globals()[sys.argv[1]]()

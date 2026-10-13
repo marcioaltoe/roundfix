@@ -1,0 +1,21 @@
+{
+  "unknown": {
+    "command": "./bin/roundfix baseline profile no-such-command",
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0264-qa-6maukknn/cwd",
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: baseline profile failed: unknown baseline profile command \"no-such-command\"\nRun 'roundfix baseline profile --help' for usage.\n",
+    "executable": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0264-baseline-group-usage-errors-name-their-own-help-8e5db501ec0318d2-c92fdd3b-b7c84aaf/run_20261013T191202Z_d88e2d69e5414b79/bin/roundfix",
+    "HOME": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0264-qa-6maukknn/home"
+  },
+  "help": {
+    "command": "./bin/roundfix baseline profile --help",
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0264-qa-6maukknn/cwd",
+    "exit": 0,
+    "stdout": "Usage:\n  roundfix baseline profile init --id <id> [--from <built-in-id>]\n  roundfix baseline profile show <id> [--format <text|json>]\n  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]\n\nCommands:\n  init      Create one repository-owned profile from an embedded built-in profile.\n  show      Resolve one built-in or repository-owned profile.\n  validate  Validate one profile ID, one repository profile path, or all repository profiles.\n",
+    "stderr": "",
+    "executable": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0264-baseline-group-usage-errors-name-their-own-help-8e5db501ec0318d2-c92fdd3b-b7c84aaf/run_20261013T191202Z_d88e2d69e5414b79/bin/roundfix",
+    "HOME": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0264-qa-6maukknn/home"
+  },
+  "unchanged": true
+}

@@ -1,0 +1,86 @@
+diff --git a/internal/cli/baseline_profile.go b/internal/cli/baseline_profile.go
+index eca1da05..9addff12 100644
+--- a/internal/cli/baseline_profile.go
++++ b/internal/cli/baseline_profile.go
+@@ -53,11 +53,9 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
+ 			return exitOK
+ 		}
+ 		if len(args) == 1 || args[1] != "check" {
+-			printBaselineProfileFailure(
++			printBaselineUsageError(
+ 				"baseline capabilities",
+-				validationError{message: "baseline capabilities requires the check command"},
+-				false,
+-				stdout,
++				"baseline capabilities requires the check command",
+ 				stderr,
+ 			)
+ 			return exitPreflight
+@@ -71,11 +69,9 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
+ 			return exitOK
+ 		}
+ 		if len(args) == 1 {
+-			printBaselineProfileFailure(
++			printBaselineUsageError(
+ 				"baseline skills",
+-				validationError{message: "baseline skills requires the restore or reconcile command"},
+-				false,
+-				stdout,
++				"baseline skills requires the restore or reconcile command",
+ 				stderr,
+ 			)
+ 			return exitPreflight
+@@ -86,11 +82,9 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
+ 		case "reconcile":
+ 			return runBaselineSkillsReconcileCommand(ctx, args[2:], stdout, stderr)
+ 		default:
+-			printBaselineProfileFailure(
++			printBaselineUsageError(
+ 				"baseline skills",
+-				validationError{message: "baseline skills requires the restore or reconcile command"},
+-				false,
+-				stdout,
++				"baseline skills requires the restore or reconcile command",
+ 				stderr,
+ 			)
+ 			return exitPreflight
+@@ -101,28 +95,31 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
+ 			return exitOK
+ 		}
+ 		if len(args) == 1 || args[1] != "sync" {
+-			printBaselineProfileFailure(
++			printBaselineUsageError(
+ 				"baseline assets",
+-				validationError{message: "baseline assets requires the sync command"},
+-				false,
+-				stdout,
++				"baseline assets requires the sync command",
+ 				stderr,
+ 			)
+ 			return exitPreflight
+ 		}
+ 		return runBaselineAssetsSyncCommand(ctx, args[2:], stdout, stderr)
+ 	default:
+-		printBaselineProfileFailure(
++		printBaselineUsageError(
+ 			"baseline",
+-			validationError{message: fmt.Sprintf("unknown baseline command %q", args[0])},
+-			false,
+-			stdout,
++			fmt.Sprintf("unknown baseline command %q", args[0]),
+ 			stderr,
+ 		)
+ 		return exitPreflight
+ 	}
+ }
+ 
++// printBaselineUsageError writes a baseline dispatcher usage error to stderr:
++// the message once, then the help pointer of the command path the user typed.
++func printBaselineUsageError(commandPath, message string, stderr io.Writer) {
++	fmt.Fprintf(stderr, "%s: %s\n", app.Name, message)
++	fmt.Fprintf(stderr, "Run '%s %s --help' for usage.\n", app.Name, commandPath)
++}
++
+ type baselineCapabilitiesCheckRequest struct {
+ 	repo    string
+ 	profile string

@@ -1,0 +1,13 @@
+diff --git a/internal/cli/command_help_test.go b/internal/cli/command_help_test.go
+index 8168b71b..57a198aa 100644
+--- a/internal/cli/command_help_test.go
++++ b/internal/cli/command_help_test.go
+@@ -162,7 +162,7 @@ func TestCommandHelpArgumentBoundaries(t *testing.T) {
+ 		}
+ 		for _, suffix := range [][]string{nil, {"unknown"}, {"unknown", "--help"}, {"--", "--help"}} {
+ 			args := append([]string{"baseline", group.name}, suffix...)
+-			tests = append(tests, testCase{strings.Join(args, " "), args, exitPreflight, "", "roundfix: baseline baseline " + group.name + " failed: baseline " + group.name + " requires the " + group.command + " command\nRun 'roundfix baseline profile --help' for usage.\n"})
++			tests = append(tests, testCase{strings.Join(args, " "), args, exitPreflight, "", "roundfix: baseline " + group.name + " requires the " + group.command + " command\nRun 'roundfix baseline " + group.name + " --help' for usage.\n"})
+ 		}
+ 	}
+ 	for _, tt := range tests {

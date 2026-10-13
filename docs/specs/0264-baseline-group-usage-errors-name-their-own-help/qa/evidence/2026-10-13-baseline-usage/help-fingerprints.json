@@ -1,0 +1,519 @@
+{
+  "count": 57,
+  "failures": [],
+  "calls": [
+    {
+      "command": "./bin/roundfix archive --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix archive <slug>\n  roundfix archive <slug> --qa-override --approval <source> --reason <text>\n  roundfix archive <slug> --plan\n  roundfix archive <slug> --pull-request <number>\n\nArchives a Spec after verifying either every Task is completed and the newest\nQA Report has verdict: pass (or a partial verdict covered only by declared\nUnreachable Acceptance), or a recorded supersession exists for a Spec without\na Task Graph. Writes one Archive Record and removes the committed Spec folder.\nThe removed bytes stay in Git at the record's source_revision. The destination\nis docs/history/specs/<slug>.md for the built-in root, otherwise\n<spec-root>/_archived/<slug>.md.\narchive creates no Run and never pushes.\nRefuses, writing nothing, while the Spec folder has uncommitted changes or Git ignores a file under it.\n\nThe QA override requires an approval source and reason, still requires every\nnon-QA Task completed, preserves the QA Task and Reports unchanged, and records\nthe observed QA outcome and archived HEAD. It is refused when QA already\nqualifies for normal archive.\n\nOptions:\n  --qa-override  Archive despite failed, missing, or unreadable QA evidence\n  --approval     Source of the maintainer authority for the override\n  --reason       Reason the unmet QA prerequisite is being waived\n  --pull-request Store the delivery pull request number in the Archive Record\n\nExit codes:\n  0  archived\n  1  archive could not finish after writing; stderr says how to finish\n  2  Preflight Validation failed\n",
+      "stderr": "",
+      "expected": "sha256:444c5d8d7d8b9cb3227ea0a462e4402d4bf9beab346bd5df55890e945bcdbf8e",
+      "observed": "sha256:444c5d8d7d8b9cb3227ea0a462e4402d4bf9beab346bd5df55890e945bcdbf8e",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix attach --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix attach [<run-id>] [--no-input]\n\nReplays the Run's event timeline from the Run Database, read-only.\nAttach never creates Runs, fetches, starts Agents, commits, pushes, or\nresolves Review Source threads. Without a Run ID at an interactive\nterminal, attach opens the Run Browser to pick a Run; leaving the Live\nRun View returns to a refreshed browser until you quit.\n\nOptions:\n  --run-id    Run ID to attach to (same as the positional argument)\n  --no-input  Fail instead of opening the Run Browser when no Run ID is passed\n",
+      "stderr": "",
+      "expected": "sha256:14d983efd7310a0d43d8bf05b595fa3230ccdaf817f10719deb443b82950098c",
+      "observed": "sha256:14d983efd7310a0d43d8bf05b595fa3230ccdaf817f10719deb443b82950098c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline apply --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]\n\nStrictly parses one portable roundfix/baseline-plan/v1 document, confirms its\nexact Plan Digest, validates clone-stable Git lineage and every bounded\npreimage, then applies only the supplied postimages through the recoverable\ntransaction. An exact empty reapply is a verified success.\n\nBaseline verification checks managed postimages, immutable backups, carrier\nrelationships, Setup Manifest identity, retention accounting, and resolved\naudit state. Repository formatter and Verification commands are reported as\nrecommendations and are never run.\n\nExit codes:\n  0  approved plan applied or already applied, and Baseline verification passed\n  1  apply, verification, output, rollback, or recovery failure\n  2  invalid arguments, plan schema, or unsafe repository\n  3  confirmation mismatch, stale preimage, or unrelated Git lineage\n\nOptions:\n  --plan          Portable roundfix/baseline-plan/v1 JSON file\n  --confirm-plan  Exact approved Plan Digest from the supplied document\n  --repo          Git worktree or a path inside it (default current directory)\n  --format        Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:d981a824a83163f519d2cb23248f54ab031b5ef585f112b92860bf30e6e70886",
+      "observed": "sha256:d981a824a83163f519d2cb23248f54ab031b5ef585f112b92860bf30e6e70886",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline assets sync --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]\n\nChecks or refreshes the Go-owned canonical Baseline setup snapshots from an\nexplicit canonical setups directory. The source must be a clean Git checkout\nwith a portable GitHub origin, a full immutable HEAD commit, committed setup\ndocuments, safe source-relative paths, and complete regular-file skill trees\nwhose working bytes match the declared commit.\n\nCheck mode is read-only and reports whether every canonical snapshot is\ncurrent. A non-empty refresh first validates the generated catalog in memory,\nthen uses the recoverable Baseline transaction to update only\ninternal/baseline/assets/setups. It never installs skills, writes the canonical\nsource, or reads the installed setup-context-driven skill at runtime.\n\nExit codes:\n  0  snapshots are current, or a canonical refresh completed\n  1  check-mode drift, refresh, output, rollback, or recovery failure\n  2  invalid arguments, source provenance, path, tree, or catalog compatibility\n  130 operation canceled\n\nOptions:\n  --source-dir  Required canonical setups directory inside the immutable source checkout\n  --check       Report snapshot drift without writing canonical assets\n  --format      Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:8ecacd9e28d8fc9babeb232d2682ed7408776acd1dffce421b82a97f30d616aa",
+      "observed": "sha256:8ecacd9e28d8fc9babeb232d2682ed7408776acd1dffce421b82a97f30d616aa",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline capabilities check --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]\n\nRe-checks Repository Capability evidence through the same evaluator and\ndivergence renderer used by Baseline planning. The command accepts and resolves\nno decisions, never writes repository or journal bytes, never executes a\ncandidate or repository command, and never uses the network.\n\nJSON output uses roundfix/baseline-capability-recheck/v1.\n\nWhen --profile is omitted, the command resolves the current Baseline Profile\nfrom a valid Setup Manifest. A repository without either source returns a named\nProfile error instead of an empty result.\n\nExit codes:\n  0  capability evidence evaluated with no blocking divergence\n  1  output failure\n  2  invalid arguments, repository failure, or no resolvable Baseline Profile\n  3  capability evidence evaluated with a blocking divergence\n\nOptions:\n  --profile  Built-in or repository-owned Baseline Profile; defaults to the current Setup Manifest\n  --repo     Git worktree or a path inside it (default current directory)\n  --format   Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:6a8adad40c7a333f8bddffb36396ae0f462ef6c6b6de4ee9c424aee5924bd63d",
+      "observed": "sha256:6a8adad40c7a333f8bddffb36396ae0f462ef6c6b6de4ee9c424aee5924bd63d",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline plan --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]\n\nBuilds the complete portable roundfix/baseline-plan/v1 document from\nclone-stable Git lineage, bounded repository preimages, one selected Baseline\nProfile ID or strict repository-owned Profile draft, and normalized decisions.\nThe two Profile inputs are mutually exclusive and produce the same normalized\nPlan when they resolve to the same Profile. JSON is the portable apply input;\ntext is a concise file-level projection. Missing decisions return a\nroundfix/baseline-result/v1 next action without a partial plan.\n\nThe command never prompts, writes repository bytes, executes\nrepository-defined commands, or uses the network. Select instruction handling\nwith --decision preservation.mode=greenfield|preservation.\n\nExit codes:\n  0  complete Baseline Plan emitted\n  2  invalid arguments, Git/repository failure, or unsafe bounded carrier\n  3  a decision, manual classification, or repository-alignment action is required\n\nOptions:\n  --profile       Built-in or repository-owned Baseline Profile\n  --profile-file  Strict repository-owned Profile draft; mutually exclusive with --profile\n  --decision      Decision as id=value; repeat for multiple answers\n  --decision-file Strict Decision Document path; repeat to merge inputs\n  --repo          Git worktree or a path inside it (default current directory)\n  --format        Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:56baea7bcd570ea7fe1ec7ad45d95619e9e89ceba09a574f22d3e7a5ebd0c351",
+      "observed": "sha256:56baea7bcd570ea7fe1ec7ad45d95619e9e89ceba09a574f22d3e7a5ebd0c351",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline profile init --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline profile init --id <id> [--from <built-in-id>]\n\nCreates .roundfix/baseline/profiles/<id>.json exclusively. The declaration\ncopies allowed embedded entry IDs from the selected built-in source; it does\nnot compose profiles, copy assets, or accept executable or remote content.\n\nOptions:\n  --id    Required lowercase repository-owned Baseline Profile ID\n  --from  Embedded built-in Baseline Profile (default go-cli-tui)\n",
+      "stderr": "",
+      "expected": "sha256:c88251b4e7d9ab7424d2682242d3153b7354bf3eff37ad3d2af6aa2d8f7c6d82",
+      "observed": "sha256:c88251b4e7d9ab7424d2682242d3153b7354bf3eff37ad3d2af6aa2d8f7c6d82",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline profile show --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline profile show <id> [--format <text|json>]\n\nResolves one built-in or repository-owned Baseline Profile against the\nembedded catalog and prints its normalized composition and digest.\n\nOptions:\n  --format  Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:b19e52eba137683f4abd754b99f5eead9f3e416b9e3f904ba37a4513a347bc6e",
+      "observed": "sha256:b19e52eba137683f4abd754b99f5eead9f3e416b9e3f904ba37a4513a347bc6e",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline profile validate --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]\n\nValidates one built-in or repository-owned Baseline Profile by ID, one direct\nfile under .roundfix/baseline/profiles, or every repository-owned profile when\nno target is supplied. The command reads no user-scoped profile catalog.\n\nOptions:\n  --format  Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:a5098497b3b8e401b185feb029348689b6ab2c7c17e045b743537970bdcf4690",
+      "observed": "sha256:a5098497b3b8e401b185feb029348689b6ab2c7c17e045b743537970bdcf4690",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline skills reconcile --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]\n\nPreviews or applies removal of obsolete skills-lock.json entries for one\nsource repository at one immutable commit. Installed skill trees are retained.\nA missing Profile-required skill blocks the complete reconciliation.\n\nA non-empty preview exits 3 and returns its exact Plan Digest. Apply requires\nthat digest through --confirm-plan and uses the recoverable Baseline\ntransaction to update skills-lock.json atomically. An empty reconciliation is\nan idempotent exit 0. Mutable or malformed revisions are refused before source\nacquisition.\n\nExit codes:\n  0  no obsolete entries remain, or the confirmed reconciliation was applied\n  1  source acquisition, proof, apply, output, rollback, or recovery failure\n  2  invalid arguments, profile, lock schema, source, revision, or unsafe target\n  3  confirmation is required or does not match the current Change Plan, or a\n     Profile-required skill is absent at the selected revision (finding\n     reconcile.required-removed, no Plan Digest), or the lock changed during\n     planning (finding lock.changed-during-plan)\n  130 operation canceled\n\nOptions:\n  --profile       Required built-in Baseline Profile\n  --source        Required source repository as owner/repo\n  --revision      Required exact immutable 40-hex source commit\n  --source-dir    Declared offline Git checkout or bare object store containing\n                  the selected source repository's exact immutable commit\n  --confirm-plan  Exact lowercase Plan Digest returned by the current preview\n  --repo          Git worktree or a path inside it (default current directory)\n  --format        Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:556c32beaabbe90cb0a7a58637113df7d449f0890e1972e5a7c68b2294e8fad1",
+      "observed": "sha256:556c32beaabbe90cb0a7a58637113df7d449f0890e1972e5a7c68b2294e8fad1",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline skills restore --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]\n\nPreviews or applies exact external Repository Skill Set restoration for one\nbuilt-in Baseline Profile. Sources are grouped by immutable provider,\nrepository, and commit provenance. Source bytes, portable tree digests,\nskills-lock.json adapter compatibility, targets, and the complete preimage are\nvalidated before mutation.\n\nA non-empty preview exits 3 and returns its exact Plan Digest. Apply requires\nthat digest through --confirm-plan and uses the recoverable Baseline\ntransaction to update selected skill files and skills-lock.json atomically.\nAn empty restoration is an idempotent exit 0.\n\nExit codes:\n  0  selected skills already match, or the confirmed restoration was applied\n  1  source acquisition, proof, apply, output, rollback, or recovery failure\n  2  invalid arguments, profile, skill, lock schema, source, or unsafe target\n  3  confirmation is required or does not match the current Change Plan, or the\n     lock changed during planning (finding lock.changed-during-plan)\n  130 operation canceled\n\nOptions:\n  --profile       Required built-in Baseline Profile\n  --skill         External profile skill to restore; repeat to select multiple,\n                  or omit to restore every drifted external profile skill\n  --source-dir    Declared offline Git checkout or bare object store containing\n                  every selected skill's exact immutable commit\n  --confirm-plan  Exact lowercase Plan Digest returned by the current preview\n  --repo          Git worktree or a path inside it (default current directory)\n  --format        Output format: text or json (default text)\n",
+      "stderr": "",
+      "expected": "sha256:fcb558ea62f494a5d991f6520fc7f4bfffb223dbabf0fa192569de0381a1b108",
+      "observed": "sha256:fcb558ea62f494a5d991f6520fc7f4bfffb223dbabf0fa192569de0381a1b108",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix baseline update --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix baseline update [--repo <path>] [--format <text|json>]\n                           [--yes | --confirm-plan <digest>]\n                           [--adopt-suggested] [--decision <id=value> ...]\n                           [--no-skills]\n                           [--no-history]\n                           [--promote <path> ...]\n                           [--skills-source-dir <path>]\n\nReads the repository's Setup Manifest, resolves its recorded Baseline Profile\nand decisions against the current catalog, and builds a managed-refresh Plan\nwithout prompting or invoking a semantic analyzer. Without confirmation, a\nchanged Plan is presented and repository bytes remain unchanged. --yes approves\nthe Plan Digest computed in this invocation; --confirm-plan approves the exact\ndigest reviewed in a previous invocation. The two forms are mutually exclusive.\n\nA repository without a Setup Manifest requires first adoption. A decision the\nmanifest does not carry requires action unless --adopt-suggested explicitly\nselects the catalog suggestion or --decision declares a value; every adopted\nsuggestion and declared decision is reported. --decision records or changes a\nselected decision before planning; profile-fixed decisions and preservation.mode\nare refused.\n\nAfter an approved guidance apply, the command reinstalls the binary-carried\nRoundfix skills and restores missing or drifted external Repository Skill Set\nmembers through their preview-and-confirm contract. --no-skills suppresses that\nstage. --skills-source-dir selects an explicit offline Git checkout or bare\nobject store for external restoration. An unreachable immutable upstream is a\nper-skill warning and does not change the successful guidance-apply exit.\n\nThe update also plans the Pending History, converts every selected unit on\napproval, and creates an annotated history-full tag when absent. Push that tag\nwith git push origin history-full. --no-history skips history planning and conversion.\n\nHistory Citations bind the digest, Live Documents offer --promote to copy a cited\nfile to docs/references/, and Stale History Citations name targets history-full holds.\nPromotions copy committed history at the planned revision into references read by\nevery later Spec, and never overwrite an existing file or rewrite a citing file.\n\nJSON output uses roundfix/baseline-update-result/v1.\n\nExit codes:\n  0  repository already current, or approved managed refresh applied and verified\n  1  apply, verification, output, rollback, or recovery failure\n  2  invalid input, incompatible manifest, or unsafe repository\n  3  adoption, a new decision, confirmation, or retention action is required\n  130 operation canceled\n\nOptions:\n  --repo             Git worktree or a path inside it (default current directory)\n  --format           Output format: text or json (default text)\n  --yes              Approve the Plan Digest computed in this invocation\n  --confirm-plan     Exact Plan Digest reviewed in a previous invocation\n  --adopt-suggested  Adopt and report suggestions only for decisions absent from the manifest\n  --decision         Record or change a decision as id=value; repeat for several decisions\n  --no-skills        Skip the Repository Skill Set refresh\n  --no-history       Skip Pending History planning and conversion\n  --promote          Copy a selected folder file to docs/references/; repeatable,\n                      incompatible with --no-history\n  --skills-source-dir\n                      Offline Git checkout or bare object store for external skill restoration\n",
+      "stderr": "",
+      "expected": "sha256:8e880d28f5f52f59431a3a45a43a3ad1966d9ea819245bd7a70e13257879aa4a",
+      "observed": "sha256:8e880d28f5f52f59431a3a45a43a3ad1966d9ea819245bd7a70e13257879aa4a",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix cancel --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix cancel <slug> --reason <text>\n\nCancels an active Spec that will not be delivered. Writes one Archive Record\nwith disposition cancelled, the reason, the date and the Tasks completed and\npending, returns each adopted Backlog Entry to docs/backlog/ (status: open)\nand each adopted Finding to docs/findings/ (status: pending), and removes the\ncommitted Spec folder. The removed bytes stay in Git at the record's\nsource_revision. cancel creates no Run, never changes a Task status, and\nnever commits or pushes.\n\nRefuses while an Active Run or an unfinished Delivery Queue item holds the\nSpec, while an active Spec requires it, while Git ignores a file under the\nSpec folder, and for a Spec that carries a supersession.\n\nOptions:\n  --reason  Why the Spec is cancelled, recorded in the Archive Record\n\nExit codes:\n  0  cancelled\n  1  cancel write or removal failed\n  2  Preflight Validation failed\n",
+      "stderr": "",
+      "expected": "sha256:b4c5142c98e3e6c1679bf8e0442d586fce963877be4206225140a98c3b4625c8",
+      "observed": "sha256:b4c5142c98e3e6c1679bf8e0442d586fce963877be4206225140a98c3b4625c8",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix deliver plan --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix deliver plan [--json] [<slug>...]\n  roundfix deliver start <slug>...\n  roundfix deliver status\n  roundfix deliver resume\n  roundfix deliver retry <slug>\n  roundfix deliver stop\n\nRecords and advances an ordered queue of Specs. The detached owner survives the\ncalling terminal. A blocked item is parked and the owner continues with the\nnext item.\n\nCommands:\n  plan    Report which Specs are approved to run\n  start   Validate and record a new queue, then start its detached owner\n  status  Print every queued Spec's stage, blocker and item worktree\n  resume  Start a detached owner for the persisted queue\n  retry   Return one parked Spec to the queue and reach its owner\n  stop    Prove and terminate the persisted queue owner\n\nFlags:\n  --max-duration <duration>  Set a positive queue duration\n  --max-retries <n>          Set the per-item retry limit to at least 1\n  --max-tokens <n>           Set the queue token ceiling to at least 1\n",
+      "stderr": "",
+      "expected": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "observed": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix deliver resume --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix deliver plan [--json] [<slug>...]\n  roundfix deliver start <slug>...\n  roundfix deliver status\n  roundfix deliver resume\n  roundfix deliver retry <slug>\n  roundfix deliver stop\n\nRecords and advances an ordered queue of Specs. The detached owner survives the\ncalling terminal. A blocked item is parked and the owner continues with the\nnext item.\n\nCommands:\n  plan    Report which Specs are approved to run\n  start   Validate and record a new queue, then start its detached owner\n  status  Print every queued Spec's stage, blocker and item worktree\n  resume  Start a detached owner for the persisted queue\n  retry   Return one parked Spec to the queue and reach its owner\n  stop    Prove and terminate the persisted queue owner\n\nFlags:\n  --max-duration <duration>  Set a positive queue duration\n  --max-retries <n>          Set the per-item retry limit to at least 1\n  --max-tokens <n>           Set the queue token ceiling to at least 1\n",
+      "stderr": "",
+      "expected": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "observed": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix deliver retry --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix deliver plan [--json] [<slug>...]\n  roundfix deliver start <slug>...\n  roundfix deliver status\n  roundfix deliver resume\n  roundfix deliver retry <slug>\n  roundfix deliver stop\n\nRecords and advances an ordered queue of Specs. The detached owner survives the\ncalling terminal. A blocked item is parked and the owner continues with the\nnext item.\n\nCommands:\n  plan    Report which Specs are approved to run\n  start   Validate and record a new queue, then start its detached owner\n  status  Print every queued Spec's stage, blocker and item worktree\n  resume  Start a detached owner for the persisted queue\n  retry   Return one parked Spec to the queue and reach its owner\n  stop    Prove and terminate the persisted queue owner\n\nFlags:\n  --max-duration <duration>  Set a positive queue duration\n  --max-retries <n>          Set the per-item retry limit to at least 1\n  --max-tokens <n>           Set the queue token ceiling to at least 1\n",
+      "stderr": "",
+      "expected": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "observed": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix deliver start --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix deliver plan [--json] [<slug>...]\n  roundfix deliver start <slug>...\n  roundfix deliver status\n  roundfix deliver resume\n  roundfix deliver retry <slug>\n  roundfix deliver stop\n\nRecords and advances an ordered queue of Specs. The detached owner survives the\ncalling terminal. A blocked item is parked and the owner continues with the\nnext item.\n\nCommands:\n  plan    Report which Specs are approved to run\n  start   Validate and record a new queue, then start its detached owner\n  status  Print every queued Spec's stage, blocker and item worktree\n  resume  Start a detached owner for the persisted queue\n  retry   Return one parked Spec to the queue and reach its owner\n  stop    Prove and terminate the persisted queue owner\n\nFlags:\n  --max-duration <duration>  Set a positive queue duration\n  --max-retries <n>          Set the per-item retry limit to at least 1\n  --max-tokens <n>           Set the queue token ceiling to at least 1\n",
+      "stderr": "",
+      "expected": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "observed": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix deliver status --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix deliver plan [--json] [<slug>...]\n  roundfix deliver start <slug>...\n  roundfix deliver status\n  roundfix deliver resume\n  roundfix deliver retry <slug>\n  roundfix deliver stop\n\nRecords and advances an ordered queue of Specs. The detached owner survives the\ncalling terminal. A blocked item is parked and the owner continues with the\nnext item.\n\nCommands:\n  plan    Report which Specs are approved to run\n  start   Validate and record a new queue, then start its detached owner\n  status  Print every queued Spec's stage, blocker and item worktree\n  resume  Start a detached owner for the persisted queue\n  retry   Return one parked Spec to the queue and reach its owner\n  stop    Prove and terminate the persisted queue owner\n\nFlags:\n  --max-duration <duration>  Set a positive queue duration\n  --max-retries <n>          Set the per-item retry limit to at least 1\n  --max-tokens <n>           Set the queue token ceiling to at least 1\n",
+      "stderr": "",
+      "expected": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "observed": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix deliver stop --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix deliver plan [--json] [<slug>...]\n  roundfix deliver start <slug>...\n  roundfix deliver status\n  roundfix deliver resume\n  roundfix deliver retry <slug>\n  roundfix deliver stop\n\nRecords and advances an ordered queue of Specs. The detached owner survives the\ncalling terminal. A blocked item is parked and the owner continues with the\nnext item.\n\nCommands:\n  plan    Report which Specs are approved to run\n  start   Validate and record a new queue, then start its detached owner\n  status  Print every queued Spec's stage, blocker and item worktree\n  resume  Start a detached owner for the persisted queue\n  retry   Return one parked Spec to the queue and reach its owner\n  stop    Prove and terminate the persisted queue owner\n\nFlags:\n  --max-duration <duration>  Set a positive queue duration\n  --max-retries <n>          Set the per-item retry limit to at least 1\n  --max-tokens <n>           Set the queue token ceiling to at least 1\n",
+      "stderr": "",
+      "expected": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "observed": "sha256:f72588488a4ec95a110b61051103b34f889a6d6b9ddbddb3dc2e2ff616419a8c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix doctor --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix doctor\n\nDiagnoses this machine's readiness for Runs. Checks Node.js, the minimum\nsupported acpx version, the effective adapter, the required\nAgent Selection Profiles, the Repository Skill Set, and codex runtime hygiene.\nThe aggregate profiles: line exact-proves every distinct tuple. The skills:\nline compares Roundfix-owned artifacts with the running binary and external\nartifacts with skills-lock.json. Each failure reports its next action.\nThe recommendations: line reports ok, found, or skipped after profiles: and\nnever fails Doctor. Doctor is read-only and mutates nothing. Only the gh and\nremote lines contact the repository's forge; each read is bounded by a\nten-second limit. Every other check stays offline.\n",
+      "stderr": "",
+      "expected": "sha256:531c424eb1ce892a64b3ba2fec9765a4737acb2bfd798619db48789edf83579f",
+      "observed": "sha256:531c424eb1ce892a64b3ba2fec9765a4737acb2bfd798619db48789edf83579f",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix events --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix events <run-id> [--follow] [--filter <categories>]\n\nReplays one Run's Supervisor event stream from the Run Database as\nroundfix-events/v1 JSONL. With --follow, continues until the Run reaches a\nterminal state or the command is interrupted.\n\nOptions:\n  --follow  Continue after replay and exit after the terminal event drains\n  --filter  Comma-separated categories: task-status,batch,verification,outcome,agent-selection,usage\n",
+      "stderr": "",
+      "expected": "sha256:a8f2fd8be63c1eadebcf68ece649d9e64d05b308702b8bbd0c06a2011ef97825",
+      "observed": "sha256:a8f2fd8be63c1eadebcf68ece649d9e64d05b308702b8bbd0c06a2011ef97825",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix fetch --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix fetch --source coderabbit --pr <number> [--spec <slug>] [--round <number|auto>] [--no-input]\n\nBehavior:\n  Runs Branch Integrity Preflight before fetching. Fetch executes in the\n  user's checkout, creates no Run Worktree, starts no Agent, and never commits\n  or pushes.\n\nOptions:\n  --source       Review Source. Supported: coderabbit\n  --pr           Open Pull Request number\n  --spec         Spec slug under docs/specs/\n  --round        Round number or auto\n  --artifact-dir Artifact Directory\n  --base-repo    Explicit base repository, owner/name\n  --head-repo    Explicit Head Repository, owner/name\n  --head-branch  Explicit PR Head Branch\n  --skip-branch-integrity\n                 Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment\n  --interactive  Open Interactive Input before starting\n  --no-input     Fail instead of opening Interactive Input\n",
+      "stderr": "",
+      "expected": "sha256:45ac44e53396a594df1009145e158e603abf42fddc24da3bb92ea36a36db55d2",
+      "observed": "sha256:45ac44e53396a594df1009145e158e603abf42fddc24da3bb92ea36a36db55d2",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix gc --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix gc [--dry-run]\n  roundfix gc compact [--apply]\n  roundfix gc sanitize [--apply]\n\nPrunes Run Event Journal rows for terminal Runs older than Journal Retention,\nthen removes their run artifact directories and orphaned runs/<id> directories\nunder the resolved run artifact root. Journal Retention never deletes Run rows or Active Run locks.\nGC then removes terminal Runs past Run Retention, including their dependent\nrows, and compacts the Run Database.\nIt never removes Review artifacts outside the run artifact root.\n\nThe sanitize subcommand discovers every recorded Artifact Root from the\nmachine-wide Run Database, classifies it with durable and filesystem evidence,\nand preserves every ambiguous path. It is a dry-run unless --apply is explicit.\n\nThe compact subcommand previews Run Database bytes before, reclaimable, and\nprojected after. It changes the database only when --apply is explicit.\n\nOptions:\n  --dry-run  Preview Journal Retention and Run Retention Runs, rows, and estimated bytes without changing anything\n  --apply    With compact, rebuild the Run Database; with sanitize, remove only proven retention-eligible or absent Run artifact directories\n",
+      "stderr": "",
+      "expected": "sha256:feefaf5113111fb49efb6952e5bd95eb9317f585a1f8334f42cd61e4f3bc1cd1",
+      "observed": "sha256:feefaf5113111fb49efb6952e5bd95eb9317f585a1f8334f42cd61e4f3bc1cd1",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix history sanitize --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]\n\nPlans pending legacy folders, findings, backlog, reviews and handoffs in that\norder. Refused Units are listed with their reason, left in place and not counted\ntoward --batch. Plans write nothing in the repository. Advice is optional and advisory.\n\nOptions:\n  --batch <n>       Select the next positive number of pending units\n  --advise          Add Jev advice for the selected folders (requires --batch)\n  --apply           Apply one batch on a clean tree covered by history-full\n  --promote <path>  Copy a repository-relative file in the batch to docs/references/\n\nApply requires an annotated history-full tag at or before HEAD holding every\npath removed or rewritten. This command never commits, tags or pushes.\nExit codes: 0 plan, applied or nothing pending; 1 write failure; 2 preflight refusal.\n",
+      "stderr": "",
+      "expected": "sha256:51b1979ed540f443bcc9a5278492c4d36dc8f25524a6891441a58e6cb22d2612",
+      "observed": "sha256:51b1979ed540f443bcc9a5278492c4d36dc8f25524a6891441a58e6cb22d2612",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix implement --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix implement --spec <slug>\n  roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>\n\nExecutes the Spec's Task Graph on the current branch as one Run: Tasks run\nin dependency order, each Task's Verification commands gate one commit, and\nthe Run pushes only when config enables implement.auto_push and the outcome\nis Clean. Without --spec, Interactive Input lists the repository's active\nSpecs for selection. Omit all Agent Selection flags to use Task Type and QA\nprofiles. A one-Run override requires --agent, --model, and --reasoning-effort together.\n\nOptions:\n  --spec               Spec slug under docs/specs/\n  --agent              Agent runtime. Supported: codex, claude, cursor, opencode\n  --model              Agent model override\n  --reasoning-effort   Default reasoning effort override\n  --agent-command      Agent command override\n  --agent-full-access  Opt into Agent runtime full-access mode\n  --no-agent-console   Hide Agent-source console events from non-TTY stderr\n  --detach             Start a Detached Run and print attach/stop commands\n  --interactive        Open Interactive Input before starting\n  --no-input           Fail instead of opening Interactive Input\n",
+      "stderr": "",
+      "expected": "sha256:e60a777a0fa88064a2fa8609d0cd8b02d3c6a59451c211e10459905a19413cbe",
+      "observed": "sha256:e60a777a0fa88064a2fa8609d0cd8b02d3c6a59451c211e10459905a19413cbe",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix init --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix init [--scope <project|user>] [--force]\n\nOptions:\n  --scope  Config scope. Supported: project, user\n           project writes <repo>/.roundfixrc.yml\n           user writes ~/.roundfix/config.yml\n  --force  Overwrite an existing config file\n",
+      "stderr": "",
+      "expected": "sha256:08699dfd2b37400862bb65967019a24df73258d7c1b34ef477210749d2a7e55b",
+      "observed": "sha256:08699dfd2b37400862bb65967019a24df73258d7c1b34ef477210749d2a7e55b",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix migrate --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix migrate [--check]\n\nUpgrades an existing Run Database to the schema version supported by this\nbinary under the machine-wide write lock. It creates nothing when the Run\nDatabase is absent, writes nothing when it is current, and refuses a database\nwritten by a newer Roundfix binary.\n\nOptions:\n  --check  Report whether the Run Database is at this binary's schema version without writing\n",
+      "stderr": "",
+      "expected": "sha256:5bf206b3d29886e97f3024addb7eecfb3be6139d9f2866177b25280a650fb56e",
+      "observed": "sha256:5bf206b3d29886e97f3024addb7eecfb3be6139d9f2866177b25280a650fb56e",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix profiles check --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix profiles check [--json]\n  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]\n\nCompares every configured category with the shipped Recommended Profile.\nReports current, differs, or pinned; undefined optional categories are omitted.\nRead-only and offline: opens no Agent Session and writes nothing.\nExit 0 even with differences; exit 2 for usage or configuration errors.\n\nOptions:\n  --apply    Adopt only differing profiles; requires --scope\n  --scope    Write User Config or Project Config (user|project); requires --apply\n  --dry-run  Prove and preview without writing; requires --apply\n  --yes      Write without confirmation after proof; requires --apply\n  --json     Print roundfix/profiles-check/v1 JSON, or roundfix/profiles-configure/v1 with --apply\n\nWith --apply, opens disposable Agent Sessions for exact proof before confirmation\nand writing. Current and pinned categories are skipped. User scope skips Project\nConfig categories with advice to use --scope project. Nothing to adopt exits 0.\n",
+      "stderr": "",
+      "expected": "sha256:9b48e7a3162834655d0bff00e190e2470ff992cf45fe18d4551f1fb8094dc4b3",
+      "observed": "sha256:9b48e7a3162834655d0bff00e190e2470ff992cf45fe18d4551f1fb8094dc4b3",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix profiles configure --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]\n\nAdds or replaces complete Agent Selection Profiles in User Config or Project\nConfig. --remove declares a category removal and may be repeated. Without\n--file or --remove, collects one profile through Interactive Input. The command\nproves every exact Agent Selection it writes before confirmation. --dry-run\nperforms the same proof and change summary without writing.\n\nOptions:\n  --scope    Required config scope: user or project\n  --file     Strict profile fragment YAML; omitted opens Interactive Input\n  --remove   Agent Work Category to remove; repeatable\n  --dry-run  Validate and render the normalized result without writing\n  --yes      Write without confirmation after validation\n  --json     Print deterministic JSON report\n",
+      "stderr": "",
+      "expected": "sha256:28a080a3c701caca79890a92c34efdcbf7fa786ea23f4a4ebf7e54827d17125d",
+      "observed": "sha256:28a080a3c701caca79890a92c34efdcbf7fa786ea23f4a4ebf7e54827d17125d",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix profiles show --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix profiles show [--category <category>] [--json]\n\nRenders the effective Agent Selection Profile source, Preferred Selection,\nFallback Chain, and advisory Recommended Profile for one category or all\ncategories. Recommendations are read-only guidance and never change routing.\n\nOptions:\n  --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review\n  --json      Print roundfix/profiles/v2 JSON\n",
+      "stderr": "",
+      "expected": "sha256:04807172ac09afcbf081c560050dff090b1fa47b956d3d801d786b00753fd2f5",
+      "observed": "sha256:04807172ac09afcbf081c560050dff090b1fa47b956d3d801d786b00753fd2f5",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix profiles validate --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix profiles validate [--category <category>] [--json]\n\nRead-only validation resolves effective profiles, deduplicates exact Agent\nSelections, proves each exact tuple through a disposable ACP Runtime session,\nand closes every disposable session on success or error.\n\nOptions:\n  --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review\n  --json      Print deterministic validation JSON\n",
+      "stderr": "",
+      "expected": "sha256:ee2f8cf0d7fb6dec558e094e97cee64ae98b2e423327f0a8e569675dfbc80923",
+      "observed": "sha256:ee2f8cf0d7fb6dec558e094e97cee64ae98b2e423327f0a8e569675dfbc80923",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix qa-report accept --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix qa-report accept <path>\n\nApplies the declared-acceptance policy to the selected QA Report. The report's\nSpec directory supplies its declarations. Produces no stdout; exit status is\nthe machine-readable result.\n\nExit codes:\n  0  the report is acceptable\n  1  the report is missing, unreadable, or unacceptable\n  2  usage error\n",
+      "stderr": "",
+      "expected": "sha256:f8f8c0d4c750a1ab663583c29dce8ca121b81ad7fcc8d1057da69de2ade228ce",
+      "observed": "sha256:f8f8c0d4c750a1ab663583c29dce8ca121b81ad7fcc8d1057da69de2ade228ce",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix reconcile --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]\n\nInspects one terminal spec Run in the current repository, or every terminal\nspec Run in the current repository when no Run ID is supplied. The default is\na read-only report. --apply releases only entries classified and revalidated\nsafe or superseded during the current invocation; dirty, unintegrated, unknown,\nand already released entries remain successful preserved results.\n\nOptions:\n  --apply                 Release freshly revalidated safe and superseded Run Worktrees and Run Branches\n  --discard-superseded    Discard Run Branches proven superseded\n  --carry-forward         Hand a Stopped or Unresolved Run's settled Tasks back to the checkout\n  --format                Output format: text (default) or json\n",
+      "stderr": "",
+      "expected": "sha256:b5dfbad0837c92e64d41b3c82d6df9d95200b9e00f94c881f5bb51f8e0695b90",
+      "observed": "sha256:b5dfbad0837c92e64d41b3c82d6df9d95200b9e00f94c881f5bb51f8e0695b90",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix release plan --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]\n  roundfix release plan --reset-to <version> [--format <text|json>]\n\nBuilds a read-only Release Plan from a stable vMAJOR.MINOR.PATCH base through\na committed target revision. --from defaults to the latest reachable stable\ntag; --to defaults to committed HEAD. --reset-to inventories every local and\nremote stable tag and every paginated GitHub Release for a clean committed\nHEAD, binds them to a plan digest, and exposes no deletion action.\n\nA range plan also reports the skills and baseline checks read-only; they never change the decision state, the proposed version, or the exit code.\nA blocking skill-coverage check exits 3 and names the check in its next action.\n\nDecision states:\n  ready                           Patch release can proceed without version approval.\n  approval_required               Minor, major, or breaking version decision needs approval.\n  manual_classification_required  Ambiguous commits need --impact and --reason.\n  no_release                      Maintenance-only changes require no release.\n\nExit codes:\n  0  ready or no_release\n  2  invalid flags, dirty tree, invalid range, or repository failure\n  3  approval_required, manual_classification_required, or a blocking skill-coverage check\n\nOptions:\n  --from    Stable release tag to use as the base, for example v1.2.3\n  --to      Target revision to analyze; defaults to HEAD\n  --impact  Manual impact for ambiguous changes: none, patch, minor, or major\n  --reason  Non-empty reason required with --impact\n  --reset-to\n            Stable reset target; incompatible with --from, --to, --impact,\n            and --reason\n  --format  Output format: text or json (default text)\n\nThe command creates no Run, reads no Roundfix configuration, and never mutates\nfiles, refs, tags, remotes, packages, releases, or configuration. Reset mode\nuses read-only Git and GitHub inventory calls; any deletion requires separate\nexplicit post-QA authority.\n",
+      "stderr": "",
+      "expected": "sha256:05366a478f27e5cc172f2357f9de27cc7466ddc0f658d1bbd94d6430bcbf25b0",
+      "observed": "sha256:05366a478f27e5cc172f2357f9de27cc7466ddc0f658d1bbd94d6430bcbf25b0",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix reopen --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix reopen --spec <slug>\n\nReturns a completed terminal QA Task to pending when a dependency is no longer\ncompleted or Git proves a Late Dependency was added after the newest QA Report.\nRecords the invalidated QA Report and dependency ids in the QA Task while\npreserving the prior Result and QA Report. reopen creates no Run, writes no Run Event Journal entry, and never\ncommits or pushes.\n\nOptions:\n  --spec  Spec slug under the configured Spec Root\n\nExit codes:\n  0  QA gate reopened\n  1  reopen write failed\n  2  Preflight Validation failed\n",
+      "stderr": "",
+      "expected": "sha256:5f0658d9bcb19062fa9c372cd885adaaf7fa337235769d453045e94664ff1b18",
+      "observed": "sha256:5f0658d9bcb19062fa9c372cd885adaaf7fa337235769d453045e94664ff1b18",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix resolve --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix resolve --pr <number> [--spec <slug>] [--round <number|all>] [--no-input]\n  roundfix resolve --pr <number> --agent <agent> --model <model> --reasoning-effort <effort> [--spec <slug>]\n\nBehavior:\n  Runs Branch Integrity Preflight and clean tracked checkout validation before\n  Agent work. Resolve executes in the user's checkout and creates no Run\n  Worktree. Omit all Agent Selection flags to use the review profile. A one-Run\n  override requires --agent, --model, and --reasoning-effort together.\n\nOptions:\n  --pr           Open Pull Request number\n  --spec         Spec slug under docs/specs/\n  --agent        Agent runtime. Supported: codex, claude, cursor, opencode\n  --model        Agent model override\n  --reasoning-effort Default reasoning effort override\n  --agent-command Agent command override\n  --agent-full-access Opt into Agent runtime full-access mode\n  --no-agent-console Hide Agent-source console events from non-TTY stderr\n  --detach       Start a Detached Run and print attach/stop commands\n  --round        Round number or all\n  --artifact-dir Artifact Directory\n  --base-repo    Explicit base repository, owner/name\n  --head-repo    Explicit Head Repository, owner/name\n  --head-branch  Explicit PR Head Branch\n  --skip-branch-integrity\n                 Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment\n  --interactive  Open Interactive Input before starting\n  --no-input     Fail instead of opening Interactive Input\n",
+      "stderr": "",
+      "expected": "sha256:d2d74e0ca17dc5367b0001a1613d6c412ceccce6ac40e99d7796e0bc8f9a7885",
+      "observed": "sha256:d2d74e0ca17dc5367b0001a1613d6c412ceccce6ac40e99d7796e0bc8f9a7885",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix review --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix review [--base <ref>]\n  roundfix review dispose <finding-id> --dismiss --evidence <text>\n  roundfix review dispose <finding-id> --fixed-by <commit>\n\nRuns the configured pre-PR reviewer over the candidate from the base commit to\nthe current HEAD and records the result under the configured Artifact Directory.\n\nOptions:\n  --base  Base Git ref; defaults to the repository's main branch\n",
+      "stderr": "",
+      "expected": "sha256:9665f888e9efb3dd0c3aa40fcd15d11692921cc3c0ecd3a8e74cdbdcff757bbc",
+      "observed": "sha256:9665f888e9efb3dd0c3aa40fcd15d11692921cc3c0ecd3a8e74cdbdcff757bbc",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix review dispose --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix review dispose <finding-id> --dismiss --evidence <text>\n  roundfix review dispose <finding-id> --fixed-by <commit>\n\nRecords one evidence-backed disposition for a finding in the current\npre-PR review record. A finding accepts at most one disposition.\n",
+      "stderr": "",
+      "expected": "sha256:2eeec8da9ef8d400ccca2fb217b71b3aec1c073d279fbe65043da0629b524e0e",
+      "observed": "sha256:2eeec8da9ef8d400ccca2fb217b71b3aec1c073d279fbe65043da0629b524e0e",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix runs --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix runs\n  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]\n  roundfix runs show <run-id> [--json]\n  roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]\n\nLists Runs from the Run Database newest first. By default the listing is\nscoped to the current repository and shows the 20 newest Active Runs. When\nthe state filter or the bound hides Runs, one trailing stderr note names the\nhidden count and the widening flag. Without a subcommand at an interactive\nterminal, runs opens the Run Browser; non-interactive contexts must use\n'roundfix runs list'.\n\nCommands:\n  causes  Explain failed Verification and corrective Tasks (read-only)\n  show  Print recorded token usage per scope and in total (read-only)\n  list  Print run id, state, kind, target, agent, start time (UTC), duration,\n        and local branch columns\n\nOptions:\n  --all    List Runs from every repository and include the repository column\n  --state  Filter by Run state: active (default), terminal, or all\n  --limit  Print at most N matching Runs, newest first; 0 lists all (default 20)\n  --since  causes: inclusive UTC date (YYYY-MM-DD)\n  --until  causes: exclusive UTC date (YYYY-MM-DD)\n  --format causes: text (default) or json\n",
+      "stderr": "",
+      "expected": "sha256:dd29a2102a4ec757b61e34a9e1a9fe128f6e5e993b1cb556d7b4b514a6d5db90",
+      "observed": "sha256:dd29a2102a4ec757b61e34a9e1a9fe128f6e5e993b1cb556d7b4b514a6d5db90",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix runs causes --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]\n\nRead-only causes of failed Verification attempts and corrective Tasks.\nOptions:\n  --since   Inclusive UTC date\n  --until   Exclusive UTC date\n  --format  text (default) or json\n\nExits 0 for results, 2 for invalid usage, 1 for an unreadable Run Database.\n",
+      "stderr": "",
+      "expected": "sha256:9c479b06c09264750c3ac651c4e4d0ae9d2facc54ae234875a0341cebc7e9c40",
+      "observed": "sha256:9c479b06c09264750c3ac651c4e4d0ae9d2facc54ae234875a0341cebc7e9c40",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix runs list --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix runs\n  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]\n  roundfix runs show <run-id> [--json]\n  roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]\n\nLists Runs from the Run Database newest first. By default the listing is\nscoped to the current repository and shows the 20 newest Active Runs. When\nthe state filter or the bound hides Runs, one trailing stderr note names the\nhidden count and the widening flag. Without a subcommand at an interactive\nterminal, runs opens the Run Browser; non-interactive contexts must use\n'roundfix runs list'.\n\nCommands:\n  causes  Explain failed Verification and corrective Tasks (read-only)\n  show  Print recorded token usage per scope and in total (read-only)\n  list  Print run id, state, kind, target, agent, start time (UTC), duration,\n        and local branch columns\n\nOptions:\n  --all    List Runs from every repository and include the repository column\n  --state  Filter by Run state: active (default), terminal, or all\n  --limit  Print at most N matching Runs, newest first; 0 lists all (default 20)\n  --since  causes: inclusive UTC date (YYYY-MM-DD)\n  --until  causes: exclusive UTC date (YYYY-MM-DD)\n  --format causes: text (default) or json\n",
+      "stderr": "",
+      "expected": "sha256:dd29a2102a4ec757b61e34a9e1a9fe128f6e5e993b1cb556d7b4b514a6d5db90",
+      "observed": "sha256:dd29a2102a4ec757b61e34a9e1a9fe128f6e5e993b1cb556d7b4b514a6d5db90",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix runs show --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix runs show <run-id> [--json]\n\nPrints recorded token usage per Work Item scope and in total, read-only.\n\nOptions:\n  --json  Print schema roundfix/runs-show/v1 with null unreported counts\n\nExit codes: 0 when the Run exists; 2 for usage errors or an unknown Run.\n",
+      "stderr": "",
+      "expected": "sha256:28b8c20ddac05b9cee5401d7466c755e0a56f5a230f02d7ea2d7cddda1e3b8c2",
+      "observed": "sha256:28b8c20ddac05b9cee5401d7466c755e0a56f5a230f02d7ea2d7cddda1e3b8c2",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix settle --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix settle --spec <slug> --task <task_id>\n\nRe-runs one Task's Verification commands in its kept Task Worktree when\navailable, then its kept Run Worktree, then the current repository. A surface\nsettles when its task file is failed, or completed while the verified work is\nstill uncommitted there \u2014 the state a refusing commit hook leaves behind. On\npass, settles completed and commits all Run Worktree changes plus the task file;\nfor a kept Task Worktree, commits all Task Worktree changes plus the task file\nand integrates them onto the Run Branch. settle creates no Run, writes no Run\nEvent Journal entries, and never pushes.\n\nOptions:\n  --spec  Spec slug under docs/specs/\n  --task  Task id from the Spec Task Graph\n\nExit codes:\n  0  settled completed and committed\n  1  verification did not pass; the Task status is unchanged and no commit is created\n  2  Preflight Validation failed\n",
+      "stderr": "",
+      "expected": "sha256:2dd357f5e005d3ec1fb2333ba24733bc9fc8dbe635e260fb68ecff1351ed7b94",
+      "observed": "sha256:2dd357f5e005d3ec1fb2333ba24733bc9fc8dbe635e260fb68ecff1351ed7b94",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix setup --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix setup [--yes] [--no-input]\n\nChecks Node.js and the minimum supported acpx version, proves the effective\nofficial Codex and Claude adapters and generated Agent Selection\nprofile readiness, then offers acpx local adapter overrides, User Config, and\nProject Config. Proposed profiles are exact-proved before writing. Legacy\nCodex and Claude override migration requires authorization. Each check prints\none deterministic report line with ok, installed, skipped, offered: declined,\nor failed.\n\nOptions:\n  --yes       Accept every offered install or file change\n  --no-input  Skip offered changes instead of prompting\n",
+      "stderr": "",
+      "expected": "sha256:6ed33911833e38e6e7a2c2c851708cce2b2cab706259ea5b8cc3e178bf33f279",
+      "observed": "sha256:6ed33911833e38e6e7a2c2c851708cce2b2cab706259ea5b8cc3e178bf33f279",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix skills check --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix skills list\n  roundfix skills check\n  roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]\n\nCommands:\n  list       List the bundled Roundfix skills and recommended external skills\n  check      Validate shipped Roundfix skill artifacts\n  install    Install the bundled Roundfix skills into this project or compatible Agent skill directories\n\nOptions:\n  --target   Install target. Supported: project, codex, claude, opencode, all\n             project writes <repo>/.agents/skills and can link .claude/skills\n  --dir      Override the target skills directory for a single target\n",
+      "stderr": "",
+      "expected": "sha256:6bd7a289f23cc988867e7fb1a4715daaeb60793878f7760ec2f12180e71e6da1",
+      "observed": "sha256:6bd7a289f23cc988867e7fb1a4715daaeb60793878f7760ec2f12180e71e6da1",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix skills install --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix skills list\n  roundfix skills check\n  roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]\n\nCommands:\n  list       List the bundled Roundfix skills and recommended external skills\n  check      Validate shipped Roundfix skill artifacts\n  install    Install the bundled Roundfix skills into this project or compatible Agent skill directories\n\nOptions:\n  --target   Install target. Supported: project, codex, claude, opencode, all\n             project writes <repo>/.agents/skills and can link .claude/skills\n  --dir      Override the target skills directory for a single target\n",
+      "stderr": "",
+      "expected": "sha256:6bd7a289f23cc988867e7fb1a4715daaeb60793878f7760ec2f12180e71e6da1",
+      "observed": "sha256:6bd7a289f23cc988867e7fb1a4715daaeb60793878f7760ec2f12180e71e6da1",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix spec audit --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix spec audit <slug> [--format <text|json>]\n\nAudits one active or archived Spec without changing Git state, the Run\nDatabase, or Spec artifacts. Reports every surviving branch and worktree with\nits classification evidence, and gives residue an exact reclaim command.\n\nOptions:\n  --format  Output format: text or json (default: text)\n\nExit codes:\n  0  no residue or undelivered work\n  1  residue or undelivered work found, or the audit could not run\n  2  usage error or unknown Spec slug\n",
+      "stderr": "",
+      "expected": "sha256:6cb690347ba456c701aff1f33f7fd30b456c3aaee279037ab7487032a22b45fc",
+      "observed": "sha256:6cb690347ba456c701aff1f33f7fd30b456c3aaee279037ab7487032a22b45fc",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix spec check --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict] [--run-verification]\n\nChecks the declarations and citations in the requested Specs without changing\ntheir artifacts. With no slug, checks every active Spec in the Spec Root.\n\nOptions:\n  --stage   Limit checks to the prd, techspec, or tasks authoring stage\n  --format  Output format: text or json (default: text)\n  --strict  Promote gap findings to errors; a full sweep reports gate repair inputs separately\n  --run-verification\n            Execute authored Verification commands in a disposable checkout at HEAD\n\nExit codes:\n  0  no errors (clean or gaps only)\n  1  at least one error, vacuous command, or unknown/malformed command verdict\n  2  usage error or unreadable Spec Root\n",
+      "stderr": "",
+      "expected": "sha256:2f5ed33efa9d1205e3eda3d5418a53feca60b22c537818c6880f2a855df67b9a",
+      "observed": "sha256:2f5ed33efa9d1205e3eda3d5418a53feca60b22c537818c6880f2a855df67b9a",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix spec judge --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]\n\nRaises advisory judgments for one active Spec. Never fails for a judgment.\nAlso asks whether each open Finding or Backlog Entry belongs with a source\nthe Spec adopted. A suggestion never gates.\n\nOptions:\n  --stage   Judge prd, techspec or tasks (default: prd and techspec)\n  --format  Output format: text or json (default: text)\n\nKeys, first set wins: ROUNDFIX_OPENROUTER_JUDGE_API_KEY, then the shared\nROUNDFIX_OPENROUTER_API_KEY (both OpenRouter), then ROUNDFIX_TYPESAFE_API_KEY\n(TypeSafe directly). The generic OPENROUTER_API_KEY is not read. The summary\nnames the variable used, never its value.\nThe monthly ceiling is jev.monthly_ceiling_usd in User Config, US$5 by default,\nacross both transports. Every request is\nrecorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).\n\nExit codes:\n  0  ran, including advisory, skipped, or stopped results\n  2  usage error, unknown active Spec, or missing required artifact\n",
+      "stderr": "",
+      "expected": "sha256:0a17579fe900267538436321b7f3243f519c9186550e973400b247c10f4603b2",
+      "observed": "sha256:0a17579fe900267538436321b7f3243f519c9186550e973400b247c10f4603b2",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix stop --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix stop <run-id>\n  roundfix stop --run-id <id>\n  roundfix stop --pr <number>\n  roundfix stop --spec <slug>\n  roundfix stop --head-repo <owner/name> --head-branch <branch>\n\nOptions:\n  --run-id      Active Run ID to stop\n  --run         Alias for --run-id\n  --pr          Open Pull Request number used to find the Active Run\n  --spec        Spec slug used to find the Active Run in the current repository\n  --head-repo   Explicit Head Repository, owner/name\n  --head-branch Explicit PR Head Branch\n  --force       Force Stop a dead, stuck, or runaway Run after proving owner exit\n  --owner-identity-unreadable\n                Permit Force Stop only after owner identity proof fails as unreadable\n\nDefault stop is graceful: it records a Stop Request and the Run stops after\nthe current Work Item settles. During a Review Source wait, the owner observes\nthe request by the next configured poll boundary and runs no later fetch,\ncheck, commit, push, or Review Source mutation.\n\nForce Stop cancels registered active Agent Sessions, terminates the recorded\nowner, and reports Stopped only after owner exit is proven. It then releases\nthe Active Run lock and may reap provably empty kept Worktrees and branches.\nIf exit proof fails, the Run remains Active; its Active Run lock stays retained.\nInspect it with 'roundfix runs list --state active', resolve the reported\nowner-process failure, then retry 'roundfix stop --force <run-id>'.\n\nRepeating Force Stop for an already Stopped Run reports the existing outcome\nwithout repeating cleanup. A different terminal outcome is rejected and\npreserved. Cleanup failures are secondary warnings after the primary failure.\n",
+      "stderr": "",
+      "expected": "sha256:7066e60f3e2db5e40b4ab0ea3b1f8c439eadb63948122bb4c90be70be23c1992",
+      "observed": "sha256:7066e60f3e2db5e40b4ab0ea3b1f8c439eadb63948122bb4c90be70be23c1992",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix storage report --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix storage report\n\nCommands:\n  report  Measure bytes and row counts by repository, state, table, and Artifact Root.\n\nThe report is read-only, accepts no flags, and needs no Git repository. It\nreads the machine-wide Run Database and recorded Artifact Roots from Roundfix\nHome without migrating, locking for writes, or changing any byte.\n",
+      "stderr": "",
+      "expected": "sha256:bb11fdf00ae56d1a44fd1f7addface275f647d4f3e00f8b258ad33d4bfe8ca45",
+      "observed": "sha256:bb11fdf00ae56d1a44fd1f7addface275f647d4f3e00f8b258ad33d4bfe8ca45",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix supersede --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix supersede --spec <slug> --by <slug> --reason <text>\n\nRecords that another active or archived Spec delivered this Spec's content.\nWrites only _supersession.md in the superseded Spec. supersede creates no Run,\nwrites no Run Event Journal entry, and never commits or pushes.\n\nOptions:\n  --spec    Superseded Spec slug under the configured Spec Root\n  --by      Active or archived Spec slug that delivered the content\n  --reason  Explanation recorded in the supersession amendment\n\nExit codes:\n  0  supersession recorded\n  1  supersession write failed\n  2  Preflight Validation failed\n",
+      "stderr": "",
+      "expected": "sha256:48b93164de71fe76e7bc50d25f43db0612942dece142700b257dd04e442e85f5",
+      "observed": "sha256:48b93164de71fe76e7bc50d25f43db0612942dece142700b257dd04e442e85f5",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix upgrade --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix upgrade [--check]\n\nResolves the latest Roundfix release for this platform through the GitHub CLI.\nWithout --check, downloads the matching asset, verifies it, and atomically\nreplaces the current executable. If no releases exist, reports that cleanly.\nAfter each release outcome, writes a recommendation notice to standard error\nwithout changing standard output or the exit code. After an install, the notice\ncomes from the installed executable.\n\nOptions:\n  --check  Report the latest release outcome without installing it\n",
+      "stderr": "",
+      "expected": "sha256:b2f07d005e73c047014bdce24c6faff49f5324df31919373401ff09daa044d1a",
+      "observed": "sha256:b2f07d005e73c047014bdce24c6faff49f5324df31919373401ff09daa044d1a",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix watch --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix watch --source coderabbit --pr <number> [--spec <slug>] [--until-clean] [--max-rounds <number>] [--no-input]\n  roundfix watch --source coderabbit --pr <number> --agent <agent> --model <model> --reasoning-effort <effort> [--spec <slug>]\n\nBehavior:\n  Runs Branch Integrity Preflight and clean tracked checkout validation before\n  Agent work. Watch executes in the user's checkout and creates no Run\n  Worktree. With --until-clean, Clean requires accepted Review Source Evidence\n  on the pushed head. The only check-or-status route to a verified head is a\n  recognised review-completed current-head CodeRabbit check or commit status;\n  a current-head CodeRabbit APPROVED review is also accepted, with zero\n  unresolved CodeRabbit threads.\n  An unrecognised signal resolves to pending even when its check\n  conclusion is success:\n  a green check is not evidence that a review ran.\n  An explicit Review Source refusal resolves to skipped;\n  watch will not merge that head or clear it for merge. If no accepted\n  Evidence appears within the grace period, watch ends CleanUnverified\n  and exits 3. Omit all Agent Selection flags to use the review profile.\n  A one-Run override requires --agent, --model, and --reasoning-effort\n  together.\n\nOptions:\n  --source       Review Source. Supported: coderabbit\n  --pr           Open Pull Request number\n  --spec         Spec slug under docs/specs/\n  --agent        Agent runtime. Supported: codex, claude, cursor, opencode\n  --model        Agent model override\n  --reasoning-effort Default reasoning effort override\n  --agent-command Agent command override\n  --agent-full-access Opt into Agent runtime full-access mode\n  --no-agent-console Hide Agent-source console events from non-TTY stderr\n  --detach       Start a Detached Run and print attach/stop commands\n  --until-clean  Repeat until no Unresolved Review Issues remain and accepted Review Source Evidence confirms the pushed head\n  --max-rounds   Maximum Review Source rounds\n  --artifact-dir Artifact Directory\n  --base-repo    Explicit base repository, owner/name\n  --head-repo    Explicit Head Repository, owner/name\n  --head-branch  Explicit PR Head Branch\n  --skip-branch-integrity\n                 Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment\n  --interactive  Open Interactive Input before starting\n  --no-input     Fail instead of opening Interactive Input\n",
+      "stderr": "",
+      "expected": "sha256:4a7067a335380564c050cb23751341098b057aa3cbca6e45bbd955593c2af16c",
+      "observed": "sha256:4a7067a335380564c050cb23751341098b057aa3cbca6e45bbd955593c2af16c",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix window clear --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix window <set|show|clear>\n  roundfix window set <HH:MM|YYYY-MM-DDTHH:MM> [--force]\n  roundfix window show\n  roundfix window clear\n\nThe Run Window bounds when a Run may start. budget.max_run_duration bounds\nhow long one may run after it starts.\n\nCommands:\n  set    Set the cutoff if no Run Window stands; use --force to replace it\n  show   Print the cutoff, current time, and remaining duration\n  clear  Remove the Run Window and report whether one was set\n\nOptions:\n  --force  Replace an existing Run Window\n",
+      "stderr": "",
+      "expected": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
+      "observed": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix window set --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix window <set|show|clear>\n  roundfix window set <HH:MM|YYYY-MM-DDTHH:MM> [--force]\n  roundfix window show\n  roundfix window clear\n\nThe Run Window bounds when a Run may start. budget.max_run_duration bounds\nhow long one may run after it starts.\n\nCommands:\n  set    Set the cutoff if no Run Window stands; use --force to replace it\n  show   Print the cutoff, current time, and remaining duration\n  clear  Remove the Run Window and report whether one was set\n\nOptions:\n  --force  Replace an existing Run Window\n",
+      "stderr": "",
+      "expected": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
+      "observed": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
+      "pass": true
+    },
+    {
+      "command": "./bin/roundfix window show --help",
+      "exit": 0,
+      "stdout": "Usage:\n  roundfix window <set|show|clear>\n  roundfix window set <HH:MM|YYYY-MM-DDTHH:MM> [--force]\n  roundfix window show\n  roundfix window clear\n\nThe Run Window bounds when a Run may start. budget.max_run_duration bounds\nhow long one may run after it starts.\n\nCommands:\n  set    Set the cutoff if no Run Window stands; use --force to replace it\n  show   Print the cutoff, current time, and remaining duration\n  clear  Remove the Run Window and report whether one was set\n\nOptions:\n  --force  Replace an existing Run Window\n",
+      "stderr": "",
+      "expected": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
+      "observed": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
+      "pass": true
+    }
+  ]
+}

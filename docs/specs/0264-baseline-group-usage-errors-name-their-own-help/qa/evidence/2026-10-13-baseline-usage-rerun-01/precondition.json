@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0264-baseline-group-usage-errors-name-their-own-help-8e5db501ec0318d2-c92fdd3b-b7c84aaf/run_20261013T191202Z_d88e2d69e5414b79/bin/roundfix",
+    "spec",
+    "check",
+    "0264-baseline-group-usage-errors-name-their-own-help",
+    "--strict"
+  ],
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0264-baseline-group-usage-errors-name-their-own-help-8e5db501ec0318d2-c92fdd3b-b7c84aaf/run_20261013T191202Z_d88e2d69e5414b79",
+  "exit": 0,
+  "stdout": "Spec 0264-baseline-group-usage-errors-name-their-own-help\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  vocabulary documentation detector: missing docs/specs/0264-baseline-group-usage-errors-name-their-own-help/_techspec.md Vocabulary Contract\n",
+  "stderr": ""
+}
