@@ -30,15 +30,15 @@ source_revision. cancel creates no Run, never changes a Task status, and
 never commits or pushes.
 
 Refuses while an Active Run or an unfinished Delivery Queue item holds the
-Spec, while an active Spec requires it, and for a Spec that carries a
-supersession.
+Spec, while an active Spec requires it, while Git ignores a file under the
+Spec folder, and for a Spec that carries a supersession.
 
 Options:
   --reason  Why the Spec is cancelled, recorded in the Archive Record
 
 Exit codes:
   0  cancelled
-  1  cancel write failed
+  1  cancel write or removal failed
   2  Preflight Validation failed
 `
 
@@ -97,16 +97,24 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return refuse(err)
 	}
-	changes, err := gitOutput(ctx, revisionRoot, "status", "--porcelain", "--untracked-files=all", "--", folder)
+	status, err := readSpecFolderStatus(ctx, repositoryRoot, folder)
 	if err != nil {
 		return refuse(err)
 	}
-	if strings.TrimSpace(changes) != "" {
-		rel, err := filepathRelSlash(repositoryRoot, folder)
+	statusFolder := folder
+	if len(status.Changes) == 0 && len(status.Ignored) > 0 {
+		// Match Git's physical root without changing the uncommitted refusal.
+		statusFolder, err = filepath.EvalSymlinks(folder)
 		if err != nil {
-			return refuse(err)
+			return refuse(fmt.Errorf("resolve ignored Spec folder: %w", err))
 		}
-		return refuse(fmt.Errorf("Spec %q has changes not committed at HEAD under %s; commit them before cancel so the Archive Record's source_revision holds the Spec", slug, rel))
+	}
+	folderRel, err := filepathRelSlash(repositoryRoot, statusFolder)
+	if err != nil {
+		return refuse(err)
+	}
+	if err := refuseSpecFolderStatus("cancel", slug, folderRel, status); err != nil {
+		return refuse(err)
 	}
 	parked, err := checkCancelWork(ctx, loaded.HomeDir, loaded.GitRoot, slug, stderr)
 	if err != nil {
@@ -128,10 +136,6 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err := ctx.Err(); err != nil {
 		return refuse(err)
 	}
-	folderRel, err := filepathRelSlash(repositoryRoot, folder)
-	if err != nil {
-		return refuse(err)
-	}
 	recordRel, err := filepathRelSlash(loaded.GitRoot, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), slug))
 	if err != nil {
 		return refuse(err)
@@ -141,6 +145,11 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		Reason: reason, SourceRevision: revision, RepositoryRoot: repositoryRoot,
 	})
 	if err != nil {
+		var removal *spec.FolderRemovalError
+		if errors.As(err, &removal) {
+			printFolderRemovalRecovery("cancel", recordRel, folderRel, removal, stderr)
+			return exitRunFailed
+		}
 		if cancelWriteError(err) {
 			fmt.Fprintf(stderr, "%s: cancel write failed: %v\n", app.Name, err)
 			return exitRunFailed
@@ -327,10 +336,10 @@ func cancelCitations(ctx context.Context, repo string, root roundconfig.SpecsRoo
 	return live, nil
 }
 
-// Cancel returns ordinary wrapped errors. Its mutation phase has these explicit
-// operation labels; all earlier planning and validation failures are preflight.
+// Pre-removal write failures have these explicit operation labels; earlier
+// planning and validation failures are preflight. Removal failures are typed.
 func cancelWriteError(err error) bool {
-	for _, operation := range []string{"create cancellation destination directory:", "create cancellation destination ", "write cancellation destination ", "write cancellation relink ", "remove cancelled Spec;"} {
+	for _, operation := range []string{"create cancellation destination directory:", "create cancellation destination ", "write cancellation destination ", "write cancellation relink "} {
 		if strings.HasPrefix(err.Error(), operation) {
 			return true
 		}

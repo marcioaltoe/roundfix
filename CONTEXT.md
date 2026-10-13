@@ -180,8 +180,12 @@ A durable lifecycle record that names the Spec which delivered another Spec's co
 _Avoid_: Replacement, duplicate, hand-written disposition
 
 **Cancel Command**:
-The `roundfix cancel <slug> --reason <text>` command that retires an active Spec which will not be delivered: it writes an Archive Record with the disposition `cancelled`, performs Source Return and removes the Spec folder, which stays in Git at `source_revision`. It refuses while an Active Run or an unfinished Delivery Queue item holds the Spec or an active Spec requires it, never changes a Task status and never commits (ADR-0262).
+The `roundfix cancel <slug> --reason <text>` command that retires an active Spec which will not be delivered: it writes an Archive Record with the disposition `cancelled`, performs Source Return and removes the Spec folder, which stays in Git at `source_revision`. It refuses while an Active Run or an unfinished Delivery Queue item holds the Spec, an active Spec requires it or Git ignores a file under the Spec folder, never changes a Task status and never commits (ADR-0262, ADR-0269).
 _Avoid_: Delete command, abandon, archive override
+
+**Ignored Spec File**:
+A file under an active Spec folder that Git ignores, so no commit holds it. The Archive Command and the Cancel Command refuse while one exists (ADR-0269).
+_Avoid_: Untracked change, scratch file, ignored repository file
 
 **Source Return**:
 The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog Entry returns to `docs/backlog/` with `status: open` and no Spec, a Finding returns to `docs/findings/` with `status: pending` and a dated addendum, and every other byte is kept. Other adopted sources stay in Git with the folder (ADR-0262).
@@ -809,6 +813,10 @@ _Avoid_: Broken link, history warning, missing source
 **Archive Record**:
 The small `<slug>.md` record an archive leaves under the resolved archive root: a file named `NNNN-<slug>.md` whose front matter declares `roundfix/archive-record/v1`; any other Markdown file in that root is not a record. It carries the disposition, QA Report and verdict, promoted references, `source_revision` and, once the delivery pull request is open, `pull_request`; the removed Spec folder stays recoverable in Git at that revision, after a squash merge through Source Revision Recovery. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override (ADR-0248, ADR-0251, ADR-0260, ADR-0261). A cancelled Spec's record has the disposition `cancelled` and carries `cancel_reason`, `completed_tasks`, `pending_tasks` and `returned_sources`; only its listed completed Tasks count as completed (ADR-0262).
 _Avoid_: Archive folder, archive log, copied Spec
+
+**Folder Removal Recovery**:
+How the Archive Command and the Cancel Command end when the final removal of the Spec folder fails: every write stays in place, and the command prints the command that finishes the removal (ADR-0269).
+_Avoid_: Rollback, retry archive, partial cleanup
 
 **Archive Advice**:
 Jev's advisory classification of candidate files before the archive cut. It labels reusable knowledge, repository records or transient evidence and never gates the archive.
