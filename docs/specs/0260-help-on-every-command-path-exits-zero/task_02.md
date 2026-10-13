@@ -72,6 +72,17 @@ credential, or reads or writes the real `~/.roundfix`.
     as the claimed candidate.
 11. MUST NOT accept a row whose only evidence is that a file was read, and
     MUST NOT write outside temporary directories and the Spec's `qa/` folder.
+12. Addendum (2026-10-13, after QA fail F-01 of Run
+    `run_20261013T031317Z_0f4d6fa287f6d6a7`): the comparison revision of
+    Requirement 5 is the delivery base, the commit on the default branch from
+    which task_01 started (the parent of task_01's commit; at the time of this
+    addendum `3820bdd4`), not `7a8b7f70`. Unrelated Specs merged between
+    authoring and delivery updated `docs/references/behavior-surfaces.json`;
+    Success Metric 3 asks that this Spec leave the record unchanged, so the row
+    MUST compare the audited record with its bytes at the delivery base and
+    MUST still report its SHA-256 at `7a8b7f70` for reference only, without
+    failing on it. Requirements 1 and 4 and Success Metric 1 keep `7a8b7f70`
+    as the characterization revision of the baseline count.
 
 ## Subtasks
 
