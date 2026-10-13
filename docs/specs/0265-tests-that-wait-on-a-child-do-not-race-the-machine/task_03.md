@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0265-tests-that-wait-on-a-child-do-not-race-the-machine
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -91,3 +91,72 @@ are gone, and each changed test passes under the race detector.
 - `_prd.md` → Goals; Core Feature 4; Success Metric 1; Success Metric 4
 - `_techspec.md` → Current behavior; 0259 overlap; Interfaces; API Contract 5; API Contract 6; Invariant 1; Testing Approach; Build Order 3
 - ADR-0271; ADR-0259; ADR-0266; ADR-0125
+
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. Task status and the
+Verification section remain Daemon-owned.
+
+### Implementation and acceptance evidence
+
+- The engine's `Dependencies.BudgetTimer` accepts the declared timer channel
+  and stop function. The watchdog uses `time.NewTimer` when it is nil, still
+  passes `time.Until(deadline)`, and retains stop/drain handling on cancellation
+  and renewal. No production budget value changed.
+- `TestTaskBudgetWatchdogUsesTheRealTimerByDefault` leaves `BudgetTimer` nil,
+  starts a blocking task_01, and lets task_00 settle with the existing synthetic
+  clock so its renewed deadline is already past in real time. It asserts a
+  Run Budget deadline, the budget-exceeded outcome, that expired renewal, one
+  preserved settlement, and exactly one cancellation of task_01.
+  This proof uses a past deadline **after task_01 starts**, rather than the
+  literal Requirement 3 ordering: a deadline already past before dispatch can
+  end the cycle at its checkpoint or race the real watchdog against Git setup,
+  without proving cancellation of a running Task.
+- `TestTaskCycleEndsRunAtBudgetDeadline` freezes the checkpoint clock and
+  delivers its fake timer event only after `budgetDeadlineRunner.started`.
+  Both parallel cases retain the Run Budget error, the unprovable-termination
+  error where applicable, only task_01 starting with one cancellation, and
+  task_02 pending. Its former 3 s allowance is gone.
+- `TestSourceRevisionRecoveryCancelsTheFetchProcess` waits for all three start
+  marker fields before explicit cancellation, checks `context.Canceled`, and
+  retains the unavailable-source, marker, numeric PID and dead-process
+  assertions. Its compiled fetch fixture blocks while its owning test remains
+  its direct parent, instead of exiting after a finite sleep.
+- `TestRunBootstrapReturnsBootstrapErrorOnTimeout` accepts expiry before the
+  shell's start marker while retaining the asserted 1 s timeout and every
+  `BootstrapError` assertion: type, command, stage and diagnostic.
+- The retention eligibility scan and the prune with no event-bearing candidate
+  now use `t.Context()` while the independent write lock stays held. Their
+  candidate/result assertions remain. The retention test's separate asserted
+  timeout for a prune that must block on that lock remains unchanged.
+- All changed top-level tests remain parallel; the Run Budget subtests are
+  parallel too. No Sequential Test, signal send or written executable was
+  added. The Spec 0259-owned test and the file tail beginning with
+  `TestBudgetExceededRunRecordsItsReason` are byte-identical to HEAD.
+
+### Focused checks
+
+Final implementation check:
+
+```sh
+rtk proxy go test -race -count=1 -timeout=5m -run '^(TestTaskBudgetWatchdogUsesTheRealTimerByDefault|TestTaskCycleEndsRunAtBudgetDeadline|TestSourceRevisionRecoveryCancelsTheFetchProcess|TestRunBootstrapReturnsBootstrapErrorOnTimeout|TestRetentionScanOutsideWriteTransaction|TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents)$' ./internal/daemon ./internal/spec ./internal/worktree ./internal/store
+```
+
+Exit 0: daemon 3.660 s, spec 5.572 s, worktree 3.719 s, store 3.219 s.
+All six selected regressions passed under the race detector, including both
+Run Budget subcases. An earlier run exposed an unused `time` import in the
+source-revision test; it was removed before the final check.
+
+A focused Python diff inspection confirmed the Spec 0259-owned tail is
+unchanged, the former 3 s, 2 s, 500 ms and 250 ms setup bounds are absent, and
+`time.Until(deadline)` remains in the watchdog. `rtk proxy git diff --check`
+reported no whitespace errors.
+
+Declared Verification and repository gates were not run in this child turn;
+the Daemon owns them and Task settlement. No commit, push or PR was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T045342Z_a78df1f6c39a67e2`
+- Source commit: `4bc4de752fab37a8bb50f8bea65d9a938c0bc05d`

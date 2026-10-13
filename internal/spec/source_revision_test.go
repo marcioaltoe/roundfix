@@ -13,10 +13,10 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"roundfix/internal/gittest"
 	"roundfix/internal/testfixture"
+	"roundfix/internal/testwait"
 )
 
 func recoveryFixture(t *testing.T, number string) (string, string, ArchiveRecord, string) {
@@ -180,10 +180,31 @@ func TestSourceRevisionRecoveryCancelsTheFetchProcess(t *testing.T) {
 	if repo := os.Getenv("ROUNDFIX_TEST_RECOVERY_REPO"); repo != "" {
 		r := ArchiveRecord{Spec: "0256-example", Source: "docs/specs/0256-example", SourceRevision: os.Getenv("ROUNDFIX_TEST_RECOVERY_REVISION"), PullRequest: "7"}
 		marker := os.Getenv("ROUNDFIX_TEST_RECOVERY_MARKER")
-		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
-		defer cancel()
-		_, err := EnsureSourceRevision(ctx, repo, "origin", r, "HEAD", ArchiveRecordPath("docs/history/specs", r.Spec))
-		if !errors.Is(err, ErrSourceRevisionUnavailable) || !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		ctx, cancel := context.WithCancel(t.Context())
+		resultCh := make(chan error, 1)
+		ended := make(chan struct{})
+		go func() {
+			defer close(ended)
+			_, err := EnsureSourceRevision(ctx, repo, "origin", r, "HEAD", ArchiveRecordPath("docs/history/specs", r.Spec))
+			resultCh <- err
+		}()
+		defer func() {
+			cancel()
+			<-ended
+		}()
+		testwait.Poll(t, "fetch fixture to start", ended, func() (bool, string) {
+			data, err := os.ReadFile(marker)
+			if errors.Is(err, os.ErrNotExist) {
+				return false, "fetch marker does not exist"
+			}
+			if err != nil {
+				t.Fatalf("read fetch start marker: %v", err)
+			}
+			return len(strings.Fields(string(data))) == 3, "fetch marker=" + string(data)
+		})
+		cancel()
+		err := testwait.Until[error, struct{}](t, "fetch cancellation", resultCh, nil)
+		if !errors.Is(err, ErrSourceRevisionUnavailable) || !errors.Is(ctx.Err(), context.Canceled) {
 			t.Fatalf("fetch error=%v context=%v", err, ctx.Err())
 		}
 		data, err := os.ReadFile(marker)
@@ -240,6 +261,7 @@ import (
 
 func main() {
  if len(os.Args) > 3 && os.Args[3] == "fetch" {
+  owner := os.Getppid()
   input, err := io.ReadAll(os.Stdin)
   if err != nil { fmt.Fprintln(os.Stderr, err); os.Exit(1) }
   state := "eof"
@@ -248,7 +270,9 @@ func main() {
   if err := os.WriteFile(os.Getenv("ROUNDFIX_TEST_RECOVERY_MARKER"), []byte(marker), 0600); err != nil {
    fmt.Fprintln(os.Stderr, err); os.Exit(1)
   }
-  time.Sleep(30 * time.Second)
+  // The direct parent cannot be reused while it remains our parent.
+  // Block until cancellation kills us or the owning test exits.
+  for owner > 1 && os.Getppid() == owner { time.Sleep(10 * time.Millisecond) }
   return
  }
  cmd := exec.Command(os.Getenv("ROUNDFIX_TEST_RECOVERY_GIT"), os.Args[1:]...)

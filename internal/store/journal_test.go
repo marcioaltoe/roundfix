@@ -496,9 +496,7 @@ func TestRetentionScanOutsideWriteTransaction(t *testing.T) {
 
 	// The eligibility scan must complete before the deadline while the lock is
 	// held, because it never needs the writer.
-	scanCtx, cancelScan := context.WithTimeout(ctx, 500*time.Millisecond)
-	defer cancelScan()
-	candidates, err := runStore.TerminalRunPruneCandidates(scanCtx, cutoff)
+	candidates, err := runStore.TerminalRunPruneCandidates(t.Context(), cutoff)
 	if err != nil {
 		t.Fatalf("eligibility scan blocked on the held write lock: %v", err)
 	}
