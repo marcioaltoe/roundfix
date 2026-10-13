@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-13
-spec: null
+spec: 0267-no-secret-and-no-spec-content-leaves-the-machine
 reason: null
 ---
 
