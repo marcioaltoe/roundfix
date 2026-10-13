@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strconv"
 	"strings"
@@ -15,6 +16,11 @@ import (
 )
 
 func platformProcessVanished(err error) bool { return errors.Is(err, unix.ESRCH) }
+
+// A process this user may not inspect, such as a non-dumpable process or one
+// holding capabilities the test binary lacks, did not inherit the test
+// binary's credentials, so it cannot carry the mark.
+func linuxProcessUninspectable(err error) bool { return errors.Is(err, fs.ErrPermission) }
 
 func linuxProcessEnvironment(pid int) ([]byte, error) {
 	root := fmt.Sprintf("/proc/%d", pid)
@@ -44,7 +50,7 @@ func helperResidue(mark string, self int) ([]residueProcess, error) {
 			continue
 		}
 		environment, err := linuxProcessEnvironment(pid)
-		if residueProcessVanished(err) {
+		if residueProcessVanished(err) || linuxProcessUninspectable(err) {
 			continue
 		}
 		if err != nil {
@@ -54,7 +60,7 @@ func helperResidue(mark string, self int) ([]residueProcess, error) {
 			continue
 		}
 		command, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
-		if residueProcessVanished(err) {
+		if residueProcessVanished(err) || linuxProcessUninspectable(err) {
 			continue
 		}
 		if err != nil {
@@ -73,7 +79,7 @@ func killResidue(process residueProcess, mark string) error {
 		return nil
 	}
 	environment, err := linuxProcessEnvironment(process.PID)
-	if residueProcessVanished(err) {
+	if residueProcessVanished(err) || linuxProcessUninspectable(err) {
 		return nil
 	}
 	if err != nil {
