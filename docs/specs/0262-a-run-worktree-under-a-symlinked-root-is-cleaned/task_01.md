@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0262-a-run-worktree-under-a-symlinked-root-is-cleaned
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -95,3 +95,66 @@ prunes, while a link at the repository or worktree directory stays unsafe.
 - `_prd.md` → Goals; User Story 1; User Story 3; Core Feature 1; Core Feature 2; Core Feature 6; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior; API Contract 1; Invariants 1-2; Invariant 4; Testing Approach; Build Order 1
 - ADR-0268; ADR-0053; ADR-0259; ADR-0244
+
+## Result
+
+Implemented the assigned Worktree Root slice for Daemon Verification.
+`recordedWorktree` now calls `resolveWithinWorktreeRoot` after its existing
+path-format checks. The helper uses `Lstat` to require real repository and
+worktree directories, treats missing directories as absent, resolves links
+at or above the Worktree Root, and requires the resolved worktree path to
+match the resolved root joined with the original two directory names.
+Registration matching then proceeds as before. The recorded reconciliation
+`Path`, reason constants, release proofs and recorded Git root validation
+are unchanged; `pathContainsSymlink` still guards that Git root.
+
+Added the five authored public API tests in
+`internal/worktree/worktree_root_test.go`. Each top-level test and each
+unsafe-link subtest starts with `t.Parallel()`. The shared fixture calls
+`Create` with a temporary location linked to a real temporary directory and
+records `ref.Path` without resolving its spelling. The pruning test retains a
+Task Worktree and asserts both exact reported refs and removal of both
+worktrees and branches. The unsafe-link tests also exercise refused apply
+and preservation by pruning. Added **Worktree Root** beside **Run Worktree**
+in `CONTEXT.md`, linked to ADR-0268 with the required avoided synonyms.
+
+### Focused checks
+
+- Before the implementation,
+  `go test -count=1 -run '^TestInspectTerminalRunResolvesASymlinkedWorktreeRoot$' ./internal/worktree`
+  exited 1: the new test observed `unknown` with
+  `recorded Run Worktree path is unsafe` instead of `safe` for a merged clean
+  Run under the linked location.
+- After the implementation,
+  `go test -count=1 -race -v -run '^(Test.*Symlinked.*|TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot|TestInspectTerminalRunUnsafePath)$' ./internal/worktree`
+  exited 0. All five new tests, all three unsafe-link subtests and the two
+  pinned refusal tests passed under the race detector.
+- After strengthening the pruning-report assertion,
+  `go test -count=1 -race -shuffle=on -v -run '^(Test.*Symlinked.*|TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot|TestInspectTerminalRunUnsafePath)$' ./internal/worktree`
+  exited 0 on the final source. Shuffle seed: `1791903057831861000`.
+  The same seven top-level tests and their subtests passed.
+
+### Acceptance evidence
+
+1. A terminal Run under a linked location is classified, applied and pruned
+   as under a real directory: the new inspection, apply and prune tests
+   passed, preserving the recorded report path and removing the Run and kept
+   Task Worktrees and their branches. The missing-worktree test additionally
+   proved `released` after Git removed the Run Worktree and branch.
+2. A repository or worktree directory link stays unsafe and removes nothing:
+   `repository-directory-link`, `worktree-directory-link` and
+   `dangling-worktree-link` passed with `unknown` and the existing unsafe-path
+   reason; apply refused, pruning returned no refs, and the real worktree,
+   Run Branch and recorded path remained.
+3. Existing refusals remain: `TestInspectTerminalRunUnsafePath` and
+   `TestCountRetainedTerminalRunsStillReportsASymlinkedRecordedRoot` passed
+   unchanged in both race runs. Their source files were not edited.
+
+The executor cannot start its sandbox with this workspace's symbolic-linked
+writable root, so file operations and focused checks used approved execution
+outside that sandbox. Tests used isolated temporary repositories and roots.
+
+The Task status remains Daemon-owned. No declared Verification command,
+repository Verification, full package suite, commit, push or pull request
+was run. No other Task or Task Graph file was edited. Missing-prefix path
+comparison and consumer coverage remain with task_02 and task_03.
