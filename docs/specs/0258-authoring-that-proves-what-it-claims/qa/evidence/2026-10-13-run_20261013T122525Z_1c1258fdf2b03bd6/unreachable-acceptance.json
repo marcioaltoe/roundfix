@@ -1,7 +1,0 @@
-{
-  "criterion": "fewer QA failures caused by an unrun consumer, a rebuilt existing component, a rejected alternative or an unread Coverage Map in Specs authored after release",
-  "reason": "the effect shows only in Specs authored with the released skills, which start after this Spec merges",
-  "satisfied_by": "the operator reviews the QA reports of the first five Specs delivered after this release and records each failure of those four classes",
-  "observed_pre_release": "Current graph ends at pending task_05; all implementation is at the Run candidate head and this Spec is active, with no open Pull Request per assignment. The measured post-release cohort cannot exist at this pre-release gate.",
-  "measured": false
-}
