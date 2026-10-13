@@ -87,6 +87,21 @@ suites while synthetic CPU load runs. No row reads or writes the real
     NOT read or write `~/.roundfix`, signal a process it did not start, use a
     broad `pkill` or `killall`, leave a burner running after its window, send
     any request to a provider, or start a workflow.
+13. Addendum (2026-10-13, after QA finding F-SUITE of Run
+    `run_20261013T045342Z_a78df1f6c39a67e2`): while Spec 0259 has not merged
+    (Requirement 4's condition), the skip of Requirement 4 also names
+    `TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate`, the test that
+    saw F6, which Spec 0259 owns (its task_02 Requirement 8) and whose
+    `exited -1` is F6 itself. The skip pattern becomes
+    `-skip '^(TestBudgetExceededRunRecordsItsReason|TestRemoveRegisteredWorktreeWaitsForTheAdminLock|TestAddDetachedWorktreeWaitsForTheAdminLock|TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate)$'`;
+    once 0259 has merged, no skip is passed.
+14. Addendum (same QA): when any measured command runs with a temporary
+    `HOME`, it MUST set `RUSTUP_HOME` and `CARGO_HOME` to the real rustup and
+    cargo homes, so the Rust toolchain the Guidance composition journey
+    invokes stays configured; it records the two values it set.
+15. Addendum (same QA): Requirement 3's row for `internal/agent` runs row 19
+    with `ROUNDFIX_REAL_ACPX=1` after task_06; a skip of that test fails the
+    row.
 
 ## Subtasks
 

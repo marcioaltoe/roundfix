@@ -18,6 +18,9 @@ graph:
       needs: [task_01, task_02, task_03]
     - id: task_05
       file: task_05.md
+      needs: [task_04, task_06]
+    - id: task_06
+      file: task_06.md
       needs: [task_04]
 ---
 
@@ -29,11 +32,15 @@ graph:
 | task_02 | The agent tests stop racing the real cancel grace and cleanup timeout     | test | high       | —                         |
 | task_03 | The daemon, worktree, store and spec tests stop racing their work         | test | medium     | —                         |
 | task_04 | The Real-Time Budget rule holds each test file to a ceiling               | test | medium     | task_01, task_02, task_03 |
-| task_05 | Run the final QA gate                                                     | qa   | high       | task_04                   |
+| task_05 | Run the final QA gate                                                     | qa   | high       | task_04, task_06          |
+| task_06 | The real ACPX round trip selects a model for its local fixture            | test | low        | task_04                   |
 
-Waves: 1 → task_01, task_02, task_03 · 2 → task_04 · 3 → task_05
+Waves: 1 → task_01, task_02, task_03 · 2 → task_04 · 3 → task_06 · 4 → task_05
 
 task_01, task_02 and task_03 share no declared file and run side by side.
 task_04 measures each file's ceiling on the tree the first three leave, so it
 follows all of them. The gate follows task_04, the only non-QA leaf, and runs
 its load windows on the tree every Task built.
+
+task_06 is Corrective Task 1 of 2, added after the first QA gate failed on
+F-ACPX-MODEL; the gate now follows it too.
