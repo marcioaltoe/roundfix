@@ -19,6 +19,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "506"
 ---
 
 # Help on every command path exits zero
