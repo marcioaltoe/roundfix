@@ -399,6 +399,10 @@ _Avoid_: Background job, nohup run, daemon
 The isolated git worktree a spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
 _Avoid_: Sandbox, scratch dir, user checkout
 
+**Worktree Root**:
+The directory two levels above a recorded worktree path, the `worktree.location` it was created under, within which symbolic links are followed; the repository and worktree directories below it must be real directories ([ADR-0268](docs/adr/0268-a-recorded-worktree-path-is-resolved-within-its-worktree-root.md)).
+_Avoid_: Worktree directory, Roundfix Home
+
 **Run Branch**:
 The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside its Run Worktree until integration moves them to the user's branch. Review Runs use the user's checkout branch directly; older pending Run Branch work is handled by Branch Integrity Preflight before review work starts.
 _Avoid_: Temp branch, detached HEAD, feature branch

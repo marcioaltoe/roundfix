@@ -2684,24 +2684,44 @@ func recordedWorktree(path string, worktrees []registeredWorktree) (registeredWo
 	if !filepath.IsAbs(path) || filepath.Clean(path) != path {
 		return registeredWorktree{}, recordedWorktreeUnsafe
 	}
-	hasSymlink, err := pathContainsSymlink(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return registeredWorktree{}, recordedWorktreeAbsent
+	canonical, state := resolveWithinWorktreeRoot(path)
+	if state != recordedWorktreePresent {
+		return registeredWorktree{}, state
 	}
-	if err != nil || hasSymlink {
-		return registeredWorktree{}, recordedWorktreeUnsafe
-	}
-	info, err := os.Stat(path)
-	if err != nil || !info.IsDir() {
-		return registeredWorktree{}, recordedWorktreeUnsafe
-	}
-	canonical := canonicalPath(path)
 	for _, worktree := range worktrees {
 		if canonicalPath(worktree.Path) == canonical {
 			return worktree, recordedWorktreePresent
 		}
 	}
 	return registeredWorktree{}, recordedWorktreeUnregistered
+}
+
+// resolveWithinWorktreeRoot follows links only at or above the Worktree Root.
+// The repository and worktree directories below it must be real directories.
+func resolveWithinWorktreeRoot(path string) (string, recordedWorktreeState) {
+	parent := filepath.Dir(path)
+	root := filepath.Dir(parent)
+	for _, directory := range []string{parent, path} {
+		info, err := os.Lstat(directory)
+		if errors.Is(err, os.ErrNotExist) {
+			return "", recordedWorktreeAbsent
+		}
+		if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			return "", recordedWorktreeUnsafe
+		}
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", recordedWorktreeAbsent
+	}
+	if err != nil {
+		return "", recordedWorktreeUnsafe
+	}
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err != nil || resolvedPath != filepath.Join(resolvedRoot, filepath.Base(parent), filepath.Base(path)) {
+		return "", recordedWorktreeUnsafe
+	}
+	return resolvedPath, recordedWorktreePresent
 }
 
 func pathContainsSymlink(path string) (bool, error) {
@@ -3464,12 +3484,7 @@ func pathAtOrBelow(path, root string) bool {
 }
 
 func canonicalPath(path string) string {
-	clean := filepath.Clean(path)
-	resolved, err := filepath.EvalSymlinks(clean)
-	if err != nil {
-		return clean
-	}
-	return filepath.Clean(resolved)
+	return roundconfig.CanonicalizeResolvedPath(path)
 }
 
 func runBelongsToRepository(run store.Run, repositoryRoot string) bool {

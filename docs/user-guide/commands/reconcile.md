@@ -82,6 +82,13 @@ Run Worktree Reconciliation uses six states:
 | `unknown` | Invalid or missing metadata, an unsafe or unregistered worktree, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
 | `released` | Both the Run Worktree and Run Branch are absent. Repeated dry-run or apply is an idempotent no-op. |
 
+When `worktree.location` is a symbolic link, a recorded Run Worktree is
+resolved within its Worktree Root. A recorded path whose repository or
+worktree directory is itself a symbolic link stays `unknown`. Run
+`roundfix reconcile` to inspect the retained Runs, then
+`roundfix reconcile --apply` to release eligible Runs that an earlier version
+kept with `recorded Run Worktree path is unsafe`.
+
 A missing worktree alone is not `released` and never authorizes deletion. When
 the Run Branch remains, Roundfix still requires an unambiguous Run Branch tip,
 and either target ancestry, QA supersession, or merged-head representation
