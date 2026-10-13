@@ -24,6 +24,30 @@ _Avoid_: Permanent waiver, review approval, uncovered reason
 A Spec's optional declaration of the covered Behavior Surfaces whose changes need no skill text, each with a reason and a planned Coverage Review ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
 _Avoid_: Skills inventory, permanent waiver, Coverage Review
 
+**Absence Evidence**:
+A TechSpec record of the search that proves each newly declared component absent, or the reason no component is new ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
+_Avoid_: Unverified absence, component inventory
+
+**ADR Alternatives**:
+A TechSpec line that relates its design to the alternatives rejected by each ADR in its Active ADR obligations ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
+_Avoid_: Decision summary, replacement decision
+
+**Coverage Cross-Read**:
+A TechSpec record of reading each PRD unit against its Coverage Map and naming any unit delivered in another shape ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
+_Avoid_: Coverage map, traceability table
+
+**Consumer Declaration**:
+A pending non-QA Task's record of the suites that consume each Shared Contract it changes and where those suites run ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
+_Avoid_: Test list, regression checklist
+
+**Shared Contract**:
+A route, public signature, persisted format or report that code outside a Task's slice consumes ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
+_Avoid_: Internal helper, implementation detail
+
+**Integration Checkpoint**:
+A non-QA Task between a contract-changing Task and the QA gate whose Verification runs the consuming suites ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
+_Avoid_: Final QA, follow-up task
+
 **Run**:
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job

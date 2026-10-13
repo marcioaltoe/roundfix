@@ -13,6 +13,10 @@ are `error` when the check locates both sides of a contradiction and `gap` when
 it surfaces a candidate it cannot settle; `--strict` promotes gaps to errors.
 The authoring-honesty contract includes these stable identifiers:
 
+These four gaps hold every active Spec, whatever its age. Before an active
+Spec's next Run, add the sections and lines each finding names; the fix of every
+finding names the section or line and the skill rule that requires it.
+
 The Glossary Declaration is a `## Glossary` section in the PRD or TechSpec.
 It lists each term the Spec adds or changes and each bolded phrase declared not
 a domain term. The glossary horizon begins with the commit that adds
@@ -58,6 +62,15 @@ oldest commit that added it; an uncommitted PRD is held.
   naming a guide in that Task or its transitive dependencies.
 - `SC-LOOP-ORDER-DIVERGENT` — the shipped clause, repository guide, and
   Baseline module asset declare different Spec loop orders.
+- `SC-ABSENCE-UNPROVEN` — a TechSpec has no Absence Evidence declaration or an
+  item lacks its search command or result. Runs from the TechSpec stage.
+- `SC-ADR-ALTERNATIVES-UNRELATED` — a listed ADR has no line relating the
+  design to that ADR's rejected alternatives. Runs from the TechSpec stage.
+- `SC-COVERAGE-UNREAD` — a Coverage Map lacks its `Deviations from the PRD:`
+  line or has a deviation that names no PRD unit. Runs from the TechSpec stage.
+- `SC-CONSUMERS-UNPROVEN` — a pending non-QA Task lacks a valid Consumer
+  Declaration, or names a suite no Verification or valid checkpoint runs.
+  Runs from the Tasks stage.
 
 The missing-receipt gap starts at the oldest commit that added
 `.agents/skills/write-techspec/references/concrete-contracts.md`. A PRD

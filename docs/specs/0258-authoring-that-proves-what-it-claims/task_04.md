@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0258-authoring-that-proves-what-it-claims
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -85,3 +85,39 @@ Context and this Task file.
 - [_prd.md](_prd.md) — Goal 5; User Story 5; Core Features 5 and 6; Success Metric 3; Adopter notes; Glossary
 - [_techspec.md](_techspec.md) — API Contract 5; Skill and document texts; Testing Approach; Build Order 4
 - ADR-0265; ADR-0244; ADR-0256
+
+## Result
+
+Implementation evidence:
+
+- Added the four finding codes with their TechSpec or Tasks stage, plus the
+  adopter paragraph, to the `spec check` command reference and the user guide.
+- Added the six ADR-0265 glossary terms to `CONTEXT.md`, each with a one-sentence
+  definition and an `_Avoid_` line.
+- Ran `make skills-sync`, the owned-skill version recorder, and `make
+  skills-sync` again. The `roundfix` skill was recorded at version `0.1.69`,
+  and both canonical and mirror copies carry that version.
+- Re-recorded `docs/references/behavior-surfaces.json` after the user guide
+  change; its `guide docs/user-guide/commands/spec.md` fingerprint changed.
+
+Focused checks:
+
+- `git diff --check`: passed.
+- Focused phrase inspection found all four codes and the adopter paragraph in
+  both documentation surfaces, and all six glossary terms with `_Avoid_` lines.
+- SHA-256 inspection matched `.agents/skills/roundfix/SKILL.md` to
+  `skills/roundfix/SKILL.md` and `.agents/skills/roundfix/references/spec.md`
+  to `skills/roundfix/references/spec.md`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`: passed, `1 passed in 1 packages`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed, `1
+  passed in 1 packages`.
+
+The declared `## Verification` commands and Task status remain Daemon-owned and
+were not run or changed in this turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T122525Z_1c1258fdf2b03bd6`
+- Source commit: `61dd75d054e73d0c3675c04db4aa2035214959aa`
