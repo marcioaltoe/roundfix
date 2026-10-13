@@ -280,8 +280,8 @@ None. No command's output, flags or exit codes change.
 - Goal 2, Core Feature 3 → agent cleanup timeout and stop grace (task_02).
 - Goal 2, Core Feature 4 → Run Budget timer and the store, spec and worktree
   tests (task_03).
-- Goal 3, Core Feature 5, Success Metric 3 → Real-Time Budget rule, glossary and
-  repository rule (task_04).
+- Goal 3, Core Feature 5, Success Metric 3 → the rule test of API Contract 7,
+  which fails on each seeded violation, and its ceiling table (task_04).
 - Goal 4, Success Metric 4 → Invariant 1, proved from the diff by the QA gate
   (task_05).
 - Success Metric 1, Success Metric 2 → QA gate under synthetic load (task_05).

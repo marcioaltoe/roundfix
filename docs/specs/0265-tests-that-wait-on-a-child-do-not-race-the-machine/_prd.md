@@ -167,7 +167,9 @@ found and read through Exa during authoring:
   after per-test fixes, which is why this Spec adds a rule. The testing-boss
   anti-pattern list (`projects/skills/mirror/skills/05-implementation-loop/testing-boss/references/antipatterns.md`)
   names static sleeps and fixed-timeout waits as the top empirical flakiness
-  cause.
+  cause. No wiki page covered resource-affected flaky tests; the Exa sources
+  above were captured as a pending research Inbox Entry in the Secondbrain's
+  own namespace.
 
 ## Glossary
 
