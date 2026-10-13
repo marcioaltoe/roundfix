@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0264-baseline-group-usage-errors-name-their-own-help
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -66,3 +66,24 @@ mirror and the version record.
 - [_prd.md](_prd.md) — Goals; Core Feature 4
 - [_techspec.md](_techspec.md) — Coverage Map; Build Order 1
 - ADR-0256; ADR-0189; ADR-0233
+
+## Result
+
+- Added the required bare or unknown-group usage-error sentence immediately
+  after the Spec 0260 group-help sentence in the canonical baseline reference.
+- Ran `rtk make skills-sync`, which synchronized the mirror reference.
+- Ran `rtk go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; it passed (`1 passed in 1 packages`) and recorded `roundfix` skill version `0.1.71` in both `SKILL.md` fields and `skills/testdata/owned-skill-versions.json`.
+- Acceptance criterion 1 evidence: the required phrase is present in both
+  `.agents/skills/roundfix/references/baseline.md` and
+  `skills/roundfix/references/baseline.md`; `cmp` confirms the reference
+  copies match.
+- Acceptance criterion 2 evidence: `cmp` confirms the canonical and mirrored
+  `SKILL.md` files match, and the owned-skill version recorder test passed.
+  `git diff --check` passed, and the protected `### QA settlement` sections
+  remain identical.
+- The Task's declared Verification commands remain for Daemon execution.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T182909Z_0621af1dca36d211`
+- Source commit: `9e97b7c15de62fadfa1080e77629f3755f9a4c47`
