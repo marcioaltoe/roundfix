@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0260-help-on-every-command-path-exits-zero
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -117,3 +117,78 @@ skill phrases.
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 2; API Contract 3; API Contract 4; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Surface Transcript 6; Invariants 1-4; Testing Approach; Build Order 1
 - [2026-10-09-qa-report-accept-help-exits-one.md](references/2026-10-09-qa-report-accept-help-exits-one.md)
 - ADR-0256; ADR-0184; ADR-0259; ADR-0189; ADR-0233
+
+## Result
+
+Implemented the Task 01 slice for Daemon Verification. Status remains
+Daemon-owned; no declared Verification command, repository Verification,
+commit, push, or pull request operation was run.
+
+### Implementation
+
+- `qa-report accept` answers `commandWantsHelp(args[1:])` before operand
+  validation or report reads. The three baseline groups answer a help token
+  directly after the group with the existing baseline usage.
+- Added the six complete transcript assertions and a root-help-derived sweep
+  with group prefixes, alternative expansion, duplicate removal, and named
+  failures. Added the four required `TestRunCommandHelp` rows without changing
+  existing rows. Added focused parser and argument-boundary cases for help
+  ordering, `--` terminators, bare groups, and unknown group commands.
+- Removed the ancestor fallback from `skillCoverageCLIHelp`. It invokes each
+  command's own help once and reports nonzero help exits. The bytes contract
+  independently compares `qa-report accept` with its own help and asserts exit
+  zero with the required own-help failure message.
+- Updated the canonical settle and baseline references with the required
+  sentences, ran `make skills-sync`, then ran the owned-skill record command.
+  It raised both Roundfix skill versions from `0.1.66` to `0.1.67` and recorded
+  the new digest. All three changed skill files match their embedded mirrors.
+
+### Focused checks
+
+The focused CLI check exited 0:
+
+```sh
+rtk proxy go test ./internal/cli -count=1 -run '^Test(HelpSurfaceTranscripts|EveryCommandPathPrintsItsHelp|HelpCommandPathsKeepsPrefixesAndAlternatives|CommandHelpArgumentBoundaries|RunCommandHelp|RunQAReportAcceptCommand.*|QAReportAccept.*|CapabilityRecheck|CapabilityTextRendersProbe|BaselineProfile.*)$'
+```
+
+The affected contract check exited 0:
+
+```sh
+rtk proxy go test ./internal/docscontract -tags docscontract -count=1 -run '^Test(TheSkillCoverageMapIsCurrent|BehaviorSurfaceBytesComeFromParsedValuesAndGuideContent)$'
+```
+
+Required generation commands both exited 0:
+
+```sh
+rtk proxy make skills-sync
+rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+```
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Six Surface Transcripts and regression detection | Before the dispatcher edits, the focused transcript/sweep check exited 1: all six transcripts failed; `accept --help` and `-h` exited 1, and the trailing help transcript exited 2. The same transcript tests passed in the focused CLI check after implementation. They compare complete stdout, empty stderr, and exit zero. |
+| Every command path and both flags | The root-help parser yielded 71 paths and 142 calls. Before implementation it named exactly eight failing command lines; after implementation every call passed. Parser coverage also checks alternative expansion, every prefix, duplicate removal, and all four token boundaries. |
+| Four new help-exit rows | `TestRunCommandHelp` passed with all existing rows and the exact four required new rows and output fragments. |
+| Behavior Surface contracts and unchanged record | Both affected contract tests passed. A temporary Go overlay substituting the original `qa_report.go` made `TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent` fail with `roundfix qa-report accept --help: help exited 1: ...`; the check runner required that diagnostic and the nonzero exit. The overlay changed no repository source. Direct byte comparison against HEAD confirmed that both surface and coverage records remain unchanged. |
+| Skill text, mirrors, and version record | Both required sentences are present. The sanctioned synchronization and record commands passed; canonical and embedded `SKILL.md`, settle reference, and baseline reference are byte-identical. The record command passed with Roundfix version `0.1.67`. All tracked `### QA settlement` sections were compared with HEAD and remain unchanged. |
+| Existing report and baseline cases | All five top-level tests in `qa_report_test.go` and all five in `baseline_profile_test.go` passed through the focused CLI selection. Both source test files remain unchanged. The new boundary cases additionally assert complete original group-error text, stdout/stderr placement, and exit 2. |
+
+### Scope and handoff
+
+- The initial worktree change was only the Daemon's `task_01.md` status change.
+  The final audit found 13 changed or added paths, all within this Task's
+  declared slice, including this Result. `_tasks.md` and other Task files
+  remain unchanged, as do the user guide and all usage text.
+- `docs/references/behavior-surfaces.json` remains byte-identical to HEAD,
+  SHA-256 `a4418b9fcf3da8a507454b8d678a326c1c4f06de0ae5e518a68b99d20e55fecb`.
+  `docs/references/skill-coverage.json` also remains byte-identical.
+- `rtk proxy git diff --check` exited 0. The sandbox could not initialize the
+  supplied symlinked writable root; authorized task commands ran with direct
+  execution after automatic approval.
+- Declared Verification and terminal settlement remain for the Daemon.
+  No additional implementation follow-up was discovered within this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T031317Z_0f4d6fa287f6d6a7`
+- Source commit: `e130e7dfcdc9438819f4ee24926735e79689d256`

@@ -83,20 +83,14 @@ func TestTheSkillCoverageMapIsCurrent(t *testing.T) {
 	}
 }
 
-// cliHelp uses the nearest successful ancestor for a command that rejects --help.
 func skillCoverageCLIHelp(t *testing.T, words []string) []byte {
 	t.Helper()
-	for {
-		var stdout, stderr bytes.Buffer
-		args := append(append([]string(nil), words...), "--help")
-		if cli.Run(args, &stdout, &stderr) == 0 {
-			return stdout.Bytes()
-		}
-		if len(words) == 0 {
-			t.Fatalf("root help failed: %s", stderr.String())
-		}
-		words = words[:len(words)-1]
+	var stdout, stderr bytes.Buffer
+	args := append(append([]string(nil), words...), "--help")
+	if code := cli.Run(args, &stdout, &stderr); code != 0 {
+		t.Fatalf("roundfix %s: help exited %d: %s", strings.Join(args, " "), code, stderr.String())
 	}
+	return stdout.Bytes()
 }
 
 func computeBehaviorSurfaces(t *testing.T, root string) map[string]string {
@@ -435,8 +429,9 @@ func TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent(t *testing.T) {
 			t.Errorf("%s: fingerprint = %s, want %s", id, got[id], want)
 		}
 	}
-	// This command rejects --help; its bytes must come from its successful parent.
-	if got["command qa-report accept"] != skillcoverage.Fingerprint(skillCoverageCLIHelp(t, []string{"qa-report"})) {
-		t.Error("command qa-report accept: fingerprint does not use nearest successful ancestor")
+	var stdout, stderr bytes.Buffer
+	code := cli.Run([]string{"qa-report", "accept", "--help"}, &stdout, &stderr)
+	if code != 0 || got["command qa-report accept"] != skillcoverage.Fingerprint(stdout.Bytes()) {
+		t.Error("command qa-report accept: fingerprint does not use its own help")
 	}
 }

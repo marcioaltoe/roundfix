@@ -48,6 +48,10 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	case "apply":
 		return runBaselineApplyCommand(ctx, args[1:], stdout, stderr)
 	case "capabilities":
+		if len(args) > 1 && commandWantsHelp(args[1:2]) {
+			fmt.Fprint(stdout, commandUsage("baseline"))
+			return exitOK
+		}
 		if len(args) == 1 || args[1] != "check" {
 			printBaselineProfileFailure(
 				"baseline capabilities",
@@ -62,6 +66,10 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr, environment)
 	case "skills":
+		if len(args) > 1 && commandWantsHelp(args[1:2]) {
+			fmt.Fprint(stdout, commandUsage("baseline"))
+			return exitOK
+		}
 		if len(args) == 1 {
 			printBaselineProfileFailure(
 				"baseline skills",
@@ -88,6 +96,10 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 			return exitPreflight
 		}
 	case "assets":
+		if len(args) > 1 && commandWantsHelp(args[1:2]) {
+			fmt.Fprint(stdout, commandUsage("baseline"))
+			return exitOK
+		}
 		if len(args) == 1 || args[1] != "sync" {
 			printBaselineProfileFailure(
 				"baseline assets",

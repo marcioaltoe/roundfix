@@ -487,6 +487,26 @@ func TestRunCommandHelp(t *testing.T) {
 			args:     []string{"profiles", "show", "--help"},
 			contains: []string{"roundfix profiles show [--category <category>] [--json]", "--category", "--json", "read-only"},
 		},
+		{
+			name:     "qa-report accept",
+			args:     []string{"qa-report", "accept", "--help"},
+			contains: []string{"roundfix qa-report accept <path>"},
+		},
+		{
+			name:     "baseline capabilities",
+			args:     []string{"baseline", "capabilities", "--help"},
+			contains: []string{"roundfix baseline [--repo <path>] [--format <text|json>]"},
+		},
+		{
+			name:     "baseline skills",
+			args:     []string{"baseline", "skills", "-h"},
+			contains: []string{"roundfix baseline [--repo <path>] [--format <text|json>]"},
+		},
+		{
+			name:     "baseline assets",
+			args:     []string{"baseline", "assets", "--help"},
+			contains: []string{"roundfix baseline [--repo <path>] [--format <text|json>]"},
+		},
 	}
 
 	for _, tt := range tests {
