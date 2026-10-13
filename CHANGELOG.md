@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.74.0] - 2026-10-13
+
+### A Run Worktree under a symlinked root is cleaned
+
+- **Symbolic-linked `worktree.location`.** When the worktree location is a symbolic link, for example to another volume, a recorded Run Worktree is now resolved within its Worktree Root. The cleanup after a Delivery Queue merge and `roundfix reconcile` release and prune it as they would under a real directory, instead of keeping it with `recorded Run Worktree path is unsafe`.
+- **Still refused.** A recorded path whose repository or worktree directory is itself a symbolic link stays `unknown` and is preserved, so cleanup never follows a link out of the worktree location.
+- **Gone directories.** A recorded worktree and its Git registration are compared after resolving symbolic links, also when the directory no longer exists, so a retried item or Task Worktree under a symbolic-linked root is pruned or recreated instead of failing on a stale registration.
+- **Upgrade step.** Run `roundfix reconcile` to inspect the Runs an earlier version kept as unsafe, then `roundfix reconcile --apply` to release the eligible ones and reclaim their space.
+- **Glossary.** Adds Worktree Root (ADR-0268).
+
 ## [0.73.0] - 2026-10-13
 
 ### Authoring that proves what it claims
