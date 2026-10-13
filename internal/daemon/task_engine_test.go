@@ -7719,24 +7719,43 @@ func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
 }
 
 func TestBudgetExceededRunRecordsItsReason(t *testing.T) {
-	// Sequential: shares process-wide wall-clock scheduling with Git work inside a fixed 500 ms Run budget.
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02", needs: []string{"task_01"}},
 	})
 	fixture.worktree.snapshots = [][]string{nil, {"src/core.go"}}
+	const maximum = 500 * time.Millisecond
+	// Keep the real watchdog's deadline beyond this test's lifetime. The
+	// logical clock advances only once task_02 runs, after task_01 settles
+	// and commits, regardless of how long its Git work takes.
+	startedAt := time.Now().Add(24 * time.Hour)
+	if deadline, ok := t.Deadline(); ok {
+		startedAt = deadline
+	}
+	budgetExpired := make(chan struct{})
 	runner := &taskFakeRunner{
 		calls:        fixture.calls,
 		gitRoot:      fixture.gitRoot,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
-		blockByTask:  map[string]bool{"task_02": true},
+		afterTask: func(taskID string) {
+			if taskID == "task_02" {
+				close(budgetExpired)
+			}
+		},
 	}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
-	engine.deps.Now = time.Now
-	const maximum = 500 * time.Millisecond
+	engine.deps.Now = func() time.Time {
+		select {
+		case <-budgetExpired:
+			return startedAt.Add(maximum)
+		default:
+			return startedAt
+		}
+	}
 	plan := fixture.plan()
-	plan.RunStartedAt = time.Now()
+	plan.RunStartedAt = startedAt
 	plan.BudgetEnabled = true
 	plan.MaxRunDuration = maximum
 
@@ -7757,6 +7776,9 @@ func TestBudgetExceededRunRecordsItsReason(t *testing.T) {
 	}
 	if result.Completed != 1 || len(committer.messages) != 1 {
 		t.Fatalf("completed before budget = %d with %d commits, want 1 each", result.Completed, len(committer.messages))
+	}
+	if result.BudgetRenewedBy != "task_01" {
+		t.Fatalf("budget renewed by = %q, want task_01", result.BudgetRenewedBy)
 	}
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
 		t.Fatalf("task_01 status = %q, want completed", got)
