@@ -1,6 +1,0 @@
-{
-  "command": "git show 7a8b7f70:docs/references/behavior-surfaces.json > <temp>/old-surfaces.json; cmp <temp>/old-surfaces.json docs/references/behavior-surfaces.json",
-  "exit": 1,
-  "stdout": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix0260-vc3gnb9h/old-surfaces.json docs/references/behavior-surfaces.json differ: char 102, line 4\n",
-  "stderr": ""
-}

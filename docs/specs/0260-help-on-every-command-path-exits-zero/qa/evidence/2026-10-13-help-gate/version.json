@@ -1,7 +1,0 @@
-{
-  "command": "./bin/roundfix --version",
-  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix0260-vc3gnb9h/empty",
-  "exit": 0,
-  "stdout": "roundfix 0.69.0 (e130e7df-dirty, built 2026-10-13 00:36:39 -0300)\n",
-  "stderr": ""
-}

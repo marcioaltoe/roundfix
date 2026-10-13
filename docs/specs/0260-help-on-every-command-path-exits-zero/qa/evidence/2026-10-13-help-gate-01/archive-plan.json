@@ -1,8 +1,0 @@
-{
-  "command": "./bin/roundfix archive 0260-help-on-every-command-path-exits-zero --plan",
-  "exit": 0,
-  "stdout": "archive plan for 0260-help-on-every-command-path-exits-zero: removes 88 file(s) (864536 bytes) and writes docs/history/specs/0260-help-on-every-command-path-exits-zero.md\ncore 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-13-01.md, qa/qa-report-2026-10-13.md, references/_index.md, task_01.md, task_02.md\nevidence 78 file(s) (738496 bytes) under qa/evidence/\ncandidate references/2026-10-09-qa-report-accept-help-exits-one.md 719 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)\npromote with: roundfix archive 0260-help-on-every-command-path-exits-zero --promote <path>\n",
-  "stderr": "",
-  "mode": "read-only",
-  "judge_credentials": "not inherited; no live judge call authorized"
-}

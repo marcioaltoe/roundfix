@@ -1,3 +1,0 @@
-First observation had incomplete docscontract dependency declarations and a mismatched prose summary. It is superseded by the planned second observation.
-Both Behavior Surface contract tests pass at head (exit 0); the record is byte-identical to 7a8b7f70, SHA-256 a4418b9fcf3da8a507454b8d678a326c1c4f06de0ae5e518a68b99d20e55fecb. Both fail on the same sabotaged copy, naming qa-report accept --help (exit 1), proving the ancestor fallback is gone. See `evidence/2026-10-13-help-gate/contracts-head.log`, `contracts-sabotage.log`, `surface-record-bytes.json`.
-

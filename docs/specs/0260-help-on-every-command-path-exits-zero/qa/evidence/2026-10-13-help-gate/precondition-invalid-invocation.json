@@ -1,7 +1,0 @@
-{
-  "command": "./bin/roundfix spec check 0260-help-on-every-command-path-exits-zero --strict --repo /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0260-help-on-every-command-path-exits-zero-757f769032dcb400-6266079f-c289cacd/run_20261013T031317Z_0f4d6fa287f6d6a7",
-  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix0260-vc3gnb9h/empty",
-  "exit": 2,
-  "stdout": "",
-  "stderr": "roundfix: spec check failed: unknown flag \"--repo\"\nRun 'roundfix spec check --help' for usage.\n"
-}
