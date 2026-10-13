@@ -69,6 +69,10 @@ command's exit code. Exit `2` means invalid arguments, an unknown active Spec,
 a missing PRD, or a missing TechSpec with `--stage techspec`. An unknown stage
 fails with `unsupported --stage "<value>"; use prd, techspec or tasks`.
 
+These four gaps hold every active Spec, whatever its age. Before an active
+Spec's next Run, add the sections and lines each finding names; the fix of every
+finding names the section or line and the skill rule that requires it.
+
 
 The full Spec Consistency Check reports `SC-SPEC-PATH-PINNED` as an error for
 each line in a non-Markdown file that names the checked Spec's active
@@ -149,6 +153,10 @@ under `interface:` or `creates:` to record its Coverage Review.
 | `SC-GLOSSARY-UNDECLARED` | A required declaration is absent, a declaration line is malformed, or a bold candidate is neither defined nor declared. Runs from the PRD stage, reading only the PRD at `--stage prd` and both artifacts after it. |
 | `SC-GLOSSARY-UNPLANNED` | An added or changed term has no binding Task, or a changed term is not defined (declare it as added). Runs from the Tasks stage with a Task Graph. |
 | `SC-GLOSSARY-MISSING` | Every binding Task has completed but the glossary still lacks the declared term. Runs from the Tasks stage with a Task Graph. |
+| `SC-ABSENCE-UNPROVEN` | A TechSpec has no Absence Evidence declaration or an item lacks its search command or result. Runs from the TechSpec stage. |
+| `SC-ADR-ALTERNATIVES-UNRELATED` | A listed ADR has no line relating the design to that ADR's rejected alternatives. Runs from the TechSpec stage. |
+| `SC-COVERAGE-UNREAD` | A Coverage Map lacks its `Deviations from the PRD:` line or has a deviation that names no PRD unit. Runs from the TechSpec stage. |
+| `SC-CONSUMERS-UNPROVEN` | A pending non-QA Task lacks a valid Consumer Declaration, or names a suite no Verification or valid checkpoint runs. Runs from the Tasks stage. |
 
 A binding Task is a non-QA Task whose Context declares a glossary file under
 `interface:` or `creates:` and whose `## Verification` text contains

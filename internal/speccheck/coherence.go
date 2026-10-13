@@ -47,6 +47,10 @@ type stagedDetector struct {
 }
 
 var stagedDetectors = []stagedDetector{
+	{code: CodeConsumersUnproven, stage: StageTasks},
+	{code: CodeAbsenceUnproven, stage: StageTechSpec},
+	{code: CodeADRAlternativesUnrelated, stage: StageTechSpec},
+	{code: CodeCoverageUnread, stage: StageTechSpec},
 	{code: CodeSkillsMalformed, stage: StagePRD},
 	{code: CodeSkillsUntasked, stage: StageTasks},
 	{code: CodeGlossaryUndeclared, stage: StagePRD},
@@ -146,6 +150,9 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 			addSkip(&result, code, artifactDisplayPath(repoRoot, prdPath))
 		}
 		if stage == StageTechSpec {
+			for _, code := range techSpecProofCodes {
+				addSkip(&result, code, artifactDisplayPath(repoRoot, prdPath))
+			}
 			addSkip(&result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, prdPath))
 		}
 		addSkip(&result, CodeReceiptUnproven, artifactDisplayPath(repoRoot, prdPath))
@@ -256,6 +263,9 @@ func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath stri
 		return fmt.Errorf("read Spec artifact %q: %w", prdPath, err)
 	}
 	if !techSpecPresent {
+		for _, code := range techSpecProofCodes {
+			addSkip(result, code, artifactDisplayPath(repoRoot, techSpecPath))
+		}
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, techSpecPath))
 		return nil
 	}
@@ -263,6 +273,7 @@ func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath stri
 	if err != nil {
 		return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 	}
+	detectTechSpecProof(result, prdContent, techSpecContent, artifactDisplayPath(repoRoot, prdPath), artifactDisplayPath(repoRoot, techSpecPath))
 	detectCoverageMap(
 		result,
 		coverageUnitsDeclaredIn(

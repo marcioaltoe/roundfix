@@ -10,3 +10,15 @@
 ## API Contracts
 
 None. This fixture declares no public interface.
+
+## Coverage Map
+
+Deviations from the PRD: None.
+
+## Absence Evidence
+
+None. This fixture declares no new component.
+
+## ADR Alternatives
+
+None. This fixture lists no ADR under Active ADR obligations.

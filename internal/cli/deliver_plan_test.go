@@ -351,10 +351,11 @@ func newDeliverPlanWorkspace(t *testing.T, fixtures ...deliverPlanFixtureSpec) (
 		if fixture.slug != implementTestSlug {
 			writeImplementSpec(t, repoDir, fixture.slug, []implementSeed{{id: "task_01"}})
 		}
+		taskPath := filepath.Join(repoDir, "docs", "specs", fixture.slug, "task_01.md")
+		mustWrite(t, taskPath, mustRead(t, taskPath)+"\n## Consumers\n\nNone. This fixture exercises Delivery Plan declarations without changing a shared contract.\n")
 		authorizationPath := filepath.Join(repoDir, "docs", "specs", fixture.slug, "_authorization.md")
 		mustWrite(t, authorizationPath, implementFixtureAuthorization(fixture.slug, fixture.operations...))
 		if len(fixture.premises) > 0 {
-			taskPath := filepath.Join(repoDir, "docs", "specs", fixture.slug, "task_01.md")
 			content := mustRead(t, taskPath) + "\n## Context\n\n"
 			for _, premise := range fixture.premises {
 				content += "- interface: `" + premise + "`\n"

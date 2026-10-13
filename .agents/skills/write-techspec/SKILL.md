@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.10
+  version: 0.0.12
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.10
+version: 0.0.12
 ---
 
 # Write TechSpec
@@ -126,6 +126,31 @@ grant or amendment outside the change it authorizes.
 Keep interface sketches under 20 lines each; they document shape, not implementation. Target 1,500–2,500 words — a spec nobody reads protects nobody.
 
 Every Spec a Delivery Queue delivers carries an approved `_authorization.md`, with or without protected tooling. The record's `operations` list names `implement`, `commit`, `push`, `pull_request` and `merge`; a Spec that changes no Governed Path records `paths: []`.
+
+## Proof of what the Spec claims
+
+A TechSpec records three proofs in named places, and `roundfix spec check`
+reports a missing place as a gap on every active Spec. The check reads only
+structure; whether a proof is right stays with the reader.
+
+- Absence evidence. For each component the TechSpec declares new, record the
+  search that proved it absent under `## Absence Evidence`, as a numbered item:
+  the component, `command:` with the search in backticks, and `result:` with
+  what it found. Search the files the TechSpec cites for the behavior, not only
+  for the name. When nothing is new, write `None.` followed by the reason.
+  `SC-ABSENCE-UNPROVEN` reports a missing declaration or an item without its
+  command or result.
+- Rejected alternatives. Under `## ADR Alternatives`, write one line
+  `- ADR-NNNN: <relation>` for each ADR the Active ADR obligations rows list:
+  how the design relates to the alternatives that ADR rejected. When the design
+  takes a rejected alternative, say so and supersede or amend the ADR.
+  `SC-ADR-ALTERNATIVES-UNRELATED` reports a listed ADR without its line.
+- Coverage Cross-Read. Before `write-tasks`, read each PRD user story, Core
+  Feature and Success Metric against the component the Coverage Map names. Add
+  the line `Deviations from the PRD:` to the Coverage Map, followed by `None.`
+  or by one bullet per PRD unit the TechSpec delivers in another shape, naming
+  the unit and the reason. `SC-COVERAGE-UNREAD` reports a missing line or a
+  deviation that names no PRD unit.
 
 ### 5. Report
 

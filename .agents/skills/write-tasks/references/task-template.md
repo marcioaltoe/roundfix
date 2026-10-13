@@ -117,6 +117,15 @@ complexity: medium # low | medium | high
 - interface: `.agents/skills/roundfix/references/<command>.md`
 - interface: `docs/user-guide/commands/<command>.md`
 
+## Consumers
+
+<!-- Every non-QA Task that has not completed declares the suites that consume
+     each Shared Contract it changes, named in its Verification or in an
+     Integration Checkpoint between the Task and the QA gate, or writes `None.`
+     with the reason it changes no Shared Contract. -->
+
+- <contract> — consumers: `<suite>`
+
 ## Verification
 
 <!-- The exact commands that prove this task done, with what to expect from each.

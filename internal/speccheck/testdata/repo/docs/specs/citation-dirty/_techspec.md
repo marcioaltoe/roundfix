@@ -10,3 +10,16 @@
 ## Decisions
 
 The implementation also follows ADR-0103.
+
+## Coverage Map
+
+Deviations from the PRD: None.
+
+## Absence Evidence
+
+None. This fixture declares no new component.
+
+## ADR Alternatives
+
+- ADR-0100: This fixture takes no rejected alternative.
+- ADR-0101: This fixture takes no rejected alternative.

@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.13
+  version: 0.0.14
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.13
+version: 0.0.14
 ---
 
 # Write Tasks
@@ -184,6 +184,9 @@ Code for another operating system is verified by building its non-test code for 
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.
 - **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. A Task must prove its own effect with executable checks; the Run-level gate proves nothing else regressed. Do not add a whole-package suite command to each Task for regression coverage. Every Verification command must be able to fail when no work was done: a command that names a missing test or selects no cases is vacuous if it still exits zero. A Verification command passes only by exiting zero. A Verification command never contains a backtick: the inline-code span ends at the first one and cuts the command, so match with a regular-expression class such as `.` instead. For an assertion whose success is an empty result or an absent string, use a form that turns that condition into exit zero: `matches="$(find path -name '*.tmp' -print)" || exit 1; test -z "$matches"`, `test -d path && ! grep -rq 'forbidden' path`, or `find path -name '*.tmp' -print > /tmp/matches.txt 2>&1 || { cat /tmp/matches.txt; exit 1; }; test ! -s /tmp/matches.txt || { cat /tmp/matches.txt; exit 1; }` when failure must print the matches. Refuse the work-independent shape composed only of repository-wide gates plus working-tree cleanliness checks; those checks pass most easily when no Task work occurred. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
+
+A suite that consumes a Shared Contract the Task changes is the exception; see
+Consumers of a shared contract.
 - **A gated graph leaves the repository Verification green.** Every Task of a graph that includes the authored QA gate leaves the repository Verification green because the Daemon runs that command when each Task settles. `verification.repository_at_settlement` is the operator's switch for this settlement check; it is not an authoring choice.
 - **Task declarations are explicit.** A Task may declare `verification: independent` when its Verification commands are independent and every command must run after a failure; do not infer this from shell text. A red repository gate may admit only Tasks named in the frozen `_authorization.md` `precondition_repairs` list, and the list cannot be widened by the Task or Agent. A `creates: docs/adr/NNNN-...` declaration claims that ADR ordinal; a duplicate tree or active-Spec claim is refused with `SC-ORDINAL-CLAIMED`.
 - **Temporal prerequisites do not grant authority.** Represent a future release, external observation, generated ordinal, or other temporal prerequisite as a named prerequisite with its evidence owner. It never invents release authority or turns an expected future fact into completed Task work.
@@ -303,9 +306,33 @@ Requirement so the gate can reproduce it through the built product. A
 transcript is a coverage unit: keep its name traceable from the TechSpec to
 the implementing test and then to the gate.
 
+## Consumers of a shared contract
+
+A Shared Contract is a route, a public signature, a persisted format or a
+report that code outside the Task's slice consumes. Every non-QA Task carries
+a Consumer Declaration in a `## Consumers` section, which `roundfix spec check`
+reads in every Task that has not completed:
+
+- `- <contract> — consumers: <suite>, <suite>` names the suites that consume
+  each Shared Contract the Task changes, each in backticks exactly as its
+  Verification command writes it, such as a package path. Each suite occurs in
+  one of the Task's Verification commands, in the same command as a check only
+  the Task's work satisfies, so the command still fails before the work.
+- `- checkpoint: task_NN` names an Integration Checkpoint instead: a non-QA
+  Task that needs this Task, that the QA gate needs, and whose Verification
+  runs the suites. Use it when a later Task adapts the consumers.
+- `None.` followed by the reason states that the Task changes no Shared
+  Contract.
+
+`SC-CONSUMERS-UNPROVEN` reports a missing section, a malformed entry, a suite
+no Verification runs, or a checkpoint outside that position.
+
 ## Process
 
 ### 1. Derive the breakdown
+
+Read the TechSpec's Coverage Cross-Read first; a Coverage Map without its
+`Deviations from the PRD:` line goes back to `write-techspec`.
 
 Start from the TechSpec's Build Order (its dependency statements become graph edges). Map every PRD user story and core feature onto at least one task; an uncovered story is a hole to fix now. Map every declared Success Metric and API Contract onto at least one task, and ensure each appears by name in some Task's References. An uncovered promise is a hole to fix now. Decide the QA gate once from the authored Spec and add either its terminal node or the reasoned decline to the breakdown.
 
