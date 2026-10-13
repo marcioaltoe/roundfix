@@ -57,7 +57,7 @@ depends on another Spec's artifacts.
   "living under Roundfix Home, recorded on the Run row", the record this Spec
   reads without rewriting. ADR-0259: "Every top-level test in a Parallel Test Package calls
   `t.Parallel()` as its first statement", and each changed package runs once
-  with `-race`. ADR-0256: "A release waits for the skills that describe a
+  with `-race`. ADR-0271: "A test bounds by real time only what it asserts"; the new tests give no child, goroutine or Git a real-time allowance they do not assert. ADR-0256: "A release waits for the skills that describe a
   changed surface", answered by a Coverage Review for the reconcile surfaces.
   ADR-0244: "A Spec now carries a Glossary Declaration". ADR-0257: "Inside a
   Run the Daemon is the only full gate". ADR-0258: "A Spec is authored against

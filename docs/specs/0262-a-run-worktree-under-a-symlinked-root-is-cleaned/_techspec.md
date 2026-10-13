@@ -40,7 +40,7 @@ created under an earlier location, and touch every caller and its tests
   and unintegrated work stays intact". ADR-0023: "living under Roundfix Home,
   recorded on the Run row". ADR-0259: "Every
   top-level test in a Parallel Test Package calls `t.Parallel()` as its first
-  statement". ADR-0256: "A release waits for the skills that describe a
+  statement". ADR-0271: "A test bounds by real time only what it asserts"; the new tests give no child, goroutine or Git a real-time allowance they do not assert. ADR-0256: "A release waits for the skills that describe a
   changed surface". ADR-0244: "A Spec now carries a Glossary Declaration".
   ADR-0257: "Inside a Run the Daemon is the only full gate". ADR-0258: "A Spec
   is authored against the QA rerun classes". ADR-0161, ADR-0212 and ADR-0232:
@@ -206,6 +206,7 @@ Deviations from the PRD: None.
 - ADR-0053: no rejected alternative is taken; reconciliation stays proof-based and read-only without `--apply`, and only the set of paths that count as the recorded worktree widens.
 - ADR-0023: no rejected alternative is taken; Run Worktrees still live one per Run under Roundfix Home, and the recorded path is read as written.
 - ADR-0259: no rejected alternative is taken; every new test calls `t.Parallel()` first and no Sequential Test is added.
+- ADR-0271: no rejected alternative is taken; the new tests bound by real time only what they assert, and no test file gains a Real-Time Budget.
 - ADR-0256: its rejected model-judging alternative stays rejected; the Coverage Review records why the reconcile skill text needs no change.
 - ADR-0244: no rejected alternative is taken; **Worktree Root** follows the declaration contract.
 - ADR-0257: no rejected alternative is taken; Task agents run focused tests and the Daemon runs the declared Verification.
