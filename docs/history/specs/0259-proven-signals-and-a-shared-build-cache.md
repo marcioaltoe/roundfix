@@ -26,6 +26,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "512"
 ---
 
 # Proven signals and a shared build cache
