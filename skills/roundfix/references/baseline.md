@@ -165,6 +165,8 @@ lets ACP proposals authorize writes.
 `roundfix baseline assets --help`, or `-h`, print the `baseline` usage,
 which lists their commands, and exit `0`.
 
+Run bare, or with a command they do not have, they exit `2`: the usage error names the group once on standard error and points at `roundfix baseline <group> --help`, and an unknown `baseline` command points at `roundfix baseline --help`.
+
 Re-check Repository Capability evidence without changing the repository:
 
 ```text
