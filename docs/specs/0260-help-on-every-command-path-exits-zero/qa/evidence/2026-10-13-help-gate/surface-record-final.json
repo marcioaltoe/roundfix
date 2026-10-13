@@ -1,0 +1,74 @@
+{
+  "comparison_revision": "7a8b7f70",
+  "delivery_base": "3820bdd4f40fb0a9396a5440678c30c69e65f028",
+  "head": "e130e7dfcdc9438819f4ee24926735e79689d256",
+  "old_sha256": "a5446631b1ce5377013b3e8e0a9ee81339e706cd0f12776a523cbcd90ad4048e",
+  "current_sha256": "a4418b9fcf3da8a507454b8d678a326c1c4f06de0ae5e518a68b99d20e55fecb",
+  "matches_declared_revision": false,
+  "matches_delivery_base": true,
+  "qa_report_accept_fingerprint_unchanged": true,
+  "changed_surfaces": {
+    "command archive": {
+      "at_7a8b7f70": "sha256:c1b23f0e879eac7cf22caec849511d7f450cdf6f3e06cdab936c334af8e822b6",
+      "at_head": "sha256:1ccd77e552c91c9302b9b7ed33cbf21e48eed0fd4b1af65110a82b54c156da7a"
+    },
+    "command baseline update": {
+      "at_7a8b7f70": "sha256:c7143576782a1f52a84deb6e8220bc715692ea7557f1dafcbef740ebf711e803",
+      "at_head": "sha256:8e880d28f5f52f59431a3a45a43a3ad1966d9ea819245bd7a70e13257879aa4a"
+    },
+    "command cancel": {
+      "at_7a8b7f70": null,
+      "at_head": "sha256:ce63b06925c1d6b41d36d46f0d50d91f271c9ec8fc05d399a46776c533ef6e1b"
+    },
+    "guide docs/user-guide/commands.md": {
+      "at_7a8b7f70": "sha256:f16b8d0e54ade7b6c9bfde100dd2207a64ac2118a9a38081b3b14a3bc5e1e966",
+      "at_head": "sha256:9f09149447250cf10209aacc602f3b2fabd2bdf880424fae60384d2a2135f026"
+    },
+    "guide docs/user-guide/commands/archive.md": {
+      "at_7a8b7f70": "sha256:06c7328abed2159ccc4c35e58ed02d81f8df87624095908372b0f07b8eca9334",
+      "at_head": "sha256:1673ea80ece777cb9893cc15d35353a2e20fae2803b12c503391eac35bfea7cd"
+    },
+    "guide docs/user-guide/commands/baseline.md": {
+      "at_7a8b7f70": "sha256:4a962405922d881b2f91e153e32fbaf4a9bdc392cf4581dfdab74f70b5c4d705",
+      "at_head": "sha256:80532a20d20e090ac0b378645ab505a1d78912a1ce7352683fe3730a714c2e02"
+    },
+    "guide docs/user-guide/commands/cancel.md": {
+      "at_7a8b7f70": null,
+      "at_head": "sha256:0e8018050598f5d762447ffed931762a19a373c0b5b7bec3e24a2e4ed83ba80e"
+    },
+    "guide docs/user-guide/commands/deliver.md": {
+      "at_7a8b7f70": "sha256:e07024edfc1c5bb5e091413da25f3383cc3600e853461c7bef8a4d1e2a3cb522",
+      "at_head": "sha256:e417a64a0cf907185fb9471762fba08e2ec43ed5962514504650dadf65efd9e8"
+    },
+    "guide docs/user-guide/commands/doctor.md": {
+      "at_7a8b7f70": "sha256:b17c805e628972b4a9be6eec389bb155ac05d138bc6a78384e6bfa08e34d9afb",
+      "at_head": "sha256:8e677588308ef76ff1621e1adc623bc99cd286628a79538687181fd92d6d5bda"
+    },
+    "guide docs/user-guide/commands/review.md": {
+      "at_7a8b7f70": "sha256:5bc988bd5df4fba20516929c21e250f73d197c24eb013fca6ba8f9f060bf6128",
+      "at_head": "sha256:c838f008098f300111de03adb1a32b907d0e7e4d61f0da617f74a70e3fba22b9"
+    },
+    "guide docs/user-guide/commands/runs.md": {
+      "at_7a8b7f70": "sha256:cf47380de48b33d34475d4d5a77ce044c78cd855bfad73e5b4eed0367eccf188",
+      "at_head": "sha256:6feccb648debf547e8c9ed717935bf532382f00b04736796b97ac843b1399630"
+    },
+    "guide docs/user-guide/commands/supersede.md": {
+      "at_7a8b7f70": "sha256:e582a51c031dd1f93eb7c9456ccb0cdb1cf83eade4496e7a1ceb5ad810333072",
+      "at_head": "sha256:200fa30dfab0e06372da85c078fafc34101dee4fc8546d823fbc11217e8ec9f3"
+    },
+    "guide docs/user-guide/context-driven-development.md": {
+      "at_7a8b7f70": "sha256:c1583001540998d2b3c91e9bca9a074263ed7b944b6cb1bac06527f5f8ab3bc2",
+      "at_head": "sha256:7daffde3a4dcb8662549b4100e563d17b1782767640d2bd7d509f12479a3b386"
+    },
+    "guide docs/user-guide/usage.md": {
+      "at_7a8b7f70": "sha256:ed35fc56ddde9bd15142d7965f2f846e1766dfbca4baa9e25f9552ca46e2bfae",
+      "at_head": "sha256:5f4a52bc419412850196bf3e1847d66bc959b72190a42c51412c39113a064704"
+    }
+  },
+  "prior_commits": [
+    "acf3c5866f4dfa83e5b0822ee2585950fec6b9b4 feat: deliver 0257-the-baseline-respects-the-repository (#501)",
+    "0be608924625acb6c8b4c327c5ac77d126121985 feat: deliver 0261-a-cancelled-spec-leaves-a-record (#498)",
+    "2e2ddcfa31d50795e3bea695ab6d67c8412482a0 feat: deliver 0256-an-archive-record-that-survives-a-squash-merge (#495)",
+    "38e90bf464d2b95fb175f5e621ac3f048d753224 feat: deliver 0255-an-archive-that-relinks-and-an-update-that-lists-citations (#492)"
+  ]
+}

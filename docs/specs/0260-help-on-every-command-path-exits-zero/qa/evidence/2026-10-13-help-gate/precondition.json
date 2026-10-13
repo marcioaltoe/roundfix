@@ -1,0 +1,7 @@
+{
+  "command": "./bin/roundfix spec check 0260-help-on-every-command-path-exits-zero --strict",
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0260-help-on-every-command-path-exits-zero-757f769032dcb400-6266079f-c289cacd/run_20261013T031317Z_0f4d6fa287f6d6a7",
+  "exit": 0,
+  "stdout": "Spec 0260-help-on-every-command-path-exits-zero\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  vocabulary documentation detector: missing docs/specs/0260-help-on-every-command-path-exits-zero/_techspec.md Vocabulary Contract\n",
+  "stderr": ""
+}

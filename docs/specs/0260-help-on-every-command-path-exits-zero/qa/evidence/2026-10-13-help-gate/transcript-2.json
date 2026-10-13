@@ -1,0 +1,21 @@
+{
+  "expected_stdout": "Usage:\n  roundfix qa-report accept <path>\n\nApplies the declared-acceptance policy to the selected QA Report. The report's\nSpec directory supplies its declarations. Produces no stdout; exit status is\nthe machine-readable result.\n\nExit codes:\n  0  the report is acceptable\n  1  the report is missing, unreadable, or unacceptable\n  2  usage error\n",
+  "expected_stderr": "",
+  "expected_exit": 0,
+  "observed": {
+    "command": "./bin/roundfix qa-report accept -h",
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix0260-vc3gnb9h/empty",
+    "exit": 0,
+    "stdout": "Usage:\n  roundfix qa-report accept <path>\n\nApplies the declared-acceptance policy to the selected QA Report. The report's\nSpec directory supplies its declarations. Produces no stdout; exit status is\nthe machine-readable result.\n\nExit codes:\n  0  the report is acceptable\n  1  the report is missing, unreadable, or unacceptable\n  2  usage error\n",
+    "stderr": ""
+  },
+  "fresh_confirmation": {
+    "command": "./bin/roundfix qa-report accept -h",
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix0260-vc3gnb9h/empty",
+    "exit": 0,
+    "stdout": "Usage:\n  roundfix qa-report accept <path>\n\nApplies the declared-acceptance policy to the selected QA Report. The report's\nSpec directory supplies its declarations. Produces no stdout; exit status is\nthe machine-readable result.\n\nExit codes:\n  0  the report is acceptable\n  1  the report is missing, unreadable, or unacceptable\n  2  usage error\n",
+    "stderr": ""
+  },
+  "scratch_state_unchanged": true,
+  "match": true
+}

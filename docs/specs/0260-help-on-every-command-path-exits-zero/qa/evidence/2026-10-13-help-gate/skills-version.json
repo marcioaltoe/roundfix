@@ -1,0 +1,7 @@
+{
+  "command": "go test -count=1 -v -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills",
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0260-help-on-every-command-path-exits-zero-757f769032dcb400-6266079f-c289cacd/run_20261013T031317Z_0f4d6fa287f6d6a7",
+  "exit": 0,
+  "stdout": "=== RUN   TestEveryOwnedSkillVersionIsRecorded\n--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)\nPASS\nok  \troundfix/skills\t0.289s\n",
+  "stderr": ""
+}

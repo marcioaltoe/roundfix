@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0260-help-on-every-command-path-exits-zero
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

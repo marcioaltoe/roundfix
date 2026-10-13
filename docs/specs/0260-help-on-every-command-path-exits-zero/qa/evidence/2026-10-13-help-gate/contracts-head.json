@@ -1,0 +1,7 @@
+{
+  "command": "go test -count=1 -tags docscontract -v -run ^(TestTheSkillCoverageMapIsCurrent|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent)$ ./internal/docscontract",
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0260-help-on-every-command-path-exits-zero-757f769032dcb400-6266079f-c289cacd/run_20261013T031317Z_0f4d6fa287f6d6a7",
+  "exit": 0,
+  "stdout": "=== RUN   TestTheSkillCoverageMapIsCurrent\n--- PASS: TestTheSkillCoverageMapIsCurrent (0.06s)\n=== RUN   TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent\n--- PASS: TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent (0.00s)\nPASS\nok  \troundfix/internal/docscontract\t0.458s\n",
+  "stderr": ""
+}

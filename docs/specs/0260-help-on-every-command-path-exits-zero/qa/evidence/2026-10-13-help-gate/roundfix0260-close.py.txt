@@ -1,0 +1,25 @@
+from pathlib import Path
+import runpy,re,json,subprocess,hashlib
+q=runpy.run_path('/tmp/roundfix0260-run.py',run_name='qa_helpers');globals().update(q)
+s=report.read_text();front=s.split('---\n',2)[1];assert front.count('verdict:')==1 and 'verdict: fail' in front and 'status: closed' in front
+assert 'auditing_binary: "0.69.0 (3820bdd4, built 2026-10-13 00:12:37 -0300)"' in front
+assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in front
+assert s.count('\n## Results\n')==1 and s.count('\n## Mechanical skips\n')==1
+rows=re.findall(r'^\| (\d+) \| ([^|]+) \| ([^|]+) \|$',s,re.M);assert len(rows)==15 and len({a for a,_,_ in rows})==15
+for i,status,prov in rows:
+ section=s.split('### '+i+'\n',1)[1].split('\n### ',1)[0];blocks=re.findall(r'```yaml\n(.*?)```',section,re.S);assert len(blocks)==1 and 'inputs:\n' in blocks[0] and 'kind: repository_path' in blocks[0],i
+ assert status.strip()!='pending' and 'Observation: pending.' not in section
+for ref in set(re.findall(r'`(evidence/[^`]+)`',s)):assert (report.parent/ref).exists(),ref
+old=tmp/'old-surfaces.json';old.write_bytes(subprocess.check_output(['git','show','7a8b7f70:docs/references/behavior-surfaces.json'],cwd=root));p=subprocess.run(['cmp',str(old),'docs/references/behavior-surfaces.json'],cwd=root,capture_output=True,text=True);assert p.returncode==1
+save('comparison-reproduction.json',{'command':'git show 7a8b7f70:docs/references/behavior-surfaces.json > <temp>/old-surfaces.json; cmp <temp>/old-surfaces.json docs/references/behavior-surfaces.json','exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr})
+checks=[cli(['qa-report','accept',str(report)]),cli(['qa-report','accept',str(report)])];assert all(r['exit']==1 and 'fail' in r['stderr'] for r in checks),checks
+save('completed-report-eligibility.json',checks)
+assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()==m['head']
+assert subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=root,text=True)==''
+newpaths=subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=root,text=True).splitlines();assert newpaths and all(p.startswith(str(spec/'qa')+'/') for p in newpaths)
+(evidence/'roundfix0260-close.py.txt').write_text(Path('/tmp/roundfix0260-close.py').read_text())
+manifest={str(p.relative_to(evidence)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted(evidence.iterdir()) if p.is_file() and p.name!='manifest.json'};save('manifest.json',manifest)
+s+='\n## Closure checks\n\nThe completed report has one frontmatter block, 15 terminal rows with typed inputs, no pending row, exact blocked counts, unchanged seeded auditor fields and mechanical skips, and resolving evidence paths. `cmp` reproduces F-01 with exit 1. Two fresh `./bin/roundfix qa-report accept <this-report>` calls exit 1 and refuse the fail verdict, as expected; see `evidence/2026-10-13-help-gate/completed-report-eligibility.json`. Evidence file hashes are in `evidence/2026-10-13-help-gate/manifest.json`. HEAD remains the audited Task commit, tracked source has no delta, and all non-ignored untracked files are in this Spec\'s qa directory. No repository Verification was rerun.\n'
+report.write_text(s)
+print('Closure checks passed: 15 terminal rows; fail eligibility correctly refused; source untouched; evidence paths resolved.')
+print(json.dumps(checks[0]))

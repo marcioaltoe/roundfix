@@ -1,0 +1,17 @@
+from pathlib import Path
+import runpy,subprocess,json,hashlib
+q=runpy.run_path('/tmp/roundfix0260-run.py',run_name='qa_helpers');globals().update(q)
+env=json.loads((tmp/'test-env.json').read_text())
+args=['go','test','-count=1','-tags','docscontract','-v','-run','^(TestTheSkillCoverageMapIsCurrent|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent)$','./internal/docscontract']
+for name,cwd in [('contracts-head-final',root),('contracts-sabotage-final',tmp/'sabotage')]:
+ p=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True,timeout=600);d={'command':' '.join(args),'cwd':str(cwd),'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr};save(name+'.json',d);(evidence/(name+'.log')).write_text('$ '+' '.join(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ if cwd==root:assert p.returncode==0
+ else:assert p.returncode==1 and 'qa-report accept --help: help exited 1' in p.stdout+p.stderr
+ print(name+': exit '+str(p.returncode),flush=True)
+record_path='docs/references/behavior-surfaces.json';old=subprocess.check_output(['git','show','7a8b7f70:'+record_path],cwd=root);base=subprocess.check_output(['git','show','3820bdd4f40fb0a9396a5440678c30c69e65f028:'+record_path],cwd=root);current=(root/record_path).read_bytes()
+history=subprocess.check_output(['git','log','--format=%H %s','7a8b7f70..HEAD','--',record_path],cwd=root,text=True);diff=subprocess.check_output(['git','diff','7a8b7f70','HEAD','--',record_path],cwd=root,text=True)
+(evidence/'surface-record-history.txt').write_text(history+'\n'+diff)
+oldj=json.loads(old)['surfaces'];newj=json.loads(current)['surfaces'];changed={key:{'at_7a8b7f70':oldj.get(key),'at_head':newj.get(key)} for key in sorted(set(oldj)|set(newj)) if oldj.get(key)!=newj.get(key)}
+save('surface-record-final.json',{'comparison_revision':'7a8b7f70','delivery_base':'3820bdd4f40fb0a9396a5440678c30c69e65f028','head':m['head'],'old_sha256':hashlib.sha256(old).hexdigest(),'current_sha256':hashlib.sha256(current).hexdigest(),'matches_declared_revision':old==current,'matches_delivery_base':base==current,'qa_report_accept_fingerprint_unchanged':oldj['command qa-report accept']==newj['command qa-report accept'],'changed_surfaces':changed,'prior_commits':history.splitlines()})
+assert current!=old and current==base
+record(10,'fail','F-01: the declared full-record comparison with 7a8b7f70 fails (old SHA-256 '+hashlib.sha256(old).hexdigest()+', current '+hashlib.sha256(current).hexdigest()+'). '+str(len(changed))+' surface entries differ following four earlier delivered Specs. The record equals the delivery base and qa-report accept fingerprint is unchanged; task_01 did not edit it. Both own-help contract tests pass at head and fail naming qa-report accept --help on the sabotaged copy. Fresh observation used complete contract inputs; first observation is superseded and not eligible for carry-forward. See `evidence/2026-10-13-help-gate/contracts-head-final.log`, `contracts-sabotage-final.log`, `surface-record-final.json`, `surface-record-history.txt`.')

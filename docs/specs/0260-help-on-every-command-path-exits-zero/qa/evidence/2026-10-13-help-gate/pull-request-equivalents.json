@@ -1,0 +1,12 @@
+{
+  "candidate": "e130e7dfcdc9438819f4ee24926735e79689d256",
+  "target_branch": "roundfix/deliver-0260-help-on-every-command-path-exits-zero-757f769032dcb400",
+  "pull_request": "none open; authoritative daemon prompt",
+  "approval": "Maintainer delivery authority recorded in _authorization.md, approved 2026-10-11, consuming this Spec; permission for implementation, daemon commit/push/PR/merge. No PR review acceptance obtained.",
+  "checks": "Daemon make verify-changed exit 0 at audited head; fresh make build and declared QA checks captured for the same head.",
+  "unresolved_threads": "None because no Pull Request exists, from authoritative daemon prompt; no GitHub/network lookup performed.",
+  "merge_ready": "No Merge-Ready acceptance yet; the authored terminal QA gate runs before PR creation.",
+  "review_artifact_ancestry": "No review artifact or review-artifact commit yet; e130e7dfcdc9438819f4ee24926735e79689d256 is the claimed candidate, whose Task commit descends from the authorization revision 3820bdd4f40fb0a9396a5440678c30c69e65f028.",
+  "unblock": "After daemon settlement and permitted publication, open the Spec target-branch PR and collect its required checks and review acceptance; the Run branch has no PR.",
+  "equivalent_evidence": "Explicit pre-PR equivalents recorded for all five controls under task_02 Requirement 10; no completed PR review or acceptance is claimed."
+}

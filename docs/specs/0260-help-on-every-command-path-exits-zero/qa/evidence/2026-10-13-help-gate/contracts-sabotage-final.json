@@ -1,0 +1,7 @@
+{
+  "command": "go test -count=1 -tags docscontract -v -run ^(TestTheSkillCoverageMapIsCurrent|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent)$ ./internal/docscontract",
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix0260-vc3gnb9h/sabotage",
+  "exit": 1,
+  "stdout": "=== RUN   TestTheSkillCoverageMapIsCurrent\n    skill_coverage_test.go:36: roundfix qa-report accept --help: help exited 1: roundfix: QA Report eligibility refused: report path \"--help\" is not in a Spec qa directory\n--- FAIL: TestTheSkillCoverageMapIsCurrent (0.00s)\n=== RUN   TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent\n    skill_coverage_test.go:422: roundfix qa-report accept --help: help exited 1: roundfix: QA Report eligibility refused: report path \"--help\" is not in a Spec qa directory\n--- FAIL: TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent (0.00s)\nFAIL\nFAIL\troundfix/internal/docscontract\t0.268s\nFAIL\n",
+  "stderr": ""
+}

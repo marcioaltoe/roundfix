@@ -1,0 +1,14 @@
+[
+  {
+    "command": "./bin/roundfix qa-report accept docs/specs/0260-help-on-every-command-path-exits-zero/qa/qa-report-2026-10-13-01.md",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "./bin/roundfix qa-report accept docs/specs/0260-help-on-every-command-path-exits-zero/qa/qa-report-2026-10-13-01.md",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

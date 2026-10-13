@@ -1,0 +1,212 @@
+$ go test -count=1 -v -run ^Test(RunQAReportAcceptCommand.*|QAReportAccept.*|CapabilityRecheck|CapabilityTextRendersProbe|BaselineProfile.*)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestCapabilityRecheck
+=== PAUSE TestCapabilityRecheck
+=== RUN   TestCapabilityTextRendersProbe
+=== PAUSE TestCapabilityTextRendersProbe
+=== RUN   TestBaselineProfileCommandInitShowAndValidate
+=== PAUSE TestBaselineProfileCommandInitShowAndValidate
+=== RUN   TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== PAUSE TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== RUN   TestBaselineProfileHelpContract
+=== PAUSE TestBaselineProfileHelpContract
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== PAUSE TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== RUN   TestRunQAReportAcceptCommandAcceptsAQualifyingPartial
+=== PAUSE TestRunQAReportAcceptCommandAcceptsAQualifyingPartial
+=== RUN   TestQAReportAcceptRefusesAPendingReport
+=== PAUSE TestQAReportAcceptRefusesAPendingReport
+=== RUN   TestQAReportAcceptRefusesAHollowPass
+=== PAUSE TestQAReportAcceptRefusesAHollowPass
+=== RUN   TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== PAUSE TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== RUN   TestRunQAReportAcceptCommandFailsClosed
+=== PAUSE TestRunQAReportAcceptCommandFailsClosed
+=== CONT  TestCapabilityRecheck
+=== RUN   TestCapabilityRecheck/requires_no_decisions_and_writes_nothing
+=== CONT  TestRunQAReportAcceptCommandAcceptsAQualifyingPartial
+=== CONT  TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== CONT  TestRunQAReportAcceptCommandFailsClosed
+=== CONT  TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== CONT  TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== RUN   TestRunQAReportAcceptCommandFailsClosed/failed_report
+=== CONT  TestBaselineProfileHelpContract
+=== RUN   TestBaselineProfileHelpContract/baseline_--help
+=== CONT  TestBaselineProfileCommandInitShowAndValidate
+=== CONT  TestCapabilityTextRendersProbe
+=== CONT  TestQAReportAcceptRefusesAHollowPass
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/qa-report
+=== RUN   TestBaselineProfileHelpContract/baseline_capabilities_check_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_init_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_show_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_validate_--help
+--- PASS: TestBaselineProfileHelpContract (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_capabilities_check_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_init_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_show_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_validate_--help (0.00s)
+=== CONT  TestQAReportAcceptRefusesAPendingReport
+--- PASS: TestQAReportAcceptRefusesAnEmptyFrontMatter (0.00s)
+=== RUN   TestRunQAReportAcceptCommandFailsClosed/missing_report
+--- PASS: TestRunQAReportAcceptCommandAcceptsAQualifyingPartial (0.00s)
+--- PASS: TestQAReportAcceptRefusesAPendingReport (0.00s)
+--- PASS: TestQAReportAcceptRefusesAHollowPass (0.00s)
+=== RUN   TestRunQAReportAcceptCommandFailsClosed/unparseable_report
+--- PASS: TestRunQAReportAcceptCommandFailsClosed (0.01s)
+    --- PASS: TestRunQAReportAcceptCommandFailsClosed/failed_report (0.00s)
+    --- PASS: TestRunQAReportAcceptCommandFailsClosed/missing_report (0.00s)
+    --- PASS: TestRunQAReportAcceptCommandFailsClosed/unparseable_report (0.00s)
+--- PASS: TestBaselineProfileCommandInitShowAndValidate (0.02s)
+--- PASS: TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles (0.03s)
+--- PASS: TestCapabilityTextRendersProbe (0.04s)
+=== RUN   TestCapabilityRecheck/names_an_unresolvable_Profile
+=== RUN   TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling
+=== RUN   TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/--format_json
+=== RUN   TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/--format=json
+=== RUN   TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/-format_json
+=== RUN   TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/-format=json
+--- PASS: TestCapabilityRecheck (0.05s)
+    --- PASS: TestCapabilityRecheck/requires_no_decisions_and_writes_nothing (0.05s)
+    --- PASS: TestCapabilityRecheck/names_an_unresolvable_Profile (0.00s)
+    --- PASS: TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling (0.00s)
+        --- PASS: TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/--format_json (0.00s)
+        --- PASS: TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/--format=json (0.00s)
+        --- PASS: TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/-format_json (0.00s)
+        --- PASS: TestCapabilityRecheck/preserves_JSON_failures_for_every_format_flag_spelling/-format=json (0.00s)
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle
+--- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape (6.65s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only (0.46s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/qa-report (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only (0.45s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only (0.45s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR (0.46s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR (0.46s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/settle (0.26s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only (0.45s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network (0.45s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds (0.46s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/settle (0.26s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only (0.45s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/qa-report (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/archive (0.14s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/settle (0.25s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence (0.36s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/archive (0.10s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host (0.40s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/qa-report (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/settle (0.22s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network (0.38s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/qa-report (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/archive (0.10s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive (0.10s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive (0.10s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive (0.10s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle (0.19s)
+PASS
+suiteguard: guard cost: measured 2660 paths; fingerprint took 95.902333ms before and 68.951125ms after
+ok  	roundfix/internal/cli	7.112s
+
+stderr:

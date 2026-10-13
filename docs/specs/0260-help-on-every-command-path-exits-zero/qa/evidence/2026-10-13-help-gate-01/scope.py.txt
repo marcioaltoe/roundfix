@@ -1,0 +1,41 @@
+from pathlib import Path
+import json
+m=json.loads((Path(Path('/tmp/roundfix0260-qa01-location.txt').read_text())/'meta.json').read_text())
+import runpy,subprocess,re,json,hashlib
+from pathlib import Path
+q=runpy.run_path(str(Path(m['evidence'])/'run.py.txt'),run_name='qa_helpers');globals().update(q)
+def git(*args):return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
+head=m['head'];base=m['base'];task=m['task_commit']
+commits=git('rev-list','--reverse',base+'..'+head).splitlines();assert commits==[task,head],commits
+addendum_paths=git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines();assert addendum_paths==[str(spec/'task_02.md')],addendum_paths
+changed=git('diff-tree','--no-commit-id','--name-only','-r',task).splitlines();tasktext=(root/spec/'task_01.md').read_text();declared=re.findall(r'^- (?:interface|creates): `([^`]+)`',tasktext,re.M)+[str(spec/'task_01.md')]
+undeclared=sorted(set(changed)-set(declared));assert not undeclared,undeclared
+known_governed=['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/baseline.md','.agents/skills/roundfix/references/settle.md','internal/cli/cli_test.go','skills/roundfix/SKILL.md']
+auth=git('show',base+':'+str(spec/'_authorization.md')); bounded=re.findall(r'^  - ([^\n ]+)$',auth.split('operations:')[0],re.M)
+assert set(known_governed)&set(changed)<=set(bounded)
+assert subprocess.run(['git','merge-base','--is-ancestor',base,task],cwd=root).returncode==0
+assert git('show',task+':'+str(spec/'_authorization.md'))==auth
+excluded=['docs/user-guide/','docs/references/skill-coverage.json','Makefile','.github/workflows/','go.mod','go.sum','.roundfixrc.yml','docs/references/behavior-surfaces.json','docs/findings/','CONTEXT.md','internal/cli/qa_report_test.go','internal/cli/baseline_profile_test.go']
+excluded_diff=git('diff','--name-only',base,head,'--',*excluded);assert not excluded_diff,excluded_diff
+all_delta=git('diff','--name-only','HEAD');assert not all_delta,all_delta
+unknown=git('ls-files','--others','--exclude-standard').splitlines();assert all(x.startswith(str(spec/'qa')+'/') for x in unknown),unknown
+pairs=[('.agents/skills/roundfix/'+p,'skills/roundfix/'+p) for p in ['SKILL.md','references/settle.md','references/baseline.md']]
+mirrors={a:(root/a).read_bytes()==(root/b).read_bytes() for a,b in pairs};assert all(mirrors.values())
+settle=' '.join((root/pairs[1][0]).read_text().split());baseline=' '.join((root/pairs[2][0]).read_text().split())
+assert 'Read its usage through `roundfix qa-report accept --help` or `-h`, which prints it and exits `0` without reading a report.' in settle
+assert 'which lists their commands, and exit `0`.' in baseline
+# Exact old-phrase and obsolete-fallback search restricted to live command surfaces.
+search=subprocess.run(['rg','-n','--glob','*.md','--glob','*.go','has no .--help|nearest successful ancestor','skills/roundfix','.agents/skills/roundfix','docs/user-guide','internal/docscontract/skill_coverage_test.go'],cwd=root,capture_output=True,text=True);assert search.returncode==1,search.stdout
+prod_diff=git('diff',base,head,'--','internal/cli/qa_report.go','internal/cli/baseline_profile.go'); usage_changes=[line for line in prod_diff.splitlines() if line[:1] in '+-' and not line.startswith(('+++','---')) and ('const ' in line or 'Usage:' in line)];assert not usage_changes,usage_changes
+# The seeded mechanical audit is authoritative for governed-path classification;
+# this Requirement independently checks actual commit file scope against its grant.
+record_data={'commit_range':base+'..'+head,'commits':commits,'addendum_commit_paths':addendum_paths,'actual_changed_paths':changed,'declared_paths':declared,'undeclared':undeclared,'mechanical_governed_set':known_governed,'bounded_authorization_paths':bounded,'authorization_revision':base,'authorization_predates_task':True,'authorization_unchanged':True,'excluded_paths':excluded,'excluded_changed_paths':excluded_diff,'tracked_worktree_delta':all_delta,'untracked_paths_scope':'only assigned qa directory','skill_mirrors_match':mirrors,'roundfix_skill_version':'0.1.67','obsolete_wording_search_exit':search.returncode,'obsolete_wording_hits':search.stdout,'production_diff':prod_diff,'usage_changes':usage_changes}
+save('scope-audit.json',record_data)
+# Row 14 also waits for the focused owned-skill version check before it settles.
+print('Scope audit: 13 declared changed paths; 5 governed paths bounded; all excluded paths unchanged; mirrors and wording match.',flush=True)
+controls={'candidate':head,'target_branch':'roundfix/deliver-0260-help-on-every-command-path-exits-zero-757f769032dcb400','pull_request':'none open; authoritative daemon prompt','approval':'Maintainer delivery authority recorded in _authorization.md, approved 2026-10-11, consuming this Spec; permission for implementation, daemon commit/push/PR/merge. No PR review acceptance obtained.','checks':'Daemon make verify-changed exit 0 at audited head; fresh make build and declared QA checks captured for the same head.','unresolved_threads':'None because no Pull Request exists, from authoritative daemon prompt; no GitHub/network lookup performed.','merge_ready':'No Merge-Ready acceptance yet; the authored terminal QA gate runs before PR creation.','review_artifact_ancestry':'No review artifact or review-artifact commit yet; '+head+' is the claimed candidate, whose Task commit descends from the authorization revision '+base+'.','unblock':'After daemon settlement and permitted publication, open the Spec target-branch PR and collect its required checks and review acceptance; the Run branch has no PR.','equivalent_evidence':'Explicit pre-PR equivalents recorded for all five controls under task_02 Requirement 10; no completed PR review or acceptance is claimed.'}
+save('pull-request-equivalents.json',controls)
+record(15,'blocked (environment: no open Pull Request)','The Daemon prompt names no open PR on the Spec target branch. Pre-PR controls: recorded maintainer authority; Daemon make verify-changed pass at '+head+'; no threads because no PR; no Merge-Ready acceptance yet; no review artifact yet and audited head '+head+' is the claimed candidate. Task ancestry and recorded approval were inspected. Every control is explicitly accounted for by the pre-PR equivalent required by Requirement 10. See `evidence/2026-10-13-help-gate-01/pull-request-equivalents.json`. The actual PR journey remains unobserved until a PR exists.')
+
+skills=json.loads((evidence/'skills-version.json').read_text());assert skills['exit']==0
+record(14,'pass','Actual git diff-tree lists 13 Task paths, all declared by task_01, including its own file; all 5 mechanically classified governed paths are bounded by the preceding operative grant. The only later commit changes task_02 for the comparison addendum. No excluded path, usage text, original compatibility test or tracked source changed. Required skill sentences and all three mirrors match; stale wording has no live hits; owned version 0.1.67 passes its record test. Seeded mechanical authorization audit is preserved. See `evidence/2026-10-13-help-gate-01/scope-audit.json` and `skills-version.json`.')

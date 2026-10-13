@@ -1,0 +1,85 @@
+{
+  "commit_range": "3820bdd4f40fb0a9396a5440678c30c69e65f028..b2c03c24c00af69cb8d10692e9010b4e46917dba",
+  "commits": [
+    "b705f546c1a0b99a39de16cbd9f6fbed96b1f52e",
+    "b2c03c24c00af69cb8d10692e9010b4e46917dba"
+  ],
+  "addendum_commit_paths": [
+    "docs/specs/0260-help-on-every-command-path-exits-zero/task_02.md"
+  ],
+  "actual_changed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    ".agents/skills/roundfix/references/settle.md",
+    "docs/specs/0260-help-on-every-command-path-exits-zero/task_01.md",
+    "internal/cli/baseline_profile.go",
+    "internal/cli/cli_test.go",
+    "internal/cli/command_help_test.go",
+    "internal/cli/qa_report.go",
+    "internal/docscontract/skill_coverage_test.go",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/baseline.md",
+    "skills/roundfix/references/settle.md",
+    "skills/testdata/owned-skill-versions.json"
+  ],
+  "declared_paths": [
+    "internal/cli/qa_report.go",
+    "internal/cli/baseline_profile.go",
+    "internal/cli/command_help_test.go",
+    "internal/cli/cli_test.go",
+    "internal/docscontract/skill_coverage_test.go",
+    ".agents/skills/roundfix/references/settle.md",
+    "skills/roundfix/references/settle.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    "skills/roundfix/references/baseline.md",
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/roundfix/SKILL.md",
+    "skills/testdata/owned-skill-versions.json",
+    "docs/specs/0260-help-on-every-command-path-exits-zero/task_01.md"
+  ],
+  "undeclared": [],
+  "mechanical_governed_set": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    ".agents/skills/roundfix/references/settle.md",
+    "internal/cli/cli_test.go",
+    "skills/roundfix/SKILL.md"
+  ],
+  "bounded_authorization_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    ".agents/skills/roundfix/references/settle.md",
+    "internal/cli/cli_test.go",
+    "skills/roundfix/SKILL.md"
+  ],
+  "authorization_revision": "3820bdd4f40fb0a9396a5440678c30c69e65f028",
+  "authorization_predates_task": true,
+  "authorization_unchanged": true,
+  "excluded_paths": [
+    "docs/user-guide/",
+    "docs/references/skill-coverage.json",
+    "Makefile",
+    ".github/workflows/",
+    "go.mod",
+    "go.sum",
+    ".roundfixrc.yml",
+    "docs/references/behavior-surfaces.json",
+    "docs/findings/",
+    "CONTEXT.md",
+    "internal/cli/qa_report_test.go",
+    "internal/cli/baseline_profile_test.go"
+  ],
+  "excluded_changed_paths": "",
+  "tracked_worktree_delta": "",
+  "untracked_paths_scope": "only assigned qa directory",
+  "skill_mirrors_match": {
+    ".agents/skills/roundfix/SKILL.md": true,
+    ".agents/skills/roundfix/references/settle.md": true,
+    ".agents/skills/roundfix/references/baseline.md": true
+  },
+  "roundfix_skill_version": "0.1.67",
+  "obsolete_wording_search_exit": 1,
+  "obsolete_wording_hits": "",
+  "production_diff": "diff --git a/internal/cli/baseline_profile.go b/internal/cli/baseline_profile.go\nindex 8ec10579..eca1da05 100644\n--- a/internal/cli/baseline_profile.go\n+++ b/internal/cli/baseline_profile.go\n@@ -48,6 +48,10 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr\n \tcase \"apply\":\n \t\treturn runBaselineApplyCommand(ctx, args[1:], stdout, stderr)\n \tcase \"capabilities\":\n+\t\tif len(args) > 1 && commandWantsHelp(args[1:2]) {\n+\t\t\tfmt.Fprint(stdout, commandUsage(\"baseline\"))\n+\t\t\treturn exitOK\n+\t\t}\n \t\tif len(args) == 1 || args[1] != \"check\" {\n \t\t\tprintBaselineProfileFailure(\n \t\t\t\t\"baseline capabilities\",\n@@ -62,6 +66,10 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr\n \tcase \"profile\":\n \t\treturn runBaselineProfileCommand(args[1:], stdout, stderr, environment)\n \tcase \"skills\":\n+\t\tif len(args) > 1 && commandWantsHelp(args[1:2]) {\n+\t\t\tfmt.Fprint(stdout, commandUsage(\"baseline\"))\n+\t\t\treturn exitOK\n+\t\t}\n \t\tif len(args) == 1 {\n \t\t\tprintBaselineProfileFailure(\n \t\t\t\t\"baseline skills\",\n@@ -88,6 +96,10 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr\n \t\t\treturn exitPreflight\n \t\t}\n \tcase \"assets\":\n+\t\tif len(args) > 1 && commandWantsHelp(args[1:2]) {\n+\t\t\tfmt.Fprint(stdout, commandUsage(\"baseline\"))\n+\t\t\treturn exitOK\n+\t\t}\n \t\tif len(args) == 1 || args[1] != \"sync\" {\n \t\t\tprintBaselineProfileFailure(\n \t\t\t\t\"baseline assets\",\ndiff --git a/internal/cli/qa_report.go b/internal/cli/qa_report.go\nindex 5715cd5e..decb8fc4 100644\n--- a/internal/cli/qa_report.go\n+++ b/internal/cli/qa_report.go\n@@ -38,6 +38,10 @@ func runQAReportCommand(ctx context.Context, args []string, stdout, stderr io.Wr\n \t\tfmt.Fprintf(stderr, \"Run '%s qa-report --help' for usage.\\n\", app.Name)\n \t\treturn exitPreflight\n \t}\n+\tif commandWantsHelp(args[1:]) {\n+\t\tfmt.Fprint(stdout, qaReportUsage)\n+\t\treturn exitOK\n+\t}\n \tif len(args) != 2 || strings.TrimSpace(args[1]) == \"\" {\n \t\tfmt.Fprintf(stderr, \"%s: qa-report accept requires exactly one report path\\n\", app.Name)\n \t\tfmt.Fprintf(stderr, \"Run '%s qa-report --help' for usage.\\n\", app.Name)",
+  "usage_changes": []
+}

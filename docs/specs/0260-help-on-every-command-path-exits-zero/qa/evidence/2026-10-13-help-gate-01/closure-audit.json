@@ -1,0 +1,21 @@
+{
+  "report": "docs/specs/0260-help-on-every-command-path-exits-zero/qa/qa-report-2026-10-13-01.md",
+  "verdict": "pass",
+  "passed_rows": 14,
+  "rows_blocked_environment": 1,
+  "rows_blocked_finding": 0,
+  "rows_blocked_declared": 0,
+  "pending": 0,
+  "input_declarations": 15,
+  "seeded_sections_preserved": true,
+  "all_evidence_paths_resolve": true,
+  "named_tests_verified": true,
+  "report_accept_exits": [
+    0,
+    0
+  ],
+  "tracked_delta": "",
+  "head": "b2c03c24c00af69cb8d10692e9010b4e46917dba",
+  "untracked_paths": 82,
+  "report_sha256": "8d3926c617f86c836e779b13bc6ac5e5f61b31ecddd61d590a1679131b5ee899"
+}

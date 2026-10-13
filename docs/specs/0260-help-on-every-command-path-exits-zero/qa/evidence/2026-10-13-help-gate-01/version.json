@@ -1,0 +1,6 @@
+{
+  "command": "./bin/roundfix --version",
+  "exit": 0,
+  "stdout": "roundfix 0.69.0 (b2c03c24-dirty, built 2026-10-13 01:00:59 -0300)\n",
+  "stderr": ""
+}

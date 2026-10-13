@@ -1,0 +1,8 @@
+{
+  "cause": "The row-status regex was applied globally and also matched the seeded two-column carry-forward table.",
+  "reproduced": true,
+  "repair": "Limit status updates to the Results section; restore the exact 15 seeded re-run dispositions.",
+  "fixed_writer_idempotent": true,
+  "product_rows_reexecuted": false,
+  "product_source_changed": false
+}

@@ -1,0 +1,11 @@
+$ go test -count=1 -tags docscontract -v -run ^(TestTheSkillCoverageMapIsCurrent|TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent)$ ./internal/docscontract
+exit: 0
+stdout:
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.07s)
+=== RUN   TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent
+--- PASS: TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent (0.00s)
+PASS
+ok  	roundfix/internal/docscontract	0.451s
+
+stderr:

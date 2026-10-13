@@ -1,0 +1,16 @@
+{
+  "required_named_tests_executed": true,
+  "original_compatibility_tests": [
+    "TestRunQAReportAcceptCommandAcceptsAQualifyingPartial",
+    "TestQAReportAcceptRefusesAPendingReport",
+    "TestQAReportAcceptRefusesAHollowPass",
+    "TestQAReportAcceptRefusesAnEmptyFrontMatter",
+    "TestRunQAReportAcceptCommandFailsClosed",
+    "TestCapabilityRecheck",
+    "TestCapabilityTextRendersProbe",
+    "TestBaselineProfileCommandInitShowAndValidate",
+    "TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles",
+    "TestBaselineProfileHelpContract"
+  ],
+  "original_count": 10
+}

@@ -1,0 +1,17 @@
+{
+  "head": "b2c03c24c00af69cb8d10692e9010b4e46917dba",
+  "build": {
+    "command": "make build",
+    "exit": 0,
+    "stdout": "go build -buildvcs=false -ldflags \"-X 'roundfix/internal/app.BuildCommit=b2c03c24-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-13 01:00:59 -0300'\" -o bin/roundfix ./cmd/roundfix\n",
+    "stderr": "",
+    "head": "b2c03c24c00af69cb8d10692e9010b4e46917dba",
+    "binary_sha256": "0c195a2d199401b7f1d1afd3e5c4c822bc591bbed0e236cec6beba5db7c52880"
+  },
+  "verification": {
+    "command": "make verify-changed",
+    "exit": 0,
+    "source": "Daemon prompt: already run outside Agent sandbox; diagnostics removed on success; not rerun"
+  },
+  "binary_sha256": "0c195a2d199401b7f1d1afd3e5c4c822bc591bbed0e236cec6beba5db7c52880"
+}
