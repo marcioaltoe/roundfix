@@ -21,6 +21,8 @@ import (
 
 const realACPXIntegrationEnv = "ROUNDFIX_REAL_ACPX"
 
+const realACPXEchoModel = "echo-model"
+
 const spawnedFixtureDeathTestEnv = "ROUNDFIX_TEST_SPAWNED_FIXTURE_DEATH"
 
 // spawnedFixtureWaitPrefix marks the wait duration the nested fixture run
@@ -140,7 +142,8 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 		"ROUNDFIX_ACPX_ECHO_STATE="+helperState,
 	)
 
-	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: helper}
+	// The local echo fixture has its own identity and advertised model.
+	runtime := RuntimeSpec{ID: "echo-custom", Protocol: ProtocolStdio, Command: helper, Model: realACPXEchoModel}
 	session := SessionRef{Name: "roundfix-real-acpx-" + strconv.FormatInt(time.Now().UnixNano(), 36), WorkDir: dir}
 	t.Cleanup(func() {
 		_ = runner.EndSession(context.Background(), runtime, session)
@@ -403,6 +406,8 @@ import (
 	"time"
 )
 
+const echoModel = "` + realACPXEchoModel + `"
+
 type rpcMessage struct {
 	JSONRPC string          ` + "`json:\"jsonrpc\"`" + `
 	ID      json.RawMessage ` + "`json:\"id\"`" + `
@@ -483,10 +488,10 @@ func (a *echoAgent) handle(msg rpcMessage) {
 	case "session/new":
 		a.persistSession("echo-session")
 		a.logf("new echo-session")
-		a.respond(msg.ID, map[string]any{"sessionId": "echo-session"})
+		a.respond(msg.ID, map[string]any{"sessionId": "echo-session", "configOptions": echoConfigOptions()})
 	case "session/load", "session/resume":
 		a.logf("resume echo-session")
-		a.respond(msg.ID, map[string]any{})
+		a.respond(msg.ID, map[string]any{"configOptions": echoConfigOptions()})
 	case "session/close":
 		a.cancel("echo-session")
 		a.logf("close echo-session")
@@ -506,6 +511,17 @@ func (a *echoAgent) handle(msg rpcMessage) {
 	default:
 		a.respond(msg.ID, map[string]any{})
 	}
+}
+
+func echoConfigOptions() []map[string]any {
+	return []map[string]any{{
+		"id":           "model",
+		"name":         "Model",
+		"category":     "model",
+		"type":         "select",
+		"currentValue": echoModel,
+		"options":      []map[string]any{{"value": echoModel, "name": "Local echo"}},
+	}}
 }
 
 func (a *echoAgent) handlePrompt(msg rpcMessage) {
