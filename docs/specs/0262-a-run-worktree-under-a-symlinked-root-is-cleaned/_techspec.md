@@ -16,8 +16,8 @@ real. `canonicalPath`, behind every `samePath`, resolves the longest existing
 prefix of a path instead of falling back to its lexical form, so a worktree
 whose directory is gone still matches the resolved path Git keeps. Every
 consumer reaches both through the existing functions, so no caller changes.
-The disposal tests move onto the package's runner seam and prove waiting by
-cancelling at a synchronization point.
+The timing-dependent disposal lock tests are out of scope: Spec 0259's
+corrective task_06 fixes them.
 
 The trade-off accepted is that the Worktree Root is read from the recorded
 path's layout, `<worktree.location>/<repo-slug>/<name>`, and not from the
@@ -38,9 +38,7 @@ created under an earlier location, and touch every caller and its tests
 - Active ADR obligations: applicable. ADR-0268 governs every decision below.
   ADR-0053: "is read-only unless `--apply` is supplied" and "Ambiguous, dirty,
   and unintegrated work stays intact". ADR-0023: "living under Roundfix Home,
-  recorded on the Run row". ADR-0089: "make the code under test receive its
-  environment and working directory as arguments". ADR-0125: "A spawned
-  fixture is a compiled binary, never a written script". ADR-0259: "Every
+  recorded on the Run row". ADR-0259: "Every
   top-level test in a Parallel Test Package calls `t.Parallel()` as its first
   statement". ADR-0256: "A release waits for the skills that describe a
   changed surface". ADR-0244: "A Spec now carries a Glossary Declaration".
@@ -100,15 +98,6 @@ the link spelling never equals the resolved path Git keeps. Neither `doctor`
 nor `gc` compares worktree paths. `internal/config` already has the
 prefix-resolving form, `canonicalizeResolvedPath`, for review roots.
 
-**The lock tests.** `TestRemoveRegisteredWorktreeWaitsForTheAdminLock` and
-`TestAddDetachedWorktreeWaitsForTheAdminLock` call the exported function with a
-250 ms deadline while another goroutine holds the lock, and expect
-`context.DeadlineExceeded`. The exported functions pass `execGitRunner{}`, and
-the deadline also bounds the real `git rev-parse --git-common-dir` that runs
-before the lock. When that process outlives 250 ms, the context kills it and
-the error is the killed process, not the deadline. The other admin-lock tests
-use fake runners and synchronization channels already.
-
 ## System Architecture
 
 - **Worktree Root resolution** (`internal/worktree/worktree.go`): a new
@@ -117,9 +106,6 @@ use fake runners and synchronization channels already.
 - **Prefix-resolving comparison**: `canonicalPath` delegates to the review
   root's algorithm, exported from `internal/config` as
   `CanonicalizeResolvedPath`; its only config caller is renamed.
-- **Disposal seam** (`internal/worktree/disposal.go`): each exported function
-  delegates to an unexported one that takes a `gitRunner`, the pattern
-  `InspectTerminalRun` already follows.
 - **Consumers**: no change to `internal/cli`, `internal/daemon` or
   `internal/delivery` production code; their tests prove the rule end to end.
 
@@ -136,10 +122,6 @@ func canonicalPath(path string) string // longest existing prefix resolved
 
 // internal/config/config.go (renamed from canonicalizeResolvedPath)
 func CanonicalizeResolvedPath(path string) string
-
-// internal/worktree/disposal.go
-func removeRegisteredWorktree(ctx context.Context, runner gitRunner, gitRoot, path string) error
-func addDetachedWorktree(ctx context.Context, runner gitRunner, repository, path, revision string) error
 ```
 
 ### Data Models
@@ -174,23 +156,7 @@ None. No record, table or report field changes.
    its discard; `ApplyRunBranchCandidate`; `UseItem` and `CleanupItem` for an
    item worktree whose directory is gone. No flag, report field, reason or
    exit code changes.
-4. API Contract: the disposal seam and its tests.
-   `RemoveRegisteredWorktree(ctx, gitRoot, path)` returns
-   `removeRegisteredWorktree(ctx, execGitRunner{}, gitRoot, path)`, and
-   `AddDetachedWorktree` returns `addDetachedWorktree` the same way; behavior
-   and signatures of the exported functions are unchanged. Each of the two
-   lock tests holds the lock with the existing holder, then runs the operation
-   in a goroutine with a cancellable context and a test runner that delegates
-   every call to `execGitRunner{}`, closes a `resolved` channel after
-   `rev-parse --path-format=absolute --git-common-dir` returns, and records any
-   `worktree` command that starts while the holder holds. After `resolved` the
-   test cancels the context and requires `context.Canceled`, no recorded
-   `worktree` command, and the worktree unchanged; after releasing the holder
-   it runs the operation again with the test's context and requires success.
-   Neither test passes a deadline to the operation; a wait for `resolved` or
-   for the goroutine fails the test after ten seconds instead of hanging,
-   which decides nothing when the lock works.
-5. API Contract: documentation. The reconcile user guide gains a paragraph:
+4. API Contract: documentation. The reconcile user guide gains a paragraph:
    when `worktree.location` is a symbolic link, a recorded Run Worktree is
    resolved within its Worktree Root, a recorded path whose repository or
    worktree directory is a link stays `unknown`, and `roundfix reconcile`
@@ -213,7 +179,6 @@ gets under a real directory, and the CLI tests assert them.
 3. `canonicalPath` of an existing path is unchanged.
 4. Reconciliation never removes anything it would not remove if the worktree
    location were the real directory.
-5. No disposal test passes a deadline to the operation it proves.
 
 ## Coverage Map
 
@@ -227,24 +192,19 @@ Deviations from the PRD: None.
   `canonicalPath` (task_02), item and release tests (task_03).
 - Goal 4, User Story 2, Core Feature 4, Core Feature 5, Success Metric 1 →
   CLI reconcile tests and the reconcile and configuration guides (task_03).
-- Goal 5, User Story 5, Core Feature 6, Success Metric 4 → disposal seam and
-  the two lock tests (task_04).
-- Core Feature 7 → `CONTEXT.md` **Worktree Root** (task_01).
+- Core Feature 6 → `CONTEXT.md` **Worktree Root** (task_01).
 
 ## Absence Evidence
 
 1. Worktree Root resolution — command: `grep -rn 'Worktree Root' internal CONTEXT.md docs/user-guide`; result: no match at `94fbf85b`; the only symbolic-link rule for worktree paths is `pathContainsSymlink`, which refuses every link.
 2. Prefix-resolving comparison in the worktree package — command: `grep -n 'EvalSymlinks' internal/worktree/worktree.go`; result: one match, `canonicalPath`, which falls back to the lexical path; the prefix-resolving form exists only as the unexported `canonicalizeResolvedPath` in `internal/config/config.go`, which this design reuses.
-3. Disposal runner seam — command: `grep -n 'func removeRegisteredWorktree\|func addDetachedWorktree' internal/worktree/disposal.go internal/worktree/worktree.go`; result: no match; the exported disposal functions call `runWorktreeCommand` with `execGitRunner{}` directly.
-4. Reconcile guide paragraph — command: `grep -n 'symbolic link\|symlink' docs/user-guide/commands/reconcile.md`; result: no match; the configuration guide mentions symlinks only for Spec artifacts.
+3. Reconcile guide paragraph — command: `grep -n 'symbolic link\|symlink' docs/user-guide/commands/reconcile.md`; result: no match; the configuration guide mentions symlinks only for Spec artifacts.
 
 ## ADR Alternatives
 
-- ADR-0268: this Spec's own decision; it rejects threading the configured location, accepting any link, recording resolved paths, a longer deadline and `testing/synctest`.
+- ADR-0268: this Spec's own decision; it rejects threading the configured location, accepting any link and recording resolved paths.
 - ADR-0053: no rejected alternative is taken; reconciliation stays proof-based and read-only without `--apply`, and only the set of paths that count as the recorded worktree widens.
 - ADR-0023: no rejected alternative is taken; Run Worktrees still live one per Run under Roundfix Home, and the recorded path is read as written.
-- ADR-0089: its rejected alternative, mutating process-global state for a test, is not taken; the lock tests pass their runner as an argument.
-- ADR-0125: no rejected alternative is taken; no test writes a wrapper executable, and the test runner wraps the real `git` in process.
 - ADR-0259: no rejected alternative is taken; every new test calls `t.Parallel()` first and no Sequential Test is added.
 - ADR-0256: its rejected model-judging alternative stays rejected; the Coverage Review records why the reconcile skill text needs no change.
 - ADR-0244: no rejected alternative is taken; **Worktree Root** follows the declaration contract.
@@ -290,8 +250,6 @@ repositories:
   the Run Worktree in the link spelling of a linked location.
 - `internal/daemon/reconcile_symlinked_root_test.go` (task_03):
   `TestClassifySupersededBranchUnderASymlinkedWorktreeRoot`.
-- `internal/worktree/disposal_test.go` (task_04): the two lock tests rewritten
-  as API Contract 4 says, keeping their names.
 - Each Task runs its changed packages once with `-race` (ADR-0259).
 
 ## Build Order
@@ -303,13 +261,11 @@ repositories:
 3. Consumers' tests in `internal/cli` and `internal/daemon`, the reconcile and
    configuration guides, the Coverage Review and the Behavior Surface Record
    (task_03) (depends on: 1, 2).
-4. The disposal seam and the two lock tests (task_04).
-5. QA gate (depends on: 3, 4).
+4. QA gate (depends on: 3).
 
 task_01 and task_02 both edit `internal/worktree/worktree.go`, so they run in
 series; task_03 is the Integration Checkpoint for both, whose Verification runs
-the consuming suites. task_04 shares no file with the others and runs beside
-task_01.
+the consuming suites.
 
 ## Risks & Considerations
 
@@ -329,10 +285,8 @@ task_01.
 - adds: **Worktree Root**
 - not a term: **Worktree Root resolution** — the helper that applies the rule
 - not a term: **Prefix-resolving comparison** — the behavior of one helper
-- not a term: **Disposal seam** — the unexported runner-taking functions
 - not a term: **Git registers the resolved path** — a heading of the measurements
 - not a term: **Reconciliation refuses the recorded spelling** — a heading of the measurements
-- not a term: **The lock tests** — a heading of the measurements
 - not a term: **A test that relied on the lexical fallback** — a risk heading
 - not a term: **Trusting the location's link** — a risk heading
 - not a term: **Old reports** — a risk heading
@@ -344,6 +298,4 @@ task_01.
   layout; see ADR-0268.
 - `canonicalPath` resolves the longest existing prefix by reusing the config
   helper; see ADR-0268.
-- The lock tests cancel at a synchronization point through the runner seam;
-  see ADR-0268.
 - No consumer's production code changes; task_03 proves them end to end.

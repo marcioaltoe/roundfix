@@ -92,6 +92,6 @@ prunes, while a link at the repository or worktree directory stays unsafe.
 
 ## References
 
-- `_prd.md` → Goals; User Story 1; User Story 3; Core Feature 1; Core Feature 2; Core Feature 7; Success Metric 1; Success Metric 2
+- `_prd.md` → Goals; User Story 1; User Story 3; Core Feature 1; Core Feature 2; Core Feature 6; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior; API Contract 1; Invariants 1-2; Invariant 4; Testing Approach; Build Order 1
 - ADR-0268; ADR-0053; ADR-0259; ADR-0244

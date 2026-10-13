@@ -45,7 +45,7 @@ code changes.
    `t.Parallel()` first: a Run whose branch is contained in its target, under
    a linked location, is not refused with `worktree condition failed`.
 4. MUST add to `docs/user-guide/commands/reconcile.md` the paragraph of
-   `_techspec.md` → API Contract 5, containing the phrase
+   `_techspec.md` → API Contract 4, containing the phrase
    `resolved within its Worktree Root` and the command
    `roundfix reconcile --apply`, and to `docs/user-guide/configuration.md`, in
    the section that lists the Run and Task Worktree paths, one sentence
@@ -105,5 +105,5 @@ code changes.
 ## References
 
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 4; Core Feature 4; Core Feature 5; Success Metric 1; Success Metric 3; Skills
-- `_techspec.md` → API Contract 3; API Contract 5; Invariant 4; Testing Approach; Build Order 3
+- `_techspec.md` → API Contract 3; API Contract 4; Invariant 4; Testing Approach; Build Order 3
 - ADR-0268; ADR-0053; ADR-0256; ADR-0259

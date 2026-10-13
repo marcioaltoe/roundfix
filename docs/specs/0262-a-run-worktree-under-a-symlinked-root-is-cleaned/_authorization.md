@@ -1,7 +1,7 @@
 ---
 status: approved
 granted: 2026-10-12
-action: resolve a recorded worktree path within its Worktree Root and compare worktree paths through their longest existing prefix, so a Run, Task or item worktree under a symbolic-linked worktree location is reconciled, released and pruned, document the reclaim with roundfix reconcile --apply, and make the disposal lock tests wait on a synchronization point
+action: resolve a recorded worktree path within its Worktree Root and compare worktree paths through their longest existing prefix, so a Run, Task or item worktree under a symbolic-linked worktree location is reconciled, released and pruned, and document the reclaim with roundfix reconcile --apply
 consuming: 0262-a-run-worktree-under-a-symlinked-root-is-cleaned
 paths: []
 operations:
@@ -21,10 +21,10 @@ or the CI workflows. For this Spec, item A, the decisions are: a recorded Run
 Worktree path and a registered worktree path that resolve to the same
 directory are the same worktree; a path resolving outside the worktree root
 stays unsafe; every comparison of recorded and registered worktree paths is
-swept for the same class; the admin-lock test proves waiting through an
-explicit synchronization point, never elapsed time; and the command that
+swept for the same class; and the command that
 reclaims the retained terminal Run Worktrees must work on the symlinked root
-and be documented.
+and be documented. The admin-lock test source of the same cycle is fixed by
+Spec 0259's corrective task_06 and leaves this Spec.
 
 The governed set was measured on the authoring branch at `94fbf85b` with
 `GovernedPath`, through a `go test -overlay` probe in `internal/speccheck`

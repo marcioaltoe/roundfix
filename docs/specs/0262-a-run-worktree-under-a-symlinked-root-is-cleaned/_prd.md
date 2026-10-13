@@ -16,12 +16,9 @@ worktree root held 24 GB that nothing reclaims
 ([the symlinked root Backlog Entry](references/2026-10-12-a-run-worktree-under-a-symlinked-root-is-never-cleaned.md)).
 Roundfix records each worktree in the configured spelling, Git registers the
 resolved path, and reconciliation refuses any recorded path that crosses a
-symbolic link. In the same cycle a test that proves the worktree
-administration lock failed a Delivery Queue gate under load and passed on the
-retry, because it lets a deadline expire while real Git runs
-([the admin-lock Backlog Entry](references/2026-10-12-the-worktree-admin-lock-test-is-timing-dependent.md)).
-Both sources concern the worktree package's disposal path, so one Spec owns
-them.
+symbolic link. The cycle's other worktree source, the timing-dependent
+admin-lock test, is fixed by Spec 0259's corrective task_06 and closed in
+history, so this Spec does not own it.
 
 This is a bug fix: no command, flag, output format or exit code changes. A
 symbolic-linked worktree location starts to work as a real directory does, and
@@ -31,13 +28,13 @@ The maintainer decided on 2026-10-12, finally: a recorded Run Worktree path and
 a registered worktree path that resolve to the same directory are the same
 worktree; a path resolving outside the worktree root stays unsafe; every
 comparison of recorded and registered worktree paths is swept for the same
-class; the admin-lock test proves waiting through an explicit synchronization
-point, never elapsed time; and the command that reclaims the retained Run
+class; and the command that reclaims the retained Run
 Worktrees must exist, work on the symlinked root and be documented.
 
 ## Prerequisites
 
-None. Specs 0263 and 0264 of cycle AF change archive, cancel and the Baseline
+None. Spec 0259 merges first and fixes the disposal lock tests, which this
+Spec no longer touches. Specs 0263 and 0264 of cycle AF change archive, cancel and the Baseline
 group usage error, and touch no file this Spec declares. Spec 0258, not yet
 merged, adds structural gaps to `spec check --strict` that hold every active
 Spec; this Spec already carries the Absence Evidence, ADR Alternatives,
@@ -54,16 +51,11 @@ depends on another Spec's artifacts.
   repositories and the local `git` binary. Source: `docs/agents/cli.md`,
   `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable. ADR-0268 (this Spec) decides the
-  Worktree Root rule, the prefix-resolving comparison and the synchronization
-  point. ADR-0053: reconciliation "is read-only unless `--apply` is supplied"
+  Worktree Root rule and the prefix-resolving comparison. ADR-0053: reconciliation "is read-only unless `--apply` is supplied"
   and "Ambiguous, dirty, and unintegrated work stays intact", which stays true
   under a symbolic-linked root. ADR-0023: each Run executes in a worktree
   "living under Roundfix Home, recorded on the Run row", the record this Spec
-  reads without rewriting. ADR-0089: "make the code under test receive its
-  environment and working directory as arguments", the reason the lock test
-  uses the existing runner seam. ADR-0125: "A spawned fixture is a compiled
-  binary, never a written script", so no test puts a wrapper `git` on the
-  path. ADR-0259: "Every top-level test in a Parallel Test Package calls
+  reads without rewriting. ADR-0259: "Every top-level test in a Parallel Test Package calls
   `t.Parallel()` as its first statement", and each changed package runs once
   with `-race`. ADR-0256: "A release waits for the skills that describe a
   changed surface", answered by a Coverage Review for the reconcile surfaces.
@@ -96,8 +88,6 @@ depends on another Spec's artifacts.
   when both resolve to the same directory, also when the directory is gone.
 - `roundfix reconcile --apply` reclaims the Run Worktrees an earlier version
   kept as unsafe, and the user guide says so.
-- The admin-lock tests pass or fail on the lock's behavior, never on the
-  host's speed.
 
 ## User Stories
 
@@ -113,8 +103,6 @@ depends on another Spec's artifacts.
 4. As the Delivery Queue, I want an item or Task Worktree whose directory is
    already gone under a symbolic-linked root to be pruned or recreated, so that
    a retried item does not fail on a stale registration.
-5. As the maintainer, I want the repository gate to stop failing on the
-   admin-lock test under load, so that a red gate means a defect.
 
 ## Core Features
 
@@ -136,10 +124,7 @@ depends on another Spec's artifacts.
 5. **Reclaim documented.** The reconcile user guide states that a
    symbolic-linked `worktree.location` is resolved within its Worktree Root and
    that `roundfix reconcile --apply` releases the Runs an earlier version kept.
-6. **Synchronization point.** The disposal tests prove waiting for the
-   administration lock by cancelling the operation after the runner reports
-   that the Git common directory is resolved, with no deadline.
-7. **Glossary.** `CONTEXT.md` defines **Worktree Root**.
+6. **Glossary.** `CONTEXT.md` defines **Worktree Root**.
 
 ## User Experience
 
@@ -159,7 +144,7 @@ prints `warning: cleanup failed` for those Runs.
 - Changing the reconcile report shape, its reasons or its exit codes.
 - Carry-forward staging worktrees, which already resolve their root before
   `git worktree add`.
-- Any other timing-dependent test outside the worktree administration lock.
+- The disposal lock tests, which Spec 0259's corrective task_06 fixes.
 
 ## Success Metrics
 
@@ -173,9 +158,6 @@ prints `warning: cleanup failed` for those Runs.
 3. Success Metric: under a symbolic-linked root, an item worktree whose
    directory is gone is cleaned up and recreated, and a Delivery Queue release
    and the superseded-branch disposition of a merged Run succeed.
-4. Success Metric: the two disposal tests pass 50 consecutive times under
-   `-race` with `-parallel 16`, contain no deadline, and fail when the lock is
-   removed in a disposable copy.
 
 ## Acceptance evidence
 
@@ -190,20 +172,13 @@ The outside-evidence row rests on sources this Spec did not produce:
   measured offline during authoring, lists a worktree added through a
   symbolic-linked directory under the resolved directory; the QA gate repeats
   that measurement.
-- The Go blog, "Testing Time (and other asynchronicities)", Damien Neil,
-  2025-08-26 (https://go.dev/blog/testing-time, found and read through Exa):
-  "on an overloaded continuous integration (CI) system it isn't unusual to see
-  pauses much longer than that" and "The `synctest.Wait` function provides
-  synchronization, but the passage of time does not." This is why the lock
-  test waits on a synchronization point and not a deadline, and why
-  `testing/synctest`, which cannot see a subprocess or a file lock, is not used.
 - The Secondbrain, read during authoring through `wiki/index.md` and two
   `qmd query` searches: the mirror of ADR-0023
   (`projects/roundfix/mirror/docs/adr/0023-runs-execute-in-per-run-worktrees.md`)
   and ADR-0053 confirmed that Run Worktrees live under Roundfix Home and that
   reconciliation is proof-based, so the fix widens what counts as the same
   worktree without weakening any proof. No page covered symbolic-linked
-  worktree roots or the admin-lock test.
+  worktree roots.
 
 ## Glossary
 
@@ -213,7 +188,6 @@ The outside-evidence row rests on sources this Spec did not produce:
 - not a term: **Prefix-resolving comparison** — a Core Feature heading
 - not a term: **Every consumer covered** — a Core Feature heading
 - not a term: **Reclaim documented** — a Core Feature heading
-- not a term: **Synchronization point** — a test technique, not a domain concept
 
 ## Skills
 
@@ -226,8 +200,6 @@ The outside-evidence row rests on sources this Spec did not produce:
 
 - A recorded worktree path is resolved within its Worktree Root; see ADR-0268.
 - Path comparison resolves the longest existing prefix; see ADR-0268.
-- The lock tests wait on a synchronization point through the runner seam; see
-  ADR-0268.
 
 ## Open Questions
 
