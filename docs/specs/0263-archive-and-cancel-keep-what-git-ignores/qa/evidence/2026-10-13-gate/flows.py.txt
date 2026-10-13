@@ -1,0 +1,132 @@
+import hashlib,json,os,pathlib,re,shutil,subprocess,tempfile,traceback
+W=pathlib.Path.cwd().resolve(); S=W/'docs/specs/0263-archive-and-cancel-keep-what-git-ignores'; E=S/'qa/evidence/2026-10-13-gate'; REPORT=S/'qa/qa-report-2026-10-13.md'
+ROOT=pathlib.Path(tempfile.mkdtemp(prefix='rf0263-flows-',dir='/private/tmp'))
+ENV={'PATH':os.environ['PATH'],'HOME':str(ROOT/'home'),'LANG':'C','GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':'/dev/null','GIT_OPTIONAL_LOCKS':'0'}
+pathlib.Path(ENV['HOME']).mkdir(); SLUG='0001-demo'; F='docs/specs/'+SLUG; REC='docs/history/specs/'+SLUG+'.md'
+def write(repo,path,content):
+ p=repo/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
+def run(repo,args,check=False):
+ r=subprocess.run(args,cwd=repo,env=ENV,capture_output=True,text=True)
+ result={'cwd':str(repo),'command':args,'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr}
+ if check and r.returncode:raise AssertionError(result)
+ return result
+def git(repo,*args):return run(repo,['git',*args],True)['stdout']
+def sha(repo):
+ out={}
+ for p in sorted(repo.rglob('*')):
+  if p.is_symlink():out[str(p.relative_to(repo))]=hashlib.sha256(('symlink:'+os.readlink(p)).encode()).hexdigest()
+  elif p.is_file():out[str(p.relative_to(repo))]=hashlib.sha256(p.read_bytes()).hexdigest()
+ return out
+def tree(repo):return {p:d for p,d in sha(repo).items() if not p.startswith('.git/')}
+def status(repo,ignored=False):return git(repo,'status','--porcelain','--untracked-files=all',*(['--ignored'] if ignored else []))
+def settle(row,state,notes):
+ data=REPORT.read_text();data=re.sub(r'(^\| '+str(row)+r' \| )pending( \|)',r'\g<1>'+state+r'\2',data,flags=re.M)
+ data=data.replace('<!-- ROW '+str(row)+' OBSERVATIONS -->',notes+'\n\n<!-- ROW '+str(row)+' OBSERVATIONS -->');REPORT.write_text(data)
+def save(name,obj):
+ (E/(name+'.json')).write_text(json.dumps(obj,indent=2)+'\n')
+def fixture(name,command='archive',recovery=False):
+ repo=ROOT/name;repo.mkdir();git(repo,'init','--initial-branch=main');git(repo,'config','user.name','Roundfix QA');git(repo,'config','user.email','roundfix-qa@example.com');git(repo,'config','commit.gpgsign','false');git(repo,'config','core.hooksPath','/dev/null')
+ write(repo,'.gitignore','*.log\nout/\nbin/\n')
+ write(repo,'docs/agents/agent-instructions.md','# Agent instructions\n');write(repo,'docs/agents/domain.md','# Domain instructions\n')
+ write(repo,F+'/_prd.md','---\nstatus: active\n---\n\n# PRD\n\n## Goals\n\nKeep the fixture.\n')
+ write(repo,F+'/_tasks.md','---\nschema: spec-tasks/v1\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n\n# Tasks\n')
+ write(repo,F+'/task_01.md','---\ntask: task_01\nspec: '+SLUG+'\nstatus: completed\ntype: backend\ncomplexity: low\n---\n\n# Task 1\n\n## Verification\n\n- `true` — expected: exit 0.\n')
+ write(repo,F+'/qa/qa-report-2026-10-13.md','---\nverdict: pass\nrows_passed: 1\n---\n\n# QA Report\n')
+ if recovery:
+  write(repo,F+'/references/note.md','Promoted note.\n')
+  write(repo,'docs/backlog/followup.md','[Note](../specs/'+SLUG+'/references/note.md)\n[Spec](../specs/'+SLUG+'/_prd.md)\n')
+  if command=='cancel':
+   write(repo,F+'/_tasks.md','---\nschema: spec-tasks/v1\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_02\n      file: task_02.md\n      needs: [task_01]\n---\n\n# Tasks\n')
+   write(repo,F+'/task_02.md','---\ntask: task_02\nspec: '+SLUG+'\nstatus: pending\ntype: backend\ncomplexity: low\n---\n\n# Task 2\n\n## Verification\n\n- `true` — expected: exit 0.\n')
+   write(repo,F+'/references/_index.md','| path | type |\n| --- | --- |\n| entry.md | backlog |\n| finding.md | finding |\n')
+   write(repo,F+'/references/entry.md','---\nstatus: promoted\nspec: '+SLUG+'\n---\n\n# Entry\n\nIntent.\n')
+   write(repo,F+'/references/finding.md','---\nstatus: done\nupdated_at: 2026-10-01\nabsorbed_by: '+SLUG+'\n---\n\n# Finding\n\nEvidence.\n')
+ git(repo,'add','-A');git(repo,'commit','-m','docs: seed disposable QA fixture');git(repo,'update-ref','refs/remotes/origin/main','HEAD');git(repo,'symbolic-ref','refs/remotes/origin/HEAD','refs/remotes/origin/main')
+ (repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(W/'bin/roundfix')
+ return repo
+def cli(repo,command,*extra):return run(repo,['./bin/roundfix',command,SLUG,*(['--reason','no consumer'] if command=='cancel' else []),*extra])
+def refusal(command,reason):return 'Preflight failed\n\nReason:\n  '+reason+'\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run \'roundfix '+command+' --help\' for usage.\n'
+def assert_transcript(r,code,err):assert (r['exit'],r['stdout'],r['stderr'])==(code,'',err),r
+
+def refusal_row(command,row):
+ repo=fixture('ignored-'+command,command)
+ for name in ['run.log','qa/evidence/out/b.log','qa/evidence/out/a.log']:write(repo,F+'/'+name,'ignored evidence: '+name+'\n')
+ before_status=status(repo,True);before=sha(repo)
+ r=cli(repo,command)
+ reason='Spec "'+SLUG+'" cannot '+command+' while Git ignores 3 file(s) under '+F+' that no commit holds: '+F+'/qa/evidence/out/a.log, '+F+'/qa/evidence/out/b.log, '+F+'/run.log; remove each file or commit it with git add -f, then retry'
+ after_status=status(repo,True);after=sha(repo)
+ evidence={'result':r,'expected_stderr':refusal(command,reason),'before_status':before_status,'after_status':after_status,'before_sha256':before,'after_sha256':after,'record_exists':(repo/REC).exists(),'home_files':[str(p.relative_to(ROOT/'home')) for p in (ROOT/'home').rglob('*')]}
+ save('row-'+str(row),evidence)
+ assert_transcript(r,2,refusal(command,reason));assert before==after;assert before_status==after_status;assert not (repo/REC).exists()
+ settle(row,'pass','`./bin/roundfix '+command+' '+SLUG+(' --reason "no consumer"' if command=='cancel' else '')+'`: exit 2; stdout empty; all stderr lines match Surface Transcript '+('1' if command=='archive' else '2')+'. Git independently enumerated all three ignored paths, including two in the ignored directory. SHA-256 of every repository file (including ignored files and `.git`), symlinks and full ignored Git status stayed equal. No Archive Record or Run database appeared. Evidence: `evidence/2026-10-13-gate/row-'+str(row)+'.json`.')
+ print('Row',row,'pass',flush=True)
+
+def recovery_start(command,row):
+ repo=fixture("recovery "+command+" and 'quote",command,True)
+ success=ROOT/('success-'+command);shutil.copytree(repo,success,symlinks=True)
+ before=tree(repo);revision=git(repo,'rev-parse','HEAD').strip();(repo/F/'references').chmod(0o555)
+ r=cli(repo,command);save('row-'+str(row),{'result':r,'before_tree':before,'revision':revision,'successful_fixture':str(success)})
+ lines=r['stderr'].splitlines();assert r['exit']==1 and r['stdout']=='' and len(lines)==2,r
+ assert lines[0].startswith('roundfix: '+command+' wrote '+REC+' but could not remove the Spec folder '+F+': '),r
+ assert 'permission denied' in lines[0] and str(repo/F/'references') in lines[0],r
+ q="'"+str(repo/F).replace("'","'\\''")+"'";finish='chmod -R u+w '+q+' && rm -rf '+q
+ assert lines[1]=='roundfix: finish the removal with: '+finish,r
+ state={'repo':str(repo),'success':str(success),'result':r,'revision':revision,'finish':finish,'command':command}
+ settle(row,'pass','`./bin/roundfix '+command+' '+SLUG+(' --reason "no consumer"' if command=='cancel' else '')+'`: exit 1, empty stdout and exactly two stderr lines match Surface Transcript '+('3' if command=='archive' else '4')+'; the variable cause is a real permission-denied unlink in `references/`. The printed absolute path includes a space and an apostrophe, escaped for a POSIX shell. Fresh reads find the Archive Record and leftover note; row 7 will independently check every write and execute recovery. Evidence: `evidence/2026-10-13-gate/row-'+str(row)+'.json`.')
+ print('Row',row,'pass',flush=True);return state
+
+def precedence():
+ results=[]
+ for command in ['archive','cancel']:
+  repo=fixture('precedence-'+command,command);write(repo,F+'/run.log','ignored\n');write(repo,F+'/_prd.md',(repo/F/'_prd.md').read_text()+'\nUncommitted edit.\n')
+  before_status=status(repo,True);before=sha(repo);r=cli(repo,command)
+  reason='Spec "'+SLUG+'" has changes not committed at HEAD under '+F+'; commit them before '+command+' so the Archive Record\'s source_revision holds the Spec'
+  after_status=status(repo,True);after=sha(repo)
+  results.append({'result':r,'expected_stderr':refusal(command,reason),'before_sha256':before,'after_sha256':after,'before_status':before_status,'after_status':after_status})
+  save('row-6',results);assert_transcript(r,2,refusal(command,reason));assert before==after and before_status==after_status
+ settle(6,'pass','Both commands exit 2 with the existing uncommitted reason byte for byte even with an ignored log. Independent SHA-256 and ignored-status reads confirm no byte changed. Evidence: `evidence/2026-10-13-gate/row-6.json`.');print('Row 6 pass',flush=True)
+
+def finish_recovery(states):
+ results=[]
+ for state in states:
+  repo=pathlib.Path(state['repo']);success=pathlib.Path(state['success']);command=state['command']
+  record=(repo/REC).read_text();assert 'source_revision: '+state['revision'] in record
+  assert (repo/'docs/references/note.md').read_text()=='Promoted note.\n'
+  assert (repo/'docs/backlog/followup.md').read_text()=='[Note](../references/note.md)\n[Spec](../history/specs/'+SLUG+'.md)\n'
+  paths=[REC,'docs/references/note.md','docs/backlog/followup.md']
+  if command=='cancel':
+   assert 'status: open' in (repo/'docs/backlog/entry.md').read_text();assert 'spec: null' in (repo/'docs/backlog/entry.md').read_text()
+   assert 'status: pending' in (repo/'docs/findings/finding.md').read_text();paths+=['docs/backlog/entry.md','docs/findings/finding.md']
+  writes={p:(repo/p).read_text() for p in paths}
+  finish=run(repo,['sh','-c',state['finish']],True)
+  normal=cli(success,command);assert normal['exit']==0,normal
+  after_status=status(repo);normal_status=status(success);assert after_status==normal_status,(after_status,normal_status)
+  assert tree(repo)==tree(success),{'recovered':tree(repo),'normal':tree(success)}
+  assert not (repo/F).exists();assert all((repo/p).read_text()==data for p,data in writes.items());assert git(repo,'rev-parse','HEAD').strip()==state['revision']
+  results.append({'state':state,'writes_before_finish':writes,'finish_result':finish,'normal_result':normal,'recovered_status':after_status,'normal_status':normal_status,'recovered_tree':tree(repo),'normal_tree':tree(success),'head_unchanged':True,'folder_absent':True})
+  save('row-7',results)
+ repo=fixture('pr7-archive','archive',True);(repo/F/'references').chmod(0o555);r=cli(repo,'archive','--pull-request','7');assert r['exit']==1,r
+ record=(repo/REC).read_text();assert re.search(r'^pull_request: ["\x27]?7["\x27]?$',record,re.M),record
+ finish=r['stderr'].splitlines()[1].removeprefix('roundfix: finish the removal with: ');f=run(repo,['sh','-c',finish],True);assert not (repo/F).exists();assert (repo/REC).read_text()==record
+ results.append({'pull_request_result':r,'record_before_and_after':record,'finish_result':f,'folder_absent':True});save('row-7',results)
+ settle(7,'pass','Archive and cancel retained the record, automatic note promotion and relink; cancel also retained returned Backlog Entry and Finding with their expected statuses. Ran each stderr finishing command exactly with `sh -c` and compared with a successful run on a byte-identical copied fixture: folder absent, all output bytes and `git status --porcelain --untracked-files=all` equal, original HEAD unchanged. Repeated archive with `--pull-request 7`: record names 7 before and after recovery. Space/apostrophe folders removed safely. Evidence: `evidence/2026-10-13-gate/row-7.json`.');print('Row 7 pass',flush=True)
+
+def help_row():
+ results=[]
+ for command in ['archive','cancel']:
+  r=run(W,['./bin/roundfix',command,'--help']);results.append(r);save('row-8',results);assert r['exit']==0 and r['stderr']=='',r
+  text=' '.join(r['stdout'].split())
+  if command=='archive':
+   for phrase in ['Refuses, writing nothing, while the Spec folder has uncommitted changes or Git ignores a file under it.','1 archive could not finish after writing; stderr says how to finish']:assert phrase in text,(phrase,r)
+  else:
+   for phrase in ['Refuses while an Active Run or an unfinished Delivery Queue item holds the Spec, while an active Spec requires it, while Git ignores a file under the Spec folder, and for a Spec that carries a supersession.','1 cancel write or removal failed']:assert phrase in text,(phrase,r)
+ settle(8,'pass','Both `./bin/roundfix archive --help` and `./bin/roundfix cancel --help` exit 0 with empty stderr. Refusal sentences and exit-1 entries match API Contract 4; archive lists exit 1 between 0 and 2. Saved full stdout and stderr for separate comparison. Evidence: `evidence/2026-10-13-gate/row-8.json`.');print('Row 8 pass',flush=True)
+
+if __name__=='__main__':
+ settle(1,'pass','Static gate: Daemon supplied `make verify-changed`, pass, exit 0, diagnostics removed on success, for audited head `867da60f1c8c81e2b422d8fd15b3733cc54ab321`. Recorded as supervised evidence; not rerun. `make build` completed exit 0 and the built version is recorded in frontmatter and `evidence/2026-10-13-gate/precondition.json`.')
+ states=[]
+ for row,fn in [(2,lambda:refusal_row('archive',2)),(3,lambda:refusal_row('cancel',3)),(4,lambda:states.append(recovery_start('archive',4))),(5,lambda:states.append(recovery_start('cancel',5))),(6,precedence),(7,lambda:finish_recovery(states)),(8,help_row)]:
+  try:fn()
+  except Exception:
+   err=traceback.format_exc();(E/('row-'+str(row)+'-failure.txt')).write_text(err);settle(row,'fail','Execution failed: `evidence/2026-10-13-gate/row-'+str(row)+'-failure.txt`.\n\n```text\n'+err+'```');print('Row',row,'FAIL',err,flush=True)
+ save('fixture-location',{'root':str(ROOT),'binary_symlink':str(W/'bin/roundfix'),'environment':ENV})

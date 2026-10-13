@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0263-archive-and-cancel-keep-what-git-ignores
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

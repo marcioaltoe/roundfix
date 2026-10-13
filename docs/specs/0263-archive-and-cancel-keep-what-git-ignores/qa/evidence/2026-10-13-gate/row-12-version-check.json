@@ -1,0 +1,13 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-run",
+    "^TestEveryOwnedSkillVersionIsRecorded$",
+    "./skills"
+  ],
+  "exit": 0,
+  "stdout": "ok  \troundfix/skills\t0.464s\n",
+  "stderr": ""
+}

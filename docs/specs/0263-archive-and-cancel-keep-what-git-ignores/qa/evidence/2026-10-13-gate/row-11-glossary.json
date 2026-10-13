@@ -1,0 +1,17 @@
+{
+  "declared_terms": [
+    "Ignored Spec File",
+    "Folder Removal Recovery"
+  ],
+  "definitions": {
+    "Ignored Spec File": "A file under an active Spec folder that Git ignores, so no commit holds it. The Archive Command and the Cancel Command refuse while one exists (ADR-0269).",
+    "Folder Removal Recovery": "How the Archive Command and the Cancel Command end when the final removal of the Spec folder fails: every write stays in place, and the command prints the command that finishes the removal (ADR-0269)."
+  },
+  "bold_vocabulary": [
+    "Folder Removal Recovery",
+    "Ignored Spec File"
+  ],
+  "missing_terms": [],
+  "operative_rule": "docs/agents/domain.md",
+  "decision": "docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md"
+}

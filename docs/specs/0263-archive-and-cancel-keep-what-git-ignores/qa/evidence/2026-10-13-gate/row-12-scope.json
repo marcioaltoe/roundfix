@@ -1,0 +1,252 @@
+{
+  "base": "6403304fa39619632b1957dab5dbb3fb6a2c0407",
+  "head": "867da60f1c8c81e2b422d8fd15b3733cc54ab321",
+  "commit_range": "6403304fa39619632b1957dab5dbb3fb6a2c0407..867da60f1c8c81e2b422d8fd15b3733cc54ab321",
+  "tasks": [
+    {
+      "task": "task_01",
+      "commit": "9cb4e3ea0c33b0f4c1d3be69b4e7d489f946d081",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "9cb4e3ea0c33b0f4c1d3be69b4e7d489f946d081"
+      ],
+      "changed_paths": [
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0263-archive-and-cancel-keep-what-git-ignores/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/cancel.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_pull_request_test.go",
+        "internal/cli/archive_test.go",
+        "internal/cli/cancel.go",
+        "internal/cli/cancel_test.go",
+        "internal/cli/spec_folder_status.go",
+        "internal/cli/spec_folder_status_test.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md",
+        "docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md",
+        "docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md",
+        "internal/cli/spec_folder_status.go",
+        "internal/cli/spec_folder_status_test.go",
+        "internal/cli/archive.go",
+        "internal/cli/cancel.go",
+        "internal/cli/archive_test.go",
+        "internal/cli/cancel_test.go",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/cancel.md",
+        "docs/references/skill-coverage.json",
+        "docs/references/behavior-surfaces.json"
+      ],
+      "recorded_paths": [
+        "internal/cli/archive_pull_request_test.go"
+      ],
+      "outside_declared_scope": [],
+      "governed_paths": [],
+      "unbounded_governed_paths": [],
+      "authorization_source": "docs/specs/0263-archive-and-cancel-keep-what-git-ignores/_authorization.md",
+      "operative_revision": null,
+      "authorization_mechanical_audit": "no governed mutations"
+    },
+    {
+      "task": "task_02",
+      "commit": "f0c0ecf907c9e8468510f1dbaab99290608da45d",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "f0c0ecf907c9e8468510f1dbaab99290608da45d"
+      ],
+      "changed_paths": [
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0263-archive-and-cancel-keep-what-git-ignores/task_02.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/cancel.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_pull_request_test.go",
+        "internal/cli/archive_test.go",
+        "internal/cli/cancel.go",
+        "internal/cli/cancel_test.go",
+        "internal/cli/folder_removal_recovery.go",
+        "internal/cli/folder_removal_recovery_test.go",
+        "internal/spec/archive.go",
+        "internal/spec/cancel.go",
+        "internal/spec/folder_removal.go",
+        "internal/spec/folder_removal_test.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md",
+        "docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md",
+        "internal/spec/folder_removal.go",
+        "internal/spec/folder_removal_test.go",
+        "internal/cli/folder_removal_recovery_test.go",
+        "internal/spec/archive.go",
+        "internal/spec/cancel.go",
+        "internal/cli/folder_removal_recovery.go",
+        "internal/cli/archive.go",
+        "internal/cli/cancel.go",
+        "internal/cli/archive_test.go",
+        "internal/cli/cancel_test.go",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/cancel.md",
+        "docs/references/skill-coverage.json",
+        "docs/references/behavior-surfaces.json"
+      ],
+      "recorded_paths": [
+        "internal/cli/archive_pull_request_test.go"
+      ],
+      "outside_declared_scope": [],
+      "governed_paths": [
+        "internal/spec/archive.go"
+      ],
+      "unbounded_governed_paths": [],
+      "authorization_source": "docs/specs/0263-archive-and-cancel-keep-what-git-ignores/_authorization.md",
+      "operative_revision": "6403304fa39619632b1957dab5dbb3fb6a2c0407",
+      "authorization_mechanical_audit": "seeded granted table; no repeated mechanical detector"
+    },
+    {
+      "task": "task_03",
+      "commit": "867da60f1c8c81e2b422d8fd15b3733cc54ab321",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "867da60f1c8c81e2b422d8fd15b3733cc54ab321"
+      ],
+      "changed_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        "CONTEXT.md",
+        "docs/specs/0263-archive-and-cancel-keep-what-git-ignores/task_03.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared_paths": [
+        "docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md",
+        ".agents/skills/domain-modeling/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        "skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        ".agents/skills/archive-spec/SKILL.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/testdata/owned-skill-versions.json",
+        "CONTEXT.md"
+      ],
+      "recorded_paths": [],
+      "outside_declared_scope": [],
+      "governed_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "unbounded_governed_paths": [],
+      "authorization_source": "docs/specs/0263-archive-and-cancel-keep-what-git-ignores/_authorization.md",
+      "operative_revision": "6403304fa39619632b1957dab5dbb3fb6a2c0407",
+      "authorization_mechanical_audit": "seeded granted table; no repeated mechanical detector"
+    }
+  ],
+  "unchanged_destination_functions": {
+    "internal/spec/archive.go": [
+      "ArchiveKinds",
+      "ArchiveDir",
+      "validateQAArchiveOverride",
+      "qaArchiveOverrideErrorOutcome",
+      "qaArchiveOverrideRelativePath",
+      "ArchiveSpecRoot",
+      "archiveUnprovenActions",
+      "archiveDate",
+      "stampArchiveMetadata",
+      "archiveFrontmatterMapping",
+      "setArchiveFrontmatterValue",
+      "setArchiveFrontmatterNode",
+      "archiveScalarNode",
+      "archiveBoolNode",
+      "archiveSequenceNode",
+      "archiveLinkTarget",
+      "archiveLinkInside",
+      "prepareArchiveLinks",
+      "rewriteArchiveLinks",
+      "restoreArchiveLinks",
+      "ArchiveLinksMatch",
+      "markdownSpace",
+      "scanArchiveMarkdown",
+      "archiveMarkdownLinkEnd"
+    ],
+    "internal/spec/cancel.go": [
+      "cancelVacant",
+      "cancelRelativePath",
+      "cancelRegularPath",
+      "planSourceReturn",
+      "cancelSourceContent"
+    ]
+  },
+  "protected_config_changes": [],
+  "skill_versions": {
+    "archive-spec": {
+      "previous_version": "0.0.10",
+      "current_version": "0.0.11",
+      "recorded": {
+        "version": "0.0.11",
+        "digest": "7ee354f9b3788fb771c32b8230ca0e30527e1ff7b3f65e2e0e6d6b30340b07c3"
+      },
+      "source_mirror_equal": true,
+      "QA_settlement_equal": true
+    },
+    "roundfix": {
+      "previous_version": "0.1.69",
+      "current_version": "0.1.70",
+      "recorded": {
+        "version": "0.1.70",
+        "digest": "b9f186553c9a8b9d516152f950951920f205275a0252b78408b788b96a957454"
+      },
+      "source_mirror_equal": true,
+      "QA_settlement_equal": true
+    }
+  },
+  "QA_settlement_sections_unchanged": {
+    ".agents/skills/archive-spec/SKILL.md": true,
+    ".agents/skills/roundfix/SKILL.md": true,
+    ".agents/skills/roundfix/references/archive.md": true,
+    "skills/archive-spec/SKILL.md": true,
+    "skills/roundfix/SKILL.md": true,
+    "skills/roundfix/references/archive.md": true
+  },
+  "documentation_phrases": {
+    "docs/user-guide/commands/archive.md": {
+      "refusal": true,
+      "recovery": true
+    },
+    "docs/user-guide/commands/cancel.md": {
+      "refusal": true,
+      "recovery": true
+    },
+    ".agents/skills/archive-spec/SKILL.md": {
+      "refusal": true,
+      "recovery": true
+    },
+    ".agents/skills/roundfix/references/archive.md": {
+      "refusal": true,
+      "recovery": true
+    }
+  },
+  "governed_classifier_source": "internal/speccheck/governed.go",
+  "operative_authorization_equals_base": true,
+  "worktree_delta": "?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/fixture-location.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/flows.py.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-2-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-2.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-4-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-4.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-5-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-5.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-6-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-6.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/initial-invalid-fixture/row-7-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/precondition.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-10-docs.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-2-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-2.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-3.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-4-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-4.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-5-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-5.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-6-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-6.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-7-failure.txt\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-7.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-8.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-9-tests-initial.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/evidence/2026-10-13-gate/row-9-tests.json\n?? docs/specs/0263-archive-and-cancel-keep-what-git-ignores/qa/qa-report-2026-10-13.md\n",
+  "spec_layer_diff": "diff --git a/internal/spec/archive.go b/internal/spec/archive.go\nindex 552b7832..0e741285 100644\n--- a/internal/spec/archive.go\n+++ b/internal/spec/archive.go\n@@ -375,6 +375,10 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {\n \t}); err != nil {\n \t\treturn ArchiveResult{}, err\n \t}\n+\tremovalFolder, err := filepath.Abs(sourceDir)\n+\tif err != nil {\n+\t\treturn ArchiveResult{}, fmt.Errorf(\"resolve Spec folder for removal: %w\", err)\n+\t}\n \tvar written, rewritten []string\n \trollback := func(cause error) error {\n \t\tfor _, path := range rewritten {\n@@ -417,7 +421,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {\n \t\t}\n \t}\n \tif err := os.RemoveAll(sourceDir); err != nil {\n-\t\treturn ArchiveResult{}, fmt.Errorf(\"remove Spec; leftover folder %q: %w\", sourceDir, err)\n+\t\treturn result, &FolderRemovalError{Folder: removalFolder, Err: err}\n \t}\n \treturn result, nil\n }\ndiff --git a/internal/spec/cancel.go b/internal/spec/cancel.go\nindex 92b17921..deeb4007 100644\n--- a/internal/spec/cancel.go\n+++ b/internal/spec/cancel.go\n@@ -231,6 +231,10 @@ func Cancel(req CancelRequest) (CancelResult, error) {\n \t}); err != nil {\n \t\treturn CancelResult{}, fmt.Errorf(\"inspect cancelled Spec files: %w\", err)\n \t}\n+\tremovalFolder, err := filepath.Abs(sourceDir)\n+\tif err != nil {\n+\t\treturn CancelResult{}, fmt.Errorf(\"resolve Spec folder for removal: %w\", err)\n+\t}\n \t// Record and copies are exclusive creations. Track directories too so rollback\n \t// restores even a repository that had no history or return directories.\n \tcopies = append([]cancelCopy{{result.RecordPath, content}}, copies...)\n@@ -300,7 +304,7 @@ func Cancel(req CancelRequest) (CancelResult, error) {\n \t\t}\n \t}\n \tif err := os.RemoveAll(sourceDir); err != nil {\n-\t\treturn CancelResult{}, fmt.Errorf(\"remove cancelled Spec; leftover folder %q: %w\", sourceDir, err)\n+\t\treturn result, &FolderRemovalError{Folder: removalFolder, Err: err}\n \t}\n \treturn result, nil\n }\n"
+}

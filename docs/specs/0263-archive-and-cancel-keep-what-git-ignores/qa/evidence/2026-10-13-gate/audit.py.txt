@@ -1,0 +1,49 @@
+import pathlib,re,json,hashlib,subprocess,os
+S=pathlib.Path('docs/specs/0263-archive-and-cancel-keep-what-git-ignores');p=S/'qa/qa-report-2026-10-13.md';E=S/'qa/evidence/2026-10-13-gate';t=p.read_text();fm=t.split('---',2)[1]
+assert t.startswith('---\n') and re.findall(r'^verdict: (.+)$',fm,re.M)==['pass'],'verdict'
+assert 'status: closed' in fm,'closed'
+assert 'auditing_binary: "0.74.0 (6403304f, built 2026-10-13 13:33:21 -0300)"' in fm,'auditor'
+assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in fm,'staleness'
+results=t.split('## Results\n',1)[1].split('\n## ',1)[0];rows=re.findall(r'^\| (\d+) \| ([^|]+) \| ([^|]+) \|$',results,re.M)
+assert [int(r[0]) for r in rows]==list(range(1,14)),'row ids'
+assert sum(status.strip()=='pass' for _,status,_ in rows)==12,'passed count'
+blocked=[r for r in rows if r[1].strip().startswith('blocked')]
+assert len(blocked)==1 and blocked[0][0]=='13' and blocked[0][1].strip()=='blocked (environment: no open Pull Request)','environment cause'
+allowed={'repository Verification','outside-evidence row','Pull Request row'}|{'Requirement '+str(n) for n in range(2,11)};actual=set()
+for n,status,prov in rows:
+ sources={x.strip() for x in prov.split(';')};assert sources<=allowed,(n,sources);actual|=sources
+ block=t.split('### Row '+n+':',1)[1].split('\n### Row ',1)[0]
+ assert '```yaml\ninputs:\n' in block and 'kind: repository_path' in block,(n,'inputs')
+ assert 'Status: pending' not in block,(n,'status')
+ if n in ['1','12','13']:assert 'kind: commit_range' in block,(n,'commits')
+ if 2<=int(n)<=9:assert 'ref: skills/**' in block,(n,'embedded sources')
+assert actual==allowed,'coverage closure'
+assert 'rows_blocked_environment: 1' in fm and 'rows_blocked_finding: 0' in fm and 'rows_blocked_declared: 0' in fm,'blocked counts'
+assert 'evidence_snapshots' not in t,'daemon ownership'
+refs=set(re.findall(r'`(evidence/[^`]+)`',t));missing=[ref for ref in refs if not (p.parent/ref).exists()];assert not missing,missing
+assert not [f for f in E.rglob('*') if f.is_file() and f.suffix in ['.go','.c','.ts','.js']],'no compiled evidence'
+for f in E.glob('*.json'):json.loads(f.read_text())
+for n in [2,3]:
+ d=json.loads((E/f'row-{n}.json').read_text())
+ assert d['result']['exit']==2 and d['before_sha256']==d['after_sha256'] and d['before_status']==d['after_status'] and not d['record_exists'],(n,'refusal integrity')
+for n in [4,5]:
+ d=json.loads((E/f'row-{n}.json').read_text());assert d['result']['exit']==1 and d['result']['stdout']=='' and len(d['result']['stderr'].splitlines())==2,(n,'recovery transcript')
+r7=json.loads((E/'row-7.json').read_text());assert len(r7)==3,'recoveries'
+for item in r7[:2]:assert item['recovered_tree']==item['normal_tree'] and item['recovered_status']==item['normal_status'] and item['folder_absent'] and item['head_unchanged'],'successful tree equivalence'
+assert re.search(r'^pull_request:\s*["\x27]?7["\x27]?$',r7[2]['record_before_and_after'],re.M) and r7[2]['folder_absent'],'PR7 retained'
+tests=json.loads((E/'row-9-tests.json').read_text());assert len(tests)==5 and all(d['exit']==0 and not d.get('missing_named_passes') for d in tests),'tests'
+for n in [2,4,5,6,7]:
+ leftover=E/f'row-{n}-failure.txt'
+ if leftover.exists():leftover.unlink() # originals stay in initial-invalid-fixture/
+env=os.environ.copy();env['HOME']=json.loads((E/'precondition.json').read_text())['home'];env.pop('NODE_OPTIONS',None)
+r=subprocess.run(['./bin/roundfix','--version'],capture_output=True,text=True,env=env);assert r.returncode==0 and 'user_flow_binary: '+json.dumps(r.stdout.strip()) in fm,'binary'
+tracked=subprocess.run(['git','diff','--exit-code','HEAD','--','.'],capture_output=True,text=True);assert tracked.returncode==0,'tracked delta'
+head=subprocess.run(['git','rev-parse','HEAD'],capture_output=True,text=True);assert head.returncode==0 and head.stdout.strip()=='867da60f1c8c81e2b422d8fd15b3733cc54ab321','head'
+status=subprocess.run(['git','status','--porcelain=v1','--untracked-files=all'],capture_output=True,text=True);assert status.returncode==0,'git status'
+lines=status.stdout.splitlines();assert all(line.startswith('?? '+str(S/'qa')+'/') for line in lines),status.stdout
+checks=subprocess.run(['git','diff','--check'],capture_output=True,text=True);assert checks.returncode==0,'whitespace'
+summary={'verdict':'pass','rows':13,'pass':12,'rows_blocked_environment':1,'rows_blocked_finding':0,'rows_blocked_declared':0,'fail':0,'skipped':0,'pending':0,'coverage_sources':sorted(actual),'evidence_paths_valid':sorted(refs),'auditor_fields_preserved':True,'no_executable_evidence_sources':True,'tracked_delta_empty':True,'all_untracked_paths_inside_assigned_qa':True,'user_flow_binary':r.stdout.strip(),'user_flow_binary_sha256':hashlib.sha256(pathlib.Path('bin/roundfix').read_bytes()).hexdigest(),'git_diff_check_exit':checks.returncode,'worktree_status':status.stdout,'evidence_sha256':{str(f.relative_to(E)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(E.rglob('*')) if f.is_file() and f.name!='final-audit.json'}}
+(E/'final-audit.json').write_text(json.dumps(summary,indent=2)+'\n')
+if '## Final report audit\n' not in t:
+ p.write_text(t.replace('## Final verdict\n','## Final report audit\n\nThe local audit confirmed one frontmatter block, preserved auditor fields, 13 terminal rows, all 12 coverage sources, typed counts, nonempty row inputs, readable evidence paths and valid JSON artifacts. It rechecked captured hashes/status, recovery equivalence and every named test result. Current `./bin/roundfix --version` equals `user_flow_binary`; `git diff --check` passes, HEAD is unchanged, the tracked delta is empty and every new path lies under this Spec’s `qa/`. Evidence: `evidence/2026-10-13-gate/final-audit.json`.\n\n## Final verdict\n'))
+print(json.dumps({k:v for k,v in summary.items() if k in ['verdict','rows','pass','rows_blocked_environment','rows_blocked_finding','rows_blocked_declared','fail','skipped','pending','tracked_delta_empty','all_untracked_paths_inside_assigned_qa','user_flow_binary']},indent=2))

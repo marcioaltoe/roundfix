@@ -1,0 +1,24 @@
+[
+  {
+    "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0263-archive-and-cancel-keep-what-git-ignores-ebebaec5367aab2b-e2855207-f52fd51f/run_20261013T163453Z_215d9dc7373d8dae",
+    "command": [
+      "./bin/roundfix",
+      "archive",
+      "--help"
+    ],
+    "exit": 0,
+    "stdout": "Usage:\n  roundfix archive <slug>\n  roundfix archive <slug> --qa-override --approval <source> --reason <text>\n  roundfix archive <slug> --plan\n  roundfix archive <slug> --pull-request <number>\n\nArchives a Spec after verifying either every Task is completed and the newest\nQA Report has verdict: pass (or a partial verdict covered only by declared\nUnreachable Acceptance), or a recorded supersession exists for a Spec without\na Task Graph. Writes one Archive Record and removes the committed Spec folder.\nThe removed bytes stay in Git at the record's source_revision. The destination\nis docs/history/specs/<slug>.md for the built-in root, otherwise\n<spec-root>/_archived/<slug>.md.\narchive creates no Run and never pushes.\nRefuses, writing nothing, while the Spec folder has uncommitted changes or Git ignores a file under it.\n\nThe QA override requires an approval source and reason, still requires every\nnon-QA Task completed, preserves the QA Task and Reports unchanged, and records\nthe observed QA outcome and archived HEAD. It is refused when QA already\nqualifies for normal archive.\n\nOptions:\n  --qa-override  Archive despite failed, missing, or unreadable QA evidence\n  --approval     Source of the maintainer authority for the override\n  --reason       Reason the unmet QA prerequisite is being waived\n  --pull-request Store the delivery pull request number in the Archive Record\n\nExit codes:\n  0  archived\n  1  archive could not finish after writing; stderr says how to finish\n  2  Preflight Validation failed\n",
+    "stderr": ""
+  },
+  {
+    "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0263-archive-and-cancel-keep-what-git-ignores-ebebaec5367aab2b-e2855207-f52fd51f/run_20261013T163453Z_215d9dc7373d8dae",
+    "command": [
+      "./bin/roundfix",
+      "cancel",
+      "--help"
+    ],
+    "exit": 0,
+    "stdout": "Usage:\n  roundfix cancel <slug> --reason <text>\n\nCancels an active Spec that will not be delivered. Writes one Archive Record\nwith disposition cancelled, the reason, the date and the Tasks completed and\npending, returns each adopted Backlog Entry to docs/backlog/ (status: open)\nand each adopted Finding to docs/findings/ (status: pending), and removes the\ncommitted Spec folder. The removed bytes stay in Git at the record's\nsource_revision. cancel creates no Run, never changes a Task status, and\nnever commits or pushes.\n\nRefuses while an Active Run or an unfinished Delivery Queue item holds the\nSpec, while an active Spec requires it, while Git ignores a file under the\nSpec folder, and for a Spec that carries a supersession.\n\nOptions:\n  --reason  Why the Spec is cancelled, recorded in the Archive Record\n\nExit codes:\n  0  cancelled\n  1  cancel write or removal failed\n  2  Preflight Validation failed\n",
+    "stderr": ""
+  }
+]
