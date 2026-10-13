@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.71.0] - 2026-10-13
+
+### Tests that wait on a child no longer race the machine
+
+- **No behavior change for users.** Every command, flag, output and exit code is unchanged. This release makes Roundfix's own test suite pass on a loaded machine, so a Delivery Queue Run no longer fails its Verification or QA on a timing race unrelated to the work it delivers.
+- **26 tests fixed.** Agent, Daemon, worktree, store, Spec and CLI tests (including the `--detach` tests) now bound by real time only the budget they assert. Every other wait ends on the event the assertion reads or on the test deadline.
+- **Real-Time Budget rule.** A repository test in `internal/testfixture` counts each test file's wall-clock allowances below ten seconds and holds the file to a ceiling that can only fall, so a new race fails `make test`.
+- **Real ACPX round trip.** The opt-in `ROUNDFIX_REAL_ACPX=1` integration test selects a model its local fixture accepts, so it runs instead of being refused.
+- **Glossary.** Adds Real-Time Budget (ADR-0271).
+
 ## [0.70.0] - 2026-10-13
 
 ### Help on every command path exits zero
