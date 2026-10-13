@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-12
-spec: null
+spec: 0263-archive-and-cancel-keep-what-git-ignores
 reason: null
 ---
 
