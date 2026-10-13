@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0266-the-review-record-survives-a-fix
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -118,3 +118,95 @@ a record and as a folder, and any other file is refused by name.
 - `_prd.md` → Goals; User Story 3; Core Feature 4; Success Metric 4
 - `_techspec.md` → Current behavior; API Contract 6; Invariant 4; Invariant 5; Testing Approach; Build Order 4
 - ADR-0272; ADR-0233; ADR-0165; ADR-0261; ADR-0259; ADR-0271
+
+## Result
+
+Implemented the declared-path correction slice. `spec.DeclaredTaskPaths`
+uses the existing Task parser to collect `creates:` and `interface:` entries
+and `RecordedTaskPaths`, returning clean, sorted, unique repository paths.
+Instruction and deletion entries do not grant correction paths; invalid Task
+content or unsafe recorded paths return an error.
+
+The proof first applies the existing archive-path rule. When a changed path
+lies outside those archives, it reads each named archive's form at the parked
+candidate and collects the declared set once. Legacy Task files are read at
+that candidate; Archive Record Task files are read under `source` at
+`source_revision`, using `spec.EnsureSourceRevision` and the configured
+delivery remote for missing objects. All Task listings and contents come
+from Git. Exact declared-path matches join the existing archive-path rule.
+The first other changed path is refused in Git's listing order with the
+required extended reason. Unavailable declarations become a refusal with
+the outside-archive path context, their cause and no returned error. A
+correction confined to archive paths needs no Task declarations and retains
+its existing acceptance even when the record's source revision is absent.
+
+Acceptance evidence from focused implementation checks:
+
+| Acceptance criterion | Evidence |
+| --- | --- |
+| A disposed fix to a declared file returns to review, for a record and for a folder. | `TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview`, subtests `archive-record` and `legacy-folder`, exercises public review/dispose commands with a fake reviewer in real temporary symlinked Git worktrees and asserts `Accepted: true`. `TestARecordedPathCountsAsDeclared` also admits a recorded-only path in both forms. |
+| Any other changed path is refused by name, and the declared set cannot be widened by the correction. | `TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath` asserts the exact refusal naming `other.txt` when the correction also changes `review.txt`. `TestDeclaredPathsAreReadAtTheRecordedRevision` refuses `other.txt` for both archive forms with committed and uncommitted Task edits, including an uncommitted source-folder copy for records. |
+| Unreadable declared paths refuse without an error. | `TestUnreadableDeclaredPathsRefuseTheCorrection` covers a missing source revision with no remote and unparsable Task content in both archive forms. Its proof helper requires no returned error, and each case asserts the unavailable reason with a cause. |
+
+Focused checks run:
+
+- Before implementation, `rtk proxy go test -count=1 -run '^TestACodeCorrectionInsideTheDeclaredPathsReturnsToReview$' ./internal/cli`
+  exited 1: both archive forms refused `review.txt` with the original
+  outside-archive reason, reproducing the missing behavior.
+- After implementation, `rtk proxy go test -count=1 -race -run 'Test(DeclaredTaskPathsReads|ACodeCorrection|ARecordedPathCounts|DeclaredPathsAreRead|UnreadableDeclaredPaths)' ./internal/spec ./internal/cli`
+  exited 0: `internal/spec` and `internal/cli` passed. This selection runs all
+  six new top-level tests, including the parser checks for deduplication,
+  context-kind selection, path cleaning and malformed declarations.
+- `rtk proxy go test -count=1 -run 'Test(AReviewOnlyCorrectionIsProvedFromTheReviewRecord|ACorrectionOutsideTheArchivedSpecIsRefused|ACorrectionWithAnUndisposedFindingIsRefused|ACorrectionThatDoesNotDescendIsRefused|ReviewCorrectionRequiresTheParkedReviewRecord|TheCorrectionProof.*)' ./internal/cli`
+  exited 0. Existing correction, record, disposition, ancestry and symlinked
+  checkout tests passed unchanged, including both required refusal regressions.
+- `rtk proxy git diff --check` exited 0.
+
+The new tests use isolated local repositories, temporary homes and a fake
+reviewer, have `t.Parallel()` first, configure no remote and add no real-time
+wait budget. No network or real reviewer was reached. The implementation
+leaves the delivery state machine, round-2/gate/check sequence, corrective-Spec
+output line, flags and exit codes unchanged.
+
+The configured sandbox could not start because the writable root contains a
+symlink; approved escalated commands were used for worktree access and focused
+checks. Task status remains Daemon-owned. Authored Verification, repository
+Verification and settlement are left to the Daemon. No commit, push, pull
+request, Task Graph edit or other Task-file edit was made. No follow-up work
+was identified for this slice.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon's diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261013T214348Z_2ba6216d89c5b1cf/verification/batch-002-attempt-1.log`
+and the existing `TestReviewCorrectionAllowsTheArchiveRecordPath`.
+The initial implementation eagerly recovered Task declarations even for a
+correction confined to an Archive Record, introducing a source-availability
+prerequisite into the existing archive-path proof. The initial focused
+selection did not include that record-path regression.
+
+Repaired only the Task's correction proof: archive paths are admitted first;
+Task declarations are collected once on the first path outside the named
+archives. If declarations cannot be read, the required unavailable reason
+also names that outside-archive path. This preserves the existing sibling-path
+refusal while retaining conservative refusal for code paths with unavailable
+declarations. Existing tests were left unchanged.
+
+Focused feedback checks:
+
+- Before the repair, `rtk proxy go test -count=1 -run '^TestReviewCorrectionAllowsTheArchiveRecordPath$' ./internal/cli`
+  exited 1 and reproduced the missing-source archive-record regression.
+- After the repair, `rtk proxy go test -count=1 -race -run 'Test(ReviewCorrectionAllowsTheArchiveRecordPath|DeclaredTaskPathsReads|ACodeCorrection|ARecordedPathCounts|DeclaredPathsAreRead|UnreadableDeclaredPaths|ACorrectionOutsideTheArchivedSpecIsRefused|TheCorrectionProofRefusesACodeFixUnderASymlinkedWorktreeRoot)' ./internal/cli ./internal/spec`
+  exited 0 for both packages. The existing record-path test covers source
+  present/absent acceptance and sibling-path refusal. All six new top-level
+  tests and both required outside-path refusal regressions passed under the
+  race detector. This refreshes evidence for all three acceptance criteria
+  after the proof repair.
+- Final `rtk proxy git diff --check` exited 0. Read-only scope inspection
+  confirmed exactly the same five task_04 paths, no staged changes, and
+  byte-identical authored Task content apart from the pre-existing
+  Daemon-owned `status: in_progress` value; only `## Result` was revised.
+
+No Task-declared Verification command was rerun. The Daemon retains status,
+full Verification and settlement ownership. No network or real reviewer was
+reached, and no commits, pushes or pull requests were created.

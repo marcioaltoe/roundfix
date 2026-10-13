@@ -88,14 +88,72 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 	if err != nil {
 		return delivery.ReviewCorrection{}, fmt.Errorf("list review correction paths: %w", err)
 	}
+	var declared map[string]bool
 	for _, name := range nulPaths(paths) {
 		allowed := false
 		for _, prefix := range prefixes {
 			allowed = allowed || strings.HasPrefix(name, prefix) || name == strings.TrimSuffix(prefix, "/")+".md"
 		}
-		if !allowed {
-			return refuse(fmt.Sprintf("changed path %s is outside the named archived Specs", name))
+		if allowed {
+			continue
+		}
+		// Archive paths have their own proof. Read Task declarations only when
+		// an outside path needs the additional declared-path proof.
+		if declared == nil {
+			declared = make(map[string]bool)
+			for _, slug := range archivedSpecs {
+				paths, err := workflow.archivedSpecDeclaredPaths(ctx, workDir, candidate, filepath.ToSlash(archiveRoot), slug)
+				if err != nil {
+					return refuse(fmt.Sprintf("declared paths of archived Spec %s are unavailable: changed path %s is outside the named archived Specs: %v", slug, name, err))
+				}
+				for _, path := range paths {
+					declared[path] = true
+				}
+			}
+		}
+		if !declared[name] {
+			return refuse(fmt.Sprintf("changed path %s is outside the named archived Specs and the paths their Tasks declared", name))
 		}
 	}
 	return delivery.ReviewCorrection{Accepted: true}, nil
+}
+
+// archivedSpecDeclaredPaths reads Task declarations from the parked candidate
+// for a folder, or the Archive Record's source_revision for a record.
+func (workflow *commandDeliveryWorkflow) archivedSpecDeclaredPaths(ctx context.Context, workDir, candidate, archiveRoot, slug string) ([]string, error) {
+	archived, err := readArchivedSpecAt(ctx, workflow.git, workDir, candidate, archiveRoot, slug)
+	if err != nil {
+		return nil, fmt.Errorf("read archived Spec: %w", err)
+	}
+	revision, folder := candidate, archived.Path
+	if archived.Form == spec.ArchivedRecord {
+		revision, folder = archived.Record.SourceRevision, archived.Record.Source
+		if _, err := spec.EnsureSourceRevision(ctx, workDir, workflow.loaded.Config.Watch.PushRemote, archived.Record, candidate, archived.Path); err != nil {
+			return nil, fmt.Errorf("recover Task source revision: %w", err)
+		}
+	}
+	listing, err := workflow.git.RunGit(ctx, workDir, "ls-tree", "-r", "--name-only", "-z", revision, "--", folder)
+	if err != nil {
+		return nil, fmt.Errorf("list archived Task files: %w", err)
+	}
+	var declared []string
+	for _, file := range nulPaths(listing) {
+		matches, err := filepath.Match("task_*.md", filepath.Base(file))
+		if err != nil {
+			return nil, fmt.Errorf("match archived Task file: %w", err)
+		}
+		if !matches || filepath.ToSlash(filepath.Dir(file)) != folder {
+			continue
+		}
+		content, err := workflow.git.RunGit(ctx, workDir, "show", revision+":"+file)
+		if err != nil {
+			return nil, fmt.Errorf("read archived Task %s: %w", file, err)
+		}
+		paths, err := spec.DeclaredTaskPaths([]byte(content), file)
+		if err != nil {
+			return nil, err
+		}
+		declared = append(declared, paths...)
+	}
+	return declared, nil
 }
