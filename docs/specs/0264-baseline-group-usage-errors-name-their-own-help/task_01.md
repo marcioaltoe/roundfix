@@ -43,6 +43,10 @@ mirror and the version record.
 - [ ] Both copies of the baseline reference carry the sentence.
 - [ ] The `SKILL.md` pair matches and the owned-skill version record passes.
 
+## Consumers
+
+- The `roundfix` skill's baseline reference and its owned-skill version record — consumers: `./skills`
+
 ## Context
 
 - instruction: `docs/agents/cli.md`

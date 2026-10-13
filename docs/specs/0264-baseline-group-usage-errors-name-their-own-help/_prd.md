@@ -67,7 +67,9 @@ the sentence it looks for do not exist yet.
   task_01 is. ADR-0184: "Task tests and QA Requirements name the transcript by
   number and reuse its text", which task_02 and task_03 do. ADR-0259: "Every
   top-level test in a Parallel Test Package calls `t.Parallel()` as its first
-  statement", which the new tests follow. ADR-0189 and ADR-0233 govern the
+  statement", which the new tests follow. ADR-0271: "A test bounds by real
+  time only what it asserts"; the new tests give no child, goroutine or Git a
+  real-time allowance. ADR-0189 and ADR-0233 govern the
   owned skill's version raise, which task_01 records with the repository's
   record command. ADR-0250 does not apply: no Baseline module version or
   coverage record changes. ADR-0244: "A Spec now carries a Glossary

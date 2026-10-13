@@ -42,10 +42,16 @@ through the named tests.
    which follows API Contract 3 and reuses `helpCommandPaths` from
    `internal/cli/command_help_test.go`. Each calls `t.Parallel()` as its
    first statement (ADR-0259).
-5. MUST NOT change `internal/cli/cli_test.go`,
-   `internal/cli/command_help_test.go`, any help or usage text, the user
-   guide, `docs/references/behavior-surfaces.json`, or any other command's
-   behavior.
+5. MUST change in `internal/cli/command_help_test.go` only the expected
+   standard error of the bare and unknown `capabilities`, `skills` and
+   `assets` rows of `TestCommandHelpArgumentBoundaries`, which Spec 0260
+   pinned to today's
+   `roundfix: baseline baseline <group> failed: ... Run 'roundfix baseline profile --help' for usage.`
+   text, so they expect API Contract 1. Every other row and the
+   `helpCommandPaths` helper keep their bytes.
+6. MUST NOT change `internal/cli/cli_test.go`, any help or usage text, the
+   user guide, `docs/references/behavior-surfaces.json`, or any other
+   command's behavior.
 
 ## Subtasks
 
@@ -61,18 +67,23 @@ through the named tests.
       groups and names the group, word or pointer on failure.
 - [ ] The existing `baseline_profile_test.go` cases pass unchanged.
 
+## Consumers
+
+- Standard error of a `baseline` group usage error — consumers: `./internal/cli`
+
 ## Context
 
 - instruction: `docs/agents/cli.md`
 - instruction: `docs/adr/0184-a-techspec-states-a-command-surface-as-a-transcript.md`
 - instruction: `docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md`
 - interface: `internal/cli/baseline_profile.go`
+- interface: `internal/cli/command_help_test.go`
 - creates: `internal/cli/baseline_group_usage_test.go`
 
 ## Verification
 
 - `out="$(go test -count=1 -v -run '^(TestBaselineGroupUsageTranscripts|TestEveryGroupUsageErrorPointsAtItsCommands)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestBaselineGroupUsageTranscripts TestBaselineGroupUsageTranscripts/transcript_1 TestBaselineGroupUsageTranscripts/transcript_2 TestBaselineGroupUsageTranscripts/transcript_3 TestBaselineGroupUsageTranscripts/transcript_4 TestBaselineGroupUsageTranscripts/transcript_5 TestBaselineGroupUsageTranscripts/transcript_6 TestEveryGroupUsageErrorPointsAtItsCommands; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task the two tests do not exist, so no PASS line is printed.
-- `grep -qF -- 'func printBaselineUsageError(' internal/cli/baseline_profile.go || { printf 'the baseline usage-error printer is missing\n' >&2; exit 1; }; go test -count=1 -run '^(TestCapabilityRecheck|TestBaselineProfileCommandInitShowAndValidate|TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles|TestBaselineProfileHelpContract)$' ./internal/cli` — expected: exit 0; before this Task the printer does not exist.
+- `grep -qF -- 'func printBaselineUsageError(' internal/cli/baseline_profile.go || { printf 'the baseline usage-error printer is missing\n' >&2; exit 1; }; go test -count=1 -run '^(TestCapabilityRecheck|TestBaselineProfileCommandInitShowAndValidate|TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles|TestBaselineProfileHelpContract|TestCommandHelpArgumentBoundaries)$' ./internal/cli` — expected: exit 0; before this Task the printer does not exist.
 
 ## References
 

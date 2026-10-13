@@ -34,7 +34,9 @@ independent.
   QA Requirements name the transcript by number and reuse its text", which
   task_02 and task_03 do. ADR-0259: "Every top-level test in a Parallel Test
   Package calls `t.Parallel()` as its first statement", which both new tests
-  do. ADR-0189 and ADR-0233 govern the owned skill's version raise. ADR-0250
+  do. ADR-0271: "A test bounds by real time only what it asserts"; the new
+  tests run `runCLI` in process and give no child, goroutine or Git a
+  real-time allowance. ADR-0189 and ADR-0233 govern the owned skill's version raise. ADR-0250
   does not apply: no Baseline module version or coverage record changes.
   ADR-0244 is met by the `None.` declarations. Source:
   `docs/agents/domain.md`.
@@ -74,9 +76,12 @@ Relation to Spec 0260, which is being delivered: it edits the same
 a help token before the usage error, and it adds a sentence to the same skill
 reference. This Spec's task_02 is implemented on the tree after Spec 0260
 merges and replaces only the usage-error calls below Spec 0260's help
-branches; it does not edit `internal/cli/cli_test.go` or
-`internal/cli/command_help_test.go`, which Spec 0260 owns, and reads only the
-`helpCommandPaths` helper from the latter.
+branches. It does not edit `internal/cli/cli_test.go`. In
+`internal/cli/command_help_test.go`, which Spec 0260 added, it reads the
+`helpCommandPaths` helper and changes only the expected standard error of the
+bare and unknown `capabilities`, `skills` and `assets` rows of
+`TestCommandHelpArgumentBoundaries`: Spec 0260 pinned them to today's
+`baseline baseline` text, which API Contract 1 replaces.
 
 Current behavior, characterized at `3820bdd4` with a sweep of every group of
 the root usage given the unknown word `no-such-command`, plus the three bare
@@ -222,6 +227,8 @@ None. No stored or serialized shape changes.
 
 ## Coverage Map
 
+Deviations from the PRD: None.
+
 Cross-read from `_prd.md`:
 
 - Goal 1, User Stories 1-2, Core Feature 1 → `printBaselineUsageError` at
@@ -236,6 +243,23 @@ Cross-read from `_prd.md`:
 
 Every PRD goal, story, feature and metric has a row; no TechSpec component is
 unmapped.
+
+## Absence Evidence
+
+1. `printBaselineUsageError` — command: `grep -rn 'printBaselineUsageError' internal`; result: no match at `2d66d793`; every `baseline` dispatcher usage error goes through `printBaselineProfileFailure`.
+2. `usageErrorGroups` and the two new tests — command: `grep -rn 'func usageErrorGroups\|TestEveryGroupUsageErrorPointsAtItsCommands\|TestBaselineGroupUsageTranscripts' internal`; result: no match at `2d66d793`.
+3. `internal/cli/baseline_group_usage_test.go` — command: `ls internal/cli/baseline_group_usage_test.go`; result: no such file at `2d66d793`; `TestCommandHelpArgumentBoundaries` pins today's text and is updated, not duplicated.
+
+## ADR Alternatives
+
+- ADR-0256: its rejected model-judging alternative stays rejected; task_01 is the skills Task its authoring rule requires.
+- ADR-0184: no rejected alternative is taken; the Task tests and QA rows name each transcript by number and reuse its text.
+- ADR-0259: no rejected alternative is taken; both new tests call `t.Parallel()` first and no Sequential Test is added.
+- ADR-0271: no rejected alternative is taken; the new tests give no child, goroutine or Git a real-time allowance.
+- ADR-0189: no rejected alternative is taken; the owned skill's version is raised in both `SKILL.md` fields.
+- ADR-0233: no rejected alternative is taken; the version is recorded with the repository's record command, never by hand.
+- ADR-0250: does not apply; no Baseline module version or coverage record changes, so none of its alternatives is in play.
+- ADR-0244: no rejected alternative is taken; the Glossary Declaration is `None.` with its reason.
 
 ## Integration Points
 

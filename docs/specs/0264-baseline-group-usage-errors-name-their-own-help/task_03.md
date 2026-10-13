@@ -57,10 +57,11 @@ an Agent Session, reads a credential, or reads or writes the real
    changed files stay within their declarations or their `## Recorded paths`,
    that every Governed Path changed is bounded in `_authorization.md`, and
    that the user guide, `docs/references/skill-coverage.json`,
-   `internal/cli/cli_test.go`, `internal/cli/command_help_test.go`, the
-   Makefile, the CI workflows, `go.mod`, `go.sum` and `.roundfixrc.yml` did
-   not change. This row reads Task commits, so it declares a `commit_range`
-   input.
+   `internal/cli/cli_test.go`, the Makefile, the CI workflows, `go.mod`,
+   `go.sum` and `.roundfixrc.yml` did not change, and that
+   `internal/cli/command_help_test.go` changed only in the rows task_02
+   Requirement 5 names. This row reads Task commits, so it declares a
+   `commit_range` input.
 9. MUST record the non-waivable Pull Request row as
    `blocked (environment: no open Pull Request)`, naming the Pull Request row
    in its provenance, supported by the pre-PR equivalent of each control: the

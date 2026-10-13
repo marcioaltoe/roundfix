@@ -73,7 +73,10 @@ bytes.
   `.roundfixrc.yml`, or lint, formatter or test-runner configuration.
 - No change to the user guide, `docs/references/behavior-surfaces.json`,
   `docs/references/skill-coverage.json`, `internal/cli/cli_test.go`,
-  `internal/cli/command_help_test.go`, archived Specs or Archive Records.
+  archived Specs or Archive Records. `internal/cli/command_help_test.go`
+  changes only in the expected standard error of the bare and unknown
+  `capabilities`, `skills` and `assets` rows that task_02 Requirement 5
+  names.
 - No test, Verification command or QA row opens a network connection, reads
   or writes the real `~/.roundfix`, or reads or writes an adopter repository.
 - No release, tag or deployment. Verification stays Daemon-owned, and Task
