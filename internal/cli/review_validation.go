@@ -182,7 +182,7 @@ func reviewFindingEvidenceDismissed(record reviewRecord, finding reviewFinding) 
 	matches := 0
 	dismissed := false
 	for _, disposition := range record.Dispositions {
-		if disposition.Repository == record.Repository && disposition.HeadCommit == record.HeadCommit && disposition.Finding == finding.ID && disposition.Text == finding.Text {
+		if sameReviewCheckout(disposition.Repository, record.Repository) && disposition.HeadCommit == record.HeadCommit && disposition.Finding == finding.ID && disposition.Text == finding.Text {
 			matches++
 			dismissed = disposition.Disposition == "dismissed" && strings.TrimSpace(disposition.Evidence) != "" && disposition.FixedBy == ""
 		}

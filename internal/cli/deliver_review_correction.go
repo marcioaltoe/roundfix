@@ -33,7 +33,7 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 	if err != nil {
 		return delivery.ReviewCorrection{}, fmt.Errorf("read review correction record: %w", err)
 	}
-	if record.Repository != workDir || record.HeadCommit != candidate || record.Outcome != reviewOutcomeFindings {
+	if !sameReviewCheckout(record.Repository, workDir) || record.HeadCommit != candidate || record.Outcome != reviewOutcomeFindings {
 		return refuse("review record must name the item worktree and parked candidate with outcome findings")
 	}
 	ledger, err := readReviewFindingDispositions(filepath.Join(artifactDir, reviewDispositionLedgerFileName))

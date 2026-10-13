@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0266-the-review-record-survives-a-fix
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -115,3 +115,77 @@ proof accepted.
 - `_prd.md` → Goals; User Story 1; User Story 3; Core Feature 1; Core Feature 2; Success Metric 1; Success Metric 3
 - `_techspec.md` → Current behavior; API Contract 1; API Contract 2; Invariants 1-2; Invariant 4; Testing Approach; Build Order 2
 - ADR-0272; ADR-0174; ADR-0233; ADR-0165; ADR-0268; ADR-0259; ADR-0271
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification. `reviewCheckoutDir`
+now hashes `roundconfig.CanonicalizeResolvedPath(checkoutRoot)` while retaining
+its 16-character SHA-256 key and `pre-pr-review/<key>` layout.
+`sameReviewCheckout` compares resolved paths at all twelve repository
+comparison sites in the four declared review/proof sources. Repository fields,
+ledger writes, the record schema, command output, flags and exit codes retain
+their existing contracts; `internal/config` and `internal/delivery` are untouched.
+
+The new `review_resolved_checkout_test.go` uses real Git worktrees under
+`<tmp>/link/repo-slug/item`, with `link` pointing to `real`, temporary homes
+and the existing per-test fake reviewer injection. All four top-level tests
+and both Artifact Directory subtests call `t.Parallel()` first. No real-time
+wait or timeout was added, and existing tests were not edited.
+
+### Focused implementation checks
+
+- Before the production change,
+  `rtk proxy go test -count=1 -run 'TestReviewCheckoutDirIsOne|TestTheCorrectionProofFinds' ./internal/cli`
+  exited 1: the linked spelling produced a different checkout digest, and both
+  Artifact Directory modes failed with `read review correction record: open …:
+  no such file or directory`.
+- After the production change,
+  `rtk proxy go test -count=1 -race -v -run 'TestReviewCheckoutDirIsOne|TestTheCorrectionProof' ./internal/cli`
+  exited 0. All four named new tests and both Artifact Directory subtests
+  reported PASS, with no race diagnostic.
+- A focused Python harness extracted every top-level test name from the six
+  existing suites below and invoked `go test -count=1 -run` with their exact
+  anchored names. It selected 88 tests and exited 0 (`ok roundfix/internal/cli`).
+  The command was:
+
+  ```sh
+  rtk proxy python3 - <<'PY'
+  import re
+  import subprocess
+  from pathlib import Path
+  files = ['review_test.go', 'review_record_checkout_test.go', 'review_lineage_test.go', 'review_disposition_test.go', 'deliver_review_correction_test.go', 'review_validation_test.go']
+  names = []
+  for name in files:
+      names.extend(re.findall(r'^func (Test\w+)\(t \*testing.T\)', Path('internal/cli', name).read_text(), re.M))
+  selector = '^(' + '|'.join(names) + ')$'
+  print(f'Running {len(names)} existing tests from ' + ', '.join(files), flush=True)
+  command = ['go', 'test', '-count=1', '-run', selector, './internal/cli']
+  raise SystemExit(subprocess.run(command).returncode)
+  PY
+  ```
+
+- Source inspection with
+  `rtk proxy rg -n '\.Repository|sameReviewCheckout|reviewCheckoutDir' internal/cli/review.go internal/cli/review_lineage.go internal/cli/review_validation.go internal/cli/deliver_review_correction.go`
+  showed all twelve comparisons routed through the helper and the unchanged
+  repository emptiness check. A separate focused Python scan confirmed twelve
+  helper call sites and zero lexical repository comparisons, exiting 0.
+- `rtk proxy git diff --check` exited 0.
+
+### Acceptance criterion evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Docs-only disposed fix is accepted with the linked spelling for both Artifact Directory modes | `TestTheCorrectionProofFindsTheRecordUnderASymlinkedWorktreeRoot/explicit-artifact-directory` and `/default-artifact-directory` both passed under `-race`, after public review and `dispose F1 --fixed-by` commands and a fix confined to `docs/history/specs/0225-example/_prd.md`. |
+| Code fix and another checkout's record are refused | `TestTheCorrectionProofRefusesACodeFixUnderASymlinkedWorktreeRoot` passed with the unchanged path refusal prefix; `TestTheCorrectionProofRefusesARecordOfAnotherCheckout` passed with the item-worktree record refusal. |
+| No lexical repository comparison remains in the four review files | All twelve sites use `sameReviewCheckout`; the source scan found none of the lexical comparisons. `TestReviewCheckoutDirIsOneForEverySpellingOfACheckout` also passed under `-race`, asserting the resolved digest and a separate sibling key. |
+
+Declared Task Verification and repository Verification were not run; the
+Daemon owns those checks and Task settlement. Status, the Task Graph and
+other Task files were not edited. No commit, push or Pull Request was made.
+Per-head records and declared-path widening remain the slices of Tasks 03
+and 04; no additional follow-up was discovered.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261013T210730Z_2a123460a7430d58`
+- Source commit: `f4b5fdc6d85588134e1412eae496e5625097daa2`
