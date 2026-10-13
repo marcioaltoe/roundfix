@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.72.0] - 2026-10-13
+
+### Proven signals and a shared build cache
+
+- **`worktree.caches`.** A new User Config and Project Config key lists repository-relative directories of rebuildable build output, such as `.gocache`. It defaults to `[]`. Absolute paths, empty paths, `.` or `..` segments and paths under `.git` are refused with a configuration error. A binary older than 0.72.0 refuses the key, so add it only after upgrading.
+- **Doctor and GC report and reclaim them.** In ended worktrees, meaning terminal Runs, their retained Task Worktrees and merged Delivery Queue items, the Doctor `storage` line adds `Worktree Build Caches reclaimable: <n> (<bytes> bytes)` within a two-second bound. `roundfix gc --dry-run` lists the declared entries, counts, bytes and paths. `roundfix gc` removes only those directories and keeps the worktree's source. Active Runs and items in any other stage keep their caches. A path outside `worktree.location`, a symlinked entry, a resolved escape and Git metadata are never removed, including through a linked `.git`. The cache in your own checkout and the shared Go build cache are outside this reclamation.
+- **Proven Signal.** Every signal Roundfix sends, other than the zero probe, goes either to a child it started and has not reaped, or to a process whose start identity matches the one recorded with its PID. Force Stop proves the owner again before it escalates to a forced kill. The detach and QA-format process-group kills use the same proof. A repository rule fails on any other kill.
+- **Test helpers.** No test helper outlives its test binary, and the suite guard fails a package that leaves a marked helper running. Without `GOCACHE` set, `make` shares one build cache under the temporary directory instead of one per worktree.
+- **Known issue.** F6, a test child killed by a signal from an unknown sender, recurred once in ten full suites, so it stays open. This release ships with a QA override the maintainer approved.
+- **Glossary.** Adds Proven Signal, Helper Lifeline, Helper Residue and Worktree Build Cache, and revises GC Command (ADR-0266).
+
 ## [0.71.0] - 2026-10-13
 
 ### Tests that wait on a child no longer race the machine
