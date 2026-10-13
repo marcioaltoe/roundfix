@@ -375,6 +375,10 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	}); err != nil {
 		return ArchiveResult{}, err
 	}
+	removalFolder, err := filepath.Abs(sourceDir)
+	if err != nil {
+		return ArchiveResult{}, fmt.Errorf("resolve Spec folder for removal: %w", err)
+	}
 	var written, rewritten []string
 	rollback := func(cause error) error {
 		for _, path := range rewritten {
@@ -417,7 +421,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		}
 	}
 	if err := os.RemoveAll(sourceDir); err != nil {
-		return ArchiveResult{}, fmt.Errorf("remove Spec; leftover folder %q: %w", sourceDir, err)
+		return result, &FolderRemovalError{Folder: removalFolder, Err: err}
 	}
 	return result, nil
 }

@@ -50,6 +50,7 @@ Options:
 
 Exit codes:
   0  archived
+  1  archive could not finish after writing; stderr says how to finish
   2  Preflight Validation failed
 `
 
@@ -191,7 +192,8 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		RepositoryRoot: repositoryRoot,
 		Promote:        req.promote,
 	})
-	if err != nil {
+	var removal *spec.FolderRemovalError
+	if err != nil && !errors.As(err, &removal) {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
@@ -204,6 +206,10 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	rel, err := filepathRelSlash(loaded.GitRoot, result.RecordPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: archive completed but could not format path: %v\n", app.Name, err)
+		return exitRunFailed
+	}
+	if removal != nil {
+		printFolderRemovalRecovery("archive", rel, folderRel, removal, stderr)
 		return exitRunFailed
 	}
 	suffix := fmt.Sprintf("; removed %d file(s) (%d bytes) kept in Git at %.12s", result.RemovedFiles, result.RemovedBytes, revision)

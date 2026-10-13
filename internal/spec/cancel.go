@@ -231,6 +231,10 @@ func Cancel(req CancelRequest) (CancelResult, error) {
 	}); err != nil {
 		return CancelResult{}, fmt.Errorf("inspect cancelled Spec files: %w", err)
 	}
+	removalFolder, err := filepath.Abs(sourceDir)
+	if err != nil {
+		return CancelResult{}, fmt.Errorf("resolve Spec folder for removal: %w", err)
+	}
 	// Record and copies are exclusive creations. Track directories too so rollback
 	// restores even a repository that had no history or return directories.
 	copies = append([]cancelCopy{{result.RecordPath, content}}, copies...)
@@ -300,7 +304,7 @@ func Cancel(req CancelRequest) (CancelResult, error) {
 		}
 	}
 	if err := os.RemoveAll(sourceDir); err != nil {
-		return CancelResult{}, fmt.Errorf("remove cancelled Spec; leftover folder %q: %w", sourceDir, err)
+		return result, &FolderRemovalError{Folder: removalFolder, Err: err}
 	}
 	return result, nil
 }

@@ -146,6 +146,7 @@ Options:
 
 Exit codes:
   0  archived
+  1  archive could not finish after writing; stderr says how to finish
   2  Preflight Validation failed
 `
 	assertArchiveTranscript(t, []string{"archive", "--help"}, help, "", 0)

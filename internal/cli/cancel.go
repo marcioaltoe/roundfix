@@ -38,7 +38,7 @@ Options:
 
 Exit codes:
   0  cancelled
-  1  cancel write failed
+  1  cancel write or removal failed
   2  Preflight Validation failed
 `
 
@@ -145,6 +145,11 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		Reason: reason, SourceRevision: revision, RepositoryRoot: repositoryRoot,
 	})
 	if err != nil {
+		var removal *spec.FolderRemovalError
+		if errors.As(err, &removal) {
+			printFolderRemovalRecovery("cancel", recordRel, folderRel, removal, stderr)
+			return exitRunFailed
+		}
 		if cancelWriteError(err) {
 			fmt.Fprintf(stderr, "%s: cancel write failed: %v\n", app.Name, err)
 			return exitRunFailed
@@ -331,10 +336,10 @@ func cancelCitations(ctx context.Context, repo string, root roundconfig.SpecsRoo
 	return live, nil
 }
 
-// Cancel returns ordinary wrapped errors. Its mutation phase has these explicit
-// operation labels; all earlier planning and validation failures are preflight.
+// Pre-removal write failures have these explicit operation labels; earlier
+// planning and validation failures are preflight. Removal failures are typed.
 func cancelWriteError(err error) bool {
-	for _, operation := range []string{"create cancellation destination directory:", "create cancellation destination ", "write cancellation destination ", "write cancellation relink ", "remove cancelled Spec;"} {
+	for _, operation := range []string{"create cancellation destination directory:", "create cancellation destination ", "write cancellation destination ", "write cancellation relink "} {
 		if strings.HasPrefix(err.Error(), operation) {
 			return true
 		}

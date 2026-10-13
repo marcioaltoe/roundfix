@@ -221,7 +221,7 @@ Options:
 
 Exit codes:
   0  cancelled
-  1  cancel write failed
+  1  cancel write or removal failed
   2  Preflight Validation failed
 `
 	code, out, errout := cancelRun(t, env, "--help")

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0263-archive-and-cancel-keep-what-git-ignores
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,75 @@ in a temporary repository.
 - `_prd.md` → Goals; User Story 2; Core Feature 2; Core Feature 3; Success Metric 2; Success Metric 3
 - `_techspec.md` → API Contract 2; API Contract 3; API Contract 4; Surface Transcript 3; Surface Transcript 4; Interfaces; Invariants 3 and 4; Testing Approach; Build Order 2
 - ADR-0269; ADR-0261; ADR-0260
+
+## Result
+
+Implemented the failed-removal half of the adopted Backlog Entry of 2026-10-12.
+`Archive` and `Cancel` now return their filled result with a
+`*FolderRemovalError` wrapping the final `os.RemoveAll` error and naming the
+absolute Spec folder. Their record, promotions, returned sources and relinks
+stay written. Both commands report the two recovery lines on standard error,
+leave standard output empty and return exit 1. Archive records a supplied
+`--pull-request` before reporting recovery. Earlier write failures retain
+existing handling; `cancelWriteError` no longer classifies removal by text.
+
+Added the POSIX shell finishing-command formatter, the authored help exit
+lines, both user-guide recovery descriptions and the recovery source in both
+command coverage entries. Re-generated the Behavior Surface Record using its
+sanctioned record command; only archive/cancel help and guide fingerprints
+changed. All six new top-level tests call `t.Parallel()` first and use real
+permissions on disposable directories, restoring `references/` in cleanup.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Read-only subdirectory produces exit 1, preserves every write and prints recovery | `TestArchiveFolderRemovalFailureRecoversForward` and `TestCancelFolderRemovalFailureRecoversForward` passed. Both use a committed `references/note.md` under `chmod 0555`, assert the whole transcript including empty stdout and exactly two stderr lines, and check the record, automatic promotion and relink. Cancellation also checks the returned Backlog Entry and Finding. `TestArchiveReturnsAFolderRemovalError` and `TestCancelReturnsAFolderRemovalError` passed, asserting `errors.As`, permission-error unwrapping, an absolute folder, the filled result and retained writes. |
+| Printed command leaves the successful-operation tree | Both recovery transcript tests passed after executing the command extracted from stderr with `sh -c`. They assert the Spec folder is absent, compare the full file tree against the expected successful archive/cancellation writes and confirm HEAD did not change. |
+| Archive records the supplied pull request despite removal failure | `TestArchiveFolderRemovalFailureRecordsThePullRequest` passed, checking `pull_request: 263` before shell recovery and again afterward. Its disposable repository supplies the existing default-branch contract through local Git refs; no network is used. |
+| Folder with a space and apostrophe is correctly quoted | `TestFolderRemovalFinishCommandQuotesTheFolder` passed. It asserts the exact formatter output, runs it with `sh -c` against a read-only folder containing both characters, checks folder removal and confirms a sibling file keeps its bytes. |
+
+### Focused checks
+
+- Initial red signal: `rtk proxy go test ./internal/spec -run '^TestArchiveReturnsAFolderRemovalError$' -count=1` exited 1 with `undefined: FolderRemovalError` before adding the typed error.
+- `rtk proxy go test ./internal/spec -run '^Test(ArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder|ArchiveRollsBackTheRecordWhenPromotionCannotBeWritten|CancelRollsBackAFailedWrite|CancelRelinksLiveCitations|ArchiveReturnsAFolderRemovalError|CancelReturnsAFolderRemovalError)$' -count=1 -v` exited 0. The six selected top-level tests and the existing relink subtests passed, including rollback for failures before removal.
+- `rtk proxy go test ./internal/cli -run 'FolderRemoval|^TestRunArchiveHelp$|^TestCancelTranscriptPrintsHelp$|^TestCancelWriteFailureUsesExitOne$|^TestRunArchiveMovesCompletedSpecAndStampsMetadata$|^TestArchiveWithAPullRequestNamesItsHeadRef$|^TestArchiveOnTheDefaultBranchDoesNotWarn$|^TestCancelTranscriptCancelsASpecWithSources$' -count=1 -v` exited 0. All eleven selected top-level tests passed, including the three required help/write-failure regressions and existing successful command behavior.
+- The first CLI focused run reached the existing unknown-default-branch refusal in the pull-request test fixture. Adding local default-branch refs let the fixture reach the intended real removal failure; the subsequent focused runs above passed.
+- Sanctioned generation: `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 after the final help and guide edits.
+- `rtk proxy git diff --check` exited 0.
+
+The sandbox could not start commands because its configured writable worktree
+root contains a symlink. Approved execution outside that sandbox accessed the
+assigned worktree; all behavioral fixtures remained disposable and local.
+
+Daemon-owned status and settlement are untouched. No declared Verification
+command, selected repository Verification, commit, push or PR operation was
+run. Task 03 owns the remaining skill and glossary descriptions.
+
+### Verification Feedback — attempt 1
+
+Inspected the daemon diagnostic at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261013T163453Z_215d9dc7373d8dae/verification/batch-002-attempt-1.log`.
+It identifies `TestArchiveHelpNamesThePullRequestOption`: its complete help
+expectation omitted the exit-1 line required by this Task's API Contract 4.
+Updated only that expected transcript in
+`internal/cli/archive_pull_request_test.go` to include
+`1  archive could not finish after writing; stderr says how to finish` between
+exits 0 and 2, preserving the exact full-transcript assertion. This additional
+ordinary source path is a direct regression consumer of Task 02's help change.
+
+Focused repair evidence:
+
+- `rtk proxy go test ./internal/cli -run '^(TestArchiveHelpNamesThePullRequestOption|TestRunArchiveHelp|TestCancelTranscriptPrintsHelp|TestCancelWriteFailureUsesExitOne)$' -count=1 -v` exited 0; all four selected tests passed.
+- `rtk proxy git diff --check` exited 0.
+- `rtk proxy gofmt -l internal/cli/archive_pull_request_test.go` exited 0 with no output.
+
+This repair changes one test expectation line and this Result addendum. Task
+status remains Daemon-owned; this Agent did not rerun declared Verification,
+commit, push or open a PR.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/archive_pull_request_test.go`

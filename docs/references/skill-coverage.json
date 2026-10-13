@@ -10,6 +10,7 @@
         "docs/user-guide/commands/archive.md",
         "internal/cli/archive.go",
         "internal/cli/archive_reader.go",
+        "internal/cli/folder_removal_recovery.go",
         "internal/cli/spec_folder_status.go"
       ]
     },
@@ -201,6 +202,7 @@
       "sources": [
         "docs/user-guide/commands/cancel.md",
         "internal/cli/cancel.go",
+        "internal/cli/folder_removal_recovery.go",
         "internal/cli/spec_folder_status.go"
       ]
     },
