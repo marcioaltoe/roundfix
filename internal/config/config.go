@@ -1514,16 +1514,16 @@ func reviewRootInsideHistory(repoRoot string, path string) bool {
 	if repoRoot == "" {
 		return false
 	}
-	canonicalPath := canonicalizeResolvedPath(path)
-	canonicalRepoRoot := canonicalizeResolvedPath(repoRoot)
+	canonicalPath := CanonicalizeResolvedPath(path)
+	canonicalRepoRoot := CanonicalizeResolvedPath(repoRoot)
 	return pathInsideOrSame(canonicalPath, filepath.Join(canonicalRepoRoot, "docs", "history"))
 }
 
-// canonicalizeResolvedPath resolves every symbolic link on the longest existing
+// CanonicalizeResolvedPath resolves every symbolic link on the longest existing
 // prefix of path and rejoins the remaining components verbatim, so containment
 // checks reject a configured root that aliases a protected directory even when
 // the review subdirectory below it does not exist yet.
-func canonicalizeResolvedPath(path string) string {
+func CanonicalizeResolvedPath(path string) string {
 	original := filepath.Clean(path)
 	candidate := original
 	var tail []string

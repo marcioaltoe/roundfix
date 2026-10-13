@@ -3484,12 +3484,7 @@ func pathAtOrBelow(path, root string) bool {
 }
 
 func canonicalPath(path string) string {
-	clean := filepath.Clean(path)
-	resolved, err := filepath.EvalSymlinks(clean)
-	if err != nil {
-		return clean
-	}
-	return filepath.Clean(resolved)
+	return roundconfig.CanonicalizeResolvedPath(path)
 }
 
 func runBelongsToRepository(run store.Run, repositoryRoot string) bool {
