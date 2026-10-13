@@ -19,6 +19,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "520"
 ---
 
 # Archive and cancel keep what Git ignores
