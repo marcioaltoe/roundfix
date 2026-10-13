@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-13
-spec: null
+spec: 0270-acceptance-rules-that-match-the-authorization-and-the-queue
 reason: null
 ---
 
