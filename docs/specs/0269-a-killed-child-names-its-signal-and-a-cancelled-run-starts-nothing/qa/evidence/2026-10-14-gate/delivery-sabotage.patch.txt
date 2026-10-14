@@ -1,4 +1,0 @@
-Replace only the fallback outcome formatter:
-the item binary's migrate --check %s: %s\n", specSlug, step, probe.exit.String(), detail
-with:
-the item binary's migrate --check exited %d: %s\n", specSlug, step, probe.exitCode, detail

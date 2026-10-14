@@ -1,9 +1,0 @@
-$ go build -buildvcs=false ./internal/childexit ./internal/testfixture ./internal/cli
-target operating system: windows
-environment names: GOOS, GOPROXY, GOTOOLCHAIN
-working_tree: audited head
-stdout:
-
-stderr:
-
-exit: 0

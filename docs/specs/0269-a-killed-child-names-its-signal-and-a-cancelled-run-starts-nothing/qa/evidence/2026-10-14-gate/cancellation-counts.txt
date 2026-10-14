@@ -1,4 +1,0 @@
-Audited HEAD + busy-gate 50ms pause: 20 passes / 20; 0 failures.
-Same copy and pause, only post-grant cancellation check removed: 20 failures / 20; every failure names total starts=2.
-Two new deterministic tests: pass at audited HEAD; both fail when only check removed without pause.
-Probe negative control: downstream ProbeCommands already rejects cancelled context; failure is the wrong error boundary, not an invented verifier start.

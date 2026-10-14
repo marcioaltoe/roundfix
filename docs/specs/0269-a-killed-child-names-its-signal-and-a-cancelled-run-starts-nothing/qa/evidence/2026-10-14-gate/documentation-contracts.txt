@@ -1,6 +1,0 @@
-.agents/skills/roundfix/references/deliver.md: all five contract phrases present
-skills/roundfix/references/deliver.md: all five contract phrases present
-docs/user-guide/commands/deliver.md: all five contract phrases present
-Canonical/mirror byte comparison: equal
-Backlog: operational fields and four sections valid; signal observation and sudo limit present; no Spec-folder link
-Glossary: Signal Exit defined next to Proven Signal; no Spec link; PRD and TechSpec declare no other added or changed term

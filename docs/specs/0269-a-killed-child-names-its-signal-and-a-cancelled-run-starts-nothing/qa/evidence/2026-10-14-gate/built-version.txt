@@ -1,8 +1,0 @@
-$ ./bin/roundfix --version
-working_tree: audited head
-stdout:
-roundfix 0.79.0 (fb919f25-dirty, built 2026-10-14 13:54:39 -0300)
-
-stderr:
-
-exit: 0

@@ -1,7 +1,0 @@
-No open Pull Request: assignment names the Spec target branch and confirmed absence.
-Approval/authority: approved Spec authorization at the delivery base grants implement, commit, push, pull_request and merge; this records delivery authority, not current-candidate review acceptance.
-Checks/status: Daemon-provided make verify-changed pass (exit 0) at fb919f25f1b7083b58fdf4d7880c4219a67025ce; success diagnostics removed. No remote PR checks exist yet.
-Unresolved review threads: none because no PR exists.
-Merge-Ready acceptance: none yet; selected provider review has not been supplied for this candidate.
-Review-artifact ancestry: no current-candidate review artifact supplied; claimed candidate is fb919f25f1b7083b58fdf4d7880c4219a67025ce (not the separate Run branch PR).
-Unblock: perform selected current-candidate pre-PR review, archive/commit under Daemon ownership and open the target-branch PR in the later delivery stage; then observe required remote checks and acceptance.
