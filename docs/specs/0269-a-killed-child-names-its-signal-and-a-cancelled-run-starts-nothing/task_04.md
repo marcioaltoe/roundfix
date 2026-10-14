@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,51 @@ named tests.
 - [_techspec.md](_techspec.md) — Invariant 5; The second start, found; Testing Approach; Build Order 4
 - [2026-10-13-the-verification-capacity-cancellation-test-starts-a-second-command.md](references/2026-10-13-the-verification-capacity-cancellation-test-starts-a-second-command.md)
 - ADR-0056; ADR-0259; ADR-0271
+
+## Result
+
+The immediate `TryAcquire` grant checks `ctx.Err()`, releases its permit on
+cancellation, and returns the queued path's acquisition error with `%w`.
+The queued path, Stop Request handling and `fairVerificationGate` are unchanged.
+The Daemon-owned `status: in_progress` remains untouched.
+
+The Daemon's first Verification attempt identified the missing probe test.
+The Verification Feedback repair added
+`TestPreWorkProbeCancelledAtTheImmediateGrantStartsNoProbe` alongside the
+attempt regression. It wraps a disposable real Run store, delegates the state
+update successfully, then cancels synchronously before capacity acquisition.
+It verifies the persisted Verifying state, cancellation matching, the required
+acquisition error, zero verifier requests, and immediate permit reuse.
+Both new tests call `t.Parallel()` first and use no sleep, polling or time budget.
+
+### Focused evidence
+
+- Acceptance criterion 1: `go test -count=1 -v -run
+  '^Test(VerificationAttempt|PreWorkProbe)CancelledAtTheImmediateGrantStartsNo(Command|Probe)$'
+  ./internal/daemon` exited 0 and printed PASS for both new tests.
+- Acceptance criterion 1, before-check evidence: the same focused selection
+  with `go test -overlay <temporary-overlay.json> -count=1 -v -run
+  '^Test(VerificationAttempt|PreWorkProbe)CancelledAtTheImmediateGrantStartsNo(Command|Probe)$'
+  ./internal/daemon` exited 1 and both new tests failed. A temporary Go overlay
+  replaced only `task_engine.go`, removing exactly the four added lines of the
+  immediate-grant check. The working source stayed intact and the temporary
+  overlay was removed afterwards. The attempt observed one verifier request
+  and a started phase. The probe received a probe-command cancellation error
+  instead of the required capacity-acquisition error.
+- Requirement 5 caveat: the probe already has a downstream cancellation guard
+  in `ProbeCommands`, so it cannot observe one verifier start on the original
+  tree when cancelled after the state update. Its acquisition-error assertion
+  makes it fail deterministically without this Task's check while preserving
+  the required zero-request assertion. No probe implementation or existing
+  test was changed to manufacture a start.
+- Acceptance criteria 2 and 3: `go test -count=1 -v -run
+  '^(TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement|TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable|TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts|TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity)$'
+  ./internal/daemon` exited 0 after the repair; all four named tests printed
+  PASS. `git diff --exit-code HEAD -- internal/daemon/task_engine_test.go`
+  exited 0, confirming that the existing tests remain byte-identical.
+- `git diff --check` exited 0. Only the assigned Task file,
+  `internal/daemon/task_engine.go`, and the new cancellation test file changed.
+
+The authored Verification commands, repository Verification and incremental
+Verification were not rerun; the Daemon owns those checks and Task settlement.
+No commit, push, pull request, Task Graph or other Task-file edit was made.

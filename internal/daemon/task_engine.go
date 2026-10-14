@@ -1911,6 +1911,10 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 // cancellation alone never observes it.
 func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
 	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
+		if err := ctx.Err(); err != nil {
+			release()
+			return nil, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+		}
 		return release, nil
 	}
 	waitCtx, cancelWait := context.WithCancel(ctx)
