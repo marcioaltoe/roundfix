@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0270-acceptance-rules-that-match-the-authorization-and-the-queue
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -92,3 +92,73 @@ the policy tests and the shape tests that run each command and the Daemon.
 - [_prd.md](_prd.md) — Goals 1; User Stories 1-2; Core Features 1; Success Metric 1; Success Metric 2
 - [_techspec.md](_techspec.md) — Data Models; API Contract 1; Invariants 1-3; Testing Approach; Build Order 1
 - ADR-0276; ADR-0240; ADR-0104; ADR-0167; ADR-0259; ADR-0271
+
+## Result
+
+Implemented API Contract 1 in the shared QA policy. `QANetworkProhibitedStatus`
+identifies only the exact trimmed status; `RowsBlockedNetworkProhibited` is
+computed in the existing Results-table pass and requires an outside-evidence
+provenance item. The policy subtracts this count with the other exempt kinds,
+clamps the subtraction to the frontmatter environment count, and includes the
+new kind among the unmet rows that qualify a partial. A remaining environment
+row beside a recognized prohibited row uses the exact new refusal. Existing
+refusal branches and frontmatter validation are unchanged.
+
+Added the three named policy tests, the five named shapes in both command and
+Daemon fixtures, and the two named Delivery Queue park cases. The Spec 0258
+shape contains four prohibited outside-evidence rows, one Pull Request row,
+one declared row, one declaration, and five environment-blocked rows. New
+policy tests call `t.Parallel()` first and use the exported row constants.
+Additional policy cases exercise trimmed whitespace, annotated provenance,
+exemption clamping, changed case, source boundaries, and missing provenance.
+
+### Focused checks
+
+- Before wiring the policy, `rtk proxy go test ./internal/spec -count=1 -run
+  '^TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial$/^prohibited_only$'`
+  exited 1: the canonical row produced `RowsBlockedNetworkProhibited: 0`
+  instead of 1. This established the regression before the behavior change.
+- After the implementation, `rtk proxy go test ./internal/spec -count=1 -run
+  'Test.*(Partial|PullRequest|NetworkProhibited|NetworkDenied|EnvironmentRowsNeedingOverride|QAReport|QAVerdict)'`
+  exited 0 (`ok roundfix/internal/spec`). This includes every existing test
+  in `qa_partial_policy_test.go`, unchanged, and the new policy tests.
+- `rtk proxy go test ./internal/cli -count=1 -run
+  'TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape|TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly'`
+  exited 0 (`ok roundfix/internal/cli`). All command shapes and park cases
+  passed through isolated local fixtures.
+- `rtk proxy go test ./internal/daemon -count=1 -run
+  'TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/(network_prohibited|Spec_0258|another_environment_beside_network_prohibited)'`
+  exited 0 (`ok roundfix/internal/daemon`). The five new shapes passed at
+  the TaskCycle settlement boundary.
+- Ran `rtk proxy gofmt -w internal/spec/qa.go
+  internal/spec/qa_partial_policy_test.go internal/cli/qa_partial_policy_test.go
+  internal/daemon/qa_partial_policy_test.go`; `rtk proxy git diff --check`
+  exited 0.
+
+### Acceptance evidence
+
+1. The qualifying policy test accepts prohibited rows alone, beside PR or
+   network-denied rows, with all exempt kinds and a covered declaration, and
+   in the Spec 0258 shape. Both new positive command shapes are accepted by
+   `qa-report accept`, `archive`, and `settle`; Daemon settlement accepts both.
+   The `network prohibited outside evidence` park case remains unparked.
+2. The exact-status/provenance policy test derives zero exemptions and one
+   override row for missing outside-evidence provenance and host suffixes,
+   refusing with `rows_blocked_environment is 1; expected 0`. Both shapes
+   refuse across the commands and Daemon. The missing-provenance park case
+   parks; host-suffixed rows retain the same one-row override count that the
+   park decision reads.
+3. The mixed-environment policy test and matching command/Daemon shape
+   assert exactly: `rows_blocked_environment is 2, 1 outside the pre-PR Pull
+   Request row and the network-denied and network-prohibited outside-evidence
+   rows; expected 0 outside them`.
+4. All existing tests in the shared partial-policy file ran unchanged in the
+   focused spec check; all existing command shapes and park cases ran
+   unchanged in the focused command check. Broader spec-package validation
+   remains with the Daemon's declared Verification.
+
+No follow-up work was added to this diff. Task status and checkboxes were
+left unchanged. The authored Verification command, repository Verification,
+and incremental Verification were not run; no commit, push, or Pull Request
+was made. Implementation and focused evidence are handed back for Daemon
+Verification and settlement.

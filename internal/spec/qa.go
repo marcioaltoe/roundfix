@@ -30,9 +30,11 @@ const (
 	QAPullRequestRowSource    = "Pull Request row"
 )
 
-// Results-row markers for outside evidence the Run sandbox could not reach.
+// Results-row markers for outside evidence the Run sandbox could not reach
+// or the Spec authorization kept offline.
 const (
 	QANetworkDeniedStatusPrefix = "blocked (environment: network denied: "
+	QANetworkProhibitedStatus   = "blocked (environment: network prohibited by Spec authorization)"
 	QAOutsideEvidenceRowSource  = "outside-evidence row"
 )
 
@@ -73,14 +75,15 @@ type QAReport struct {
 	AuditorStaleness string
 	// UserFlowBinary names the binary that exercised the public CLI rows. It
 	// is optional so reports written before this field existed stay readable.
-	UserFlowBinary            string
-	RowsBlockedEnvironment    int
-	RowsBlockedPrePullRequest int
-	RowsBlockedNetworkDenied  int
-	RowsSkipped               int
-	RowsBlockedFinding        int
-	RowsBlockedDeclared       int
-	RowsBlockedPrecondition   int
+	UserFlowBinary               string
+	RowsBlockedEnvironment       int
+	RowsBlockedPrePullRequest    int
+	RowsBlockedNetworkDenied     int
+	RowsBlockedNetworkProhibited int
+	RowsSkipped                  int
+	RowsBlockedFinding           int
+	RowsBlockedDeclared          int
+	RowsBlockedPrecondition      int
 	// Precondition is the refusal the report records, zero when the gate
 	// reached its matrix. It is optional metadata: a report that names no
 	// precondition is one that refused for none, not a report that is missing
@@ -316,11 +319,11 @@ func ReadQAReportFile(path string) (QAReport, error) {
 	return readQAReport(path)
 }
 
-// EnvironmentRowsNeedingOverride counts environment rows outside the two
+// EnvironmentRowsNeedingOverride counts environment rows outside the three
 // exempt kinds, capped by the frontmatter's environment count.
 func (report QAReport) EnvironmentRowsNeedingOverride() int {
 	return report.RowsBlockedEnvironment - min(report.RowsBlockedEnvironment,
-		report.RowsBlockedPrePullRequest+report.RowsBlockedNetworkDenied)
+		report.RowsBlockedPrePullRequest+report.RowsBlockedNetworkDenied+report.RowsBlockedNetworkProhibited)
 }
 
 // QAReportEligibility reports whether a parsed QA Report satisfies the
@@ -340,6 +343,9 @@ func QAReportEligibility(specDir string, report QAReport) error {
 		return fmt.Errorf("rows_blocked_finding is %d; expected 0", report.RowsBlockedFinding)
 	}
 	if outside := report.EnvironmentRowsNeedingOverride(); outside > 0 {
+		if report.RowsBlockedNetworkProhibited > 0 {
+			return fmt.Errorf("rows_blocked_environment is %d, %d outside the pre-PR Pull Request row and the network-denied and network-prohibited outside-evidence rows; expected 0 outside them", report.RowsBlockedEnvironment, outside)
+		}
 		if report.RowsBlockedNetworkDenied > 0 {
 			return fmt.Errorf("rows_blocked_environment is %d, %d outside the pre-PR Pull Request row and network-denied outside-evidence rows; expected 0 outside them", report.RowsBlockedEnvironment, outside)
 		}
@@ -374,7 +380,7 @@ func QAReportEligibility(specDir string, report QAReport) error {
 			)
 		}
 	}
-	if report.RowsBlockedPrePullRequest == 0 && report.RowsBlockedNetworkDenied == 0 && report.RowsBlockedDeclared == 0 {
+	if report.RowsBlockedPrePullRequest == 0 && report.RowsBlockedNetworkDenied == 0 && report.RowsBlockedNetworkProhibited == 0 && report.RowsBlockedDeclared == 0 {
 		return fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
 	}
 	if report.Hollow {
@@ -427,20 +433,21 @@ func readQAReport(path string) (QAReport, error) {
 	// reason stays empty rather than becoming the writer's placeholder, so a
 	// reader can tell a refusal whose cause was unnamed from one that was never
 	// written down.
-	prePullRequest, networkDenied, skipped := qaReportResultsCounts(body)
+	prePullRequest, networkDenied, networkProhibited, skipped := qaReportResultsCounts(body)
 	report := QAReport{
-		Verdict:                   frontmatter.Verdict,
-		Hollow:                    qaReportHollow(body),
-		AuditingBinary:            frontmatter.AuditingBinary,
-		AuditorStaleness:          frontmatter.AuditorStaleness,
-		UserFlowBinary:            frontmatter.UserFlowBinary,
-		RowsBlockedEnvironment:    rowsBlockedEnvironment,
-		RowsBlockedPrePullRequest: prePullRequest,
-		RowsBlockedNetworkDenied:  networkDenied,
-		RowsSkipped:               skipped,
-		RowsBlockedFinding:        rowsBlockedFinding,
-		RowsBlockedDeclared:       rowsBlockedDeclared,
-		RowsBlockedPrecondition:   rowsBlockedPrecondition,
+		Verdict:                      frontmatter.Verdict,
+		Hollow:                       qaReportHollow(body),
+		AuditingBinary:               frontmatter.AuditingBinary,
+		AuditorStaleness:             frontmatter.AuditorStaleness,
+		UserFlowBinary:               frontmatter.UserFlowBinary,
+		RowsBlockedEnvironment:       rowsBlockedEnvironment,
+		RowsBlockedPrePullRequest:    prePullRequest,
+		RowsBlockedNetworkDenied:     networkDenied,
+		RowsBlockedNetworkProhibited: networkProhibited,
+		RowsSkipped:                  skipped,
+		RowsBlockedFinding:           rowsBlockedFinding,
+		RowsBlockedDeclared:          rowsBlockedDeclared,
+		RowsBlockedPrecondition:      rowsBlockedPrecondition,
 		Precondition: PreconditionRefusal{
 			CheckName: qaRefusalLine(frontmatter.PreconditionCheck),
 			Reason:    qaRefusalLine(frontmatter.PreconditionReason),
@@ -596,7 +603,7 @@ func qaReportHollow(body []byte) bool {
 // qaReportResultsCounts derives exempt environment and skipped counts in
 // one Results-table pass. Exempt rows also require a Provenance column;
 // frontmatter counts retain their existing meaning and validation.
-func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, skipped int) {
+func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkProhibited, skipped int) {
 	lines := strings.Split(string(body), "\n")
 	inResults := false
 	inFence := false
@@ -665,6 +672,9 @@ func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, skipped 
 					if status == QANoOpenPullRequestStatus && qaReportProvenanceNames(provenance, QAPullRequestRowSource) {
 						prePullRequest++
 					}
+					if status == QANetworkProhibitedStatus && qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
+						networkProhibited++
+					}
 					if strings.HasPrefix(status, QANetworkDeniedStatusPrefix) && strings.HasSuffix(status, ")") &&
 						strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(status, QANetworkDeniedStatusPrefix), ")")) != "" &&
 						qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
@@ -675,7 +685,7 @@ func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, skipped 
 			index++
 		}
 	}
-	return prePullRequest, networkDenied, skipped
+	return prePullRequest, networkDenied, networkProhibited, skipped
 }
 
 func qaReportProvenanceNames(provenance, source string) bool {
