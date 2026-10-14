@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -94,3 +94,76 @@ verifiable on its own through the named tests and a Windows build.
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 2; Interfaces; Invariant 1; Invariant 4; Testing Approach; Build Order 2
 - [2026-10-13-a-test-child-is-killed-by-a-signal-from-an-unknown-sender.md](references/2026-10-13-a-test-child-is-killed-by-a-signal-from-an-unknown-sender.md)
 - ADR-0266; ADR-0259; ADR-0271
+
+
+## Result
+
+Implemented the task_02 slice for Daemon Verification. `internal/childexit`
+reads an `exec.ExitError` through its wait status and describes the signal's
+name, number and core state. Darwin and Linux use `unix.SignalName`; the other
+systems use `syscall.Signal.String`. A private wait-status decoder lets the
+table test exercise constructed statuses without starting a process.
+
+The Delivery Queue carries `childexit.Exit` alongside `exitCode`. The probe
+notice renders the exit description, and signal step errors append only the
+first non-empty stderr line, falling back to stdout. Ordinary exit failures
+retain their existing wording and detail selection. The two new parallel
+delivery tests use a fixture that signals only its own PID and waits on no
+clock. The step-error test also checks empty output, stderr precedence and
+stdout fallback.
+
+### Focused-check evidence
+
+Before the production edit,
+`go test -count=1 -run 'TestDeliveryStep(NamesTheSignal|ErrorNamesTheSignal)' ./internal/cli`
+exited 1: the probe printed `exited -1`, and each step-error case printed
+`failed with exit code -1`. The new package was absent at the initial read.
+
+After the production edit:
+
+- `go test -count=1 -v -run 'TestExitDescribes|TestDelivery(Step|Steps|ItemBinary|RunResult)' ./internal/childexit ./internal/cli`
+  exited 0. All five exit-table rows and all 17 selected CLI tests passed,
+  including both new signal tests, the unchanged migration fallback test,
+  owner-argument tests and Delivery Run result tests.
+- `go test -count=1 -run '^TestDelivery' ./internal/cli` exited 0; the full
+  delivery test family passed with the existing test files unchanged.
+- `GOOS=windows go build -o /tmp/roundfix-task02-windows-childexit.a ./internal/childexit`
+  and `GOOS=windows go build -o /tmp/roundfix-task02-windows-cli.a ./internal/cli`
+  each exited 0, producing Windows production-package archives.
+- `GOOS=linux go test -c -o /tmp/roundfix-task02-linux-cli.test ./internal/cli`
+  and `GOOS=linux go test -c -o /tmp/roundfix-task02-linux-childexit.test ./internal/childexit`
+  compiled successfully, including the Linux-constrained source and tests.
+- `git diff --check` exited 0. Changed paths are this Task file,
+  `internal/cli/deliver_workflow.go`, the four new `internal/childexit` files,
+  and `internal/cli/deliver_item_binary_signal_unix_test.go`.
+
+### Acceptance evidence
+
+1. `TestExitDescribesHowAChildEnded` passed for exit 2, SIGKILL without a core,
+   SIGABRT with a core, `From(nil)` and a non-exit error. It checks the decoded
+   fields, `Signaled` and exact descriptions. Both Windows production packages
+   built; Linux source and test compilation also succeeded.
+2. `TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe` passed with
+   the exact notice, including its trailing space and newline. It selected
+   `os.Executable()`, ran that owner's `--version` successfully and recorded
+   only the item's `migrate --check` invocation.
+3. `TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary` passed with
+   exact review-error text in all three output cases. The full delivery test
+   family passed; existing delivery tests were not edited.
+
+### Check limitation and execution boundary
+
+An additional Windows CLI test-compilation attempt,
+`GOOS=windows go test -c -o /tmp/roundfix-task02-windows-cli.test.exe ./internal/cli`,
+reported existing Unix-only test code: `syscall.Kill` in
+`detach_fixture_group_other_test.go`, `syscall.Wait4` in `detach_test.go`,
+`Setpgid` in `implement_detach_teardown_test.go` and other Unix-only symbols.
+No portability repairs were made outside this Task. Windows production builds
+above succeeded; its childexit test-compilation attempt reported no test files
+because the table test is constrained to Darwin and Linux.
+
+Task status and checkboxes remain Daemon-owned. Declared Verification,
+`make verify`, `make verify-changed` and the full repository suite were not
+run. No other Task file or Task Graph was edited, and no commit, push or pull
+request was made. No changes were made to detach exit codes,
+`exitCodeFromWait`, Daemon Verification failure text or help text.

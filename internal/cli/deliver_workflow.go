@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"roundfix/internal/childexit"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/delivery"
@@ -1532,9 +1533,17 @@ type roundfixCommandResult struct {
 	stdout   string
 	stderr   string
 	exitCode int
+	exit     childexit.Exit
 }
 
 func (result roundfixCommandResult) failure(operation string) error {
+	if result.exit.Signaled() {
+		outcome := operation + " " + result.exit.String()
+		if detail := result.firstDetailLine(); detail != "" {
+			return fmt.Errorf("%s: %s", outcome, detail)
+		}
+		return errors.New(outcome)
+	}
 	detail := strings.TrimSpace(result.stderr)
 	if detail == "" {
 		detail = strings.TrimSpace(result.stdout)
@@ -1543,6 +1552,17 @@ func (result roundfixCommandResult) failure(operation string) error {
 		detail = fmt.Sprintf("exit code %d", result.exitCode)
 	}
 	return fmt.Errorf("%s failed with exit code %d: %s", operation, result.exitCode, detail)
+}
+
+func (result roundfixCommandResult) firstDetailLine() string {
+	for _, output := range []string{result.stderr, result.stdout} {
+		for _, line := range strings.Split(output, "\n") {
+			if detail := strings.TrimSpace(line); detail != "" {
+				return detail
+			}
+		}
+	}
+	return ""
 }
 
 // stepExecutable selects a binary using only the owner's loaded declaration.
@@ -1584,19 +1604,8 @@ func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, wor
 		}
 		return executable, nil
 	}
-	detail := ""
-	for _, output := range []string{probe.stderr, probe.stdout} {
-		for _, line := range strings.Split(output, "\n") {
-			if strings.TrimSpace(line) != "" {
-				detail = strings.TrimSpace(line)
-				break
-			}
-		}
-		if detail != "" {
-			break
-		}
-	}
-	if _, err := fmt.Fprintf(log, "roundfix: notice: Delivery Queue item %s: %s runs the owner's binary; the item binary's migrate --check exited %d: %s\n", specSlug, step, probe.exitCode, detail); err != nil {
+	detail := probe.firstDetailLine()
+	if _, err := fmt.Fprintf(log, "roundfix: notice: Delivery Queue item %s: %s runs the owner's binary; the item binary's migrate --check %s: %s\n", specSlug, step, probe.exit.String(), detail); err != nil {
 		return "", fmt.Errorf("write item binary fallback: %w", err)
 	}
 	return os.Executable()
@@ -1611,14 +1620,8 @@ func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, execut
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 	runErr := command.Run()
-	result := roundfixCommandResult{stdout: stdout.String(), stderr: stderr.String(), exitCode: exitOK}
-	if runErr == nil {
-		return result, nil
-	}
-	var exitErr *exec.ExitError
-	if errors.As(runErr, &exitErr) {
-		result.exitCode = exitErr.ExitCode()
-		return result, nil
+	if exit, ok := childexit.From(runErr); ok {
+		return roundfixCommandResult{stdout: stdout.String(), stderr: stderr.String(), exitCode: exit.Code, exit: exit}, nil
 	}
 	return roundfixCommandResult{}, runErr
 }
