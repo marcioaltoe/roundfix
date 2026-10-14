@@ -1,8 +1,0 @@
-=== RUN   TestQAReportArtifactsFor0268
-=== PAUSE TestQAReportArtifactsFor0268
-=== CONT  TestQAReportArtifactsFor0268
-    governed_test.go:82: Report structure and resolving evidence paths: no findings; Secret Pattern scan: 84 QA files
---- PASS: TestQAReportArtifactsFor0268 (0.02s)
-PASS
-suiteguard: guard cost: measured 2737 paths; fingerprint took 495.241167ms before and 64.39125ms after
-ok  	roundfix/internal/speccheck	0.879s

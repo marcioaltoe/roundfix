@@ -1,8 +1,0 @@
-=== RUN   TestQAPromptCaptureForGate
-=== PAUSE TestQAPromptCaptureForGate
-=== CONT  TestQAPromptCaptureForGate
-    background_task_test.go:170: QA prompt: Run every command in the foreground and wait for it to exit; never end the turn while a command you started is still running. The end of the turn is the end of the gate.
---- PASS: TestQAPromptCaptureForGate (0.00s)
-PASS
-suiteguard: guard cost: measured 2709 paths; fingerprint took 100.5745ms before and 66.643833ms after
-ok  	roundfix/internal/agent	0.512s

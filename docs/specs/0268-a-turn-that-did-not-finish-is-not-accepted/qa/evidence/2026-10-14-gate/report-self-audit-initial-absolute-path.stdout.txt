@@ -1,9 +1,0 @@
-=== RUN   TestQAReportArtifactsFor0268
-=== PAUSE TestQAReportArtifactsFor0268
-=== CONT  TestQAReportArtifactsFor0268
-    governed_test.go:71: QA Report "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0268-a-turn-that-did-not-finish-is-not-accepted-d0c829921475753c-21db88f9-bc294aa2/run_20261014T134614Z_22918b1487940681/docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/qa-report-2026-10-14.md" is absent
---- FAIL: TestQAReportArtifactsFor0268 (0.00s)
-FAIL
-suiteguard: guard cost: measured 2734 paths; fingerprint took 475.484375ms before and 63.279875ms after
-FAIL	roundfix/internal/speccheck	0.838s
-FAIL
