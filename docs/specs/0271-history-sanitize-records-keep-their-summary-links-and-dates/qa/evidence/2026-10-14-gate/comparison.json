@@ -1,0 +1,28 @@
+{
+  "delivery_base": "7b0507dce88a37e2d9ef0007fd39d96065891817",
+  "identical": true,
+  "results": {
+    "base": {
+      "version": "roundfix 0.81.0 (7b0507dc, built 2026-10-14 17:39:02 -0300)",
+      "bytes": {
+        "docs/history/specs/0001-clean.md": 498,
+        "docs/references/clean.md": 55
+      },
+      "sha256": {
+        "docs/history/specs/0001-clean.md": "441b61c9e3b113361c1e818c2fe85a5bc06b76c2015ae6f986e11e87150d6e6e",
+        "docs/references/clean.md": "7e3858e854c88d97144e871508137716914ec22ebefda5fa61feb266aca79ce7"
+      }
+    },
+    "head": {
+      "version": "roundfix 0.81.0 (2bb570b3-dirty, built 2026-10-14 17:33:20 -0300)",
+      "bytes": {
+        "docs/history/specs/0001-clean.md": 498,
+        "docs/references/clean.md": 55
+      },
+      "sha256": {
+        "docs/history/specs/0001-clean.md": "441b61c9e3b113361c1e818c2fe85a5bc06b76c2015ae6f986e11e87150d6e6e",
+        "docs/references/clean.md": "7e3858e854c88d97144e871508137716914ec22ebefda5fa61feb266aca79ce7"
+      }
+    }
+  }
+}

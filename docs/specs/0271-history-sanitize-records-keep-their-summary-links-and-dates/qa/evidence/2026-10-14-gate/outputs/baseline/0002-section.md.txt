@@ -1,0 +1,25 @@
+---
+schema: roundfix/archive-record/v1
+spec: 0002-section
+title: 0002-section
+status: archived
+created: "2026-01-01"
+archived: "2026-01-02"
+disposition: no-qa
+source: docs/history/specs/0002-section
+source_revision: f9745a531cb9cbf956a9e82705304bbaf78b913f
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+adrs: []
+sources: []
+regeneration: []
+promoted: []
+pull_request: "42"
+delivery_commit: f9745a531cb9cbf956a9e82705304bbaf78b913f
+---
+
+# 0002-section
+
+A first section summary.

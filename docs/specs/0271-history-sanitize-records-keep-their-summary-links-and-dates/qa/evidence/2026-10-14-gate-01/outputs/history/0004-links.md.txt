@@ -1,0 +1,27 @@
+---
+schema: roundfix/archive-record/v1
+spec: 0004-links
+title: 0004-links
+status: archived
+created: "2026-01-01"
+archived: "2026-01-02"
+disposition: no-qa
+source: docs/history/specs/0004-links
+source_revision: f9745a531cb9cbf956a9e82705304bbaf78b913f
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/peer.md
+  - docs/references/probe.md
+pull_request: "42"
+delivery_commit: f9745a531cb9cbf956a9e82705304bbaf78b913f
+---
+
+# 0004-links
+
+See [probe](../../references/probe.md?raw=1#data) and [ADR](../../adr/0001-rule.md).

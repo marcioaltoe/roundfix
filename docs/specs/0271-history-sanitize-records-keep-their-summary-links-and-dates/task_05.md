@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0271-history-sanitize-records-keep-their-summary-links-and-dates
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

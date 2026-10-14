@@ -1,0 +1,5 @@
+git diff --name-only --diff-filter=MD 7b0507dce88a37e2d9ef0007fd39d96065891817 aee60541d85f5e973aa3f4ae53f70c7ac7c5648d -- docs/history/specs
+(no output; exit 0)
+
+Existing Archive Command test files modified: none.
+Tracked source delta: 

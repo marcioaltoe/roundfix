@@ -1,0 +1,31 @@
+---
+schema: roundfix/archive-record/v1
+spec: 0003-override
+title: 0003-override
+status: archived
+created: "2026-01-01"
+archived: "2026-01-02"
+disposition: qa-override
+source: docs/history/specs/0003-override
+source_revision: f9745a531cb9cbf956a9e82705304bbaf78b913f
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+qa_override: true
+qa_override_approval: 'legacy: not recorded'
+qa_override_reason: 'legacy: not recorded'
+qa_override_qa_outcome: ""
+qa_override_qa_task_status: ""
+qa_override_revision: ""
+adrs: []
+sources: []
+regeneration: []
+promoted: []
+pull_request: "42"
+delivery_commit: f9745a531cb9cbf956a9e82705304bbaf78b913f
+---
+
+# 0003-override
+
+A preserved override summary.

@@ -1,0 +1,13 @@
+# Probe
+
+[PRD](../history/specs/0004-links.md#goals), [notes](../history/specs/0004-links.md), [ADR](../adr/0001-rule.md), [peer](peer.md).
+
+Folder docs/history/specs/0004-links.md and file docs/history/specs/0004-links/notes.md.
+
+Absolute [web](https://example.test/path) and [anchor](#data).
+
+`[code](../_prd.md)`
+
+```markdown
+[fenced](../_prd.md)
+```

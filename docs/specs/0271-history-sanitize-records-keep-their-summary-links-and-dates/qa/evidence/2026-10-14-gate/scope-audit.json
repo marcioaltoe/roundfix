@@ -1,0 +1,145 @@
+{
+  "delivery_base": "7b0507dce88a37e2d9ef0007fd39d96065891817",
+  "audited_head": "2bb570b33d9a3d68f1a527c2ddb4ead7df9e2c75",
+  "task_commits": [
+    {
+      "task": "task_01",
+      "commit": "4f9e1afc1941f5daa713cb653862f16c6143dd72",
+      "changed": [
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_01.md",
+        "internal/spec/archive_record.go",
+        "internal/spec/legacy_record_summary_test.go"
+      ],
+      "declared": [
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_01.md",
+        "internal/spec/archive_record.go",
+        "internal/spec/legacy_record_summary_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "18fd5b24942828c78dce1de2fb793a70f31fa5e3",
+      "changed": [
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_02.md",
+        "docs/user-guide/commands/history.md",
+        "internal/cli/baseline_update_history.go",
+        "internal/cli/history.go",
+        "internal/cli/history_legacy_fields_test.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/history_sanitize.go",
+        "internal/spec/legacy_record_fields_test.go"
+      ],
+      "declared": [
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_02.md",
+        "docs/user-guide/commands/history.md",
+        "internal/cli/baseline_update_history.go",
+        "internal/cli/history.go",
+        "internal/cli/history_legacy_fields_test.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/history_sanitize.go",
+        "internal/spec/legacy_record_fields_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "39045f444e2df3ca717c414b052bb91c517ea86f",
+      "changed": [
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_03.md",
+        "internal/cli/history_link_rebase_test.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/history_sanitize.go",
+        "internal/spec/legacy_link_rebase.go",
+        "internal/spec/legacy_link_rebase_test.go"
+      ],
+      "declared": [
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_03.md",
+        "internal/cli/history_link_rebase_test.go",
+        "internal/spec/archive_record.go",
+        "internal/spec/history_sanitize.go",
+        "internal/spec/legacy_link_rebase.go",
+        "internal/spec/legacy_link_rebase_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_04",
+      "commit": "2bb570b33d9a3d68f1a527c2ddb4ead7df9e2c75",
+      "changed": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_04.md",
+        "docs/user-guide/commands/history.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/baseline.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/task_04.md",
+        "docs/user-guide/commands/history.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/baseline.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    }
+  ],
+  "mechanical_grant": "task_04 authorized at 7b0507dce88a37e2d9ef0007fd39d96065891817",
+  "governed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/archive.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "forbidden_changes": [],
+  "settlement_sections": [
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "unchanged": true
+    }
+  ],
+  "skill_versions": {
+    "base": [
+      "0.1.77",
+      "0.1.77"
+    ],
+    "head": [
+      "0.1.78",
+      "0.1.78"
+    ]
+  },
+  "issues": []
+}

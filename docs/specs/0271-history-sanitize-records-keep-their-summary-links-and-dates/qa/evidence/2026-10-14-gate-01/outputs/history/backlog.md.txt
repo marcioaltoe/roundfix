@@ -1,0 +1,9 @@
+---
+type: fix
+status: promoted
+created: 2026-01-01
+---
+
+# Backlog
+
+Adopted intent.

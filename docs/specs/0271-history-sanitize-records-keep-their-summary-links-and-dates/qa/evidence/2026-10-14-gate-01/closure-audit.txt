@@ -1,0 +1,1 @@
+Report audit passed: 10 terminal rows; 8 pass, 2 environment-blocked; complete provenance and typed inputs; seed fields, skips and carry-forward dispositions preserved; evidence links resolve; no evidence_snapshots; stable audited head; no tracked-source delta. Secret Pattern audit: 71 QA files, zero matches using repository patterns.

@@ -1,0 +1,44 @@
+[
+  {
+    "label": "Archive command regressions",
+    "command": "go test -count=1 -run 'Archive' ./internal/spec ./internal/cli",
+    "exit": 0,
+    "log": "archive-tests.log"
+  },
+  {
+    "label": "task_01 command 1",
+    "command": "out=\"$(go test -count=1 -v -run '^(TestLegacySummaryRemovesBlockQuoteMarkers|TestLegacySummaryFallsBackToTheFirstSection|TestLegacySummaryKeepsTheQAReportOutcome|TestActiveArchiveRecordKeepsItsSummaryReading)$' ./internal/spec 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestLegacySummaryRemovesBlockQuoteMarkers TestLegacySummaryFallsBackToTheFirstSection TestLegacySummaryKeepsTheQAReportOutcome TestActiveArchiveRecordKeepsItsSummaryReading; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done; go test -count=1 -run 'Legacy|Archive|History' ./internal/spec ./internal/cli || exit 1",
+    "exit": 0,
+    "log": "task-verification.log"
+  },
+  {
+    "label": "task_02 command 1",
+    "command": "out=\"$(go test -count=1 -v -run '^(TestLegacyOverrideWithoutApprovalRecordsNotRecorded|TestLegacyOverrideKeepsRecordedValues|TestLegacySourcesFallBackToAdoptedReferences|TestLegacySourcesPreferTheIndex|TestLegacyCreatedFallsBackToTheTechSpec|TestFindLegacyCreationReadsTheOldestAddingCommit|TestActiveArchiveRecordKeepsItsFields)$' ./internal/spec 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestLegacyOverrideWithoutApprovalRecordsNotRecorded TestLegacyOverrideKeepsRecordedValues TestLegacySourcesFallBackToAdoptedReferences TestLegacySourcesPreferTheIndex TestLegacyCreatedFallsBackToTheTechSpec TestFindLegacyCreationReadsTheOldestAddingCommit TestActiveArchiveRecordKeepsItsFields; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done; go test -count=1 -run 'Legacy|Archive|History' ./internal/spec || exit 1",
+    "exit": 0,
+    "log": "task-verification.log"
+  },
+  {
+    "label": "task_02 command 2",
+    "command": "out=\"$(go test -count=1 -v -run '^(TestHistorySanitizeRecordsTheCreationCommitDate|TestBaselineUpdateHistoryRecordsTheCreationCommitDate)$' ./internal/cli 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestHistorySanitizeRecordsTheCreationCommitDate TestBaselineUpdateHistoryRecordsTheCreationCommitDate; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done; go test -count=1 -run 'History|Legacy|ArchiveRecord|BaselineUpdate|Review.*Override|ConventionC5' ./internal/cli || exit 1; tr -s '[:space:]' ' ' < docs/user-guide/commands/history.md | grep -qF -- 'legacy: not recorded' || { printf 'history guide lacks the override value\\n' >&2; exit 1; }; go test -count=1 -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' ./internal/docscontract || exit 1",
+    "exit": 0,
+    "log": "task-verification.log"
+  },
+  {
+    "label": "task_03 command 1",
+    "command": "out=\"$(go test -count=1 -v -run '^(TestLegacyLinkRebasePointsFolderLinksAtTheirSurvivingFile|TestLegacyLinkRebaseKeepsOutsideTargets|TestLegacyLinkRebaseLeavesOtherBytes|TestLegacyConversionRebasesTheOutcomeAndPromotedCopies)$' ./internal/spec 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestLegacyLinkRebasePointsFolderLinksAtTheirSurvivingFile TestLegacyLinkRebaseKeepsOutsideTargets TestLegacyLinkRebaseLeavesOtherBytes TestLegacyConversionRebasesTheOutcomeAndPromotedCopies; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done; go test -count=1 -run 'Legacy|Archive|History|Relink' ./internal/spec || exit 1",
+    "exit": 0,
+    "log": "task-verification.log"
+  },
+  {
+    "label": "task_03 command 2",
+    "command": "out=\"$(go test -count=1 -v -run '^(TestHistorySanitizeRebasesPromotedLinks|TestBaselineUpdatePromotionRebasesLinks)$' ./internal/cli 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestHistorySanitizeRebasesPromotedLinks TestBaselineUpdatePromotionRebasesLinks; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done; go test -count=1 -run 'History|Legacy|Archive|BaselineUpdate' ./internal/cli || exit 1",
+    "exit": 0,
+    "log": "task-verification.log"
+  },
+  {
+    "label": "task_04 command 1",
+    "command": "for f in docs/user-guide/commands/history.md .agents/skills/roundfix/references/archive.md; do tr -s '[:space:]' ' ' < \"$f\" | grep -qF -- 'legacy: not recorded' || { printf 'missing override value in %s\\n' \"$f\" >&2; exit 1; }; done; for f in docs/user-guide/commands/history.md .agents/skills/roundfix/references/archive.md .agents/skills/roundfix/references/baseline.md; do tr -s '[:space:]' ' ' < \"$f\" | grep -qF -- 'Legacy Link Rebase' || { printf 'missing Legacy Link Rebase in %s\\n' \"$f\" >&2; exit 1; }; done; if tr -s '[:space:]' ' ' < docs/user-guide/commands/history.md | grep -qF -- 'copies each file byte-identically'; then printf 'guide still promises byte-identical copies\\n' >&2; exit 1; fi; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Legacy Link Rebase**:' || { printf 'CONTEXT.md does not define **Legacy Link Rebase**\\n' >&2; exit 1; }; grep -A1 '^[*][*]Lenient Legacy Reading[*][*]:' CONTEXT.md | grep -qF -- 'legacy: not recorded' || { printf 'CONTEXT.md does not revise **Lenient Legacy Reading**\\n' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 -run '^TestEveryOwnedSkillVersionIsRecorded$' ./skills || exit 1; go test -count=1 -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' ./internal/docscontract || exit 1",
+    "exit": 0,
+    "log": "docs-checks.log"
+  }
+]
