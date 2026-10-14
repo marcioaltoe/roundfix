@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.79.0] - 2026-10-14
+
+### A turn that did not finish is not accepted
+
+- **Provider System Error.** The ACPX Runner reads each turn's `threadStatus`. A turn whose last status before its `session/prompt` result is `systemError` fails with the bounded text the provider streamed after it, whatever the stop reason; a later `active` or `idle` status clears it. Before, a reply such as "Selected model is at capacity" ending `end_turn` was accepted as a finished turn, and a QA gate ended Unresolved with its report still `pending` (ADR-0274).
+- **Recovery through the Fallback Chain.** Before the Task's First Handoff, or in a QA Task while its report is pending, the next Fallback Selection takes a Provider System Error under the rule that already governs a Lost Rollout. The Run records a `provider_system_error` Run Event and the QA report's `## Agent runtime fallback` lines. A Provider System Error no fallback may take settles the Task `failed` as runtime infrastructure, and the Delivery Queue parks it `runtime-infrastructure` without counting a retry.
+- **No background tasks in Run sessions.** Every acpx command for the `claude` runtime carries `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`, and the QA prompt requires every command to run in the foreground. The runner records each Agent Background Task a turn starts; a QA turn that ends with its report pending after starting one settles the QA Task `failed` as an Unfinished Turn that names each task.
+- **Skills and guides.** The glossary, the configuration, usage and `deliver` guides, and the `roundfix` skill's `profiles` and `deliver` references describe the recovery, the refusal and the park.
+- **Glossary.** Adds Provider System Error, Agent Background Task and Unfinished Turn (ADR-0274).
+
 ## [0.78.0] - 2026-10-14
 
 ### No secret and no Spec content leaves the machine
