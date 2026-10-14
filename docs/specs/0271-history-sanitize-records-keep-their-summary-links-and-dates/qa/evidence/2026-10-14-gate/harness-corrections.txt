@@ -1,6 +1,0 @@
-QA harness corrections before final observations:
-- The initial undated TechSpec had no YAML opening marker and was refused. The final required fixture has valid YAML front matter without created.
-- Field assertions were corrected for the renderer's single-quoted override marker and quoted dates.
-- Temporary repository roots were normalized with Path.resolve for the macOS /var versus /private/var alias.
-- Intermediate setup transcripts were omitted from final evidence; the completed public-flows.log and runnable fixture retain all final public commands and assertions.
-- The initial test capture wrote evidence while suiteguard was running. Its complete diagnostics remain in task-verification-initial.log; final tests captured output outside the checkout and passed with no concurrent repository writes.

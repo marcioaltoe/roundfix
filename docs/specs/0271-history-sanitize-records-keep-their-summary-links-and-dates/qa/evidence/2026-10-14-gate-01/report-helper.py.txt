@@ -1,9 +1,0 @@
-from pathlib import Path
-import json,re
-STATE=json.loads(Path('/tmp/roundfix-0271-qa01-state.json').read_text())
-ROOT=Path(STATE['root']); EVID=Path(STATE['evid']); TMP=Path(STATE['tmp'])
-REPORT=ROOT/'docs/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates/qa/qa-report-2026-10-14-01.md'
-def finish(row,status,text):
- t=REPORT.read_text(); before, after=t.split('## Results\n',1); table, rest=after.split('\n## ',1); table=re.sub(r'(?m)^\| '+row+r' \| [^|]+ \|',lambda _: '| '+row+' | '+status+' |',table);t=before+'## Results\n'+table+'\n## '+rest
- pattern=r'(### '+row+r'\n\n```yaml\n.*?```\n\n).*?(?=\n### |\n## |\Z)'
- t,n=re.subn(pattern,lambda x:x.group(1)+text+'\n',t,flags=re.S);assert n==1,(row,n);REPORT.write_text(t)

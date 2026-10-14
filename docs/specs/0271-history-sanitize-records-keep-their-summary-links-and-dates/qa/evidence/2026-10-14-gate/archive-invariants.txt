@@ -1,3 +1,0 @@
-$ git diff --name-only --diff-filter=MD 7b0507dce88a37e2d9ef0007fd39d96065891817 2bb570b33d9a3d68f1a527c2ddb4ead7df9e2c75 -- docs/history/specs
-(empty)
-Archive Command existing test files changed: []

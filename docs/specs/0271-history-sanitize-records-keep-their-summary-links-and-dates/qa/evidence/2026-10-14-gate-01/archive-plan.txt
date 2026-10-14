@@ -1,9 +1,0 @@
-$ ./bin/roundfix archive 0271-history-sanitize-records-keep-their-summary-links-and-dates --plan
-archive plan for 0271-history-sanitize-records-keep-their-summary-links-and-dates: removes 72 file(s) (422651 bytes) and writes docs/history/specs/0271-history-sanitize-records-keep-their-summary-links-and-dates.md
-core 12 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-14-01.md, qa/qa-report-2026-10-14.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 59 file(s) (300689 bytes) under qa/evidence/
-candidate references/2026-10-13-history-sanitize-records-lose-their-summary-links-and-dates.md 2198 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
-promote with: roundfix archive 0271-history-sanitize-records-keep-their-summary-links-and-dates --promote <path>
-stderr:
-
-exit: 0
