@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.12
+  version: 0.0.14
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.12
+version: 0.0.14
 ---
 
 # QA Gate
@@ -40,6 +40,16 @@ Validate the assembled feature against the promises in its spec by exercising th
 Store runnable evidence under a non-compiled extension such as `.go.txt`,
 never as a source file the repository gate compiles or formats. A later
 pass's import skips compiled source and records each skipped path.
+
+### Evidence carries no secret
+
+record environment variable names, never their values, and record whether a
+variable is set as `<NAME> set` or `<NAME> not set`. Never persist the output
+of a command that prints the environment, including `env`, `printenv`, `set`,
+`export -p`, `declare -x`, `make -p` and `make --print-data-base`. Never write
+a secret-shaped sample into evidence. Record a Secret Match by path, line and
+kind only, and never reload a shell profile to obtain a key. The Daemon
+refuses to commit a QA Report whose files match a Secret Pattern.
 
 ### QA settlement
 

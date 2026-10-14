@@ -201,9 +201,11 @@ OpenAI or Anthropic through OpenRouter.
 
 The light session reads its key through Roundfix's key helper, preferring
 `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` and falling back to
-`ROUNDFIX_OPENROUTER_API_KEY`. OpenCode receives only a reference to the selected
-variable, never the key value, and Roundfix removes the generic
-`OPENROUTER_API_KEY`. Every light Task's prompt, the files its agent reads,
+`ROUNDFIX_OPENROUTER_API_KEY`. It reads the key under
+`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, never receives the Judge Key
+Variables, and Roundfix removes the generic `OPENROUTER_API_KEY`. No Agent
+Session and no Verification command receives the Judge Key Variables. Every
+light Task's prompt, the files its agent reads,
 and its Verification diagnostics reach OpenRouter and the selected model's
 provider. Without the named key, the light tier is skipped and the category
 profile runs instead.

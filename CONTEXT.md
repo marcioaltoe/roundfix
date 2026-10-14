@@ -822,6 +822,18 @@ _Avoid_: Rollback, retry archive, partial cleanup
 Jev's advisory classification of candidate files before the archive cut. It labels reusable knowledge, repository records or transient evidence and never gates the archive.
 _Avoid_: Archive verdict, promotion decision, required evidence
 
+**Secret Pattern**:
+One reviewed credential shape with a kind name, kept in one table. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+_Avoid_: Secret Match, credential value, ad hoc pattern
+
+**Secret Match**:
+One line that matches a Secret Pattern, reported by path, line and kind and never by value. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+_Avoid_: Secret Pattern, secret value, evidence sample
+
+**Secret Scan**:
+A check of the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+_Avoid_: Redaction, post-push scan, advisory check
+
 **Archive Command**:
 The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added (ADR-0261). Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict (ADR-0260).
 _Avoid_: Move command, retire run, cleanup command
@@ -1177,6 +1189,10 @@ _Avoid_: Judge budget, key limit, Project Config ceiling
 **Stage Key**:
 The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
 _Avoid_: API key value, generic OpenRouter key, shared key
+
+**Judge Key Variables**:
+The variables the judge reads its credentials from, which no Agent Session and no Verification command of a Run receives. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+_Avoid_: Stage Key, implementation key, credential value
 
 **Tested Base**:
 The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.

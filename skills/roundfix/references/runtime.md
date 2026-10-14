@@ -172,6 +172,10 @@ models stay selectable. An open model through OpenCode reads
 generic `OPENROUTER_API_KEY` is never read.
 `jev.router_min_credit_usd` is a deprecated key.
 
+The Judge Key Variables are withheld from every Agent Session and every
+Verification command of a Run. No Agent Session and no Verification command
+receives the Judge Key Variables.
+
 ### Light implementation tier
 
 At dispatch, a Task is `light` when `complexity` is `low`, `type` is not `qa`,
@@ -184,9 +188,9 @@ list on the `opencode` runtime, with no reasoning effort and
 `profile_source` `light-tier`; its category Preferred Selection and Fallback
 Chain follow the light models. An empty list disables the tier. The default
 model is `deepseek/deepseek-v4.1-flash`, and each configured light model must
-pass the subscription rule. The light session receives the key variable name
-from Roundfix's key helper and never the key value or generic
-`OPENROUTER_API_KEY`.
+pass the subscription rule. The light session reads its key under
+`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, populated by Roundfix's key helper,
+and never receives the Judge Key Variables or generic `OPENROUTER_API_KEY`.
 
 A skipped light Task emits phase `light_tier_skipped` with reason code
 `key_missing`, `spend_unreadable`, or `ceiling_reached`. A light Task that

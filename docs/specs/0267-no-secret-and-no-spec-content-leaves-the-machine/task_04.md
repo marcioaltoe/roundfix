@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0267-no-secret-and-no-spec-content-leaves-the-machine
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -130,3 +130,19 @@ Surface Record.
 - [_prd.md](_prd.md) — Goals; User Story 5; Core Feature 1; Core Feature 6; Glossary
 - [_techspec.md](_techspec.md) — API Contract 2; API Contract 4; API Contract 5; Coverage Map; Build Order 4
 - ADR-0273; ADR-0256; ADR-0189; ADR-0233; ADR-0244
+
+## Result
+
+Acceptance evidence:
+
+- The canonical `qa-gate` skill and QA prompt carry the evidence rule. A focused byte comparison confirmed that the `### QA settlement` section in the canonical skill is unchanged.
+- `make skills-sync` passed, and the canonical and shipped copies of the three Roundfix references plus both owned skill files compare equal. The references and guides carry the QA refusal, `secret-found` park, and Judge Key Variables wording.
+- The owned-skill recorder passed and added `qa-gate` `0.0.14` and `roundfix` `0.1.73` to `skills/testdata/owned-skill-versions.json`. `CONTEXT.md` contains the four ADR-0273 glossary definitions. The Behavior Surface Record recorder passed and updated only the three changed guide fingerprints in `docs/references/behavior-surfaces.json`.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `gofmt -d internal/agent/spec_prompt.go`, `git diff --check`, mirror comparisons, and the QA settlement byte comparison — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^$' ./internal/agent ./skills` — passed with no tests selected.
+- The first composite phrase check exposed the required case-sensitive lowercase `record` wording; after correction and regeneration, the final scoped contract, mirror, settlement, formatting, and path checks passed.
+- Verification feedback identified stale fingerprints for the three changed guides; `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed.

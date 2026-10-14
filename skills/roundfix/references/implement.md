@@ -164,6 +164,12 @@ the largest carriable Task set, breaking ties with the newest Run.
    Verification precondition. Failed, timed-out, or verdict-changing runs
    restore the original bytes and record the format outcome.
 
+   The QA Report commit boundary also runs the Secret Scan over the files the
+   commit would stage. A Secret Match refuses the commit with `QA evidence
+   carries a secret: <path>:<line> (<kind>)`, recording only its path, line and
+   kind. The Final Push runs the same scan over the commits it would send and
+   refuses the push when a Secret Match is found.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent
