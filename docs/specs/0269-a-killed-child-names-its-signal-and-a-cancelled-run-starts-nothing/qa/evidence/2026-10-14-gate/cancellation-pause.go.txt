@@ -1,0 +1,11 @@
+func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
+	if gate, ok := plan.verificationGate.(*fairVerificationGate); ok {
+		gate.mu.Lock()
+		busy := gate.activeShared > 0
+		gate.mu.Unlock()
+		if busy {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+
+// Rest of function unchanged at HEAD.

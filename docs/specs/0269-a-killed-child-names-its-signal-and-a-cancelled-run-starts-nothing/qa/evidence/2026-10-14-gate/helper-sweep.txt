@@ -1,0 +1,11 @@
+exitCodeFromWait calls in *_test.go: 0
+testfixture.ChildExitCode sites: 9
+internal/cli/review_dispose_lock_test.go:230: code, note := testfixture.ChildExitCode(err)
+internal/cli/version_freshness_isolation_test.go:127: if code, note := testfixture.ChildExitCode(err); code != exitPreflight {
+internal/cli/reopen_late_dependency_test.go:41: code, note := testfixture.ChildExitCode(command.Run())
+internal/cli/baseline_release_gate_test.go:1247: code, note := testfixture.ChildExitCode(err)
+internal/cli/reopen_test.go:49: code, note := testfixture.ChildExitCode(err)
+internal/cli/implement_test.go:139: code, note := testfixture.ChildExitCode(err)
+internal/cli/implement_test.go:7670: code, note := testfixture.ChildExitCode(err)
+internal/cli/baseline_update_citations_test.go:94: code, note := testfixture.ChildExitCode(err)
+internal/cli/script_fixture_test.go:159: if got, note := testfixture.ChildExitCode(err); got != wantExit {

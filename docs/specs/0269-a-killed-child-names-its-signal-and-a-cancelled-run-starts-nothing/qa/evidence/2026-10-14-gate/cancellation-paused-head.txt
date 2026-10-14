@@ -1,0 +1,50 @@
+$ go test -count=20 -v -run '^TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement$' ./internal/daemon
+working_tree: disposable copy
+stdout:
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.19s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.16s)
+PASS
+suiteguard: guard cost: measured 2658 paths; fingerprint took 104.88975ms before and 72.263292ms after
+ok  	roundfix/internal/daemon	3.708s
+
+stderr:
+
+exit: 0

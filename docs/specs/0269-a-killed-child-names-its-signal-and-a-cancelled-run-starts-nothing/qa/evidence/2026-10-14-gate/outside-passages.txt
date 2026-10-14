@@ -1,0 +1,12 @@
+Sources are official toolchain/module-cache content, not authored Spec evidence. No network.
+Go toolchain doc/go_spec.html, Select statements:
+If one or more of the communications can proceed, a single one that can proceed is chosen via a uniform pseudo-random selection.
+Supports post-grant cancellation checks: a ready cancellation and ready capacity wake can be selected in either order.
+
+x/sync v0.22.0 semaphore/semaphore.go:
+We prefer to fail even if we could acquire the mutex without blocking.
+Acquired the semaphore. Check that ctx isn't already done.
+Supports rejection on both immediate and queued grant boundaries. TryAcquire accepts no context, so Roundfix must check after it.
+
+os.ProcessState.ExitCode: see separate go doc transcript.
+Supports reading WaitStatus for signal identity: ExitCode alone returns -1 for a signaled child.

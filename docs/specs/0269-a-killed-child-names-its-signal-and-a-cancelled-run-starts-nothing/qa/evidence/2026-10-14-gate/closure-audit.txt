@@ -1,0 +1,8 @@
+Closed report: partial
+Rows: 7 pass, 1 blocked (environment: no open Pull Request); 0 failed/finding-blocked/declared-blocked/skipped/pending.
+Seeded auditor identity and mechanical audit/skip sections preserved.
+8 row input blocks valid; all 29 linked evidence files resolve.
+Single frontmatter with unique verdict and count keys.
+Tracked worktree delta empty; HEAD unchanged.
+Repository Verification not rerun; no commit, push, PR or Task status mutation.
+Supplementary archive-plan automatic approval refusal recorded; command did not start. Final linked evidence paths rechecked and all resolve.

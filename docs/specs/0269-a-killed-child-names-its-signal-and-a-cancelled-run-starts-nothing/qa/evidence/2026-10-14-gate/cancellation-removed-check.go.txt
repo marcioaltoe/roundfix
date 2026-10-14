@@ -1,0 +1,4 @@
+		if err := ctx.Err(); err != nil {
+			release()
+			return nil, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+		}

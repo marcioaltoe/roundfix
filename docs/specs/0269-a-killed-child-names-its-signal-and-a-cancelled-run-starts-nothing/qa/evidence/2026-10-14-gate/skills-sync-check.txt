@@ -1,0 +1,9 @@
+$ make skills-sync-check
+working_tree: audited head
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.359s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,11 @@
+$ go test -count=1 -v -run '^TestEveryOwnedSkillVersionIsRecorded$' ./skills
+working_tree: audited head
+stdout:
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+PASS
+ok  	roundfix/skills	0.160s
+
+stderr:
+
+exit: 0

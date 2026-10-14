@@ -1,0 +1,4 @@
+Supplementary administrative archive-plan attempt: no command started.
+Automatic approval review rejected ./bin/roundfix archive <spec> --plan.
+Reason: archive advice invokes a judge transport and may export Spec/archive data or use a provider, outside QA authorization and contrary to no-provider/no-network constraints.
+No retry or indirect execution. The local Outcome remains the archive-facing record; no advice or promotion is claimed. This optional administrative action is not an authored acceptance coverage source.

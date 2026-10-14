@@ -1,0 +1,9 @@
+$ ./bin/roundfix spec check 0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing --strict
+Spec 0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing/_techspec.md Vocabulary Contract
+
+exit: 0

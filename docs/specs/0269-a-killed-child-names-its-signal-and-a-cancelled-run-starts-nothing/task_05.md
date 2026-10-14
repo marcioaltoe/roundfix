@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

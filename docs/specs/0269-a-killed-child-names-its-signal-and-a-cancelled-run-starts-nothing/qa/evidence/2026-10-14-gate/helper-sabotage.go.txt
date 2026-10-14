@@ -1,0 +1,26 @@
+func runRoundfixBinaryMacro(t *testing.T, binary string, dir string, homeDir string, fakeBinDir string, stdin string, extraEnv map[string]string, args ...string) (string, string, int) {
+	t.Helper()
+	seedFreshVersionCache(t, homeDir)
+	cmd := exec.Command(binary, args...)
+	cmd.Dir = dir
+	env := isolatedGitEnvForTest()
+	env = withEnvValue(env, "HOME", homeDir)
+	env = withEnvValue(env, "PATH", fakeBinDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	env = withEnvValue(env, "ROUNDFIX_TUI", "never")
+	env = withEnvValue(env, "ROUNDFIX_COLOR", "never")
+	env = withEnvValue(env, "NO_COLOR", "1")
+	env = withEnvValue(env, "TERM", "dumb")
+	for key, value := range extraEnv {
+		env = withEnvValue(env, key, value)
+	}
+	cmd.Env = env
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), exitCodeFromWait(err)
+}
