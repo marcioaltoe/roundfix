@@ -953,9 +953,16 @@ func (workflow *commandDeliveryWorkflow) runResult(ctx context.Context, gitRoot,
 					Recovery string `json:"recovery"`
 					ScopeID  string `json:"scope_id"`
 					Step     string `json:"step"`
+					Detail   string `json:"detail"`
 				}
-				if json.Unmarshal(event.Event.Payload, &payload) == nil && payload.Phase == "rollout_lost" && payload.Recovery == "exhausted" {
+				if json.Unmarshal(event.Event.Payload, &payload) != nil || payload.Recovery != "exhausted" {
+					continue
+				}
+				switch payload.Phase {
+				case "rollout_lost":
 					result.RuntimeInfrastructure = payload.ScopeID + " lost its rollout at " + payload.Step
+				case "provider_system_error":
+					result.RuntimeInfrastructure = payload.ScopeID + " hit a provider system error: " + payload.Detail
 				}
 			}
 		}

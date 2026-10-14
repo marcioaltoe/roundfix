@@ -41,6 +41,14 @@ func (err *lostRolloutExhaustedError) Error() string {
 	return fmt.Sprintf("runtime infrastructure: lost rollout for %s at %s", err.scopeID, err.step)
 }
 
+const providerSystemErrorNotice = "The previous Agent Session ended with a provider system error; the working tree holds its changes. Keep them and continue."
+
+type providerSystemErrorExhaustedError struct{ scopeKind, scopeID, detail string }
+
+func (err *providerSystemErrorExhaustedError) Error() string {
+	return fmt.Sprintf("runtime infrastructure: %s %s hit a provider system error: %s", err.scopeKind, err.scopeID, err.detail)
+}
+
 type agentSessionOwner struct {
 	handedOff         bool
 	rolloutRecoveries int
@@ -242,6 +250,16 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 			}
 			continue
 		}
+		if failure, ok := agent.DescribeProviderSystemError(err); ok {
+			if ctx.Err() != nil || owner.scope.Kind == "review" {
+				return result, err
+			}
+			if recoveryErr := owner.recoverProviderSystemError(ctx, failure, err); recoveryErr != nil {
+				return result, recoveryErr
+			}
+			req.Prompt = owner.taskPrompt + "\n\n" + providerSystemErrorNotice
+			continue
+		}
 		var selectionErr *agent.SelectionFailureError
 		if !errors.As(err, &selectionErr) || owner.workStarted.Load() {
 			return result, err
@@ -312,6 +330,59 @@ func (owner *agentSessionOwner) recoverLostRollout(ctx context.Context, loss age
 		}
 		owner.candidateIndex = nextIndex
 	}
+	owner.selectionFailurePublished.Store(false)
+	return nil
+}
+
+func (owner *agentSessionOwner) recoverProviderSystemError(ctx context.Context, failure agent.ProviderSystemError, cause error) error {
+	failed := owner.activeCandidate()
+	owner.closeAttempt(context.WithoutCancel(ctx), owner.activeRuntime, owner.activeSession)
+	owner.active = false
+	owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: failed, Err: cause})
+	if err := owner.persistSelectionAttempt(context.WithoutCancel(ctx), failed, store.AgentSelectionStatusFailed, cause); err != nil {
+		return err
+	}
+	candidates := owner.candidates()
+	nextIndex := owner.candidateIndex + 1
+	pending := owner.scope.Kind == "qa" && owner.reportPending != nil && owner.reportPending()
+	recovery := "exhausted"
+	if nextIndex < len(candidates) && ((owner.scope.Kind == "task" && !owner.handedOff) || pending) {
+		recovery = "fallback"
+	}
+	payload := map[string]any{
+		"phase": "provider_system_error", "scope_kind": owner.scope.Kind, "scope_id": owner.scope.ID,
+		"selection": selectionPayload(failed.Selection), "detail": failure.Detail,
+		"recovery": recovery, "retry_spent": false,
+	}
+	if recovery == "fallback" {
+		payload["next_selection"] = selectionPayload(candidates[nextIndex].Selection)
+	}
+	summary := fmt.Sprintf("%s %s hit a provider system error: %s; recovery: %s", owner.scope.Kind, owner.scope.ID, failure.Detail, recovery)
+	if err := owner.engine.publishDaemonEvent(ctx, owner.scope.RunID, owner.scope.Batch, runevent.KindDaemonTask, summary, payload); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(owner.engine.deps.Progress, "roundfix: %s\n", summary); err != nil {
+		return fmt.Errorf("write provider system error notice: %w", err)
+	}
+	if recovery == "exhausted" {
+		return &providerSystemErrorExhaustedError{scopeKind: owner.scope.Kind, scopeID: owner.scope.ID, detail: failure.Detail}
+	}
+	next := candidates[nextIndex]
+	if pending {
+		section := fmt.Sprintf("\n## Agent runtime fallback\n\n- provider_system_error: %s: %s\n- fallback: %s\n- retry_spent: false\n", selectionLabel(failed.Selection), failure.Detail, selectionLabel(next.Selection))
+		file, err := os.OpenFile(owner.reportPath, os.O_APPEND|os.O_WRONLY, 0)
+		if err != nil {
+			return fmt.Errorf("open QA runtime fallback report: %w", err)
+		}
+		_, writeErr := file.WriteString(section)
+		if err := errors.Join(writeErr, file.Close()); err != nil {
+			return fmt.Errorf("append QA runtime fallback: %w", err)
+		}
+	}
+	if err := owner.publishFallback(ctx, failed, next, cause); err != nil {
+		return err
+	}
+	owner.candidateIndex = nextIndex
 	owner.selectionFailurePublished.Store(false)
 	return nil
 }
@@ -801,6 +872,9 @@ func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.Selec
 func selectionReasonCode(err error) string {
 	if _, ok := agent.DescribeLostRollout(err); ok {
 		return "rollout_lost"
+	}
+	if _, ok := agent.DescribeProviderSystemError(err); ok {
+		return "provider_system_error"
 	}
 	var failure *agent.SelectionFailureError
 	if errors.As(err, &failure) {

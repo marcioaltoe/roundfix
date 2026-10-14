@@ -2933,7 +2933,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		cancelAgent()
 		if runErr != nil {
 			var lost *lostRolloutExhaustedError
-			if errors.As(runErr, &lost) {
+			var provider *providerSystemErrorExhaustedError
+			if errors.As(runErr, &lost) || errors.As(runErr, &provider) {
 				if settleErr := engine.settleTask(ctx, plan, qaTask, ordinal, spec.StatusFailed, agentFailureReason(runErr, "")); settleErr != nil {
 					return "", "", false, settleErr
 				}

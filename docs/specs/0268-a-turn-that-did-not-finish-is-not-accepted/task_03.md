@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0268-a-turn-that-did-not-finish-is-not-accepted
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -127,3 +127,79 @@ and the delivery workflow's event reader.
 - [_techspec.md](_techspec.md) — Interfaces; Invariants 7-11; API Contract 2; API Contract 3; Testing Approach 3; Testing Approach 4; Build Order 3
 - [2026-10-13-a-model-at-capacity-reply-is-accepted-as-a-finished-turn.md](references/2026-10-13-a-model-at-capacity-reply-is-accepted-as-a-finished-turn.md)
 - ADR-0274; ADR-0245; ADR-0114; ADR-0050; ADR-0057; ADR-0259; ADR-0271
+
+## Result
+
+Implemented the assigned recovery and delivery-reader slice. The Agent Session
+owner checks a Provider System Error after a Lost Rollout and before Selection
+Failure handling. Eligible Tasks and pending QA reports move to the next
+Fallback Selection; other non-review scopes exhaust immediately. Review scopes
+return the original error. Recovery closes the failed session, persists its
+failed attempt with `provider_system_error`, records the event and progress
+line, and supplies the original Task prompt plus the recovery notice. QA
+fallback records its three report lines before the next session opens and
+leaves the seeded verdict pending.
+
+Exhaustion carries the specified runtime infrastructure reason through Task
+settlement. QA exhaustion settles its Task failed and returns a pending verdict
+without halting the cycle. The delivery workflow reads exhausted provider
+failure events into `RuntimeInfrastructure` with the specified scope and detail.
+The existing delivery engine then uses its runtime-infrastructure park and
+uncounted retry path; its engine, park classes and retry accounting were not
+changed.
+
+### Focused checks
+
+- Before implementation:
+  `rtk proxy go test -count=1 -run 'ProviderSystemError' ./internal/daemon ./internal/cli`
+  exited 1. All five new daemon scenarios reproduced missing recovery or
+  settlement, and the new delivery-reader scenario returned no provider detail.
+- After implementation, the same focused command exited 0 for both packages.
+- After adding eligibility and independent-budget coverage:
+  `rtk proxy go test -count=1 -run 'ProviderSystemError|LostRollout' ./internal/daemon ./internal/cli`
+  exited 0 for both packages. This selects the new tests, existing provider
+  review classification tests, and every Lost Rollout test in these packages.
+- `rtk proxy git diff --check` exited 0 after this Result was appended.
+- `rtk proxy git diff --exit-code -- internal/daemon/lost_rollout_recovery_test.go internal/cli/deliver_runtime_infrastructure_test.go internal/delivery`
+  showed no changes to those regression files or delivery engine paths.
+
+### Acceptance evidence
+
+1. **Fallback before First Handoff or while QA is pending, recorded once:**
+   `TestProviderSystemErrorBeforeFirstHandoffActivatesTheFallback` proves the
+   fallback selection, session closure, failed attempt reason code, single
+   provider event and progress line, notification, and recovery prompt.
+   `TestQAProviderSystemErrorBeforeTheReportFallsBackAndRecordsIt` proves that
+   the fallback runs the gate, the pending seed already carries each required
+   report line once, and the final report retains those lines.
+2. **Exhaustion without retrying the selection:**
+   `TestProviderSystemErrorAfterFirstHandoffSettlesRuntimeInfrastructure` proves
+   a failed Verification Feedback turn stays on its original session, settles
+   with the exact runtime infrastructure text, and opens no fallback.
+   `TestProviderSystemErrorWithoutFallbackSettlesRuntimeInfrastructure` proves
+   one turn and one exhausted event.
+   `TestQAProviderSystemErrorExhaustionSettlesInsteadOfHalting` proves failed QA
+   settlement, a preserved pending report, and a pending cycle verdict without
+   an error. `TestProviderSystemErrorRecoveryEligibility` also covers the
+   no-output Selection Failure shape, both review error shapes, and refusal of
+   QA fallback when the report-pending predicate is false.
+   `TestProviderSystemErrorDoesNotUseLostRolloutBudget` proves provider
+   recoveries leave Lost Rollout recovery available, and a spent Lost Rollout
+   budget does not prevent an eligible provider fallback.
+3. **Delivery parks runtime infrastructure with the provider detail:**
+   `TestDeliveryRunResultReadsAnExhaustedProviderSystemError` proves the exact
+   API Contract 3 text for exhaustion, no infrastructure classification for a
+   recovered fallback, and unchanged Lost Rollout text. Source inspection of
+   `internal/delivery/engine.go` confirms that a non-empty
+   `RuntimeInfrastructure` selects the existing `runtime-infrastructure` park
+   and bypasses counted retry enforcement. `internal/store/delivery.go` sets
+   the retry increment to zero for that blocker. No queue-engine execution is
+   claimed by this focused check.
+4. **Lost Rollout regression behavior preserved:** the final focused command
+   passes all Lost Rollout tests selected in `internal/daemon` and
+   `internal/cli`, including every test in both unchanged regression files.
+   The Lost Rollout recovery implementation remains unchanged.
+
+Task status remains Daemon-owned. The declared Verification commands and both
+repository Verification commands were not run. No commit, push or pull request
+was made. No follow-up outside this Task's slice was implemented.
