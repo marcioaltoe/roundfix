@@ -1,8 +1,0 @@
-QA evidence heading and all declared rules: pass
-QA prompt required line: pass
-.agents/skills/archive-spec/SKILL.md: settlement unchanged; sha256=7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c
-.agents/skills/qa-gate/SKILL.md: settlement unchanged; sha256=7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c
-.agents/skills/roundfix/SKILL.md: settlement unchanged; sha256=7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c
-skills/archive-spec/SKILL.md: settlement unchanged; sha256=7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c
-skills/qa-gate/SKILL.md: settlement unchanged; sha256=7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c
-skills/roundfix/SKILL.md: settlement unchanged; sha256=7641bfb8cccf9840c0d1c0c2c0fe146334c55aa9c658721a116dfac8f5b8a67c

@@ -1,3 +1,0 @@
-package speccheck
-import("encoding/json";"os";"testing")
-func TestQA0267GovernedPaths(t *testing.T){t.Parallel();data,err:=os.ReadFile(os.Getenv("QA0267_SCOPE_PATHS"));if err!=nil{t.Fatal(err)};var paths []string;if err:=json.Unmarshal(data,&paths);err!=nil{t.Fatal(err)};for _,path:=range paths{if GovernedPath(path){t.Log("GOVERNED "+path)}}}

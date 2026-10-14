@@ -1,9 +1,0 @@
-Pull Request row: blocked (environment: no open Pull Request)
-Target branch: roundfix/deliver-0267-no-secret-and-no-spec-content-leaves-the-machine-a226513250fd5f33
-Run branch is per-Run and has no Pull Request of its own. Absence is the Daemon-supplied fact; no GitHub connection was opened.
-Approval: maintainer delivery authority recorded in _authorization.md at f2e09780baa926048859dfb7225511f01528910c; operations implement, commit, push, pull_request, merge. No Pull Request approval has been obtained.
-Checks/status: Daemon supplied make verify-changed pass, exit 0, diagnostics removed, at audited head 54cbc6ae53999b9eb4800e76603f608a462884ae. No GitHub required-check state exists yet.
-Unresolved review threads: none because no Pull Request exists.
-Merge-Ready acceptance: none yet; there is no Review Source acceptance for this head.
-Review-artifact ancestry: claimed candidate 54cbc6ae53999b9eb4800e76603f608a462884ae; no separate current-candidate review artifact/acceptance supplied. QA does not infer one from implementation tests.
-Unblocking: after configured current-candidate review and permitted publication, read the target-branch PR approval/checks/threads/Merge-Ready/review-artifact ancestry. This QA Agent does not publish.

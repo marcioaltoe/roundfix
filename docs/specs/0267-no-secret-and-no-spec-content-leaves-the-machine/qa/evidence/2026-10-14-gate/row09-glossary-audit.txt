@@ -1,6 +1,0 @@
-Secret Pattern: defined; semantics match declaration; linked to accepted ADR-0273
-Secret Match: defined; semantics match declaration; linked to accepted ADR-0273
-Secret Scan: defined; semantics match declaration; linked to accepted ADR-0273
-Judge Key Variables: defined; semantics match declaration; linked to accepted ADR-0273
-Introduced bolded phrases: Judge Key Variables, Secret Match, Secret Pattern, Secret Patterns, Secret Scan
-Emitted additions: secret-found is an existing blocker string shape; pattern kind names are the Secret Pattern kind vocabulary; refusal messages contain path/line/kind metadata. No additional domain term is introduced. No Finding or Rollup artifact is introduced; their strict-check skips have no applicable lifecycle to run.
