@@ -15,6 +15,7 @@ import (
 
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	"roundfix/internal/testfixture"
 )
 
 // Suite: reopen command seam
@@ -45,7 +46,14 @@ func TestReopenThroughTheBuiltBinary(t *testing.T) {
 		command.Stdout = &stdout
 		command.Stderr = &stderr
 		err := command.Run()
-		return stdout.String(), stderr.String(), exitCodeFromWait(err)
+		code, note := testfixture.ChildExitCode(err)
+		if note != "" {
+			if stderr.Len() > 0 && !strings.HasSuffix(stderr.String(), "\n") {
+				stderr.WriteByte('\n')
+			}
+			stderr.WriteString(note + "\n")
+		}
+		return stdout.String(), stderr.String(), code
 	}
 
 	t.Run("reopens a stale gate without changing its QA Report", func(t *testing.T) {

@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/testfixture"
 )
 
 const scriptFixtureSuffix = ".fixture.sh"
@@ -155,8 +156,8 @@ func assertScriptFixture(t *testing.T, path string, args []string, want string, 
 				cmd.Env = withEnvValue(cmd.Env, key, value)
 			}
 			output, err := cmd.CombinedOutput()
-			if got := exitCodeFromWait(err); got != wantExit {
-				t.Fatalf("fixture exit = %d, want %d: %v\n%s", got, wantExit, err, output)
+			if got, note := testfixture.ChildExitCode(err); got != wantExit {
+				t.Fatalf("fixture exit = %d, want %d: %v\n%s\n%s", got, wantExit, err, output, note)
 			}
 			if string(output) != want {
 				t.Fatalf("fixture output = %q, want %q", output, want)

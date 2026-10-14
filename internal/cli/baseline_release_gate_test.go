@@ -1244,14 +1244,14 @@ func runBaselineReleaseCLI(
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 	err := command.Run()
-	if err == nil {
-		return 0, stdout.Bytes(), stderr.Bytes()
+	code, note := testfixture.ChildExitCode(err)
+	if note != "" {
+		if stderr.Len() > 0 && !strings.HasSuffix(stderr.String(), "\n") {
+			stderr.WriteByte('\n')
+		}
+		stderr.WriteString(note + "\n")
 	}
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("run Roundfix release binary: %v", err)
-	}
-	return exitErr.ExitCode(), stdout.Bytes(), stderr.Bytes()
+	return code, stdout.Bytes(), stderr.Bytes()
 }
 
 func runBaselineReleaseExternal(t *testing.T, repo, name string, args ...string) {

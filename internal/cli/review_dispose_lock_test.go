@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"roundfix/internal/testfixture"
 	"roundfix/internal/testwait"
 )
 
@@ -226,10 +227,17 @@ func waitForReviewDisposeProcesses(
 	results := make([]reviewDisposeProcessResult, len(commands))
 	for index, command := range commands {
 		err := command.Wait()
+		code, note := testfixture.ChildExitCode(err)
+		if note != "" {
+			if stderr[index].Len() > 0 && !strings.HasSuffix(stderr[index].String(), "\n") {
+				stderr[index].WriteByte('\n')
+			}
+			stderr[index].WriteString(note + "\n")
+		}
 		results[index] = reviewDisposeProcessResult{
 			stdout: stdout[index].String(),
 			stderr: stderr[index].String(),
-			code:   exitCodeFromWait(err),
+			code:   code,
 		}
 	}
 	return results

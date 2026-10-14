@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"roundfix/internal/app"
+	"roundfix/internal/testfixture"
 )
 
 const offlineTestReleaseTag = "v0.0.0-offline-test-lookup"
@@ -123,8 +124,8 @@ func TestBuiltBinaryLeavesTheSeededVersionCacheUntouched(t *testing.T) {
 
 	err = command.Run()
 
-	if code := exitCodeFromWait(err); code != exitPreflight {
-		t.Fatalf("built implement probe exit = %d, want %d; stdout=%q stderr=%q", code, exitPreflight, stdout.String(), stderr.String())
+	if code, note := testfixture.ChildExitCode(err); code != exitPreflight {
+		t.Fatalf("built implement probe exit = %d, want %d; stdout=%q stderr=%q; %s", code, exitPreflight, stdout.String(), stderr.String(), note)
 	}
 	after, err := os.ReadFile(cachePath)
 	if err != nil {

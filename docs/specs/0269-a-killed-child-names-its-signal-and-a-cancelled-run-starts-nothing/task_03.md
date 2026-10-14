@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0269-a-killed-child-names-its-signal-and-a-cancelled-run-starts-nothing
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -94,3 +94,54 @@ that finds no remaining call.
 - [_techspec.md](_techspec.md) — API Contract 3; Interfaces; Invariant 2; Invariant 3; Testing Approach; Build Order 3
 - [2026-10-13-a-test-child-is-killed-by-a-signal-from-an-unknown-sender.md](references/2026-10-13-a-test-child-is-killed-by-a-signal-from-an-unknown-sender.md)
 - ADR-0266; ADR-0259; ADR-0271
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. `ChildExitCode` uses
+`childexit.From` and `Exit.String`: ordinary exits preserve their code and
+produce no note; Signal Exits return `-1` with the signal and core state;
+start failures return `-1` with `child did not run: <error>`.
+
+All nine named sites now use the helper. Returning helpers preserve the
+child's stderr and append a non-empty note on its own final line, including
+when the child omitted a trailing newline. Code-comparison sites include the
+note in their failure message. Existing assertion conditions and expected
+values are unchanged. The governed release-gate file changes only inside
+`runBaselineReleaseCLI`; production `exitCodeFromWait` and its detach callers
+are untouched.
+
+### Focused evidence by acceptance criterion
+
+1. Signal sabotage: before migrating the helper,
+   `rtk proxy go test -count=1 -run TestRoundfixBinaryHelperNames ./internal/cli`
+   failed with `child exit = 1, want -1; stderr="fixture diagnostic"`.
+   After migration, the focused CLI selection below passed. The regression
+   asserts code `-1`, the exact last line
+   `child was killed by signal SIGKILL (9), no core dump`, and preservation
+   of the fixture's diagnostic without an original trailing newline. It
+   compiles through `FixtureBinary`, signals only its own PID, calls
+   `t.Parallel()` first, and adds no clock wait.
+2. Helper sweep: a Python repository scan of every `*_test.go` using
+   `re.search(r'\bexitCodeFromWait\s*\(', content)` found zero calls.
+   Counting `testfixture.ChildExitCode(` found nine calls across the eight
+   named files. Comparing the governed file against `git show HEAD:<path>`
+   after removing only `runBaselineReleaseCLI` proved all other bytes equal.
+3. Compilation and existing expectations: this focused command exited zero
+   (`ok roundfix/internal/cli`), compiling the package's host test files and
+   exercising representative consumers from every swept file:
+
+   ```sh
+   rtk proxy go test -count=1 -run 'TestRoundfixBinaryHelperNames|TestScriptFixtureIsTheCompiledTestBinary|TestHelperProcessRecordsTheOfflineLookup|TestBuiltBinaryLeavesTheSeededVersionCacheUntouched|TestReopenThroughTheBuiltBinary|TestReopenReopensALateDependencyThroughTheBuiltBinary|TestConcurrentDispose|TestBaselineUpdateListsHistoryCitationsTranscript|TestBaselineMacroJourneysPublicCLI' ./internal/cli
+   ```
+
+Additional focused checks exited zero:
+
+- `rtk proxy go test -count=1 -run 'TestEverySignalGoesToAProvenProcess|TestEveryTestInAParallelTestPackageRunsInParallel|TestEveryRealTimeBudgetIsWithinItsFileCeiling' ./internal/testfixture`
+- `GOOS=linux rtk proxy go build ./internal/cli ./internal/testfixture`
+- `GOOS=darwin rtk proxy go build ./internal/cli ./internal/testfixture`
+- `rtk proxy git diff --check`
+
+The initial worktree change was only the Daemon's `pending` to `in_progress`
+status edit. Task status, authored Verification, Task Graph and other Task
+files remain Daemon-owned. No declared Verification command, repository gate,
+full suite, commit, push or pull request was run. No follow-up was identified.
