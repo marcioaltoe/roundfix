@@ -37,7 +37,14 @@ repository.
    then `--apply --batch <n>` with the promotions, and record for each record
    and copy that the defect is gone (API Contracts 1-5), that every rewritten
    destination resolves from its file to an existing path, and that each
-   record's byte size equals the size the plan printed.
+   record converted without a promotion has the byte size the plan printed.
+   The plan takes no `--promote`, so a promoted record's size is not compared
+   with it; Requirement 3 compares the promoted bytes of the two commands.
+   Path text naming a folder file that is neither a core artifact nor
+   promoted stays as the Archive Relink's path pass leaves it (ADR-0277:
+   "No other byte changes"); it still names that file at the record's
+   `source_revision`, and the report records it as observed, not as a
+   finding.
 3. MUST repeat Requirement 2's apply through `roundfix baseline update --yes
    --promote <path>` on an identical fixture adopted by the Baseline, and
    record that it writes the same record and copy bytes.
