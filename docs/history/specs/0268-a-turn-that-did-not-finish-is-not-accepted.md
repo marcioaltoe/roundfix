@@ -20,6 +20,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "533"
 ---
 
 # A turn that did not finish is not accepted
