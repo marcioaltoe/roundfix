@@ -53,11 +53,11 @@ A durable attempt to drive one target's Work Items — an Open Pull Request's Re
 _Avoid_: Session, execution, job
 
 **Review Run**:
-A Run over an Open Pull Request's Review Issues — a Fetch Run, a resolve Run or a watch Run. It executes in the user's clean tracked checkout on the PR Head Branch and creates no Run Worktree (ADR-0141).
+A Run over an Open Pull Request's Review Issues — a Fetch Run, a resolve Run or a watch Run. It executes in the user's clean tracked checkout on the PR Head Branch and creates no Run Worktree ([ADR-0141](docs/adr/0141-review-runs-execute-in-a-clean-tracked-user-checkout.md)).
 _Avoid_: PR run, review job, Review Source run
 
 **Spec Run**:
-A Run the Implement Command starts over one Spec's Task Graph. It executes in a Run Worktree on a Run Branch, schedules Tasks by Wave and ends at its authored QA gate when the graph declares one; the guides also call it an Implement Run (ADR-0023, ADR-0025).
+A Run the Implement Command starts over one Spec's Task Graph. It executes in a Run Worktree on a Run Branch, schedules Tasks by Wave and ends at its authored QA gate when the graph declares one; the guides also call it an Implement Run ([ADR-0023](docs/adr/0023-runs-execute-in-per-run-worktrees.md), [ADR-0025](docs/adr/0025-spec-runs-schedule-ready-tasks-concurrently.md)).
 _Avoid_: Implement job, task run, graph execution
 
 **Fetch Run**:
@@ -97,7 +97,7 @@ The Stop Command mode that proves owner identity, cancels registered Agent Sessi
 _Avoid_: Lock release, best-effort stop, orphan reclamation
 
 **Stop Command**:
-The `roundfix stop` command that records a Stop Request for an Active Run, which then stops after the current Work Item settles, or performs a Force Stop with `--force`. It is the only way a Detached Run is ended (ADR-0022, ADR-0028).
+The `roundfix stop` command that records a Stop Request for an Active Run, which then stops after the current Work Item settles, or performs a Force Stop with `--force`. It is the only way a Detached Run is ended ([ADR-0022](docs/adr/0022-stop-requests-travel-through-the-run-database.md), [ADR-0028](docs/adr/0028-operational-runs-can-detach-from-their-caller.md)).
 _Avoid_: Kill command, cancel command, abort
 
 **Assigned Repair**:
@@ -137,11 +137,11 @@ One unit of resolvable work that Roundfix picks up and drives to an outcome: a R
 _Avoid_: Ticket, job, to-do
 
 **Backlog Entry**:
-Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status — `declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled` — where `declined` and `deferred` carry a reason and every terminal entry leaves `docs/backlog/` for `docs/history/backlog/` as a Reduced History Entry (ADR-0092, ADR-0258); it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
+Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status — `declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled` — where `declined` and `deferred` carry a reason and every terminal entry leaves `docs/backlog/` for `docs/history/backlog/` as a Reduced History Entry ([ADR-0092](docs/adr/0092-triage-intent-lives-in-a-typed-backlog.md), [ADR-0258](docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md)); it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
 _Avoid_: Finding, idea artifact, untyped suggestion
 
 **Inbox Entry**:
-A fleeting capture written as a file in the Secondbrain's inbox under its destination's namespace and committed there by its publication owner — the capturing session or an installed scheduler — never in a project checkout (ADR-0095). It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
+A fleeting capture written as a file in the Secondbrain's inbox under its destination's namespace and committed there by its publication owner — the capturing session or an installed scheduler — never in a project checkout ([ADR-0095](docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md)). It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
 _Avoid_: Project inbox item, uncommitted note, draft artifact
 
 **Rollup**:
@@ -184,27 +184,27 @@ A Task appended to an active Spec's Task Graph, before its QA gate, to fix a fin
 _Avoid_: Corrective Spec, follow-up Task
 
 **Cause Class**:
-The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, never by a model judgment (ADR-0214).
+The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, never by a model judgment ([ADR-0214](docs/adr/0214-why-a-verification-failed-is-classified-by-deterministic-signatures.md)).
 _Avoid_: failure category, root cause, model verdict
 
 **Classification Signature**:
-An ordered entry of the embedded signature table, with an identifier, a Cause Class, the one evidence source it reads and a regular expression; the first entry that matches classifies the item (ADR-0214).
+An ordered entry of the embedded signature table, with an identifier, a Cause Class, the one evidence source it reads and a regular expression; the first entry that matches classifies the item ([ADR-0214](docs/adr/0214-why-a-verification-failed-is-classified-by-deterministic-signatures.md)).
 _Avoid_: heuristic, rule, pattern
 
 **Supersession**:
-A durable lifecycle record that names the Spec which delivered another Spec's content. The Archive Command accepts it as proof of completion for the superseded Spec when that Spec has no Task Graph. A cancelled Spec never delivers another Spec's content (ADR-0262).
+A durable lifecycle record that names the Spec which delivered another Spec's content. The Archive Command accepts it as proof of completion for the superseded Spec when that Spec has no Task Graph. A cancelled Spec never delivers another Spec's content ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
 _Avoid_: Replacement, duplicate, hand-written disposition
 
 **Cancel Command**:
-The `roundfix cancel <slug> --reason <text>` command that retires an active Spec which will not be delivered: it writes an Archive Record with the disposition `cancelled`, performs Source Return and removes the Spec folder, which stays in Git at `source_revision`. It refuses while an Active Run or an unfinished Delivery Queue item holds the Spec, an active Spec requires it or Git ignores a file under the Spec folder, never changes a Task status and never commits (ADR-0262, ADR-0269).
+The `roundfix cancel <slug> --reason <text>` command that retires an active Spec which will not be delivered: it writes an Archive Record with the disposition `cancelled`, performs Source Return and removes the Spec folder, which stays in Git at `source_revision`. It refuses while an Active Run or an unfinished Delivery Queue item holds the Spec, an active Spec requires it or Git ignores a file under the Spec folder, never changes a Task status and never commits ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md), [ADR-0269](docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md)).
 _Avoid_: Delete command, abandon, archive override
 
 **Ignored Spec File**:
-A file under an active Spec folder that Git ignores, so no commit holds it. The Archive Command and the Cancel Command refuse while one exists (ADR-0269).
+A file under an active Spec folder that Git ignores, so no commit holds it. The Archive Command and the Cancel Command refuse while one exists ([ADR-0269](docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md)).
 _Avoid_: Untracked change, scratch file, ignored repository file
 
 **Source Return**:
-The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog Entry returns to `docs/backlog/` with `status: open` and no Spec, a Finding returns to `docs/findings/` with `status: pending` and a dated addendum, and every other byte is kept. Other adopted sources stay in Git with the folder (ADR-0262).
+The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog Entry returns to `docs/backlog/` with `status: open` and no Spec, a Finding returns to `docs/findings/` with `status: pending` and a dated addendum, and every other byte is kept. Other adopted sources stay in Git with the folder ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
 _Avoid_: Unadoption, restore, re-triage
 
 **Spec Root**:
@@ -223,7 +223,7 @@ reserves nothing, while a Governed Path still needs its authorization.
 _Avoid_: Declared path, reserved path, authorized path
 
 **Task Type**:
-The required classification that routes a Task to its Agent Selection Profile. The valid values are `backend`, `frontend`, `data`, `infra`, `docs`, `test`, `chore` and `qa`; use the dominant implementation surface when a Task crosses more than one. `qa` names the Spec's authored QA gate, the terminal Task that depends on every leaf, and no other Task carries it (ADR-0091).
+The required classification that routes a Task to its Agent Selection Profile. The valid values are `backend`, `frontend`, `data`, `infra`, `docs`, `test`, `chore` and `qa`; use the dominant implementation surface when a Task crosses more than one. `qa` names the Spec's authored QA gate, the terminal Task that depends on every leaf, and no other Task carries it ([ADR-0091](docs/adr/0091-the-qa-gate-is-a-task-node-of-its-own-type.md)).
 _Avoid_: Task category, work type, inferred type
 
 **Task Graph**:
@@ -263,7 +263,7 @@ The `## Unreachable Acceptance` declaration a Spec authors with its QA rows, nam
 _Avoid_: Skipped row, waived criterion, known limitation
 
 **ACP Runtime**:
-A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. Roundfix supports Codex through `codex-acp`, Claude through `claude-agent-acp`, OpenCode through `opencode acp` and, as an opt-in that enters no built-in profile, Cursor through `cursor-agent acp` (ADR-0217); command overrides remain a stdio escape hatch for local testing.
+A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. Roundfix supports Codex through `codex-acp`, Claude through `claude-agent-acp`, OpenCode through `opencode acp` and, as an opt-in that enters no built-in profile, Cursor through `cursor-agent acp` ([ADR-0217](docs/adr/0217-a-cursor-selection-names-the-advertised-model-value-and-the-login-stays-the-maintainers.md)); command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
 
 **Agent Model**:
@@ -287,7 +287,7 @@ The token-free disposable Agent Session check that maps one Agent Selection thro
 _Avoid_: Model validity, catalog match, recommendation rank
 
 **Runtime Catalogue**:
-What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands (ADR-0147).
+What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands ([ADR-0147](docs/adr/0147-the-adapters-refusal-fires-first-and-the-catalogue-is-the-net.md)).
 _Avoid_: Model list, capability payload, advertised options
 
 **Selection Encoding**:
@@ -311,7 +311,7 @@ The first Agent Selection Roundfix proves and attempts for an Agent Work Categor
 _Avoid_: Default model, primary runtime, recommendation winner
 
 **Fallback Chain**:
-The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. One exception reaches past Agent Work Started: a Lost Rollout or Provider System Error before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task, because the runtime discarded that turn before it could be handed back (ADR-0245, ADR-0274).
+The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. One exception reaches past Agent Work Started: a Lost Rollout or Provider System Error before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task, because the runtime discarded that turn before it could be handed back ([ADR-0245](docs/adr/0245-a-lost-rollout-is-runtime-infrastructure.md), [ADR-0274](docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md)).
 _Avoid_: Dynamic fallback, silent retry, unproven selection
 
 **Default Agent Model**:
@@ -375,7 +375,7 @@ The outcome (`hook_refused`) of a Task commit a repository commit hook rejected 
 _Avoid_: Commit failure, pre-commit error, verification failure
 
 **Mechanical Refusal Code**:
-The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not. The `QA-PRECONDITION` row a refused mechanical stage writes as its terminal row is a row label beside these codes, not a fifth code (ADR-0132).
+The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not. The `QA-PRECONDITION` row a refused mechanical stage writes as its terminal row is a row label beside these codes, not a fifth code ([ADR-0132](docs/adr/0132-a-refused-gate-records-the-refusal-as-its-terminal-row.md)).
 _Avoid_: lint code, error code, check name
 
 **Grant Refusal Code**:
@@ -387,11 +387,11 @@ The acpx-backed session owned by one Work Item or action. Each Implement Task ow
 _Avoid_: ACP session, chat, conversation, thread
 
 **Lost Rollout**:
-The runtime infrastructure failure (`rollout_lost`) in which the ACP Runtime cannot find the persisted record of the Agent Session it is asked to continue. The Daemon recovers it in a new Agent Session without repair or a counted queue retry (ADR-0245).
+The runtime infrastructure failure (`rollout_lost`) in which the ACP Runtime cannot find the persisted record of the Agent Session it is asked to continue. The Daemon recovers it in a new Agent Session without repair or a counted queue retry ([ADR-0245](docs/adr/0245-a-lost-rollout-is-runtime-infrastructure.md)).
 _Avoid_: Session loss, missing prompt, retryable Task failure
 
 **Provider System Error**:
-The runtime infrastructure failure (`provider_system_error`) of a turn whose stream reports that the model provider failed it — the turn's last `threadStatus` is `systemError` — whatever its stop reason. The Daemon recovers it like a Lost Rollout, without a retry on the same selection (ADR-0274).
+The runtime infrastructure failure (`provider_system_error`) of a turn whose stream reports that the model provider failed it — the turn's last `threadStatus` is `systemError` — whatever its stop reason. The Daemon recovers it like a Lost Rollout, without a retry on the same selection ([ADR-0274](docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md)).
 _Avoid_: Provider failure, capacity reply, Lost Rollout
 
 **Agent Background Task**:
@@ -403,7 +403,7 @@ The outcome (`turn_unfinished`) of a QA turn that ends with its seeded report at
 _Avoid_: Pending QA, finished turn, background job
 
 **First Handoff**:
-The first Agent turn of a Task that returns to the Daemon (ADR-0057's "Agent handoff"). Before it, the Fallback Chain's Lost Rollout and Provider System Error exception still applies; after it, no Fallback Selection takes over work a turn handed back.
+The first Agent turn of a Task that returns to the Daemon ([ADR-0057](docs/adr/0057-daemon-exclusively-owns-implement-task-status.md)'s "Agent handoff"). Before it, the Fallback Chain's Lost Rollout and Provider System Error exception still applies; after it, no Fallback Selection takes over work a turn handed back.
 _Avoid_: Session opening, first prompt, Agent Work Started
 
 **Merge-Ready**:
@@ -475,7 +475,7 @@ The terminal Run outcome a Stop Request or a Force Stop produces: the Run ended 
 _Avoid_: Cancelled, aborted, killed
 
 **Budget Exceeded**:
-The terminal Run outcome (`BudgetExceeded`) of a Run whose Run Budget passed: a watch Run settles it from its deadline, and a Spec Run settles it with the configured maximum and the elapsed time, cancels the Agent Sessions it owns and keeps its Run Worktree and Run Branch for Task Carry-Forward (ADR-0158).
+The terminal Run outcome (`BudgetExceeded`) of a Run whose Run Budget passed: a watch Run settles it from its deadline, and a Spec Run settles it with the configured maximum and the elapsed time, cancels the Agent Sessions it owns and keeps its Run Worktree and Run Branch for Task Carry-Forward ([ADR-0158](docs/adr/0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)).
 _Avoid_: Stopped, Timed Out, Max Rounds Reached
 
 **Timed Out**:
@@ -527,7 +527,7 @@ The authoritative command or commands the Daemon runs verbatim in the repository
 _Avoid_: CI, smoke test, best-effort check
 
 **Repository Contract Test**:
-A Go test under the `docscontract` or `repocontract` build tag that checks the repository itself — its documents, derived artifacts or test wiring — rather than one package's behavior. The Full Contract Run runs every one; `make verify-changed` runs the ones its Contract Relevance selects, and `make verify-docs` runs the `internal/docscontract` tests and the contracts its `repo-test` step lists (ADR-0252, ADR-0253).
+A Go test under the `docscontract` or `repocontract` build tag that checks the repository itself — its documents, derived artifacts or test wiring — rather than one package's behavior. The Full Contract Run runs every one; `make verify-changed` runs the ones its Contract Relevance selects, and `make verify-docs` runs the `internal/docscontract` tests and the contracts its `repo-test` step lists ([ADR-0252](docs/adr/0252-the-selective-gate-runs-the-repository-contracts-a-change-makes-relevant.md), [ADR-0253](docs/adr/0253-every-repository-contract-test-runs-on-main-and-before-a-release.md)).
 _Avoid_: docs test, integration test, CI-only test
 
 **Sequential Test**:
@@ -543,15 +543,15 @@ A wall-clock allowance below ten seconds that a test gives work it does not cont
 _Avoid_: Run Budget, test deadline, arbitrary timeout
 
 **Contract Relevance**:
-The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary`. The selector's summary line names each `relevant` contract it leaves out and each `boundary` contract. The Full Contract Run ignores Contract Relevance (ADR-0252, ADR-0253).
+The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary`. The selector's summary line names each `relevant` contract it leaves out and each `boundary` contract. The Full Contract Run ignores Contract Relevance ([ADR-0252](docs/adr/0252-the-selective-gate-runs-the-repository-contracts-a-change-makes-relevant.md), [ADR-0253](docs/adr/0253-every-repository-contract-test-runs-on-main-and-before-a-release.md)).
 _Avoid_: test tags, impact map, test filter
 
 **Full Contract Run**:
-`make verify-contracts`: one run of every Repository Contract Test that `cmd/verify-select` discovers, whatever its Contract Relevance, with no hand-kept list. CI runs it on every push to main and before every release, so a contract the selective gate leaves out of a pull request still runs before the change ships (ADR-0253).
+`make verify-contracts`: one run of every Repository Contract Test that `cmd/verify-select` discovers, whatever its Contract Relevance, with no hand-kept list. CI runs it on every push to main and before every release, so a contract the selective gate leaves out of a pull request still runs before the change ships ([ADR-0253](docs/adr/0253-every-repository-contract-test-runs-on-main-and-before-a-release.md)).
 _Avoid_: full suite, nightly run, repo-test
 
 **Incremental Verification**:
-The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change outside a Run while reusing safe local state. In a Daemon-assigned turn the Agent runs focused tests instead, because the Daemon runs the Task's Verification and the repository Verification at settlement (ADR-0257). It is distinct from the complete repository Verification selected by `verification.gate`.
+The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change outside a Run while reusing safe local state. In a Daemon-assigned turn the Agent runs focused tests instead, because the Daemon runs the Task's Verification and the repository Verification at settlement ([ADR-0257](docs/adr/0257-inside-a-run-the-daemon-is-the-only-full-gate-and-the-baseline-states-each-rule-once.md)). It is distinct from the complete repository Verification selected by `verification.gate`.
 _Avoid_: Complete Verification, CI gate, optional check
 
 **Waiting for Verification**:
@@ -674,7 +674,7 @@ The support command that inspects terminal Spec Run Worktrees and Run Branches a
 _Avoid_: GC Command, Settle Command, automatic integration
 
 **Task Carry-Forward**:
-The explicit act that hands a settled Task from a terminal Spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped, Unresolved or Budget Exceeded (ADR-0158) and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
+The explicit act that hands a settled Task from a terminal Spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped, Unresolved or Budget Exceeded ([ADR-0158](docs/adr/0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)) and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
 
 **Delivery Queue**:
@@ -702,91 +702,91 @@ The one operator decision presented for the lowest-position parked Delivery Queu
 _Avoid_: Warning, automatic recommendation, blocker list
 
 **Delivery Retry**:
-The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started Queue Owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` (ADR-0262).
+The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started Queue Owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
 _Avoid_: Resume Command, automatic retry, replay
 
 **Judge Log**:
-The per-month JSONL record of every advisory judgment call: the question, the transport that carried it (OpenRouter or TypeSafe), the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads (ADR-0201).
+The per-month JSONL record of every advisory judgment call: the question, the transport that carried it (OpenRouter or TypeSafe), the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads ([ADR-0201](docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md)).
 _Avoid_: Run Event Journal, audit log
 
 **Advisory Judgment**:
-A typed semantic judgment about a Spec artifact, such as whether a cited ADR supports the attributed claim, or about a source relationship, such as whether a Finding or Backlog Entry shares a Spec's context, that the authoring model must answer but that never gates, never changes another command's exit code, and fails open (ADR-0200, ADR-0209).
+A typed semantic judgment about a Spec artifact, such as whether a cited ADR supports the attributed claim, or about a source relationship, such as whether a Finding or Backlog Entry shares a Spec's context, that the authoring model must answer but that never gates, never changes another command's exit code, and fails open ([ADR-0200](docs/adr/0200-spec-authoring-gets-an-advisory-judge-that-never-gates.md), [ADR-0209](docs/adr/0209-the-judge-suggests-which-sources-share-a-spec.md)).
 _Avoid_: Gate, check, finding
 
 **Grouping Suggestion**:
-An Advisory Judgment that an open Finding or Backlog Entry shares the context of a source the Spec already adopts, so the author adopts it into the same Spec or states why it stays apart; it never moves a source by itself (ADR-0209).
+An Advisory Judgment that an open Finding or Backlog Entry shares the context of a source the Spec already adopts, so the author adopts it into the same Spec or states why it stays apart; it never moves a source by itself ([ADR-0209](docs/adr/0209-the-judge-suggests-which-sources-share-a-spec.md)).
 _Avoid_: Merge rule, automatic grouping
 
 **Grouping Bound**:
-The size limit on grouping sources into one Spec: four implementation Tasks plus its QA gate. A grouped scope that needs more is split into Specs that each fit, and each source keeps exactly one owning Spec (ADR-0208).
+The size limit on grouping sources into one Spec: four implementation Tasks plus its QA gate. A grouped scope that needs more is split into Specs that each fit, and each source keeps exactly one owning Spec ([ADR-0208](docs/adr/0208-work-items-that-share-a-context-share-a-spec.md)).
 _Avoid_: Spec size rule, Task cap
 
 **Setup Snapshot**:
-The Baseline's embedded mirror of one upstream skills setup, written only by the asset sync, that lists by name the skills a Baseline Profile takes, with the tree digest of each (ADR-0191, ADR-0241).
+The Baseline's embedded mirror of one upstream skills setup, written only by the asset sync, that lists by name the skills a Baseline Profile takes, with the tree digest of each ([ADR-0191](docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md), [ADR-0241](docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md)).
 _Avoid_: Skill lock, catalog, upstream checkout
 
 **Composed Setup Snapshot**:
-A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains (ADR-0204).
+A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains ([ADR-0204](docs/adr/0204-a-composed-profile-takes-a-setup-composed-from-upstream-setups-by-name.md)).
 _Avoid_: Merged setup, custom setup
 
 **Retired Skill**:
-A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it (ADR-0246).
+A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it ([ADR-0246](docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md)).
 _Avoid_: Deprecated skill, obsolete skill
 
 **Park Class**:
-The named reason a Delivery Queue item is parked — for example a prerequisite not yet merged, a Pull Request conflict, an environment-only QA partial or a check that failed twice outside the item's packages — shown with the next command that answers it (ADR-0192, ADR-0193).
+The named reason a Delivery Queue item is parked — for example a prerequisite not yet merged, a Pull Request conflict, an environment-only QA partial or a check that failed twice outside the item's packages — shown with the next command that answers it ([ADR-0192](docs/adr/0192-a-conflict-confined-to-declared-derived-paths-is-resolved-by-regeneration.md), [ADR-0193](docs/adr/0193-a-spec-names-its-prerequisites-and-the-owner-waits-for-them.md)).
 _Avoid_: Blocker text, error code
 
 **Prerequisite Spec**:
-A Spec another Spec names in its Task Graph as `requires`; the Queue Owner does not start the dependent item until each prerequisite is merged into the default branch (ADR-0193). A cancelled Spec's record never meets a prerequisite (ADR-0262).
+A Spec another Spec names in its Task Graph as `requires`; the Queue Owner does not start the dependent item until each prerequisite is merged into the default branch ([ADR-0193](docs/adr/0193-a-spec-names-its-prerequisites-and-the-owner-waits-for-them.md)). A cancelled Spec's record never meets a prerequisite ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
 _Avoid_: Queue order, dependency Task
 
 **Derived Path Declaration**:
-A Project Config entry naming a path pattern and the sanctioned command that regenerates it; a Pull Request conflict confined to declared derived paths is resolved by regeneration instead of parking (ADR-0192).
+A Project Config entry naming a path pattern and the sanctioned command that regenerates it; a Pull Request conflict confined to declared derived paths is resolved by regeneration instead of parking ([ADR-0192](docs/adr/0192-a-conflict-confined-to-declared-derived-paths-is-resolved-by-regeneration.md)).
 _Avoid_: Generated file list, merge strategy
 
 **Module Version Record**:
-A generated record of each Baseline module's versions and content digests, so a module version names one recorded content and the record step can choose the next free version (ADR-0250).
+A generated record of each Baseline module's versions and content digests, so a module version names one recorded content and the record step can choose the next free version ([ADR-0250](docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md)).
 _Avoid_: Module changelog, manual version note
 
 **Coverage Record**:
-A generated record of the tests in the repository's packages, including the release platforms on which platform-limited tests are built, so coverage comparisons are stable on every host (ADR-0250).
+A generated record of the tests in the repository's packages, including the release platforms on which platform-limited tests are built, so coverage comparisons are stable on every host ([ADR-0250](docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md)).
 _Avoid_: Host test list, test result report
 
 **Evidence Snapshot**:
-The Daemon's record, written when a QA pass closes, of the inputs each carriable passing row observed at the audited head (ADR-0194).
+The Daemon's record, written when a QA pass closes, of the inputs each carriable passing row observed at the audited head ([ADR-0194](docs/adr/0194-the-daemon-records-what-a-qa-row-observed-and-hands-a-failed-pass-to-the-next.md)).
 _Avoid_: QA cache, Agent-written evidence
 
 **Carried Row**:
-A QA matrix row a later pass keeps from the prior report because its Evidence Snapshot proves its inputs unmoved; it keeps its original provenance. Rows that read the repository Verification, the Pull Request or the commit range are never carried (ADR-0194, ADR-0195).
+A QA matrix row a later pass keeps from the prior report because its Evidence Snapshot proves its inputs unmoved; it keeps its original provenance. Rows that read the repository Verification, the Pull Request or the commit range are never carried ([ADR-0194](docs/adr/0194-the-daemon-records-what-a-qa-row-observed-and-hands-a-failed-pass-to-the-next.md), [ADR-0195](docs/adr/0195-rows-that-read-the-gate-or-the-commits-are-observed-on-every-pass.md)).
 _Avoid_: Skipped row, Task Carry-Forward
 
 **Carry Disposition**:
-The fixed-list outcome a QA pass records for every row of the prior report: carried, re-run as stale, re-run as always observed, or re-run because it did not pass (ADR-0195).
+The fixed-list outcome a QA pass records for every row of the prior report: carried, re-run as stale, re-run as always observed, or re-run because it did not pass ([ADR-0195](docs/adr/0195-rows-that-read-the-gate-or-the-commits-are-observed-on-every-pass.md)).
 _Avoid_: Row status, verdict
 
 **Delivery Convention**:
-A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect (ADR-0196).
+A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect ([ADR-0196](docs/adr/0196-a-pre-pr-review-finding-parks-only-after-validation.md)).
 _Avoid_: Review exemption, ignore list
 
 **Reviewer Lineage**:
-The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it (ADR-0197).
+The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md)).
 _Avoid_: Review cache, third round
 
 **Turn Usage**:
-The token count an ACP adapter reports for one prompt of a Run, recorded per Task and summed per Run; a prompt without a report is recorded as unreported, never as zero (ADR-0198).
+The token count an ACP adapter reports for one prompt of a Run, recorded per Task and summed per Run; a prompt without a report is recorded as unreported, never as zero ([ADR-0198](docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md)).
 _Avoid_: Cost estimate, spend
 
 **Usage Basis**:
-How a Turn Usage was counted: `turn` when the adapter's end-of-prompt count covers the whole turn, `request-sum` when Roundfix sums the adapter's per-request context readings (ADR-0198).
+How a Turn Usage was counted: `turn` when the adapter's end-of-prompt count covers the whole turn, `request-sum` when Roundfix sums the adapter's per-request context readings ([ADR-0198](docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md)).
 _Avoid_: Pricing model
 
 **Reported Cost**:
-The spend an ACP adapter itself reports for a turn; Roundfix prints only reported cost and never prices tokens from a table (ADR-0198).
+The spend an ACP adapter itself reports for a turn; Roundfix prints only reported cost and never prices tokens from a table ([ADR-0198](docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md)).
 _Avoid_: Estimated cost, price table
 
 **Queue Token Ceiling**:
-An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped (ADR-0199).
+An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped ([ADR-0199](docs/adr/0199-a-queue-token-ceiling-stops-new-starts-and-never-a-running-task.md)).
 _Avoid_: Run Budget, spending limit
 
 **Init Command**:
@@ -854,31 +854,31 @@ The Spec Consistency Check gap raised when a Spec's `_techspec.md` does not decl
 _Avoid_: Missing contract, untraced contract
 
 **Live Document**:
-A tracked Markdown file inside an active Spec folder, an open Backlog Entry, an unresolved Finding, or under `docs/references/`; a citation is a relative link destination or repository-relative path naming a file removed by retirement (ADR-0260).
+A tracked Markdown file inside an active Spec folder, an open Backlog Entry, an unresolved Finding, or under `docs/references/`; a citation is a relative link destination or repository-relative path naming a file removed by retirement ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Citing file, live source, current document
 
 **Archive Relink**:
-The Archive Command's pre-write operation that promotes a cited non-core file to `docs/references/<basename>`, rewrites Live Document citations to the promoted copy or Archive Record, and records rewritten paths under the optional `relinked` list (ADR-0260).
+The Archive Command's pre-write operation that promotes a cited non-core file to `docs/references/<basename>`, rewrites Live Document citations to the promoted copy or Archive Record, and records rewritten paths under the optional `relinked` list ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Archive rewrite, source duplication, link cleanup
 
 **Legacy Link Rebase**:
-The rewrite a Legacy Archive Folder conversion makes to the relative destinations of the record's outcome and of each promoted copy: a destination inside the folder points at its promoted copy or the Archive Record, and every other destination stays on the same repository path (ADR-0277).
+The rewrite a Legacy Archive Folder conversion makes to the relative destinations of the record's outcome and of each promoted copy: a destination inside the folder points at its promoted copy or the Archive Record, and every other destination stays on the same repository path ([ADR-0277](docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md)).
 _Avoid_: Archive Relink, broken-link report, arbitrary link rewrite
 
 **History Citation**:
-A citation from tracked Markdown outside the History Root to a file or folder a selected history unit removes, which `roundfix baseline update` lists in text and JSON, binds into the Plan Digest, and may offer for `--promote` when it is a Live Document (ADR-0260).
+A citation from tracked Markdown outside the History Root to a file or folder a selected history unit removes, which `roundfix baseline update` lists in text and JSON, binds into the Plan Digest, and may offer for `--promote` when it is a Live Document ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Relocation Citation, broken-link scan, stale citation
 
 **Stale History Citation**:
-A citation already unresolved in the working tree whose target remains in the History Full Tag, which `roundfix baseline update` reports with a `git show history-full:<path>` restore command outside the Plan Digest and update state (ADR-0260).
+A citation already unresolved in the working tree whose target remains in the History Full Tag, which `roundfix baseline update` reports with a `git show history-full:<path>` restore command outside the Plan Digest and update state ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Broken link, history warning, missing source
 
 **Archive Record**:
-The small `<slug>.md` record an archive leaves under the resolved archive root: a file named `NNNN-<slug>.md` whose front matter declares `roundfix/archive-record/v1`; any other Markdown file in that root is not a record. It carries the disposition, QA Report and verdict, promoted references, `source_revision` and, once the delivery pull request is open, `pull_request`; the removed Spec folder stays recoverable in Git at that revision, after a squash merge through Source Revision Recovery. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override (ADR-0248, ADR-0251, ADR-0260, ADR-0261). A cancelled Spec's record has the disposition `cancelled` and carries `cancel_reason`, `completed_tasks`, `pending_tasks` and `returned_sources`; only its listed completed Tasks count as completed (ADR-0262).
+The small `<slug>.md` record an archive leaves under the resolved archive root: a file named `NNNN-<slug>.md` whose front matter declares `roundfix/archive-record/v1`; any other Markdown file in that root is not a record. It carries the disposition, QA Report and verdict, promoted references, `source_revision` and, once the delivery pull request is open, `pull_request`; the removed Spec folder stays recoverable in Git at that revision, after a squash merge through Source Revision Recovery. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md), [ADR-0251](docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md), [ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md), [ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)). A cancelled Spec's record has the disposition `cancelled` and carries `cancel_reason`, `completed_tasks`, `pending_tasks` and `returned_sources`; only its listed completed Tasks count as completed ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
 _Avoid_: Archive folder, archive log, copied Spec
 
 **Folder Removal Recovery**:
-How the Archive Command and the Cancel Command end when the final removal of the Spec folder fails: every write stays in place, and the command prints the command that finishes the removal (ADR-0269).
+How the Archive Command and the Cancel Command end when the final removal of the Spec folder fails: every write stays in place, and the command prints the command that finishes the removal ([ADR-0269](docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md)).
 _Avoid_: Rollback, retry archive, partial cleanup
 
 **Archive Advice**:
@@ -886,63 +886,63 @@ Jev's advisory classification of candidate files before the archive cut. It labe
 _Avoid_: Archive verdict, promotion decision, required evidence
 
 **Secret Pattern**:
-One reviewed credential shape with a kind name, kept in one table. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+One reviewed credential shape with a kind name, kept in one table ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Secret Match, credential value, ad hoc pattern
 
 **Secret Match**:
-One line that matches a Secret Pattern, reported by path, line and kind and never by value. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+One line that matches a Secret Pattern, reported by path, line and kind and never by value ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Secret Pattern, secret value, evidence sample
 
 **Secret Scan**:
-A check of the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+A check of the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Redaction, post-push scan, advisory check
 
 **Archive Command**:
-The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added (ADR-0261). Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict (ADR-0260).
+The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)). Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Move command, retire run, cleanup command
 
 **Source Revision Recovery**:
-A reader's fetch of `refs/pull/<N>/head` when an Archive Record's `source_revision` is missing locally, with the number taken from the record's `pull_request` or from the trailing `(#N)` of the commit that added the record. It writes no ref, never prompts, and leaves the reader's unavailable outcome when it fails (ADR-0261).
+A reader's fetch of `refs/pull/<N>/head` when an Archive Record's `source_revision` is missing locally, with the number taken from the record's `pull_request` or from the trailing `(#N)` of the commit that added the record. It writes no ref, never prompts, and leaves the reader's unavailable outcome when it fails ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)).
 _Avoid_: Backfill, archive ref, history restore
 
 **Pull Request Record Commit**:
-The Delivery Queue's commit, made after it opens a Spec's pull request, that stores the number in the Archive Record its archive commit added and changes nothing else; the queue accepts it by proof instead of a second repository gate (ADR-0261).
+The Delivery Queue's commit, made after it opens a Spec's pull request, that stores the number in the Archive Record its archive commit added and changes nothing else; the queue accepts it by proof instead of a second repository gate ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)).
 _Avoid_: Archive commit, record backfill, amend
 
 **History Sanitize Command**:
-The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag. `roundfix baseline update` runs the same planning for every convertible unit at once, while this command remains the path for reviewed batches (ADR-0254).
+The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag. `roundfix baseline update` runs the same planning for every convertible unit at once, while this command remains the path for reviewed batches ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Archive Command, history deletion, cleanup command
 
 **Pending History**:
-The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan (ADR-0254).
+The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Active history, current history, unplanned archive
 
 **Legacy Archive Folder**:
-A Spec folder the Archive Command left under the archive root before archives wrote Archive Records (ADR-0248).
+A Spec folder the Archive Command left under the archive root before archives wrote Archive Records ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md)).
 _Avoid_: Archive Record, active Spec, history root
 
 **Refused Unit**:
-A pending History Sanitize Command unit that cannot be converted. The plan and the batch name it with its reason on one line, leave it untouched, and do not count it toward `--batch <n>`. The update lists one without blocking the Baseline Plan or changing its state; a unit with uncommitted changes is refused (ADR-0251, ADR-0254).
+A pending History Sanitize Command unit that cannot be converted. The plan and the batch name it with its reason on one line, leave it untouched, and do not count it toward `--batch <n>`. The update lists one without blocking the Baseline Plan or changing its state; a unit with uncommitted changes is refused ([ADR-0251](docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md), [ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Converted unit, skipped silently, failed batch
 
 **Lenient Legacy Reading**:
-The reading of a Legacy Archive Folder that tolerates and names projection rows outside the graph and retired Task types, accepts a legacy list of maps `unproven`, and reads the summary, `legacy: not recorded` for missing legacy override approval or reason, adopted sources and creation-date fallbacks. Legacy Link Rebase is part of this reading for the outcome and promoted copies. It is never applied to an active Spec (ADR-0251, ADR-0254, ADR-0277).
+The reading of a Legacy Archive Folder that tolerates and names projection rows outside the graph and retired Task types, accepts a legacy list of maps `unproven`, and reads the summary, `legacy: not recorded` for missing legacy override approval or reason, adopted sources and creation-date fallbacks. Legacy Link Rebase is part of this reading for the outcome and promoted copies. It is never applied to an active Spec ([ADR-0251](docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md), [ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0277](docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md)).
 _Avoid_: Relaxed active reading, manifest rewrite, schema bypass
 
 **Sanitize Batch**:
-The next units one `--apply` can convert, delivered as one Pull Request with the repository gates green and revertible; Refused Units do not count toward the batch. The update converts every convertible unit as one batch in its own change (ADR-0248, ADR-0251, ADR-0254).
+The next units one `--apply` can convert, delivered as one Pull Request with the repository gates green and revertible; Refused Units do not count toward the batch. The update converts every convertible unit as one batch in its own change ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md), [ADR-0251](docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md), [ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Archive batch, migration wave, unreviewed cleanup
 
 **Reduced History Entry**:
-A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text. A retirement writes it directly, and the History Sanitize Command reduces the entries retired before (ADR-0248, ADR-0258).
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text. A retirement writes it directly, and the History Sanitize Command reduces the entries retired before ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md), [ADR-0258](docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md)).
 _Avoid_: Summary, Archive Record, truncated history
 
 **History Full Tag**:
-The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable. The update creates it at `HEAD` when absent, never moves it, and the operator pushes it with `git push origin history-full` (ADR-0248, ADR-0254).
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable. The update creates it at `HEAD` when absent, never moves it, and the operator pushes it with `git push origin history-full` ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md), [ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Lightweight tag, batch tag, archive stamp
 
 **History Root**:
-The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md)).
 _Avoid_: Archive folder, `_archived`, attic, trash
 
 **History Relocation**:
@@ -954,27 +954,27 @@ A citation in a tracked file that resolves before a Baseline Plan's History Relo
 _Avoid_: Broken link, dangling reference, link check
 
 **Worktree Build Cache**:
-A repository-declared directory of rebuildable build output retained in a Run Worktree, Task Worktree or Delivery Queue item worktree. It becomes reclaimable when its Run is terminal or its item is merged; active work keeps it. See [ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md).
+A repository-declared directory of rebuildable build output retained in a Run Worktree, Task Worktree or Delivery Queue item worktree. It becomes reclaimable when its Run is terminal or its item is merged; active work keeps it ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
 _Avoid_: Run artifacts, shared build cache
 
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, removes declared Worktree Build Caches from ended worktrees, and reports what it freed. See [ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md). A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention (ADR-0255).
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, removes declared Worktree Build Caches from ended worktrees, and reports what it freed ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)). A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:
-The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033. It is the inner window: Run Retention removes the whole Run past the outer window, so a Journal Retention longer than the Run Retention has no effect past it (ADR-0255).
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything ([ADR-0033](docs/adr/0033-the-run-event-journal-is-pruned-by-retention.md)). It is the inner window: Run Retention removes the whole Run past the outer window, so a Journal Retention longer than the Run Retention has no effect past it ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
 _Avoid_: Log rotation, TTL, expiry
 
 **Run Retention**:
-The User Config window, `store.run_retention_days` of 7, 15 or 30 days and 30 by default, after which a terminal Run leaves the Run Database whole: its row, its Run Event Journal, its Agent Selection records, its token usage and its artifact directory. A Run that is not terminal, that a Delivery Queue references, whose Run Worktree still exists, or whose artifact directory sits under an unproven root is kept (ADR-0255).
+The User Config window, `store.run_retention_days` of 7, 15 or 30 days and 30 by default, after which a terminal Run leaves the Run Database whole: its row, its Run Event Journal, its Agent Selection records, its token usage and its artifact directory. A Run that is not terminal, that a Delivery Queue references, whose Run Worktree still exists, or whose artifact directory sits under an unproven root is kept ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
 _Avoid_: Journal Retention, TTL, purge
 
 **Run Retention Sweep**:
-The step that applies Run Retention and then returns freed pages to the filesystem by incremental compaction. It runs at most once a day at the start of a Run or a Delivery Queue under a two-second budget, continuing at the next start when the budget runs out, and without a budget in the GC Command (ADR-0255).
+The step that applies Run Retention and then returns freed pages to the filesystem by incremental compaction. It runs at most once a day at the start of a Run or a Delivery Queue under a two-second budget, continuing at the next start when the budget runs out, and without a budget in the GC Command ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
 _Avoid_: cleanup job, cron, vacuum
 
 **Worktree Bootstrap**:
-The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome ([ADR-0034](docs/adr/0034-run-worktrees-can-bootstrap-their-environment.md)).
 _Avoid_: Setup command, provisioning, install step
 
 **Context-Driven Baseline**:
@@ -1058,11 +1058,11 @@ The exact set of repository changes proposed for explicit review and confirmatio
 _Avoid_: Patch, implicit apply, change preview
 
 **Baseline Plan**:
-The `roundfix/baseline-plan/v1` document a Baseline Command run produces before any mutation: the planned postimages, the canonical managed-entry ledger, the repository and catalog identities, every bounded preimage the plan reads or changes, and the History Relocations and History Citations it carries. Another clone of the same repository can apply it only when all of those match (ADR-0071).
+The `roundfix/baseline-plan/v1` document a Baseline Command run produces before any mutation: the planned postimages, the canonical managed-entry ledger, the repository and catalog identities, every bounded preimage the plan reads or changes, and the History Relocations and History Citations it carries. Another clone of the same repository can apply it only when all of those match ([ADR-0071](docs/adr/0071-baseline-plans-are-portable-and-preimage-bound.md)).
 _Avoid_: Change preview, pending-plan state, patch
 
 **Plan Digest**:
-The digest over a Baseline Plan that the operator confirms before apply and that binds the plan's preimages, warnings and History Citations; a plan whose digest no longer matches is not the plan that was confirmed (ADR-0071).
+The digest over a Baseline Plan that the operator confirms before apply and that binds the plan's preimages, warnings and History Citations; a plan whose digest no longer matches is not the plan that was confirmed ([ADR-0071](docs/adr/0071-baseline-plans-are-portable-and-preimage-bound.md)).
 _Avoid_: File hash, approval token, repository checksum
 
 **Setup Manifest**:
@@ -1074,7 +1074,7 @@ The byte range one setup-owned marker pair delimits inside an instruction carrie
 _Avoid_: Managed file, generated block, setup section
 
 **Managed Refresh**:
-The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It also lists History Citations, binds them into the Plan Digest, accepts repeatable `--promote` values, and converts Pending History on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change (ADR-0254, ADR-0260).
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It also lists History Citations, binds them into the Plan Digest, accepts repeatable `--promote` values, and converts Pending History on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Baseline Readoption, reapply, overwrite
 
 **Unrecorded Managed Region**:
@@ -1098,11 +1098,11 @@ Generated managed Markdown that the target repository's selected formatter leave
 _Avoid_: Renderer-canonical output, format-after-apply fixup
 
 **Format Command**:
-The Project Config command `verification.format` that the Daemon runs, outside the Agent sandbox, over the files under a Spec's `qa/` directory before the repository Verification precondition (an imported pass) and before the QA Report commit, restoring the original bytes when it fails (ADR-0249).
+The Project Config command `verification.format` that the Daemon runs, outside the Agent sandbox, over the files under a Spec's `qa/` directory before the repository Verification precondition (an imported pass) and before the QA Report commit, restoring the original bytes when it fails ([ADR-0249](docs/adr/0249-a-qa-step-formats-its-qa-directory-and-reopen-sees-a-late-dependency.md)).
 _Avoid_: Repository Verification, Baseline formatter, whole-tree formatter
 
 **Late Dependency**:
-A Task in a completed QA gate's dependency closure that the Task Graph did not hold when the newest QA Report was committed; `roundfix reopen` returns the gate to `pending` over it whatever its status (ADR-0249).
+A Task in a completed QA gate's dependency closure that the Task Graph did not hold when the newest QA Report was committed; `roundfix reopen` returns the gate to `pending` over it whatever its status ([ADR-0249](docs/adr/0249-a-qa-step-formats-its-qa-directory-and-reopen-sees-a-late-dependency.md)).
 _Avoid_: Stale dependency, missing dependency, unresolved dependency
 
 **Agent Skill**:
@@ -1248,7 +1248,7 @@ The Roundfix environment variable an OpenRouter stage reads first, the judge's o
 _Avoid_: API key value, generic OpenRouter key, shared key
 
 **Judge Key Variables**:
-The variables the judge reads its credentials from, which no Agent Session and no Verification command of a Run receives. See [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md).
+The variables the judge reads its credentials from, which no Agent Session and no Verification command of a Run receives ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Stage Key, implementation key, credential value
 
 **Tested Base**:
@@ -1300,7 +1300,7 @@ A technical identity for an entity or resource that is generated and controlled 
 _Avoid_: External identifier, natural key, business code
 
 **Frontend Layout Decision**:
-The repository's recorded choice of frontend layout, `systems` or `repository-defined`. While none is recorded, the Baseline states the suggested `systems` layout; a recorded value is never overwritten (ADR-0205).
+The repository's recorded choice of frontend layout, `systems` or `repository-defined`. While none is recorded, the Baseline states the suggested `systems` layout; a recorded value is never overwritten ([ADR-0205](docs/adr/0205-a-repository-records-its-frontend-layout-and-an-unrecorded-layout-follows-the-suggestion.md)).
 _Avoid_: Frontend architecture rule, mandated layout
 
 **Standard TypeScript Monorepo Profile**:
