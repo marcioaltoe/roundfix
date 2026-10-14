@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"roundfix/internal/spec"
+	"roundfix/internal/testfixture"
 )
 
 // Suite: reopen over Git-proven Late Dependencies.
@@ -37,9 +38,9 @@ func TestReopenReopensALateDependencyThroughTheBuiltBinary(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr
-	code := exitCodeFromWait(command.Run())
+	code, note := testfixture.ChildExitCode(command.Run())
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != "reopened task_qa pending — invalidated qa/qa-report-2026-10-06.md\n" {
-		t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+		t.Fatalf("exit=%d stdout=%q stderr=%q; %s", code, stdout.String(), stderr.String(), note)
 	}
 	task := mustRead(t, implementTaskPath(repo, "task_qa"))
 	if !strings.Contains(task, "status: pending") || !strings.Contains(task, "- Dependencies added after the QA Report: `task_03`\n") {

@@ -178,12 +178,19 @@ binary and the owner's console log contains:
 roundfix: Delivery Queue item <slug>: <step> runs the item binary <absolute path>
 ```
 
-When `migrate --check` exits with any other code, the step runs the owner's
+When `migrate --check` exits with any other code or is killed by a signal, the step runs the owner's
 binary and the console log contains:
 
 ```text
-roundfix: notice: Delivery Queue item <slug>: <step> runs the owner's binary; the item binary's migrate --check exited <n>: <first non-empty line of its stderr, else stdout>
+roundfix: notice: Delivery Queue item <slug>: <step> runs the owner's binary; the item binary's migrate --check <outcome>: <first non-empty line of its stderr, else stdout>
 ```
+
+`<outcome>` is `exited <n>` for an exited probe, or, for a Signal Exit,
+`was killed by signal <name> (<number>), core dumped` or
+`was killed by signal <name> (<number>), no core dump`. When an item or owner
+step child (`implement`, `archive`, or `review`) ends by a signal, the step
+fails with `<operation> was killed by signal <name> (<number>)` and its core
+state, followed by `: <detail>` only when the child wrote a non-empty line.
 
 A failed build, a declared path Git does not ignore, or an item binary that
 cannot start parks the item as `delivery-error`; the blocker names the command

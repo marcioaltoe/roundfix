@@ -72,6 +72,10 @@ _Avoid_: Pause, retry, failure
 A signal sent only to the process whose identity was recorded when its PID was learned, or to its process group after proving the leader or the continued presence of live members. A different identity means the recorded process ended and receives no signal ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
 _Avoid_: Safe kill, PID kill, best-effort signal
 
+**Signal Exit**:
+The end of a child process that a signal caused instead of an exit status, which Roundfix and its test helpers report by the signal's name and number and whether a core was dumped, never as exit code `-1` or `1`.
+_Avoid_: exit -1, crash, negative exit code
+
 **Helper Lifeline**:
 A test helper's connection to its owning test binary, whose loss ends the helper even when test cleanup cannot run ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
 _Avoid_: Owner PID probe, cleanup promise

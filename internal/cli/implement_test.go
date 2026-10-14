@@ -32,6 +32,7 @@ import (
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	"roundfix/internal/suiteguard"
+	"roundfix/internal/testfixture"
 	"roundfix/internal/testwait"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
@@ -135,7 +136,14 @@ func runCLIHelper(t *testing.T, dir string, fakeACPX string, extraEnv map[string
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	return stdout.String(), stderr.String(), exitCodeFromWait(err)
+	code, note := testfixture.ChildExitCode(err)
+	if note != "" {
+		if stderr.Len() > 0 && !strings.HasSuffix(stderr.String(), "\n") {
+			stderr.WriteByte('\n')
+		}
+		stderr.WriteString(note + "\n")
+	}
+	return stdout.String(), stderr.String(), code
 }
 
 func cliHelperEnv(t *testing.T, fakeACPX string, extra map[string]string) []string {
@@ -7659,7 +7667,14 @@ func runRoundfixBinaryMacro(t *testing.T, binary string, dir string, homeDir str
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	return stdout.String(), stderr.String(), exitCodeFromWait(err)
+	code, note := testfixture.ChildExitCode(err)
+	if note != "" {
+		if stderr.Len() > 0 && !strings.HasSuffix(stderr.String(), "\n") {
+			stderr.WriteByte('\n')
+		}
+		stderr.WriteString(note + "\n")
+	}
+	return stdout.String(), stderr.String(), code
 }
 
 func decodeMacroConfigureResponse(t *testing.T, raw string) macroCommandResult {

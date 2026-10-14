@@ -11,7 +11,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,6 +21,7 @@ import (
 	"testing"
 
 	"roundfix/internal/spec"
+	"roundfix/internal/testfixture"
 )
 
 const baselineCitationFolder = "docs/history/specs/0001-legacy"
@@ -91,13 +91,12 @@ func baselineCitationGoRun(t *testing.T, h historyFixture, args ...string) (stri
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
 	err = command.Run()
-	code := 0
-	if err != nil {
-		var exit *exec.ExitError
-		if !errors.As(err, &exit) {
-			t.Fatalf("run transcript: %v", err)
+	code, note := testfixture.ChildExitCode(err)
+	if note != "" {
+		if stderr.Len() > 0 && !strings.HasSuffix(stderr.String(), "\n") {
+			stderr.WriteByte('\n')
 		}
-		code = exit.ExitCode()
+		stderr.WriteString(note + "\n")
 	}
 	return stdout.String(), stderr.String(), code
 }
