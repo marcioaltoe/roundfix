@@ -62,7 +62,8 @@ plan Pull Request, and the record command picks the next free version.
   change a skill describes"; `internal/cli/deliver_workflow.go` is a source of
   the `deliver` Behavior Surfaces, so task_01 updates the `deliver` reference.
   ADR-0189 and ADR-0233 govern the owned skill's version raise, written only by
-  the record command. ADR-0250 does not apply: no Baseline module
+  the record command. ADR-0272 refines ADR-0233's retry rule for a parked
+  Delivery Queue item; this Spec leaves that rule unchanged. ADR-0250 does not apply: no Baseline module
   version or coverage record changes. ADR-0244: "A Spec now carries a Glossary Declaration";
   this Spec adds one term. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable. No lint, formatter, test-runner, Makefile, CI

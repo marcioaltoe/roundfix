@@ -221,6 +221,7 @@ Cross-read from `_prd.md`:
 - ADR-0256: its rejected model judging stays rejected; task_01 is the skills Task its authoring rule requires.
 - ADR-0189: no rejected alternative is taken; both version fields rise with the content.
 - ADR-0233: no rejected alternative is taken; the record command writes the version.
+- ADR-0272: no rejected alternative is taken; a correction to a parked item is still proved by its Reviewed Head Record and declared paths.
 - ADR-0244: its rejected model gate stays rejected; the term is declared and written by task_01.
 - ADR-0250: does not apply; no Baseline module version or coverage record changes, so none of its alternatives is in play.
 
