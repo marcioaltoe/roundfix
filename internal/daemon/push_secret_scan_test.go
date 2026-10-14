@@ -126,3 +126,45 @@ func runFinalPushInIsolatedProcess(t *testing.T) bool {
 	}
 	return true
 }
+
+func TestFinalPushHistoryReadFailureOmitsItsOutput(t *testing.T) {
+	t.Parallel()
+	sample := "ghp_" + strings.Repeat("c3", 18)
+	const fixtureVariable = "ROUNDFIX_FINAL_PUSH_TEST_FIXTURE"
+	if os.Getenv(fixtureVariable) != t.Name() {
+		// The child's git prints a partial patch with the sample on stdout,
+		// writes nothing to stderr and fails, only for git log.
+		realGit, err := exec.LookPath("git")
+		if err != nil {
+			t.Fatal(err)
+		}
+		bin := t.TempDir()
+		script := "#!/bin/sh\nfor arg do if [ \"$arg\" = log ]; then printf 'commit 0\\n+%s\\n' '" + sample + "'; exit 1; fi; done\nexec '" + realGit + "' \"$@\"\n"
+		if err := os.WriteFile(filepath.Join(bin, "git"), []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		command := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^"+t.Name()+"$")
+		command.Env = append(gittest.IsolatedEnv(),
+			fixtureVariable+"="+t.Name(),
+			"PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"),
+		)
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("Final Push isolated test: %v\n%s", err, output)
+		}
+		return
+	}
+	root := t.TempDir()
+	repo, remote := filepath.Join(root, "item"), filepath.Join(root, "remote.git")
+	gittest.InitRepo(t, repo, "-b", "main")
+	gittest.InitRepo(t, remote, "--bare", "-b", "main")
+	gittest.Run(t, repo, "remote", "add", "origin", remote)
+	gittest.Run(t, repo, "commit", "--allow-empty", "-m", "test: base")
+	err := (GitPusher{}).Push(t.Context(), PushRequest{WorkDir: repo, Remote: "origin", Branch: "feat/history"})
+	if err == nil || !strings.HasPrefix(err.Error(), "run Final Push: read pushed history: ") {
+		t.Fatal("failed history read did not refuse Final Push at the history read")
+	}
+	assertFinalPushDiagnosticHasNoSample(t, err, sample)
+	if refs := gittest.Run(t, remote, "for-each-ref", "--format=%(refname)", "refs/heads/"); strings.TrimSpace(refs) != "" {
+		t.Fatal("failed history read published a remote branch")
+	}
+}

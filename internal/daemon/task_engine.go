@@ -2983,6 +2983,13 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, err
 	}
+	// The formatter may rewrite evidence, so the scan reads the bytes the commit stages.
+	if len(prepared.paths) > 0 {
+		if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", prepared.paths, verdict); err != nil {
+			return "", "", false, err
+		}
+		prepared.formatted = true
+	}
 	matches, err := scanQAReportPaths(ctx, plan.WorkDir, prepared.paths)
 	if err != nil {
 		return "", "", false, err
@@ -3670,8 +3677,9 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 }
 
 type qaReportCommitPreparation struct {
-	paths   []string
-	dropped []DroppedStagePath
+	paths     []string
+	dropped   []DroppedStagePath
+	formatted bool
 }
 
 // prepareQAReportCommit computes the path set once so the pre-settlement scan
@@ -3734,8 +3742,10 @@ func (engine *Engine) commitPreparedQAReport(ctx context.Context, plan TaskPlan,
 	if len(prepared.paths) == 0 {
 		return nil
 	}
-	if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", prepared.paths, verdict); err != nil {
-		return err
+	if !prepared.formatted {
+		if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", prepared.paths, verdict); err != nil {
+			return err
+		}
 	}
 	message := QACommitMessage(plan.Spec.Slug, verdict)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{

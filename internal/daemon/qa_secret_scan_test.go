@@ -197,3 +197,48 @@ func TestQASecretScanUsesTheReportCommitPathSet(t *testing.T) {
 		t.Fatal("cancelled scan was accepted")
 	}
 }
+
+func TestQAFormatterOutputIsScannedBeforeTheQACommit(t *testing.T) {
+	t.Parallel()
+	sample := "sk-or-" + "v1-" + strings.Repeat("e5", 32)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	plan := fixture.qaPlan()
+	path := filepath.ToSlash(filepath.Join("docs", "specs", plan.Spec.Slug, "qa", "evidence", "command.txt"))
+	// The Agent writes clean evidence; only the formatter adds the sample.
+	plan.FormatCommand = qaFormatterScript(t, "for path do case \"$path\" in *command.txt) printf '%s\\n' '"+sample+"' >> \"$path\";; esac; done\n")
+	runner := &taskFakeRunner{
+		calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass),
+		afterQA: func() {
+			if err := os.MkdirAll(filepath.Dir(filepath.Join(plan.WorkDir, path)), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			mustWriteForTest(t, filepath.Join(plan.WorkDir, path), "command output\n")
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, GitWorktreeSnapshotter{})
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.QAAccepted || taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID) != string(spec.StatusFailed) {
+		t.Fatalf("QA accepted = %t; formatter output with a secret must settle the QA Task failed", result.QAAccepted)
+	}
+	if history := runGitForTest(t, fixture.gitRoot, "log", "--format=%s"); strings.Contains(history, "docs: qa report for "+taskCycleSlug) {
+		t.Fatal("formatter output with a secret was committed")
+	}
+	refusals := 0
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonQA) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] != "secret_scan" {
+			continue
+		}
+		refusals++
+		wantMatches := []any{map[string]any{"path": path, "line": float64(2), "kind": "openrouter-key"}}
+		if !reflect.DeepEqual(payload["matches"], wantMatches) {
+			t.Fatalf("refusal event = %v", payload)
+		}
+	}
+	if refusals != 1 {
+		t.Fatalf("secret_scan events = %d, want 1", refusals)
+	}
+}
