@@ -202,7 +202,7 @@ func TestLightSessionSendsNoWarmup(t *testing.T) {
 	}
 }
 
-func TestALightSessionKeepsItsKeyOnAClaudeRuntime(t *testing.T) {
+func TestALightSessionOnAClaudeRuntimeKeepsItsKeyAndRefusesBackgroundTasks(t *testing.T) {
 	t.Parallel()
 	environ := []string{openrouterkey.Implement + "=implement-sentinel"}
 	runtime := RuntimeSpec{ID: "claude", Protocol: ProtocolACP, OpenRouterKeyVariable: openrouterkey.Implement}
@@ -215,7 +215,8 @@ func TestALightSessionKeepsItsKeyOnAClaudeRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	want = append(want, claudeBackgroundTasksEnv+"=1")
 	if !reflect.DeepEqual(overrides, want) {
-		t.Fatalf("overrides = %q, want the light session environment %q", overrides, want)
+		t.Fatalf("overrides = %q, want the light session environment and the background task refusal %q", overrides, want)
 	}
 }
