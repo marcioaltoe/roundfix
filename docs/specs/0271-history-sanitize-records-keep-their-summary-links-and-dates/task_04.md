@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0271-history-sanitize-records-keep-their-summary-links-and-dates
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -95,3 +95,44 @@ None. This Task changes documentation, the skill text and its derived records, w
 - `_prd.md` → Core Feature 4; Glossary
 - `_techspec.md` → API Contracts 1-5; Build Order 4; Glossary
 - ADR-0277; ADR-0256; ADR-0244
+
+## Result
+
+- Updated the history guide with the summary reading, `legacy: not recorded`,
+  source and creation-date fallbacks, Legacy Link Rebase for the outcome and
+  promoted copies, and the preservation of records written before this version.
+  Replaced the byte-identical promotion wording.
+- Updated the canonical archive and baseline Roundfix references with the same
+  readings and the Legacy Link Rebase behavior. The baseline reference now says
+  that its conversions rebase each promoted copy.
+- Added **Legacy Link Rebase** beside **Archive Relink** in `CONTEXT.md` and
+  revised **Lenient Legacy Reading** with the new readings and ADR-0277.
+- Ran `make skills-sync`; the distributed archive and baseline references match
+  their canonical copies. The Roundfix `SKILL.md` and its protected `### QA
+  settlement` section were unchanged.
+- Focused checks passed: `git diff --check`; the required phrase checks; and
+  canonical-to-mirror `cmp` checks for `SKILL.md`, `archive.md` and
+  `baseline.md`.
+- Verification feedback identified the stale Roundfix version record
+  (`roundfix: content changed under version 0.1.77; raise the version`). Ran the
+  Task-authorized generators with `-count=1`: the Roundfix skill is now `0.1.78`
+  with its recorded digest, and the Behavior Surface Record now includes the
+  updated history guide fingerprint.
+
+Acceptance evidence:
+
+- Guide and archive reference: both contain `legacy: not recorded` and
+  `Legacy Link Rebase`; the guide no longer contains `copies each file
+  byte-identically`.
+- Baseline reference: contains the update conversion sentence stating that
+  Legacy Link Rebase rebases each promoted copy.
+- Mirrors and records: `make skills-sync` completed; canonical/mirror
+  comparisons passed; the Roundfix version is `0.1.78`; and the Behavior
+  Surface Record generator passed.
+- Glossary: `CONTEXT.md` defines **Legacy Link Rebase** and revises
+  **Lenient Legacy Reading**, both citing ADR-0277.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261014T193608Z_0f6bbae56906b671`
+- Source commit: `2bb570b33d9a3d68f1a527c2ddb4ead7df9e2c75`

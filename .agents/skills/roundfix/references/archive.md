@@ -188,9 +188,20 @@ A Legacy Archive Folder is read with Lenient Legacy Reading: tolerated rows are
 named, while an active Spec is read strictly. Lenient Legacy Reading accepts a
 legacy list of maps in `unproven`, with one stable text line per map. A Refused
 Unit is listed with its one-line reason and skipped, so it remains untouched and
-does not consume a batch slot. `roundfix baseline update` plans these same units
-at once; pass `roundfix baseline update --no-history` to keep this command's
-reviewed-batch path.
+does not consume a batch slot. It reads the summary from the title paragraph or,
+when that paragraph is empty, the first paragraph after the first `## ` heading,
+removing block quote markers before joining lines. A legacy `qa_override: true`
+with a missing, empty or blank approval or reason records `legacy: not recorded`;
+when `references/_index.md` is absent or lists no path, `sources` falls back to
+the sorted direct Markdown files whose front matter identifies a Backlog Entry or
+Finding. An empty PRD `created` falls back to the valid TechSpec date and then to
+the author date of the oldest commit that added the PRD in the two commands that
+read Git. Legacy Link Rebase rewrites the relative destinations in the outcome
+and each promoted copy, pointing folder destinations at their promoted copy or
+the Archive Record while keeping every other destination on the same repository
+path. Records written before this version keep their bytes. `roundfix baseline
+update` plans these same units at once; pass `roundfix baseline update
+--no-history` to keep this command's reviewed-batch path.
 Apply requires the annotated `history-full` tag on an ancestor of `HEAD` and
 holding every path the batch rewrites or removes, so the full history remains
 reachable in Git.

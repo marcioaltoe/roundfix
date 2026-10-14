@@ -35,9 +35,15 @@ matter identifies a Backlog Entry (`type`, `status`, `created`) or a Finding
 (`status`, `created_at`). An empty PRD `created` takes the TechSpec's valid
 `created` date, then, in `history sanitize` and `baseline update`, the author
 date of the oldest commit reachable from `HEAD` that added the PRD under the
-Spec Root or archive root. The folder reader stops at the TechSpec date. A
-Refused Unit is listed as `refused <unit>: <reason>`, with the reason on one
-line, and remains untouched.
+Spec Root or archive root. The folder reader stops at the TechSpec date. The
+summary is read from the PRD's title paragraph, or from the first paragraph
+after its first `## ` heading when that paragraph is empty; block quote markers
+are removed before its lines are joined. Legacy Link Rebase rewrites the
+relative destinations in the outcome and in each promoted copy: a destination
+inside the folder points to its promoted copy or the Archive Record, and every
+other destination keeps the same repository path. Records written before this
+version keep their bytes. A Refused Unit is listed as `refused <unit>: <reason>`,
+with the reason on one line, and remains untouched.
 
 `roundfix baseline update` plans these same units at once as Pending History and
 binds the selected units into its Baseline Plan Digest. Use
@@ -73,8 +79,9 @@ The judge log is the only advice write and stays outside the repository.
 `--apply` requires `--batch`. It validates the entire batch before writing and
 uses `HEAD` for records' `source_revision` and reduced entries' full-text revision.
 `--promote` is repeatable, requires `--apply`, and names repository-relative files
-inside selected folders. It copies each file byte-identically to
-`docs/references/<basename>` and lists the destination in the record before
+inside selected folders. It writes each file to
+`docs/references/<basename>` after applying Legacy Link Rebase to its relative
+destinations and path text, and lists the destination in the record before
 removing the folder.
 
 The confirmation is one line:

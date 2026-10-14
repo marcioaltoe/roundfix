@@ -71,7 +71,7 @@
     "guide docs/user-guide/commands/events.md": "sha256:cf3c8060b695c2aadc498e171e7350da36f57a1f5c2997424a4f9c5112eb0959",
     "guide docs/user-guide/commands/fetch.md": "sha256:84e4ce6acbbb1d912f759b60840e66e24498db0048a07a8a778b2851ba526170",
     "guide docs/user-guide/commands/gc.md": "sha256:fad494fc563335dddc30fccaf32ffbf14c08c46d8a2b2d13c5281e745b99c59d",
-    "guide docs/user-guide/commands/history.md": "sha256:b2e0abd18fd09e1571800643b758db7b2434780f9cd2ddc4125623cb75d8a9be",
+    "guide docs/user-guide/commands/history.md": "sha256:39b7cf3330bba72014757834d7059cedc54a7bc2b5a9567eba412047cf4e8361",
     "guide docs/user-guide/commands/implement.md": "sha256:c9d1217572755ed8259d611088644eb93b619de99090f535af35badfc31ec956",
     "guide docs/user-guide/commands/init.md": "sha256:6e44fee83f2f7c08cf9b6a074d4fddc8293c4d065e6351d089692648a8178d3a",
     "guide docs/user-guide/commands/migrate.md": "sha256:9ef86066a0b47688dbb5fbfc35d805c0e9258b802aeb61eb7c2a7ffd09f44e03",
