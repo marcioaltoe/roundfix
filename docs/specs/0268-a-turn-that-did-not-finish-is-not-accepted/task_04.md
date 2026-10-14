@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0268-a-turn-that-did-not-finish-is-not-accepted
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,68 @@ step's scripted runner.
 - [_techspec.md](_techspec.md) — Interfaces; Invariants 12-15; API Contract 4; API Contract 5; Testing Approach 5; Testing Approach 6; Build Order 4
 - [2026-10-13-a-claude-qa-turn-ends-while-its-work-runs-in-the-background.md](references/2026-10-13-a-claude-qa-turn-ends-while-its-work-runs-in-the-background.md)
 - ADR-0274; ADR-0057; ADR-0259; ADR-0271
+
+## Result
+
+Task 04 implementation is handed back for Daemon Verification. Status remains
+Daemon-owned. No declared Verification command, repository gate, commit, push
+or Pull Request was run.
+
+- Claude commands receive the shared per-runtime refusal override, replacing
+  inherited `0`; other runtimes receive no entry. Session listing and standalone
+  capability acquisition use that policy too. Requirement 1 required the small
+  additional change in `internal/agent/selection_capabilities.go`.
+- The stream reader returns unique background tasks in observed start order,
+  correlating sparse tool updates with earlier descriptions by `toolCallId`.
+- The QA prompt adds the exact foreground bullet. A successful QA turn with a
+  pending seeded report and tasks emits `turn_unfinished`, settles failed with
+  every task named, and returns pending without halting.
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Claude refusal on every command; none for Codex | `TestClaudeCommandsRefuseBackgroundTasks` checks actual fake acpx environments for session preparation, prompt, standalone `set model`, cancel, close and list, including inherited `0` and an unchanged base environment. |
+| Bash and Monitor recorded once with tool and description | `TestTurnRecordsItsAgentBackgroundTasks` checks both ID fields, sparse input correlation, repeated IDs, start order, absent descriptions, empty IDs and unrelated metadata. |
+| Pending QA with tasks fails with every task named; other cases retain their handling | `TestQATurnThatLeavesABackgroundTaskIsUnfinished` asserts the exact two-task event payload and reason, failed status on disk, pending report and no Run error. The other two new tests check finished pass/fail reports and pending without tasks. |
+| Existing agent prompt tests pass | The final agent check runs every test containing `Prompt`; `TestQAPromptRequiresForegroundCommands` asserts the new bullet once. |
+
+Focused checks:
+
+- Pre-change signal: the new agent tests initially failed to compile because
+  `AgentBackgroundTask` and `ExecuteResult.BackgroundTasks` did not exist.
+- The extended environment test reproduced Claude's standalone `set model`
+  bypass (`absent`, expected `1`) before that command received the shared policy.
+- `rtk proxy go test -count=1 -run 'BackgroundTask|Foreground|Prompt|CapabilityAcquisition|^TestACPXCommandEnv' ./internal/agent` — exit 0 after final implementation edits.
+- `rtk proxy go test -count=1 -run '^Test(QATurn|QA.*(LostRollout|ProviderSystemError))' ./internal/daemon` — exit 0 after final implementation edits.
+- `rtk proxy go test -count=1 -run 'LostRollout|ProviderSystemError' ./internal/daemon` — exit 0.
+- `rtk proxy git diff --check` — exit 0.
+
+The new daemon tests call `t.Parallel()` first and wait on no elapsed time.
+Existing tests, Task prompt, review path, recovery behavior, other Task files
+and the Task Graph are unchanged. Runtime evidence uses synthetic stdout and
+fake processes; no live Claude session was used.
+
+
+### Verification Feedback repair
+
+The Daemon's attempt 1 exposed an executable shell wrapper in the new
+background-task environment test. That write violated the frozen executable
+inventory. Replaced it with the repository's existing
+`testfixture.FixtureBinary` helper: the Go tool produces the executable, and
+the compiled wrapper records the fixed policy value and waits for its fake
+acpx child. The assertions and production behavior are unchanged; this repair
+changes only `internal/agent/background_task_test.go` and this Result section.
+
+Focused checks after the repair:
+
+- `rtk proxy go test -count=1 -run '^TestClaudeCommandsRefuseBackgroundTasks$' ./internal/agent` — exit 0; all captured Claude/Codex command environments retain the required behavior.
+- `rtk proxy go test -count=1 -run '^TestNoTestWritesAnExecutableOutsideTheResidue$' ./internal/testfixture` — exit 0; the contract reported by the Daemon now passes.
+- `rtk proxy git diff --check` — exit 0.
+
+Task status remains unchanged. The configured repository Verification and the
+Task's declared Verification remain reserved for the Daemon's rerun.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/agent/selection_capabilities.go`

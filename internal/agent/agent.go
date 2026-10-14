@@ -194,7 +194,15 @@ type ExecuteRequest struct {
 	StopGrace     time.Duration
 }
 
+// AgentBackgroundTask is work a turn started through the adapter's tools.
+type AgentBackgroundTask struct {
+	ID          string `json:"id"`
+	Tool        string `json:"tool"`
+	Description string `json:"description"`
+}
+
 type ExecuteResult struct {
+	BackgroundTasks   []AgentBackgroundTask // In start order, unique by ID.
 	ACPSessionID      string
 	Usage             TurnUsage
 	LogPath           string
