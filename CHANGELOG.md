@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.80.0] - 2026-10-14
+
+### A killed child names its signal and a cancelled Run starts nothing
+
+- **Signal Exit.** One shared description of a child process's end: `exited <n>` as before, or `was killed by signal <NAME> (<number>), core dumped` / `no core dump` when a signal ended it. Before, a killed child was reported as exit code `-1`, which hid which signal ended it.
+- **Delivery Queue.** The item-binary fallback notice and the step failure name a Signal Exit; their exited forms keep their bytes.
+- **Test helpers.** Every helper that runs a child Roundfix binary reports a Signal Exit on the last line of the standard error it returns, so the next intermittent `-1` names its signal.
+- **Cancellation.** Verification Capacity reads cancellation after every grant, the immediate one included, so a cancelled Implement Run starts no Verification command and no pre-work probe.
+- **Skills and guides.** The `roundfix` skill and the `deliver` guide describe a Signal Exit.
+- **Backlog.** A new open Backlog Entry carries the trace of the unknown sender of the signal that killed an item binary in a recent delivery.
+- **Glossary.** Adds Signal Exit.
+
 ## [0.79.0] - 2026-10-14
 
 ### A turn that did not finish is not accepted
