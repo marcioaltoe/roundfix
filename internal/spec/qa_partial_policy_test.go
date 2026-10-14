@@ -7,6 +7,7 @@ package spec
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -159,6 +160,114 @@ func TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                                          string
+		pr, denied, prohibited, declared, environment int
+	}{
+		{"prohibited only", 0, 0, 1, 0, 1},
+		{"beside a Pull Request row", 1, 0, 1, 0, 2},
+		{"beside a Network-Denied Row", 0, 1, 1, 0, 2},
+		{"all exempt kinds and a covered declaration", 1, 1, 1, 1, 3},
+		{"Spec 0258 network prohibited with PR and declaration", 1, 0, 4, 1, 5},
+		{"exemptions exceed frontmatter", 1, 1, 1, 0, 1},
+		{"zero frontmatter clamps exemptions", 0, 0, 1, 0, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			rows := strings.Repeat(partialPolicyPRRow(), tt.pr) +
+				strings.Repeat(partialPolicyNetworkRow(), tt.denied) +
+				strings.Repeat(partialPolicyNetworkProhibitedRow(), tt.prohibited)
+			if tt.declared > 0 {
+				writePrePullRequestDeclaration(t, dir)
+				rows += "| blocked (declared) | Requirement 1 |\n"
+			}
+			report := readPartialPolicyReport(t, dir, tt.environment, 0, tt.declared, partialPolicyTable(rows))
+			if report.RowsBlockedEnvironment != tt.environment || report.RowsBlockedNetworkProhibited != tt.prohibited ||
+				report.RowsBlockedPrePullRequest != tt.pr || report.RowsBlockedNetworkDenied != tt.denied ||
+				report.RowsBlockedDeclared != tt.declared {
+				t.Fatalf("counts = %+v, want environment/PR/denied/prohibited/declared = %d/%d/%d/%d/%d", report, tt.environment, tt.pr, tt.denied, tt.prohibited, tt.declared)
+			}
+			if got := report.EnvironmentRowsNeedingOverride(); got != 0 {
+				t.Fatalf("override count = %d, want 0", got)
+			}
+			assertPartialPolicyEligibility(t, dir, report, "")
+		})
+	}
+	for _, provenance := range []string{
+		QAOutsideEvidenceRowSource,
+		"Requirement 7; " + QAOutsideEvidenceRowSource + " (published guide)",
+		"Requirement 7, " + QAOutsideEvidenceRowSource + ": published guide",
+		QAOutsideEvidenceRowSource + "(published guide)",
+	} {
+		t.Run(provenance, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			rows := fmt.Sprintf("|   %s   | %s |\n", QANetworkProhibitedStatus, provenance)
+			report := readPartialPolicyReport(t, dir, 1, 0, 0, partialPolicyTable(rows))
+			if report.RowsBlockedNetworkProhibited != 1 {
+				t.Fatalf("prohibited count = %d, want 1", report.RowsBlockedNetworkProhibited)
+			}
+			assertPartialPolicyEligibility(t, dir, report, "")
+		})
+	}
+}
+
+func TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence(t *testing.T) {
+	t.Parallel()
+	tests := []struct{ name, status, provenance string }{
+		{"without outside evidence", QANetworkProhibitedStatus, "Requirement 8"},
+		{"with a host", strings.TrimSuffix(QANetworkProhibitedStatus, ")") + ": docs.example.com)", QAOutsideEvidenceRowSource},
+		{"trailing host", QANetworkProhibitedStatus + " docs.example.com", QAOutsideEvidenceRowSource},
+		{"changed case", strings.ToLower(QANetworkProhibitedStatus), QAOutsideEvidenceRowSource},
+		{"wrong source boundary", QANetworkProhibitedStatus, QAOutsideEvidenceRowSource + "s"},
+		{"embedded source", QANetworkProhibitedStatus, "not an " + QAOutsideEvidenceRowSource},
+		{"changed source case", QANetworkProhibitedStatus, "Outside-evidence row"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			rows := fmt.Sprintf("| %s | %s |\n", tt.status, tt.provenance)
+			report := readPartialPolicyReport(t, dir, 1, 0, 0, partialPolicyTable(rows))
+			if report.RowsBlockedNetworkProhibited != 0 {
+				t.Fatalf("prohibited count = %d, want 0", report.RowsBlockedNetworkProhibited)
+			}
+			if got := report.EnvironmentRowsNeedingOverride(); got != 1 {
+				t.Fatalf("override count = %d, want 1", got)
+			}
+			assertPartialPolicyEligibility(t, dir, report, "rows_blocked_environment is 1; expected 0")
+		})
+	}
+	t.Run("missing Provenance column", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		body := "## Results\n\n| Status | Evidence |\n| --- | --- |\n| " + QANetworkProhibitedStatus + " | " + QAOutsideEvidenceRowSource + " |\n"
+		report := readPartialPolicyReport(t, dir, 1, 0, 0, body)
+		if report.RowsBlockedNetworkProhibited != 0 || report.EnvironmentRowsNeedingOverride() != 1 {
+			t.Fatalf("report = %+v; want no prohibited exemption and one override row", report)
+		}
+		assertPartialPolicyEligibility(t, dir, report, "rows_blocked_environment is 1; expected 0")
+	})
+}
+
+func TestAnotherEnvironmentRowBesideANetworkProhibitedRowNamesBoth(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	report := readPartialPolicyReport(t, dir, 2, 0, 0, partialPolicyTable(partialPolicyNetworkProhibitedRow()+"| blocked (environment: credentials unavailable) | Requirement 8 |\n"))
+	if report.RowsBlockedNetworkProhibited != 1 || report.EnvironmentRowsNeedingOverride() != 1 {
+		t.Fatalf("report = %+v; want one prohibited exemption and one override row", report)
+	}
+	assertPartialPolicyEligibility(t, dir, report, "rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row and the network-denied and network-prohibited outside-evidence rows; expected 0 outside them")
+}
+
+func partialPolicyNetworkProhibitedRow() string {
+	return fmt.Sprintf("| %s | Requirement 7; %s (published guide) |\n", QANetworkProhibitedStatus, QAOutsideEvidenceRowSource)
 }
 
 func partialPolicyNetworkRow() string {

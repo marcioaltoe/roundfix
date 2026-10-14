@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.14
+  version: 0.0.15
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.14
+version: 0.0.15
 ---
 
 # Write Tasks
@@ -326,6 +326,17 @@ reads in every Task that has not completed:
 
 `SC-CONSUMERS-UNPROVEN` reports a missing section, a malformed entry, a suite
 no Verification runs, or a checkpoint outside that position.
+
+## Byte invariants name the delivery base
+
+A QA requirement that holds a file byte-identical compares it with the
+Delivery Base, the merge base of the audited head with the default branch,
+never with a named commit. A plan waits in the queue behind other Specs, and
+each one that merges first may change the file, so the commit where the plan
+measured stops being the right comparison. Keep that commit out of the
+requirement; when it matters, record it in the TechSpec. `roundfix spec check`
+reports `SC-QA-BYTES-PINNED` for a requirement of a pending QA Task that names
+a byte invariant and a commit-shaped hexadecimal token together.
 
 ## Process
 

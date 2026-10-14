@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.76
+  version: 0.1.77
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.76
+version: 0.1.77
 ---
 
 # Roundfix
@@ -75,6 +75,16 @@ The same outcome settles the authored `qa` Task and determines what the archive 
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Archive Record with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; the QA Task and Reports stay unchanged in Git at the record's `source_revision`. |
+
+### Rows the Spec's authorization keeps offline
+
+The qualifying declared `partial` above also accepts an outside-evidence row
+the gate did not look up because the Spec's own authorization forbids network
+access, recorded as `blocked (environment: network prohibited by Spec authorization)`
+with the outside-evidence row named in its provenance. Like the network-denied
+row, it never decides a qualifying partial and needs no Unreachable Acceptance
+declaration, and settlement, `roundfix qa-report accept` and `roundfix archive`
+read it through the same policy (ADR-0276).
 
 ## Context-Efficient Evidence Boundaries
 

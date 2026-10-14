@@ -115,6 +115,8 @@ func TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly(t *testing.T) {
 		want          bool
 	}{
 		{"pull request rows only", "---\nverdict: partial\nrows_blocked_finding: 0\nrows_blocked_environment: 2\n---\n" + pullRequestRows, false},
+		{"network prohibited outside evidence", qaPartialShapeNamed(t, "network prohibited only").report(), false},
+		{"network prohibited without outside evidence", qaPartialShapeNamed(t, "network prohibited without outside evidence").report(), true},
 		{"PR and network outside evidence", qaPartialShapeNamed(t, "PR and network").report(), false},
 		{"another environment row", qaPartialShapeNamed(t, "another environment beside network").report(), true},
 		{"network without outside evidence", qaPartialShapeNamed(t, "network without outside evidence").report(), true},
@@ -155,6 +157,7 @@ type qaPartialShape struct {
 func qaPartialShapes() []qaPartialShape {
 	pr := "| " + spec.QANoOpenPullRequestStatus + " | " + spec.QAPullRequestRowSource + " |\n"
 	network := "| " + spec.QANetworkDeniedStatusPrefix + "docs.example.com) | Requirement 7; " + spec.QAOutsideEvidenceRowSource + " (published guide) |\n"
+	prohibited := "| " + spec.QANetworkProhibitedStatus + " | Requirement 7; " + spec.QAOutsideEvidenceRowSource + " (published guide) |\n"
 	declared := "| blocked (declared) | Requirement 1 |\n| blocked (declared) | Requirement 2 |\n"
 	return []qaPartialShape{
 		{"Spec 0213 PR only", pr, 1, 0, 0, 0, ""},
@@ -162,6 +165,11 @@ func qaPartialShapes() []qaPartialShape {
 		{"Oraculum PR only", pr, 1, 0, 0, 0, ""},
 		{"Spec 0227 annotated PR", "| " + spec.QANoOpenPullRequestStatus + " | Pull Request row (Requirement 10 constrains execution) |\n", 1, 0, 0, 0, ""},
 		{"Fluxus covered declarations and PR", pr + declared, 1, 0, 2, 2, ""},
+		{"network prohibited only", prohibited, 1, 0, 0, 0, ""},
+		{"Spec 0258 network prohibited with PR and declaration", prohibited + prohibited + prohibited + prohibited + pr + "| blocked (declared) | Requirement 1 |\n", 5, 0, 1, 1, ""},
+		{"network prohibited without outside evidence", "| " + spec.QANetworkProhibitedStatus + " | Requirement 8 |\n", 1, 0, 0, 0, "rows_blocked_environment is 1; expected 0"},
+		{"network prohibited with a host", "| " + spec.QANetworkProhibitedStatus[:len(spec.QANetworkProhibitedStatus)-1] + ": docs.example.com) | " + spec.QAOutsideEvidenceRowSource + " |\n", 1, 0, 0, 0, "rows_blocked_environment is 1; expected 0"},
+		{"another environment beside network prohibited", prohibited + "| blocked (environment: credentials unavailable) | Requirement 8 |\n", 2, 0, 0, 0, "rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row and the network-denied and network-prohibited outside-evidence rows; expected 0 outside them"},
 		{"network only", network, 1, 0, 0, 0, ""},
 		{"PR and network", pr + network, 2, 0, 0, 0, ""},
 		{"all three kinds", pr + network + declared, 2, 0, 2, 2, ""},

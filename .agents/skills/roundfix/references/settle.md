@@ -151,7 +151,10 @@ matter are refused. The pre-PR Pull Request row recorded as
 provenance, and an outside-evidence row recorded as
 `blocked (environment: network denied: <host>)` with the outside-evidence row
 named in its provenance, never decide a qualifying partial and need no
-Unreachable Acceptance declaration. Any other blocked outside-evidence row
-still blocks Pull Request preparation. When this eligibility check refuses,
+Unreachable Acceptance declaration. So does an outside-evidence row the gate
+did not look up because the Spec's own authorization forbids network access,
+recorded as `blocked (environment: network prohibited by Spec authorization)`
+with the outside-evidence row named in its provenance (ADR-0276). Any other
+blocked outside-evidence row still blocks Pull Request preparation. When this eligibility check refuses,
 `qa-report accept` prints the reason alone. Only the Settle Command appends
 `(report <path>)` to its refusal, naming the report it judged.

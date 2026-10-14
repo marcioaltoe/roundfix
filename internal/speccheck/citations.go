@@ -58,6 +58,7 @@ const (
 
 var (
 	citationCoverageDetectorCodes = []string{
+		CodeQABytesPinned,
 		CodeConsumersUnproven,
 		CodeAbsenceUnproven,
 		CodeADRAlternativesUnrelated,
@@ -1053,6 +1054,7 @@ func detectCitationCoverageAndReferences(
 		addSkip(result, CodeTranscriptUngated, manifestDisplayPath)
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
 		addSkip(result, CodeConsumersUnproven, manifestDisplayPath)
+		addSkip(result, CodeQABytesPinned, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 		addSkip(result, CodeVerifyWrapFragile, manifestDisplayPath)
@@ -1640,6 +1642,9 @@ func detectTaskCoverageAndContextReferences(
 		if task.Status == spec.StatusCompleted {
 			continue
 		}
+		displayTask := task
+		displayTask.File = artifactDisplayPath(repoRoot, taskPath)
+		result.Findings = append(result.Findings, PinnedByteInvariants(displayTask, task.ID == graph.QATaskID)...)
 		result.Findings = append(result.Findings, TruncatedVerification(artifactDisplayPath(repoRoot, taskPath), content)...)
 		if finding, ok := AuthoredQAVerification(task); ok {
 			finding.Where[0] = Location{

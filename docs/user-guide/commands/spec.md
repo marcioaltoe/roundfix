@@ -157,6 +157,7 @@ under `interface:` or `creates:` to record its Coverage Review.
 | `SC-ADR-ALTERNATIVES-UNRELATED` | A listed ADR has no line relating the design to that ADR's rejected alternatives. Runs from the TechSpec stage. |
 | `SC-COVERAGE-UNREAD` | A Coverage Map lacks its `Deviations from the PRD:` line or has a deviation that names no PRD unit. Runs from the TechSpec stage. |
 | `SC-CONSUMERS-UNPROVEN` | A pending non-QA Task lacks a valid Consumer Declaration, or names a suite no Verification or valid checkpoint runs. Runs from the Tasks stage. |
+| `SC-QA-BYTES-PINNED` | A requirement of a pending QA Task names a byte invariant and a commit-shaped hexadecimal token together; compare with the Delivery Base instead. A gap that runs from the Tasks stage. |
 
 A binding Task is a non-QA Task whose Context declares a glossary file under
 `interface:` or `creates:` and whose `## Verification` text contains

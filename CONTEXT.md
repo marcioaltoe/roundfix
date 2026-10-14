@@ -97,7 +97,7 @@ A repository path the tooling-authority rules bind — the configuration, script
 _Avoid_: Protected file, restricted path, tooling file
 
 **Delivery Base**:
-The merge base of the audited head and the repository default branch. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it.
+The merge base of the audited head and the repository default branch. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit.
 _Avoid_: Run start head, audited head, delivery target
 
 **Undeclared Governed Path**:
@@ -1229,6 +1229,14 @@ _Avoid_: Run Branch, PR Head Branch, deliver branch
 **Network-Denied Row**:
 An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
 _Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Network-Prohibited Row**:
+An outside-evidence QA row the gate did not look up because the Spec's own authorization forbids network access, recorded as `blocked (environment: network prohibited by Spec authorization)` with the outside-evidence row named in its provenance. Like the Network-Denied Row, it never decides a qualifying partial; any other wording still needs a declaration or the override.
+_Avoid_: Network-denied row, authorization override, skipped source
+
+**Pinned Byte Invariant**:
+A QA requirement that holds a file byte-identical to its bytes at a named commit instead of at the Delivery Base. It fails once a Spec that merges first changes the file, and `roundfix spec check` reports it as `SC-QA-BYTES-PINNED`.
+_Avoid_: Byte invariant, golden pin, frozen file check
 
 **Pre-PR Review Command**:
 The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.

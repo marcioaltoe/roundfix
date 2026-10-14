@@ -47,6 +47,7 @@ type stagedDetector struct {
 }
 
 var stagedDetectors = []stagedDetector{
+	{code: CodeQABytesPinned, stage: StageTasks},
 	{code: CodeConsumersUnproven, stage: StageTasks},
 	{code: CodeAbsenceUnproven, stage: StageTechSpec},
 	{code: CodeADRAlternativesUnrelated, stage: StageTechSpec},
