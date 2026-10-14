@@ -251,6 +251,10 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 		return c, fmt.Errorf("inventory legacy folder: %w", err)
 	}
 	sort.Strings(c.Files)
+	rebase := LegacyLinkRebase{Folder: c.Folder, RecordPath: c.RecordPath, Promoted: map[string]string{}}
+	for _, file := range c.Files {
+		rebase.Files = append(rebase.Files, c.Folder+"/"+file)
+	}
 	for _, promotion := range req.Promote {
 		if !strings.HasPrefix(promotion, c.Folder+"/") {
 			return c, fmt.Errorf("promotion %q is outside legacy folder", promotion)
@@ -287,10 +291,14 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 			return c, fmt.Errorf("read promotion: %w", err)
 		}
 		c.legacyCopies[destination] = content
+		rebase.Promoted[promotion] = destination
 		c.Promoted = append(c.Promoted, destination)
 	}
 	sort.Strings(c.Promoted)
-	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true})
+	for source, destination := range rebase.Promoted {
+		c.legacyCopies[destination] = rebase.Rebase(c.legacyCopies[destination], source, destination)
+	}
+	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true, Rebase: &rebase})
 	if err != nil {
 		return c, fmt.Errorf("build legacy record: %w", err)
 	}

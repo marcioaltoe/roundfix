@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0271-history-sanitize-records-keep-their-summary-links-and-dates
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -99,3 +99,50 @@ repositories.
 - `_prd.md` → Goals; User Story 2; Core Feature 3; Success Metric 1; Success Metric 2
 - `_techspec.md` → API Contract 5; API Contract 6; Interfaces; Invariants 2, 3, 4 and 6; Current behavior; Testing Approach; Build Order 3
 - ADR-0277; ADR-0260
+
+## Result
+
+Implemented the Task 03 slice for the adopted Backlog Entry's fourth defect.
+`LegacyLinkRebase` reuses the Archive Markdown scanner, destination resolver,
+citation moves and bounded path-text pass. It rebases relative destinations
+from their source file to their written file, retaining query and fragment
+suffixes. Targets inside the removed folder name their promoted copy or the
+record; outside targets retain their repository path. URLs, schemes, anchors,
+repository escapes and relative destinations inside code retain their bytes.
+The shared path-text pass keeps its existing treatment of code.
+
+`PlanLegacyConversion` collects all promotion destinations before rebasing
+copies, so links between promoted files resolve regardless of promotion order.
+The planned copy bytes are the bytes `ApplyLegacyConversion` writes.
+`ArchiveRecordInput.Rebase` applies only to legacy outcomes, using the PRD,
+selected QA Report or supersession artifact that supplied the outcome. The
+folder reader passes no rebase. `RelinkContent`, `PlanArchiveRelink`, the
+Archive Command and existing tests were not edited.
+
+Added all six required tests with `t.Parallel()` first. Acceptance evidence:
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Summary links resolve from the record to promoted references | `TestLegacyLinkRebasePointsFolderLinksAtTheirSurvivingFile` and `TestLegacyConversionRebasesTheOutcomeAndPromotedCopies` exercise promoted targets, PRD summaries, first-section summaries and QA outcomes. Both command tests check the written summary and resolve its destinations to existing files. |
+| Copy links to core artifacts resolve to the record; outside links keep their target | The rebase tests cover core, unpromoted and unlisted folder targets, folder links, encoded paths, reference definitions and outside ADRs. Both command tests resolve every written destination, including core, unpromoted, peer-promotion and ADR links with suffixes. |
+| Copies and records without such links keep their bytes | `TestLegacyLinkRebaseLeavesOtherBytes` checks exact bytes, including binary, CRLF, URL, scheme, anchor, code and repository-escape cases. The conversion test compares a link-free record with rendering without rebase and compares link-free promoted bytes. The existing `TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames` passes unchanged. |
+| Both commands write their planned rebased bytes | The conversion test compares rendering, planned copies and applied files. `TestHistorySanitizeRebasesPromotedLinks` and `TestBaselineUpdatePromotionRebasesLinks` compare written records to `PlanLegacyConversion.Rendered`, assert the exact expected copy bytes and resolve destinations after folder removal. |
+
+Focused checks run in this turn:
+
+- Before implementation: `go test ./internal/cli -run 'RebasesPromotedLinks|PromotionRebasesLinks' -count=1` exited 1. Both new command tests reproduced the unchanged summary destinations from the removed folder.
+- After implementation: `go test ./internal/spec -run 'LegacyLinkRebase|LegacyConversionRebases' -count=1` exited 0.
+- `go test ./internal/cli -run 'RebasesPromotedLinks|PromotionRebasesLinks|TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames' -count=1` exited 0.
+- `go test ./internal/spec -run '^Test(RelinkContentRewritesOnlyDestinationsAndPaths|PlanArchiveRelinkPromotesLiveCitedFilesAndTargetsTheRecord|ArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder|LegacyConversionWritesARecordGitStillHolds|LegacyConversionPreservesTheRendererOutcomeBudget|ActiveArchiveRecordKeepsItsSummaryReading|ActiveArchiveRecordKeepsItsFields)$' -count=1` exited 0.
+- `go test ./internal/cli -run '^Test(ArchiveRelinksLiveCitationsTranscript|ArchiveWithoutInboundCitationsIsUnchanged|ArchiveRelinkCombinesManualPromotionsAndPreservesHistory)$' -count=1` exited 0.
+- `gofmt` applied to the five implementation/test files; `git diff --check` exited 0.
+
+The declared Verification commands and repository gates were not run; the
+Daemon owns them and Task settlement. The pre-existing status edit remains
+`in_progress`. No other Task file or manifest was edited, and no commit, push
+or pull request was made. No follow-up work was identified in this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261014T193608Z_0f6bbae56906b671`
+- Source commit: `39045f444e2df3ca717c414b052bb91c517ea86f`

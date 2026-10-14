@@ -62,6 +62,7 @@ type ArchiveRecordInput struct {
 	Unproven                                        []string
 	QAOverride                                      *QAArchiveOverrideRecord
 	Promoted                                        []string
+	Rebase                                          *LegacyLinkRebase // Legacy only; nil keeps the outcome as read.
 }
 
 func ArchiveRecordPath(root, slug string) string { return filepath.Join(root, slug+".md") }
@@ -181,6 +182,7 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	if in.Legacy {
 		summaryParagraph = legacyArchiveParagraph
 	}
+	outcomeSource := filepath.Join(in.SpecDir, "_prd.md")
 	r.Outcome = summaryParagraph(string(body), "# ")
 	if in.Legacy && r.Outcome == "" {
 		r.Outcome = summaryParagraph(string(body), "## ")
@@ -261,6 +263,7 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 		outcome := summaryParagraph(archiveSection(string(text), "Outcome"), "")
 		if outcome != "" {
 			r.Outcome = outcome
+			outcomeSource = reportPath
 		}
 	} else if r.QAOverride == nil && !errors.Is(err, ErrNoQAReport) {
 		return r, err
@@ -278,10 +281,19 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 			r.Disposition = ArchiveSuperseded
 			r.SupersededBy = s.SupersededBy
 			r.Outcome = strings.Join(strings.Fields(s.Reason), " ")
+			outcomeSource = filepath.Join(in.SpecDir, SupersessionFilename)
 		}
 	}
 	if r.Disposition == "" {
 		r.Disposition = ArchiveNoQA
+	}
+	if in.Legacy && in.Rebase != nil {
+		rel, err := filepath.Rel(in.SpecDir, outcomeSource)
+		if err != nil {
+			return r, fmt.Errorf("resolve legacy outcome source: %w", err)
+		}
+		from := filepath.ToSlash(filepath.Join(in.Rebase.Folder, rel))
+		r.Outcome = string(in.Rebase.Rebase([]byte(r.Outcome), from, in.Rebase.RecordPath))
 	}
 	return r, nil
 }
