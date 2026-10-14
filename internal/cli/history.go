@@ -162,7 +162,11 @@ func planHistoryUnit(ctx context.Context, repo, specRel, archive, archiveRel, re
 			if err != nil {
 				return u, err
 			}
-			c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: delivery})
+			created, err := spec.FindLegacyCreation(ctx, repo, specRel, archiveRel, u.name)
+			if err != nil {
+				return u, err
+			}
+			c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Created: created, Delivery: delivery})
 			u.refusal = err
 			u.conversion = &c
 		} else {
@@ -287,7 +291,7 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 			continue
 		}
 		c := u.conversion
-		converted, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: spec.LegacyDelivery{Commit: c.Record.DeliveryCommit, PullRequest: c.Record.PullRequest, Date: c.Record.Archived}, Promote: promotions[u.name]})
+		converted, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Created: c.Record.Created, Delivery: spec.LegacyDelivery{Commit: c.Record.DeliveryCommit, PullRequest: c.Record.PullRequest, Date: c.Record.Archived}, Promote: promotions[u.name]})
 		if err != nil {
 			return fail(err)
 		}

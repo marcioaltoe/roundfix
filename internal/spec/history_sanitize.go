@@ -23,6 +23,7 @@ type LegacyConversionRequest struct {
 	ArchiveRoot    string
 	Slug           string
 	SourceRevision string
+	Created        string // Fallback date when the folder supplied none.
 	Delivery       LegacyDelivery
 	Promote        []string
 }
@@ -141,6 +142,26 @@ func FindLegacyDelivery(ctx context.Context, repoRoot, specRoot, archiveRoot, sl
 	return delivery, nil
 }
 
+// FindLegacyCreation reads the oldest adding commit reachable from HEAD,
+// including both the active and archive paths without guessing renames.
+func FindLegacyCreation(ctx context.Context, repoRoot, specRoot, archiveRoot, slug string) (string, error) {
+	if !legacySlug(slug) || !validArchiveSource(specRoot, strings.Repeat("0", 40)) || !validArchiveSource(archiveRoot, strings.Repeat("0", 40)) {
+		return "", errors.New("unsafe legacy creation path")
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "log", "--no-renames", "--diff-filter=A", "--reverse", "--format=%as", "HEAD", "--", path.Join(specRoot, slug, "_prd.md"), path.Join(archiveRoot, slug, "_prd.md"))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
+		return "", fmt.Errorf("read legacy creation with git log: %w: %s", err, output)
+	}
+	if dates := strings.Fields(string(output)); len(dates) > 0 {
+		return dates[0], nil
+	}
+	return "", nil
+}
+
 func legacySlug(slug string) bool {
 	return slug != "" && slug != "." && slug != ".." && path.Base(slug) == slug && !strings.ContainsAny(slug, "\\\x00")
 }
@@ -230,6 +251,10 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 		return c, fmt.Errorf("inventory legacy folder: %w", err)
 	}
 	sort.Strings(c.Files)
+	rebase := LegacyLinkRebase{Folder: c.Folder, RecordPath: c.RecordPath, Promoted: map[string]string{}}
+	for _, file := range c.Files {
+		rebase.Files = append(rebase.Files, c.Folder+"/"+file)
+	}
 	for _, promotion := range req.Promote {
 		if !strings.HasPrefix(promotion, c.Folder+"/") {
 			return c, fmt.Errorf("promotion %q is outside legacy folder", promotion)
@@ -266,10 +291,14 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 			return c, fmt.Errorf("read promotion: %w", err)
 		}
 		c.legacyCopies[destination] = content
+		rebase.Promoted[promotion] = destination
 		c.Promoted = append(c.Promoted, destination)
 	}
 	sort.Strings(c.Promoted)
-	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true})
+	for source, destination := range rebase.Promoted {
+		c.legacyCopies[destination] = rebase.Rebase(c.legacyCopies[destination], source, destination)
+	}
+	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true, Rebase: &rebase})
 	if err != nil {
 		return c, fmt.Errorf("build legacy record: %w", err)
 	}
@@ -278,6 +307,9 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 		if err != nil {
 			return c, fmt.Errorf("read legacy tolerances: %w", err)
 		}
+	}
+	if c.Record.Created == "" {
+		c.Record.Created = req.Created
 	}
 	c.Record.PullRequest, c.Record.DeliveryCommit = req.Delivery.PullRequest, req.Delivery.Commit
 	if c.Record.Archived == "" {

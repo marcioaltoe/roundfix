@@ -118,7 +118,9 @@ clean repository-relative file inside a selected folder, outside every Refused
 Unit, not a core artifact, unique by basename among the promotions, and absent
 from `docs/references/`. `--promote` with `--no-history`, an invalid value,
 a refused unit or an occupied destination exits 2 with category `invalid`
-and writes nothing. The update never rewrites a citing file.
+and writes nothing. The update's conversions read Legacy Archive Folders with
+the same summary, field, source and creation-date fallbacks, and Legacy Link
+Rebase rebases each promoted copy. The update never rewrites a citing file.
 
 Adopter note: if an earlier `roundfix baseline update` or Sanitize Batch
 already broke citations, run `roundfix baseline update` with the History Full

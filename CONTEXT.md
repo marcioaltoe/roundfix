@@ -818,6 +818,10 @@ _Avoid_: Citing file, live source, current document
 The Archive Command's pre-write operation that promotes a cited non-core file to `docs/references/<basename>`, rewrites Live Document citations to the promoted copy or Archive Record, and records rewritten paths under the optional `relinked` list (ADR-0260).
 _Avoid_: Archive rewrite, source duplication, link cleanup
 
+**Legacy Link Rebase**:
+The rewrite a Legacy Archive Folder conversion makes to the relative destinations of the record's outcome and of each promoted copy: a destination inside the folder points at its promoted copy or the Archive Record, and every other destination stays on the same repository path (ADR-0277).
+_Avoid_: Archive Relink, broken-link report, arbitrary link rewrite
+
 **History Citation**:
 A citation from tracked Markdown outside the History Root to a file or folder a selected history unit removes, which `roundfix baseline update` lists in text and JSON, binds into the Plan Digest, and may offer for `--promote` when it is a Live Document (ADR-0260).
 _Avoid_: Relocation Citation, broken-link scan, stale citation
@@ -879,7 +883,7 @@ A pending History Sanitize Command unit that cannot be converted. The plan and t
 _Avoid_: Converted unit, skipped silently, failed batch
 
 **Lenient Legacy Reading**:
-The reading of a Legacy Archive Folder's Task Graph that tolerates and names projection rows outside the graph and retired Task types. It also accepts a legacy list of maps `unproven`, one text line per map. It is never applied to an active Spec (ADR-0251, ADR-0254).
+The reading of a Legacy Archive Folder that tolerates and names projection rows outside the graph and retired Task types, accepts a legacy list of maps `unproven`, and reads the summary, `legacy: not recorded` for missing legacy override approval or reason, adopted sources and creation-date fallbacks. Legacy Link Rebase is part of this reading for the outcome and promoted copies. It is never applied to an active Spec (ADR-0251, ADR-0254, ADR-0277).
 _Avoid_: Relaxed active reading, manifest rewrite, schema bypass
 
 **Sanitize Batch**:
