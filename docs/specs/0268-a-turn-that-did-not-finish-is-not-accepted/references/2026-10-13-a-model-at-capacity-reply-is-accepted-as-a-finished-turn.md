@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-13
-spec: null
+spec: 0268-a-turn-that-did-not-finish-is-not-accepted
 reason: null
 ---
 
