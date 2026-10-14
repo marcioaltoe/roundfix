@@ -1,0 +1,15 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0264-baseline-group-usage-errors-name-their-own-help",
+    "--strict",
+    "--format",
+    "json"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/historical-clone",
+  "exit": 1,
+  "stdout": "{\"schema\":\"roundfix-speccheck/v1\",\"slug\":\"0264-baseline-group-usage-errors-name-their-own-help\",\"findings\":[{\"code\":\"SC-QA-BYTES-PINNED\",\"severity\":\"error\",\"summary\":\"docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md line 45 pins a byte invariant to commit 3820bdd4\",\"where\":[{\"path\":\"docs/specs/0264-baseline-group-usage-errors-name-their-own-help/task_03.md\",\"line\":45}],\"fix\":\"Compare with the Delivery Base, the merge base of the audited head with the default branch, and keep the commit where the plan measured out of the requirement, following the write-tasks rule \\\"Byte invariants name the delivery base\\\".\"}],\"repairInputs\":[],\"skipped\":[{\"code\":\"SC-FINDING-LIFECYCLE\",\"missing\":\"docs/findings Finding\"},{\"code\":\"SC-ROLLUP-MEMBER\",\"missing\":\"docs/findings rollup\"},{\"code\":\"SC-VOCABULARY-UNDOCUMENTED\",\"missing\":\"docs/specs/0264-baseline-group-usage-errors-name-their-own-help/_techspec.md Vocabulary Contract\"}],\"verification\":{\"executed\":false,\"commands\":[],\"uncommitted\":[]}}\n",
+  "stderr": ""
+}

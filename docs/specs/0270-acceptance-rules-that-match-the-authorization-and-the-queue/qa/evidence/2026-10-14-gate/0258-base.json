@@ -1,0 +1,12 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "qa-report",
+    "accept",
+    "/tmp/rf0270-qa-_pz00lsg/history-0258/docs/specs/0258-authoring-that-proves-what-it-claims/qa/qa-report-2026-10-13.md"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/base",
+  "exit": 1,
+  "stdout": "",
+  "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 5, 4 outside the pre-PR Pull Request row; expected 0 outside it\n"
+}

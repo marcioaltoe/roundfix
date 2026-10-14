@@ -1,0 +1,14 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "--strict",
+    "--format",
+    "json"
+  ],
+  "cwd": "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0270-acceptance-rules-that-match-the-authorization-and-the-queue-d5c846b57b896a9d-288c5c84-bfbb9725/run_20261014T174911Z_8d771e92d24f52c5",
+  "exit": 0,
+  "stdout": "{\"schema\":\"roundfix-speccheck/v1\",\"slug\":\"0270-acceptance-rules-that-match-the-authorization-and-the-queue\",\"findings\":[],\"repairInputs\":[],\"skipped\":[{\"code\":\"SC-FINDING-LIFECYCLE\",\"missing\":\"docs/findings Finding\"},{\"code\":\"SC-ROLLUP-MEMBER\",\"missing\":\"docs/findings rollup\"},{\"code\":\"SC-VOCABULARY-UNDOCUMENTED\",\"missing\":\"docs/specs/0270-acceptance-rules-that-match-the-authorization-and-the-queue/_techspec.md Vocabulary Contract\"}],\"verification\":{\"executed\":false,\"commands\":[],\"uncommitted\":[]}}\n",
+  "stderr": ""
+}

@@ -1,0 +1,17 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/tmp/rf0270-qa-_pz00lsg/park-overlay-resolved.json",
+    "-count=1",
+    "-v",
+    "-run",
+    "^TestQA0270ParkAllFiveShapes$",
+    "./internal/cli"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/sabotage-clone",
+  "exit": 0,
+  "stdout": "=== RUN   TestQA0270ParkAllFiveShapes\n=== PAUSE TestQA0270ParkAllFiveShapes\n=== CONT  TestQA0270ParkAllFiveShapes\n=== RUN   TestQA0270ParkAllFiveShapes/network_prohibited_only\n    qa_partial_policy_test.go:238: shape=network prohibited only park=false\n=== RUN   TestQA0270ParkAllFiveShapes/Spec_0258_network_prohibited_with_PR_and_declaration\n    qa_partial_policy_test.go:238: shape=Spec 0258 network prohibited with PR and declaration park=false\n=== RUN   TestQA0270ParkAllFiveShapes/network_prohibited_without_outside_evidence\n    qa_partial_policy_test.go:238: shape=network prohibited without outside evidence park=true\n=== RUN   TestQA0270ParkAllFiveShapes/network_prohibited_with_a_host\n    qa_partial_policy_test.go:238: shape=network prohibited with a host park=true\n=== RUN   TestQA0270ParkAllFiveShapes/another_environment_beside_network_prohibited\n    qa_partial_policy_test.go:238: shape=another environment beside network prohibited park=true\n--- PASS: TestQA0270ParkAllFiveShapes (0.43s)\n    --- PASS: TestQA0270ParkAllFiveShapes/network_prohibited_only (0.09s)\n    --- PASS: TestQA0270ParkAllFiveShapes/Spec_0258_network_prohibited_with_PR_and_declaration (0.09s)\n    --- PASS: TestQA0270ParkAllFiveShapes/network_prohibited_without_outside_evidence (0.08s)\n    --- PASS: TestQA0270ParkAllFiveShapes/network_prohibited_with_a_host (0.08s)\n    --- PASS: TestQA0270ParkAllFiveShapes/another_environment_beside_network_prohibited (0.08s)\nPASS\nsuiteguard: guard cost: measured 2662 paths; fingerprint took 76.126792ms before and 64.007042ms after\nok  \troundfix/internal/cli\t0.969s\n",
+  "stderr": ""
+}

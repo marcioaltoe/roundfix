@@ -1,0 +1,15 @@
+exec((__import__('pathlib').Path.cwd()/'docs/specs/0270-acceptance-rules-that-match-the-authorization-and-the-queue/qa/evidence/2026-10-14-gate/common.py.txt').read_text())
+clone=WORK/'sabotage-clone';assert not git('status','--short',cwd=clone)
+(clone/'bin').mkdir(exist_ok=True);shutil.copy2(ROOT/'bin/roundfix',clone/'bin/roundfix')
+with (clone/'.git/info/exclude').open('a') as f:f.write('/bin/\n')
+for n in [1,2]:
+ p=run('baseline-digests-'+str(n),['make','baseline-digests'],cwd=clone);assert p.returncode==0
+ if n==2:assert 'changed:false' in p.stdout or '"changed":false' in p.stdout,(p.stdout[-1600:],p.stderr)
+home=WORK/'home-managed-refresh';e=cli_env(home)
+for n in [1,2]:
+ p=run('managed-refresh-'+str(n),['./bin/roundfix','baseline','update','--repo','.','--no-skills','--no-history','--yes','--format','text'],cwd=clone,env=e);assert p.returncode==0,(p.stdout[-1200:],p.stderr)
+ if n==2: assert 'File changes: 0' in p.stdout,(p.stdout[-1600:],p.stderr)
+status=git('status','--short',cwd=clone);(EV/'regeneration-final-status.txt').write_text(status+'\n');assert not status,status
+p=run('archive-plan',['./bin/roundfix','archive','0270-acceptance-rules-that-match-the-authorization-and-the-queue','--plan'],env=cli_env(WORK/'home-archive-plan'))
+assert p.returncode==0,(p.stdout,p.stderr)
+print('Digest and Managed Refresh idempotence passed; archive plan observed offline.',flush=True)

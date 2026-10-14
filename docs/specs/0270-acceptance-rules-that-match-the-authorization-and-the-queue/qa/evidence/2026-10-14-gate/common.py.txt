@@ -1,0 +1,24 @@
+import os, json, subprocess, pathlib, tarfile, io, shutil, hashlib
+ROOT=pathlib.Path.cwd()
+EV=ROOT/'docs/specs/0270-acceptance-rules-that-match-the-authorization-and-the-queue/qa/evidence/2026-10-14-gate'
+STATE=json.loads((EV/'workspace.json').read_text())
+WORK=pathlib.Path(STATE['temporary_workspace'])
+def run(name,args,cwd=ROOT,env=None):
+ p=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True)
+ (EV/(name+'.json')).write_text(json.dumps({'command':args,'cwd':str(cwd),'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr},indent=2)+'\n')
+ print(name+': exit '+str(p.returncode),flush=True)
+ return p
+def git(*args,cwd=ROOT):
+ return subprocess.check_output(['git',*args],cwd=cwd,text=True).strip()
+def archive(rev,dest,path=None):
+ dest.mkdir(parents=True,exist_ok=True)
+ args=['git','archive',rev]+([path] if path else [])
+ b=subprocess.check_output(args,cwd=ROOT)
+ with tarfile.open(fileobj=io.BytesIO(b)) as t: t.extractall(dest,filter='data')
+def cli_env(home):
+ home.mkdir(parents=True,exist_ok=True)
+ e=os.environ.copy()
+ for k in list(e):
+  if k.startswith(('ROUNDFIX_','GIT_')): e.pop(k,None)
+ e.update(HOME=str(home),XDG_CONFIG_HOME=str(home/'config'),XDG_CACHE_HOME=str(home/'cache'),GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_TERMINAL_PROMPT='0')
+ return e

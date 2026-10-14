@@ -1,0 +1,44 @@
+exec((__import__('pathlib').Path.cwd()/'docs/specs/0270-acceptance-rules-that-match-the-authorization-and-the-queue/qa/evidence/2026-10-14-gate/common.py.txt').read_text())
+import re
+sp=ROOT/'docs/specs/0270-acceptance-rules-that-match-the-authorization-and-the-queue'
+# Save every remaining spelling and whether it is permitted.
+args=['rg','-n','-i','network denied: <host>|network-denied outside-evidence|network-denied row','docs/','skills/','.agents/skills/','CONTEXT.md','AGENTS.md','-g','!docs/history/**','-g','!docs/specs/0270-acceptance-rules-that-match-the-authorization-and-the-queue/**']
+r=run('wording-sweep-complete',args);assert r.returncode==0
+entries=[]
+for line in r.stdout.splitlines():
+ path,n,text=line.split(':',2);num=int(n);content=(ROOT/path).read_text()
+ if path.startswith('docs/adr/'):
+  reason='Earlier decision, extended or superseded in part by accepted ADR-0276; historical decision text is retained.'
+ elif path.startswith('docs/references/2026-10-08-'):
+  reason='Dated audit evidence predating the change; it is not a live exhaustive exemption rule.'
+ elif path=='CONTEXT.md':
+  reason='Defines the Network-Denied Row as its own kind; the adjacent new Network-Prohibited Row entry states the additional exemption.'
+ elif text.startswith('| qualifying declared'):
+  reason='Protected QA settlement table: required unchanged; the immediately following offline-extension heading adds the third exempt kind.'
+ else:
+  assert 'network prohibited by Spec authorization' in content,path
+  reason='Live guidance includes the canonical network-prohibited extension; this match describes the network-denied kind, not an exhaustive two-kind policy.'
+ entries.append({'path':path,'line':num,'text':text,'allowed':True,'reason':reason})
+(EV/'wording-classification.json').write_text(json.dumps(entries,indent=2)+'\n')
+run('baseline-module-diff',['git','diff',STATE['base'],STATE['head'],'--','internal/baseline/assets/modules/spec-workflow.json','internal/baseline/assets/modules/autonomous-work.json'])
+for label,repo in [('base',WORK/'base'),('head',ROOT)]:
+ p=run('binary-'+label,['./bin/roundfix','--version'],cwd=repo,env=cli_env(WORK/('home-version-'+label)));assert p.returncode==0
+summary=[]
+for name in ['prohibited-only','0258','missing-provenance','host-suffix','mixed']:
+ for command in ['qa-report','archive','settle']:
+  f=EV/('shape-'+name+'-'+command+'.json');d=json.loads(f.read_text());expected=0 if name in ['prohibited-only','0258'] else 2 if command=='archive' else 1
+  assert d['exit']==expected,(name,command,d)
+  repo=WORK/('shape-'+name+'-'+command);s=repo/'docs/specs/0001-policy-flow';archive_record=repo/'docs/history/specs/0001-policy-flow.md'
+  if command=='archive': assert archive_record.exists()==(expected==0) and s.exists()==(expected!=0)
+  if command=='settle': assert ('status: completed' if expected==0 else 'status: failed') in (s/'task_qa.md').read_text()
+  summary.append({'shape':name,'command':command,'exit':d['exit'],'stderr':d['stderr'],'state_confirmed':True})
+(EV/'shape-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+# A Go overlay calls the repository's real governed-path classifier and scanner.
+clone=WORK/'sabotage-clone';source=(clone/'cmd/roundfix/main.go').resolve();overlay=WORK/'contract-probe-overlay.json'
+overlay.write_text(json.dumps({'Replace':{str(source):str((EV/'contract-probe.go.txt').resolve())}}))
+p=run('governed-and-secret-scan',['go','run','-overlay',str(overlay),'./cmd/roundfix',str(EV/'scope-audit.json'),str(sp/'qa')],cwd=clone);assert p.returncode==0
+result=json.loads(p.stdout);assert not result['secret_matches'],result['secret_matches']
+auth=(sp/'_authorization.md').read_text();bounded=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+assert not set(result['governed'])-bounded,(set(result['governed'])-bounded)
+assert len(result['governed'])==22
+print('Final checks: '+str(len(entries))+' wording matches classified; 15 CLI outcomes and persisted state confirmed; 22 governed paths bounded; zero Secret Matches.',flush=True)

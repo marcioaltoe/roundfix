@@ -1,0 +1,12 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "qa-report",
+    "accept",
+    "/tmp/rf0270-qa-_pz00lsg/shape-prohibited-only-qa-report/docs/specs/0001-policy-flow/qa/qa-report-2026-10-14.md"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/shape-prohibited-only-qa-report",
+  "exit": 0,
+  "stdout": "",
+  "stderr": ""
+}

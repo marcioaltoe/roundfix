@@ -1,0 +1,11 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "archive",
+    "0001-policy-flow"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/shape-prohibited-only-archive",
+  "exit": 0,
+  "stdout": "archived 0001-policy-flow -> docs/history/specs/0001-policy-flow.md; removed 6 file(s) (1033 bytes) kept in Git at 048ca9b81668\n",
+  "stderr": ""
+}

@@ -1,0 +1,16 @@
+{
+  "command": [
+    "go",
+    "build",
+    "-buildvcs=false",
+    "-ldflags",
+    "-X roundfix/internal/app.BuildCommit=a754a4d0",
+    "-o",
+    "bin/roundfix",
+    "./cmd/roundfix"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/base",
+  "exit": 0,
+  "stdout": "",
+  "stderr": ""
+}

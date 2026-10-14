@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0270-acceptance-rules-that-match-the-authorization-and-the-queue
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

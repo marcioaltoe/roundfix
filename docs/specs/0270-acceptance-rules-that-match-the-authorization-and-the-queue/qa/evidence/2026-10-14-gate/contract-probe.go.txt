@@ -1,0 +1,17 @@
+package main
+import (
+ "encoding/json"
+ "io/fs"
+ "os"
+ "path/filepath"
+ "roundfix/internal/secretscan"
+ "roundfix/internal/speccheck"
+)
+func main() {
+ var in struct { AllChangedPaths []string `json:"all_changed_paths"` }
+ b,err:=os.ReadFile(os.Args[1]); if err!=nil { panic(err) }; if err=json.Unmarshal(b,&in);err!=nil{panic(err)}
+ governed:=[]string{};for _,p:=range in.AllChangedPaths {if speccheck.GovernedPath(p) {governed=append(governed,p)}}
+ matches:=[]secretscan.Match{};count:=0
+ err=filepath.WalkDir(os.Args[2],func(p string,d fs.DirEntry,e error) error {if e!=nil{return e};if d.IsDir(){return nil};b,e:=os.ReadFile(p);if e!=nil{return e};count++;matches=append(matches,secretscan.ScanContent(p,b)...);return nil});if err!=nil{panic(err)}
+ if err=json.NewEncoder(os.Stdout).Encode(map[string]any{"governed":governed,"secret_matches":matches,"qa_files_scanned":count});err!=nil{panic(err)}
+}

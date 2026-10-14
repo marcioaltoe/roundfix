@@ -1,0 +1,15 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "^TestPinnedByteInvariant",
+    "./internal/speccheck"
+  ],
+  "cwd": "/tmp/rf0270-qa-_pz00lsg/sabotage-clone",
+  "exit": 1,
+  "stdout": "FAIL\troundfix/internal/speccheck [build failed]\nFAIL\n",
+  "stderr": "# roundfix/internal/speccheck [roundfix/internal/speccheck.test]\ninternal/speccheck/pinned_bytes.go:4:2: \"fmt\" imported and not used\n"
+}
