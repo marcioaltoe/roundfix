@@ -12,8 +12,10 @@ reason: null
 
 F6, `TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout`, fails
 when its `migrate --check` child is killed by a signal. It occurred in 0254,
-in the starting verification of 0259, and in suite 7 of 0259's ten full
-suites: three recorded occurrences.
+in the starting verification of 0259, in suite 7 of 0259's ten full
+suites, and in the first attempt of 0268's task_02 on 2026-10-14
+(`migrate --check exited -1` instead of 2, before Signal Exit shipped): four
+recorded occurrences.
 
 ## Where
 
