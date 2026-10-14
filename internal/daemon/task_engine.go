@@ -2983,16 +2983,20 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, err
 	}
-	// The formatter may rewrite evidence, so the scan reads the bytes the commit stages.
-	if len(prepared.paths) > 0 {
+	// The first scan keeps a secret away from the formatter and its diagnostics;
+	// the second reads the formatted bytes the commit stages.
+	matches, err := scanQAReportPaths(ctx, plan.WorkDir, prepared.paths)
+	if err != nil {
+		return "", "", false, err
+	}
+	if len(matches) == 0 && len(prepared.paths) > 0 {
 		if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", prepared.paths, verdict); err != nil {
 			return "", "", false, err
 		}
 		prepared.formatted = true
-	}
-	matches, err := scanQAReportPaths(ctx, plan.WorkDir, prepared.paths)
-	if err != nil {
-		return "", "", false, err
+		if matches, err = scanQAReportPaths(ctx, plan.WorkDir, prepared.paths); err != nil {
+			return "", "", false, err
+		}
 	}
 	if len(matches) > 0 {
 		qaStatus, accepted = spec.StatusFailed, false

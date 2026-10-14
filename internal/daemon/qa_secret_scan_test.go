@@ -242,3 +242,46 @@ func TestQAFormatterOutputIsScannedBeforeTheQACommit(t *testing.T) {
 		t.Fatalf("secret_scan events = %d, want 1", refusals)
 	}
 }
+
+func TestQAFormatterNeverSeesEvidenceWithASecretMatch(t *testing.T) {
+	t.Parallel()
+	sample := "sk-or-" + "v1-" + strings.Repeat("f6", 32)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	plan := fixture.qaPlan()
+	path := filepath.ToSlash(filepath.Join("docs", "specs", plan.Spec.Slug, "qa", "evidence", "command.txt"))
+	// A failing formatter that echoes its input would put the sample in its diagnostic.
+	plan.FormatCommand = qaFormatterScript(t, "cat \"$@\" >&2\nexit 1\n")
+	runner := &taskFakeRunner{
+		calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass),
+		afterQA: func() {
+			if err := os.MkdirAll(filepath.Dir(filepath.Join(plan.WorkDir, path)), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			mustWriteForTest(t, filepath.Join(plan.WorkDir, path), "command output\n"+sample+"\n")
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, GitWorktreeSnapshotter{})
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.QAAccepted || taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID) != string(spec.StatusFailed) {
+		t.Fatalf("QA accepted = %t; evidence with a secret must settle the QA Task failed", result.QAAccepted)
+	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonQA) {
+		if eventPayloadMap(t, event)["phase"] == "format" {
+			t.Fatal("formatter ran over evidence with a Secret Match")
+		}
+	}
+	outputs := []string{fixture.progress.String()}
+	for _, event := range fixture.sink.events {
+		outputs = append(outputs, event.Summary, string(event.Payload))
+	}
+	for _, output := range outputs {
+		for index := 0; index+8 <= len(sample); index++ {
+			if strings.Contains(output, sample[index:index+8]) {
+				t.Fatal("QA output contains a sample byte run")
+			}
+		}
+	}
+}
