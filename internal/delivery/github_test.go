@@ -17,6 +17,10 @@ func TestPushPublishesTheRecordedHeadNotTheCheckout(t *testing.T) {
 	runner := newScriptedCommandRunner(t,
 		commandStep{
 			name: "git",
+			args: []string{"log", "-p", "-U0", "--reverse", "--no-color", "--no-ext-diff", "--no-renames", "--format=commit %H", headSHA, "--not", "--remotes=origin"},
+		},
+		commandStep{
+			name: "git",
 			args: []string{"push", "origin", headSHA + ":refs/heads/feat/delivery"},
 		},
 		commandStep{
@@ -40,6 +44,10 @@ func TestPushPublishesTheRecordedHeadNotTheCheckout(t *testing.T) {
 
 func TestPullRequestBoundaryRejectsAPushWithoutAnObservedRemoteHead(t *testing.T) {
 	runner := newScriptedCommandRunner(t,
+		commandStep{
+			name: "git",
+			args: []string{"log", "-p", "-U0", "--reverse", "--no-color", "--no-ext-diff", "--no-renames", "--format=commit %H", "head-one", "--not", "--remotes=origin"},
+		},
 		commandStep{
 			name: "git",
 			args: []string{"push", "origin", "head-one:refs/heads/feat/delivery"},

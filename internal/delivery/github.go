@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"roundfix/internal/secretscan"
 )
 
 const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,mergeCommit,mergeable,mergeStateStatus"
@@ -172,6 +174,18 @@ func (client GitHubCLI) PushBranch(ctx context.Context, remote, branch, head str
 	}
 	if strings.HasPrefix(remote, "-") {
 		return RemoteHead{}, fmt.Errorf("push branch: remote %q cannot start with '-'", remote)
+	}
+
+	history, err := client.run(ctx, "git", secretscan.PushedHistoryArgs(head, remote)...)
+	if err != nil {
+		return RemoteHead{}, fmt.Errorf("push branch: read pushed history: %w", err)
+	}
+	if history.ExitCode != 0 {
+		// A failed read may have emitted a partial patch containing a secret.
+		return RemoteHead{}, commandFailure("push branch: read pushed history", CommandResult{Stderr: history.Stderr, ExitCode: history.ExitCode})
+	}
+	if matches := secretscan.ScanPushedHistory([]byte(history.Stdout)); len(matches) != 0 {
+		return RemoteHead{}, fmt.Errorf("push branch: refuse push: %w", &secretscan.MatchesError{Matches: matches})
 	}
 
 	ref := "refs/heads/" + branch

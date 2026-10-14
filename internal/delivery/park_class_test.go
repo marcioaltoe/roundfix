@@ -77,7 +77,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 		class   ParkClass
 	}{
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
-		{BlockerRunUnresolved, ParkClassFinding}, {BlockerReviewFindings, ParkClassFinding}, {BlockerCorrectiveSpecRequired, ParkClassFinding}, {BlockerGateFailed, ParkClassFinding}, {BlockerChecksFailed, ParkClassFinding}, {BlockerRevalidationFailed, ParkClassFinding},
+		{BlockerSecretFound, ParkClassFinding}, {BlockerRunUnresolved, ParkClassFinding}, {BlockerReviewFindings, ParkClassFinding}, {BlockerCorrectiveSpecRequired, ParkClassFinding}, {BlockerGateFailed, ParkClassFinding}, {BlockerChecksFailed, ParkClassFinding}, {BlockerRevalidationFailed, ParkClassFinding},
 		{BlockerRunBudgetExceeded, ParkClassBudget}, {BlockerQueueDeadline, ParkClassBudget}, {BlockerReviewBlocked, ParkClassReview}, {BlockerReviewStale, ParkClassReview}, {BlockerUnauthorized, ParkClassAuthorization}, {BlockerFlakyCheck, ParkClassFlakyCheck}, {"unknown", ParkClassUnclassified},
 	} {
 		t.Run(tt.blocker, func(t *testing.T) {
@@ -85,6 +85,9 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				item := store.DeliveryQueueItem{SpecSlug: "example", Worktree: "/worktrees/example", Stage: store.DeliveryStageParked, Blocker: tt.blocker + suffix}
 				queue := store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}
 				park := ClassifyPark(queue, item)
+				if tt.blocker == BlockerSecretFound && park.Next != "remove the secret from every commit the blocker names on the item branch in /worktrees/example, then run roundfix deliver retry example" {
+					t.Fatalf("secret-found next action = %q", park.Next)
+				}
 				question, found := PendingQuestionFor(queue)
 				if park.Class != tt.class || !found || question.Answer != park.Next {
 					t.Fatalf("classification=%+v question=%+v", park, question)

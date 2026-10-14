@@ -62,6 +62,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 		classification.Class = ParkClassFlakyCheck
 		classification.Next = "the check failed twice in " + strings.TrimSpace(detail) + ", which " + item.SpecSlug +
 			" did not change; fix or re-run it, then run roundfix deliver retry " + item.SpecSlug
+	case BlockerSecretFound:
+		classification.Class = ParkClassFinding
+		classification.Next = "remove the secret from every commit the blocker names on the item branch in " + item.Worktree + ", then run roundfix deliver retry " + item.SpecSlug
 	case BlockerRunUnresolved, BlockerReviewFindings, BlockerCorrectiveSpecRequired, BlockerGateFailed, BlockerChecksFailed, BlockerRevalidationFailed:
 		classification.Class = ParkClassFinding
 		if blocker == BlockerRevalidationFailed {

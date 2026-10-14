@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"roundfix/internal/judge"
+	"roundfix/internal/secretscan"
 )
 
 type VerifyRequest struct {
@@ -327,6 +328,13 @@ func (GitPusher) Push(ctx context.Context, req PushRequest) error {
 	}
 	if strings.TrimSpace(req.Branch) == "" {
 		return fmt.Errorf("run Final Push: PR Head Branch is required")
+	}
+	history, err := runGitOutput(ctx, req.WorkDir, secretscan.PushedHistoryArgs("HEAD", req.Remote)...)
+	if err != nil {
+		return fmt.Errorf("run Final Push: read pushed history: %w", err)
+	}
+	if matches := secretscan.ScanPushedHistory([]byte(history)); len(matches) != 0 {
+		return fmt.Errorf("run Final Push: refuse push: %w", &secretscan.MatchesError{Matches: matches})
 	}
 	return runGit(ctx, req.WorkDir, "push", req.Remote, "HEAD:"+req.Branch)
 }
