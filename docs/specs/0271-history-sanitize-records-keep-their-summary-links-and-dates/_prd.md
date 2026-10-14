@@ -44,7 +44,8 @@ Spec's QA compares with the delivery base, so the rule does not apply.
   "One plan, one digest", so the update's digest binds the changed records.
   ADR-0260: "a promoted file keeps its bytes and its own outward relative
   links are not rebased", which ADR-0277 narrows for conversions. ADR-0261:
-  "records already archived stay byte-identical". ADR-0262: "A cancelled Spec
+  "records already archived stay byte-identical". ADR-0272 reads a
+  `source_revision` the way ADR-0261 recovers it and changes no record. ADR-0262: "A cancelled Spec
   leaves an Archive Record and returns its sources"; a cancellation's record is
   not a conversion and keeps its reading. ADR-0269: "Archive and cancel refuse
   ignored Spec files and finish a failed removal forward"; neither command

@@ -251,6 +251,7 @@ Deviations from the PRD: None.
 - ADR-0254: no rejected alternative is taken; the update still converts every unit in the change it plans.
 - ADR-0260: the rejected alternatives stay rejected; ADR-0277 narrows only its statement about promoted bytes, for conversions.
 - ADR-0261: no rejected alternative is taken; no backfill rewrites a record.
+- ADR-0272: no rejected alternative is taken; its correction proof reads Archive Records and this Spec changes none of its rules.
 - ADR-0262: no rejected alternative is taken; the Cancel Command and its record are untouched.
 - ADR-0269: no rejected alternative is taken; the archive and cancel refusals and their recovery are untouched.
 - ADR-0256: no rejected alternative is taken; the docs Task updates both covering skill references.
