@@ -1133,9 +1133,18 @@ model; explicit none is a policy choice with no provider.
 _Avoid_: Review Source, Pre-PR Review Policy, reviewer model
 
 **Pre-PR Review Record**:
-The record of one Pre-PR Review, kept per checkout. Its verdict is read from
-the reviewer's final message.
+The record of one Pre-PR Review, kept per checkout under its resolved path. Its
+verdict is read from the reviewer's final message. See
+[ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).
 _Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+**Reviewed Head Record**:
+The copy of a Pre-PR Review Record kept under the head it reviewed, written for
+every verdict that is not a reuse and never replaced by a later round at
+another head. A Delivery Retry's correction proof reads it for the parked
+candidate. See
+[ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).
+_Avoid_: round record, review history
 
 
 **QA Archive Override**:

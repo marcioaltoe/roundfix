@@ -49,9 +49,26 @@ const (
 )
 
 func reviewCheckoutDir(artifactDir, checkoutRoot string) string {
-	digest := sha256.Sum256([]byte(filepath.Clean(checkoutRoot)))
+	digest := sha256.Sum256([]byte(roundconfig.CanonicalizeResolvedPath(checkoutRoot)))
 	key := hex.EncodeToString(digest[:])[:16]
 	return filepath.Join(artifactDir, "pre-pr-review", key)
+}
+
+// reviewHeadRecordPath accepts only full lowercase SHA-1 or SHA-256 commit names.
+func reviewHeadRecordPath(artifactDir, checkoutRoot, head string) (string, bool) {
+	if len(head) != 40 && len(head) != 64 {
+		return "", false
+	}
+	for _, char := range head {
+		if !(char >= '0' && char <= '9' || char >= 'a' && char <= 'f') {
+			return "", false
+		}
+	}
+	return filepath.Join(reviewCheckoutDir(artifactDir, checkoutRoot), "heads", head+".json"), true
+}
+
+func sameReviewCheckout(left, right string) bool {
+	return roundconfig.CanonicalizeResolvedPath(left) == roundconfig.CanonicalizeResolvedPath(right)
 }
 
 type reviewFinding struct {
@@ -234,6 +251,25 @@ func readReviewRecord(path string) (reviewRecord, error) {
 	return record, nil
 }
 
+// readReviewRecordAtHead prefers the head record, falling back only when it
+// is absent to a current record that still names the requested head.
+func readReviewRecordAtHead(artifactDir, checkoutRoot, head string) (reviewRecord, error) {
+	if path, ok := reviewHeadRecordPath(artifactDir, checkoutRoot, head); ok {
+		record, err := readReviewRecord(path)
+		if !errors.Is(err, os.ErrNotExist) {
+			return record, err
+		}
+	}
+	record, err := readReviewRecord(filepath.Join(reviewCheckoutDir(artifactDir, checkoutRoot), reviewRecordFileName))
+	if err != nil {
+		return reviewRecord{}, err
+	}
+	if record.HeadCommit != head {
+		return reviewRecord{}, os.ErrNotExist
+	}
+	return record, nil
+}
+
 func validateReviewRecord(record reviewRecord) error {
 	switch {
 	case strings.TrimSpace(record.Repository) == "":
@@ -320,7 +356,7 @@ func validateDismissedReviewRecord(record reviewRecord) error {
 		}
 		matches := 0
 		for _, disposition := range record.Dispositions {
-			if disposition.Repository != record.Repository ||
+			if !sameReviewCheckout(disposition.Repository, record.Repository) ||
 				disposition.HeadCommit != record.HeadCommit ||
 				disposition.Finding != finding.ID ||
 				disposition.Text != finding.Text {
@@ -663,7 +699,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			printReviewCommandFailure(err, stderr)
 			return exitPreflight
 		}
-		if prior != nil && filepath.Clean(prior.Repository) == filepath.Clean(record.Repository) && plan.prior == nil {
+		if prior != nil && sameReviewCheckout(prior.Repository, record.Repository) && plan.prior == nil {
 			if err := endOpenReviewSession(ctx, prior, commandDependenciesForContext(ctx).newEngineCollaborators().runner); err != nil {
 				printReviewCommandFailure(err, stderr)
 				return exitPreflight
@@ -723,7 +759,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if record.Provider != "codex" && record.Provider != "claude" {
 		prior, readErr := readReviewRecord(filepath.Join(reviewCheckoutDir(artifactDir, record.Repository), reviewRecordFileName))
-		if readErr == nil && filepath.Clean(prior.Repository) == filepath.Clean(record.Repository) {
+		if readErr == nil && sameReviewCheckout(prior.Repository, record.Repository) {
 			if err := endOpenReviewSession(ctx, &prior, commandDependenciesForContext(ctx).newEngineCollaborators().runner); err != nil {
 				printReviewCommandFailure(err, stderr)
 				return exitPreflight
@@ -826,7 +862,7 @@ func reusableReviewRecord(
 	if err != nil {
 		return reviewRecord{}, nil, false, fmt.Errorf("read reusable pre-pr review record: %w", err)
 	}
-	if filepath.Clean(record.Repository) != filepath.Clean(candidate.Repository) ||
+	if !sameReviewCheckout(record.Repository, candidate.Repository) ||
 		record.BaseCommit != candidate.BaseCommit ||
 		record.HeadCommit != candidate.HeadCommit ||
 		record.Provider != candidate.Provider {
@@ -878,7 +914,7 @@ func matchingReviewFindingDispositions(
 	dispositions := make([]reviewFindingDisposition, 0)
 	for _, disposition := range ledger {
 		for _, finding := range record.FindingItems {
-			if !reviewFindingDismissedByValidation(finding) && disposition.Repository == record.Repository &&
+			if !reviewFindingDismissedByValidation(finding) && sameReviewCheckout(disposition.Repository, record.Repository) &&
 				disposition.HeadCommit == record.HeadCommit &&
 				disposition.Finding == finding.ID &&
 				disposition.Text == finding.Text {
@@ -936,7 +972,7 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		printReviewDisposeRefusal(err, stderr)
 		return exitPreflight
 	}
-	if filepath.Clean(record.Repository) != filepath.Clean(gitState.Root) {
+	if !sameReviewCheckout(record.Repository, gitState.Root) {
 		printReviewDisposeRefusal(errors.New("pre-pr review record belongs to another repository"), stderr)
 		return exitPreflight
 	}
@@ -1093,7 +1129,7 @@ func readReviewFindingDispositions(path string) ([]reviewFindingDisposition, err
 
 func reviewFindingAlreadyDisposed(dispositions []reviewFindingDisposition, record reviewRecord, finding reviewFinding) bool {
 	for _, disposition := range dispositions {
-		if disposition.Repository == record.Repository &&
+		if sameReviewCheckout(disposition.Repository, record.Repository) &&
 			disposition.HeadCommit == record.HeadCommit &&
 			disposition.Finding == finding.ID &&
 			disposition.Text == finding.Text {
@@ -2035,11 +2071,31 @@ func finishReviewCommand(stdout, stderr io.Writer, artifactDir string, record re
 }
 
 func persistReviewRecord(artifactDir string, record reviewRecord) error {
-	checkoutDir := reviewCheckoutDir(artifactDir, record.Repository)
+	var encoded bytes.Buffer
+	if err := writeReviewRecord(&encoded, record); err != nil {
+		return err
+	}
+	currentPath := filepath.Join(reviewCheckoutDir(artifactDir, record.Repository), reviewRecordFileName)
+	if err := persistReviewRecordBytes(currentPath, encoded.Bytes()); err != nil {
+		return err
+	}
+	if record.Reused {
+		return nil
+	}
+	switch record.Outcome {
+	case reviewOutcomeReviewed, reviewOutcomeFindings, reviewOutcomeFindingsDismissed, reviewOutcomeCeilingClosed:
+		if headPath, ok := reviewHeadRecordPath(artifactDir, record.Repository, record.HeadCommit); ok {
+			return persistReviewRecordBytes(headPath, encoded.Bytes())
+		}
+	}
+	return nil
+}
+
+func persistReviewRecordBytes(path string, content []byte) error {
+	checkoutDir := filepath.Dir(path)
 	if err := os.MkdirAll(checkoutDir, 0o755); err != nil {
 		return fmt.Errorf("create review checkout directory %q: %w", checkoutDir, err)
 	}
-	path := filepath.Join(checkoutDir, reviewRecordFileName)
 	temp, err := os.CreateTemp(checkoutDir, ".pre-pr-review-*.json")
 	if err != nil {
 		return fmt.Errorf("create temporary review record: %w", err)
@@ -2048,9 +2104,9 @@ func persistReviewRecord(artifactDir string, record reviewRecord) error {
 	defer func() {
 		_ = os.Remove(tempPath)
 	}()
-	if err := writeReviewRecord(temp, record); err != nil {
+	if _, err := temp.Write(content); err != nil {
 		_ = temp.Close()
-		return err
+		return fmt.Errorf("encode review record: %w", err)
 	}
 	if err := temp.Chmod(0o644); err != nil {
 		_ = temp.Close()

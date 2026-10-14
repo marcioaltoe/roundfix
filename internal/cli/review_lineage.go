@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -35,7 +34,7 @@ type reviewLineagePlan struct {
 
 func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate reviewRecord, git preflight.GitRunner) (reviewLineagePlan, error) {
 	plan := reviewLineagePlan{Lineage: reviewLineage{Round: 1}, candidate: candidate, ctx: ctx}
-	if prior == nil || filepath.Clean(prior.Repository) != filepath.Clean(candidate.Repository) || prior.Provider != candidate.Provider || prior.BaseCommit != candidate.BaseCommit {
+	if prior == nil || !sameReviewCheckout(prior.Repository, candidate.Repository) || prior.Provider != candidate.Provider || prior.BaseCommit != candidate.BaseCommit {
 		return plan, nil
 	}
 	if prior.HeadCommit != candidate.HeadCommit {
@@ -107,7 +106,7 @@ func buildRoundTwoPrompt(plan reviewLineagePlan, delta string, previous []review
 func reviewDispositionsAtHead(ledger []reviewFindingDisposition, repository, head string) []reviewFindingDisposition {
 	result := make([]reviewFindingDisposition, 0)
 	for _, d := range ledger {
-		if d.Repository == repository && d.HeadCommit == head {
+		if sameReviewCheckout(d.Repository, repository) && d.HeadCommit == head {
 			result = append(result, d)
 		}
 	}
@@ -205,7 +204,7 @@ func validateCeilingClosedReviewRecord(record reviewRecord) error {
 		standing++
 		matches := 0
 		for _, d := range record.Dispositions {
-			if d.Repository != record.Repository || d.HeadCommit != record.Lineage.ReviewedHead || d.Finding != finding.ID || d.Text != finding.Text {
+			if !sameReviewCheckout(d.Repository, record.Repository) || d.HeadCommit != record.Lineage.ReviewedHead || d.Finding != finding.ID || d.Text != finding.Text {
 				continue
 			}
 			if (d.Disposition == "dismissed" && strings.TrimSpace(d.Evidence) != "" && d.FixedBy == "") || (d.Disposition == "fixed" && strings.TrimSpace(d.FixedBy) != "") {
