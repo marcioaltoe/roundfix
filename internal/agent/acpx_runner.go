@@ -1691,11 +1691,11 @@ func (runner *ACPXRunner) command() string {
 }
 
 func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime RuntimeSpec, sessionName string) ([]string, error) {
-	if strings.TrimSpace(runtime.ID) == "claude" {
-		return []string{claudeBackgroundTasksEnv + "=1"}, nil
-	}
 	if runtime.OpenRouterKeyVariable != "" {
 		return lightSessionEnvironment(runtime, runner.baseEnv())
+	}
+	if strings.TrimSpace(runtime.ID) == "claude" {
+		return []string{claudeBackgroundTasksEnv + "=1"}, nil
 	}
 	if strings.TrimSpace(runtime.ID) != "codex" || runtime.Protocol == ProtocolStdio {
 		return nil, nil
