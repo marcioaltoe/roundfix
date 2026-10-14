@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.77.0] - 2026-10-14
+
+### The review record survives a fix
+
+- **Resolved checkout key.** The Pre-PR Review Record is now kept under the checkout's resolved path, and every comparison of review checkouts resolves symbolic links first. Before, a Run Worktree under a symbolic-linked `worktree.location` wrote its record under one name and `roundfix deliver retry` looked for it under another, so a fixed review was refused as unproven. A checkout without symbolic links keeps its record directory, and no record field changes.
+- **Reviewed Head Record.** Every `reviewed`, `findings`, `findings-dismissed` or `ceiling-closed` verdict that is not a reuse also writes a copy at `heads/<head commit>.json`. A later round at another head never replaces it, so review round 2 no longer overwrites the findings the item parked on. A reused, blocked or omitted record writes none.
+- **Correction proof for `corrective-spec-required`.** `roundfix deliver retry` now reads the parked candidate's Reviewed Head Record. Besides paths under the archived Spec the blocker names, the correction may change the paths the Spec's Tasks declared (`creates:`, `interface:` and recorded paths, read at the recorded revision). Review round 2 and the repository checks still follow. Any other path still requires a corrective Spec, and the refusal now names that path (ADR-0272, refining ADR-0233).
+- **Skill.** The `roundfix` skill's `deliver` and `review` references describe the Reviewed Head Record and the wider correction proof.
+- **Glossary.** Adds Reviewed Head Record and revises Pre-PR Review Record and the Delivery Retry rule (ADR-0272).
+
 ## [0.76.0] - 2026-10-13
 
 ### Baseline group usage errors name their own help
