@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.78.0] - 2026-10-14
+
+### No secret and no Spec content leaves the machine
+
+- **Secret Scan.** One reviewed table of Secret Patterns, each with a kind: private key blocks, GitHub, OpenRouter, Anthropic, OpenAI, AWS, Slack, Google and Stripe keys, and credential assignments such as `API_KEY=...`. A Secret Match reports the path, the line, the kind and, from history, the commit. It never carries the value or any part of it.
+- **QA Report commit.** Before the QA Task settles, the Daemon scans exactly the files the QA Report commit would stage, after the QA formatter runs. A Secret Match settles the QA Task `failed` with `QA evidence carries a secret: <path>:<line>: <kind>` and creates no commit; the report and its evidence stay uncommitted in the Run Worktree. Before, `make -p` output with an inherited API key could be committed as evidence and then refused by GitHub push protection (ADR-0273, refining ADR-0015).
+- **Every push.** The Delivery Queue's push and the Daemon's Final Push scan the lines each unpushed commit adds and refuse before `git push` runs. A failed history read also refuses, and its diagnostic never carries the read's output. The Delivery Queue parks the item as `secret-found`: remove the secret from every commit the blocker names, then run `roundfix deliver retry <slug>`.
+- **Judge keys stay outside Runs.** No Agent Session and no Verification command receives the Judge Key Variables, so a QA command such as `roundfix archive --plan` inside a Run no longer sends the Spec's files to the judge provider. A Light Tier session receives its OpenRouter key under `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, still falling back to the shared `ROUNDFIX_OPENROUTER_API_KEY` value. Run the judge outside Runs; it is advisory and fails open.
+- **Skills.** The `qa-gate` skill tells the QA Agent never to persist environment dumps; the `roundfix` skill's `deliver`, `implement` and `runtime` references describe the scan, the `secret-found` park and the withheld keys.
+- **Glossary.** Adds Secret Pattern, Secret Match, Secret Scan and Judge Key Variables (ADR-0273).
+
 ## [0.77.0] - 2026-10-14
 
 ### The review record survives a fix
