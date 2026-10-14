@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-13T00:00:00Z
+updated_at: 2026-10-14T23:44:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -31,7 +31,7 @@ before the QA Task settles, the Daemon runs the Secret Scan over exactly the
 files the QA Report commit would stage. A Secret Match settles the QA Task
 `failed`, names each match in the reason and in one Run Event, and creates no
 QA Report commit; the report and its evidence stay uncommitted in the Run
-Worktree. This refines ADR-0015, whose QA Report commit is made "either way":
+Worktree. This refines ADR-0091, which consolidated ADR-0015, whose QA Report commit is made "either way":
 a report that carries a Secret Match is never committed.
 
 **Every push Roundfix makes is scanned first.** The Delivery Queue's push and

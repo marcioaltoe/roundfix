@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-03T00:00:00Z
-updated_at: 2026-08-03T00:00:00Z
+updated_at: 2026-10-14T23:44:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -21,3 +21,9 @@ either leaves the gate non-terminal or puts a pending dependency beneath a
 settled terminal, and both are load-time validation errors that name the
 insertion. The node routes to the Daemon's existing gate step, so report,
 verdict, and typed blocked-row counts stay exactly as ADR-0080 defines them.
+
+Consolidates ADR-0015 (2026-10-14), whose opt-in `--qa` flag ADR-0088
+removed. Its surviving decisions stand here: the Daemon reads the verdict
+from the QA Report front matter, a missing or unreadable verdict counts as
+fail, a failing verdict ends the Run Unresolved, and the QA Report is
+committed in its own commit either way. Git keeps ADR-0015's text.
