@@ -53,6 +53,7 @@ Every other declared path is ordinary: `CONTEXT.md`,
 `docs/user-guide/configuration.md`, `docs/user-guide/usage.md`,
 `docs/user-guide/commands/deliver.md`, the two reference mirrors under
 `skills/roundfix/references/`, `skills/testdata/owned-skill-versions.json`,
+`docs/references/behavior-surfaces.json`,
 and the Go sources and tests under `internal/agent`, `internal/daemon` and
 `internal/cli` that task_02 to task_04 declare.
 
@@ -71,16 +72,18 @@ suite guard, so it needs no declared output list here:
 rewrites the version lines of `.agents/skills/roundfix/SKILL.md` and its
 mirror and `skills/testdata/owned-skill-versions.json`.
 
-No Baseline module changes, so neither `make baseline-digests` nor the module
-version record command is declared, and the Behavior Surface Record keeps its
-bytes.
+task_01 also records the Behavior Surface fingerprints of the guides it
+changes with
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`,
+which rewrites only `docs/references/behavior-surfaces.json`. No Baseline
+module changes, so neither `make baseline-digests` nor the module version
+record command is declared.
 
 ## Limits
 
 - No change to the Makefile, the CI workflows, `go.mod`, `go.sum`,
   `.roundfixrc.yml`, or lint, formatter or test-runner configuration.
 - No change to the `qa-gate` skill, any `### QA settlement` section,
-  `docs/references/behavior-surfaces.json`,
   `docs/references/skill-coverage.json`, archived Specs or Archive Records.
 - No test, Verification command or QA row starts a real Agent Session, sends a
   request to a model provider, opens a network connection, reads `~/.acpx`,

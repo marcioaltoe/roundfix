@@ -73,7 +73,13 @@ version.
    `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`.
    These are implementation steps, never part of Verification, and no version
    is written by hand.
-7. MUST NOT change any other command reference, any other glossary entry, the
+7. MUST, after the guide and skill edits, record the Behavior Surface
+   fingerprints with
+   `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`,
+   which rewrites only `docs/references/behavior-surfaces.json`, the way
+   Spec 0266 recorded its guide changes. This is an implementation step,
+   never part of Verification, and the record is never edited by hand.
+8. MUST NOT change any other command reference, any other glossary entry, the
    `### QA settlement` section of any skill, the `qa-gate` skill, or
    `docs/references/skill-coverage.json`.
 
@@ -85,6 +91,7 @@ version.
       refusal in the usage guide.
 - [ ] Add the Provider System Error park to both `deliver` texts.
 - [ ] Raise and record the skill version and sync the mirrors.
+- [ ] Record the Behavior Surface fingerprints.
 
 ## Acceptance Criteria
 
@@ -109,6 +116,7 @@ version.
 - interface: `.agents/skills/roundfix/SKILL.md`
 - interface: `skills/roundfix/SKILL.md`
 - interface: `skills/testdata/owned-skill-versions.json`
+- interface: `docs/references/behavior-surfaces.json`
 - instruction: `.agents/skills/domain-modeling/SKILL.md`
 - instruction: `docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md`
 - instruction: `docs/adr/0245-a-lost-rollout-is-runtime-infrastructure.md`
