@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
@@ -18,6 +19,9 @@ import (
 
 const ArchiveRecordSchema = "roundfix/archive-record/v1"
 const ArchiveRecordTargetBytes = 2048
+
+// LegacyNotRecorded marks an override field absent from the legacy folder.
+const LegacyNotRecorded = "legacy: not recorded"
 
 type ArchiveDisposition string
 
@@ -148,6 +152,25 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	if r.QAOverride == nil && meta.Override {
 		r.QAOverride = &QAArchiveOverrideRecord{meta.Approval, meta.Reason, meta.Outcome, meta.TaskStatus, meta.Revision}
 	}
+	if in.Legacy {
+		if r.QAOverride != nil {
+			// Copy before filling gaps so the caller's override stays untouched.
+			override := *r.QAOverride
+			if strings.TrimSpace(override.Approval) == "" {
+				override.Approval = LegacyNotRecorded
+			}
+			if strings.TrimSpace(override.Reason) == "" {
+				override.Reason = LegacyNotRecorded
+			}
+			r.QAOverride = &override
+		}
+		if r.Created == "" {
+			r.Created, err = legacyTechSpecCreated(in.SpecDir)
+			if err != nil {
+				return r, err
+			}
+		}
+	}
 	for _, line := range strings.Split(string(body), "\n") {
 		if strings.HasPrefix(line, "# ") {
 			r.Title = strings.TrimSpace(strings.TrimPrefix(line, "# "))
@@ -193,6 +216,12 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 		value := strings.Trim(strings.TrimSpace(cells[column]), "`")
 		if value != "" && !strings.HasPrefix(value, "-") && !strings.HasPrefix(value, ":") {
 			r.Sources = append(r.Sources, value)
+		}
+	}
+	if in.Legacy && len(r.Sources) == 0 {
+		r.Sources, err = legacyAdoptedSources(in.SpecDir)
+		if err != nil {
+			return r, err
 		}
 	}
 	auth, err := os.ReadFile(filepath.Join(in.SpecDir, "_authorization.md"))
@@ -255,6 +284,71 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 		r.Disposition = ArchiveNoQA
 	}
 	return r, nil
+}
+
+// legacyTechSpecCreated reads only the date when the PRD supplied none.
+func legacyTechSpecCreated(folder string) (string, error) {
+	content, err := os.ReadFile(filepath.Join(folder, "_techspec.md"))
+	if errors.Is(err, os.ErrNotExist) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("read legacy TechSpec: %w", err)
+	}
+	fm, _, err := splitFrontmatter(content)
+	if err != nil {
+		return "", fmt.Errorf("read legacy TechSpec front matter: %w", err)
+	}
+	var meta struct{ Created string }
+	if err := yaml.Unmarshal(fm, &meta); err != nil {
+		return "", fmt.Errorf("parse legacy TechSpec: %w", err)
+	}
+	if len(meta.Created) >= len(time.DateOnly) {
+		date := meta.Created[:len(time.DateOnly)]
+		if _, err := time.Parse(time.DateOnly, date); err == nil {
+			return date, nil
+		}
+	}
+	return "", nil
+}
+
+// legacyAdoptedSources recognizes source front matter, not arbitrary notes.
+func legacyAdoptedSources(folder string) ([]string, error) {
+	directory := filepath.Join(folder, "references")
+	entries, err := os.ReadDir(directory)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("list legacy references: %w", err)
+	}
+	var sources []string
+	for _, entry := range entries {
+		if filepath.Ext(entry.Name()) != ".md" || !entry.Type().IsRegular() {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(directory, entry.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("read legacy reference %q: %w", entry.Name(), err)
+		}
+		fm, _, err := splitFrontmatter(content)
+		if err != nil {
+			continue // A file without front matter is not an adopted source.
+		}
+		var fields map[string]yaml.Node
+		if yaml.Unmarshal(fm, &fields) != nil {
+			continue // Only a front matter mapping identifies a source.
+		}
+		_, status := fields["status"]
+		_, createdAt := fields["created_at"]
+		_, kind := fields["type"]
+		_, created := fields["created"]
+		if status && (createdAt || (kind && created)) {
+			sources = append(sources, entry.Name())
+		}
+	}
+	sort.Strings(sources)
+	return sources, nil
 }
 
 // Decode legacy unproven separately so scalar spellings survive YAML typing.

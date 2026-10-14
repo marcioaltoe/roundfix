@@ -362,7 +362,7 @@ func (p *baselineUpdateHistoryPlan) promote(paths []string) error {
 		c := u.conversion
 		// Selected files are committed at Revision. Their copies become references
 		// read by every later Spec; PlanLegacyConversion never overwrites a destination.
-		converted, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: p.root, ArchiveRoot: p.archiveRoot, Slug: u.name, SourceRevision: p.Report.Revision, Delivery: spec.LegacyDelivery{Commit: c.Record.DeliveryCommit, PullRequest: c.Record.PullRequest, Date: c.Record.Archived}, Promote: promotions[u.name]})
+		converted, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: p.root, ArchiveRoot: p.archiveRoot, Slug: u.name, SourceRevision: p.Report.Revision, Created: c.Record.Created, Delivery: spec.LegacyDelivery{Commit: c.Record.DeliveryCommit, PullRequest: c.Record.PullRequest, Date: c.Record.Archived}, Promote: promotions[u.name]})
 		if err != nil {
 			return fmt.Errorf("promotion %q: %w", strings.Join(promotions[u.name], ", "), err)
 		}

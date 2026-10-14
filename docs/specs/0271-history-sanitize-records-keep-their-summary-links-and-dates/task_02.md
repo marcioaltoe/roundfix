@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0271-history-sanitize-records-keep-their-summary-links-and-dates
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -114,3 +114,90 @@ commands that plan conversions. It is verifiable on its own through
 - `_prd.md` → Goals; User Story 3; Core Feature 2; Core Feature 4; Success Metric 1; Success Metric 3
 - `_techspec.md` → API Contract 2; API Contract 3; API Contract 4; API Contract 6; Invariants 1, 4, 5 and 6; Current behavior; Testing Approach; Build Order 2
 - ADR-0277; ADR-0254; ADR-0251
+
+
+## Result
+
+Implemented this Task's field-reading slice of the adopted Backlog Entry
+`2026-10-13-history-sanitize-records-lose-their-summary-links-and-dates.md`
+(defects three, five and six). Task status and settlement remain Daemon-owned.
+
+### Implementation and acceptance evidence
+
+- Missing override approval or reason: `LegacyNotRecorded` fills only empty or
+  blank fields under `Legacy`. Recorded whitespace, tabs and multiline text
+  survive; outcome, QA Task status and revision retain their legacy values.
+  `TestLegacyOverrideWithoutApprovalRecordsNotRecorded` covers absent, empty
+  and blank fields; `TestLegacyOverrideKeepsRecordedValues` covers recorded
+  fields, one missing field, and the unchanged `ArchivedTaskCompleted` answers
+  for empty, pending and failed QA Task status.
+- Adopted sources: a missing or empty index falls back to sorted regular
+  Markdown files immediately under `references/` with Backlog Entry or Finding
+  front matter. Plain notes, non-Markdown files, nested files and non-mapping
+  front matter are excluded. `TestLegacySourcesFallBackToAdoptedReferences`
+  exercises those cases; `TestLegacySourcesPreferTheIndex` proves that a
+  populated index keeps its paths and order without adding fallback sources.
+  Both command regressions also assert the adopted source survives conversion
+  and promotion.
+- Creation date: `BuildArchiveRecord` reads a valid TechSpec date only under
+  `Legacy` when the PRD supplies none. `PlanLegacyConversion` applies
+  `LegacyConversionRequest.Created` only when neither document supplied a
+  date. `FindLegacyCreation` reads the oldest adding commit reachable from
+  `HEAD` for both PRD paths, honors cancellation, and wraps Git failures.
+  `planHistoryUnit` propagates that read failure through the existing delivery
+  read error path; both promotion re-plans retain the first plan's `Created`.
+  `TestLegacyCreatedFallsBackToTheTechSpec` covers date precedence, timestamps,
+  invalid dates and absence of any date; the folder reader stops at the
+  TechSpec. `TestFindLegacyCreationReadsTheOldestAddingCommit` covers a later
+  archive move, direct archive additions, no matching commit, cancellation,
+  unsafe paths and wrapped Git failure. Both named CLI regressions parse the
+  written records and compare the Git fallback to the creating commit's `%as`,
+  distinct from the later archiving commit; they also exercise PRD and TechSpec
+  precedence. History sanitize is exercised with and without promotion;
+  baseline update is exercised through `--yes --promote`.
+- Non-legacy behavior: `TestActiveArchiveRecordKeepsItsFields` compares every
+  record field and rendered bytes against the existing behavior, including
+  blank override fields, no adopted-source or TechSpec-date fallback, and
+  original index ordering. Existing archive, override-convention and promotion
+  transcript checks listed below also pass unchanged. Production changes do
+  not alter review conventions, record parsing, digest serialization or output
+  statements.
+
+All nine required top-level tests, and their subtests, start with
+`t.Parallel()`. The history guide documents the three readings with the exact
+`legacy: not recorded` value. The sanctioned generator re-recorded the Behavior
+Surface Record; only the history guide fingerprint changed.
+
+### Focused checks
+
+- Before production edits:
+  `go test ./internal/spec -count=1 -run '^TestLegacy(OverrideWithoutApproval|SourcesFallBack|CreatedFallsBack)'`
+  exited 1, reproducing blank override fields, missing adopted sources and
+  missing TechSpec dates.
+- After the final test edits:
+  `go test ./internal/spec -count=1 -run 'TestLegacy(Override|Sources|Created)|TestFindLegacyCreation|TestActiveArchiveRecordKeepsItsFields|^TestArchiveRecordKeepsEveryOverrideField$|^TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder$|^TestReadArchivedSpecReadsRecordAndLegacyFolder$'`
+  exited 0. This selects the seven new field tests plus three existing archive
+  compatibility tests.
+- `go test ./internal/cli -count=1 -run 'RecordsTheCreationCommitDate$'`
+  exited 0 for both new command regressions and their date/promotion cases.
+- `go test ./internal/cli -count=1 -run 'RecordsTheCreationCommitDate$|^TestHistorySanitizePromotesIntoReferences$|^TestBaselineUpdatePromotesHistoryCitations$|^TestOverrideArchiveIsEligibleForConventionC5$|^TestConventionC5ValidatorHonorsEligibility$'`
+  exited 0 for the new command cases, existing sanitize promotion and two C5
+  checks. The `TestBaselineUpdatePromotesHistoryCitations` alternative matches
+  no existing test; baseline transcript evidence is the separate check below.
+- `go test ./internal/cli -count=1 -run '^TestBaselineUpdatePromotesOnlyOnRequestTranscript$'`
+  exited 0, preserving the existing full baseline promotion transcript.
+- Required regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and wrote `docs/references/behavior-surfaces.json`.
+- `git diff --check` exited 0.
+
+The Task's declared Verification commands, the selected repository Verification
+and the full suite were not run; they belong to the Daemon. No existing test,
+Task Graph manifest, other Task file, review convention or tooling configuration
+was edited. No repository commit, push or pull request was made. No follow-up
+outside this Task's slice was introduced.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261014T193608Z_0f6bbae56906b671`
+- Source commit: `18fd5b24942828c78dce1de2fb793a70f31fa5e3`

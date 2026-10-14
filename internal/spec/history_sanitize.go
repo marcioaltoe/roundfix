@@ -23,6 +23,7 @@ type LegacyConversionRequest struct {
 	ArchiveRoot    string
 	Slug           string
 	SourceRevision string
+	Created        string // Fallback date when the folder supplied none.
 	Delivery       LegacyDelivery
 	Promote        []string
 }
@@ -139,6 +140,26 @@ func FindLegacyDelivery(ctx context.Context, repoRoot, specRoot, archiveRoot, sl
 		delivery.PullRequest = match[1]
 	}
 	return delivery, nil
+}
+
+// FindLegacyCreation reads the oldest adding commit reachable from HEAD,
+// including both the active and archive paths without guessing renames.
+func FindLegacyCreation(ctx context.Context, repoRoot, specRoot, archiveRoot, slug string) (string, error) {
+	if !legacySlug(slug) || !validArchiveSource(specRoot, strings.Repeat("0", 40)) || !validArchiveSource(archiveRoot, strings.Repeat("0", 40)) {
+		return "", errors.New("unsafe legacy creation path")
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "log", "--no-renames", "--diff-filter=A", "--reverse", "--format=%as", "HEAD", "--", path.Join(specRoot, slug, "_prd.md"), path.Join(archiveRoot, slug, "_prd.md"))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
+		return "", fmt.Errorf("read legacy creation with git log: %w: %s", err, output)
+	}
+	if dates := strings.Fields(string(output)); len(dates) > 0 {
+		return dates[0], nil
+	}
+	return "", nil
 }
 
 func legacySlug(slug string) bool {
@@ -278,6 +299,9 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 		if err != nil {
 			return c, fmt.Errorf("read legacy tolerances: %w", err)
 		}
+	}
+	if c.Record.Created == "" {
+		c.Record.Created = req.Created
 	}
 	c.Record.PullRequest, c.Record.DeliveryCommit = req.Delivery.PullRequest, req.Delivery.Commit
 	if c.Record.Archived == "" {

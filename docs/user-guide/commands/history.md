@@ -26,8 +26,18 @@ entries are skipped.
 
 Lenient Legacy Reading also accepts a legacy list of maps in `unproven`. Each
 map becomes one stable text line in the Archive Record; active Specs continue to
-require the string-only list. A Refused Unit is listed as `refused <unit>:
-<reason>`, with the reason on one line, and remains untouched.
+require the string-only list. A legacy `qa_override: true` with a missing, empty
+or blank approval or reason records `legacy: not recorded` in that field;
+recorded values and the other override fields are preserved. When
+`references/_index.md` is absent or lists no path, `sources` lists, sorted by
+file name, the regular Markdown files directly under `references/` whose front
+matter identifies a Backlog Entry (`type`, `status`, `created`) or a Finding
+(`status`, `created_at`). An empty PRD `created` takes the TechSpec's valid
+`created` date, then, in `history sanitize` and `baseline update`, the author
+date of the oldest commit reachable from `HEAD` that added the PRD under the
+Spec Root or archive root. The folder reader stops at the TechSpec date. A
+Refused Unit is listed as `refused <unit>: <reason>`, with the reason on one
+line, and remains untouched.
 
 `roundfix baseline update` plans these same units at once as Pending History and
 binds the selected units into its Baseline Plan Digest. Use
