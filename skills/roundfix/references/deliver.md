@@ -285,6 +285,8 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | `authorization` | `unauthorized` |
 | `unclassified` | unknown blockers; resolve the blocker, then retry |
 
+An unrecovered Provider System Error parks the item as
+`runtime-infrastructure: <scope_id> hit a provider system error: <detail>`.
 Existing blockers keep their next actions. A queue without parked items adds
 no Park line.
 

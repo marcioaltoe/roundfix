@@ -368,6 +368,8 @@ The Park Class identifies the reason and the next action:
 | `authorization` | `unauthorized` |
 | `unclassified` | an unknown blocker |
 
+An unrecovered Provider System Error parks the item as
+`runtime-infrastructure: <scope_id> hit a provider system error: <detail>`.
 Each existing blocker keeps its previous next action. A queue without parked
 items adds no `Park:` line.
 

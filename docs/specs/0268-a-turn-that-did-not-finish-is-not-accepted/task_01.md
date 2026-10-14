@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0268-a-turn-that-did-not-finish-is-not-accepted
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -138,3 +138,39 @@ and the owned-skill version record is checked in this Task's own Verification.
 - [2026-10-13-a-model-at-capacity-reply-is-accepted-as-a-finished-turn.md](references/2026-10-13-a-model-at-capacity-reply-is-accepted-as-a-finished-turn.md)
 - [2026-10-13-a-claude-qa-turn-ends-while-its-work-runs-in-the-background.md](references/2026-10-13-a-claude-qa-turn-ends-while-its-work-runs-in-the-background.md)
 - ADR-0274; ADR-0245; ADR-0189; ADR-0233; ADR-0244; ADR-0256
+
+## Result
+
+- Added the Provider System Error, Agent Background Task and Unfinished Turn
+  glossary terms to `CONTEXT.md`; updated Fallback Chain, Fallback Selection
+  and Agent Work Started with the Provider System Error eligibility rule.
+- Extended the configuration guide, usage guide and canonical profiles
+  reference with Provider System Error recovery, no same-selection retry and
+  runtime-infrastructure settlement. The usage guide now records the
+  `provider_system_error` and `turn_unfinished` event payloads, QA report line,
+  Claude environment variable and foreground command rule.
+- Added the unrecovered Provider System Error park detail to both deliver
+  references, including the uncounted retry sentence.
+- Ran `make skills-sync` successfully, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` successfully; the recorder raised the Roundfix Skill
+  from `0.1.73` to the final recorded version `0.1.75` and updated its
+  history. The sync and recorder were rerun after the final wording refinement.
+- Ran `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` successfully;
+  it was rerun after the final wording refinement and only the Behavior Surface
+  record changed from that recorder.
+- Focused checks: required phrases were found with `rg`; the deprecated
+  `Lost Rollout is the one exception` wording was absent; canonical and mirror
+  Roundfix Skill files compared equal with `cmp`; and `git diff --check`
+  reported no whitespace errors.
+- The Task status remains daemon-owned. The pre-existing `status:
+  in_progress` change was preserved, and the Task's declared Verification is
+  left for the Daemon.
+- Verification Feedback attempt 1: `make verify-changed` reached the unrelated
+  `internal/store` package but its parallel process-controller test timed out
+  while proving graceful termination; all other listed packages passed. The
+  changed-path diff contains no `internal/store` source or test. Focused
+  reproduction `go test -count=1 ./internal/store -run
+  '^TestOwnerProcessControllerReprovesBeforeForceKill$'` passed with 6 tests,
+  so no out-of-scope repair was made.

@@ -151,11 +151,14 @@ failed attempt, publishes `agent_selection_fallback`, renders the same notice on
 stderr/TUI/Attach/Run Event Stream, and only then activates the next configured
 fallback in order. Once `agent_work_started` is recorded, there is no fallback
 for prompt, tool, verification, cancellation or rate-limit failure; they keep
-their normal failure semantics. A Lost Rollout is the one exception and gets no repair: the Task continues in a new Agent
-Session, using the next Fallback Selection before the First Handoff or while a
-QA report is pending, and the same selection otherwise. An Agent Session owner
-gets at most two recoveries; the third settles the Task as runtime
-infrastructure.
+their normal failure semantics. A Lost Rollout gets no repair: the Task
+continues in a new Agent Session, using the next Fallback Selection before the
+First Handoff or while a QA report is pending, and the same selection
+otherwise. A Provider System Error lets the next Fallback Selection take the
+Task under the same condition, gets no retry on the same selection, does not
+count toward the Lost Rollout budget, and otherwise settles the Task as runtime
+infrastructure. An Agent Session owner gets at most two Lost Rollout
+recoveries; the third Lost Rollout settles the Task as runtime infrastructure.
 
 Legacy `defaults.agent` and `runtimes.<runtime>.model` /
 `runtimes.<runtime>.reasoning_effort` remain readable only for scopes without a
