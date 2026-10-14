@@ -556,16 +556,17 @@ type acpxJSONRPCError struct {
 }
 
 type acpxStreamResult struct {
-	protocol           *ProtocolFailure
-	acpSessionID       string
-	usage              TurnUsage
-	output             string
-	message            string
-	messages           []string
-	stopReason         string
-	promptResultParsed bool
-	agentOutput        bool
-	err                error
+	providerSystemError *ProtocolFailure
+	protocol            *ProtocolFailure
+	acpSessionID        string
+	usage               TurnUsage
+	output              string
+	message             string
+	messages            []string
+	stopReason          string
+	promptResultParsed  bool
+	agentOutput         bool
+	err                 error
 }
 
 func (runner *ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
@@ -1529,6 +1530,10 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		failure := &BatchFailureError{Reason: "missing session/prompt stop reason", Stderr: stderr.String()}
 		return result, classifyFailure(stream.agentOutput, failure)
 	}
+	if stream.promptResultParsed && stream.providerSystemError != nil {
+		failure := &BatchFailureError{Reason: ProviderSystemErrorReason, Protocol: stream.providerSystemError, Stderr: stderr.String()}
+		return result, classifyFailure(stream.agentOutput, failure)
+	}
 	return result, nil
 }
 
@@ -1543,6 +1548,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	var agentOutput bool
 	var streamErr error
 	var protocol promptProtocolTrace
+	var threadStatus promptThreadStatus
 	reader := bufio.NewReader(stdout)
 	for {
 		line, readErr := reader.ReadBytes('\n')
@@ -1554,9 +1560,10 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
 			}
-			if !sessionUpdateSeen {
-				var notification acpxJSONRPCMessage
-				if json.Unmarshal(line, &notification) == nil && notification.Method == acpMethodSessionUpdate {
+			var notification acpxJSONRPCMessage
+			if json.Unmarshal(line, &notification) == nil {
+				threadStatus.observe(notification)
+				if !sessionUpdateSeen && notification.Method == acpMethodSessionUpdate {
 					sessionUpdateSeen = true
 					var params acpSessionNotificationPayload
 					if json.Unmarshal(notification.Params, &params) == nil {
@@ -1579,7 +1586,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	}
 	messageList := messages.messages()
 	contract := adapterLineageContracts[strings.TrimSpace(req.Runtime.ID)]
-	return acpxStreamResult{protocol: protocol.result(), acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+	return acpxStreamResult{providerSystemError: threadStatus.failure(), protocol: protocol.result(), acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {

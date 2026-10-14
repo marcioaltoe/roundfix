@@ -315,12 +315,13 @@ func parseSealedPromptStream(stream []byte) (SealedPromptResult, error) {
 }
 
 type sealedStreamParser struct {
-	line       []byte
-	messages   agentMessageLog
-	stopReason string
-	sawResult  bool
-	toolUsed   bool
-	err        error
+	threadStatus promptThreadStatus
+	line         []byte
+	messages     agentMessageLog
+	stopReason   string
+	sawResult    bool
+	toolUsed     bool
+	err          error
 }
 
 func newSealedStreamParser() *sealedStreamParser {
@@ -379,6 +380,7 @@ func (parser *sealedStreamParser) consumeLine(line []byte) {
 		)
 		return
 	}
+	parser.threadStatus.observe(message)
 	if message.Method == acpMethodSessionUpdate {
 		parser.consumeSessionUpdate(line)
 		return
@@ -451,6 +453,9 @@ func (parser *sealedStreamParser) Result() (SealedPromptResult, error) {
 		return SealedPromptResult{}, errors.New(
 			"sealed acpx prompt omitted its terminal result",
 		)
+	}
+	if failure := parser.threadStatus.failure(); failure != nil {
+		return SealedPromptResult{}, fmt.Errorf("sealed acpx prompt ended with a provider system error: %s", failure.Detail)
 	}
 	if parser.stopReason != "end_turn" {
 		return SealedPromptResult{}, fmt.Errorf(
