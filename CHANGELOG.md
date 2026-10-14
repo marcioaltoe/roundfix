@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.81.0] - 2026-10-14
+
+### Acceptance rules that match the authorization and the queue
+
+- **Network-Prohibited Row.** The shared QA policy treats a Results row whose status is exactly `blocked (environment: network prohibited by Spec authorization)` and whose provenance names the outside-evidence row like a Network-Denied Row: it never decides a qualifying partial and needs neither an Unreachable Acceptance declaration nor the QA Archive Override. Settlement, `roundfix archive` and `roundfix qa-report accept` share the rule, so the Delivery Queue no longer parks a partial whose only unmet outside-evidence rows were kept offline by the Spec's own authorization. Any other status or provenance still refuses (ADR-0276).
+- **One wording in the QA skill.** `qa-gate` writes that status only when the Spec's own `_authorization.md` forbids network access, names the authorization text in the report, and still checks offline any source it can. `qa-gate`, `archive-spec` and `roundfix` list the new row in the QA settlement table, and the `roundfix` `archive` and `settle` references describe the shared policy.
+- **Pinned Byte Invariant.** `roundfix spec check` reports `SC-QA-BYTES-PINNED`, a gap, for each requirement of a pending QA Task that asks for byte identity against a commit-shaped hexadecimal token. Such a requirement compares with the Delivery Base instead, so a Spec that waits in the queue while other Specs change the file no longer fails its QA; `write-tasks` says so (ADR-0276).
+- **Guides and Baseline.** The two Baseline clauses and the user guide pages that list the exempt outside-evidence row gain the new row, and the spec check code list gains `SC-QA-BYTES-PINNED`.
+- **Glossary.** Adds Network-Prohibited Row and Pinned Byte Invariant and revises Delivery Base (ADR-0276).
+
 ## [0.80.0] - 2026-10-14
 
 ### A killed child names its signal and a cancelled Run starts nothing
