@@ -20,6 +20,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "542"
 ---
 
 # History sanitize records keep their summary, links and dates
