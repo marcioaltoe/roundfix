@@ -11,7 +11,9 @@ row named in its provenance, never decides a qualifying partial and needs no
 Unreachable Acceptance declaration. An outside-evidence row blocked only because
 the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance,
 also never decides a qualifying partial and needs no Unreachable Acceptance
-declaration. Any other blocked outside-evidence row still blocks Pull Request
+declaration. So does an outside-evidence row the gate did not look up because
+the Spec's own authorization forbids network access, recorded as `blocked
+(environment: network prohibited by Spec authorization)` with the outside-evidence row named in its provenance. Any other blocked outside-evidence row still blocks Pull Request
 preparation. A `pending` verdict is never
 accepted, and a `pass` or otherwise-eligible `partial` that records no QA row
 is refused. A report whose front matter is empty or duplicated is unreadable

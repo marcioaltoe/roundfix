@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0270-acceptance-rules-that-match-the-authorization-and-the-queue
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -70,6 +70,57 @@ pages, the adoption guide and the Behavior Surface Record.
       `SC-QA-BYTES-PINNED` and the Delivery Base.
 - [ ] Every mirror matches, every version is recorded, and the Behavior
       Surface Record is current.
+
+## Result
+
+Implemented the settlement-skill and task-authoring guidance from the TechSpec:
+
+- Added the unchanged-table-following `Rows the Spec's authorization keeps offline`
+  section to canonical `qa-gate`, `archive-spec`, and `roundfix` skills.
+- Added the QA gate's authorization and offline-source instructions, the
+  archive and settle reference wording, and the `Byte invariants name the
+  delivery base` rule with `SC-QA-BYTES-PINNED`.
+- Updated the four user-guide surfaces, regenerated the owned-skill mirrors and
+  version record, and re-recorded `docs/references/behavior-surfaces.json`.
+- Added `skills/acceptance_rules_test.go` with the two required whitespace-
+  normalized contract tests.
+
+Focused evidence collected before Daemon Verification:
+
+- `make skills-sync` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 ./skills -run '^(TestTheSettlementSkillsNameTheNetworkProhibitedRow|TestWriteTasksComparesByteInvariantsWithTheDeliveryBase)$'` — 2 tests passed.
+- Canonical and mirrored owned-skill SHA-256 hashes match for `qa-gate`,
+  `archive-spec`, `roundfix`, and `write-tasks`; `git diff --check` passed.
+- The required live wording sweep found the remaining old Baseline copies only
+  in `docs/agents/spec-routing.md` and `docs/agents/autonomous-work.md`, which
+  are task_03-owned as stated by the task.
+
+Acceptance-criterion evidence:
+
+- The three settlement skills have the new section immediately after their
+  unchanged QA settlement tables; the focused settlement test passed.
+- `qa-gate` names the authorization-forbidden status, its provenance, and the
+  offline-source rule; the focused settlement test and wording sweep passed.
+- `write-tasks`, the Roundfix Spec reference, and the Spec command page name
+  `SC-QA-BYTES-PINNED` and the Delivery Base; the focused byte-invariant test
+  passed.
+- Mirror hashes match, the owned-skill version recorder passed, and the
+  Behavior Surface recorder passed and updated its generated record.
+
+Verification feedback:
+
+- Daemon attempt 1 `make verify-changed` failed in the unrelated existing
+  `internal/cli` test `TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout`,
+  where the fixture child was killed by `SIGKILL` instead of returning its
+  configured exit 2. The diagnostic is recorded at the supplied artifact path;
+  its body is not copied here.
+- The repository's open F6 backlog entry identifies this same signal failure
+  in the delivery item tests. No Task 04 implementation path is involved, so
+  no unrelated CLI repair was made.
+- Isolated focused check:
+  `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 ./internal/cli -run '^TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate$' -v` — 3 subtests passed.
 
 ## Consumers
 

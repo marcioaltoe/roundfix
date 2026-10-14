@@ -13,6 +13,10 @@ are `error` when the check locates both sides of a contradiction and `gap` when
 it surfaces a candidate it cannot settle; `--strict` promotes gaps to errors.
 The authoring-honesty contract includes these stable identifiers:
 
+- `SC-QA-BYTES-PINNED` — a requirement of a pending QA Task names a byte
+  invariant and a commit-shaped hexadecimal token together; compare with the
+  Delivery Base instead. A gap that runs from the Tasks stage.
+
 These four gaps hold every active Spec, whatever its age. Before an active
 Spec's next Run, add the sections and lines each finding names; the fix of every
 finding names the section or line and the skill rule that requires it.

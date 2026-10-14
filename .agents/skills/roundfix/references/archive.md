@@ -50,8 +50,11 @@ recorded as `blocked (environment: no open Pull Request)` with the Pull Request
 row named in its provenance, and the outside-evidence row, recorded as
 `blocked (environment: network denied: <host>)` with the outside-evidence row
 named in its provenance, never decide a qualifying partial and need no
-Unreachable Acceptance declaration. Any other blocked outside-evidence row
-still blocks Pull Request preparation. Settlement and archive both apply this
+Unreachable Acceptance declaration. So does an outside-evidence row the gate
+did not look up because the Spec's own authorization forbids network access,
+recorded as `blocked (environment: network prohibited by Spec authorization)`
+with the outside-evidence row named in its provenance (ADR-0276). Any other
+blocked outside-evidence row still blocks Pull Request preparation. Settlement and archive both apply this
 same policy. A `fail`, an
 undeclared `partial`, a missing or unparseable
 report, and a `pass` carrying finding-, declared-, or precondition-blocked rows
@@ -108,7 +111,8 @@ Refusals exit `2` through Preflight Validation, name the first unmet condition
 on stderr, and leave the active Spec folder in place. Every refusal outside the
 one declared-only case is unchanged: a finding-blocked row, an
 environment-blocked row other than the pre-PR Pull Request row or a
-network-denied outside-evidence row, a declared count not covered by the Spec's
+network-denied outside-evidence row or a network-prohibited outside-evidence row,
+a declared count not covered by the Spec's
 declarations, `verdict: fail`, missing QA, and any non-completed Task all
 refuse. `qa_override` keeps its existing meaning for explicitly authorized
 archival of genuinely failed or missing evidence; declared unreachability does
