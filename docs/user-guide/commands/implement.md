@@ -154,6 +154,12 @@ Daemon Task and QA commits stage only repository paths that do not cross a
 symbolic link; dropped paths are journaled and warned
 (`roundfix: task file <path> kept outside the repository; committed without it`).
 
+At the QA Report commit boundary, the Secret Scan checks the files that commit
+would stage. A Secret Match refuses the commit with `QA evidence carries a
+secret: <path>:<line> (<kind>)`, recording only its path, line and kind. The
+Final Push scans the commits it would send and refuses the push when it finds a
+Secret Match.
+
 
 The `Tokens:` line follows the outcome on every terminal Implement Run,
 before any `pushed` line. It reads the Run's recorded sums after the Run ends,

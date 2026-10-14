@@ -9,6 +9,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"roundfix/internal/judge"
+	"roundfix/internal/secretscan"
 )
 
 type VerifyRequest struct {
@@ -125,6 +128,7 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 
 	cmd := exec.CommandContext(ctx, "sh", "-c", req.Command)
 	cmd.Dir = req.WorkDir
+	cmd.Env = judge.WithoutKeyVariables(os.Environ())
 	cmd.Stdout = tempFile
 	cmd.Stderr = tempFile
 	runErr := cmd.Run()
@@ -324,6 +328,15 @@ func (GitPusher) Push(ctx context.Context, req PushRequest) error {
 	}
 	if strings.TrimSpace(req.Branch) == "" {
 		return fmt.Errorf("run Final Push: PR Head Branch is required")
+	}
+	history, err := runGitCommand(ctx, req.WorkDir, secretscan.PushedHistoryArgs("HEAD", req.Remote)...)
+	if err != nil {
+		// A failed read may have emitted a partial patch containing a secret,
+		// so the diagnostic carries the exit and stderr, never stdout.
+		return fmt.Errorf("run Final Push: read pushed history: git log failed: exit status %d%s", history.ExitCode, formatCommandOutput([]byte(history.Stderr)))
+	}
+	if matches := secretscan.ScanPushedHistory([]byte(history.Stdout)); len(matches) != 0 {
+		return fmt.Errorf("run Final Push: refuse push: %w", &secretscan.MatchesError{Matches: matches})
 	}
 	return runGit(ctx, req.WorkDir, "push", req.Remote, "HEAD:"+req.Branch)
 }

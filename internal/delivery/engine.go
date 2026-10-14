@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"roundfix/internal/secretscan"
 	"roundfix/internal/store"
 )
 
@@ -25,6 +26,7 @@ const (
 	BlockerChecksTimeout          = "checks-timeout"
 	BlockerUnauthorized           = "unauthorized"
 	BlockerDeliveryError          = "delivery-error"
+	BlockerSecretFound            = "secret-found"
 	BlockerItemWorktreeMissing    = "item-worktree-missing"
 	BlockerRunBudgetExceeded      = "run-budget-exceeded"
 	BlockerQueueDeadline          = "queue-deadline"
@@ -1072,8 +1074,11 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	if err != nil {
 		return err
 	}
-	if err := engine.push(ctx, gitRoot, workDir, item.SpecSlug, publication, head); err != nil {
+	if err := engine.push(ctx, gitRoot, workDir, item, publication, head); err != nil {
 		return err
+	}
+	if item.Stage == store.DeliveryStageParked {
+		return nil
 	}
 	pullRequest, err := engine.createPullRequest(ctx, gitRoot, workDir, item.SpecSlug, publication, head)
 	if err != nil {
@@ -1083,9 +1088,9 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStageChecking)
 }
 
-func (engine *Engine) push(ctx context.Context, gitRoot, workDir, specSlug string, publication Publication, expectedHead string) error {
+func (engine *Engine) push(ctx context.Context, gitRoot, workDir string, item *store.DeliveryQueueItem, publication Publication, expectedHead string) error {
 	pullRequests := engine.pullRequests.WithWorkDir(workDir)
-	intent, unmatched, err := engine.actionIntent(ctx, gitRoot, specSlug, store.DeliveryActionPush)
+	intent, unmatched, err := engine.actionIntent(ctx, gitRoot, item.SpecSlug, store.DeliveryActionPush)
 	if err != nil {
 		return err
 	}
@@ -1100,7 +1105,7 @@ func (engine *Engine) push(ctx context.Context, gitRoot, workDir, specSlug strin
 			}
 		}
 	} else {
-		intent, err = engine.store.RecordDeliveryActionIntent(ctx, gitRoot, specSlug, store.DeliveryActionPush)
+		intent, err = engine.store.RecordDeliveryActionIntent(ctx, gitRoot, item.SpecSlug, store.DeliveryActionPush)
 		if err != nil {
 			return fmt.Errorf("record push intent: %w", err)
 		}
@@ -1108,6 +1113,14 @@ func (engine *Engine) push(ctx context.Context, gitRoot, workDir, specSlug strin
 
 	remoteHead, err := pullRequests.PushBranch(ctx, publication.Remote, publication.HeadBranch, expectedHead)
 	if err != nil {
+		var refusal *secretscan.MatchesError
+		if errors.As(err, &refusal) {
+			matches := make([]string, len(refusal.Matches))
+			for index, match := range refusal.Matches {
+				matches[index] = match.String()
+			}
+			return engine.park(ctx, gitRoot, item, BlockerSecretFound+": "+strings.Join(matches, ", "))
+		}
 		return fmt.Errorf("push candidate: %w", err)
 	}
 	if remoteHead.SHA != expectedHead {

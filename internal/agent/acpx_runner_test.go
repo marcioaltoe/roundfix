@@ -5022,6 +5022,10 @@ func acpxPromptResponseLine(stopReason string) string {
 }
 
 func runFakeACPXProcess() int {
+	if err := recordFakeJudgeEnvironment(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
 	if err := recordFakeACPXConfig(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2

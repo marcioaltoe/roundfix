@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"roundfix/internal/codex"
+	"roundfix/internal/judge"
 )
 
 const codexPathEnv = "CODEX_PATH"
@@ -129,9 +130,11 @@ const claudeNestedGuardEnv = "CLAUDECODE"
 
 // acpxCommandEnv builds the acpx child environment from the explicit base:
 // variables that must not leak into Agent runtimes are removed (the codex
-// hygiene path, re-added per session through overrides, and Claude Code's
-// nested-session guard), then per-runtime overrides are appended.
+// hygiene path, re-added per session through overrides, Claude Code's
+// nested-session guard, and every Judge Key Variable), then per-runtime
+// overrides are appended.
 func acpxCommandEnv(base []string, overrides []string) []string {
+	base = judge.WithoutKeyVariables(base)
 	// An override without an equals sign removes the named inherited variable.
 	replaced := make(map[string]bool, len(overrides))
 	for _, entry := range overrides {
