@@ -20,6 +20,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "530"
 ---
 
 # No secret and no Spec content leaves the machine
