@@ -306,6 +306,7 @@ Deviations from the PRD: None.
 - ADR-0057: no rejected alternative is taken; the Daemon remains the only writer of the Task status it settles `failed`.
 - ADR-0189: no rejected alternative is taken; the skill version rises with its content.
 - ADR-0233: no rejected alternative is taken; the version is written by the record command.
+- ADR-0272: no rejected alternative is taken; a correction to a parked item is still proved by its Reviewed Head Record and declared paths.
 - ADR-0256: its rejected model-judging alternative stays rejected; task_01 is the skills Task its rule requires.
 - ADR-0259: no rejected alternative is taken; the new daemon and cli tests call `t.Parallel()` first.
 - ADR-0271: no rejected alternative is taken; no new test waits on elapsed time.

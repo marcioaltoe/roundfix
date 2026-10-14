@@ -97,7 +97,9 @@ merge); no Verification of this Spec reads the other Spec's work.
   failures may still be settled failed by the Daemon without a Verification
   command", which governs an unrecovered Provider System Error and an
   Unfinished Turn. ADR-0189 and ADR-0233 govern the Roundfix Skill's version
-  raise. ADR-0256's skills-Task rule applies because
+  raise. ADR-0272 refines ADR-0233's
+  retry rule for a parked Delivery Queue item; this Spec leaves that rule
+  unchanged. ADR-0256's skills-Task rule applies because
   `internal/cli/deliver_workflow.go` is a covered source. ADR-0259 and ADR-0271
   bind the new tests. ADR-0244: "A Spec now carries a Glossary Declaration",
   answered by the Glossary section below. ADR-0184: "A TechSpec now declares
