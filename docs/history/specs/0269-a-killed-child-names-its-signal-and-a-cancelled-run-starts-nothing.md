@@ -21,6 +21,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "536"
 ---
 
 # A killed child names its signal, and a cancelled Run starts nothing
