@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0270-acceptance-rules-that-match-the-authorization-and-the-queue
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -105,3 +105,39 @@ repository's own commands, and writes the glossary entries.
 - [_prd.md](_prd.md) — Goals 2; User Stories 4; Core Features 4; Success Metric 5
 - [_techspec.md](_techspec.md) — Exact texts; API Contract 4; Invariants 6; Build Order 3
 - ADR-0276; ADR-0240; ADR-0104; ADR-0244; ADR-0259; ADR-0271
+
+## Result
+
+Implementation evidence prepared for Daemon Verification:
+
+- Appended the exact Network-Prohibited Row sentences to the two Baseline
+  module clauses, raised both module versions with
+  `GOCACHE=/tmp/roundfix-task03-gocache go test ./internal/baseline -run
+  '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions
+  -count=1`, and recorded one passing package/test result.
+- Ran `gofmt` on the new clause test. Ran `make baseline-digests` twice;
+  the first regenerated the derived Baseline set and the second reported
+  `baseline-digests: ... changed:false`.
+- Ran the required Managed Refresh twice with a temporary `HOME`. The first
+  refresh reported `File changes: 3` for the two guides and
+  `docs/agents/setup-context.json`; the second reported `File changes: 0`
+  and `Idempotence: verified`.
+- Added `TestTheGuidesExemptANetworkProhibitedOutsideEvidenceRow`, with
+  `t.Parallel()` first. The focused test passed and checked both embedded
+  clauses, both Standard TypeScript Monorepo formatter goldens, and both
+  repository guides after whitespace normalization.
+- Added the Network-Prohibited Row and Pinned Byte Invariant glossary entries
+  after Network-Denied Row, and appended the Delivery Base sentence.
+  `jq empty`, `git diff --check`, and the glossary phrase assertions passed.
+
+Acceptance evidence:
+
+1. The changed source clauses append only the specified sentences; the focused
+   clause test passed against both generated guides and both formatter goldens.
+2. The second Baseline digest run reported `changed:false`, and the second
+   Managed Refresh reported `File changes: 0`.
+3. `CONTEXT.md` contains all three required glossary headings and the
+   Delivery Base sentence; the focused glossary assertions passed.
+
+The task remains `in_progress` for the Daemon to run the authored Verification
+and own settlement.
