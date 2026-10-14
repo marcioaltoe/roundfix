@@ -5,6 +5,7 @@ package daemon
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"roundfix/internal/gittest"
 	"roundfix/internal/secretscan"
+	"roundfix/internal/testfixture"
 )
 
 func TestFinalPushRefusesAHistoryThatAddsASecret(t *testing.T) {
@@ -138,11 +140,32 @@ func TestFinalPushHistoryReadFailureOmitsItsOutput(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		bin := t.TempDir()
-		script := "#!/bin/sh\nfor arg do if [ \"$arg\" = log ]; then printf 'commit 0\\n+%s\\n' '" + sample + "'; exit 1; fi; done\nexec '" + realGit + "' \"$@\"\n"
-		if err := os.WriteFile(filepath.Join(bin, "git"), []byte(script), 0o755); err != nil {
-			t.Fatal(err)
+		fakeGit := testfixture.FixtureBinary(t, "git", fmt.Sprintf(`package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+func main() {
+	for _, arg := range os.Args[1:] {
+		if arg == "log" {
+			fmt.Printf("commit 0\n+%%s\n", %q)
+			os.Exit(1)
 		}
+	}
+	command := exec.Command(%q, os.Args[1:]...)
+	command.Stdin, command.Stdout, command.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if err := command.Run(); err != nil {
+		if exit, ok := err.(*exec.ExitError); ok {
+			os.Exit(exit.ExitCode())
+		}
+		os.Exit(1)
+	}
+}
+`, sample, realGit))
+		bin := filepath.Dir(fakeGit)
 		command := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^"+t.Name()+"$")
 		command.Env = append(gittest.IsolatedEnv(),
 			fixtureVariable+"="+t.Name(),
