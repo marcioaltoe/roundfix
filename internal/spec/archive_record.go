@@ -154,7 +154,14 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 			break
 		}
 	}
-	r.Outcome = archiveParagraph(string(body), "# ")
+	summaryParagraph := archiveParagraph
+	if in.Legacy {
+		summaryParagraph = legacyArchiveParagraph
+	}
+	r.Outcome = summaryParagraph(string(body), "# ")
+	if in.Legacy && r.Outcome == "" {
+		r.Outcome = summaryParagraph(string(body), "## ")
+	}
 	seen := map[string]bool{}
 	for _, adr := range regexp.MustCompile(`ADR-[0-9]{4}`).FindAllString(archiveSection(string(body), "Decisions"), -1) {
 		if !seen[adr] {
@@ -222,7 +229,7 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 		if readErr != nil {
 			return r, readErr
 		}
-		outcome := archiveParagraph(archiveSection(string(text), "Outcome"), "")
+		outcome := summaryParagraph(archiveSection(string(text), "Outcome"), "")
 		if outcome != "" {
 			r.Outcome = outcome
 		}
@@ -393,6 +400,27 @@ func archiveParagraph(body, after string) string {
 	}
 	return strings.Join(strings.Fields(strings.Join(lines, " ")), " ")
 }
+
+// Strip each line's nested block quote markers before reading the paragraph.
+// Keep archiveParagraph unchanged for active Specs and existing records.
+func legacyArchiveParagraph(body, after string) string {
+	lines := strings.Split(body, "\n")
+	for i, line := range lines {
+		for {
+			indent := 0
+			for indent < len(line) && indent < 3 && line[indent] == ' ' {
+				indent++
+			}
+			if indent == len(line) || line[indent] != '>' {
+				break
+			}
+			line = strings.TrimPrefix(line[indent+1:], " ")
+		}
+		lines[i] = line
+	}
+	return archiveParagraph(strings.Join(lines, "\n"), after)
+}
+
 func archiveRecordMapping(r ArchiveRecord) *yaml.Node {
 	n := &yaml.Node{Kind: yaml.MappingNode}
 	add := func(k string, v any) {

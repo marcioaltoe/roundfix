@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0271-history-sanitize-records-keep-their-summary-links-and-dates
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,52 @@ paragraph its author wrote. It is verifiable on its own through
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Success Metric 1; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 6; Invariants 1, 4 and 6; Current behavior; Testing Approach; Build Order 1
 - ADR-0277; ADR-0251
+
+## Result
+
+Implemented the summary-reading slice for the adopted Backlog Entry's first
+two defects. `BuildArchiveRecord` selects `legacyArchiveParagraph` only under
+`Legacy`, removes each line's nested block quote markers before joining, and
+falls back to the PRD's first second-level section when the title paragraph is
+empty. The newest QA Report's non-empty outcome still overrides the PRD, and
+a supersession reason still overrides both. `archiveParagraph` and
+`ParseArchiveRecord` are unchanged.
+
+Added the four required parallel tests in
+`internal/spec/legacy_record_summary_test.go`. Legacy cases use disposable
+repositories and `PlanLegacyConversion`, assert the exact rendered body, and
+check that planning leaves the source folder intact. Section cases also read
+the legacy folder, apply the conversion, and read the resulting Archive Record
+through `ReadArchivedSpec`.
+
+### Focused check evidence
+
+- Before the implementation, `rtk proxy go test ./internal/spec -count=1 -run
+  '^(TestLegacySummary|TestActiveArchiveRecordKeepsItsSummaryReading)'` exited
+  1: two-line and nested quotes retained `>`, first-section cases returned an
+  empty outcome, and QA quote cases retained markers. Active-summary cases
+  had no failures.
+- After implementation, `rtk proxy go test ./internal/spec -count=1 -v -run
+  '^(TestLegacySummary|TestActiveArchiveRecordKeepsItsSummaryReading)'` exited
+  0: all four named tests and their 19 subtests passed.
+- `rtk proxy go test ./internal/spec -count=1 -run
+  '^(TestArchiveRecordRoundTrips|TestArchiveRecordOfASupersededSpec|TestLegacyConversionOfAFolderWithoutQAIsNoQA|TestLegacyConversionPreservesTheRendererOutcomeBudget|TestLegacyConversionOfAFailedQAIsFailedQA|TestReadArchivedSpecReadsRecordAndLegacyFolder)$'`
+  exited 0: six existing regressions passed unchanged.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Two-line and nested quote summaries join without markers | `TestLegacySummaryRemovesBlockQuoteMarkers` asserts exact record body lines for two-line, nested and unspaced markers. Additional cases preserve greater-than text after four spaces and inside a line, respect quoted paragraph breaks, and keep plain summaries. |
+| Title followed by a section yields its first paragraph | `TestLegacySummaryFallsBackToTheFirstSection` covers plain and quoted section paragraphs, title precedence and an empty first section; both archived forms read the same outcome. |
+| QA outcome wins over the PRD | `TestLegacySummaryKeepsTheQAReportOutcome` covers title and section summaries, selects the newest of two reports, retains the PRD when that outcome is empty, and preserves supersession precedence. |
+| Non-legacy summary reading stays the same | `TestActiveArchiveRecordKeepsItsSummaryReading` asserts the exact `> a > b` outcome from both PRD and QA quotes, no active section fallback, and unchanged parsed outcomes. |
+
+The only pre-existing change was this Task's Daemon-owned `in_progress`
+status. This turn adds only this Result section to the Task artifact. Declared
+Task Verification and repository Verification were not run; the Daemon owns
+both and settlement. No commit, push, PR, Task Graph edit or other Task edit
+was made. No follow-up outside this slice was required.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261014T193608Z_0f6bbae56906b671`
+- Source commit: `4f9e1afc1941f5daa713cb653862f16c6143dd72`
