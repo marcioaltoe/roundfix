@@ -1,0 +1,28 @@
+package daemon
+import ("fmt"; "strings"; "testing"; "roundfix/internal/runevent"; "roundfix/internal/spec")
+func TestQA0267EveryPatternRefusesACommit(t *testing.T) {
+ t.Parallel()
+ samples:=[]struct{kind,value string}{
+ {"private-key-block","-----BEGIN "+"PRIVATE KEY-----"},
+ {"github-token","ghp"+"_"+strings.Repeat("a",36)},
+ {"openrouter-key","sk-or-"+"v1-"+strings.Repeat("b7",32)},
+ {"anthropic-key","sk-ant"+"-"+strings.Repeat("a",32)},
+ {"openai-key","sk"+"-"+strings.Repeat("a",32)},
+ {"aws-access-key-id","AK"+"IA"+strings.Repeat("A",16)},
+ {"slack-token","xox"+"b-"+strings.Repeat("a",10)},
+ {"google-api-key","AI"+"za"+strings.Repeat("a",35)},
+ {"stripe-secret-key","sk_live"+"_"+strings.Repeat("a",24)},
+ {"credential-assignment","SAMPLE_API_KEY="+strings.Repeat("a1",12)},
+ }
+ for _,sample:=range samples {t.Run(sample.kind,func(t *testing.T){t.Parallel()
+ f,result,path:=qaSecretScanFixture(t,sample.value)
+ if result.QAAccepted || taskStatusOnDisk(t,f.gitRoot,f.graph.QATaskID)!=string(spec.StatusFailed){t.Fatal("QA accepted pattern sample")}
+ if strings.Contains(runGitForTest(t,f.gitRoot,"log","--format=%s"),"docs: qa report for "+taskCycleSlug){t.Fatal("QA committed pattern sample")}
+ refusal:=false; for _,event:=range taskEventsOfKind(f.sink,runevent.KindDaemonQA){p:=eventPayloadMap(t,event);if p["phase"]=="secret_scan"{refusal=true;t.Logf("event=%s phase=secret_scan path=%s line=2 kind=%s",event.Summary,path,sample.kind)}}
+ want:="QA evidence carries a secret: "+path+":2: "+sample.kind;reason:=""
+ for _,event:=range taskEventsOfKind(f.sink,runevent.KindDaemonTask){p:=eventPayloadMap(t,event);if event.ReviewIssue==f.graph.QATaskID&&p["phase"]=="settled" {reason,_=p["reason"].(string)}}
+ if !refusal || reason!=want {t.Fatal("missing expected location-only refusal")}
+ for _,event:=range f.sink.events {if strings.Contains(event.Summary,sample.value)||strings.Contains(string(event.Payload),sample.value){t.Fatal("event echoes sample")}}
+ t.Log(fmt.Sprintf("reason=%s; QA Report commits=0",reason))
+ })}
+}

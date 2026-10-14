@@ -1,0 +1,202 @@
+command: go test -count=1 -v -run ^(TestQAReportWithASecretMatchSettlesFailedWithoutACommit|TestQAReportWithoutASecretMatchKeepsItsCommit|TestSecretPatternsMatchTheirKindAndNeverEchoTheValue)$ ./internal/daemon ./internal/secretscan
+exit: 0
+stdout:
+=== RUN   TestQAReportWithASecretMatchSettlesFailedWithoutACommit
+=== PAUSE TestQAReportWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestQAReportWithoutASecretMatchKeepsItsCommit
+=== PAUSE TestQAReportWithoutASecretMatchKeepsItsCommit
+=== CONT  TestQAReportWithASecretMatchSettlesFailedWithoutACommit
+=== CONT  TestQAReportWithoutASecretMatchKeepsItsCommit
+--- PASS: TestQAReportWithASecretMatchSettlesFailedWithoutACommit (0.25s)
+--- PASS: TestQAReportWithoutASecretMatchKeepsItsCommit (0.28s)
+PASS
+suiteguard: guard cost: measured 2656 paths; fingerprint took 89.825916ms before and 69.037209ms after
+ok  	roundfix/internal/daemon	0.628s
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private-key-block
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private-key-block
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/github-token
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/github-token
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openrouter-key
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openrouter-key
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/anthropic-key
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/anthropic-key
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openai-key
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openai-key
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/aws-access-key-id
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/aws-access-key-id
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/slack-token
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/slack-token
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/google-api-key
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/google-api-key
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/stripe-secret-key
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/stripe-secret-key
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/credential-assignment
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/credential-assignment
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private_header
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private_header
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/encrypted_header
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/encrypted_header
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/fine_grained
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/fine_grained
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/plain_openai
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/plain_openai
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/router_shape_falls_through
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/router_shape_falls_through
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/session_aws
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/session_aws
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/restricted_stripe
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/restricted_stripe
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/gho_
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/gho_
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghu_
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghu_
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghs_
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghs_
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghr_
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghr_
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxa-
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxa-
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxp-
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxp-
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxr-
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxr-
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxs-
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxs-
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY?=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY?=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN?=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN?=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET?=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET?=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD?=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD?=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN?=
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN?=
+=== RUN   TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:
+=== PAUSE TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private-key-block
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxr-
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN?=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY?=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN?=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxs-
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/slack-token
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/fine_grained
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/encrypted_header
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/aws-access-key-id
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openai-key
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET?=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/anthropic-key
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxp-
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/session_aws
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openrouter-key
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/credential-assignment
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/restricted_stripe
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxa-
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/github-token
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD?=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/stripe-secret-key
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/router_shape_falls_through
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/plain_openai
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/google-api-key
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD=
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private_header
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghu_
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/gho_
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghr_
+=== CONT  TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghs_
+--- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxr- (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN: (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN?= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN:= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/TOKEN= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY: (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY?= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET:= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY:= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN: (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/API_KEY= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxs- (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN?= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/slack-token (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN:= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private-key-block (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/fine_grained (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/encrypted_header (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/MYTOKEN= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET: (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/aws-access-key-id (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openai-key (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/SECRET?= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/anthropic-key (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxp- (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/session_aws (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD: (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/openrouter-key (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/credential-assignment (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/restricted_stripe (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/xoxa- (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/github-token (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD?= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/stripe-secret-key (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/plain_openai (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD:= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/router_shape_falls_through (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/google-api-key (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/PASSWORD= (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/private_header (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghu_ (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/gho_ (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghr_ (0.00s)
+    --- PASS: TestSecretPatternsMatchTheirKindAndNeverEchoTheValue/ghs_ (0.00s)
+PASS
+ok  	roundfix/internal/secretscan	0.092s
+
+stderr:

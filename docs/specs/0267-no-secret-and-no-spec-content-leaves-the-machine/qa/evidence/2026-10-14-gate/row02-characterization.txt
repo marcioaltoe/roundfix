@@ -1,0 +1,19 @@
+command: go test -count=1 -v -overlay /tmp/roundfix-0267-qa-n_36rdzz/probes.json -run ^TestQA0267(Agent|Verification)Characterization$ ./internal/agent ./internal/daemon
+exit: 0
+stdout:
+=== RUN   TestQA0267AgentCharacterization
+=== PAUSE TestQA0267AgentCharacterization
+=== CONT  TestQA0267AgentCharacterization
+    qa0267_characterization_test.go:11: Agent environment: judge variables=0; control present=true; names=ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY
+--- PASS: TestQA0267AgentCharacterization (0.00s)
+PASS
+suiteguard: guard cost: measured 2651 paths; fingerprint took 87.633334ms before and 69.253542ms after
+ok  	roundfix/internal/agent	0.393s
+=== RUN   TestQA0267VerificationCharacterization
+    qa0267_characterization_test.go:14: Verification environment: judge variables=0; control present=true; names=ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY
+--- PASS: TestQA0267VerificationCharacterization (0.00s)
+PASS
+suiteguard: guard cost: measured 2651 paths; fingerprint took 97.693041ms before and 69.694875ms after
+ok  	roundfix/internal/daemon	0.506s
+
+stderr:

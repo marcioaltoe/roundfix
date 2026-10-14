@@ -1,0 +1,2 @@
+from common import *
+row(1,'pass','`make build` exited 0; `./bin/roundfix --version` identifies the audited-head binary. The Daemon supplied `make verify-changed`: pass, exit 0, diagnostics removed. Independent identity: HEAD is '+s['head']+'. Gate not rerun. Evidence: [preconditions](evidence/2026-10-14-gate/preconditions.txt).')

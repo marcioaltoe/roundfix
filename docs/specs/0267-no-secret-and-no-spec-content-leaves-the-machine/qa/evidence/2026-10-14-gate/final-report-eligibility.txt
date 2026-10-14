@@ -1,0 +1,13 @@
+command: go test -count=1 -v -overlay /tmp/roundfix-0267-qa-n_36rdzz/report.json -run ^TestQA0267FinalReportEligibility$ ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestQA0267FinalReportEligibility
+=== PAUSE TestQA0267FinalReportEligibility
+=== CONT  TestQA0267FinalReportEligibility
+    qa0267_report_test.go:3: qualifying partial accepted by QAReportEligibility; environment=1 finding=0 declared=0
+--- PASS: TestQA0267FinalReportEligibility (0.00s)
+PASS
+suiteguard: guard cost: measured 2688 paths; fingerprint took 102.668458ms before and 66.415709ms after
+ok  	roundfix/internal/spec	0.365s
+
+stderr:

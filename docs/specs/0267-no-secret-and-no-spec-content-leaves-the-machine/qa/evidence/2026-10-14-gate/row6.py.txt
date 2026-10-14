@@ -1,0 +1,25 @@
+from common import *
+import hashlib
+skill=root/'.agents/skills/qa-gate/SKILL.md'; text=skill.read_text()
+start=text.index('### Evidence carries no secret');end=text.index('### QA settlement',start);rule=' '.join(text[start:end].split())
+required=['record environment variable names, never their values','<NAME> set','<NAME> not set','env','printenv','set','export -p','declare -x','make -p','make --print-data-base','never reload a shell profile','Secret Match by path, line and kind only','refuses to commit a QA Report']
+for phrase in required: assert phrase in rule,phrase
+prompt=(root/'internal/agent/spec_prompt.go').read_text();assert '- Record environment variable names, never their values, and never persist the output of a command that prints the environment (env, printenv, set, export -p, declare -x, make -p); the Daemon refuses a QA Report whose files match a Secret Pattern.' in prompt
+changed=[];lines=['QA evidence heading and all declared rules: pass','QA prompt required line: pass']
+paths=subprocess.check_output(['git','ls-files','-z','*.md'],cwd=root).decode().split('\0')
+def section(data):
+    match=re.search(r'^### QA settlement\n.*?(?=^## |^### |\Z)',data,re.M|re.S)
+    return match[0] if match else None
+for path in paths:
+    if not path:continue
+    current=(root/path).read_text(); sec=section(current)
+    if sec is None:continue
+    before=subprocess.check_output(['git','show',s['base']+':'+path],cwd=root,text=True)
+    assert sec==section(before),path
+    lines.append(path+': settlement unchanged; sha256='+hashlib.sha256(sec.encode()).hexdigest())
+    changed.append(path)
+assert len(changed)>=6
+assert (root/'skills/qa-gate/SKILL.md').read_bytes()==skill.read_bytes()
+(evidence/'row06-contract-audit.txt').write_text('\n'.join(lines)+'\n')
+row(6,'pass','The new evidence heading satisfies every task_04 Requirement 2 clause, and qaGateContract carries Requirement 3 verbatim. Independent Git comparison found every tracked QA settlement section byte-identical to the delivery base, including canonical/shipped qa-gate, archive-spec and roundfix; the QA skill mirror also matches. Evidence: [asserted phrases and settlement hashes](evidence/2026-10-14-gate/row06-contract-audit.txt).')
+print('row06: all contract assertions and '+str(len(changed))+' settlement sections passed')

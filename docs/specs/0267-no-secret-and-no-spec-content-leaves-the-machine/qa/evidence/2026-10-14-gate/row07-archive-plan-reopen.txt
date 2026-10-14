@@ -1,0 +1,11 @@
+command: /usr/bin/sandbox-exec -p (version 1)(allow default)(deny network*) env -u ROUNDFIX_OPENROUTER_JUDGE_API_KEY -u ROUNDFIX_OPENROUTER_API_KEY -u ROUNDFIX_TYPESAFE_API_KEY ./bin/roundfix archive 0001-offline-archive --plan
+exit: 0
+stdout:
+archive plan for 0001-offline-archive: removes 3 file(s) (97 bytes) and writes docs/history/specs/0001-offline-archive.md
+core 1 file(s): _prd.md
+evidence 0 file(s) (0 bytes) under qa/evidence/
+candidate references/knowledge.md 31 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
+candidate references/second.md 37 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
+promote with: roundfix archive 0001-offline-archive --promote <path>
+
+stderr:

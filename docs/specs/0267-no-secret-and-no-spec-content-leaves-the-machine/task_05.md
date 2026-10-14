@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0267-no-secret-and-no-spec-content-leaves-the-machine
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

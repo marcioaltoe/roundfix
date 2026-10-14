@@ -1,0 +1,41 @@
+from common import *
+base=s['base'];head=s['head'];spec=Path(s['spec']);slug=spec.name
+commits=subprocess.check_output(['git','log','--reverse','--format=%H',base+'..'+head],cwd=root,text=True).splitlines()
+lines=['Commit range: '+base+'..'+head];allpaths=set();issues=[];grant=(spec/'_authorization.md').read_text();allowed=set(re.findall(r'^  - (\S+)$',grant.split('operations:')[0],re.M))
+assert subprocess.check_output(['git','show',base+':'+str((spec/'_authorization.md').relative_to(root))],cwd=root,text=True)==grant
+for commit in commits:
+ body=subprocess.check_output(['git','show','-s','--format=%B',commit],cwd=root,text=True)
+ task=re.search(r'^Roundfix-Task: (task_\d+)$',body,re.M);assert task,(commit,'not a Task commit')
+ taskid=task[1];p=spec/(taskid+'.md');text=p.read_text();assert 'status: completed' in text
+ context=text.split('## Context')[1].split('## Verification')[0]
+ declared=set(re.findall(r'^- (?:creates|interface|changes|updates|deletes): `([^`]+)`',context,re.M))
+ recorded=set()
+ if '## Recorded paths' in text:recorded=set(re.findall(r'^- `([^`]+)`',text.split('## Recorded paths')[1],re.M))
+ declared |= recorded | {str(p.relative_to(root))}
+ paths=subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r',commit],cwd=root,text=True).splitlines();allpaths.update(paths)
+ lines.append(taskid+' '+commit+':')
+ for path in paths:
+  if path not in declared:issues.append(taskid+': undeclared path '+path)
+  lines.append('  '+path+(' (Recorded paths)' if path in recorded else ' (declared)'))
+ lines.append('  Result references named reproducible focused checks; status completed.')
+pathsfile=scratch/'scope-paths.json';pathsfile.write_text(json.dumps(sorted(allpaths)));environment=dict(cleanenv);environment['QA0267_SCOPE_PATHS']=str(pathsfile)
+p=run('row10-governed-paths',['go','test','-count=1','-v','-overlay',str(scratch/'governed.json'),'-run','^TestQA0267GovernedPaths$','./internal/speccheck'],env=environment)
+governed=set(re.findall(r'GOVERNED (\S+)',p.stdout));assert governed
+for path in governed:
+ if path not in allowed:issues.append('unbounded Governed Path: '+path)
+lines.append('Governed Paths measured: '+str(len(governed))+'; all bounded by the operative grant at delivery base.')
+lines.append('Mechanical authorization audit for task_04 is preserved: grant revision '+base+' precedes Task commit '+head+'. No authorization file is folded into a Task commit.')
+excluded=['internal/cli/review.go','Makefile','go.mod','go.sum','.roundfixrc.yml']
+for path in excluded:
+ changed=subprocess.check_output(['git','diff','--name-only',base,head,'--',path],cwd=root,text=True).strip();assert not changed,path
+ lines.append(path+': unchanged against delivery base')
+assert not subprocess.check_output(['git','diff','--name-only',base,head,'--','.github/workflows'],cwd=root,text=True).strip()
+lines.append('CI workflows: unchanged against delivery base')
+assert not subprocess.check_output(['git','diff','--name-only'],cwd=root,text=True).strip()
+lines.append('Current tracked worktree delta: none; QA report/evidence are the assigned untracked directory.')
+run('row10-secret-history',['go','test','-count=1','-v','-overlay',str(scratch/'probes.json'),'-run','^TestQA0267TaskHistory$','./internal/secretscan'])
+lines.append('All added lines of the four Task commits scanned: 0 Secret Matches. No extra push surface, redaction/history rewriting, hooks or QA-format environment behavior was introduced.')
+(evidence/'row10-scope-audit.txt').write_text('\n'.join(lines)+'\n')
+assert not issues,'; '.join(issues)
+row(10,'pass','All four Task commits are bounded by Context declarations, the Task file itself or Recorded paths. Task 02 Recorded paths are disclosed: internal/agent/acpx_runner_test.go and internal/daemon/main_test.go. The real GovernedPath probe classifies every changed path; all seven governed paths are in the operative grant, whose committed record predates the consuming Task. The seeded mechanical authorization result and skips are preserved. Protected review.go, Makefile, workflows, manifests and .roundfixrc.yml are unchanged. Current tracked delta is empty. ScanPushedHistory found 0 Secret Matches in every Task addition. Evidence: [scope and declarations](evidence/2026-10-14-gate/row10-scope-audit.txt), [governed classifier](evidence/2026-10-14-gate/row10-governed-paths.txt), [history scan](evidence/2026-10-14-gate/row10-secret-history.txt).')
+print('row10: four Task scopes, authorization ancestry, protected paths and history scan passed')

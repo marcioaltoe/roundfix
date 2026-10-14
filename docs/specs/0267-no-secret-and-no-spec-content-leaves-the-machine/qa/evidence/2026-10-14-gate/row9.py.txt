@@ -1,0 +1,17 @@
+from common import *
+context=(root/'CONTEXT.md').read_text();prd=(root/'docs/specs/0267-no-secret-and-no-spec-content-leaves-the-machine/_prd.md').read_text();tech=(root/'docs/specs/0267-no-secret-and-no-spec-content-leaves-the-machine/_techspec.md').read_text()
+terms=['Secret Pattern','Secret Match','Secret Scan','Judge Key Variables']; assertions={'Secret Pattern':['reviewed credential shape','one table'],'Secret Match':['path, line and kind','never by value'],'Secret Scan':['files a QA Report commit would stage','commits a Roundfix push would send','refuses on a Secret Match'],'Judge Key Variables':['no Agent Session','no Verification command']}
+lines=[]
+for term in terms:
+ m=re.search(r'^\*\*'+re.escape(term)+r'\*\*:\n(.*?)(?=\n\n)',context,re.M|re.S);assert m,term
+ for phrase in assertions[term]:assert phrase in m[1],(term,phrase)
+ assert 'ADR-0273' in m[1]; assert '- adds: **'+term+'**' in prd
+ lines.append(term+': defined; semantics match declaration; linked to accepted ADR-0273')
+# The strict precondition checks other bolded terms and glossary declarations; the missing Vocabulary Contract needs a gate assessment.
+bold={' '.join(term.split()) for term in re.findall(r'\*\*(.+?)\*\*',prd+'\n'+tech,re.S)};lines.append('Introduced bolded phrases: '+', '.join(sorted(bold)))
+for term in bold:
+ assert term in terms or term in ('Secret Patterns','Judge Key') or ('**'+term+'**' in context),term
+lines.append('Emitted additions: secret-found is an existing blocker string shape; pattern kind names are the Secret Pattern kind vocabulary; refusal messages contain path/line/kind metadata. No additional domain term is introduced. No Finding or Rollup artifact is introduced; their strict-check skips have no applicable lifecycle to run.')
+(evidence/'row09-glossary-audit.txt').write_text('\n'.join(lines)+'\n')
+row(9,'pass','Assertions confirm all four declared terms are defined with the promised semantics and link to ADR-0273. Cross-reading all bolded PRD/TechSpec phrases and the emitted pattern/refusal/blocker vocabulary found no undeclared new domain term. This explicitly covers the strict checker Vocabulary Contract skip; there is no Finding/Rollup lifecycle in this Spec. Evidence: [semantic assertions](evidence/2026-10-14-gate/row09-glossary-audit.txt).')
+print('row09: four glossary definitions and remaining vocabulary accounted for')

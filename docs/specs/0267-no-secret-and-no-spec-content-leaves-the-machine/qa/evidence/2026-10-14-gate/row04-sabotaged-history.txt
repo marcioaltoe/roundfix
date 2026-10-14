@@ -1,0 +1,12 @@
+command: go test -count=1 -v -overlay /tmp/roundfix-0267-qa-n_36rdzz/push-mutant.json -run ^TestPushRefusesAHistoryThatAddsASecret$ ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestPushRefusesAHistoryThatAddsASecret
+    push_secret_scan_test.go:54: push did not return a MatchesError
+--- FAIL: TestPushRefusesAHistoryThatAddsASecret (0.15s)
+FAIL
+suiteguard: guard cost: measured 2654 paths; fingerprint took 80.109333ms before and 73.595625ms after
+FAIL	roundfix/internal/delivery	0.537s
+FAIL
+
+stderr:

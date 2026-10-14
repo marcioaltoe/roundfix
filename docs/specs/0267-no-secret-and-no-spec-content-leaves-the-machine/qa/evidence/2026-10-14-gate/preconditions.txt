@@ -1,0 +1,4 @@
+make build: exit 0
+user_flow_binary: roundfix 0.77.0 (54cbc6ae-dirty, built 2026-10-14 08:31:52 -0300)
+strict spec check: exit 0; no findings; authored Verification not executed
+Daemon static gate: make verify-changed; pass; exit 0; diagnostics removed on success; not rerun by Agent

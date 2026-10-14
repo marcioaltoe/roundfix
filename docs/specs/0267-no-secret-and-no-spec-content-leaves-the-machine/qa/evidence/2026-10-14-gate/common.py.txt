@@ -1,0 +1,21 @@
+from pathlib import Path
+import json, subprocess, os, re
+s=json.loads(Path('/tmp/roundfix-0267-qa-state.json').read_text())
+root=Path(s['root']); scratch=Path(s['scratch']); evidence=Path(s['evidence']); report=Path(s['report'])
+cleanenv=dict(os.environ)
+for name in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','OPENROUTER_API_KEY','TYPESAFE_API_KEY']:
+    cleanenv.pop(name,None)
+def run(name,args,cwd=None,env=None,expect=0):
+    p=subprocess.run(args,cwd=cwd or root,env=env or cleanenv,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    data='command: '+ ' '.join(str(x) for x in args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr
+    (evidence/(name+'.txt')).write_text(data)
+    print(name+': exit '+str(p.returncode),flush=True)
+    print((p.stdout+p.stderr)[-1800:],flush=True)
+    if expect is not None and p.returncode!=expect: raise RuntimeError(name+' unexpected exit')
+    return p
+
+def row(i,status,body):
+    text=report.read_text()
+    text=re.sub(r'(^\| '+str(i)+r' \| )[^|]+( \|)',lambda m:m[1]+status+m[2],text,flags=re.M)
+    text=re.sub(r'(<!-- row-result-'+str(i)+r' -->\n).*?(\n<!-- end-row-result-'+str(i)+r' -->)',lambda m:m[1]+body+m[2],text,flags=re.S)
+    report.write_text(text)

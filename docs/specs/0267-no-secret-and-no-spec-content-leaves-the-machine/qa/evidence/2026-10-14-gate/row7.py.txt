@@ -1,0 +1,22 @@
+from common import *
+import hashlib
+repo=scratch/'archive-fixture-cloned'; home=scratch/'archive-home-cloned';home.mkdir()
+subprocess.run(['git','clone','--shared','--quiet',str(root),str(repo)],env=cleanenv,check=True)
+specdir=repo/'docs/specs/0001-offline-archive';(specdir/'references').mkdir(parents=True)
+(specdir/'_prd.md').write_text('# Offline fixture\nPlan only.\n')
+(specdir/'references/knowledge.md').write_text('# Lesson\nCredential-free plan.\n')
+(specdir/'references/second.md').write_text('# Another lesson\nNo provider access.\n')
+(repo/'bin').mkdir(exist_ok=True);(repo/'bin/roundfix').symlink_to(root/'bin/roundfix')
+fixture_env=dict(cleanenv);fixture_env['HOME']=str(home);fixture_env['GIT_CONFIG_NOSYSTEM']='1';fixture_env['GIT_CONFIG_GLOBAL']='/dev/null'
+def snapshot():
+ return {str(p.relative_to(repo)):hashlib.sha256(p.read_bytes()).hexdigest() for p in repo.rglob('*') if p.is_file() and not p.is_symlink()}
+before=snapshot()
+args=['/usr/bin/sandbox-exec','-p','(version 1)(allow default)(deny network*)','env','-u','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','-u','ROUNDFIX_OPENROUTER_API_KEY','-u','ROUNDFIX_TYPESAFE_API_KEY','./bin/roundfix','archive','0001-offline-archive','--plan']
+p=run('row07-archive-plan',args,cwd=repo,env=fixture_env)
+for candidate in ['references/knowledge.md','references/second.md']:
+ assert any(line.startswith('candidate '+candidate+' ') and 'ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set' in line for line in p.stdout.splitlines())
+assert not p.stderr
+assert snapshot()==before
+p2=run('row07-archive-plan-reopen',args,cwd=repo,env=fixture_env);assert p2.stdout==p.stdout and snapshot()==before
+run('row07-no-provider-request',['go','test','-count=1','-v','-run','^TestArchivePlanWithoutAKeyPrintsNoAdvice$','./internal/cli'])
+row(7,'pass','The built ./bin/roundfix archive --plan ran against a disposable fixture with temporary HOME and all three Judge Key Variables removed via env -u. Both candidates report `no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)`, stderr is empty, exit 0. A second invocation produces identical output; independent hashes confirm every fixture repository file unchanged. OS network denial encloses both public runs. The owning CLI test independently asserts zero calls to its rejecting provider transport. Evidence: [public plan](evidence/2026-10-14-gate/row07-archive-plan.txt), [reopen](evidence/2026-10-14-gate/row07-archive-plan-reopen.txt), [zero requests](evidence/2026-10-14-gate/row07-no-provider-request.txt).')

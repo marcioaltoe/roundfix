@@ -1,0 +1,3 @@
+from common import *
+run('row05-tracked-scan',['go','test','-count=1','-v','-overlay',str(scratch/'probes.json'),'-run','^TestQA0267TrackedContentAndHistory$','./internal/secretscan'])
+row(5,'pass','The overlay invoked ScanContent over every git ls-files path at the audited head and found 0 Secret Matches. The scan reads committed blobs, including tracked symlink text rather than dereferencing directory targets. The initial probe directory-read diagnostic is preserved; the corrected probe covers all tracked paths. No source file was added to the repository; the runnable probe is [scanner_probe.go.txt](evidence/2026-10-14-gate/scanner_probe.go.txt). Evidence: [scan counts and command](evidence/2026-10-14-gate/row05-tracked-scan.txt).')
