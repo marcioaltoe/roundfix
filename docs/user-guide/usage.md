@@ -688,7 +688,7 @@ Review Issues: unknown — fetch did not complete.
 ```
 
 The full evidence and refusal rules trace to
-[ADR-0054](../history/adr/0054-review-source-evidence-determines-review-outcomes.md),
+[ADR-0142](../adr/0142-head-bound-review-source-evidence-decides-the-watch-outcome.md),
 Spec 0039,
 and the
 [detached-watch finding](../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md).

@@ -29,7 +29,7 @@ type retiredFamilyLocation struct {
 var archiveLayoutAfterSpec0094Task02 = []retiredFamilyLocation{
 	{family: "Specs", kind: ArchiveKindSpec, directory: "docs/history/specs", presentInRepository: true},
 	{family: "findings", kind: ArchiveKindFinding, directory: "docs/history/findings", presentInRepository: true},
-	{family: "ADRs", kind: ArchiveKindADR, directory: "docs/history/adr", presentInRepository: true},
+	{family: "ADRs", kind: ArchiveKindADR, directory: "docs/history/adr"},
 	{family: "backlog entries", kind: ArchiveKindBacklog, directory: "docs/history/backlog"},
 	{family: "Review Artifacts", kind: ArchiveKindReview, directory: "docs/history/reviews"},
 }
@@ -40,7 +40,7 @@ func TestArchiveLayoutCharacterizationRecordsEveryRetiredFamily(t *testing.T) {
 	want := []retiredFamilyLocation{
 		{family: "Specs", kind: ArchiveKindSpec, directory: "docs/history/specs", presentInRepository: true},
 		{family: "findings", kind: ArchiveKindFinding, directory: "docs/history/findings", presentInRepository: true},
-		{family: "ADRs", kind: ArchiveKindADR, directory: "docs/history/adr", presentInRepository: true},
+		{family: "ADRs", kind: ArchiveKindADR, directory: "docs/history/adr"},
 		{family: "backlog entries", kind: ArchiveKindBacklog, directory: "docs/history/backlog"},
 		{family: "Review Artifacts", kind: ArchiveKindReview, directory: "docs/history/reviews"},
 	}
