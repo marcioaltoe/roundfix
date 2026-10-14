@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0267-no-secret-and-no-spec-content-leaves-the-machine
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -105,3 +105,64 @@ the two QA step tests.
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 2; API Contract 3; Invariants 1-4; Data Models; Testing Approach; Build Order 1
 - [2026-10-13-qa-evidence-records-environment-values.md](references/2026-10-13-qa-evidence-records-environment-values.md)
 - ADR-0273; ADR-0015; ADR-0259; ADR-0271
+
+## Result
+
+Implemented this Task's slice for Daemon Verification. Task status and authored
+Verification remain Daemon-owned; no declared Verification command, repository
+Verification, commit, push or pull request was run by this Agent.
+
+### Implementation
+
+- Added the standard-library-only `internal/secretscan` API and the ordered,
+  compiled Secret Pattern table in `patterns.go`. Matches hold only path, line,
+  kind and optional commit; errors list every location without storing values.
+  Content scanning applies the 8000-byte binary check and the first-kind rule.
+- Added pushed-history arguments and a process-free patch parser that preserves
+  commit, new path and new-file line numbers. It handles multiple hunks, quoted
+  paths, additions resembling patch headers, removed lines, deleted files,
+  binary-file notices and merge commits without patches.
+- Extracted the existing QA Report staging calculation. The QA step computes
+  that filtered path set once and scans it after evidence snapshot recording,
+  before Task settlement. A Match changes settlement to `failed`, records the
+  contracted location-only reason and one `daemon.qa` event with
+  `phase: secret_scan`, and skips the report commit. The report, evidence and
+  Task file remain in the Run Worktree. Clean reports retain their commit
+  message, formatter invocation and existing event phases.
+
+### Focused checks and acceptance evidence
+
+Before the guard was added,
+`go test -count=1 -run '^TestQAReportWithASecretMatch' ./internal/daemon`
+failed because QA accepted the sample-bearing evidence. After implementation:
+
+- `go test -count=1 ./internal/secretscan` — exit 0.
+- `go test -race -shuffle=on -count=1 -run 'TestSecretPatterns|TestScan|TestQAReport(With|Without)ASecretMatch|TestQASecretScan|TestTaskCycleQAVerdictMatrix|TestTaskCycleQAOnlyRun|TestQAFormat(Commits|Formats|Reverts|Leaves|Empty)|TestQAGateCommitsTheEvidenceSnapshot|TestQAGateCarriesARow' ./internal/secretscan ./internal/daemon`
+  — exit 0 for both packages after the last code edit.
+- `go test -count=1 -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-task01-source-audit-cdwnrbwe/overlay.json -run '^TestTask01AddedSourcesContainNoSecretMatches$' ./internal/secretscan`
+  — exit 0 after the last code edit. This temporary overlay reads all four added
+  Go files and runs `ScanContent` against them; it adds no repository file.
+- `git diff --check` — exit 0.
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Every table kind matches its runtime sample; diagnostics never echo values | `TestSecretPatternsMatchTheirKindAndNeverEchoTheValue` covers every kind, prefix/operator variants, table order and copied kind names. It checks Match JSON, `String()` and `MatchesError.Error()` for sample byte runs of eight or more. The QA refusal test checks every captured event, progress, settlement reason and Task file for the same leak. |
+| Evidence with a Match settles failed without a QA Report commit; clean evidence commits as before | Both required QA tests pass through `TaskCycle`, the existing fake QA Agent and real temporary Git repositories. The refusal names the evidence path, line 2 and `openrouter-key`, emits exactly one refusal event and preserves the evidence bytes and report. The clean test checks the unchanged commit message, committed evidence and existing QA event phases. Existing verdict, formatter, prior-pass carry and snapshot checks also pass. |
+| No added file holds a Secret Pattern match | The temporary source audit reports zero Matches across `patterns.go`, `scan.go`, `scan_test.go` and `qa_secret_scan_test.go`. Every synthetic sample is constructed by concatenation at runtime. |
+
+Additional focused coverage in `TestQASecretScanUsesTheReportCommitPathSet`
+proves forced report/Task paths, imported evidence and ordinary QA changes are
+scanned; Project Config, executable files, pre-existing unrelated dirt and
+repository-Verification output are excluded. Binary content and tracked
+file deletions contribute no Match. Read errors and cancellation refuse the
+scan rather than accepting unread content. Every added top-level test calls
+`t.Parallel()` first and introduces no short real-time budget.
+
+### Follow-up boundary
+
+The assigned Task explicitly requires a synthetic pushed-history log and no
+scanner-package process. Its test therefore uses synthetic additions followed
+by removal, rather than the real-Git example in the TechSpec's Testing Approach.
+Task 03 owns proving that shape against real Git and integrating both push
+refusals. Judge environment changes and QA guidance remain with their assigned
+Tasks.

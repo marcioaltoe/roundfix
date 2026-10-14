@@ -25,6 +25,7 @@ import (
 	"roundfix/internal/preflight"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/secretscan"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
@@ -2978,14 +2979,63 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.recordQAEvidenceSnapshots(ctx, plan, ordinal, reportPath, auditedHead); err != nil {
 		return "", "", false, err
 	}
+	prepared, err := engine.prepareQAReportCommit(ctx, plan, before, verificationWindowPaths, reportPath, qaTask, prior.Files...)
+	if err != nil {
+		return "", "", false, err
+	}
+	matches, err := scanQAReportPaths(ctx, plan.WorkDir, prepared.paths)
+	if err != nil {
+		return "", "", false, err
+	}
+	if len(matches) > 0 {
+		qaStatus, accepted = spec.StatusFailed, false
+		details := make([]string, len(matches))
+		for index, match := range matches {
+			details[index] = match.String()
+		}
+		qaReason = "QA evidence carries a secret: " + strings.Join(details, "; ")
+	}
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
 	plan.runBudget.renew(engine.deps.Now(), qaTask.ID)
-	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask, prior.Files...); err != nil {
+	if len(matches) > 0 {
+		locations := make([]map[string]any, len(matches))
+		for index, match := range matches {
+			locations[index] = map[string]any{"path": match.Path, "line": match.Line, "kind": match.Kind}
+		}
+		message := fmt.Sprintf("QA Report refused: %d Secret Match(es)", len(matches))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+			message, map[string]any{"phase": "secret_scan", "matches": locations}); err != nil {
+			return "", "", false, err
+		}
+		fmt.Fprintln(engine.deps.Progress, message)
+		return verdict, reportPath, false, nil
+	}
+	if err := engine.commitPreparedQAReport(ctx, plan, ordinal, verdict, reportPath, qaTask, prepared); err != nil {
 		return "", "", false, err
 	}
 	return verdict, reportPath, accepted, nil
+}
+
+// scanQAReportPaths skips tracked deletions, which have no content to stage.
+// Any other read failure refuses settlement and commit as infrastructure failure.
+func scanQAReportPaths(ctx context.Context, workDir string, paths []string) ([]secretscan.Match, error) {
+	var matches []secretscan.Match
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("scan QA Report paths: %w", err)
+		}
+		content, err := os.ReadFile(filepath.Join(workDir, path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("scan QA Report path %q: %w", path, err)
+		}
+		matches = append(matches, secretscan.ScanContent(path, content)...)
+	}
+	return matches, nil
 }
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
@@ -3612,9 +3662,24 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		}
 		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
 	}
-	after, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
+	prepared, err := engine.prepareQAReportCommit(ctx, plan, before, verificationWindowPaths, reportPath, qaTask, importedPaths...)
 	if err != nil {
 		return err
+	}
+	return engine.commitPreparedQAReport(ctx, plan, ordinal, verdict, reportPath, qaTask, prepared)
+}
+
+type qaReportCommitPreparation struct {
+	paths   []string
+	dropped []DroppedStagePath
+}
+
+// prepareQAReportCommit computes the path set once so the pre-settlement scan
+// reads exactly the files the QA Report commit will stage.
+func (engine *Engine) prepareQAReportCommit(ctx context.Context, plan TaskPlan, before, verificationWindowPaths []string, reportPath string, qaTask spec.Task, importedPaths ...string) (qaReportCommitPreparation, error) {
+	after, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
+	if err != nil {
+		return qaReportCommitPreparation{}, err
 	}
 	changed := diffSnapshots(before, after)
 	if len(verificationWindowPaths) > 0 {
@@ -3646,27 +3711,37 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	afterWithoutProjectConfig, _ := pathsWithoutProjectConfig(plan.WorkDir, after)
 	governedMutation := HasGovernedSnapshotMutation(beforeWithoutProjectConfig, afterWithoutProjectConfig)
 	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, governedMutation); err != nil {
-		return fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
+		return qaReportCommitPreparation{}, fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
 	}
 	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, governedMutation); err != nil {
-		return fmt.Errorf("refuse QA Task %s commit: %w", qaTask.ID, err)
+		return qaReportCommitPreparation{}, fmt.Errorf("refuse QA Task %s commit: %w", qaTask.ID, err)
 	}
-	for _, drop := range dropped {
+	return qaReportCommitPreparation{paths: stageable, dropped: dropped}, nil
+}
+
+func (engine *Engine) commitPreparedQAReport(ctx context.Context, plan TaskPlan, ordinal int, verdict, reportPath string, qaTask spec.Task, prepared qaReportCommitPreparation) error {
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
+		}
+		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
+	}
+	for _, drop := range prepared.dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, "", "QA Report", drop); err != nil {
 			return err
 		}
 	}
-	if len(stageable) == 0 {
+	if len(prepared.paths) == 0 {
 		return nil
 	}
-	if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", stageable, verdict); err != nil {
+	if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", prepared.paths, verdict); err != nil {
 		return err
 	}
 	message := QACommitMessage(plan.Spec.Slug, verdict)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
 		Message: message,
-		Paths:   stageable,
+		Paths:   prepared.paths,
 	}); err != nil {
 		return err
 	}
@@ -3678,7 +3753,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	fmt.Fprintf(engine.deps.Progress, "QA Report commit created: %s\n", subject)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonCommit,
 		fmt.Sprintf("QA Report commit created: %s", subject),
-		map[string]any{"decision": "created", "task": qaTask.ID, "commit": commit, "report": reportPath, "paths": len(stageable)},
+		map[string]any{"decision": "created", "task": qaTask.ID, "commit": commit, "report": reportPath, "paths": len(prepared.paths)},
 	); err != nil {
 		return fmt.Errorf("publish QA commit event for run %q: %w", plan.RunID, err)
 	}
