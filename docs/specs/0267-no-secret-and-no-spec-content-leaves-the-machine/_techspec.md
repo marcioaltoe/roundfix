@@ -281,6 +281,7 @@ unmapped.
 - ADR-0256: its rejected model-judging alternative stays rejected; task_04 is the skills Task for the changed user-guide surfaces.
 - ADR-0189: no rejected alternative is taken; each owned skill's version rises in both `SKILL.md` fields.
 - ADR-0233: no rejected alternative is taken; versions are recorded with the record command, never by hand.
+- ADR-0272: no rejected alternative is taken; a correction to a parked item is still proved by its Reviewed Head Record and declared paths, and a `secret-found` park returns through the existing `roundfix deliver retry` without changing that proof.
 - ADR-0244: no rejected alternative is taken; the four terms are declared and task_04 writes them.
 - ADR-0259: no rejected alternative is taken; each new test calls `t.Parallel()` first or names the process-wide state it changes.
 - ADR-0271: no rejected alternative is taken; no new test bounds by real time what it does not assert.

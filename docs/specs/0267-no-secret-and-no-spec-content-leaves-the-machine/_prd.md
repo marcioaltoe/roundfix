@@ -67,7 +67,9 @@ Variables.
   Final Push, which gains the scan. ADR-0256: the Tasks change the
   `deliver` and configuration user-guide surfaces, so task_04 changes the
   covering skills. ADR-0189 and ADR-0233 govern the owned skills' version
-  raise. ADR-0244: the Spec declares its terms below. ADR-0259 and ADR-0271
+  raise. ADR-0272 refines ADR-0233's retry rule for a
+  parked Delivery Queue item; this Spec adds the `secret-found` park, which
+  returns through `roundfix deliver retry` and leaves that rule unchanged. ADR-0244: the Spec declares its terms below. ADR-0259 and ADR-0271
   govern the new tests: `t.Parallel()` first or a named Sequential reason,
   and no real-time allowance for what a test does not assert. ADR-0265: the
   TechSpec carries its absence evidence, ADR alternatives and coverage
