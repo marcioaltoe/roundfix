@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-13
-spec: null
+spec: 0271-history-sanitize-records-keep-their-summary-links-and-dates
 reason: null
 ---
 
