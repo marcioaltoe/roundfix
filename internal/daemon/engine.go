@@ -242,6 +242,10 @@ func agentFailureReason(err error, fallback string) string {
 	if errors.As(err, &lost) {
 		return lost.Error()
 	}
+	var provider *providerSystemErrorExhaustedError
+	if errors.As(err, &provider) {
+		return provider.Error()
+	}
 	if reason, ok := modelNotAdvertisedTerminalReason(err); ok {
 		return terminalReasonLine(reason)
 	}

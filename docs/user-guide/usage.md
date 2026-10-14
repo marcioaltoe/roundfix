@@ -278,8 +278,12 @@ session. Automatic fallback is allowed only before the first prompt. After
 failures use normal Task or Run failure semantics. A Lost Rollout gets no
 repair: the Task continues in a new Agent Session, using the next Fallback
 Selection before the First Handoff or while a QA report is pending, and the
-same selection otherwise. Each Agent Session owner can recover at most twice;
-the third Lost Rollout settles the Task as runtime infrastructure.
+same selection otherwise. A Provider System Error lets the next Fallback
+Selection take the Task under the same condition, gets no retry on the same
+selection, does not count toward the Lost Rollout budget, and otherwise settles
+the Task as runtime infrastructure. Each Agent Session owner can recover at
+most twice from Lost Rollouts; the third Lost Rollout settles the Task as
+runtime infrastructure.
 
 Each recovery is recorded in the Run Event Journal as a `daemon.task` event
 with phase `rollout_lost`. Its payload includes the scope, selection, step and
@@ -288,6 +292,26 @@ detail, `recovery` set to `fallback`, `new_session` or `exhausted`,
 a QA fallback session starts, the seeded report keeps `verdict: pending` and
 gains a `## Agent runtime fallback` section with the lost rollout, fallback
 selection and `- retry_spent: false` lines.
+
+A Provider System Error recovery is recorded as a `daemon.task` event with
+phase `provider_system_error`. Its payload includes `scope_kind`, `scope_id`,
+`selection`, `detail`, `recovery` (`fallback` or `exhausted`),
+`next_selection` for a fallback, and `retry_spent: false`. A QA fallback adds
+`- provider_system_error: <selection>: <detail>`, `- fallback: <next selection>`
+and `- retry_spent: false` to the seeded report's `## Agent runtime fallback`
+section.
+
+When a QA turn returns with its seeded report still at `verdict: pending` after
+starting an Agent Background Task, the Run Event is `daemon.task` with phase
+`turn_unfinished`, `scope_kind: qa`, `scope_id`, and `background_tasks`, whose
+entries contain `id`, `tool` and `description`. The QA Task fails as an
+Unfinished Turn and names each task. A finished report, or a pending report
+without a recorded task, keeps the existing handling.
+
+Roundfix starts every `claude` Agent Session with
+`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`. QA turns are also asked to run every
+command in the foreground, wait for it to exit, and end the turn only after
+the command has finished.
 
 ### Legacy migration
 

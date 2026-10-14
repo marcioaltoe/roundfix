@@ -1,10 +1,12 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -197,5 +199,24 @@ func TestLightSessionSendsNoWarmup(t *testing.T) {
 	prompts := readJSONStrings(t, h.promptsPath)
 	if len(prompts) != 1 || prompts[0] != "prompt" {
 		t.Fatalf("prompts = %v", prompts)
+	}
+}
+
+func TestALightSessionOnAClaudeRuntimeKeepsItsKeyAndRefusesBackgroundTasks(t *testing.T) {
+	t.Parallel()
+	environ := []string{openrouterkey.Implement + "=implement-sentinel"}
+	runtime := RuntimeSpec{ID: "claude", Protocol: ProtocolACP, OpenRouterKeyVariable: openrouterkey.Implement}
+	runner := &ACPXRunner{Environment: environ}
+	overrides, err := runner.codexEnvForSession(context.Background(), runtime, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := lightSessionEnvironment(runtime, environ)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = append(want, claudeBackgroundTasksEnv+"=1")
+	if !reflect.DeepEqual(overrides, want) {
+		t.Fatalf("overrides = %q, want the light session environment and the background task refusal %q", overrides, want)
 	}
 }

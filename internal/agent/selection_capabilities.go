@@ -348,6 +348,13 @@ func ParseSessionCapabilitySnapshot(payload []byte, adapter AdapterEvidence, ret
 // boundary. It does not open ACPX Session files, Codex caches, or other
 // runtime-private persistence.
 func (runner *ACPXRunner) AcquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest) (SelectionCapabilities, error) {
+	if strings.TrimSpace(request.Runtime.ID) == "claude" {
+		env, err := runner.codexEnvForSession(ctx, request.Runtime, request.Session.Name)
+		if err != nil {
+			return SelectionCapabilities{}, err
+		}
+		return runner.acquireSelectionCapabilities(ctx, request, env)
+	}
 	return runner.acquireSelectionCapabilities(ctx, request, nil)
 }
 

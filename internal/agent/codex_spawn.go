@@ -128,11 +128,13 @@ func codexResultPath(result codex.Result) string {
 // processes, not nested sessions, so the guard never applies to them.
 const claudeNestedGuardEnv = "CLAUDECODE"
 
+const claudeBackgroundTasksEnv = "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"
+
 // acpxCommandEnv builds the acpx child environment from the explicit base:
 // variables that must not leak into Agent runtimes are removed (the codex
-// hygiene path, re-added per session through overrides, Claude Code's
-// nested-session guard, and every Judge Key Variable), then per-runtime
-// overrides are appended.
+// hygiene path and Claude background-task policy, re-added per session through
+// overrides, Claude Code's nested-session guard, and every Judge Key Variable),
+// then per-runtime overrides are appended.
 func acpxCommandEnv(base []string, overrides []string) []string {
 	base = judge.WithoutKeyVariables(base)
 	// An override without an equals sign removes the named inherited variable.
@@ -144,7 +146,7 @@ func acpxCommandEnv(base []string, overrides []string) []string {
 	filtered := make([]string, 0, len(base)+len(overrides))
 	for _, entry := range base {
 		key, _, _ := strings.Cut(entry, "=")
-		if key == codexPathEnv || key == claudeNestedGuardEnv || replaced[key] {
+		if key == codexPathEnv || key == claudeNestedGuardEnv || key == claudeBackgroundTasksEnv || replaced[key] {
 			continue
 		}
 		filtered = append(filtered, entry)

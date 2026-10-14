@@ -556,16 +556,18 @@ type acpxJSONRPCError struct {
 }
 
 type acpxStreamResult struct {
-	protocol           *ProtocolFailure
-	acpSessionID       string
-	usage              TurnUsage
-	output             string
-	message            string
-	messages           []string
-	stopReason         string
-	promptResultParsed bool
-	agentOutput        bool
-	err                error
+	backgroundTasks     []AgentBackgroundTask
+	providerSystemError *ProtocolFailure
+	protocol            *ProtocolFailure
+	acpSessionID        string
+	usage               TurnUsage
+	output              string
+	message             string
+	messages            []string
+	stopReason          string
+	promptResultParsed  bool
+	agentOutput         bool
+	err                 error
 }
 
 func (runner *ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
@@ -1223,8 +1225,8 @@ func (runner *ACPXRunner) ListRoundfixSessions(ctx context.Context, runtime Runt
 		return nil, fmt.Errorf("build acpx sessions list command: %w", err)
 	}
 	var env []string
-	if runtime.OpenRouterKeyVariable != "" {
-		env, err = lightSessionEnvironment(runtime, runner.baseEnv())
+	if strings.TrimSpace(runtime.ID) == "claude" || runtime.OpenRouterKeyVariable != "" {
+		env, err = runner.codexEnvForSession(ctx, runtime, "")
 		if err != nil {
 			return nil, err
 		}
@@ -1485,6 +1487,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		result.StopReason = stream.stopReason
 		result.Usage = stream.usage
 		result.ACPSessionID = stream.acpSessionID
+		result.BackgroundTasks = stream.backgroundTasks
 		_ = runner.publishStatus(context.WithoutCancel(ctx), req.ExecuteRequest, sink, "stopped")
 		return result, StopError{LogPath: req.LogPath, Output: result.Output, Killed: forceClosed, Err: ctx.Err()}
 	}
@@ -1495,6 +1498,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	result.StopReason = stream.stopReason
 	result.Usage = stream.usage
 	result.ACPSessionID = stream.acpSessionID
+	result.BackgroundTasks = stream.backgroundTasks
 	if waitErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return result, StopError{LogPath: req.LogPath, Output: result.Output, Err: ctxErr}
@@ -1529,6 +1533,10 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		failure := &BatchFailureError{Reason: "missing session/prompt stop reason", Stderr: stderr.String()}
 		return result, classifyFailure(stream.agentOutput, failure)
 	}
+	if stream.promptResultParsed && stream.providerSystemError != nil {
+		failure := &BatchFailureError{Reason: ProviderSystemErrorReason, Protocol: stream.providerSystemError, Stderr: stderr.String()}
+		return result, classifyFailure(stream.agentOutput, failure)
+	}
 	return result, nil
 }
 
@@ -1543,6 +1551,8 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	var agentOutput bool
 	var streamErr error
 	var protocol promptProtocolTrace
+	var threadStatus promptThreadStatus
+	var backgroundTasks promptBackgroundTasks
 	reader := bufio.NewReader(stdout)
 	for {
 		line, readErr := reader.ReadBytes('\n')
@@ -1554,9 +1564,11 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
 			}
-			if !sessionUpdateSeen {
-				var notification acpxJSONRPCMessage
-				if json.Unmarshal(line, &notification) == nil && notification.Method == acpMethodSessionUpdate {
+			var notification acpxJSONRPCMessage
+			if json.Unmarshal(line, &notification) == nil {
+				threadStatus.observe(notification)
+				backgroundTasks.observe(notification)
+				if !sessionUpdateSeen && notification.Method == acpMethodSessionUpdate {
 					sessionUpdateSeen = true
 					var params acpSessionNotificationPayload
 					if json.Unmarshal(notification.Params, &params) == nil {
@@ -1579,7 +1591,70 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	}
 	messageList := messages.messages()
 	contract := adapterLineageContracts[strings.TrimSpace(req.Runtime.ID)]
-	return acpxStreamResult{protocol: protocol.result(), acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+	return acpxStreamResult{backgroundTasks: backgroundTasks.tasks, providerSystemError: threadStatus.failure(), protocol: protocol.result(), acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+}
+
+// promptBackgroundTasks retains sparse tool inputs and unique task starts for
+// one prompt only; the next turn begins with a new collector.
+type promptBackgroundTasks struct {
+	descriptions map[string]string
+	seen         map[string]bool
+	tasks        []AgentBackgroundTask
+}
+
+func (tasks *promptBackgroundTasks) observe(message acpxJSONRPCMessage) {
+	if message.Method != acpMethodSessionUpdate {
+		return
+	}
+	var params struct {
+		Update struct {
+			SessionUpdate string `json:"sessionUpdate"`
+			ToolCallID    string `json:"toolCallId"`
+			RawInput      struct {
+				Description *string `json:"description"`
+			} `json:"rawInput"`
+			Meta struct {
+				ClaudeCode struct {
+					ToolName     string `json:"toolName"`
+					ToolResponse struct {
+						BackgroundTaskID string `json:"backgroundTaskId"`
+						TaskID           string `json:"taskId"`
+					} `json:"toolResponse"`
+				} `json:"claudeCode"`
+			} `json:"_meta"`
+		} `json:"update"`
+	}
+	if json.Unmarshal(message.Params, &params) != nil {
+		return
+	}
+	update := params.Update
+	if update.SessionUpdate != "tool_call" && update.SessionUpdate != "tool_call_update" {
+		return
+	}
+	if update.ToolCallID != "" && update.RawInput.Description != nil {
+		if tasks.descriptions == nil {
+			tasks.descriptions = make(map[string]string)
+		}
+		tasks.descriptions[update.ToolCallID] = *update.RawInput.Description
+	}
+	if update.SessionUpdate != "tool_call_update" {
+		return
+	}
+	response := update.Meta.ClaudeCode.ToolResponse
+	id := response.BackgroundTaskID
+	if id == "" {
+		id = response.TaskID
+	}
+	if id == "" || tasks.seen[id] {
+		return
+	}
+	if tasks.seen == nil {
+		tasks.seen = make(map[string]bool)
+	}
+	tasks.seen[id] = true
+	tasks.tasks = append(tasks.tasks, AgentBackgroundTask{
+		ID: id, Tool: update.Meta.ClaudeCode.ToolName, Description: tasks.descriptions[update.ToolCallID],
+	})
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
@@ -1616,8 +1691,19 @@ func (runner *ACPXRunner) command() string {
 }
 
 func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime RuntimeSpec, sessionName string) ([]string, error) {
+	var claudeEnv []string
+	if strings.TrimSpace(runtime.ID) == "claude" {
+		claudeEnv = []string{claudeBackgroundTasksEnv + "=1"}
+	}
 	if runtime.OpenRouterKeyVariable != "" {
-		return lightSessionEnvironment(runtime, runner.baseEnv())
+		overrides, err := lightSessionEnvironment(runtime, runner.baseEnv())
+		if err != nil {
+			return nil, err
+		}
+		return append(overrides, claudeEnv...), nil
+	}
+	if claudeEnv != nil {
+		return claudeEnv, nil
 	}
 	if strings.TrimSpace(runtime.ID) != "codex" || runtime.Protocol == ProtocolStdio {
 		return nil, nil

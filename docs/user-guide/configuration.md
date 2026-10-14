@@ -601,8 +601,12 @@ notification before activating the next configured tuple. Once
 rate-limit failures keep their normal failure semantics. A Lost Rollout gets no
 repair: the Task continues in a new Agent Session, using the next Fallback
 Selection before the First Handoff or while a QA report is pending, and the
-same selection otherwise. An Agent Session owner gets at most two recoveries;
-the third settles the Task as runtime infrastructure.
+same selection otherwise. A Provider System Error lets the next Fallback
+Selection take the Task under the same condition, gets no retry on the same
+selection, does not count toward the Lost Rollout budget, and otherwise settles
+the Task as runtime infrastructure. An Agent Session owner gets at most two
+Lost Rollout recoveries; the third Lost Rollout settles the Task as runtime
+infrastructure.
 
 Legacy configs with `defaults.agent` or top-level `runtimes` still load during
 the compatibility window only when the same file has no `profiles` section.

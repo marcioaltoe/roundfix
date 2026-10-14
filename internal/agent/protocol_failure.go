@@ -14,12 +14,13 @@ const ProtocolFailureMessageLimit = 512
 
 // ProtocolFailure places the first failure in an acpx prompt process.
 type ProtocolFailure struct {
-	Step        string
-	Code        int
-	Message     string
-	PromptSent  bool
-	LostRollout bool
-	Detail      string
+	Step                string
+	Code                int
+	Message             string
+	PromptSent          bool
+	LostRollout         bool
+	ProviderSystemError bool
+	Detail              string
 }
 
 // ProtocolDescription describes a prompt-process or session-preparation failure.
@@ -125,6 +126,9 @@ func protocolFailureText(protocol *ProtocolFailure) string {
 		return ""
 	}
 	text := " at " + protocol.Step
+	if protocol.ProviderSystemError {
+		text += ": " + boundedProtocolMessage(protocol.Detail)
+	}
 	if message := boundedProtocolMessage(protocol.Message); message != "" {
 		text += fmt.Sprintf(": %s (JSON-RPC %d)", message, protocol.Code)
 	}

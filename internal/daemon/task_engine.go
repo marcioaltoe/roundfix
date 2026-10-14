@@ -2920,7 +2920,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			}
 		}()
 		agentCtx, cancelAgent := context.WithCancel(ctx)
-		_, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
+		turn, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 			Runtime:     plan.Runtime,
 			Session:     plan.Session,
 			RunID:       plan.RunID,
@@ -2933,7 +2933,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		cancelAgent()
 		if runErr != nil {
 			var lost *lostRolloutExhaustedError
-			if errors.As(runErr, &lost) {
+			var provider *providerSystemErrorExhaustedError
+			if errors.As(runErr, &lost) || errors.As(runErr, &provider) {
 				if settleErr := engine.settleTask(ctx, plan, qaTask, ordinal, spec.StatusFailed, agentFailureReason(runErr, "")); settleErr != nil {
 					return "", "", false, settleErr
 				}
@@ -2949,6 +2950,25 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				return "", "", false, fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
 			}
 			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
+		}
+		if len(turn.BackgroundTasks) > 0 {
+			report, readErr := spec.ReadQAReportFile(seededReportPath)
+			if readErr == nil && report.Verdict == spec.VerdictPending {
+				names := make([]string, len(turn.BackgroundTasks))
+				for index, task := range turn.BackgroundTasks {
+					names[index] = fmt.Sprintf("%s (%s: %s)", task.ID, task.Tool, task.Description)
+				}
+				reason := "unfinished turn: the QA turn ended with its report pending after starting background task " + strings.Join(names, "; ")
+				if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, qaTask.ID, runevent.KindDaemonTask, reason,
+					map[string]any{"phase": "turn_unfinished", "scope_kind": "qa", "scope_id": qaTask.ID, "background_tasks": turn.BackgroundTasks},
+				); err != nil {
+					return "", "", false, err
+				}
+				if err := engine.settleTask(ctx, plan, qaTask, ordinal, spec.StatusFailed, reason); err != nil {
+					return "", "", false, err
+				}
+				return spec.VerdictPending, reportPath, false, nil
+			}
 		}
 	}
 	var eligibilityErr error
