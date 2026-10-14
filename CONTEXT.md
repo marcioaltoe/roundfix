@@ -1,6 +1,6 @@
 # Roundfix
 
-Roundfix picks up Work Items — Review Issues from pull request reviews today, Tasks from Spec Task Graphs next — resolves them through the user's selected ACP Runtime, and pushes only when nothing unresolved remains. This glossary defines the product language for that loop.
+Roundfix picks up Work Items — Review Issues from pull request reviews and Tasks from Spec Task Graphs — resolves them through the user's selected ACP Runtime, and pushes only when nothing unresolved remains. This glossary defines the product language for that loop; the terms under Adopter decisions describe repositories the Context-Driven Baseline configures, not Roundfix itself.
 
 ## Language
 
@@ -52,8 +52,16 @@ _Avoid_: Final QA, follow-up task
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job
 
+**Review Run**:
+A Run over an Open Pull Request's Review Issues — a Fetch Run, a resolve Run or a watch Run. It executes in the user's clean tracked checkout on the PR Head Branch and creates no Run Worktree (ADR-0141).
+_Avoid_: PR run, review job, Review Source run
+
+**Spec Run**:
+A Run the Implement Command starts over one Spec's Task Graph. It executes in a Run Worktree on a Run Branch, schedules Tasks by Wave and ends at its authored QA gate when the graph declares one; the guides also call it an Implement Run (ADR-0023, ADR-0025).
+_Avoid_: Implement job, task run, graph execution
+
 **Fetch Run**:
-A short review Run that runs Branch Integrity Preflight, fetches Review Source issues, and persists markdown artifacts from the user's checkout without starting an Agent, creating a Run Worktree, committing, or pushing.
+A short Review Run that runs Branch Integrity Preflight, fetches Review Source issues, and persists markdown artifacts from the user's checkout without starting an Agent, creating a Run Worktree, committing, or pushing.
 _Avoid_: Standalone fetch, untracked fetch
 
 **Open Pull Request**:
@@ -88,6 +96,10 @@ _Avoid_: Process Residue, orphan helper, zombie
 The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation
 
+**Stop Command**:
+The `roundfix stop` command that records a Stop Request for an Active Run, which then stops after the current Work Item settles, or performs a Force Stop with `--force`. It is the only way a Detached Run is ended (ADR-0022, ADR-0028).
+_Avoid_: Kill command, cancel command, abort
+
 **Assigned Repair**:
 A repair a QA gate's own Task file instructs it to make, as opposed to a finding it observes and reports. The gate performs an Assigned Repair, verifies it, and records what it performed; it may write only the paths its Task names. Anything the Task did not assign stays reported rather than performed. In code and in a report's audit trail the same idea appears lowercase, as an assigned repair.
 _Avoid_: Auto-fix, gate edit, remediation
@@ -121,15 +133,15 @@ The GitHub repository that owns the PR Head Branch.
 _Avoid_: Base repository, local checkout
 
 **Work Item**:
-One unit of resolvable work that Roundfix picks up and drives to an outcome: a Review Issue today, a Task next.
+One unit of resolvable work that Roundfix picks up and drives to an outcome: a Review Issue in a Review Run, a Task in a Spec Run.
 _Avoid_: Ticket, job, to-do
 
 **Backlog Entry**:
-Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or `declined` with a reason; it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
+Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status — `declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled` — where `declined` and `deferred` carry a reason and every terminal entry leaves `docs/backlog/` for `docs/history/backlog/` as a Reduced History Entry (ADR-0092, ADR-0258); it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
 _Avoid_: Finding, idea artifact, untyped suggestion
 
 **Inbox Entry**:
-A fleeting capture born committed in the Secondbrain's inbox under its destination's namespace. It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
+A fleeting capture written as a file in the Secondbrain's inbox under its destination's namespace and committed there by its publication owner — the capturing session or an installed scheduler — never in a project checkout (ADR-0095). It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
 _Avoid_: Project inbox item, uncommitted note, draft artifact
 
 **Rollup**:
@@ -160,7 +172,7 @@ At the same repository, base, head, and provider, the findings verdict is reused
 _Avoid_: Review Issue resolution, unrecorded operator decision, finding deletion
 
 **Spec**:
-One Spec's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, QA evidence, and adopted sources under `references/` with provenance recorded in `references/_index.md`.
+One Spec's artifact set produced by the spec workflow under the Spec Root: the Idea when the route starts there, the PRD, the TechSpec, the Task Graph, the Task files, the authorization record `_authorization.md`, the Glossary Declaration in the PRD or TechSpec, the QA evidence under `qa/`, and the adopted sources under `references/` with provenance recorded in `references/_index.md`.
 _Avoid_: Feature folder, epic, project
 
 **Corrective Spec**:
@@ -211,7 +223,7 @@ reserves nothing, while a Governed Path still needs its authorization.
 _Avoid_: Declared path, reserved path, authorized path
 
 **Task Type**:
-The required classification that routes a Task to its Agent Selection Profile. The valid values are `backend`, `frontend`, `data`, `infra`, `docs`, `test`, and `chore`; use the dominant implementation surface when a Task crosses more than one.
+The required classification that routes a Task to its Agent Selection Profile. The valid values are `backend`, `frontend`, `data`, `infra`, `docs`, `test`, `chore` and `qa`; use the dominant implementation surface when a Task crosses more than one. `qa` names the Spec's authored QA gate, the terminal Task that depends on every leaf, and no other Task carries it (ADR-0091).
 _Avoid_: Task category, work type, inferred type
 
 **Task Graph**:
@@ -246,8 +258,12 @@ _Avoid_: Empty report, failed gate, skipped QA, precondition error
 Evidence for at least one named acceptance row that originates outside the Spec's own artifacts — a real repository, a measurement, or published literature — with its origin recorded. A row whose external evidence cannot be obtained is recorded as blocked with its reason. It exists because a rubric and the requirement it measures, written by one author from one premise, confirm rather than test.
 _Avoid_: Self-authored rehearsal, internal fixture, passing suite
 
+**Unreachable Acceptance**:
+The `## Unreachable Acceptance` declaration a Spec authors with its QA rows, naming each acceptance row whose evidence needs the network, an open Pull Request or a credential the repository cannot hold. A row blocked for a declared reason can still qualify a declared `partial`; the pre-PR Pull Request row, a Network-Denied Row and a Network-Prohibited Row need no declaration.
+_Avoid_: Skipped row, waived criterion, known limitation
+
 **ACP Runtime**:
-A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
+A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. Roundfix supports Codex through `codex-acp`, Claude through `claude-agent-acp`, OpenCode through `opencode acp` and, as an opt-in that enters no built-in profile, Cursor through `cursor-agent acp` (ADR-0217); command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
 
 **Agent Model**:
@@ -255,7 +271,7 @@ A runtime-specific model choice that Roundfix explicitly assigns to every Agent 
 _Avoid_: ACP Runtime, Agent, free-form model override
 
 **Agent Work Category**:
-The routing key Roundfix uses to resolve an Agent Selection Profile: `general`, one Task Type, `qa`, or `review`.
+The routing key Roundfix uses to resolve an Agent Selection Profile: `general`, one Task Type (`qa` included), or `review`.
 _Avoid_: Agent role, benchmark category, automatic route
 
 **Agent Selection**:
@@ -275,7 +291,7 @@ What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent
 _Avoid_: Model list, capability payload, advertised options
 
 **Selection Encoding**:
-How one Agent Selection's reasoning effort is represented in the advertised ACP controls, decided during proof and reported by readiness surfaces. `independent` assigns a separate advertised reasoning option. `model_variant` selects an advertised model identifier that already carries the effort. `model_managed` is an empty reasoning effort on an adapter advertising no reasoning control at all. `runtime_managed` is an empty reasoning effort on an ACP Runtime whose advertised reasoning control Roundfix declines to assign, so the observed value is the Agent Model's own and is not proof-relevant. `runtime_deferred` is a non-empty reasoning effort on an ACP Runtime that advertises the control only once the Agent Session holds a queue owner, so proof verifies the value is advertised and the Run applies and observes it after an inert setup turn and before the first work turn.
+How one Agent Selection's reasoning effort is represented in the advertised ACP controls, decided during proof and reported by readiness surfaces. `independent` assigns a separate advertised reasoning option. `model_variant` selects an advertised model identifier that already carries the effort. `model_managed` is an empty reasoning effort on an adapter advertising no reasoning control at all. `runtime_managed` is an empty reasoning effort on an ACP Runtime whose advertised reasoning control Roundfix declines to assign, so the observed value is the Agent Model's own and is not proof-relevant. `runtime_deferred` is a non-empty reasoning effort on an ACP Runtime that advertises the control only once the Agent Session holds a Queue Owner, so proof verifies the value is advertised and the Run applies and observes it after an inert setup turn and before the first work turn.
 _Avoid_: Effort mode, reasoning strategy, assignment style
 
 **Agent Selection Profile**:
@@ -295,7 +311,7 @@ The first Agent Selection Roundfix proves and attempts for an Agent Work Categor
 _Avoid_: Default model, primary runtime, recommendation winner
 
 **Fallback Chain**:
-The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. A Lost Rollout or Provider System Error before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task.
+The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. One exception reaches past Agent Work Started: a Lost Rollout or Provider System Error before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task, because the runtime discarded that turn before it could be handed back (ADR-0245, ADR-0274).
 _Avoid_: Dynamic fallback, silent retry, unproven selection
 
 **Default Agent Model**:
@@ -315,7 +331,7 @@ The dated Agent Selection Profile Roundfix recommends for one Agent Work Categor
 _Avoid_: Model Recommendation Ranking, model router, benchmark policy, automatic selection
 
 **Fallback Selection**:
-The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun. A Lost Rollout or Provider System Error before the First Handoff, or in a QA Task before its report, lets this selection take the Task.
+The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun or under the Fallback Chain's Lost Rollout and Provider System Error exception.
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
 **Negative Control**:
@@ -347,7 +363,7 @@ The Spec check finding (`SC-CITATION-UNSUPPORTED`) raised when an artifact attri
 _Avoid_: Broken link, missing ADR, stale reference
 
 **Agent Work Started**:
-The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it. A Lost Rollout or Provider System Error before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task.
+The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it. Only the Fallback Chain's Lost Rollout and Provider System Error exception reaches past it.
 _Avoid_: Session opened, prompt sent, turn started
 
 **Selection Failure**:
@@ -359,16 +375,15 @@ The outcome (`hook_refused`) of a Task commit a repository commit hook rejected 
 _Avoid_: Commit failure, pre-commit error, verification failure
 
 **Mechanical Refusal Code**:
-The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not.
+The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not. The `QA-PRECONDITION` row a refused mechanical stage writes as its terminal row is a row label beside these codes, not a fifth code (ADR-0132).
 _Avoid_: lint code, error code, check name
 
 **Grant Refusal Code**:
 The stable token the Spec checker emits when an authorization boundary refuses. `SC-TOOLING-UNAPPROVED` means a Spec claims tooling authorization its cited record does not sustain because the record is proposed, undated, withdrawn, or consumed by another Spec. A record that honestly declares its mutations proposed, claiming no operative grant, is accurate rather than defective and refuses nothing. Like a Mechanical Refusal Code, the token is the durable name a reader and a later detector both use; the sentence beside it may be reworded, the token may not.
 _Avoid_: authorization error, permission code, trust error
 
-
 **Agent Session**:
-The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
+The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, the authored QA gate owns a separate `qa` Agent Session, and a Review Run uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread
 
 **Lost Rollout**:
@@ -381,14 +396,14 @@ _Avoid_: Provider failure, capacity reply, Lost Rollout
 
 **Agent Background Task**:
 A command an Agent starts through its ACP Runtime's background facility, such as a Claude Code background Bash command or Monitor, which keeps running after its tool call returns. Roundfix refuses them in Run sessions and records each one a turn starts.
-_Avoid_: Background job — that term remains for the Detached Run
+_Avoid_: Background job, background command, detached task
 
 **Unfinished Turn**:
 The outcome (`turn_unfinished`) of a QA turn that ends with its seeded report at `verdict: pending` after starting an Agent Background Task. The QA Task settles `failed` with a reason that names each task.
 _Avoid_: Pending QA, finished turn, background job
 
 **First Handoff**:
-The first Agent turn of a Task that returns to the Daemon (ADR-0057's "Agent handoff"). Before it, a Lost Rollout lets the Fallback Chain take the Task.
+The first Agent turn of a Task that returns to the Daemon (ADR-0057's "Agent handoff"). Before it, the Fallback Chain's Lost Rollout and Provider System Error exception still applies; after it, no Fallback Selection takes over work a turn handed back.
 _Avoid_: Session opening, first prompt, Agent Work Started
 
 **Merge-Ready**:
@@ -416,7 +431,7 @@ A Run started with the detach flag: roundfix re-executes itself as a session lea
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
-The isolated git worktree a spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
+The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
 _Avoid_: Sandbox, scratch dir, user checkout
 
 **Worktree Root**:
@@ -424,7 +439,7 @@ The directory two levels above a recorded worktree path, the `worktree.location`
 _Avoid_: Worktree directory, Roundfix Home
 
 **Run Branch**:
-The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside its Run Worktree until integration moves them to the user's branch. Review Runs use the user's checkout branch directly; older pending Run Branch work is handled by Branch Integrity Preflight before review work starts.
+The named branch (`roundfix/run-<id>`) that carries a Spec Run's commits inside its Run Worktree until integration moves them to the user's branch. Review Runs use the user's checkout branch directly; older pending Run Branch work is handled by Branch Integrity Preflight before review work starts.
 _Avoid_: Temp branch, detached HEAD, feature branch
 
 **Branch Disposition**:
@@ -432,11 +447,11 @@ A recorded terminal reason a Run Branch no longer needs integration and may be d
 _Avoid_: Branch cleanup, forced deletion, reconcile result
 
 **Run Worktree Reconciliation**:
-The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch is contained in its target or its content is represented at the merged head; `superseded` when a newer QA Report or the merged-head proof represents its Task or QA Report commits; `unintegrated` when resolved evidence does not represent the Run; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
+The proof-based classification of a terminal Spec Run's retained Git surfaces: `safe` when the Run Branch is contained in its target or its content is represented at the merged head; `superseded` when a newer QA Report or the merged-head proof represents its Task or QA Report commits; `unintegrated` when resolved evidence does not represent the Run; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
 _Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
-A terminal spec Run outcome where the spec Run's work completed but its commits could not be fast-forwarded onto the user's branch (local changes overlap or the branch diverged); the commits stay on the Run Branch and the report names the integration command. Review Runs do not end Integration Pending.
+A terminal Spec Run outcome where the Spec Run's work completed but its commits could not be fast-forwarded onto the user's branch (local changes overlap or the branch diverged); the commits stay on the Run Branch and the report names the integration command. Review Runs do not end Integration Pending.
 _Avoid_: Failure, conflict, silent divergence
 
 **Max Rounds**:
@@ -451,16 +466,44 @@ _Avoid_: Failure, timeout, budget exceeded
 A terminal Run outcome where the cycle completed but unresolved Work Items remain: Unresolved Review Issues blocking Final Push, Tasks not completed, or a failing QA verdict. Distinct from Failed, which means the Run itself broke.
 _Avoid_: Failure, crash, partial success
 
+**Failed**:
+A terminal Run outcome where the Run itself broke — an adapter, Git, bootstrap or infrastructure error — before it could complete; distinct from an Unresolved Outcome, which finished with work remaining. It exits `1`.
+_Avoid_: Unresolved, crash, error outcome
+
+**Stopped**:
+The terminal Run outcome a Stop Request or a Force Stop produces: the Run ended before another outcome, its local work preserved and any kept Run Worktree available to Task Carry-Forward. It exits `0`.
+_Avoid_: Cancelled, aborted, killed
+
+**Budget Exceeded**:
+The terminal Run outcome (`BudgetExceeded`) of a Run whose Run Budget passed: a watch Run settles it from its deadline, and a Spec Run settles it with the configured maximum and the elapsed time, cancels the Agent Sessions it owns and keeps its Run Worktree and Run Branch for Task Carry-Forward (ADR-0158).
+_Avoid_: Stopped, Timed Out, Max Rounds Reached
+
+**Timed Out**:
+The terminal Review Run outcome (`TimedOut`) of a watch Run whose wait for accepted Review Source Evidence reached its deadline before Clean, recorded with the evidence detail it last saw. It exits `1`.
+_Avoid_: Budget Exceeded, Clean Unverified, timeout error
+
+**Checkout Moved**:
+The terminal Review Run outcome (`CheckoutMoved`) recorded when the user's checkout no longer matches the target recorded on the Run at Preflight Validation, so the Run ends instead of committing to the wrong branch.
+_Avoid_: Branch switch, detached HEAD, Stopped
+
+**Fetched**:
+The terminal outcome of a Fetch Run: Review Issues and their markdown artifacts persisted, nothing resolved, nothing pushed. It exits `0`.
+_Avoid_: Clean, downloaded, synced
+
 **Clean**:
-A terminal Run outcome where the cycle completed with nothing unresolved remaining: no Unresolved Review Issues for review work, or every Task completed — and a passing QA verdict when requested — for spec work.
+A terminal Run outcome where the cycle completed with nothing unresolved remaining: no Unresolved Review Issues for review work, or every Task completed — and a passing QA verdict when the graph authors a gate — for spec work.
 _Avoid_: Success, done, green
 
+**Implement Clean**:
+A Spec Run's Clean: every Task completed and, when the graph authors a QA gate, a passing verdict. An archive, a QA Archive Override, a review verdict or a merge never establishes it.
+_Avoid_: Archived, QA pass, delivered
+
 **Clean Unverified**:
-A terminal review Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but accepted Review Source Evidence for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and exit code `3`; an explicit skipped review ends Review Skipped instead.
+A terminal Review Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but accepted Review Source Evidence for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and by exit code `3`, which Review Skipped shares; an explicit skipped review ends Review Skipped instead.
 _Avoid_: Clean, failure, timeout
 
 **Review Skipped**:
-A terminal review Run outcome where the Review Source explicitly reports that it did not review the expected head. It is never Merge-Ready, carries the source-reported reason and next action, and uses a non-zero exit code.
+A terminal Review Run outcome where the Review Source explicitly reports that it did not review the expected head. It is never Merge-Ready, carries the source-reported reason and next action, and exits `3` like Clean Unverified.
 _Avoid_: Clean, Clean Unverified, zero Review Issues
 
 **Run Budget**:
@@ -469,14 +512,14 @@ _Avoid_: Max rounds, review round limit
 
 **Run Window**:
 The durable, repository-scoped bound on when an Implement Run may be created. It governs a Run's start and never its finish: a Run created before the cutoff continues to its own terminal outcome. The implementation spellings `RunWindow` and `run_window` refer to this same term.
-_Avoid_: Session — Agent Session names a different concept; curfew and deadline suggest the wrong boundary
+_Avoid_: Session, curfew, deadline
 
 **Preflight Validation**:
 The early checks Roundfix runs before starting a Run or work that would make the developer wait.
 _Avoid_: Best-effort validation, late failure
 
 **Branch Integrity Preflight**:
-The deterministic Preflight Validation for review Runs that blocks fetch, resolve, and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically except QA-report-only branches and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
+The deterministic Preflight Validation for Review Runs that blocks fetch, resolve, and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically except QA-report-only branches and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
 _Avoid_: Advisory check, best-effort warning, soft gate
 
 **Verification**:
@@ -627,16 +670,20 @@ The local recovery command that re-runs one Task's Verification commands in the 
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
-The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.
+The support command that inspects terminal Spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.
 _Avoid_: GC Command, Settle Command, automatic integration
 
 **Task Carry-Forward**:
-The explicit act that hands a settled Task from a terminal spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped or Unresolved and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
+The explicit act that hands a settled Task from a terminal Spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped, Unresolved or Budget Exceeded (ADR-0158) and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
 
 **Delivery Queue**:
 The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
+
+**Queue Owner**:
+The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one.
+_Avoid_: Scheduler, daemon, deliver loop
 
 **Delivery Plan**:
 The read-only account of which Specs have delivery authority, what blocks the others and which production premises ordered Specs share. It reports a prepared queue without recording or running one.
@@ -655,7 +702,7 @@ The one operator decision presented for the lowest-position parked Delivery Queu
 _Avoid_: Warning, automatic recommendation, blocker list
 
 **Delivery Retry**:
-The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` (ADR-0262).
+The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started Queue Owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` (ADR-0262).
 _Avoid_: Resume Command, automatic retry, replay
 
 **Judge Log**:
@@ -674,9 +721,9 @@ _Avoid_: Merge rule, automatic grouping
 The size limit on grouping sources into one Spec: four implementation Tasks plus its QA gate. A grouped scope that needs more is split into Specs that each fit, and each source keeps exactly one owning Spec (ADR-0208).
 _Avoid_: Spec size rule, Task cap
 
-**Frontend Layout Decision**:
-The repository's recorded choice of frontend layout, `systems` or `repository-defined`. While none is recorded, the Baseline states the suggested `systems` layout; a recorded value is never overwritten (ADR-0205).
-_Avoid_: Frontend architecture rule, mandated layout
+**Setup Snapshot**:
+The Baseline's embedded mirror of one upstream skills setup, written only by the asset sync, that lists by name the skills a Baseline Profile takes, with the tree digest of each (ADR-0191, ADR-0241).
+_Avoid_: Skill lock, catalog, upstream checkout
 
 **Composed Setup Snapshot**:
 A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains (ADR-0204).
@@ -691,7 +738,7 @@ The named reason a Delivery Queue item is parked — for example a prerequisite 
 _Avoid_: Blocker text, error code
 
 **Prerequisite Spec**:
-A Spec another Spec names in its Task Graph as `requires`; the queue owner does not start the dependent item until each prerequisite is merged into the default branch (ADR-0193). A cancelled Spec's record never meets a prerequisite (ADR-0262).
+A Spec another Spec names in its Task Graph as `requires`; the Queue Owner does not start the dependent item until each prerequisite is merged into the default branch (ADR-0193). A cancelled Spec's record never meets a prerequisite (ADR-0262).
 _Avoid_: Queue order, dependency Task
 
 **Derived Path Declaration**:
@@ -741,10 +788,6 @@ _Avoid_: Estimated cost, price table
 **Queue Token Ceiling**:
 An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped (ADR-0199).
 _Avoid_: Run Budget, spending limit
-
-**Reprocess Command**:
-An explicit future command for revisiting selected Terminal Review Issues.
-_Avoid_: Include resolved, resolve option
 
 **Init Command**:
 The support command that creates User Config or Project Config before operational Runs.
@@ -998,10 +1041,6 @@ _Avoid_: Prose summary, optional example, compressed guidance
 The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
 _Avoid_: Module list, arbitrary file order, duplicated root policy
 
-**Standard TypeScript Monorepo Profile**:
-The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
-_Avoid_: Project-specific profile, generic TypeScript profile, sample template
-
 **Repository Capability**:
 A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
 _Avoid_: Assumed stack, installed package list, inferred readiness
@@ -1017,6 +1056,14 @@ _Avoid_: Setup questionnaire, decision draft, configuration prompt
 **Change Plan**:
 The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
 _Avoid_: Patch, implicit apply, change preview
+
+**Baseline Plan**:
+The `roundfix/baseline-plan/v1` document a Baseline Command run produces before any mutation: the planned postimages, the canonical managed-entry ledger, the repository and catalog identities, every bounded preimage the plan reads or changes, and the History Relocations and History Citations it carries. Another clone of the same repository can apply it only when all of those match (ADR-0071).
+_Avoid_: Change preview, pending-plan state, patch
+
+**Plan Digest**:
+The digest over a Baseline Plan that the operator confirms before apply and that binds the plan's preimages, warnings and History Citations; a plan whose digest no longer matches is not the plan that was confirmed (ADR-0071).
+_Avoid_: File hash, approval token, repository checksum
 
 **Setup Manifest**:
 The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
@@ -1046,14 +1093,6 @@ _Avoid_: Best-effort migration, category coverage, silent rule removal
 Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
 _Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
 
-**HTTP Contract Decision**:
-The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
-_Avoid_: HTTP profile, universal REST rule, inferred route style
-
-**Better Auth Base Path**:
-The path under which a repository mounts Better Auth's routes, the value of Better Auth's `basePath` option, recorded as the optional `auth.base_path` decision. When it is recorded, the provider's route exception and the matching HTTP Contract Decision exception cover that path followed by `/*`; when it is absent, the recorded exception stands, and Better Auth's own default is `/api/auth` ([ADR-0263](docs/adr/0263-the-better-auth-base-path-is-a-repository-decision-a-baseline-update-records.md)).
-_Avoid_: Auth prefix, API prefix, auth scope
-
 **Formatter-Stable Output**:
 Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
 _Avoid_: Renderer-canonical output, format-after-apply fixup
@@ -1066,9 +1105,9 @@ _Avoid_: Repository Verification, Baseline formatter, whole-tree formatter
 A Task in a completed QA gate's dependency closure that the Task Graph did not hold when the newest QA Report was committed; `roundfix reopen` returns the gate to `pending` over it whatever its status (ADR-0249).
 _Avoid_: Stale dependency, missing dependency, unresolved dependency
 
-**Internal Identifier**:
-A technical identity for an entity or resource that is generated and controlled by the project.
-_Avoid_: External identifier, natural key, business code
+**Agent Skill**:
+A folder holding a `SKILL.md` and its bundled files that an Agent or the Supervisor activates on a declared trigger. Roundfix ships its own as Roundfix Skills and installs upstream ones as Vendored Skills.
+_Avoid_: Plugin, prompt template, tool
 
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
@@ -1103,7 +1142,7 @@ The shared Live Run View composition made of the Phase Row, Work Queue, Session 
 _Avoid_: Dashboard, reduced pane
 
 **Work Queue**:
-The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+The Live Run View pane that lists a Run's Work Items and their current status for both review and Spec Runs.
 _Avoid_: Issue list, task pane
 
 **Phase Row**:
@@ -1150,7 +1189,6 @@ _Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
 The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
 _Avoid_: tail mode, auto-scroll, live mode
 
-
 **Pre-PR Review Policy**:
 The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
 Pull Request is opened. An enabled review covers the current candidate, while
@@ -1177,7 +1215,6 @@ another head. A Delivery Retry's correction proof reads it for the parked
 candidate. See
 [ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).
 _Avoid_: round record, review history
-
 
 **QA Archive Override**:
 An explicit user request or applicable prior authorization to archive a covered
@@ -1245,3 +1282,27 @@ _Avoid_: Byte invariant, golden pin, frozen file check
 **Pre-PR Review Command**:
 The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
 _Avoid_: Review Run, PR feedback Watch, review command alias
+
+## Adopter decisions
+
+The Context-Driven Baseline records these decisions in the repositories it configures. They describe those repositories, not Roundfix, whose own stack and identifiers follow its ADRs.
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Better Auth Base Path**:
+The path under which a repository mounts Better Auth's routes, the value of Better Auth's `basePath` option, recorded as the optional `auth.base_path` decision. When it is recorded, the provider's route exception and the matching HTTP Contract Decision exception cover that path followed by `/*`; when it is absent, the recorded exception stands, and Better Auth's own default is `/api/auth` ([ADR-0263](docs/adr/0263-the-better-auth-base-path-is-a-repository-decision-a-baseline-update-records.md)).
+_Avoid_: Auth prefix, API prefix, auth scope
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Frontend Layout Decision**:
+The repository's recorded choice of frontend layout, `systems` or `repository-defined`. While none is recorded, the Baseline states the suggested `systems` layout; a recorded value is never overwritten (ADR-0205).
+_Avoid_: Frontend architecture rule, mandated layout
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template

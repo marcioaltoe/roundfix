@@ -42,9 +42,10 @@ Both loops keep the same contract, which is what lets an agent drive them:
 
 - **stdout** carries only the deterministic report at Run end.
 - **stderr** carries diagnostics, progress, the Run ID, and Agent output.
-- **Exit codes**: `0` Clean, Stopped, or an already-complete no-op; `1`
-  Unresolved, Failed, or Integration Pending; `2` Preflight Validation failure;
-  `3` Clean Unverified (watch only); `130` for an in-terminal Ctrl-C.
+- **Exit codes**: `0` Clean, Max Rounds Reached, Stopped, Fetched, or an
+  already-complete no-op; `1` Unresolved, Failed, Budget Exceeded, Timed Out,
+  or Integration Pending; `2` Preflight Validation failure; `3` Clean
+  Unverified or Review Skipped (watch only); `130` for an in-terminal Ctrl-C.
 - **Outcomes are fixed strings** you can branch on — see each loop below.
 
 Agent Selection Profiles choose the runtime, model, and reasoning effort.
