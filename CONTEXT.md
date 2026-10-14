@@ -60,6 +60,10 @@ _Avoid_: PR run, review job, Review Source run
 A Run the Implement Command starts over one Spec's Task Graph. It executes in a Run Worktree on a Run Branch, schedules Tasks by Wave and ends at its authored QA gate when the graph declares one; the guides also call it an Implement Run ([ADR-0023](docs/adr/0023-runs-execute-in-per-run-worktrees.md), [ADR-0025](docs/adr/0025-spec-runs-schedule-ready-tasks-concurrently.md)).
 _Avoid_: Implement job, task run, graph execution
 
+**Implement Run**:
+The Spec Run as the Implement Command and the agent guides name it; the two terms name one Run.
+_Avoid_: Spec execution, implement job, implement session
+
 **Fetch Run**:
 A short Review Run that runs Branch Integrity Preflight, fetches Review Source issues, and persists markdown artifacts from the user's checkout without starting an Agent, creating a Run Worktree, committing, or pushing.
 _Avoid_: Standalone fetch, untracked fetch
