@@ -1,0 +1,5 @@
+{
+  "binary": "./bin/roundfix",
+  "foreground_rule_occurrences": 1,
+  "foreground_rule": "Run every command in the foreground and wait for it to exit; never end the turn while a command you started is still running. The end of the turn is the end of the gate."
+}

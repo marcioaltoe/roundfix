@@ -1,0 +1,17 @@
+import readline from 'node:readline';
+const send = obj => process.stdout.write(JSON.stringify(obj)+'\n');
+const lines=readline.createInterface({input:process.stdin});
+for await (const line of lines) {
+ let m; try {m=JSON.parse(line);} catch {continue;}
+ if (m.id===undefined) continue;
+ let result={};
+ if(m.method==='initialize') result={protocolVersion:1,agentCapabilities:{loadSession:true},agentInfo:{name:'qa-fake-0268',version:'1.0.0'},authMethods:[]};
+ else if(m.method==='session/new' || m.method==='session/load') result={sessionId:'qa-fake-thread-0268'};
+ else if(m.method==='session/prompt') {
+  const sid=m.params.sessionId;
+  for(const status of ['active','systemError']) send({jsonrpc:'2.0',method:'session/update',params:{sessionId:sid,update:{sessionUpdate:'session_info_update',_meta:{codex:{threadStatus:{type:status}}}}}});
+  send({jsonrpc:'2.0',method:'session/update',params:{sessionId:sid,update:{sessionUpdate:'agent_message_chunk',content:{type:'text',text:'Selected model is at capacity. Please try a different model.'}}}});
+  result={stopReason:'end_turn',usage:null};
+ }
+ send({jsonrpc:'2.0',id:m.id,result});
+}

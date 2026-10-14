@@ -1,0 +1,119 @@
+=== RUN   TestClaudeCommandsRefuseBackgroundTasks
+=== PAUSE TestClaudeCommandsRefuseBackgroundTasks
+=== RUN   TestTurnRecordsItsAgentBackgroundTasks
+=== PAUSE TestTurnRecordsItsAgentBackgroundTasks
+=== RUN   TestQAPromptRequiresForegroundCommands
+=== PAUSE TestQAPromptRequiresForegroundCommands
+=== RUN   TestBuildQAPromptCarriesTheSpecContextBundle
+=== PAUSE TestBuildQAPromptCarriesTheSpecContextBundle
+=== RUN   TestBuildQAPromptCarriesThePreviousReportIdentity
+=== PAUSE TestBuildQAPromptCarriesThePreviousReportIdentity
+=== RUN   TestBuildQAPromptStatesQAGateContract
+=== PAUSE TestBuildQAPromptStatesQAGateContract
+=== RUN   TestBuildQAPromptStatesTheDeclaredMatrix
+=== PAUSE TestBuildQAPromptStatesTheDeclaredMatrix
+=== RUN   TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget
+=== PAUSE TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget
+=== RUN   TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen
+=== PAUSE TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen
+=== RUN   TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence
+=== PAUSE TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence
+=== RUN   TestBuildQAPromptOmitsUnrecordedCheckoutFacts
+=== PAUSE TestBuildQAPromptOmitsUnrecordedCheckoutFacts
+=== RUN   TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts
+=== PAUSE TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts
+=== RUN   TestBuildQAPromptDeterministicForIdenticalInput
+=== PAUSE TestBuildQAPromptDeterministicForIdenticalInput
+=== RUN   TestBuildQAPromptValidatesRequiredFields
+=== PAUSE TestBuildQAPromptValidatesRequiredFields
+=== CONT  TestClaudeCommandsRefuseBackgroundTasks
+=== CONT  TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget
+=== CONT  TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts
+=== CONT  TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence
+=== CONT  TestBuildQAPromptStatesQAGateContract
+=== CONT  TestBuildQAPromptOmitsUnrecordedCheckoutFacts
+=== RUN   TestClaudeCommandsRefuseBackgroundTasks/claude
+--- PASS: TestBuildQAPromptOmitsUnrecordedCheckoutFacts (0.00s)
+--- PASS: TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence (0.00s)
+=== RUN   TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/no_run_branch
+=== CONT  TestBuildQAPromptCarriesTheSpecContextBundle
+=== PAUSE TestClaudeCommandsRefuseBackgroundTasks/claude
+=== RUN   TestBuildQAPromptCarriesTheSpecContextBundle/changed_paths
+--- PASS: TestBuildQAPromptStatesQAGateContract (0.00s)
+--- PASS: TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget (0.00s)
+=== CONT  TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen
+--- PASS: TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen (0.00s)
+=== CONT  TestQAPromptRequiresForegroundCommands
+=== RUN   TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/no_target_branch
+--- PASS: TestQAPromptRequiresForegroundCommands (0.00s)
+=== CONT  TestBuildQAPromptCarriesThePreviousReportIdentity
+=== RUN   TestBuildQAPromptCarriesThePreviousReportIdentity/previous_report_exists
+=== CONT  TestBuildQAPromptDeterministicForIdenticalInput
+--- PASS: TestBuildQAPromptDeterministicForIdenticalInput (0.00s)
+=== CONT  TestTurnRecordsItsAgentBackgroundTasks
+=== PAUSE TestBuildQAPromptCarriesThePreviousReportIdentity/previous_report_exists
+=== RUN   TestBuildQAPromptCarriesThePreviousReportIdentity/no_previous_report
+=== PAUSE TestBuildQAPromptCarriesThePreviousReportIdentity/no_previous_report
+=== CONT  TestBuildQAPromptCarriesThePreviousReportIdentity/previous_report_exists
+=== PAUSE TestBuildQAPromptCarriesTheSpecContextBundle/changed_paths
+=== RUN   TestClaudeCommandsRefuseBackgroundTasks/codex
+=== RUN   TestBuildQAPromptCarriesTheSpecContextBundle/no_changed_paths
+=== CONT  TestBuildQAPromptStatesTheDeclaredMatrix
+=== PAUSE TestBuildQAPromptCarriesTheSpecContextBundle/no_changed_paths
+=== CONT  TestBuildQAPromptCarriesTheSpecContextBundle/changed_paths
+--- PASS: TestBuildQAPromptStatesTheDeclaredMatrix (0.00s)
+=== CONT  TestBuildQAPromptCarriesTheSpecContextBundle/no_changed_paths
+--- PASS: TestBuildQAPromptCarriesTheSpecContextBundle (0.00s)
+    --- PASS: TestBuildQAPromptCarriesTheSpecContextBundle/changed_paths (0.00s)
+    --- PASS: TestBuildQAPromptCarriesTheSpecContextBundle/no_changed_paths (0.00s)
+=== CONT  TestBuildQAPromptValidatesRequiredFields
+=== RUN   TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/no_user_checkout
+=== RUN   TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/whitespace_target_branch
+=== RUN   TestTurnRecordsItsAgentBackgroundTasks/Bash_and_Monitor_in_start_order
+--- PASS: TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts (0.00s)
+    --- PASS: TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/no_run_branch (0.00s)
+    --- PASS: TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/no_target_branch (0.00s)
+    --- PASS: TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/no_user_checkout (0.00s)
+    --- PASS: TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts/whitespace_target_branch (0.00s)
+=== CONT  TestBuildQAPromptCarriesThePreviousReportIdentity/no_previous_report
+--- PASS: TestBuildQAPromptCarriesThePreviousReportIdentity (0.00s)
+    --- PASS: TestBuildQAPromptCarriesThePreviousReportIdentity/previous_report_exists (0.00s)
+    --- PASS: TestBuildQAPromptCarriesThePreviousReportIdentity/no_previous_report (0.00s)
+=== PAUSE TestClaudeCommandsRefuseBackgroundTasks/codex
+=== CONT  TestClaudeCommandsRefuseBackgroundTasks/claude
+=== PAUSE TestTurnRecordsItsAgentBackgroundTasks/Bash_and_Monitor_in_start_order
+=== RUN   TestTurnRecordsItsAgentBackgroundTasks/no_background_tasks
+=== RUN   TestBuildQAPromptValidatesRequiredFields/empty_spec_slug
+=== PAUSE TestTurnRecordsItsAgentBackgroundTasks/no_background_tasks
+=== RUN   TestTurnRecordsItsAgentBackgroundTasks/missing_description
+=== PAUSE TestTurnRecordsItsAgentBackgroundTasks/missing_description
+=== RUN   TestTurnRecordsItsAgentBackgroundTasks/other_update_metadata_is_not_a_task
+=== CONT  TestClaudeCommandsRefuseBackgroundTasks/codex
+=== RUN   TestBuildQAPromptValidatesRequiredFields/empty_spec_directory
+=== RUN   TestBuildQAPromptValidatesRequiredFields/empty_prd_path
+=== PAUSE TestTurnRecordsItsAgentBackgroundTasks/other_update_metadata_is_not_a_task
+=== CONT  TestTurnRecordsItsAgentBackgroundTasks/Bash_and_Monitor_in_start_order
+=== RUN   TestBuildQAPromptValidatesRequiredFields/negative_omitted_prior_file_count
+=== CONT  TestTurnRecordsItsAgentBackgroundTasks/missing_description
+=== CONT  TestTurnRecordsItsAgentBackgroundTasks/other_update_metadata_is_not_a_task
+=== RUN   TestBuildQAPromptValidatesRequiredFields/previous_report_without_head
+=== RUN   TestBuildQAPromptValidatesRequiredFields/previous_report_head_without_path
+--- PASS: TestBuildQAPromptValidatesRequiredFields (0.00s)
+    --- PASS: TestBuildQAPromptValidatesRequiredFields/empty_spec_slug (0.00s)
+    --- PASS: TestBuildQAPromptValidatesRequiredFields/empty_spec_directory (0.00s)
+    --- PASS: TestBuildQAPromptValidatesRequiredFields/empty_prd_path (0.00s)
+    --- PASS: TestBuildQAPromptValidatesRequiredFields/negative_omitted_prior_file_count (0.00s)
+    --- PASS: TestBuildQAPromptValidatesRequiredFields/previous_report_without_head (0.00s)
+    --- PASS: TestBuildQAPromptValidatesRequiredFields/previous_report_head_without_path (0.00s)
+=== CONT  TestTurnRecordsItsAgentBackgroundTasks/no_background_tasks
+--- PASS: TestTurnRecordsItsAgentBackgroundTasks (0.00s)
+    --- PASS: TestTurnRecordsItsAgentBackgroundTasks/missing_description (0.01s)
+    --- PASS: TestTurnRecordsItsAgentBackgroundTasks/other_update_metadata_is_not_a_task (0.01s)
+    --- PASS: TestTurnRecordsItsAgentBackgroundTasks/Bash_and_Monitor_in_start_order (0.01s)
+    --- PASS: TestTurnRecordsItsAgentBackgroundTasks/no_background_tasks (0.01s)
+--- PASS: TestClaudeCommandsRefuseBackgroundTasks (0.00s)
+    --- PASS: TestClaudeCommandsRefuseBackgroundTasks/codex (0.72s)
+    --- PASS: TestClaudeCommandsRefuseBackgroundTasks/claude (0.72s)
+PASS
+suiteguard: guard cost: measured 2697 paths; fingerprint took 86.228292ms before and 80.519125ms after
+ok  	roundfix/internal/agent	1.025s

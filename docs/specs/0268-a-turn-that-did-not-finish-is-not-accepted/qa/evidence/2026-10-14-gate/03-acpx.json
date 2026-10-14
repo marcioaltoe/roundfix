@@ -1,0 +1,23 @@
+{
+  "command": [
+    "acpx",
+    "--format",
+    "json",
+    "--cwd",
+    "<temporary-directory>",
+    "--timeout",
+    "15",
+    "codex",
+    "exec",
+    "reproduce capacity"
+  ],
+  "exit": 0,
+  "acpx_version": "0.19.4",
+  "node_version": "v26.11.1",
+  "environment_names": [
+    "HOME",
+    "TMPDIR",
+    "PATH",
+    "LANG"
+  ]
+}

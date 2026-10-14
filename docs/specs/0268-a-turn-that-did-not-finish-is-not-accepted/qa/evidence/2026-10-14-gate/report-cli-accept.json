@@ -1,0 +1,21 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "qa-report",
+    "accept",
+    "docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/qa-report-2026-10-14.md"
+  ],
+  "exit": 0,
+  "missing_pass_lines": [],
+  "environment_names": [
+    "HOME",
+    "PATH",
+    "TMPDIR",
+    "LANG",
+    "GOMODCACHE",
+    "GOCACHE",
+    "GOPROXY",
+    "GOSUMDB",
+    "GOTOOLCHAIN"
+  ]
+}

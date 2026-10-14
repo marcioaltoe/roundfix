@@ -1,0 +1,23 @@
+=== RUN   TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== PAUSE TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== RUN   TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== PAUSE TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== CONT  TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== CONT  TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+--- PASS: TestQATurnThatLeavesABackgroundTaskIsUnfinished (0.29s)
+--- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally (0.00s)
+    --- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail (0.31s)
+    --- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass (0.31s)
+--- PASS: TestQATurnWithoutBackgroundTaskKeepsAPendingReport (0.31s)
+PASS
+suiteguard: guard cost: measured 2700 paths; fingerprint took 90.629792ms before and 71.345041ms after
+ok  	roundfix/internal/daemon	0.667s

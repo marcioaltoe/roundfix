@@ -1,0 +1,24 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "^(TestLostRolloutBeforeFirstHandoffActivatesTheFallback|TestLostRolloutAfterFirstHandoffResumesInANewSession|TestLostRolloutWithoutFallbackResumesTheSameSelection|TestThirdLostRolloutSettlesRuntimeInfrastructure|TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt|TestQALostRolloutExhaustionSettlesInsteadOfHalting)$",
+    "./internal/daemon"
+  ],
+  "exit": 1,
+  "missing_pass_lines": [],
+  "environment_names": [
+    "HOME",
+    "PATH",
+    "TMPDIR",
+    "LANG",
+    "GOMODCACHE",
+    "GOCACHE",
+    "GOPROXY",
+    "GOSUMDB",
+    "GOTOOLCHAIN"
+  ]
+}

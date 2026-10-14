@@ -1,0 +1,8 @@
+=== RUN   TestQARecordedACPXStream
+=== PAUSE TestQARecordedACPXStream
+=== CONT  TestQARecordedACPXStream
+    provider_system_error_test.go:280: recorded acpx exit-zero end_turn rejected: Agent Batch failed: provider system error at session/prompt: Selected model is at capacity. Please try a different model.
+--- PASS: TestQARecordedACPXStream (0.01s)
+PASS
+suiteguard: guard cost: measured 2691 paths; fingerprint took 526.505834ms before and 78.707ms after
+ok  	roundfix/internal/agent	0.872s

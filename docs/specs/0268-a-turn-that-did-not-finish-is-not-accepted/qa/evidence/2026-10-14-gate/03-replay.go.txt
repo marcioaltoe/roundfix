@@ -1,0 +1,10 @@
+
+func TestQARecordedACPXStream(t *testing.T) {
+ t.Parallel()
+ stdout, err := os.ReadFile("<temporary-stream>")
+ if err != nil { t.Fatal(err) }
+ run := runFakeACPXPrompt(t, fakeACPXPrompt{stdout:string(stdout)})
+ detail, ok := DescribeProviderSystemError(run.err)
+ if !ok || detail.Detail != providerCapacityText || run.result.StopReason != "end_turn" { t.Fatalf("result = %+v, error = %v",run.result,run.err) }
+ t.Logf("recorded acpx exit-zero end_turn rejected: %v",run.err)
+}

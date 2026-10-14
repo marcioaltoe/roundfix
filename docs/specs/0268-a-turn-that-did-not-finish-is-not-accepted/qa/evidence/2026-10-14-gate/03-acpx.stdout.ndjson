@@ -1,0 +1,9 @@
+{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":true,"writeTextFile":true},"terminal":true},"clientInfo":{"name":"acpx","version":"0.19.4"}}}
+{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"agentCapabilities":{"loadSession":true},"agentInfo":{"name":"qa-fake-0268","version":"1.0.0"},"authMethods":[]}}
+{"jsonrpc":"2.0","id":1,"method":"session/new","params":{"cwd":"<temporary-directory>","mcpServers":[]}}
+{"jsonrpc":"2.0","id":1,"result":{"sessionId":"qa-fake-thread-0268"}}
+{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"qa-fake-thread-0268","prompt":[{"type":"text","text":"reproduce capacity"}]}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"qa-fake-thread-0268","update":{"sessionUpdate":"session_info_update","_meta":{"codex":{"threadStatus":{"type":"active"}}}}}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"qa-fake-thread-0268","update":{"sessionUpdate":"session_info_update","_meta":{"codex":{"threadStatus":{"type":"systemError"}}}}}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"qa-fake-thread-0268","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"Selected model is at capacity. Please try a different model."}}}}
+{"jsonrpc":"2.0","id":2,"result":{"stopReason":"end_turn","usage":null}}

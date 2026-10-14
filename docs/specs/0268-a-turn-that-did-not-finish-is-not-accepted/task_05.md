@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0268-a-turn-that-did-not-finish-is-not-accepted
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

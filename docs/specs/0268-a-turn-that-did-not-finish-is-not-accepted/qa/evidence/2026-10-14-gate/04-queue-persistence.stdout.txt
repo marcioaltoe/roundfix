@@ -1,0 +1,9 @@
+=== RUN   TestRuntimeInfrastructureParksTheItem
+--- PASS: TestRuntimeInfrastructureParksTheItem (0.01s)
+=== RUN   TestClassifyParkRuntimeInfrastructure
+--- PASS: TestClassifyParkRuntimeInfrastructure (0.00s)
+=== RUN   TestRuntimeInfrastructureRetryIsNotCounted
+--- PASS: TestRuntimeInfrastructureRetryIsNotCounted (0.00s)
+PASS
+suiteguard: guard cost: measured 2706 paths; fingerprint took 105.446792ms before and 68.979625ms after
+ok  	roundfix/internal/delivery	0.462s

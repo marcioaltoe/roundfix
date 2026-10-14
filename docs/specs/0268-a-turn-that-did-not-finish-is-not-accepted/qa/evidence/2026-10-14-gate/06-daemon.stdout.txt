@@ -1,0 +1,27 @@
+=== RUN   TestLostRolloutBeforeFirstHandoffActivatesTheFallback
+=== PAUSE TestLostRolloutBeforeFirstHandoffActivatesTheFallback
+=== RUN   TestLostRolloutAfterFirstHandoffResumesInANewSession
+=== PAUSE TestLostRolloutAfterFirstHandoffResumesInANewSession
+=== RUN   TestLostRolloutWithoutFallbackResumesTheSameSelection
+=== PAUSE TestLostRolloutWithoutFallbackResumesTheSameSelection
+=== RUN   TestThirdLostRolloutSettlesRuntimeInfrastructure
+=== PAUSE TestThirdLostRolloutSettlesRuntimeInfrastructure
+=== RUN   TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+=== PAUSE TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+=== RUN   TestQALostRolloutExhaustionSettlesInsteadOfHalting
+=== PAUSE TestQALostRolloutExhaustionSettlesInsteadOfHalting
+=== CONT  TestLostRolloutBeforeFirstHandoffActivatesTheFallback
+=== CONT  TestThirdLostRolloutSettlesRuntimeInfrastructure
+=== CONT  TestQALostRolloutExhaustionSettlesInsteadOfHalting
+=== CONT  TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+=== CONT  TestLostRolloutWithoutFallbackResumesTheSameSelection
+=== CONT  TestLostRolloutAfterFirstHandoffResumesInANewSession
+--- PASS: TestThirdLostRolloutSettlesRuntimeInfrastructure (0.18s)
+--- PASS: TestLostRolloutBeforeFirstHandoffActivatesTheFallback (0.19s)
+--- PASS: TestLostRolloutWithoutFallbackResumesTheSameSelection (0.19s)
+--- PASS: TestLostRolloutAfterFirstHandoffResumesInANewSession (0.19s)
+--- PASS: TestQALostRolloutExhaustionSettlesInsteadOfHalting (0.31s)
+--- PASS: TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt (0.32s)
+PASS
+suiteguard: guard cost: measured 2703 paths; fingerprint took 89.736292ms before and 69.760667ms after
+ok  	roundfix/internal/daemon	0.662s

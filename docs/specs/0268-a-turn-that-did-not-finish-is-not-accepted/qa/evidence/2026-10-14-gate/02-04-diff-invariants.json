@@ -1,0 +1,25 @@
+{
+  "existing_exit_branches_byte_identical": true,
+  "parsed_result_anomaly_unchanged": true,
+  "read_only_refusal_unchanged": true,
+  "lost_rollout_recovery_function_byte_identical": true,
+  "provider_eligibility": "task before First Handoff or QA report pending",
+  "next_selection_only": true,
+  "provider_recovery_does_not_reference_lost_rollout_budget": true,
+  "classifier_order": [
+    "Lost Rollout",
+    "Provider System Error",
+    "Selection Failure"
+  ],
+  "delivery_engine_store_and_review_production_unchanged": true,
+  "independent_confirmation": [
+    "02-agent",
+    "02-review",
+    "04-daemon",
+    "04-delivery",
+    "04-queue-persistence",
+    "06-agent",
+    "06-daemon",
+    "06-cli"
+  ]
+}

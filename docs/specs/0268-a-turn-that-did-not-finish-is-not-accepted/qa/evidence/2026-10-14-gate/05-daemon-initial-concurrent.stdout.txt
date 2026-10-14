@@ -1,0 +1,32 @@
+=== RUN   TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== PAUSE TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== RUN   TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== PAUSE TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== CONT  TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== CONT  TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+--- PASS: TestQATurnThatLeavesABackgroundTaskIsUnfinished (0.44s)
+--- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally (0.00s)
+    --- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail (0.50s)
+    --- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass (0.51s)
+--- PASS: TestQATurnWithoutBackgroundTaskKeepsAPendingReport (0.52s)
+PASS
+suiteguard: guard cost: measured 2667 paths; fingerprint took 100.793959ms before and 84.441833ms after
+suiteguard: repository boundary violated:
+suiteguard: created: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/evidence/2026-10-14-gate/02-review.json
+suiteguard: created: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/evidence/2026-10-14-gate/02-review.stderr.txt
+suiteguard: created: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/evidence/2026-10-14-gate/02-review.stdout.txt
+suiteguard: created: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/evidence/2026-10-14-gate/06-agent.json
+suiteguard: created: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/evidence/2026-10-14-gate/06-agent.stderr.txt
+suiteguard: created: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/evidence/2026-10-14-gate/06-agent.stdout.txt
+suiteguard: modified: docs/specs/0268-a-turn-that-did-not-finish-is-not-accepted/qa/qa-report-2026-10-14.md
+FAIL	roundfix/internal/daemon	1.182s
+FAIL
