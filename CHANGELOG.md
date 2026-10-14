@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.82.0] - 2026-10-14
+
+### History sanitize records keep their summary, links and dates
+
+- **Summary.** `roundfix history sanitize` and the history section of `roundfix baseline update` remove block quote markers from each line before joining a Legacy Archive Folder's summary paragraph, and a PRD whose title is followed directly by a section yields the first paragraph after its first second-level heading. Before, a quoted summary was joined with `>` mid-text and such a PRD gave no summary.
+- **Fields.** A legacy override without approval or reason records `legacy: not recorded` there; `sources` falls back to the adopted source files under `references/` when the index lists none; `created` falls back to the TechSpec date and then to the oldest commit that added the PRD.
+- **Legacy Link Rebase.** The relative destinations in the record's outcome and in each promoted copy, and the folder path text in them, are rewritten so that no link the generator writes points at the removed folder.
+- **Unchanged records.** Archive Records already written stay byte-identical; only generation from Legacy Archive Folders changes.
+- **Skills and guides.** The `history` guide and the `roundfix` skill's `archive` and `baseline` references describe the new readings.
+- **Glossary.** Adds Legacy Link Rebase and revises Lenient Legacy Reading.
+
 ## [0.81.0] - 2026-10-14
 
 ### Acceptance rules that match the authorization and the queue
