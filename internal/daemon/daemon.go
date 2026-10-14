@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"roundfix/internal/judge"
 )
 
 type VerifyRequest struct {
@@ -125,6 +127,7 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 
 	cmd := exec.CommandContext(ctx, "sh", "-c", req.Command)
 	cmd.Dir = req.WorkDir
+	cmd.Env = judge.WithoutKeyVariables(os.Environ())
 	cmd.Stdout = tempFile
 	cmd.Stderr = tempFile
 	runErr := cmd.Run()

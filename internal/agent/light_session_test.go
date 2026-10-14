@@ -82,7 +82,7 @@ func TestLightSessionReadsTheImplementKeyByName(t *testing.T) {
 				}
 				provider := object["provider"].(map[string]any)
 				options := provider["openrouter"].(map[string]any)["options"].(map[string]any)
-				if options["apiKey"] != "{env:"+runtime.OpenRouterKeyVariable+"}" {
+				if options["apiKey"] != "{env:"+openrouterkey.Implement+"}" {
 					t.Fatalf("option = %v", options)
 				}
 				if inherited != "" && (object["theme"] != "dark" || provider["other"] == nil || options["timeout"] != float64(42)) {
@@ -161,18 +161,24 @@ func TestOpenModelImplementationFallsBackToTheSharedKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	inline := environmentValue(overrides, "OPENCODE_CONFIG_CONTENT")
-	if !strings.Contains(inline, `"apiKey":"{env:`+openrouterkey.Shared+`}"`) {
-		t.Fatalf("OpenCode config does not reference the shared variable: %s", inline)
+	if !strings.Contains(inline, `"apiKey":"{env:`+openrouterkey.Implement+`}"`) {
+		t.Fatalf("OpenCode config does not reference the implementation variable: %s", inline)
 	}
-	if strings.Contains(inline, openrouterkey.Implement) {
-		t.Fatalf("OpenCode config references the implementation variable: %s", inline)
+	if strings.Contains(inline, openrouterkey.Shared) {
+		t.Fatalf("OpenCode config references the shared variable: %s", inline)
 	}
 	commandEnv := acpxCommandEnv(environ, overrides)
 	if value := environmentValue(commandEnv, "OPENROUTER_API_KEY"); value != "" {
 		t.Fatalf("generic key reached OpenCode: %q", value)
 	}
-	if value := environmentValue(commandEnv, openrouterkey.Shared); value != "shared-sentinel" {
-		t.Fatalf("shared key missing from OpenCode environment: %q", value)
+	if value := environmentValue(commandEnv, openrouterkey.Implement); value != "shared-sentinel" {
+		t.Fatalf("shared key missing from implementation variable: %q", value)
+	}
+	for _, entry := range commandEnv {
+		name, _, _ := strings.Cut(entry, "=")
+		if name == openrouterkey.Shared {
+			t.Fatal("shared variable reached OpenCode")
+		}
 	}
 	variable, present = config.OpenRouterImplementKey([]string{"OPENROUTER_API_KEY=generic-sentinel"})
 	if present || variable != "" {

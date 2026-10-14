@@ -3,6 +3,8 @@ package agent
 import (
 	"encoding/json"
 	"errors"
+
+	"roundfix/internal/openrouterkey"
 )
 
 // lightSessionEnvironment carries only a variable reference in inline config.
@@ -23,10 +25,14 @@ func lightSessionEnvironment(runtime RuntimeSpec, environment []string) ([]strin
 		}
 		object = child
 	}
-	object["apiKey"] = "{env:" + runtime.OpenRouterKeyVariable + "}"
+	object["apiKey"] = "{env:" + openrouterkey.Implement + "}"
 	data, err := json.Marshal(config)
 	if err != nil {
 		return nil, err
 	}
-	return []string{"OPENROUTER_API_KEY", "OPENCODE_CONFIG_CONTENT=" + string(data)}, nil
+	overrides := []string{"OPENROUTER_API_KEY", "OPENCODE_CONFIG_CONTENT=" + string(data)}
+	if runtime.OpenRouterKeyVariable != openrouterkey.Implement {
+		overrides = append(overrides, openrouterkey.Implement+"="+environmentValue(environment, runtime.OpenRouterKeyVariable))
+	}
+	return overrides, nil
 }
