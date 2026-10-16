@@ -172,7 +172,7 @@ _Avoid_: Check presence, generic approval, inferred clean state
 
 **Review Finding Disposition**:
 A Pre-PR Review finding's recorded fix or evidence-backed dismissal, tied to the head the reviewer examined.
-At the same repository, base, head, and provider, the findings verdict is reused without asking the reviewer; only exact evidence-backed dismissals of every finding produce `findings-dismissed`, while a fix requires a fresh review of its changed head.
+At the same repository, base, head, and provider, the findings verdict is reused without asking the reviewer; only exact evidence-backed dismissals of every finding produce `findings-dismissed`, while a fix requires a fresh review of its changed head. An evidence-backed dismissal may be recorded at a later `HEAD` that descends from the reviewed head when the finding's anchored lines are unchanged; it stays tied to the reviewed head and records `currentHead` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
 _Avoid_: Review Issue resolution, unrecorded operator decision, finding deletion
 
 **Spec**:
@@ -686,7 +686,7 @@ The durable, ordered set of Specs that Roundfix advances from an Implement Run t
 _Avoid_: Release queue, Batch, Run list
 
 **Queue Owner**:
-The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one.
+The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one. When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
 _Avoid_: Scheduler, daemon, deliver loop
 
 **Delivery Plan**:

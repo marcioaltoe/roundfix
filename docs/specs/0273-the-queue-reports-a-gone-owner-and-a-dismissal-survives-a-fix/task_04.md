@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -92,3 +92,45 @@ None. This Task changes documentation, the skill text and its derived records, w
 - `_prd.md` → Core Feature 4; Glossary
 - `_techspec.md` → API Contracts 1-3; Surface Transcripts 1-5; Build Order 4; Glossary
 - ADR-0279; ADR-0256; ADR-0244
+
+## Result
+
+Implementation evidence for daemon handoff:
+
+- The canonical `deliver` reference describes the exact `Owner:` line, the
+  different start-time identity state, the ordering around `Warning:`, `Park:`
+  and `Limits:`, and the item worktree refusal containing `this checkout is the
+  item worktree of`.
+- The canonical `review` reference accepts a descendant HEAD when anchored
+  lines are unchanged, records `currentHead`, and describes ancestry and
+  recorded-anchor refusal reasons. Its `### QA settlement` section was not
+  changed.
+- `CONTEXT.md` revises **Queue Owner** and **Review Finding Disposition**, with
+  both entries citing ADR-0279.
+- `make skills-sync` completed after the reference edits and after the version
+  record update; the canonical and mirror reference and `SKILL.md` pairs match
+  byte for byte (`cmp` passed).
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` passed and recorded the raised Roundfix skill version.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` passed and
+  rewrote the Behavior Surface Record.
+- Focused checks: `git diff --check` passed; required phrases were found in
+  both canonical and mirrored references.
+
+Acceptance evidence:
+
+- Deliver reference: the exact `Owner:` line and item worktree refusal are
+  present in both reference copies.
+- Review reference: the descendant dismissal rule includes `anchored lines
+  are unchanged` and `currentHead`; the old `moved-head dismissals` wording is
+  absent.
+- Derived records: mirror equality, the owned-skill version test with its
+  record flag, the coverage-record test with its record flag, and `make
+  skills-sync` all produced the evidence above.
+- Glossary: both required entries contain the new behavior and ADR-0279.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261016T175249Z_782526ccf3bf55ac`
+- Source commit: `11a8c1fd208fdb5f306dbb599a6bdb826a7ef071`

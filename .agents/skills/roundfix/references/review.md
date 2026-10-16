@@ -159,19 +159,29 @@ none carries a readable anchor, the review blocks with exit `2` and reason
 readable and their findings count as standing.
 
 Use `roundfix review dispose` to record one disposition for one finding. A
-dismissal requires non-blank evidence and an unchanged reviewed `HEAD`. A fix
-requires a resolving commit that differs from and descends from the reviewed
-head and is reachable from the current `HEAD`. Evidence is copied as text and
-is never executed.
+dismissal requires non-blank evidence. It is accepted at the reviewed `HEAD`,
+or at a descendant when the finding's anchored lines are unchanged byte for
+byte at the same line numbers. Roundfix reads both commits through Git, never
+the working tree; a start line of `0` compares the whole file. It refuses a
+head that does not descend from the reviewed head, a finding without a
+recorded anchor, or an anchor whose file is missing, whose lines no longer
+exist, or whose lines changed or moved. Dismiss before committing a fix that
+changes or moves those lines. A fix requires a resolving commit that differs
+from and descends from the reviewed head and is reachable from the current
+`HEAD`. Evidence is copied as text and is never executed.
 
 Successful dispositions append one JSON line to
 `pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that
 same line. The line ties the finding's identity and text to its repository and
 reviewed head, and records either `evidence` or `fixedBy` with an RFC 3339 UTC
-timestamp. The ledger is append-only. Roundfix refuses a missing or mismatched
-findings record, an unknown identity, invalid or blank forms, moved-head
-dismissals, invalid fixing commits, and a second disposition. It also refuses
-a finding already `dismissed-by-validation` with
+timestamp. An accepted dismissal after a fix keeps `headCommit` equal to the
+reviewed head and adds `currentHead` as the last field, naming the HEAD where
+the anchor was proven unchanged. A dismissal at the reviewed head omits
+`currentHead`. The ledger is append-only. Roundfix refuses a missing or
+mismatched findings record, an unknown identity, invalid or blank forms,
+dismissals that fail the ancestry or recorded-anchor proof above, invalid
+fixing commits, and a second disposition. It also refuses a finding already
+`dismissed-by-validation` with
 `finding "<ID>" was dismissed by validation (<rule>)`. Every refusal
 exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
 nothing.
