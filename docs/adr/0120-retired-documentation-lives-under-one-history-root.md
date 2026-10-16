@@ -1,7 +1,7 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-12T12:41:53Z
-updated_at: 2026-08-12T14:16:46Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
 superseded_by: null # null or ADR-NNNN
 ---
@@ -26,3 +26,5 @@ Spec 0085's goal that retired material leave the directories an Agent loads by
 default — an Agent reaches `docs/agents/` through `CLAUDE.md` rather than loading
 `docs/` wholesale — while preserving that Spec's other two goals, one archive root
 and one path filter, unchanged.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** The History Root holds only `specs/`, the Archive Records. Retired Findings, Backlog Entries, ADRs and Review Artifacts are deleted, and Git keeps their text.

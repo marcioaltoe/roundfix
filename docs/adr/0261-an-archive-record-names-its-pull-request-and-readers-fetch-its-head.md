@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-12T00:00:00Z
-updated_at: 2026-10-12T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -72,3 +72,5 @@ accepted by proof, not by review. A reader can now reach the network, so the
 fetch is non-interactive, bounded and attempted only when the commit is
 missing and a pull request number is known. Tests use a local bare repository
 as the forge.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** An Archive Record already written stays byte-identical except for a link destination to a file a later retirement deletes, which becomes a Git Locator.

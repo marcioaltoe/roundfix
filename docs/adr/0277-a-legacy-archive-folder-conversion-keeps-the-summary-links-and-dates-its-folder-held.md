@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-13T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -78,3 +78,5 @@ blobs" binds the Delivery Queue's proof of an Archive Command, which never
 sees a conversion. The Plan Digest of `baseline update` already binds each
 record's bytes, so a changed record changes the digest of a plan that selects
 it. The schema stays `roundfix/archive-record/v1`.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** A destination inside the removed folder that is not promoted names the file as a Git Locator, at the record's `source_revision` when the default branch or a tag reaches it and otherwise at the newest such commit that holds the file, never the Archive Record itself.
