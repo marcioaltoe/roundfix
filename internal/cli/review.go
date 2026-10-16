@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -87,6 +88,7 @@ type reviewFindingDisposition struct {
 	Evidence    string `json:"evidence,omitempty"`
 	FixedBy     string `json:"fixedBy,omitempty"`
 	RecordedAt  string `json:"recordedAt"`
+	CurrentHead string `json:"currentHead,omitempty"`
 }
 
 // Below Spec 0194's reviewed 919,745-byte candidate; Spec 0200's
@@ -1008,9 +1010,12 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 	if request.dismiss {
-		if gitState.HEAD != record.HeadCommit {
-			printReviewDisposeRefusal(fmt.Errorf("dismissal requires current HEAD %q to equal reviewed head %q", gitState.HEAD, record.HeadCommit), stderr)
+		if err := proveDismissalAnchor(ctx, gitRunner, gitState.Root, record.HeadCommit, gitState.HEAD, finding); err != nil {
+			printReviewDisposeRefusal(err, stderr)
 			return exitPreflight
+		}
+		if gitState.HEAD != record.HeadCommit {
+			disposition.CurrentHead = gitState.HEAD
 		}
 		disposition.Disposition = "dismissed"
 		disposition.Evidence = request.evidence
@@ -1046,6 +1051,65 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		return exitPreflight
 	}
 	return exitOK
+}
+
+func proveDismissalAnchor(ctx context.Context, git preflight.GitRunner, root, reviewed, head string, finding reviewFinding) error {
+	if head == reviewed {
+		return nil
+	}
+	if _, err := git.RunGit(ctx, root, "merge-base", "--is-ancestor", reviewed, head); err != nil {
+		var exitErr interface{ ExitCode() int }
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return fmt.Errorf("dismissal requires current HEAD %q to equal or descend from reviewed head %q", head, reviewed)
+		}
+		return fmt.Errorf("check dismissal ancestry: %w", err)
+	}
+	if finding.Anchor == nil {
+		return fmt.Errorf("dismissal at HEAD %q after reviewed head %q requires finding %q to record an anchor", head, reviewed, finding.ID)
+	}
+	anchor := *finding.Anchor
+	unchanged := fmt.Errorf("dismissal at HEAD %q after reviewed head %q requires the anchor of finding %q (%s:%d-%d) to be unchanged", head, reviewed, finding.ID, anchor.Path, anchor.StartLine, anchor.EndLine)
+	if anchor.StartLine < 0 || anchor.EndLine < anchor.StartLine {
+		return unchanged
+	}
+	var excerpts [2]string
+	for index, commit := range []string{reviewed, head} {
+		object, err := git.RunGit(ctx, root, "rev-parse", "--verify", "--end-of-options", commit+":"+anchor.Path)
+		if err != nil {
+			return unchanged
+		}
+		object = strings.TrimSpace(object)
+		body, err := git.RunGit(ctx, root, "cat-file", "blob", object)
+		if err != nil {
+			return unchanged
+		}
+		// ExecGitRunner trims trailing LF bytes. Recover them from the immutable
+		// blob's size so a final newline (or an empty final line) remains evidence.
+		sizeText, err := git.RunGit(ctx, root, "cat-file", "-s", object)
+		if err != nil {
+			return unchanged
+		}
+		size, err := strconv.Atoi(strings.TrimSpace(sizeText))
+		if err != nil || size < len(body) {
+			return unchanged
+		}
+		body += strings.Repeat("\n", size-len(body))
+		if anchor.StartLine > 0 {
+			lines := strings.SplitAfter(body, "\n")
+			if lines[len(lines)-1] == "" {
+				lines = lines[:len(lines)-1]
+			}
+			if anchor.EndLine > len(lines) {
+				return unchanged
+			}
+			body = strings.Join(lines[anchor.StartLine-1:anchor.EndLine], "")
+		}
+		excerpts[index] = body
+	}
+	if excerpts[0] != excerpts[1] {
+		return unchanged
+	}
+	return nil
 }
 
 func parseReviewDisposeCommand(args []string) (reviewDisposeRequest, error) {

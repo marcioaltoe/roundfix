@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -109,3 +109,73 @@ dispose` on a temporary repository with a seeded Pre-PR Review Record.
 - `_prd.md` → Goals; User Story 2; Core Feature 2; Core Feature 4; Success Metric 2
 - `_techspec.md` → API Contract 3; API Contract 4; Surface Transcript 4; Surface Transcript 5; Invariants 5, 6 and 7; Data Models; Current behavior; Testing Approach; Build Order 3
 - ADR-0279; ADR-0272; ADR-0196; ADR-0174
+
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification; status and settlement
+remain Daemon-owned.
+
+### Implementation
+
+- `proveDismissalAnchor` preserves the reviewed-head fast path, distinguishes
+  ancestry exit status 1 from other Git failures, requires the recorded anchor,
+  and compares its inclusive line range at the same numbers in both commits.
+  A line-zero anchor compares the complete blob. Blob reads use `rev-parse
+  --verify --end-of-options`, `cat-file blob` and `cat-file -s`: the size
+  restores trailing LF bytes stripped by `ExecGitRunner`, preserving byte
+  comparison without changing the shared runner.
+- Accepted later dismissals append `currentHead` last while retaining the
+  reviewed `headCommit`. Same-head dismissals omit that field. Fix dispositions,
+  record reuse, correction proof, Reviewer Lineage and help were not changed.
+- Added all nine required parallel tests, plus byte/line boundary and ancestry
+  failure tests. The transcript tests assert the complete stdout, stderr and
+  exit code, alongside ledger growth or preservation. They also prove that
+  uncommitted edits cannot decide the anchor comparison and that the recorded
+  anchor takes precedence over the finding text.
+- Updated the review guide with the anchored-lines rule, three refusal classes,
+  whole-file rule and optional `currentHead`; regenerated its Behavior Surface
+  Record through the required record command.
+
+### Focused-check evidence
+
+- Red reproduction before replacing the equality check:
+  `go test -count=1 ./internal/cli -run '^TestReviewDisposeReproducesTheDismissalAfterAFixTranscript$'`
+  exited 1 with the old `dismissal requires current HEAD ... to equal reviewed
+  head ...` refusal.
+- After implementation,
+  `go test -count=1 ./internal/cli -run 'TestReviewDispose(ReproducesThe|RefusesADismissal|ComparesTheWholeFile|AtTheReviewedHead|RequiresEveryAnchoredByte|ReportsAncestryFailure)|TestReviewCorrectionAcceptsADismissalRecordedAfterTheFix'`
+  exited 0. This covers the nine required tests and the extra byte/line and
+  operational-error cases.
+- After the last Go edit,
+  `go test -count=1 ./internal/cli -run '^Test(ReviewDispose|DisposeFixedBy|Review.*Lineage|AReviewOnlyCorrection|ACorrection|ReviewCorrectionRequires|ReviewCorrectionAccepts|ReviewReuses)'`
+  exited 0, including the unchanged existing moved-head dismissal test and
+  focused existing dispose, correction, lineage and reuse checks.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and regenerated only the review guide fingerprint in
+  `docs/references/behavior-surfaces.json`.
+- `git diff --check` exited 0.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Descendant dismissal appends once with both heads | `TestReviewDisposeReproducesTheDismissalAfterAFixTranscript` checks the whole JSON line and a single ledger line, then proves a repeated disposition appends nothing. The fix changes an unrelated part of the same file. |
+| Changed/moved/deleted/missing anchors and non-descendants refuse without appending | The changed-anchor transcript and the four required refusal tests assert exact reasons and unchanged ledger state. Missing files are tested at either commit; additional cases cover missing range ends, empty files, trailing spaces, CR and final LF bytes, and an operational ancestry error. |
+| Reviewed-head dismissal preserves its old line | `TestReviewDisposeAtTheReviewedHeadWritesNoCurrentHead` checks the complete old JSON shape with a legacy unanchored finding and no `currentHead`. |
+| Correction proof accepts the later dismissal | `TestReviewCorrectionAcceptsADismissalRecordedAfterTheFix` persists the parked candidate's record, records an actual fixing commit and later dismissal through the CLI, checks both ledger heads, and gets an accepted `ProveReviewCorrection` result. |
+| Guide states the new rule | The guide now says `anchored lines are unchanged`, describes ancestry/missing-anchor/changed-anchor refusals and `currentHead`, and the required generator updates its fingerprint. |
+
+### Scope and follow-up
+
+The old-wording sweep found the two Roundfix skill review references still
+using the earlier equality rule. Their update belongs to Task 04 and is left
+for that Task. Existing task status changes were preserved. No other Task file
+or Task Graph manifest was edited, and no commit, push or Pull Request was
+made. The authored Verification and repository Verification were not run;
+they remain the Daemon's settlement work.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261016T175249Z_782526ccf3bf55ac`
+- Source commit: `699b4b30c6fd91b20f15e2d59aa91ecfa695a555`
