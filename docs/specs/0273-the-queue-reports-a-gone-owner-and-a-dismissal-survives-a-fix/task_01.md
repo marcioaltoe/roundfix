@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -103,3 +103,104 @@ and repository.
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Core Feature 4; Success Metric 1; User Experience
 - `_techspec.md` → API Contract 1; API Contract 4; Surface Transcript 1; Invariants 1, 2 and 3; Current behavior; Testing Approach; Build Order 1
 - ADR-0279; ADR-0044; ADR-0266
+
+## Result
+
+Implemented the Task 01 slice for Daemon Verification and settlement.
+
+- Added `deliveryOwnerLine` to the existing reader-only status path, after
+  `Warning:` lines and before `Park:` lines. It checks for a recorded PID and
+  an item that can advance, probes liveness before proving the recorded
+  identity, and rechecks liveness after a successful proof to cover an owner
+  exiting during the proof. Proven absence and identity mismatch name
+  `roundfix deliver resume`; other proof errors and a missing controller
+  produce only the prescribed stderr diagnostic.
+- Added all seven required tests in
+  `internal/cli/deliver_owner_status_test.go`, plus an exact transcript test
+  for placement among Warning, Park, limits, usage and Pending Question
+  lines. Every top-level test and subtest calls `t.Parallel()` first. Gone
+  owners use PID `1<<30`; live-owner cases use the test's own PID with the
+  existing fake controller. No test signals an owner.
+- Updated the status paragraph in the deliver guide and ran its sanctioned
+  Behavior Surface Record command. The generator changed only that guide's
+  fingerprint in `docs/references/behavior-surfaces.json`.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Absent or differently identified owner prints one recovery line | `TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning` checks the whole Surface Transcript 1, empty stderr and exit 0 for PID `1<<30`; `TestDeliverStatusNamesAnOwnerWithADifferentIdentity` checks the identity-mismatch line and recorded proof arguments. Both ran in the focused status selection. |
+| Proven owner, no owner or no advanceable item prints no line; uncheckable identity writes a diagnostic | The three required `TestDeliverStatusPrintsNoOwnerLine...` tests and `TestDeliverStatusReportsAnUncheckableOwnerOnStderr` ran in the focused selection. Diagnostic subtests cover unreadable identity, another error and a missing controller, with exact stdout/stderr and exit 0. |
+| Status preserves the owner record, exit code and existing lines | `TestDeliverStatusLeavesTheOwnerRecord` reads the entire queue before and after status and compares it unchanged for absent, mismatched, proven and unreadable owners. Exact transcript tests cover exit 0 and line order; the existing status tests also ran unchanged. Source review confirms `store.OpenReader` remains in use and the helper has no store writer or reclamation call. |
+| Guide names the line and its states | The deliver guide contains the exact required line, identity-mismatch wording, suppression conditions, stderr diagnostic, exit 0 and read-only recovery behavior. The record command exited 0 and regenerated its fingerprint. |
+
+### Focused checks
+
+- Before the implementation,
+  `go test -count=1 ./internal/cli -run '^TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning$'`
+  exited 1: stdout had the checking item, limits and usage but lacked the
+  Owner line; exit 0 and empty stderr already matched.
+- After the implementation,
+  `go test -count=1 ./internal/cli -run '^TestDeliverStatus'` exited 0
+  (`ok roundfix/internal/cli`). This ran the new owner tests and existing
+  status tests together.
+- Required regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 (`ok roundfix/internal/docscontract`).
+- `git diff --check` exited 0. Both Go files were formatted with `gofmt`.
+
+The shell sandbox rejected the configured symlinked writable root before
+execution; the approved escalation mechanism permitted the scoped file work
+and focused checks in the assigned checkout.
+
+The Task's declared Verification, all-deliver selection and repository gates
+remain for the Daemon. Task status and its authored Verification are
+unchanged; no other Task or Task Graph was edited, and no commit, push or
+pull request was made. The feedback investigation below records a separately
+owned fixture blocker.
+
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261016T175249Z_782526ccf3bf55ac/verification/batch-001-attempt-1.log`.
+The repository gate stopped in the existing
+`TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout`: its probe
+ended by SIGKILL instead of the fixture's intended exit 2. No owner-status
+test failure was reported.
+
+Source inspection found that `newDeliveryItemFixture` still builds by copying
+onto `bin/roundfix`, and the fallback test rebuilds that same path in its
+second subtest. ADR-0281 documents this exact intermittent failure and the
+required replacement-by-rename repair. The failing test and its production
+workflow are unchanged by Task 01, and their execution does not call
+`runDeliverStatus` or `deliveryOwnerLine`.
+
+The local report
+`~/Library/Logs/DiagnosticReports/roundfix-2026-10-16-150208.ips` records a
+`roundfix` child of `cli.test` terminated in namespace `CODESIGNING` with
+indicator `Taskgated Invalid Signature`. This supports the failure class in
+ADR-0281; the gate log does not include a child PID, so a direct PID join to
+this specific crash report is unavailable.
+
+Ran one focused check:
+`go test -count=1 ./internal/cli -run '^(TestDeliverStatus.*|TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate)$'`.
+It exited 0 (`ok roundfix/internal/cli`). This checks Task 01's status behavior
+alongside the reported test; a single passing execution does not settle the
+intermittent repository-gate failure. `git diff --check` also exited 0.
+
+No in-scope implementation defect was identified. The fixture repair is
+explicitly assigned to Spec
+`0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced`, Task 02,
+which declares both fixture files and the rebuild regression test. That
+separately owned repair remains a follow-up; no fixture, production workflow,
+Verification configuration, Task status or other Task file was changed here.
+Only this Result was updated during the feedback turn. The full configured
+Verification remains with the Daemon, and its intermittent blocker remains
+unresolved by this slice. No gate was rerun and no commit, push or pull
+request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261016T175249Z_782526ccf3bf55ac`
+- Source commit: `7cdf03d3e43a1d151d5931ca5e73086951d9b7ba`

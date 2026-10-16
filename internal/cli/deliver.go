@@ -382,6 +382,9 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
 		}
 	}
+	if line := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr); line != "" {
+		fmt.Fprintln(stdout, line)
+	}
 	for _, item := range queue.Items {
 		if item.Stage == store.DeliveryStageParked && item.Blocker != delivery.BlockerQueueTokenCeiling {
 			park := delivery.ClassifyPark(queue, item)
@@ -402,6 +405,44 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 	}
 	return exitOK
+}
+
+func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) string {
+	if queue.OwnerPID <= 0 {
+		return ""
+	}
+	canAdvance := false
+	for _, item := range queue.Items {
+		if item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
+			canAdvance = true
+			break
+		}
+	}
+	if !canAdvance {
+		return ""
+	}
+
+	state := "is not running"
+	if store.ProcessAlive(queue.OwnerPID) {
+		var proofErr error
+		if controller == nil {
+			proofErr = errors.New("Delivery Queue owner process controller is required")
+		} else {
+			proofErr = controller.ProveOwner(ctx, queue.OwnerPID, queue.OwnerIdentity)
+		}
+		switch {
+		case proofErr == nil && store.ProcessAlive(queue.OwnerPID):
+			return ""
+		case proofErr == nil:
+			// The process exited between the liveness check and identity proof.
+		case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
+			state = "has a different process identity"
+		default:
+			fmt.Fprintf(stderr, "roundfix: Delivery Queue owner PID %d could not be checked: %v\n", queue.OwnerPID, proofErr)
+			return ""
+		}
+	}
+	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state)
 }
 
 func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
