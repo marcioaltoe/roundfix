@@ -621,7 +621,7 @@ changes; `--no-input` reports diagnosis and writes nothing. Declining an
 adapter migration or any later write leaves every unauthorized target
 unchanged.
 
-The durable contract is [ADR-0055](../history/adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md).
+The durable contract is [ADR-0140](../adr/0140-an-agent-selection-is-proven-as-the-exact-advertised-tuple.md).
 Its environment evidence is preserved in the
 archived Spec 0041 validation record.
 Spec 0036 remains ordered after

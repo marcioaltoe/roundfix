@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-07-21T20:44:54Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-10-14T23:44:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -31,3 +31,9 @@ also supersedes the pre-Verification Agent-failure shortcut retained by Spec
 0024. The existing same-Session Verification Feedback bound, failed Task
 Worktree preservation, independent Task continuation, dependency blocking,
 and Settle Command recovery remain unchanged.
+
+Consolidates ADR-0014 (2026-10-14); the requirements it preserved stand
+here: the Daemon runs a Task's declared Verification verbatim after the
+Agent hands back, only a passing Verification allows the Task commit, and a
+Task whose file declares no Verification command is refused before any Run
+starts. Git keeps ADR-0014's text.

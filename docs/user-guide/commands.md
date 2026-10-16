@@ -50,9 +50,10 @@ installing, substitute `go run ./cmd/roundfix`.
 
 - **stdout** carries only the deterministic report of the requested command.
   Diagnostics, progress, the Run ID, and Agent output go to **stderr**.
-- **Exit codes**: `0` Clean, Stopped, Fetched, or an already-complete no-op;
-  `1` Unresolved, Failed, or Integration Pending; `2` Preflight Validation
-  failure; `3` Clean Unverified (watch only); `130` in-terminal Ctrl-C.
+- **Exit codes**: `0` Clean, Max Rounds Reached, Stopped, Fetched, or an
+  already-complete no-op; `1` Unresolved, Failed, Budget Exceeded, Timed Out,
+  or Integration Pending; `2` Preflight Validation failure; `3` Clean
+  Unverified or Review Skipped (watch only); `130` in-terminal Ctrl-C.
 - A bare `help` requests usage only as a command's first argument. `-h` or
   `--help` requests usage anywhere before `--`; no token after `--` requests
   usage.

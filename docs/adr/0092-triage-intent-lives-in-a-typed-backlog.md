@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-03T00:00:00Z
-updated_at: 2026-08-03T12:00:00Z
+updated_at: 2026-10-14T23:49:02Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -29,3 +29,10 @@ entry is never evidence. Reusing the commit vocabulary was chosen over a
 bespoke type set because the maintainer's own usage showed findings
 absorbing problem reports that were really `fix` intent — the shared word
 is what keeps the intent legible across every artifact it passes through.
+
+**Lifecycle widened (2026-10-14).** The terminal statuses are the Backlog
+Operational Contract's in `docs/agents/docs-layout.md`: `declined`,
+`deferred`, `done`, `deprecated`, `superseded`, `closed` and `cancelled`,
+with the reason the contract requires, and a terminal entry leaves
+`docs/backlog/` for `docs/history/backlog/` as a Reduced History Entry
+(ADR-0258). `open` and `promoted` stand as decided here.

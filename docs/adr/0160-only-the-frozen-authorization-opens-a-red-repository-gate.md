@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-24T00:00:00Z
-updated_at: 2026-09-24T00:00:00Z
+updated_at: 2026-10-14T23:44:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -35,6 +35,5 @@ cannot begin until a new Run resolves an authorization that names it.
 
 ## References
 
-- [ADR-0014: Daemon runs Task Verification and settles status](0014-daemon-runs-task-verification-and-settles-status.md)
 - [ADR-0057: Daemon exclusively owns Implement Task status](0057-daemon-exclusively-owns-implement-task-status.md)
 - [Spec 0158 technical specification](../specs/0158-daemon-verification-and-access-readiness/_techspec.md)

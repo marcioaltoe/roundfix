@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-09-30T00:00:00Z
+updated_at: 2026-10-14T23:44:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -51,7 +51,6 @@ It names the head the reviewer last saw. The Delivery Queue advances on it as
 it advances on `findings-dismissed`.
 
 This decision refines
-[ADR-0153](0153-pre-pr-review-is-an-explicit-provider-policy.md),
-[ADR-0018](0018-one-agent-session-per-run.md) and
-[ADR-0051](0051-tasks-and-qa-own-agent-sessions.md). It supersedes none of
-them.
+[ADR-0153](0153-pre-pr-review-is-an-explicit-provider-policy.md) and
+[ADR-0051](0051-tasks-and-qa-own-agent-sessions.md), which consolidated
+ADR-0018. It supersedes none of them.
