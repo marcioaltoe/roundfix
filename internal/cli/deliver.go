@@ -141,6 +141,14 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return nil
 	}
 
+	if _, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot); err != nil {
+		reason := fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
+		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, reason, stderr)
+	} else if !found {
+		reason := fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, missingDeliveryQueue(ctx, runStore, loaded.GitRoot))
+		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, reason, stderr)
+	}
+
 	dependencies := commandDependenciesForContext(ctx)
 	engine := dependencies.newDeliveryEngine(runStore, loaded)
 	if engine == nil {
@@ -198,6 +206,21 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	printDeliverRetryResult(stdout, specSlug, result)
 	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
+}
+
+func missingDeliveryQueue(ctx context.Context, runStore *store.Store, gitRoot string) error {
+	reason := fmt.Errorf("Delivery Queue for repository %q does not exist", gitRoot)
+	worktrees, err := runStore.DeliveryQueueItemWorktrees(ctx)
+	if err != nil {
+		return reason
+	}
+	resolvedRoot := roundconfig.CanonicalizeResolvedPath(gitRoot)
+	for _, item := range worktrees {
+		if item.GitRoot != gitRoot && roundconfig.CanonicalizeResolvedPath(item.Worktree) == resolvedRoot {
+			return fmt.Errorf("%w; this checkout is the item worktree of %s in the Delivery Queue of %q; run the command in %q", reason, item.SpecSlug, item.GitRoot, item.GitRoot)
+		}
+	}
+	return reason
 }
 
 func printDeliverRetryRefusal(ctx context.Context, runStore *store.Store, gitRoot, specSlug string, err error, stderr io.Writer) int {
@@ -364,7 +387,7 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		return printDeliverFailure("status", err, stderr)
 	}
 	if !found {
-		return printDeliverFailure("status", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
+		return printDeliverFailure("status", missingDeliveryQueue(ctx, runStore, loaded.GitRoot), stderr)
 	}
 	for _, item := range queue.Items {
 		blocker := item.Blocker
@@ -487,7 +510,7 @@ func runDeliverResume(ctx context.Context, args []string, stdout, stderr io.Writ
 		return printDeliverFailure("resume", err, stderr)
 	}
 	if !found {
-		return printDeliverFailure("resume", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
+		return printDeliverFailure("resume", missingDeliveryQueue(ctx, runStore, loaded.GitRoot), stderr)
 	}
 	if queue.OwnerPID > 0 {
 		ownerState := "is not running"
@@ -540,7 +563,7 @@ func runDeliverStop(ctx context.Context, args []string, stdout, stderr io.Writer
 		return printDeliverFailure("stop", err, stderr)
 	}
 	if !found {
-		return printDeliverFailure("stop", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
+		return printDeliverFailure("stop", missingDeliveryQueue(ctx, runStore, loaded.GitRoot), stderr)
 	}
 	if queue.OwnerPID == 0 {
 		fmt.Fprintln(stdout, "Delivery Queue owner is not running.")

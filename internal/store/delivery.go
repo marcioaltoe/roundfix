@@ -51,6 +51,11 @@ type DeliveryQueue struct {
 	Items         []DeliveryQueueItem
 }
 
+// DeliveryQueueItemWorktree identifies a recorded item worktree and its owning checkout.
+type DeliveryQueueItemWorktree struct {
+	GitRoot, SpecSlug, Worktree string
+}
+
 type DeliveryQueueItem struct {
 	SpecSlug            string
 	Position            int
@@ -257,6 +262,32 @@ ORDER BY position`, gitRoot)
 		return DeliveryQueue{}, false, fmt.Errorf("iterate Delivery Queue items: %w", err)
 	}
 	return queue, true, nil
+}
+
+// DeliveryQueueItemWorktrees lists recorded item worktrees in queue and position order.
+// It is read-only and can be used with a reader store.
+func (store *Store) DeliveryQueueItemWorktrees(ctx context.Context) ([]DeliveryQueueItemWorktree, error) {
+	rows, err := store.db.QueryContext(ctx, `
+SELECT git_root, spec_slug, worktree
+FROM delivery_queue_items
+WHERE worktree <> ''
+ORDER BY git_root, position`)
+	if err != nil {
+		return nil, fmt.Errorf("list Delivery Queue item worktrees: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	worktrees := []DeliveryQueueItemWorktree{}
+	for rows.Next() {
+		var item DeliveryQueueItemWorktree
+		if err := rows.Scan(&item.GitRoot, &item.SpecSlug, &item.Worktree); err != nil {
+			return nil, fmt.Errorf("scan Delivery Queue item worktree: %w", err)
+		}
+		worktrees = append(worktrees, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Delivery Queue item worktrees: %w", err)
+	}
+	return worktrees, nil
 }
 
 // ClaimDeliveryQueueOwner records the process that exclusively advances one

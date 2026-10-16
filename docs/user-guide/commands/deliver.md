@@ -557,6 +557,16 @@ No side effects:
 exit: 2
 ```
 
+When `deliver retry`, `status`, `resume` or `stop` runs in a recorded item
+worktree that has no queue of its own, it exits `2` and names the item and the
+checkout that owns its queue. The reason adds `this checkout is the item
+worktree of <slug> in the Delivery Queue of "<checkout>"; run the command in
+"<checkout>"`. Run the command from that owning checkout. The refusal does not
+act on that queue: it changes no item or owner record and starts no owner.
+`retry` keeps its `Retry refused` layout; the other three commands keep their
+`Preflight failed` layout. Outside a recorded item worktree, the missing-queue
+reason stays unchanged.
+
 ### Token usage
 
 `deliver start --max-tokens 5000000 <slug>...` records an optional queue token
