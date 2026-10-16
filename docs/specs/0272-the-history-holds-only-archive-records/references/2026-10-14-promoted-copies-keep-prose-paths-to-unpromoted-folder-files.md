@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-10-14
-spec: null
+spec: 0272-the-history-holds-only-archive-records
 reason: null
 ---
 

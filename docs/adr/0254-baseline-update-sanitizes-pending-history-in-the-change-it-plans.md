@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-08T00:00:00Z
-updated_at: 2026-10-08T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -77,3 +77,5 @@ Under Lenient Legacy Reading, a legacy `unproven` list of maps is accepted.
 Each map becomes one stable text line in the Archive Record: `row <row>: <claim>`
 followed by the other keys in lexical order. Active Specs keep the string-only
 list.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** The update's history section plans the same removals as the History Sanitize Command and lists each citation the removal breaks with its Git Locator; one plan and one digest stay as decided here.

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-08T00:00:00Z
-updated_at: 2026-10-08T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -70,3 +70,5 @@ retained, and the Go clause is added. The audit estimates about 9–11 minutes
 of wall time saved per Spec from whole-transcript assertion and most of the
 remaining overrides from reachable evidence. Those numbers rest on the audit's
 counts, not on a measurement this ADR makes.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** A retirement no longer writes reduced history: it deletes the file, and Git keeps the text. The authoring rules of this decision stand.

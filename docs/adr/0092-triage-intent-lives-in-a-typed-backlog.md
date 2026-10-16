@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-03T00:00:00Z
-updated_at: 2026-10-14T23:49:02Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -36,3 +36,5 @@ Operational Contract's in `docs/agents/docs-layout.md`: `declined`,
 with the reason the contract requires, and a terminal entry leaves
 `docs/backlog/` for `docs/history/backlog/` as a Reduced History Entry
 (ADR-0258). `open` and `promoted` stand as decided here.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** A terminal Backlog Entry, `deferred` included, is deleted in the change that records its status; it no longer becomes a Reduced History Entry under `docs/history/backlog/`. Promotion is unchanged.

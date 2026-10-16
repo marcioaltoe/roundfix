@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-14
-spec: null
+spec: 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix
 reason: null
 ---
 

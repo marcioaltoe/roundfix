@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-07T00:00:00Z
-updated_at: 2026-10-07T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -79,3 +79,5 @@ original text stays in Git at the named revision and at the `history-full`
 tag. The Archive Record schema stays `roundfix/archive-record/v1` and gains
 the disposition `no-qa`. Git history is not rewritten and the pack does not
 shrink ("Não agora", 2026-10-06).
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** The sanitize removes Reduced History Entries, retired ADRs and `superseded` Archive Records that nothing cites and that hold no regeneration grant, instead of reducing anything, and rewrites each citation it breaks to a Git Locator. The dry run, the batches and the `history-full` tag stay as decided here.

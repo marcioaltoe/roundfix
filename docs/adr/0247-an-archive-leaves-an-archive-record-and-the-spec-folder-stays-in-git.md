@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-06T00:00:00Z
-updated_at: 2026-10-06T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -89,3 +89,5 @@ where it knows them. The `### QA settlement` tables of the archive-spec,
 qa-gate and Roundfix skills change identically. A passing, partial or
 override archive leaves an Archive Record, with the override's reason when
 overridden, instead of keeping the Spec, its QA report and evidence.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** The archive writes each promoted copy through the Legacy Link Rebase, so a destination or path inside the removed folder that is not promoted becomes a Git Locator and an outward destination keeps its target; the exact-archive proof compares each copy with that rewrite of its removed file instead of with the blob.

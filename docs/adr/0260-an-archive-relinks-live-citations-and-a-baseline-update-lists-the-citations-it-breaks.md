@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-12T00:00:00Z
-updated_at: 2026-10-12T00:00:00Z
+updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -72,3 +72,7 @@ while a live document cites the folder would stall the normal queue order,
 owner first. Automatic promotion by the update was declined by the maintainer
 on 2026-10-12. Rewriting citing files from the update would change live
 documents in a plan whose subject is the History Root.
+
+**Extended by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** A citation of a file that a retirement deletes, from a Live Document or an Archive Record, is rewritten to a Git Locator `<path>@<commit>` whose commit holds the file and is reachable from the default branch or a tag; the archive's promotion of cited files stays as decided here.
+
+**Narrowed by [ADR-0278](0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md) (2026-10-16).** A promoted copy no longer keeps its bytes: the archive rebases its outward relative destinations and turns each citation of an unpromoted file of the removed folder into a Git Locator. Live Documents keep the Archive Relink decided here.

@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-10-14
-spec: null
+spec: 0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd
 reason: null
 ---
 

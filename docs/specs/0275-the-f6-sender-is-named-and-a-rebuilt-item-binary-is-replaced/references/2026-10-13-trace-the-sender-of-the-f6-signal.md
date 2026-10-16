@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-13
-spec: null
+spec: 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced
 reason: null
 ---
 
