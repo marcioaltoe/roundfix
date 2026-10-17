@@ -70,11 +70,17 @@ refresh that reports the repository current.
    and fix the broken link in
    `docs/references/jev-router-measurement-2026-10-04.md` the same way. No
    other file is edited by hand.
-6. MUST run the Managed Refresh,
+6. MUST run the Managed Refresh itself, as this Task's own implementation
+   work:
    `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`,
    which refreshes the managed guides and the Setup Manifest and applies the
    history section; then run it again without `--yes` and require exit 0 with
-   no pending history. After it, the History Root holds only Archive Records
+   no pending history. The run with `--yes` is not a Verification command and
+   the Daemon never runs it: the Verification below only runs the refresh
+   without `--yes`, to prove the tree current after this Task's own refresh.
+   A diff that still holds `docs/history/findings` or `docs/history/backlog`
+   fails settlement on its `deletes:` entries, as the Run of 2026-10-17 06:28
+   UTC did when its Agent left the refresh to the Daemon. After it, the History Root holds only Archive Records
    (243 files), none of the ten `superseded` records 0120 to 0129 remains,
    the five user guide and reference links to reduced Findings and the 40
    broken links in Archive Records carry Git Locators, and
