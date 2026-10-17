@@ -354,7 +354,24 @@ commit, then run `roundfix deliver retry <slug>`. Retry accepts a head descended
 from the candidate, records it, and resumes at `reviewing`.
 
 `deliver status` prints each item's Spec slug, stage, blocker and worktree.
-After any `Warning:` lines and before `Limits:`, it prints one line per parked
+When the queue records an owner PID, at least one item is neither `merged` nor
+`parked`, and that PID is proven absent, it adds this line after any `Warning:`
+lines and before any `Park:` lines:
+
+```text
+Owner: Delivery Queue owner PID <pid> is not running; run roundfix deliver resume
+```
+
+If the PID is alive but its start-time identity differs from the recorded
+owner identity, the state is `has a different process identity` instead of
+`is not running`. A proven live owner, no recorded owner, or a queue whose
+items are all merged or parked adds no `Owner:` line. If the identity cannot
+be checked, status adds no `Owner:` line and writes
+`roundfix: Delivery Queue owner PID <pid> could not be checked: <error>` to
+stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
+the recorded owner PID and identity for `deliver resume` to recover.
+
+After any `Owner:` line and before `Limits:`, it prints one line per parked
 item in queue order, except `queue-token-ceiling` (see Token usage below):
 
 ```text
@@ -539,6 +556,16 @@ No side effects:
   Roundfix did not change the Delivery Queue item, start a queue owner, commit, or push.
 exit: 2
 ```
+
+When `deliver retry`, `status`, `resume` or `stop` runs in a recorded item
+worktree that has no queue of its own, it exits `2` and names the item and the
+checkout that owns its queue. The reason adds `this checkout is the item
+worktree of <slug> in the Delivery Queue of "<checkout>"; run the command in
+"<checkout>"`. Run the command from that owning checkout. The refusal does not
+act on that queue: it changes no item or owner record and starts no owner.
+`retry` keeps its `Retry refused` layout; the other three commands keep their
+`Preflight failed` layout. Outside a recorded item worktree, the missing-queue
+reason stays unchanged.
 
 ### Token usage
 

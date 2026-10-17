@@ -141,6 +141,14 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return nil
 	}
 
+	if _, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot); err != nil {
+		reason := fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
+		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, reason, stderr)
+	} else if !found {
+		reason := fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, missingDeliveryQueue(ctx, runStore, loaded.GitRoot))
+		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, reason, stderr)
+	}
+
 	dependencies := commandDependenciesForContext(ctx)
 	engine := dependencies.newDeliveryEngine(runStore, loaded)
 	if engine == nil {
@@ -198,6 +206,21 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	printDeliverRetryResult(stdout, specSlug, result)
 	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
+}
+
+func missingDeliveryQueue(ctx context.Context, runStore *store.Store, gitRoot string) error {
+	reason := fmt.Errorf("Delivery Queue for repository %q does not exist", gitRoot)
+	worktrees, err := runStore.DeliveryQueueItemWorktrees(ctx)
+	if err != nil {
+		return reason
+	}
+	resolvedRoot := roundconfig.CanonicalizeResolvedPath(gitRoot)
+	for _, item := range worktrees {
+		if item.GitRoot != gitRoot && roundconfig.CanonicalizeResolvedPath(item.Worktree) == resolvedRoot {
+			return fmt.Errorf("%w; this checkout is the item worktree of %s in the Delivery Queue of %q; run the command in %q", reason, item.SpecSlug, item.GitRoot, item.GitRoot)
+		}
+	}
+	return reason
 }
 
 func printDeliverRetryRefusal(ctx context.Context, runStore *store.Store, gitRoot, specSlug string, err error, stderr io.Writer) int {
@@ -364,7 +387,7 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		return printDeliverFailure("status", err, stderr)
 	}
 	if !found {
-		return printDeliverFailure("status", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
+		return printDeliverFailure("status", missingDeliveryQueue(ctx, runStore, loaded.GitRoot), stderr)
 	}
 	for _, item := range queue.Items {
 		blocker := item.Blocker
@@ -381,6 +404,9 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		if item.Warning != "" {
 			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
 		}
+	}
+	if line := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr); line != "" {
+		fmt.Fprintln(stdout, line)
 	}
 	for _, item := range queue.Items {
 		if item.Stage == store.DeliveryStageParked && item.Blocker != delivery.BlockerQueueTokenCeiling {
@@ -402,6 +428,44 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 	}
 	return exitOK
+}
+
+func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) string {
+	if queue.OwnerPID <= 0 {
+		return ""
+	}
+	canAdvance := false
+	for _, item := range queue.Items {
+		if item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
+			canAdvance = true
+			break
+		}
+	}
+	if !canAdvance {
+		return ""
+	}
+
+	state := "is not running"
+	if store.ProcessAlive(queue.OwnerPID) {
+		var proofErr error
+		if controller == nil {
+			proofErr = errors.New("Delivery Queue owner process controller is required")
+		} else {
+			proofErr = controller.ProveOwner(ctx, queue.OwnerPID, queue.OwnerIdentity)
+		}
+		switch {
+		case proofErr == nil && store.ProcessAlive(queue.OwnerPID):
+			return ""
+		case proofErr == nil:
+			// The process exited between the liveness check and identity proof.
+		case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
+			state = "has a different process identity"
+		default:
+			fmt.Fprintf(stderr, "roundfix: Delivery Queue owner PID %d could not be checked: %v\n", queue.OwnerPID, proofErr)
+			return ""
+		}
+	}
+	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state)
 }
 
 func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
@@ -446,7 +510,7 @@ func runDeliverResume(ctx context.Context, args []string, stdout, stderr io.Writ
 		return printDeliverFailure("resume", err, stderr)
 	}
 	if !found {
-		return printDeliverFailure("resume", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
+		return printDeliverFailure("resume", missingDeliveryQueue(ctx, runStore, loaded.GitRoot), stderr)
 	}
 	if queue.OwnerPID > 0 {
 		ownerState := "is not running"
@@ -499,7 +563,7 @@ func runDeliverStop(ctx context.Context, args []string, stdout, stderr io.Writer
 		return printDeliverFailure("stop", err, stderr)
 	}
 	if !found {
-		return printDeliverFailure("stop", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
+		return printDeliverFailure("stop", missingDeliveryQueue(ctx, runStore, loaded.GitRoot), stderr)
 	}
 	if queue.OwnerPID == 0 {
 		fmt.Fprintln(stdout, "Delivery Queue owner is not running.")
