@@ -1,8 +1,0 @@
-$ ./bin/roundfix archive 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix --plan
-archive plan for 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix: removes 39 file(s) (188558 bytes) and writes docs/history/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix.md
-core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-16.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 26 file(s) (67927 bytes) under qa/evidence/
-candidate references/2026-10-14-a-dismissal-after-a-committed-fix-needs-a-reset.md 1226 bytes: repository_record (p=0.72)
-candidate references/2026-10-14-deliver-status-does-not-say-the-queue-owner-is-gone.md 972 bytes: repository_record (p=0.84)
-promote with: roundfix archive 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix --promote <path>
-exit: 0

@@ -1,5 +1,0 @@
-Fixture preparation corrections, before row settlement:
-1. A seed repository without docs/specs hit the existing configuration preflight (exit 2). Added a tracked docs/specs/.keep in disposable fixture histories and repeated the intended journey.
-2. A proposed review dispositions read is not a public command (exit 2: unexpected argument). Used the documented ledger file and fresh duplicate-command refusal as the independent read/persistence proof. No provider was invoked.
-3. An initial shell glob for an absent schema filename matched nothing; switched to rg against known directories.
-No product source or tests were changed.

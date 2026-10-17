@@ -1,4 +1,0 @@
-$ go test -count=1 -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills
-ok  	roundfix/skills	0.168s
-
-exit: 0

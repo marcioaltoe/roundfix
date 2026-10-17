@@ -1,4 +1,0 @@
-$ go test -count=1 -run Deliver|ReviewDispose|Disposition|Correction|Lineage|Reus ./internal/cli
-ok  	roundfix/internal/cli	13.057s
-
-exit: 0

@@ -1,5 +1,0 @@
-$ git worktree add --detach /private/tmp/rf273-rerun-s1suy30p/head-tree 8609170db7a60c606e47c82fbb5102dabdcd1a3c
-HEAD is now at 8609170d docs: the Roundfix skill and the glossary describe the owner report, the refusal and the dismissal
-Preparing worktree (detached HEAD 8609170d)
-
-exit: 0

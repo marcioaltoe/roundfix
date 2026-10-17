@@ -1,3 +1,0 @@
-$ go build -o /private/tmp/rf273-rerun-s1suy30p/fixture ./qa273fixture
-
-exit: 0

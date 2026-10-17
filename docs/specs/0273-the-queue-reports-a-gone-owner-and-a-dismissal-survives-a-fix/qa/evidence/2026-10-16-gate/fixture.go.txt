@@ -1,4 +1,0 @@
-package main
-import("context";"fmt";"os";"strconv";"roundfix/internal/store")
-func main(){ctx:=context.Background(); if os.Args[1]=="identity" {pid,e:=strconv.Atoi(os.Args[2]);must(e); id,e:=store.OwnerProcessIdentity(ctx,pid);must(e);fmt.Print(id);return}; home,root:=os.Args[2],os.Args[3];s,e:=store.Open(ctx,home);must(e);defer s.Close();if os.Args[1]=="record"{_,_,_,e=s.RecordDeliveryQueueItemWorktree(ctx,root,"0300-example","fix/qa-item",os.Args[4]);must(e);fmt.Println("worktree recorded through store API");return};q,e:=s.CreateDeliveryQueue(ctx,root,[]string{"0300-example"});must(e);item:=q.Items[0];item.Stage=store.DeliveryStageChecking;must(s.UpdateDeliveryQueueItem(ctx,root,item));must(s.ClaimDeliveryQueueOwner(ctx,root,1<<30,"recorded-owner-identity"));if len(os.Args)>4 {_,_,_,e=s.RecordDeliveryQueueItemWorktree(ctx,root,"0300-example","fix/qa-item",os.Args[4]);must(e)};fmt.Println("fixture seeded")}
-func must(e error){if e!=nil{panic(e)}}

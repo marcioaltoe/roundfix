@@ -1,3 +1,0 @@
-$ git worktree remove /private/tmp/rf273-rerun-s1suy30p/base-tree
-
-exit: 0
