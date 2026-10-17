@@ -1,6 +1,0 @@
-$ git worktree add --detach /private/tmp/roundfix-0272-qa01-hbrsthy1/base-worktree 61d95aa3a03103c64f7e7f0823945094308f6d55
-stdout:
-HEAD is now at 61d95aa3 docs: have 0272 name every removed file and fix its QA criteria (#554)
-stderr:
-Preparing worktree (detached HEAD 61d95aa3)
-exit: 0

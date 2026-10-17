@@ -1,5 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0272-the-history-holds-only-archive-records-82392213e09195f8-b832685a-bb83ae64/run_20261017T065250Z_4a0bb2ff0617aa6a/bin/roundfix --version
-stdout:
-roundfix 0.83.0 (f61afa85-dirty, built 2026-10-17 04:14:16 -0300)
-stderr:
-exit: 0

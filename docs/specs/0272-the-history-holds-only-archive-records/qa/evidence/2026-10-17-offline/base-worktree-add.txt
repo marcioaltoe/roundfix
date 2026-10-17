@@ -1,6 +1,0 @@
-$ git worktree add --detach /private/tmp/roundfix-0272-qa-olcgfa70/base-worktree 7d3d05843280e0980c2d62a257af826806cc7018
-stdout:
-HEAD is now at 7d3d0584 docs: say that 0272 task_04 runs the Managed Refresh itself (#553)
-stderr:
-Preparing worktree (detached HEAD 7d3d0584)
-exit: 0

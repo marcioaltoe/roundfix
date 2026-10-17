@@ -1,5 +1,0 @@
-$ make build
-stdout:
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=61d95aa3' -X 'roundfix/internal/app.BuildTime=2026-10-17 05:05:52 -0300'" -o bin/roundfix ./cmd/roundfix
-stderr:
-exit: 0
