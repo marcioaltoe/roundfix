@@ -43,7 +43,7 @@ func TestDeliveryItemBinaryCopyStartsWhileTheOwnerForks(t *testing.T) {
 			t.Fatal(err)
 		}
 		// A distinct trailer gives each build its own copy directory.
-		if err := os.WriteFile(source, append(append([]byte(nil), program...), fmt.Sprintf("build %d", i)...), 0o755); err != nil {
+		if err := os.WriteFile(source, append(append([]byte(nil), program...), fmt.Sprintf("build %d", i)...), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		copied, err := copyDeliveryItemBinary(source, filepath.Join(dir, "item-binary"))
