@@ -187,7 +187,7 @@ a tag. Other citations are listed and left unchanged. The rewrite reads only
 this repository and writes only the planned citing files.
 
 History units are Legacy Archive Folder conversions, then `findings`,
-`backlog`, `adr`, `reviews`, `handoffs` and `superseded` removals. They include
+`backlog`, `adr`, `reviews`, `handoffs` and `superseded` removals, followed by `record-links` repairs. They include
 Reduced History Entries, legacy family trees, terminal active Findings and
 Backlog Entries, retired ADRs and finished Review Artifacts the Baseline used
 to relocate. A superseded ADR whose accepted successor does not name it refuses
@@ -196,10 +196,22 @@ regeneration grants. Its citation check covers every surviving tracked Markdown
 file outside skill trees and `testdata`, including bounded slugs in front matter.
 Legacy Spec folder relocations and the live review root rename still apply.
 
+After removal units, `record-links` repairs each surviving Archive Record's
+relative links to missing files and to itself. It tries the record-relative
+path, then the record's original `source` folder; the first reachable commit
+holding the target wins. A self-link becomes the Git Locator of the source
+folder. When neither path has a qualifying commit, the record-relative path
+and its pull request are used. Code spans, fences, URLs and Git Locators are
+not relative links. A record removed by the same plan is skipped.
+
+The repair line is `- record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
+A JSON `rewrite` unit carries `links`; `History units` file and byte totals
+count only files that leave the tree.
+
 Removal lines read `- <unit>: removes <n> file(s) (<b> bytes)`. A rewritten
 citation appends `; rewrites to <replacement>`. `History applied:` drops the
 old reduction count and appends `; rewrote <c> citation(s) in <m> file(s)` after
-the History Full Tag clause. JSON unit actions are `convert` or `remove` and
+the History Full Tag clause. JSON unit actions are `convert`, `remove` or `rewrite` and
 omit `bytesAfter`; `applied.reduced` stays 0 and the applied object adds
 `rewrittenCitations` and `rewrittenFiles`. The Plan Digest binds the removals
 and each citation's `rewrite`, with no `bytesAfter`. A plan writes nothing and

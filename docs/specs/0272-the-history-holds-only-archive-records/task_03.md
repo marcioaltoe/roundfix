@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0272-the-history-holds-only-archive-records
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -187,3 +187,117 @@ fixtures, both commands and the skill and glossary checks.
 - `_prd.md` → Goals; User Story 2; Core Feature 2; Core Feature 7; Success Metric 2; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 11; API Contract 12; API Contract 13; API Contract 14; Invariants 1, 2 and 5; Testing Approach; Build Order 3; Glossary
 - ADR-0278; ADR-0183; ADR-0244; ADR-0256; ADR-0261
+
+## Result
+
+Task 03 implementation is prepared for Daemon Verification. The Daemon's
+`status: in_progress` is preserved. The declared Verification commands,
+repository Verification and incremental Verification were not run. No commit,
+push, branch change or pull request was made. The only pre-existing changed
+path was this Task file's Daemon-owned status update.
+
+### Implementation and acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Retained families, reduced entries, terminal Findings and broken/self links are reported only after adoption. | `SC-HISTORY-RETAINED` runs at `prd` in both Check paths. Its gate reads the manifest-recorded `guide.docs-layout` region and collapses whitespace; a closed gate records its reason. `TestHistoryRetainedIsSilentBeforeTheBaselineCarriesTheRule` plants retained files and links with the sentence absent, including a decoy sentence outside the recorded region. `TestHistoryRetainedReportsRetainedFamiliesAndTerminalFindings` reports all five families, a legacy reduced entry and a done Finding, and accepts a wrapped sentinel. Both passed. |
+| Diagnostics name the deletion or replacement Git Locator. | File diagnostics name deletion and Git retention. Record links share `ResolveRecordLink` with the writer; other links and invalid locators use `ResolveGitLocator`. Object checks are batched, with reachability proved once per distinct commit. `TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator` covers records, Live Documents and the user guide. `TestHistoryRetainedReportsAGitLocatorNoReachableCommitHolds` covers an unreachable commit, an absent object, a reachable commit lacking its path and a tag-retained source. Both passed. Outside Git, locator resolution/validation is skipped by name while file diagnostics run. |
+| Both commands rewrite broken record links. | The final `record-links` unit skips records selected for removal, emits the required text and JSON rewrite shapes, binds repairs into the Plan Digest and applies after removal citations. Removal totals exclude repaired records; overlapping rewrites count each file once. `TestHistorySanitizeRewritesBrokenRecordLinks` and `TestBaselineUpdateRewritesBrokenRecordLinks` passed for repair-only and combined removal/repair scenarios, checking dry-run immutability, removal skips, digest binding, output, locators, combined counts and a current second plan. Baseline text and JSON are both checked. |
+| Skills and glossary describe deletion and Git Locators. | The three guide pages, five Roundfix references and Archive Relink section were revised; both owned skill mirrors and versions were regenerated. `CONTEXT.md` adds Git Locator and revises all eight required terms, each citing ADR-0278. Focused inspection confirmed the required phrases, all nine ADR citations, exact mirror equality and byte-identical QA settlement sections in canonical and embedded copies. The Behavior Surface Record was regenerated successfully. |
+
+`TestMissingRelativeLinksFindsBrokenAndSelfLinks` passed for inline links,
+images, reference definitions, existing targets and the exclusions for code,
+fences, URLs, anchors and Git Locators.
+`TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource` passed for
+record-relative precedence, source-folder fallback, self-link replacement,
+pull-request fallback, skip selection, read-only planning and an empty second
+plan. Record repairs operate only on link spans: the test also parses the
+result to prove `source` metadata and prose paths remain unchanged.
+
+Claim Receipts now read active ADRs first, then the newest addition or
+modification reachable from HEAD in local Git, including removed active or
+history ADR paths. Historical symlink blobs and ambiguous candidates do not
+prove a receipt. Rollup members resolve as pending/partial active Findings,
+existing archived files, or deleted basenames in local HEAD history.
+`TestReceiptsResolveARemovedADRThroughGit`, `TestRollupMembersResolveThroughGit`
+and `TestTerminalBacklogEntryFixSaysDelete` passed. `SC-ARCHIVE-LICENSE` was
+left unchanged.
+
+`SC-HISTORY-RETAINED` joins the corpus code set and golden at 0, with the
+required update sentence and matching characterization pin.
+`TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095` passed in
+the focused run. The real-tree corpus Verification remains Daemon-owned;
+this Task leaves activation of the guide sentence and repository cleanup to
+task_04.
+
+### Existing tests intentionally changed
+
+- `TestReceiptsResolveArchivedAndInactiveRecords`: its archived ADR is committed
+  and deleted, and the receipt resolves its Git source and revision.
+- `TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks`: retains active
+  ambiguity and directory-symlink refusals, and adds ambiguous Git records and
+  an uncommitted history ADR that must not serve as a filesystem fallback.
+- `TestCheckRollupMember`: the active member is pending, satisfying the new
+  unresolved-member contract; legacy archived-member resolution remains tested.
+- `TestCheckBacklogUnmoved`: the declined-entry fix says to delete the entry.
+- `TestTerminalBacklogEntryLeftActiveIsUnmoved`: the fix requires its missing
+  reason and deletion, with Git retaining the text.
+- `TestADeferredBacklogEntryLeftActiveIsReported`: the deferred-entry fix names
+  deletion instead of a history destination.
+
+No existing top-level test was removed or renamed. The corpus pin's intentional
+change is described above. All eleven required new tests call `t.Parallel()`
+as their first statement; focused source inspection confirmed this.
+
+### Focused commands and outcomes
+
+Commands below are shown without the host's `rtk proxy` wrapper.
+
+- `go test ./internal/spec ./internal/speccheck ./internal/cli -run 'Test(MissingRelativeLinks|PlanRecordLinks|HistoryRetained|ReceiptsResolveA|ReceiptSourcesRefuse|RollupMembersResolve|TerminalBacklogEntryFix|HistorySanitizeRewrites|BaselineUpdateRewrites|ArchiveLayoutCharacterizationPinsCorpus)' -count=1`
+  — exit 0 in all three packages.
+- `go test ./internal/cli ./internal/speccheck -run 'Test(BaselineUpdateRewrites|HistorySanitizeRewrites|CheckRollupMember|RollupMembersResolve|ReducedFindings)' -count=1`
+  — exit 0 after the last source/test edits, including the baseline text assertions.
+- `go test ./internal/cli -run '^Test(BaselineUpdate|SpecCheck)' -count=1`
+  — exit 0 for the broader command compatibility check.
+- `go test ./internal/cli ./internal/spec ./internal/speccheck -run 'Test(History|BaselineHistory|BaselineUpdateHistory|BaselineUpdateRemoves|BaselineUpdateRewrites|MissingRelativeLinks|PlanRecordLinks|ReducedFinding|ReducedFindings|Receipts|Receipt|CheckRollup|CheckBacklog|TerminalBacklog|ADeferred)' -count=1`
+  — exit 0 in all three packages on a stable tree. An earlier run overlapped
+  artifact regeneration and suiteguard rejected the temporary catalog writes;
+  it was rerun after regeneration finished, without changing guard behavior.
+- `make skills-sync` — exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; final versions are Roundfix `0.1.81` and archive-spec `0.0.13`.
+- `make baseline-digests` — exit 0; final report says no derived artifact changes.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0; regenerated `docs/references/behavior-surfaces.json`.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+  — wrote the eleven new test names and passed its assertions, but exited 1
+  because suiteguard rejected the generated record write. See the bounded
+  follow-up below.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1`
+  — exit 0; the regenerated inventory has no regression, without writing it.
+- Focused Python inspections — exit 0 for required phrases, glossary citations,
+  parallel declarations, mirror equality, QA settlement preservation, corpus
+  registration and unchanged ownership of all other Task files and `_tasks.md`.
+- `git diff --check` — exit 0, including the final Result formatting.
+
+Initial focused failures were fixture errors: unnumbered filenames were not
+Archive Records, deleting a fixture's only Spec removed its empty Spec Root,
+and two receipt subtests lacked a carrier PRD. The fixtures were corrected to
+exercise the existing public contracts, and the focused runs above passed.
+
+### Bounded follow-up
+
+The coverage generator limitation already recorded by task_02 remains:
+`internal/spec/coverage_test.go` does not call
+`suiteguard.DeclareSanctionedRegeneration` when its update flag is set. The
+Spec sanctions the exact command and output, but suiteguard also requires
+that in-process declaration. That owning source is a Governed Path outside
+this Spec's mutation grant, so it was not edited and no guard was bypassed.
+The authorized generated inventory is retained and its non-writing check
+passes. Repairing the generator registration belongs to separately authorized
+tooling work. No new authority or change to another Task was inferred.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T040614Z_129d30ef10580a78`
+- Source commit: `30ee7e816cc848de95a52b6eb7005c0c8d1ad355`

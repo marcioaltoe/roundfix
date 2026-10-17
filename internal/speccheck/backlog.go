@@ -15,8 +15,7 @@ import (
 
 // CodeBacklogUnmoved identifies a promoted or terminal Backlog Entry that still
 // lives in docs/backlog/. The Backlog Operational Contract requires promoted
-// entries to move into a Spec's references/ and terminal entries to move into
-// history.
+// entries to move into a Spec's references/ and terminal entries to be deleted.
 const CodeBacklogUnmoved = "SC-BACKLOG-UNMOVED"
 
 const backlogPath = "docs/backlog"
@@ -69,9 +68,9 @@ func detectBacklogPromotion(result *Result, repoRoot string) error {
 		}
 		status := document.frontmatter.status.value
 		if terminalBacklogStatus(status) {
-			fix := "Move " + document.displayPath + " to " + spec.ArchiveDir(spec.ArchiveKindBacklog) + "/."
+			fix := "Delete " + document.displayPath + "; Git keeps its text."
 			if !hasBacklogValue(document.frontmatter.spec.value) && !hasBacklogValue(document.frontmatter.reason.value) {
-				fix = "Add a non-empty reason to " + document.displayPath + ", then move it to " + spec.ArchiveDir(spec.ArchiveKindBacklog) + "/."
+				fix = "Add a non-empty reason to " + document.displayPath + ", then delete it; Git keeps its text."
 			}
 			result.Findings = append(result.Findings, Finding{
 				Code:     CodeBacklogUnmoved,

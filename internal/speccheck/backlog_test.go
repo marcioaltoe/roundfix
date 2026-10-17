@@ -90,7 +90,7 @@ func TestCheckBacklogUnmoved(t *testing.T) {
 		}
 	})
 
-	t.Run("red declined entry must move to history", func(t *testing.T) {
+	t.Run("red declined entry must be deleted", func(t *testing.T) {
 		t.Parallel()
 
 		repoRoot := writeBacklogCarrier(t)
@@ -100,8 +100,8 @@ func TestCheckBacklogUnmoved(t *testing.T) {
 
 		result := checkBacklogCarrier(t, repoRoot)
 		finding := requireRenderedFinding(t, result, speccheck.CodeBacklogUnmoved, entryPath, 2)
-		if !strings.Contains(finding.Fix, "docs/history/backlog/") {
-			t.Fatalf("fix = %q, want history destination", finding.Fix)
+		if !strings.Contains(strings.ToLower(finding.Fix), "delete") {
+			t.Fatalf("fix = %q, want deletion with Git retaining its text", finding.Fix)
 		}
 	})
 
@@ -164,8 +164,8 @@ func TestTerminalBacklogEntryLeftActiveIsUnmoved(t *testing.T) {
 
 	result := checkBacklogCarrier(t, repoRoot)
 	finding := requireRenderedFinding(t, result, speccheck.CodeBacklogUnmoved, entryPath, 2)
-	if !strings.Contains(finding.Fix, "docs/history/backlog/") {
-		t.Fatalf("fix = %q, want history destination", finding.Fix)
+	if !strings.Contains(strings.ToLower(finding.Fix), "delete") {
+		t.Fatalf("fix = %q, want deletion with Git retaining its text", finding.Fix)
 	}
 	if !strings.Contains(finding.Fix, "reason") {
 		t.Fatalf("fix = %q, want missing reason", finding.Fix)

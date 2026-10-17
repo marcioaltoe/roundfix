@@ -120,13 +120,13 @@ func TestCheckRollupMember(t *testing.T) {
 		}
 	})
 
-	t.Run("green active and archived members", func(t *testing.T) {
+	t.Run("green unresolved and archived members", func(t *testing.T) {
 		t.Parallel()
 
 		repoRoot := writeFindingsCarrier(t)
 		const rollup = "2026-08-06-rollup.md"
 		writeFindingsArtifact(t, repoRoot, "docs/findings/"+rollup, "---\nstatus: pending\nkind: rollup\nmembers:\n  - 2026-08-06-active.md\n  - 2026-08-06-archived.md\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Rollup\n")
-		writeFindingsArtifact(t, repoRoot, "docs/findings/2026-08-06-active.md", "---\nstatus: deferred\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Active\n")
+		writeFindingsArtifact(t, repoRoot, "docs/findings/2026-08-06-active.md", "---\nstatus: pending\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Active\n")
 		writeFindingsArtifact(t, repoRoot, archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-archived.md"), "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+rollup+"\n---\n\n# Archived\n")
 
 		result := checkFindingsCarrier(t, repoRoot)

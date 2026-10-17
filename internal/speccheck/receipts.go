@@ -1,9 +1,11 @@
 package speccheck
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -91,7 +93,13 @@ func ProveReceipt(repoRoot string, receipt Receipt) (sourcePath string, proven b
 	if !resolved {
 		return "", false, "does not resolve to a file", nil
 	}
-	content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(sourcePath)))
+	var content []byte
+	if receiptDecisionPattern.MatchString(receipt.Source) && strings.Contains(sourcePath, "@") {
+		path, commit, _ := strings.Cut(sourcePath, "@")
+		content, err = historyGit(context.Background(), repoRoot, "show", commit+":"+path)
+	} else {
+		content, err = os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(sourcePath)))
+	}
 	if err != nil {
 		return sourcePath, false, "", fmt.Errorf("read receipt source %q: %w", sourcePath, err)
 	}
@@ -106,7 +114,7 @@ func resolveReceiptSource(repoRoot, source string) (string, bool, error) {
 		return receiptFilePath(repoRoot, source)
 	}
 	number := strings.TrimPrefix(source, "ADR-")
-	for _, directory := range []string{"docs/adr", "docs/history/adr"} {
+	for _, directory := range []string{"docs/adr"} {
 		// Check the directory components too; Glob must never traverse a symlink.
 		if _, ok, err := receiptPathInfo(repoRoot, directory); err != nil {
 			return "", false, err
@@ -129,7 +137,41 @@ func resolveReceiptSource(repoRoot, source string) (string, bool, error) {
 		}
 		return receiptFilePath(repoRoot, filepath.ToSlash(relative))
 	}
-	return "", false, nil
+	return receiptGitSource(repoRoot, number)
+}
+
+// Receipts read the newest reachable addition or modification, even after the
+// ADR left the tree. Ambiguous records and symlink blobs never prove a receipt.
+func receiptGitSource(root, number string) (string, bool, error) {
+	ctx := context.Background()
+	available, err := historyHasGit(ctx, root)
+	if err != nil || !available {
+		return "", false, err
+	}
+	if _, err := historyGit(ctx, root, "rev-parse", "--verify", "--quiet", "HEAD"); err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) && exit.ExitCode() == 1 {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	out, err := historyGit(ctx, root, "log", "-1", "--format=%H", "--name-only", "--diff-filter=AM", "--no-renames", "--full-history", "HEAD", "--", "docs/adr/"+number+"-*.md", "docs/history/adr/"+number+"-*.md")
+	if err != nil {
+		return "", false, err
+	}
+	lines := strings.Fields(string(out))
+	if len(lines) != 2 {
+		return "", false, nil
+	}
+	commit, path := lines[0], lines[1]
+	tree, err := historyGit(ctx, root, "ls-tree", commit, "--", path)
+	if err != nil {
+		return "", false, err
+	}
+	if !strings.HasPrefix(string(tree), "100644 blob ") && !strings.HasPrefix(string(tree), "100755 blob ") {
+		return "", false, nil
+	}
+	return path + "@" + commit, true, nil
 }
 
 func receiptFilePath(repoRoot, relative string) (string, bool, error) {

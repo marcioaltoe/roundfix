@@ -325,6 +325,7 @@ var corpusFindingCodes = []string{
 	speccheck.CodeFindingLifecycle,
 	speccheck.CodeRollupMember,
 	speccheck.CodeArchiveLicense,
+	speccheck.CodeHistoryRetained,
 	speccheck.CodeReferenceUnresolved,
 	speccheck.CodeVocabularyUndocumented,
 	speccheck.CodeVerifyWorkIndependent,

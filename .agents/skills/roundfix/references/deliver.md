@@ -97,6 +97,13 @@ outside the archived folder and History Root, existed at the parent, and its
 bytes equal the archive's rewrite of the parent's bytes under the same citation
 moves; an extra or altered relinked file fails the archive proof.
 
+The Archive Command deletes the source folder. Its copied outcome and promoted
+copies use a Git Locator for an unpromoted destination in that folder, naming
+a commit that holds the path and is reachable from the default branch or a tag,
+or the path and record's pull request when no such commit exists. The exact
+archive proof compares each promoted copy with the removed blob after this
+same rewrite; it still refuses a relinked path under the History Root.
+
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
 one of those operations, `deliver start` exits `2`, names every refused Spec

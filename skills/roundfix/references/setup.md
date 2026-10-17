@@ -189,3 +189,11 @@ exit code. With no declared cache, the storage line stays byte-identical.
 ```text
 storage: found (Runs reclaimable: 0; Run Database free bytes: 0; Worktree Build Caches reclaimable: 1 (11 bytes); next: roundfix gc)
 ```
+
+## Pending History after upgrade
+
+The upgrade notice names every pending history unit, including a Reduced
+History Entry left by an earlier version. Run `roundfix baseline update` to
+review removal of retired families and uncited superseded records, conversion
+of Legacy Archive Folders, citation rewrites and `record-links` repairs.
+No new reduced entry is written; retired text stays in Git.

@@ -59,6 +59,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeGlossaryMissing, stage: StageTasks},
 	{code: CodeLoopOrderDivergent, stage: StagePRD},
 	{code: CodeFindingLifecycle, stage: StagePRD},
+	{code: CodeHistoryRetained, stage: StagePRD},
 	{code: CodeRollupMember, stage: StagePRD},
 	{code: CodeArchiveLicense, stage: StagePRD},
 	{code: CodeBacklogUnmoved, stage: StagePRD},
@@ -129,6 +130,9 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		return result, fmt.Errorf("read Spec %q: %s is not a directory", slug, specDir)
 	}
 	if err := detectLoopOrderConsistency(&result, repoRoot); err != nil {
+		return result, err
+	}
+	if err := detectHistoryRetained(&result, repoRoot, specsRoot); err != nil {
 		return result, err
 	}
 	if err := detectFindingsConsistency(&result, repoRoot); err != nil {

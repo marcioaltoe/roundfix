@@ -84,10 +84,10 @@ citation, and apply writes the same files.
 
 When Pending History exists, the managed refresh adds a `History` section to
 the plan. Text output lists the history units and their planned records or
-reductions, with `History: <status>`, `History units:`, `History applied:`,
+removals and `record-links` repairs, with `History: <status>`, `History units:`, `History applied:`,
 `History refused:` and `History tag:` lines when those values exist. Each reason
-is one line; uncommitted changes and paths outside the coverage of an existing
-History Full Tag are refused and left untouched. A refused unit does not block
+is one line; uncommitted changes and removed paths held by neither the History
+Full Tag nor a commit the default branch reaches are refused and left untouched. A refused unit does not block
 the Baseline Plan or change the update's state. A repository-wide history
 precondition such as an invalid tag can make the history section `blocked` with
 its one-line result while the Baseline Plan keeps its existing behavior.
@@ -120,14 +120,27 @@ from `docs/references/`. `--promote` with `--no-history`, an invalid value,
 a refused unit or an occupied destination exits 2 with category `invalid`
 and writes nothing. The update's conversions read Legacy Archive Folders with
 the same summary, field, source and creation-date fallbacks, and Legacy Link
-Rebase rebases each promoted copy. The update never rewrites a citing file.
+Rebase rewrites each promoted copy, using a Git Locator for an unpromoted
+folder destination. After removals the update rewrites citations in surviving
+Archive Records, Live Documents and the user guide to Git Locators. A Reduced
+History Entry uses its original provenance path and commit when reachable;
+no new reduced entry is written.
 
-Adopter note: if an earlier `roundfix baseline update` or Sanitize Batch
-already broke citations, run `roundfix baseline update` with the History Full
-Tag present and read the `History stale citations` lines. Restore a target you
-keep with `git show history-full:<path>` into `docs/references/` before
-fixing the link. Specs already written to link an owner's copy need nothing,
-because the owner's archive performs an Archive Relink.
+After removal units, `record-links` repairs each surviving Archive Record's
+relative links to missing files and to itself. It tries the record-relative
+path, then the record's original `source` folder; the first reachable commit
+holding the target wins. A self-link becomes the Git Locator of the source
+folder. When neither path has a qualifying commit, the record-relative path
+and its pull request are used. Code spans, fences, URLs and Git Locators are
+not relative links. A record removed by the same plan is skipped.
+
+Text prints `- record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
+Removal units print `- <unit>: removes <n> file(s) (<b> bytes)`. Rewritten
+citations append `; rewrites to <replacement>` and carry `rewrite` in JSON.
+JSON actions are `convert`, `remove` and `rewrite`; a rewrite unit carries
+`links`. `bytesAfter` is omitted, `applied.reduced` stays 0, and apply adds
+`rewrittenCitations` and `rewrittenFiles`. File totals count only removals.
+The Plan Digest binds removals, record repairs and replacement text.
 
 JSON always includes a `history` object. Its status is `skipped`, `current`,
 `pending`, `applied` or `blocked`; it carries the selected units, Refused Units,
@@ -135,7 +148,7 @@ tag action and apply result when those values exist. When units are selected,
 the history section is part of the same Plan Digest as the Baseline Plan, and
 `--yes` or `--confirm-plan <digest>` approves both. Apply runs the Baseline Plan
 first, creates the annotated `history-full` tag at `HEAD` when absent, then
-converts every selected unit. The tag is never moved or pushed by the update;
+converts folders, removes retired files and repairs record links. The tag is never moved or pushed by the update;
 push it with `git push origin history-full`.
 
 Pass `--no-history` to leave the history section out and keep the reviewed

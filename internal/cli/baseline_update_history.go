@@ -50,6 +50,7 @@ type baselineUpdateHistoryUnit struct {
 	Disposition string `json:"disposition,omitempty"`
 	Files       int    `json:"files"`
 	Bytes       int64  `json:"bytes"`
+	Links       int    `json:"links,omitempty"`
 }
 type baselineUpdateHistoryRefusal struct {
 	Unit   string `json:"unit"`
@@ -67,7 +68,7 @@ type baselineUpdateHistoryApplied struct {
 type baselineUpdateHistoryPlan struct {
 	Report         baselineUpdateHistory
 	selected       []historyUnit
-	rewrite        spec.HistoryRewritePlan
+	rewrite        historyCitationRewritePlan
 	root           string
 	historyRoot    string
 	archiveRoot    string
@@ -174,6 +175,15 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 				continue
 			}
 		}
+		if u.links != nil {
+			u, err = planRecordLinksUnit(ctx, root, archiveRel, p.selected)
+			if err != nil {
+				return blocked(err)
+			}
+			if len(u.links.Files) == 0 {
+				continue
+			}
+		}
 		u, err = planHistoryUnit(ctx, root, specRel, archive, archiveRel, revision, u)
 		if err != nil {
 			return blocked(err)
@@ -184,6 +194,11 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 		}
 		if u.refusal == nil {
 			paths := append([]string(nil), u.files...)
+			if u.links != nil {
+				for path := range u.links.Files {
+					paths = append(paths, path)
+				}
+			}
 			if u.folder {
 				// Includes untracked files inside the folder.
 				paths = append(paths, name)
@@ -193,14 +208,19 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 				return blocked(err)
 			}
 			dirty := status != ""
-			for _, path := range u.files {
+			for _, path := range paths {
+				if u.folder && path == name {
+					continue
+				}
 				if !headPaths[path] {
 					dirty = true
 				}
 			}
 			if dirty {
 				path := name
-				if !u.folder {
+				if u.links != nil {
+					path = archiveRel
+				} else if !u.folder {
 					path = spec.ArchiveDir(spec.ArchiveKind(u.name))
 				}
 				u.refusal = fmt.Errorf("has uncommitted changes under %s; commit or restore them and rerun", path)
@@ -230,6 +250,10 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 			report.Record = c.RecordPath
 			report.Disposition = string(c.Record.Disposition)
 			report.Bytes = c.Bytes
+		} else if u.links != nil {
+			report.Action = "rewrite"
+			report.Files = len(u.links.Files)
+			report.Links = u.links.Links
 		} else {
 			report.Action = string(u.kind.Action)
 			report.Bytes = u.kind.BytesBefore
@@ -265,23 +289,15 @@ func (p baselineUpdateHistoryPlan) citation(c spec.HistoryCitation) baselineUpda
 }
 
 func (p *baselineUpdateHistoryPlan) listCitations(ctx context.Context) error {
-	var removed, folders []string
 	promotable := map[string]string{}
 	for _, u := range p.selected {
 		if u.folder {
-			removed = append(removed, u.files...)
-			folders = append(folders, u.conversion.Folder+"/")
 			for _, file := range u.files {
 				if !baselineHistoryCoreArtifact(strings.TrimPrefix(file, u.conversion.Folder+"/")) {
 					promotable[file] = file
 				}
 			}
-		} else if u.kind.Action == "remove" {
-			removed = append(removed, u.files...)
 		}
-	}
-	if len(removed) == 0 && len(folders) == 0 {
-		return nil
 	}
 	rewrite, err := planHistoryRewrite(ctx, p.root, p.specRootRel, p.archiveRootRel, p.selected)
 	if err != nil {
@@ -407,12 +423,14 @@ func (p baselineUpdateHistoryPlan) digest(baselinePlanDigest string) (string, er
 		return baselinePlanDigest, nil
 	}
 	type digestUnit struct {
-		Unit         string   `json:"unit"`
-		Action       string   `json:"action"`
-		Paths        []string `json:"paths"`
-		Record       string   `json:"record,omitempty"`
-		RecordDigest string   `json:"recordDigest,omitempty"`
-		Promoted     []string `json:"promoted,omitempty"`
+		Unit         string            `json:"unit"`
+		Action       string            `json:"action"`
+		Paths        []string          `json:"paths"`
+		Record       string            `json:"record,omitempty"`
+		RecordDigest string            `json:"recordDigest,omitempty"`
+		Links        int               `json:"links,omitempty"`
+		Rewrites     map[string]string `json:"rewrites,omitempty"`
+		Promoted     []string          `json:"promoted,omitempty"`
 	}
 	type digestCitation struct {
 		Path    string `json:"path"`
@@ -429,6 +447,15 @@ func (p baselineUpdateHistoryPlan) digest(baselinePlanDigest string) (string, er
 	}{Revision: p.Report.Revision, Action: p.Report.Tag.Action, Commit: p.Report.Tag.Commit, Units: []digestUnit{}}
 	for i, u := range p.selected {
 		d := digestUnit{Unit: p.Report.Units[i].Unit, Action: p.Report.Units[i].Action, Paths: append([]string(nil), u.files...)}
+		if u.links != nil {
+			d.Links = u.links.Links
+			d.Rewrites = map[string]string{}
+			for path, content := range u.links.Files {
+				d.Paths = append(d.Paths, path)
+				sum := sha256.Sum256(content)
+				d.Rewrites[path] = hex.EncodeToString(sum[:])
+			}
+		}
 		sort.Strings(d.Paths)
 		if c := u.conversion; c != nil {
 			d.Record = c.RecordPath
@@ -476,7 +503,7 @@ func applyBaselineUpdateHistory(ctx context.Context, repo string, p baselineUpda
 		if err == nil {
 			if u.conversion != nil {
 				err = spec.ApplyLegacyConversion(repo, *u.conversion)
-			} else {
+			} else if u.links == nil {
 				err = spec.ApplyHistoryKind(repo, *u.kind)
 			}
 		}
@@ -488,7 +515,7 @@ func applyBaselineUpdateHistory(ctx context.Context, repo string, p baselineUpda
 			report.Applied.Records++
 			report.Applied.Removed += len(c.Files)
 			report.Applied.Bytes += c.Bytes
-		} else {
+		} else if u.links == nil {
 			report.Applied.Removed += len(u.files)
 			report.Applied.Bytes += u.kind.BytesBefore
 		}
@@ -514,6 +541,9 @@ func printBaselineUpdateHistory(w io.Writer, h baselineUpdateHistory) {
 		var files int
 		var bytes int64
 		for _, u := range h.Units {
+			if u.Action == "rewrite" {
+				continue
+			}
 			files += u.Files
 			bytes += u.Bytes
 		}
@@ -522,6 +552,8 @@ func printBaselineUpdateHistory(w io.Writer, h baselineUpdateHistory) {
 			switch u.Action {
 			case "convert":
 				fmt.Fprintf(w, "- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\n", u.Unit, u.Files, u.Bytes, u.Record, u.Disposition)
+			case "rewrite":
+				fmt.Fprintf(w, "- record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.Links, u.Files)
 			case "remove":
 				fmt.Fprintf(w, "- %s: removes %d file(s) (%d bytes)\n", u.Unit, u.Files, u.Bytes)
 			}

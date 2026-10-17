@@ -115,6 +115,23 @@ These lines disclose provenance and do not refuse execution. JSON includes
 all sources are committed, and reports `malformed` plus the parser message in
 `verification.commands` through the `verdict` and `cause` fields.
 
+`SC-HISTORY-RETAINED` is an error from the PRD stage once the manifest-recorded
+`guide.docs-layout` region carries “A retirement deletes the file” after
+whitespace collapses. Until then the detector is listed as skipped with its
+reason. It reports files under the History Root's Findings, Backlog, ADR,
+Review and Handoff families, terminal Findings left active, broken relative
+links in Archive Records, Live Documents and the user guide, record self-links,
+and Git Locators whose commit lacks the path or is unreachable from the default
+branch and tags. Each diagnostic names the file and line and the deletion or
+replacement Git Locator. Outside Git, locator resolution and validation are
+listed as skipped; file checks still run. The check reads only local files and Git.
+
+Claim Receipts resolve `ADR-NNNN` in `docs/adr/`, then read the newest addition
+or modification reachable from `HEAD` in Git, including removed ADRs. Rollup
+members resolve as unresolved Findings, existing archived files or deletions
+under the active or history Findings family in Git. `SC-BACKLOG-UNMOVED` tells
+a terminal Backlog Entry to be deleted, with Git retaining its text.
+
 ### Glossary Declaration
 
 The Spec Consistency Check reads the `## Glossary` section of the PRD or

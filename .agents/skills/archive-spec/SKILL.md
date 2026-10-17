@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.12
+  version: 0.0.13
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.12
+version: 0.0.13
 ---
 
 # Archive Spec
@@ -27,6 +27,13 @@ to the promoted copy; citations of the Spec folder or a core artifact point to
 the Archive Record. The record lists rewritten files under `relinked` when any
 exist. The source keeps one owner, so a secondary Spec needs no copy (ADR-0260,
 ADR-0083).
+
+The Spec folder retires by deletion. In the copied outcome and each promoted
+copy, a destination inside the removed folder names a promoted copy or becomes
+a Git Locator, `` `<path>@<commit>` ``; it never points at the record itself.
+The commit holds the path and is reachable from the default branch or a tag.
+When no such commit exists, the locator names the path and the record's pull
+request. Other destinations retain their repository target (ADR-0278).
 
 The archive refuses to write when a promotion destination already exists, when
 two promotions share a basename, or when a Live Document to be rewritten has

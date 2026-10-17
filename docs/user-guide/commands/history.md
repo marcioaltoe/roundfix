@@ -81,6 +81,18 @@ plan, outside `.agents/skills/`, `skills/` and `testdata` directories. Relative
 links, bounded record paths and bounded slugs all count, including front matter
 values. Text already inside a Git Locator does not count.
 
+After removal units, `record-links` repairs each surviving Archive Record's
+relative links to missing files and to itself. It tries the record-relative
+path, then the record's original `source` folder; the first reachable commit
+holding the target wins. A self-link becomes the Git Locator of the source
+folder. When neither path has a qualifying commit, the record-relative path
+and its pull request are used. Code spans, fences, URLs and Git Locators are
+not relative links. A record removed by the same plan is skipped.
+
+The repair line is `record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
+Rewritten records count toward units, while the file and byte totals count only
+files that leave the tree. Apply reports rewrites alongside removal citations.
+
 When a unit cannot be converted, the plan continues and lists
 `refused <unit>: <reason>`. Its first line adds `; <r> unit(s) refused`. A failed
 newest QA Report without an override is recorded as `failed-qa`, beside `no-qa`
