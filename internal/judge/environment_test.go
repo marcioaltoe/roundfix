@@ -12,7 +12,7 @@ func TestWithoutKeyVariablesRemovesEveryJudgeVariable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	variables := questions.KeyVariables()
+	variables := append(questions.KeyVariables(), "TYPESAFE_API_KEY")
 	if len(variables) == 0 {
 		t.Fatal("embedded questions declare no Judge Key Variables")
 	}

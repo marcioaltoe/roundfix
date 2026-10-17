@@ -15,6 +15,7 @@ import (
 )
 
 type VerifyRequest struct {
+	RunID      string
 	WorkDir    string
 	Command    string
 	OutputPath string
@@ -129,6 +130,16 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 	cmd := exec.CommandContext(ctx, "sh", "-c", req.Command)
 	cmd.Dir = req.WorkDir
 	cmd.Env = judge.WithoutKeyVariables(os.Environ())
+	if req.RunID != "" {
+		marker := judge.RunMarkerVariable + "="
+		filtered := cmd.Env[:0]
+		for _, entry := range cmd.Env {
+			if !strings.HasPrefix(entry, marker) {
+				filtered = append(filtered, entry)
+			}
+		}
+		cmd.Env = append(filtered, marker+req.RunID)
+	}
 	cmd.Stdout = tempFile
 	cmd.Stderr = tempFile
 	runErr := cmd.Run()

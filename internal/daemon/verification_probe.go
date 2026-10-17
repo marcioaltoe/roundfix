@@ -49,6 +49,10 @@ func ProbeCommands(
 	commands []string,
 	outputFor func(index int) string,
 ) ([]CommandVerdict, error) {
+	return probeCommandsForRun(ctx, verifier, "", workDir, commands, outputFor)
+}
+
+func probeCommandsForRun(ctx context.Context, verifier Verifier, runID, workDir string, commands []string, outputFor func(index int) string) ([]CommandVerdict, error) {
 	verdicts := make([]CommandVerdict, 0, len(commands))
 	for index, command := range commands {
 		outputPath := outputFor(index)
@@ -73,6 +77,7 @@ func ProbeCommands(
 		}
 		// A parser that cannot start must not introduce a new refusal.
 		result, verifyErr := verifier.Verify(ctx, VerifyRequest{
+			RunID:      runID,
 			WorkDir:    workDir,
 			Command:    command,
 			OutputPath: outputPath,

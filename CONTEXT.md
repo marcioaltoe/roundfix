@@ -1263,8 +1263,12 @@ _Avoid_: Judge budget, key limit, Project Config ceiling
 The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared OpenRouter key for Roundfix; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
 _Avoid_: API key value, generic OpenRouter key, shared key
 
+**Run Marker**:
+The `ROUNDFIX_RUN_ID` variable naming the Run in each of its Agent Session and Verification processes. While it is non-empty, the judge sends nothing and reports the Run as its skip reason, whatever keys the command holds ([ADR-0283](docs/adr/0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md)).
+_Avoid_: Judge Key Variables, Run Worktree location, Roundfix Home
+
 **Judge Key Variables**:
-The variables the judge reads its credentials from, which no Agent Session and no Verification command of a Run receives ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
+The credential variables withheld from every Agent Session and Verification command of a Run: the judge's declared key variables and the generic TypeSafe key `TYPESAFE_API_KEY`. The Run Marker also keeps the judge silent if a runtime restores a key ([ADR-0283](docs/adr/0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md), amending [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Stage Key, implementation key, credential value
 
 **Tested Base**:

@@ -12,6 +12,7 @@ import (
 )
 
 type Request struct {
+	RunID                   string
 	RepoRoot, SpecDir, Spec string
 	Stage                   Stage
 	Keys                    map[string]string
@@ -90,6 +91,18 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 	}
 	for _, s := range plan.Skipped {
 		report.Judgments = append(report.Judgments, Judgment{Kind: s.Kind, Artifact: relativeArtifact(req.RepoRoot, s.Artifact), Line: s.Line, Target: s.Target, Outcome: "skipped", Reason: reasonPointer(s.Reason)})
+	}
+	if req.RunID != "" {
+		report.Skipped = reasonPointer("inside Run " + req.RunID + ", named by " + RunMarkerVariable)
+		for _, p := range plan.Pending {
+			j := Judgment{Kind: p.Kind, Artifact: relativeArtifact(req.RepoRoot, p.Artifact), Line: p.Line, Target: relativeArtifact(req.RepoRoot, p.Target), Text: p.Text, Outcome: "skipped", Reason: report.Skipped}
+			if p.Kind == "goal-mechanism" {
+				_, title, _ := strings.Cut(p.Target, " → ")
+				j.SectionTitle = reasonPointer(title)
+			}
+			report.Judgments = append(report.Judgments, j)
+		}
+		return report, nil
 	}
 	t, variable, key, ok := selectTransport(q, req.Keys)
 	now := req.Now

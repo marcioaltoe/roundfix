@@ -13,6 +13,7 @@ import (
 )
 
 type ArchiveAdviceRequest struct {
+	RunID                   string
 	RepoRoot, SpecDir, Spec string
 	Files                   []string
 	Keys                    map[string]string
@@ -44,6 +45,16 @@ type ArchiveAdviceReport struct {
 // not prevent the archive command from proceeding.
 func AdviseArchive(ctx context.Context, q Questions, req ArchiveAdviceRequest) (ArchiveAdviceReport, error) {
 	report := ArchiveAdviceReport{Model: q.PinnedModel, Advice: []ArchiveAdvice{}, MonthCeilingUSD: q.MonthlyCeilingUSD}
+	if req.RunID != "" {
+		report.Skipped = reasonPointer("inside Run " + req.RunID + ", named by " + RunMarkerVariable)
+		for _, name := range req.Files {
+			if isArchiveCore(name) || strings.HasPrefix(filepath.ToSlash(name), "qa/evidence/") {
+				continue
+			}
+			report.Advice = append(report.Advice, ArchiveAdvice{File: filepath.ToSlash(name), Outcome: "skipped", Reason: report.Skipped})
+		}
+		return report, nil
+	}
 	now := req.Now
 	if now == nil {
 		now = time.Now

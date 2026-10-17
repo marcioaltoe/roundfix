@@ -491,16 +491,17 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 						advice[p] = "no advice (" + err.Error() + ")"
 					}
 				} else {
+					runID := commandRunID(env.environ)
 					keys := map[string]string{}
 					for _, key := range q.KeyVariables() {
 						for _, entry := range env.environ {
 							n, v, _ := strings.Cut(entry, "=")
-							if n == key {
+							if runID == "" && n == key {
 								keys[n] = v
 							}
 						}
 					}
-					report, err := judge.AdviseArchive(ctx, q.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.ArchiveAdviceRequest{RepoRoot: loaded.GitRoot, SpecDir: filepath.Join(loaded.GitRoot, c.Folder), Spec: c.Slug, Files: candidates, Keys: keys, HomeDir: loaded.HomeDir, Transport: env.dependencies.judgeTransport, Now: env.dependencies.judgeNow})
+					report, err := judge.AdviseArchive(ctx, q.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.ArchiveAdviceRequest{RunID: runID, RepoRoot: loaded.GitRoot, SpecDir: filepath.Join(loaded.GitRoot, c.Folder), Spec: c.Slug, Files: candidates, Keys: keys, HomeDir: loaded.HomeDir, Transport: env.dependencies.judgeTransport, Now: env.dependencies.judgeNow})
 					if err != nil {
 						for _, p := range candidates {
 							advice[p] = "no advice (" + err.Error() + ")"

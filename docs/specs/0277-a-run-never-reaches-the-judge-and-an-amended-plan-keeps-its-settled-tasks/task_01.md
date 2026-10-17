@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -155,3 +155,93 @@ provider.
 - `_prd.md` → Sources; Goals; User Story 1; Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 9; Success Metric 1; Glossary
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 9; Surface Transcript 1; Invariants 1, 2 and 3; Current behavior; Testing Approach; Build Order 1
 - ADR-0283; ADR-0273; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+## Result
+
+### Implementation
+
+- Added `judge.RunMarkerVariable` (`ROUNDFIX_RUN_ID`) and explicit `RunID`
+  fields on both judge requests. A non-empty marker returns the exact Run
+  skip reason before transport selection, credential lookup, the Judge Log
+  clock or log access. Spec judgments retain their planned skipped rows;
+  archive candidates each receive the Run reason.
+- The three command callers read the marker from their injected command
+  environment and collect no judge credentials while it is non-empty.
+  Explicit `--offline` keeps its existing transcript.
+- Session ensure/prepare and prompt invocations append a request-specific
+  marker override without mutating the runner's inherited environment or
+  cached runtime overrides. Existing acpx environment replacement removes an
+  inherited marker. `WithoutKeyVariables` now also removes
+  `TYPESAFE_API_KEY`, preserving unrelated entries and implementation Stage
+  Keys.
+- `ExecVerifier` replaces the inherited marker with `VerifyRequest.RunID`.
+  The engine forwards the Run ID for Task and repository Verification. The
+  pre-work probe uses an internal Run-aware entry point; standalone
+  `ProbeCommands` keeps its interface and empty Run ID. The necessary caller
+  change in `internal/daemon/task_engine.go` belongs to this Task's unchanged
+  tree probe requirement.
+- Updated the three command guides, canonical spec/archive skill references,
+  and the Run Marker and Judge Key Variables glossary terms with ADR-0283.
+  Searched the guides and skill copies for descriptions of judge protection;
+  remaining key-withholding statements describe the still-active removal
+  rule. No QA settlement section changed.
+- Regenerated the mirrors and records using their owning commands; the
+  Roundfix skill version is `0.1.90`. No record or mirror was hand-edited.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| A marker with keys present prevents both judge entry points from sending or writing a log, and names the Run. | `TestJudgeSendsNothingInsideARun` and `TestArchiveAdviceSendsNothingInsideARun` use the default HTTP transport with a local counting server, assert zero requests, no Judge Log directory, the exact reason and no calls to the log clock. All three new command tests inject a marker and key and assert zero transport calls. |
+| Each prepare/prompt and Verification command carries its Run ID and no withheld credential variable. | Extended `TestNoAgentSessionReceivesAJudgeKeyVariable` records the marker at acpx boundaries for standard and light sessions, checks replacement of an inherited marker, rejects `TYPESAFE_API_KEY`, retains the implementation Stage Key and verifies the runner's environment stays intact. Extended `TestVerificationReceivesNoJudgeKeyVariable` executes a child that checks all withheld variables, its request marker and a control variable, then checks that the parent's variables remain intact. `TestEnginePassesRunIDToEveryVerificationCommand` exercises and observes the engine's pre-work probe, Task Verification and repository settlement Verification. |
+| The archive plan inside a Run matches Surface Transcript 1. | `TestArchivePlanInsideARunMatchesItsTranscript` asserts every stdout/stderr line and the exit code for the keyless transcript and the same fixture with a key present; it also checks Spec bytes and the existing offline transcript. |
+| An empty marker preserves existing judge behavior. | Empty-marker controls in both judge tests make real local HTTP requests and write Judge Logs. Focused existing judge/CLI controls cover advisory results, the command's injected key, monthly ceilings, archive advice and history advice; the existing offline transcript also passes. |
+
+### Focused checks and generation
+
+- Red starting point: `go test ./internal/judge -run 'InsideARun' -count=1`
+  exited 1 because the two request types lacked `RunID`, before the production
+  change.
+- `go test -race ./internal/judge ./internal/agent ./internal/daemon ./internal/cli -run 'InsideARun|WithoutKeyVariables|NoAgentSessionReceives|VerificationReceivesNoJudge|EnginePassesRunID' -count=1`
+  exited 0 in all four packages after generation finished.
+- An earlier invocation of that race check had passing assertions but exited
+  1 in `internal/agent`: skill version regeneration overlapped its suiteguard
+  fingerprint window. After the generator finished, the same check passed
+  without concurrent repository writes or any guard changes.
+- `go test ./internal/judge ./internal/cli -run '^(TestRunRaisesAtTheMeasuredThresholds|TestRunStopsAtTheMonthlyCeiling|TestRunSendsNothingWithoutAKey|TestArchiveAdviceJudgesOnlyCandidateFiles|TestSpecJudgeReportsAdvisoryJudgments|TestSpecJudgeReadsTheKeyFromItsOwnEnvironment|TestSpecJudgeSkipsAtTheMonthlyCeiling|TestHistorySanitizeAdviseWithAFakeJudge|TestArchivePlanOfflineTranscript)$' -count=1`
+  exited 0 in both packages.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and recorded `0.1.90` in both skill copies and the version record.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and re-recorded the three changed guide fingerprints.
+- `make baseline-digests` exited 0 with `changed:false`; no Baseline artifact
+  remains changed.
+- Read-only byte comparisons confirmed that the generated Roundfix mirror
+  matches its canonical folder and every existing `### QA settlement`
+  section in the changed canonical skill files matches `HEAD`. The five
+  requested documentation files contain both `ROUNDFIX_RUN_ID` and
+  `TYPESAFE_API_KEY`. `git diff --check` exited 0.
+- A focused Windows compile, `GOOS=windows GOARCH=amd64 go test -c -o <temporary-directory> ./internal/judge ./internal/agent ./internal/daemon ./internal/cli`,
+  produced `judge.test.exe` and `daemon.test.exe`, but exited 1 for the
+  pre-existing Unix-only tests in Agent and CLI: `syscall.Kill` in
+  `internal/agent/acpx_integration_test.go`, and `syscall.Stat_t`,
+  `syscall.Getpgrp`, signal helpers, `syscall.Wait4` and `Setpgid` in the CLI
+  files listed in the TechSpec's Current behavior. Those repairs belong to
+  task_02. New tests use no Unix-only system call or new platform constraint.
+
+### Handoff boundary
+
+The pre-existing status change to `in_progress` is preserved. The Task's
+status, authored Verification, other Tasks and `_tasks.md` were not edited.
+No authored Verification command, selected repository Verification or full
+suite was run; the three recording commands above are required generation
+steps. No commit, push or pull request was made. All provider behavior used
+injected transports or the local test server; no request reached a provider.
+Daemon Verification and settlement remain pending.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/daemon/task_engine.go`

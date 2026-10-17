@@ -19,15 +19,16 @@ const fakeJudgeEnvironmentPath = "ROUNDFIX_FAKE_JUDGE_ENVIRONMENT_PATH"
 type fakeJudgeEnvironment struct {
 	Command string
 	Names   []string
+	RunID   string
 }
 
-// The fake acpx records variable names only, at every command boundary.
+// The fake acpx records variable names and the Run Marker, never credential values.
 func recordFakeJudgeEnvironment() error {
 	path := os.Getenv(fakeJudgeEnvironmentPath)
 	if path == "" {
 		return nil
 	}
-	row := fakeJudgeEnvironment{Command: fakeACPXCommandKey(os.Args[1:])}
+	row := fakeJudgeEnvironment{Command: fakeACPXCommandKey(os.Args[1:]), RunID: os.Getenv(judge.RunMarkerVariable)}
 	for _, entry := range os.Environ() {
 		name, _, _ := strings.Cut(entry, "=")
 		row.Names = append(row.Names, name)
@@ -50,7 +51,7 @@ func TestNoAgentSessionReceivesAJudgeKeyVariable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	variables := questions.KeyVariables()
+	variables := append(questions.KeyVariables(), "TYPESAFE_API_KEY")
 	const control = "ROUNDFIX_JUDGE_ENVIRONMENT_CONTROL"
 	for _, kind := range []string{"standard", "light"} {
 		t.Run(kind, func(t *testing.T) {
@@ -59,6 +60,7 @@ func TestNoAgentSessionReceivesAJudgeKeyVariable(t *testing.T) {
 			path := filepath.Join(h.gitRoot, "environment-names.jsonl")
 			h.setEnv(fakeJudgeEnvironmentPath, path)
 			h.setEnv(control, fmt.Sprintf("control-%s", kind))
+			h.setEnv(judge.RunMarkerVariable, "inherited-run")
 			for index, variable := range variables {
 				h.setEnv(variable, fmt.Sprintf("fixture-%s-%d", kind, index))
 			}
@@ -84,6 +86,9 @@ func TestNoAgentSessionReceivesAJudgeKeyVariable(t *testing.T) {
 			if _, err := h.runner.ListRoundfixSessions(t.Context(), runtime, h.gitRoot); err != nil {
 				t.Fatal(err)
 			}
+			if got := environmentValue(h.runner.Environment, judge.RunMarkerVariable); got != "inherited-run" {
+				t.Fatalf("runner inherited Run Marker changed to %q", got)
+			}
 			rows := strings.Split(strings.TrimSpace(readFile(t, path)), "\n")
 			invocations := readJSONInvocations(t, h.invocationsPath)
 			if len(rows) != len(invocations) {
@@ -99,6 +104,13 @@ func TestNoAgentSessionReceivesAJudgeKeyVariable(t *testing.T) {
 					t.Fatal("environment record does not match invocation")
 				}
 				commands[row.Command] = true
+				switch row.Command {
+				case "cancel", "sessions close", "sessions list":
+				default:
+					if row.RunID != "run-acpx" {
+						t.Errorf("%s received Run Marker %q, want request Run ID", row.Command, row.RunID)
+					}
+				}
 				for _, variable := range variables {
 					if slices.Contains(row.Names, variable) {
 						t.Errorf("%s received judge variable %s", row.Command, variable)

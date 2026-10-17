@@ -139,13 +139,25 @@ recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
 Archive Advice before it happens. Use repeatable `--promote <path>` to copy a
 confirmed candidate to `docs/references/` in the archive change.
 
+When `ROUNDFIX_RUN_ID` is non-empty in the command's environment, every
+candidate has `no advice (inside Run <run-id>, named by ROUNDFIX_RUN_ID)`.
+Archive Advice selects no transport, reads no key or Judge Log, writes no Judge
+Log and sends no request, even with a judge key present.
+Every Agent Session and Verification command of a Run receives this marker
+with the Run's ID. Roundfix also withholds the Judge Key Variables, including
+`TYPESAFE_API_KEY`, from those children; the marker keeps the judge silent even
+if a runtime restores a key from the user's shell startup.
+
+The advice of `roundfix history sanitize --batch <n> --advise` uses the same
+marker and candidate skip reason.
+
 Use `roundfix archive <slug> --plan --offline` when no judge may be contacted,
 including every QA Task. The offline plan loads no judge and reads no Judge
 Key Variable. After the evidence line it prints `judge: skipped (offline)`,
 then each candidate in file order as
 `candidate <file> <bytes> bytes: no advice (offline)`.
 `--offline` without `--plan` exits `2` with `--offline requires --plan`.
-The plain `--plan` form keeps Archive Advice.
+The plain `--plan` form keeps Archive Advice outside a Run.
 
 ### Archive Relink
 

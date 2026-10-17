@@ -128,6 +128,7 @@ func runSpecJudgeCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if err != nil {
 		return fail(err)
 	}
+	runID := commandRunID(environment.environ)
 	keys := make(map[string]string)
 	allowed := make(map[string]bool)
 	for _, variable := range questions.KeyVariables() {
@@ -135,12 +136,12 @@ func runSpecJudgeCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	for _, entry := range environment.environ {
 		name, value, _ := strings.Cut(entry, "=")
-		if allowed[name] {
+		if runID == "" && allowed[name] {
 			keys[name] = value
 		}
 	}
 	report, err := judge.Run(ctx, questions.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.Request{
-		RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Stage: req.stage,
+		RunID: runID, RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Stage: req.stage,
 		Keys: keys, HomeDir: environment.homeDir,
 		Transport: environment.dependencies.judgeTransport, Now: environment.dependencies.judgeNow,
 	})
@@ -204,4 +205,16 @@ func renderSpecJudgeText(report judge.Report) string {
 	}
 	out.WriteByte('\n')
 	return out.String()
+}
+
+// commandRunID uses the command environment, which can differ from the process.
+func commandRunID(environ []string) string {
+	var runID string
+	for _, entry := range environ {
+		name, value, _ := strings.Cut(entry, "=")
+		if name == judge.RunMarkerVariable {
+			runID = value
+		}
+	}
+	return runID
 }
