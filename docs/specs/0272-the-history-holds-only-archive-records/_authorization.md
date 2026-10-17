@@ -14,6 +14,7 @@ paths:
   - docs/agents/docs-layout.md
   - docs/agents/secondbrain.md
   - docs/agents/setup-context.json
+  - docs/references/coverage-record.json
   - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
   - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md
   - internal/baseline/assets/modules/context-workflow.json
@@ -106,7 +107,7 @@ and the catalog and plan characterization goldens under
 `internal/baseline/testdata/`; the mirrors `skills/roundfix/references/*.md`;
 `skills/testdata/owned-skill-versions.json`;
 `docs/references/behavior-surfaces.json`; `CONTEXT.md`; the user guide pages;
-`docs/references/**`; every file under `docs/history/`; and the ADR notes
+`docs/references/**` other than the coverage record; every file under `docs/history/`; and the ADR notes
 written while planning.
 
 ## Sanctioned regeneration
@@ -146,6 +147,12 @@ outputs:
   - docs/references/behavior-surfaces.json
 ```
 
+```yaml
+command: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+outputs:
+  - docs/references/coverage-record.json
+```
+
 `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
 is the Managed Refresh: it renders this repository's guides and Setup Manifest
 and applies the history section that removes the retired families, rewrites
@@ -175,3 +182,15 @@ hand-edited.
   `~/.roundfix`, reaches the network, or reads another repository.
 - No release, tag or deployment. Verification stays Daemon-owned, and Task
   status stays Daemon-written.
+
+## Amendment of 2026-10-17
+
+The first Run of this Spec's delivery stopped on 2026-10-17 at task_02's
+settlement with `QA-AUTH-PATHS`: retiring the reduction tests changes the test
+inventory in `docs/references/coverage-record.json`, which is a Governed Path,
+and its regenerating command was not declared, so the suite guard also refused
+the generator's write. This amendment adds that record to `paths` and its
+command to the sanctioned regeneration, under the same cycle AH grant
+("registros de versão" and "testes governados"); it adds no source path and
+changes nothing else. It lands on the default branch before the delivery
+consumes it.
