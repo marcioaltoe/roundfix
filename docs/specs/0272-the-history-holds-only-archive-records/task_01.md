@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0272-the-history-holds-only-archive-records
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -152,3 +152,100 @@ repository and through the proof.
 - `_prd.md` → Goals; User Story 2; Core Feature 3; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 6; Invariants 1-4; Current behavior; Testing Approach; Build Order 1
 - ADR-0278; ADR-0260; ADR-0247; ADR-0277; ADR-0261
+
+## Result
+
+Implemented the Task 01 slice for Daemon Verification.
+
+- Added `GitLocator`, `GitLocatorHolds`, `ResolveGitLocator` and
+  `CitationRewrite.Apply`. Resolution uses local refs through
+  `preflight.DetectDefaultBranch`, prefers reachable provenance, falls back to
+  the newest default-branch path commit (or its deletion parent), and returns
+  wrapped Git failures. The resolver performs no fetch.
+- `RelinkContent` delegates to the shared rewrite. The scanner now also reports
+  whole-link boundaries and shares its code mask with the path pass and outcome
+  shortening. Located inline links, images and reference definitions become
+  locators; moved destinations retain their suffixes. Existing locators,
+  CRLF, nested image labels and unrelated bytes are preserved.
+- Normal archives and legacy conversion use one `LegacyLinkRebase` for the
+  selected outcome and every promoted copy. Unpromoted folder targets become
+  locators, explicit record self-citations locate the source folder, and outward
+  destinations retain their repository targets. `BuildArchiveRecord` applies
+  an input rebase in either reading mode. `Rebase` now returns an error.
+- The Delivery Queue pairs a promotion by its unique removed-file basename,
+  reconstructs the complete promotion map, and compares the copy against the
+  shared rewrite with the parent preferred. Its other proof checks, including
+  the History Root relink refusal, remain in place.
+- Updated both command guides and regenerated
+  `docs/references/behavior-surfaces.json` with the required record command.
+  The additional ordinary path `internal/cli/archive.go` passes the existing
+  `--pull-request` value into the archive before it renders fallback locators.
+
+### Acceptance evidence
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Every locator names a reachable commit holding the path or an explicit fallback | The four `TestResolveGitLocator*` tests cover default ancestry, annotated tags, directories, deletion parents, local-head precedence, remote-only default refs, detached heads, deleted delivery branches and refusal to rely on another work branch. `TestGitLocatorTextForms` checks both code forms. Cancellation and non-repository errors are exercised. `TestArchiveOutcomeLinksBecomeGitLocators` checks an adopted reference at its planning commit and QA-only evidence with both unavailable and pull-request fallback text. |
+| Outcomes and copies have no removed-folder or record-self links | `TestLegacyLinkRebaseNeverLinksTheRecordToItself` covers folder, core-file and explicit self-citations. `TestCitationRewriteReplacesLinksAndPathsWithGitLocators` covers inline links with titles, images, reference definitions, code paths, fences, existing locators and nested labels. `TestArchivePromotedCopyKeepsItsTargetsThroughGitLocators` checks promotion-to-promotion links, removed-file locators, outward targets and unchanged link-free copies. `TestArchiveRecordShorteningKeepsGitLocatorsWhole` checks sentence and fallback cuts, multiple backticks and a whole locator before the cut. Legacy PRD, QA, supersession, sanitize and baseline-update routes pass their focused checks. |
+| RelinkContent retains its existing Archive Relink bytes | `TestCitationRewriteKeepsRelinkContentBytes` checks exact expected bytes and counts, including CRLF, titles, encoded paths, unmapped descendants and unusual path roots. Existing `TestRelinkContentRewritesOnlyDestinationsAndPaths`, `TestArchiveLinksMatch`, `TestArchiveLinksMarkdownForms` and `TestPlanArchiveRelink*` checks pass. |
+| Delivery accepts rewritten copies and refuses tampered relinks | `TestDeliveryAcceptsAnArchiveWithRewrittenPromotedCopies` checks working-tree, committed and reconciliation proofs, and rejects copy edits, wrong locator commits, changed Live Documents and ambiguous basenames even with different source bytes. Existing `TestDeliveryRefusesATamperedRelinkedFile` still covers the History Root, unlisted changes and duplicate relinks. Archive-stage tests confirm staging and committed proof. |
+
+All twelve required new top-level tests call `t.Parallel()` first. Each runs
+in a child test process with a temporary `HOME`, isolated Git configuration
+and disposable repositories, avoiding process-global `t.Setenv` in a parallel
+test. A deleted feature branch supplies the unreachable delivery provenance.
+
+### Intentional existing-test changes
+
+- `TestLegacyLinkRebasePointsFolderLinksAtTheirSurvivingFile` now expects Git
+  Locators for unpromoted files, core artifacts, unlisted descendants and folder
+  path text instead of record links.
+- `TestLegacyConversionRebasesTheOutcomeAndPromotedCopies` now expects the
+  promoted copy's PRD citation at the source commit. Its link-free and outcome
+  precedence checks retain their assertions.
+- `TestHistorySanitizeRebasesPromotedLinks` and
+  `TestBaselineUpdatePromotionRebasesLinks` now check revision-specific
+  locators for the removed PRD and notes while peer promotions and ADR targets
+  retain their destinations.
+- `TestArchiveRelinksLiveCitationsTranscript` now includes a removed-folder
+  citation in the promoted source and expects its locator. Delivery's shared
+  relink fixture also includes that citation, so its acceptance, staging,
+  ambiguity and tamper cases exercise rewritten promotions.
+- The two remaining `LegacyLinkRebase` byte/target tests only gained handling
+  for the new error return; their expected bytes remain the same.
+
+### Focused checks
+
+Each command below exited 0. These are development selections, not the authored
+Verification commands.
+
+- `rtk proxy go test ./internal/spec -run 'TestCitationRewrite|TestResolveGitLocator|TestGitLocatorTextForms|TestLegacyLinkRebase|TestLegacyConversionRebases|TestArchiveRecordShortening|TestRelinkContent|TestArchiveLinks' -count=1`
+- `rtk proxy go test ./internal/cli -run 'TestArchiveOutcomeLinks|TestArchivePromotedCopy|TestDeliveryAcceptsAnArchive|TestHistorySanitizeRebasesPromotedLinks|TestBaselineUpdatePromotionRebasesLinks|TestArchiveRelinksLiveCitationsTranscript|TestDeliveryRefusesATamperedRelinkedFile|TestDeliveryAcceptsARelinkedRetirement|TestDeliveryRefusesAnAmbiguousPromotionPairing|TestDeliveryArchiveStage' -count=1`
+- `rtk proxy go test ./internal/spec -run 'TestArchiveLinksMarkdownForms|TestArchiveLinksMatch|TestRelinkContentRewritesOnlyDestinationsAndPaths|TestPlanArchiveRelink|TestArchiveRecord|TestArchiveWrites|TestCancelRelinksLiveCitations|TestLegacyConversionPreservesTheRendererOutcomeBudget' -count=1`
+- `rtk proxy go test ./internal/cli -run 'TestArchiveRelink|TestArchiveWithoutInbound|TestArchiveRefuses|TestArchiveRecordsAPullRequest|TestDeliveryArchiveStage|TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening' -count=1`
+- Required generation: `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+- `rtk proxy git diff --check`.
+
+Development checks first exposed a CRLF reference-definition boundary loss,
+an incorrectly constructed deleted-branch fixture and an empty-token scanner
+loop. The boundary and loop were corrected, the fixture now preserves the
+planning branch, and the affected final focused selections above pass. The
+stalled development process was interrupted and exited before the final run.
+
+The initial worktree already held the Daemon's `status: in_progress` change in
+this Task file. That field is untouched. The authored Verification, selected
+repository Verification and terminal Task settlement remain with the Daemon.
+No commit, push or pull request was made. Workspace commands required the
+approved sandbox escalation because the configured writable root contains a
+symlink; the checks themselves ran successfully.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/archive.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T022748Z_f36d5baf6706b515`
+- Source commit: `eb7b5fce063ae472e2494bd3301070c4a01046ad`

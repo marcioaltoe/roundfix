@@ -120,7 +120,11 @@ during the item by comparing the merge commit with Git's merge of the candidate
 into its first parent.
 
 The archive commit also carries the promoted copies and every relinked file
-named by the Archive Record. The queue accepts a relinked file only when it is
+named by the Archive Record. The exact-archive proof recomputes each promoted
+copy from the single removed file with its basename, applying the archive's
+Git Locator rewrite with the parent as the preferred commit. The copy must
+match those rewritten bytes; an ambiguous basename or any extra edit refuses
+the proof. The queue accepts a relinked file only when it is
 outside the archived folder and History Root, existed at the parent, and its
 bytes equal the archive's rewrite of the parent's bytes under the same citation
 moves; an extra or altered relinked file fails the archive proof.

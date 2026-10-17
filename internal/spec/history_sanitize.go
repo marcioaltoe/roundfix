@@ -295,8 +295,22 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 		c.Promoted = append(c.Promoted, destination)
 	}
 	sort.Strings(c.Promoted)
+	inside, err := archiveGitWorkTree(context.Background(), req.RepositoryRoot)
+	if err != nil {
+		return c, err
+	}
+	rebase.Locate = func(path string) (GitLocator, bool, error) {
+		if !inside {
+			return GitLocator{Path: path, PullRequest: req.Delivery.PullRequest}, true, nil
+		}
+		locator, err := ResolveGitLocator(context.Background(), req.RepositoryRoot, path, req.SourceRevision, req.Delivery.PullRequest)
+		return locator, true, err
+	}
 	for source, destination := range rebase.Promoted {
-		c.legacyCopies[destination] = rebase.Rebase(c.legacyCopies[destination], source, destination)
+		c.legacyCopies[destination], err = rebase.Rebase(c.legacyCopies[destination], source, destination)
+		if err != nil {
+			return c, fmt.Errorf("rebase legacy promotion %q: %w", destination, err)
+		}
 	}
 	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true, Rebase: &rebase})
 	if err != nil {

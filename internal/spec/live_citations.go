@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,82 +53,8 @@ func ArchiveCitationMoves(folderRel, recordRel string, folderFiles []string, pro
 // RelinkContent changes only scanned relative destinations and bounded path text.
 // The scanner masks code; the path pass deliberately also covers spans and fences.
 func RelinkContent(content []byte, citingPath string, moves map[string]string) ([]byte, int) {
-	sources := make([]string, 0, len(moves))
-	for source := range moves {
-		if source != "" {
-			sources = append(sources, source)
-		}
-	}
-	sort.Slice(sources, func(i, j int) bool {
-		if len(sources[i]) != len(sources[j]) {
-			return len(sources[i]) > len(sources[j])
-		}
-		return sources[i] < sources[j]
-	})
-	var out bytes.Buffer
-	count, end := 0, 0
-	for _, span := range scanArchiveMarkdown(content) {
-		text, n := relinkArchivePaths(content[end:span.start], sources, moves)
-		out.Write(text)
-		count += n
-		destination := content[span.start:span.end]
-		target, suffix, relative := archiveLinkTarget(string(destination), filepath.Dir(citingPath))
-		if next, ok := moves[filepath.ToSlash(target)]; relative && ok {
-			rel, err := filepath.Rel(filepath.Dir(citingPath), filepath.FromSlash(next))
-			if err == nil {
-				replacement := (&url.URL{Path: filepath.ToSlash(rel)}).EscapedPath() + suffix
-				out.WriteString(replacement)
-				if replacement != string(destination) {
-					count++
-				}
-			} else {
-				out.Write(destination)
-			}
-		} else {
-			out.Write(destination)
-		}
-		end = span.end
-	}
-	text, n := relinkArchivePaths(content[end:], sources, moves)
-	out.Write(text)
-	return out.Bytes(), count + n
-}
-
-func relinkArchivePaths(content []byte, sources []string, moves map[string]string) ([]byte, int) {
-	var out bytes.Buffer
-	count := 0
-	boundary := func(c byte) bool { return strings.ContainsRune(" \t\r\n`\"'()[]<>#.,;:", rune(c)) }
-	for i := 0; i < len(content); {
-		matched := false
-		if i == 0 || boundary(content[i-1]) {
-			for _, source := range sources {
-				if !bytes.HasPrefix(content[i:], []byte(source)) {
-					continue
-				}
-				end := i + len(source)
-				// A slash is a path boundary only when it terminates the folder path.
-				// Do not turn an unmapped descendant or a filename prefix into a record path.
-				if end < len(content) && content[end] == '/' {
-					if end+1 < len(content) && !boundary(content[end+1]) {
-						continue
-					}
-					end++
-				} else if end < len(content) && !boundary(content[end]) {
-					continue
-				}
-				out.WriteString(moves[source])
-				count++
-				i = end
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			out.WriteByte(content[i])
-			i++
-		}
-	}
-	return out.Bytes(), count
+	rewritten, count, _ := (CitationRewrite{Moves: moves}).Apply(content, citingPath, citingPath)
+	return rewritten, count
 }
 
 // ArchiveRelinkPlan holds automatic and manual promotions and exact rewrites.
