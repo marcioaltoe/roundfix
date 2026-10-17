@@ -223,9 +223,10 @@ it. No Verification here depends on another unmerged Spec.
 
 ## Success Metrics
 
-1. Success Metric: on the delivered tree the History Root holds exactly 243
-   files, all Archive Records, and none under the Findings, Backlog or ADR
-   families.
+1. Success Metric: on the delivered tree the History Root holds exactly the
+   Archive Records of the delivery base minus the ten `superseded` records
+   0120 to 0129 (243 files when planned, 244 once Spec 0273's record landed
+   on 2026-10-16), and none under the Findings, Backlog or ADR families.
 2. Success Metric: a planted file under any of those families, a planted
    Reduced History Entry and a planted relative link to a missing file each
    make the Spec Consistency Check fail, and the unplanted tree passes.

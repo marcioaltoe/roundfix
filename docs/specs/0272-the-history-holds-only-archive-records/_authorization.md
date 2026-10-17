@@ -218,3 +218,16 @@ as the cleanup (first planned as a corrective task_06, folded into task_04 on
 2026-10-17 because it cannot settle before the cleanup). Nothing else
 changes, and the amendment lands on the default branch before the delivery
 consumes it.
+
+## Amendment of 2026-10-17, third
+
+The sixth Run delivered task_01 to task_04 and its QA gate failed three rows:
+the History Root count named 243 although Spec 0273's record landed before
+delivery, the `roundfix baseline update` plan did not name the files it
+removes (User Story 3), and a delivery fixture test was killed by macOS code
+signing. The corrective task_06 adds the paths to the plan; it changes
+`internal/cli/baseline_update_history.go` and its tests, which are not
+governed, and `.agents/skills/roundfix/SKILL.md`,
+`.agents/skills/roundfix/references/baseline.md`, `skills/roundfix/SKILL.md`
+and `docs/references/coverage-record.json`, already in `paths`. No path is
+added.
