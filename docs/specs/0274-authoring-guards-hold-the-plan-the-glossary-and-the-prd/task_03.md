@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -92,3 +92,68 @@ None. This Task adds a contract test and rewords glossary prose; no code consume
 - `_prd.md` → Goals; User Story 3; Core Feature 3; Success Metric 3
 - `_techspec.md` → API Contract 4; Invariant 5; Current behavior; Testing Approach; Build Order 3
 - ADR-0280; ADR-0244; ADR-0091
+
+## Result
+
+Implemented the five glossary rules and all six named tests in the existing
+`internal/docscontract/user_guide_contract_test.go`, retaining its
+`docscontract` build tag and `//verify:always` directive. The entry parser stops
+at headings, preserves source line numbers, and excludes `_Avoid_` lines from
+definition bodies. Shared rule functions serve the live glossary and synthetic
+violations. Phrase matching supports wrapped runs, consecutive term splits,
+plurals, possessives, hyphen boundaries, link labels, and code-span breaks.
+
+The two package-level tables hold seven reasoned allowlist phrases and the
+four closed-list mappings. Mappings read `spec.AllowedTaskTypes()` and the
+exported mechanical-refusal, reconciliation, and selection-encoding constants;
+`QA-PRECONDITION` remains the explicit row-label exception. Removing each
+allowlist phrase must expose an additional phrase finding.
+
+Reworded undefined capitalized runs without changing definition meanings,
+including the newer History Citation phrasing. Corrective Spec now has a plain
+`_Avoid_` list; Corrective Task's existing definition still owns the distinction
+between active and archived Specs. Existing literal output and ADR targets are
+preserved.
+
+### Focused evidence by acceptance criterion
+
+- Live glossary: `rtk proxy go test -count=1 -tags docscontract -run
+  '^TestGlossary' -json ./internal/docscontract` exited 0. The captured JSON
+  reports all six named top-level tests passing, including the five live
+  rules, and 36 passing subtests with no failures. Output was captured at
+  `/tmp/roundfix-0274-task03-glossary-check.jsonl` for this implementation turn;
+  no test depends on that file.
+- Planted violations: the shared helpers report exactly one undefined-phrase
+  finding, two invalid-link findings (proposed ADR and Spec destination), one
+  Task Type finding for the omitted `spec.TaskTypeQA`, one prose `_Avoid_`
+  finding, and one duplicate-sentence finding. Assertions require the named
+  entry for each, including both sentence owners. Additional subtests probe
+  phrase boundaries, accepted and legacy ADRs, every inactive ADR status,
+  malformed `_Avoid_` lines, wrapping and link normalization, and the exact
+  sixty-character sentence threshold.
+- Allowlist: `TestGlossaryPhrasesAreDefinedTerms` checks non-blank phrases and
+  reasons and removes each of the seven exceptions in turn to prove rule 1
+  still needs it. The focused run reports it passing.
+- Term preservation: a focused Python comparison against `git show
+  HEAD:CONTEXT.md` confirms all 321 glossary terms retain their names and
+  order, all 137 ADR link occurrences retain their targets, and all 272
+  existing code spans remain unchanged. Inspection also confirms six new
+  top-level tests begin with `t.Parallel()` and the repository still has nine
+  `docscontract` test files.
+
+The initial focused run exposed the live phrase gaps and Corrective Spec's
+prose `_Avoid_` line before the prose repairs. Subsequent focused checks use
+the repaired glossary. `gofmt` was applied to the changed Go file, and
+`rtk git diff --check` exited 0.
+
+The pre-existing worktree change was this Task's Daemon-owned status. It
+remains `in_progress`; only this Result was appended to its authored content.
+Implementation changes are limited to the existing test file and `CONTEXT.md`.
+No Task Graph or other Task file was edited. Declared Verification and the
+repository Verification were not run; they remain Daemon-owned. No commit,
+push, or pull request was made. No follow-up work was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T101202Z_03bf9e36c3f11f8c`
+- Source commit: `ae0eb42c2d0c78a679a8fd3fb50f87fdf93498c3`
