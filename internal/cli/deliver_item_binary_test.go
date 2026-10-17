@@ -19,8 +19,9 @@ import (
 )
 
 const deliveryItemFixtureSource = `package main
-import ("encoding/json"; "fmt"; "os"; "strconv"; "syscall")
+import ("encoding/json"; "fmt"; "io"; "os"; "strconv"; "syscall")
 func main() {
+ if len(os.Args) == 2 && os.Args[1] == "hold" { if _, err := io.Copy(io.Discard, os.Stdin); err != nil { panic(err) }; return }
  dir, err := os.Getwd(); if err != nil { panic(err) }
  file, err := os.OpenFile(os.Getenv("DELIVERY_ITEM_RECORD"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); if err != nil { panic(err) }
  err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home string; Pid, Ppid, Pgid int }{os.Args[1:], dir, os.Getenv("HOME"), os.Getpid(), os.Getppid(), syscall.Getpgrp()}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
@@ -40,6 +41,10 @@ type deliveryItemFixture struct {
 	workflow                 *commandDeliveryWorkflow
 	repo, home, record, head string
 	log                      bytes.Buffer
+}
+
+func deliveryItemBuildCommand(binary string) string {
+	return "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix.next && mv -f bin/roundfix.next bin/roundfix"
 }
 
 func newDeliveryItemFixture(t *testing.T) *deliveryItemFixture {
@@ -76,7 +81,7 @@ func newDeliveryItemFixture(t *testing.T) *deliveryItemFixture {
 	f.workflow = &commandDeliveryWorkflow{store: db, git: preflight.ExecGitRunner{}, log: &f.log, loaded: roundconfig.Loaded{GitRoot: f.repo, HomeDir: f.home}}
 	f.workflow.loaded.Config.Specs.Root = "docs/specs"
 	f.workflow.loaded.Config.Defaults.ArtifactDir = filepath.Join(root, "artifacts")
-	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{Path: "bin/roundfix", Build: "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix"}
+	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{Path: "bin/roundfix", Build: deliveryItemBuildCommand(binary)}
 	setCommandEnvForTest(t, "DELIVERY_ITEM_RECORD", f.record)
 	setCommandEnvForTest(t, "DELIVERY_ITEM_PROBE_EXIT", "0")
 	setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "")

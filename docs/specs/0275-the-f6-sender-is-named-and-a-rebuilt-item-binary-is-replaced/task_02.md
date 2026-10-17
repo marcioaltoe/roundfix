@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -96,3 +96,75 @@ writes in place.
 - `_prd.md` → Goals; User Story 1; Core Feature 3; Success Metric 1; Success Metric 2
 - `_techspec.md` → API Contract 4; API Contract 5; API Contract 6; Invariants 2 and 3; Current behavior; Testing Approach; Build Order 2
 - ADR-0281; ADR-0213; ADR-0125; ADR-0259; ADR-0271
+
+
+## Result
+
+sender: not reproduced
+
+Copied from `diagnosis/f6-sender.md`, read before implementation. This Task
+answers the replacement-build half of the Backlog Entry of 2026-10-13; the
+held-binary reproduction below does not change Task 01's diagnosis of F6.
+
+Both delivery fixtures now use `deliveryItemBuildCommand(binary)`, which
+preserves the existing shell quoting and returns API Contract 4's command:
+`mkdir -p bin && cp '<binary>' bin/roundfix.next && mv -f bin/roundfix.next bin/roundfix`.
+The builds that print, exit, or only create a directory are unchanged.
+
+The fixture's `hold` mode reads stdin through EOF and returns before recording
+a start. The new parallel rebuild test takes its first step through the probe
+report, starts the previous executable with `StdinPipe`, and takes a second
+step while the test holds the pipe's write end. It asserts the item selection
+line, the previous inode replaced by a different nonzero inode, the report's
+`replaced` form, a recorded probe with a live context, and exactly two
+`migrate --check` starts. Deferred teardown closes the pipe and asserts that
+its own held child exits 0, including on an earlier assertion failure. The
+pipe also releases the child if the test binary ends; no real-time allowance,
+retry, signal, or unrelated-process wait was added.
+
+### Focused implementation evidence
+
+- Old-build proof on macOS: temporarily changed only the builder's return to
+  the original in-place copy, then ran
+  `rtk proxy go test -count=1 -v -run '^TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns$' ./internal/cli`.
+  Exit 1. The second-step log contained
+  `migrate --check was killed by signal SIGKILL (9), no core dump`;
+  the report read inode `772695031 -> 772695031 (rewritten in place)`,
+  `probe start not recorded`, `context live`. The helper's in-place return
+  was then replaced with the final copy-and-rename command.
+- Final implementation: ran
+  `rtk proxy go test -count=1 -v -run '^TestDelivery(Step|Steps|ItemBinary|ProbeReport)' ./internal/cli`.
+  Exit 0; all 12 selected top-level tests passed, including the rebuild test,
+  the five existing tests named in Requirement 6, both Task 01 report tests,
+  and the four remaining item-binary cases. No Helper Residue was reported.
+- An initial focused invocation exposed the signal fixture's now-unused
+  `strings` import; removed it before the behavioral red/green runs above.
+- `GOOS=linux rtk proxy go build ./internal/cli`: exit 0, covering the other
+  platform named by the edited signal test's build constraint.
+- Local source audit with `rg` over `internal/cli/deliver*test.go` found both
+  fixture build declarations using the shared builder and its sole copy
+  destination `bin/roundfix.next`. A Python comparison against `git show HEAD`
+  confirmed all existing test functions in both edited fixture files remain
+  byte-identical, as does the entire Task 01 probe report file.
+- Changed-path audit against Git's tracked diff and untracked paths found only
+  the three Task 02 Go test files and this Task file. No production file,
+  other Task, or Task Graph manifest changed. `rtk proxy git diff --check`:
+  exit 0 before recording this Result.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| No delivery fixture copies onto its existing item binary. | Both fixtures call the API Contract 4 builder; the delivery-test source audit found only the copy to `bin/roundfix.next` followed by rename. |
+| Rebuilding while the previous build runs preserves a normal probe exit. | The new rebuild test passed with replacement, including two recorded probes, item selection, a new inode, and holder exit 0. The old builder produced the exact SIGKILL notice above. |
+| Existing item binary assertions continue to pass unchanged. | The focused 12-test selection passed; source comparison confirmed every existing test function in the edited fixture files and the Task 01 report file is byte-identical to HEAD. |
+
+Task status remains Daemon-owned. Declared Verification commands, repository
+Verification, and full suites were not run in this turn; the Daemon and the
+terminal QA Task retain their assigned checks. No commit, push, or pull
+request was created. No additional implementation follow-up was introduced.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T121021Z_d7caac86f32133f1`
+- Source commit: `a14a3594523d721d607da451a97015cc45d17abc`
