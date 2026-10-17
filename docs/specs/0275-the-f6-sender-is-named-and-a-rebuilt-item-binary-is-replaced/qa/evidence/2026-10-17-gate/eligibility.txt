@@ -1,2 +1,0 @@
-roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"
-exit: 1

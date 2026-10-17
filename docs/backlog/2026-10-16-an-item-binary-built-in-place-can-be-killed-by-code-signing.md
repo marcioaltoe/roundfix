@@ -33,7 +33,7 @@ build, so a running item binary is never rewritten under itself.
 
 ## Evidence
 
-Spec 0275 (`docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/`)
+Spec 0275 (`docs/history/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced.md`)
 fixes the same mechanism in the delivery test fixtures and leaves production
 builds unchanged; its authoring probes reproduced F6's notice "was killed by
 signal SIGKILL (9), no core dump" five times in five through the fixture.
