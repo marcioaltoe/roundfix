@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	gitpath "path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -73,6 +74,7 @@ func sameReviewCheckout(left, right string) bool {
 }
 
 type reviewFinding struct {
+	Segment    int                      `json:"segment,omitempty"`
 	ID         string                   `json:"id"`
 	Text       string                   `json:"text"`
 	Anchor     *reviewFindingAnchor     `json:"anchor,omitempty"`
@@ -119,6 +121,7 @@ func (err reviewRetriedSelectionError) Error() string { return err.err.Error() }
 func (err reviewRetriedSelectionError) Unwrap() error { return err.err }
 
 type reviewRecord struct {
+	Segments              []reviewSegment            `json:"segments,omitempty"`
 	FailedStep            string                     `json:"failedStep,omitempty"`
 	AdapterMessage        string                     `json:"adapterMessage,omitempty"`
 	SelectionRetries      []reviewSelectionRetry     `json:"selectionRetries,omitempty"`
@@ -408,7 +411,7 @@ func reviewCandidateDiff(
 	return diff, err
 }
 
-func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit string, specRoots []string, runner preflight.GitRunner) (string, []reviewOmittedPath, error) {
+func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit string, specRoots []string, runner preflight.GitRunner, declarationBases ...string) (string, []reviewOmittedPath, error) {
 	gitRoot, baseCommit, headCommit = strings.TrimSpace(gitRoot), strings.TrimSpace(baseCommit), strings.TrimSpace(headCommit)
 	switch {
 	case gitRoot == "":
@@ -417,6 +420,15 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 		return "", nil, errors.New("review base commit is required")
 	case headCommit == "":
 		return "", nil, errors.New("review head commit is required")
+	}
+	declarationBase := baseCommit
+	if len(declarationBases) > 0 {
+		declarationBase = declarationBases[0]
+	}
+	// An empty user path reads only Project Config at the immutable base.
+	declarations, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, "", declarationBase)
+	if err != nil {
+		return "", nil, reviewPrePromptError{fmt.Errorf("review scope: read derived paths: %w", err)}
 	}
 	skills := make(map[string]struct{})
 	for _, commit := range []string{baseCommit, headCommit} {
@@ -488,6 +500,9 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 	}
 	omitted := make([]reviewOmittedPath, 0)
 	for _, path := range strings.Split(changed, "\x00") {
+		if path == "" {
+			continue
+		}
 		reason := ""
 		for _, source := range retiredSources {
 			if deletedPaths[path] && strings.HasPrefix(path, source+"/") {
@@ -510,6 +525,27 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 			if len(parts) == 2 {
 				if _, found := skills[parts[0]]; found {
 					reason = "upstream-skill"
+				}
+			}
+		}
+		if reason == "" && deletedPaths[path] && strings.HasPrefix(path, "docs/history/") {
+			content, err := runner.RunGit(ctx, gitRoot, "show", baseCommit+":"+path)
+			if err != nil {
+				return "", nil, reviewPrePromptError{fmt.Errorf("review scope: read retired history: %w", err)}
+			}
+			if !spec.IsArchiveRecord(gitpath.Base(path), []byte(content)) {
+				reason = "retired-history"
+			}
+		}
+		if reason == "" {
+			for _, declaration := range declarations.Delivery.DerivedPaths {
+				for _, pattern := range declaration.Paths {
+					if strings.HasSuffix(pattern, "/") {
+						continue
+					}
+					if matched, _ := gitpath.Match(pattern, path); matched {
+						reason = "generated"
+					}
 				}
 			}
 		}
@@ -541,17 +577,13 @@ func estimateReviewPromptTokens(prompt string) int {
 }
 
 func appendReviewOmissions(prompt string, omitted []reviewOmittedPath) string {
-	qa, skills := 0, 0
+	counts := make(map[string]int)
 	for _, path := range omitted {
-		if path.Reason == "qa-evidence" {
-			qa++
-		} else {
-			skills++
-		}
+		counts[path.Reason]++
 	}
 	var out strings.Builder
 	out.WriteString(prompt)
-	fmt.Fprintf(&out, "Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills.\n", qa, skills)
+	fmt.Fprintf(&out, "Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills, %d of archived Spec sources, %d of retired history, %d of generated files.\n", counts["qa-evidence"], counts["upstream-skill"], counts["archived-spec-source"], counts["retired-history"], counts["generated"])
 	for _, path := range omitted {
 		fmt.Fprintf(&out, "%s (%s)\n", path.Path, path.Reason)
 	}
@@ -592,6 +624,9 @@ type reviewSpecContext struct {
 }
 
 type reviewSpecContextResult struct {
+	segments              []reviewSegment
+	segmentDiffs          []string
+	segmentAnswers        []reviewSegmentAnswer
 	estimatedPromptTokens int
 	candidateDiff         string
 	diffBytes             int
@@ -818,6 +853,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		stderr,
 		plan,
 	)
+	record.Segments = specContext.segments
 	record.SelectionRetries = specContext.selectionRetries
 	record.DiffBytes = specContext.diffBytes
 	record.EstimatedPromptTokens = specContext.estimatedPromptTokens
@@ -829,8 +865,13 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	record.SkippedSpecs = append([]string{}, specContext.skipped...)
 	record.ArchivedSpecs = append([]string{}, specContext.archivedSpecs...)
 	record.SpecContextTruncated = specContext.truncated
-	record, code := classifyReviewCommandResult(record, result, runErr)
-	if record.Outcome == reviewOutcomeFindings || record.Outcome == reviewOutcomeReviewed {
+	var code int
+	if len(specContext.segmentAnswers) > 0 {
+		record, code = classifyReviewSegmentAnswers(record, specContext.segmentAnswers)
+	} else {
+		record, code = classifyReviewCommandResult(record, result, runErr)
+	}
+	if len(specContext.segmentAnswers) == 0 && (record.Outcome == reviewOutcomeFindings || record.Outcome == reviewOutcomeReviewed) {
 		record, code = validateReviewFindingAnchors(record, specContext.candidateDiff)
 	}
 	if record.Outcome == reviewOutcomeFindings {
@@ -1309,15 +1350,27 @@ func runConfiguredReviewSession(
 	scope := reviewSpecContextResult{candidateDiff: diff, diffBytes: len(diff), omittedPaths: omitted}
 	prompt := buildReviewPrompt(baseCommit, headCommit, diff, omitted)
 	if plan.Lineage.Round == 2 {
-		delta, deltaOmitted, deltaErr := reviewScopedDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, specRoots, gitRunner)
+		delta, deltaOmitted, deltaErr := reviewScopedDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, specRoots, gitRunner, baseCommit)
 		if deltaErr != nil {
 			return agent.ExecuteResult{}, scope, false, deltaErr
 		}
 		scope.diffBytes, scope.omittedPaths = len(delta), deltaOmitted
 		prompt = appendReviewOmissions(buildRoundTwoPrompt(plan, delta, plan.Lineage.PreviousFindings, plan.Lineage.PreviousDispositions), deltaOmitted)
 	}
+	var segmentPrompts []string
 	if config.PrePRReview.Provider == "codex" {
-		if err := checkReviewDiffBound(scope.diffBytes, scope.omittedPaths); err != nil {
+		if plan.Lineage.Round == 1 && scope.diffBytes > reviewDiffBound {
+			segments, segmentDiffs, prompts, err := planReviewSegments(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner, scope)
+			if err != nil {
+				return agent.ExecuteResult{}, scope, false, err
+			}
+			scope.segments, scope.segmentDiffs, segmentPrompts = segments, segmentDiffs, prompts
+			scope.diffBytes = 0
+			for _, segment := range segments {
+				scope.diffBytes += segment.DiffBytes
+			}
+			prompt = prompts[0]
+		} else if err := checkReviewDiffBound(scope.diffBytes, scope.omittedPaths); err != nil {
 			return agent.ExecuteResult{}, scope, false, err
 		}
 	}
@@ -1326,7 +1379,11 @@ func runConfiguredReviewSession(
 		return agent.ExecuteResult{}, scope, false, reviewSpecReadError{err: err}
 	}
 	specContext.candidateDiff, specContext.diffBytes, specContext.omittedPaths = scope.candidateDiff, scope.diffBytes, scope.omittedPaths
+	specContext.segments, specContext.segmentDiffs = scope.segments, scope.segmentDiffs
 	prompt = appendReviewSpecContexts(prompt, specContext)
+	if len(segmentPrompts) > 0 {
+		segmentPrompts[0] = prompt
+	}
 	if config.PrePRReview.Provider == "claude" {
 		specContext.estimatedPromptTokens = estimateReviewPromptTokens(prompt)
 		if specContext.estimatedPromptTokens > claudeReviewPromptBudget {
@@ -1346,6 +1403,9 @@ func runConfiguredReviewSession(
 	preparer, canPrepare := runner.(agent.SessionPreparer)
 	preparedRunner, canRunPrepared := runner.(agent.PreparedPromptRunner)
 	if !canPrepare || !canRunPrepared {
+		if len(segmentPrompts) > 0 {
+			return agent.ExecuteResult{}, specContext, false, errors.New("segmented review requires a prepared-session runner")
+		}
 		runtime, runtimeErr := runtimeForProfileSelection(profile.Profile.Preferred)
 		if runtimeErr != nil {
 			return agent.ExecuteResult{}, specContext, false, runtimeErr
@@ -1377,13 +1437,41 @@ func runConfiguredReviewSession(
 		}
 		return err
 	}
-	runPrepared := func(index int) (agent.ExecuteResult, error) {
+	runPrompt := func(index int) (agent.ExecuteResult, error) {
 		result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
 		if ctx.Err() == nil && reviewPromptFailedBeforePrompt(runErr) && !retried[index] {
 			retry(index, runErr)
 			result, runErr = preparedRunner.RunPrepared(ctx, request, runevent.Discard)
 		}
 		return result, runErr
+	}
+	runPrepared := func(index int) (agent.ExecuteResult, error) {
+		if len(segmentPrompts) == 0 {
+			return runPrompt(index)
+		}
+		specContext.segmentAnswers = nil
+		var answer strings.Builder
+		var last agent.ExecuteResult
+		for i, prompt := range segmentPrompts {
+			request.Prompt = prompt
+			result, runErr := runPrompt(index)
+			// A selection may fall back only before any segment was sent.
+			if i == 0 && reviewPromptFailedBeforePrompt(runErr) {
+				return result, runErr
+			}
+			specContext.segmentAnswers = append(specContext.segmentAnswers, reviewSegmentAnswer{result: result, err: runErr, diff: specContext.segmentDiffs[i]})
+			fmt.Fprintf(&answer, "--- Review Segment %d of %d ---\n%s\n", i+1, len(segmentPrompts), result.Message)
+			last = result
+			classified, _ := classifyReviewCommandResult(reviewRecord{Outcome: reviewOutcomeBlocked}, result, runErr)
+			if classified.Outcome == reviewOutcomeFindings {
+				classified, _ = validateReviewFindingAnchors(classified, specContext.segmentDiffs[i])
+			}
+			if classified.Outcome == reviewOutcomeBlocked {
+				break
+			}
+		}
+		last.Message = answer.String()
+		return last, nil
 	}
 	fallback := func(index int, err error) bool {
 		if ctx.Err() != nil || !retried[index] || index+1 >= len(selections) {

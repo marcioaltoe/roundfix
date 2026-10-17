@@ -116,7 +116,7 @@ func TestDeliveryProbeReportRecordsTheProbeStart(t *testing.T) {
 	f := newDeliveryItemFixture(t)
 	executable, err, report := f.step(t, commandContextForTest(t, t.Context()), "review")
 	path := filepath.Join(f.repo, "bin/roundfix")
-	if err != nil || executable != path {
+	if err != nil || executable != f.copyPath(t) {
 		t.Fatalf("executable=%q err=%v; %s", executable, err, report)
 	}
 	inode := deliveryItemInode(t, path)

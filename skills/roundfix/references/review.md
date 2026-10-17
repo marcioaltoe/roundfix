@@ -22,22 +22,59 @@ names in the `skills` map of `skills-lock.json` at either end of the diff,
 with reason `upstream-skill`; a skill dropped from the head lock remains
 omitted. A missing lock omits no skills for that revision. An unreadable or
 malformed lock blocks with `review scope: read skills-lock.json: <error>`.
-These rules apply to round one's candidate and round two's delta.
+Deleted files under `docs/history/`, except Archive Records, are omitted as
+`retired-history`. A file matched by an exact or glob entry in
+`delivery.derived_paths[].paths` is omitted as `generated`. Matching uses
+whole-path Go `path.Match`; directory entries ending in `/` never omit files.
+Declarations come from Project Config at the candidate's base commit, never
+from its head or an intermediate segment head. A base without Project Config
+omits no generated files. An unreadable base configuration blocks with
+`review scope: read derived paths: <error>` before a provider call.
+
+Omission precedence is `archived-spec-source`, `qa-evidence`, `upstream-skill`,
+`retired-history`, then `generated`. These rules apply to round one's
+candidate and round two's delta.
 
 After the diff block, the prompt lists the sorted omitted paths and their
-reasons, introduced by `Omitted from this diff (not reviewed): <n> path(s) of
-QA evidence, <m> of upstream-managed skills.` The record's `omittedPaths`
+reasons, introduced by `Omitted from this diff (not reviewed): <q> path(s) of
+QA evidence, <u> of upstream-managed skills, <a> of archived Spec sources, <r>
+of retired history, <g> of generated files.` The record's `omittedPaths`
 is the same sorted array of `{path, reason}`, always present as `[]` when
 empty. `diffBytes` measures the diff text sent in that round, or the measured
 diff when the bound blocks it. Older records without these fields remain
 readable.
 
-For `codex`, a diff above 917504 bytes blocks with exit `2` before any provider
-call or Agent Session preparation, without trying a configured fallback. Its
-reason is `review diff too large: <bytes> bytes after omitting <n> path(s)
-exceeds the review bound of 917504 bytes`. This bound is below Spec 0194's
-successfully reviewed 919,745-byte candidate; Spec 0200's 1,295,055-byte
-candidate failed three times. On a runtime failure carrying
+For `codex` round 1, a scoped candidate diff above 917504 bytes is reviewed
+in at most four Review Segments. A Review Segment is a consecutive
+first-parent commit range whose scoped diff fits the bound. Roundfix lists
+`git rev-list --first-parent --reverse <base>..<head>` and greedily grows each
+range while its scoped diff stays within the bound. It prepares one read-only
+Agent Session and sends each segment prompt in order through `RunPrepared`.
+Each prompt starts with:
+
+```text
+Review Segment <i> of <k>: commits <segment base>..<segment head> of the candidate <base>..<head>; answer for this segment only.
+```
+
+Only the first prompt carries the Spec context. The first blocked or failed
+answer stops the sequence. Otherwise one record merges the findings as `F1`,
+`F2`, and so on in segment order, each carrying a one-based `segment` number.
+Each anchor is checked against its own segment's diff. The record's optional
+`segments` array holds `{base, head, diffBytes}` for each range; `diffBytes`
+on the record is their sum. The answer file joins the answers under
+`--- Review Segment <i> of <k> ---` lines. Unsegmented and older records omit
+both `segments` and the finding's `segment` field. Verdict reuse,
+dispositions, convention validation and round accounting remain per candidate
+head: all segments are one round.
+
+A single commit above the bound, or an oversized round-2 delta, still blocks
+with exit `2` before any provider call, readiness probe or session preparation:
+`review diff too large: <bytes> bytes after omitting <n> path(s) exceeds the
+review bound of 917504 bytes`. A candidate needing more than four segments
+blocks at the same boundary with `review diff too large: <bytes> bytes after
+omitting <n> path(s) needs <k> review segments; a review allows at most 4`.
+Round 2 is never segmented. Claude retains its token budget below and is
+never segmented. On a runtime failure carrying
 `agent.BatchFailureError` stderr, `runtimeStderrTail` records its last 10 lines
 capped at the last 1,024 bytes. The reason text is unchanged; the tail field
 is omitted when empty.
@@ -104,15 +141,17 @@ in a clause beginning with `Failure:`. An older record without `findingItems` de
 Roundfix reads it.
 
 The prompt carries Delivery Conventions version
-`roundfix/delivery-conventions/v2`. These describe what a delivery writes by
+`roundfix/delivery-conventions/v3`. These describe what a delivery writes by
 design:
 
 - C1. A Spec's QA Report records the head it audited and is committed after
   that head, so it never names the commit that records it.
-- C2. The Daemon writes a Task file's status and its `## Result`,
-  `## Recorded paths` and `## Carry-forward provenance` sections after the
-  Task's Verification passes; a Result that calls status Daemon-owned agrees
-  with a `completed` status.
+- C2. The Daemon writes a Task file's status after the Task's Verification
+  passes, its `## Result` and `## Carry-forward provenance` sections for
+  non-QA Tasks only, and `## Recorded paths` only when a Task changed a path
+  it did not declare; a QA Task settles on its committed QA Report and carries
+  none of these sections. A Result that calls status Daemon-owned agrees with
+  a `completed` status.
 - C3. The archive commit moves a completed Spec's directory to the archive
   root and stamps its archive front matter.
 - C4. A planning candidate authors a Spec whose Tasks are all pending and
@@ -206,8 +245,9 @@ merge base stay the same and each reviewed head descends from the last.
 Round 1 reviews the full candidate diff. Round 2 reviews only the delta from
 the round-1 head to the current head; its prompt always includes every round-1
 finding with its validation and operator disposition. A fixed or dismissed
-finding is raised again only if the delta reintroduces it. Anchors are still
-validated against the full merge-base candidate diff in either round.
+finding is raised again only if the delta reintroduces it. For a segmented round 1, anchors are validated against their own segment
+diff; otherwise they are validated against the full merge-base candidate
+diff in either round.
 A rebase, changed provider or merge base, or a head that does not descend
 starts a new lineage at round 1. A blocked review retries its own round with
 its recorded previous data.

@@ -77,6 +77,8 @@ func TestPlanHistoryKindsRemovesWhatTheOldLayoutLeft(t *testing.T) {
 	}
 }
 
+// Keep the existing test name while asserting ADR-0282's replacement contract:
+// an accepted successor gains lineage; only an unaccepted successor is refused.
 func TestPlanHistoryKindsRefusesASupersededADRItsSuccessorDoesNotName(t *testing.T) {
 	t.Parallel()
 	if !gitLocatorTestHome(t) {
@@ -84,15 +86,39 @@ func TestPlanHistoryKindsRefusesASupersededADRItsSuccessorDoesNotName(t *testing
 	}
 	root, _ := gitLocatorRepo(t)
 	old := "docs/adr/0001-old.md"
+	successor := "docs/adr/0002-new.md"
 	historyEntryWrite(t, root, old, "---\nstatus: superseded\nsuperseded_by: ADR-0002\n---\n# Old\n")
-	historyEntryWrite(t, root, "docs/adr/0002-new.md", "---\nstatus: accepted\n---\n# New\n")
-	if _, err := PlanHistoryKinds(t.Context(), root); err == nil || !strings.Contains(err.Error(), "0001-old.md") {
-		t.Fatalf("err=%v", err)
-	}
-	historyEntryWrite(t, root, "docs/adr/0002-new.md", "---\nstatus: accepted\n---\n# New\n\nConsolidates ADR-0001 (2026-10-16).\n")
+	historyEntryWrite(t, root, successor, "---\nstatus: accepted\n---\n# New\n")
+	legacyCommit(t, root, "docs: superseded ADR and accepted successor")
 	plans, err := PlanHistoryKinds(t.Context(), root)
-	if err != nil || len(plans) != 1 || !reflect.DeepEqual(plans[0].Files, []string{old}) {
-		t.Fatalf("plans=%+v err=%v", plans, err)
+	if err != nil || len(plans) != 1 || !reflect.DeepEqual(plans[0].Files, []string{old}) || len(plans[0].Lineage) != 1 || len(plans[0].Refused) != 0 {
+		t.Fatalf("unnamed accepted successor: plans=%+v err=%v", plans, err)
+	}
+	lineage := plans[0].Lineage[0]
+	if lineage.Successor != successor || lineage.Removed != old || !strings.HasPrefix(lineage.Line, "Supersedes ADR-0001 (") {
+		t.Fatalf("lineage=%+v", lineage)
+	}
+	historyEntryWrite(t, root, successor, "---\nstatus: proposed\n---\n# New\n")
+	plans, err = PlanHistoryKinds(t.Context(), root)
+	wantRefused := []HistoryRefusal{{Path: old, Reason: "superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated"}}
+	if err != nil || len(plans) != 1 || len(plans[0].Files) != 0 || len(plans[0].Lineage) != 0 || !reflect.DeepEqual(plans[0].Refused, wantRefused) {
+		t.Fatalf("proposed successor: plans=%+v err=%v", plans, err)
+	}
+	named := "---\nstatus: accepted\n---\n# New\n\nConsolidates ADR-0001 (2026-10-16).\n"
+	historyEntryWrite(t, root, successor, named)
+	plans, err = PlanHistoryKinds(t.Context(), root)
+	if err != nil || len(plans) != 1 || !reflect.DeepEqual(plans[0].Files, []string{old}) || len(plans[0].Lineage) != 0 || len(plans[0].Refused) != 0 {
+		t.Fatalf("named accepted successor: plans=%+v err=%v", plans, err)
+	}
+	if err := ApplyHistoryKind(root, plans[0]); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(filepath.Join(root, successor))
+	if err != nil || string(content) != named {
+		t.Fatalf("existing lineage changed: %q err=%v", content, err)
+	}
+	if _, err := os.Stat(filepath.Join(root, old)); !os.IsNotExist(err) {
+		t.Fatalf("superseded ADR remains: %v", err)
 	}
 }
 

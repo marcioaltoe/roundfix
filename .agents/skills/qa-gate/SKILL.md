@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.15
+  version: 0.0.16
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.15
+version: 0.0.16
 ---
 
 # QA Gate
@@ -638,8 +638,9 @@ The gate permits Pull Request preparation on `pass`, or on a qualifying declared
 
 Write one `## Outcome` paragraph in the QA Report describing the result that
 the Archive Record will carry. In a Delivery Queue Run, use
-`roundfix archive <slug> --plan` and copy any candidate advised as
-`reusable_knowledge` to `docs/references/` in the QA commit with
+`roundfix archive <slug> --plan --offline` to list the cut and its candidates.
+A QA Task never contacts the judge. Review candidates for reusable knowledge
+and copy confirmed knowledge to `docs/references/` in the QA commit with
 `--promote <path>` when archiving.
 
 ## Anti-patterns

@@ -195,5 +195,8 @@ storage: found (Runs reclaimable: 0; Run Database free bytes: 0; Worktree Build 
 The upgrade notice names every pending history unit, including a Reduced
 History Entry left by an earlier version. Run `roundfix baseline update` to
 review removal of retired families and uncited superseded records, conversion
-of Legacy Archive Folders, citation rewrites and `record-links` repairs.
+of Legacy Archive Folders, missing successor lineage, per-path ADR refusals,
+citation rewrites, `record-links` and `live-links` repairs. The latter prints
+`live-links: rewrites <l> link(s) in <n> file(s)` in history text and the same
+line prefixed with `- ` in baseline text.
 No new reduced entry is written; retired text stays in Git.

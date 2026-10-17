@@ -75,7 +75,7 @@ func TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary(t *testing.T) {
 				t.Fatalf("review error=%v want=%q", err, want)
 			}
 			f.assertStarts(t, []string{"migrate", "--check"}, []string{"review"})
-			if f.log.String() != f.selectionLine("review") {
+			if f.log.String() != f.selectionLine(t, "review") {
 				t.Fatalf("log=%q", f.log.String())
 			}
 		})

@@ -2,11 +2,13 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"roundfix/internal/config"
@@ -15,13 +17,14 @@ import (
 )
 
 const historyUsage = `Usage:
-  roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]
+  roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...] [--format text|json]
 
 Plans pending legacy folders, findings, backlog, ADRs, reviews, handoffs and superseded records in that
-order, followed by record-links repairs. Refused Units are listed with their reason, left in place and not counted
+order, followed by record-links and live-links repairs. Refused Units are listed with their reason, left in place and not counted
 toward --batch. Plans write nothing in the repository. Advice is optional and advisory.
 
 Options:
+  --format <value>  Print text (default) or JSON
   --batch <n>       Select the next positive number of pending units
   --advise          Add Jev advice for the selected folders (requires --batch)
   --apply           Apply one batch on a clean tree covered by history-full
@@ -33,6 +36,7 @@ Exit codes: 0 plan, applied or nothing pending; 1 write failure; 2 preflight ref
 `
 
 type historyRequest struct {
+	format                  string
 	batch                   int
 	batchSet, advise, apply bool
 	promote                 []string
@@ -52,6 +56,7 @@ func parseHistory(args []string) (historyRequest, error) {
 	var req historyRequest
 	f := flag.NewFlagSet("history sanitize", flag.ContinueOnError)
 	f.SetOutput(io.Discard)
+	f.StringVar(&req.format, "format", "text", "Output format")
 	f.IntVar(&req.batch, "batch", 0, "Next units")
 	f.BoolVar(&req.advise, "advise", false, "Advice")
 	f.BoolVar(&req.apply, "apply", false, "Apply")
@@ -65,12 +70,16 @@ func parseHistory(args []string) (historyRequest, error) {
 		}
 	})
 	switch {
+	case req.format != "text" && req.format != "json":
+		return req, fmt.Errorf("--format must be text or json")
 	case len(f.Args()) > 0:
 		return req, fmt.Errorf("unexpected argument %q", f.Args()[0])
 	case req.batchSet && req.batch < 1:
 		return req, fmt.Errorf("--batch must be a positive integer")
 	case req.apply && !req.batchSet:
 		return req, fmt.Errorf("--apply requires --batch <n>")
+	case req.advise && req.format == "json":
+		return req, fmt.Errorf("--advise requires --format text")
 	case req.advise && (!req.batchSet || req.apply):
 		return req, fmt.Errorf("--advise requires --batch and cannot be combined with --apply")
 	case len(req.promote) > 0 && !req.apply:
@@ -103,7 +112,7 @@ func historyInventory(ctx context.Context, root, archive string) ([]historyUnit,
 	}
 	for _, kind := range []spec.ArchiveKind{spec.ArchiveKindFinding, spec.ArchiveKindBacklog, spec.ArchiveKindADR, spec.ArchiveKindReview, spec.ArchiveKindHandoff} {
 		plan, err := spec.PlanHistoryKind(ctx, root, kind, specRootRel)
-		if len(plan.Files) > 0 || err != nil {
+		if len(plan.Files) > 0 || len(plan.Refused) > 0 || err != nil {
 			units = append(units, historyUnit{name: string(kind), files: plan.Files, kind: &plan, refusal: err})
 			if err == nil {
 				removed = append(removed, plan.Files...)
@@ -127,6 +136,13 @@ func historyInventory(ctx context.Context, root, archive string) ([]historyUnit,
 	}
 	if len(links.Files) > 0 {
 		units = append(units, historyUnit{name: "record-links", links: &links})
+	}
+	live, err := spec.PlanLiveLinks(ctx, root, specRootRel, archiveRel, skip)
+	if err != nil {
+		return nil, err
+	}
+	if len(live.Files) > 0 {
+		units = append(units, historyUnit{name: "live-links", links: &live})
 	}
 	return units, nil
 }
@@ -251,6 +267,9 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		if len(req.promote) > 0 {
 			return fail(fmt.Errorf("promotion is outside the batch"))
 		}
+		if req.format == "json" {
+			return printHistoryJSON(stdout, stderr, nil, nil, nil, false)
+		}
 		fmt.Fprintln(stdout, "history sanitize plan: 0 unit(s) pending; nothing pending")
 		return exitOK
 	}
@@ -279,7 +298,7 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 			}
 		}
 		if u.links != nil {
-			u, err = planRecordLinksUnit(ctx, repo, archiveRel, selected)
+			u, err = planLinksUnit(ctx, repo, specRel, archiveRel, u.name, selected)
 			if err != nil {
 				return fail(err)
 			}
@@ -291,6 +310,15 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		u, err = planHistoryUnit(ctx, repo, specRel, archive, archiveRel, revision, u)
 		if err != nil {
 			return fail(err)
+		}
+		if u.kind != nil {
+			for _, refusal := range u.kind.Refused {
+				refused = append(refused, historyUnit{name: refusal.Path, refusal: fmt.Errorf("%s", refusal.Reason)})
+			}
+			if len(u.files) == 0 && u.refusal == nil {
+				total--
+				continue
+			}
 		}
 		if u.refusal != nil {
 			if u.folder {
@@ -345,8 +373,10 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		if err := historyTagCoverage(ctx, repo, selected); err != nil {
 			return fail(err)
 		}
-		printHistoryRefused(refused, stdout)
-		if len(selected) == 0 && len(refused) > 0 {
+		if req.format == "text" {
+			printHistoryRefused(refused, stdout)
+		}
+		if len(selected) == 0 && len(refused) > 0 && !onlyHistoryADRRefusals(refused) {
 			return fail(fmt.Errorf("history sanitize --apply found no convertible unit; %d unit(s) refused", len(refused)))
 		}
 	}
@@ -355,7 +385,15 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		if err != nil {
 			return fail(err)
 		}
-		return applyHistoryUnits(ctx, repo, revision, selected, rewrite, len(refused), total-len(selected), stdout, stderr)
+		output := stdout
+		if req.format == "json" {
+			output = io.Discard
+		}
+		code := applyHistoryUnits(ctx, repo, revision, selected, rewrite, len(refused), total-len(selected), output, stderr)
+		if code == exitOK && req.format == "json" {
+			return printHistoryJSON(stdout, stderr, selected, refused, rewrite.Citations, true)
+		}
+		return code
 	}
 	return printHistoryPlan(ctx, req, loaded, env, selected, refused, stdout, stderr)
 }
@@ -422,6 +460,9 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 		return exitPreflight
 	}
 	citations := rewrite.Citations
+	if req.format == "json" {
+		return printHistoryJSON(stdout, stderr, units, refused, citations, false)
+	}
 	fmt.Fprintf(stdout, "history sanitize plan: %d unit(s) pending; %d file(s) (%d bytes) leave docs/history%s\n", len(units), files, bytes, historyRefusalSuffix(len(refused)))
 	for _, u := range units {
 		if c := u.conversion; c != nil {
@@ -493,7 +534,11 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 				fmt.Fprintf(stdout, "candidate %s/%s %d bytes%s\n", c.Folder, p, info.Size(), suffix)
 			}
 		} else if u.links != nil {
-			fmt.Fprintf(stdout, "record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.links.Links, len(u.links.Files))
+			if u.name == "live-links" {
+				fmt.Fprintf(stdout, "live-links: rewrites %d link(s) in %d file(s)\n", u.links.Links, len(u.links.Files))
+			} else {
+				fmt.Fprintf(stdout, "record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.links.Links, len(u.links.Files))
+			}
 		} else {
 			k := u.kind
 			fmt.Fprintf(stdout, "%s: removes %d file(s) (%d bytes)\n", u.name, len(k.Files), k.BytesBefore)
@@ -509,6 +554,44 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 		fmt.Fprintln(stdout)
 	}
 	fmt.Fprintln(stdout, "apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)")
+	return exitOK
+}
+
+func printHistoryJSON(stdout, stderr io.Writer, units, refused []historyUnit, citations []spec.HistoryCitation, applied bool) int {
+	report := newBaselineUpdateHistory("current")
+	if len(units) > 0 {
+		report.Status = "pending"
+	}
+	if applied {
+		report.Status = "applied"
+	}
+	for _, u := range units {
+		unit := baselineUpdateHistoryUnit{Unit: u.name, Paths: append([]string{}, u.files...), Files: len(u.files)}
+		switch {
+		case u.conversion != nil:
+			unit.Unit = u.conversion.Folder
+			unit.Action, unit.Record, unit.Disposition, unit.Bytes = "convert", u.conversion.RecordPath, string(u.conversion.Record.Disposition), u.conversion.Bytes
+		case u.links != nil:
+			unit.Action, unit.Files, unit.Links = "rewrite", len(u.links.Files), u.links.Links
+			for path := range u.links.Files {
+				unit.Paths = append(unit.Paths, path)
+			}
+			sort.Strings(unit.Paths)
+		default:
+			unit.Action, unit.Bytes = string(u.kind.Action), u.kind.BytesBefore
+		}
+		report.Units = append(report.Units, unit)
+	}
+	for _, u := range refused {
+		report.Refused = append(report.Refused, baselineUpdateHistoryRefusal{Unit: u.name, Reason: historyRefusalLine(u.refusal)})
+	}
+	for _, c := range citations {
+		report.Citations = append(report.Citations, baselineUpdateHistoryCitation{Path: c.Path, Line: c.Line, Target: c.Target, Rewrite: c.Rewrite})
+	}
+	if err := json.NewEncoder(stdout).Encode(report); err != nil {
+		fmt.Fprintf(stderr, "history sanitize: encode JSON: %v\n", err)
+		return exitRunFailed
+	}
 	return exitOK
 }
 
@@ -555,8 +638,15 @@ func planHistoryRewrite(ctx context.Context, repo, specRel, archiveRel string, u
 		return p, err
 	}
 	for _, u := range units {
+		if u.kind != nil {
+			citations, err := u.kind.LineageCitations(repo)
+			if err != nil {
+				return p, err
+			}
+			p.Citations = append(p.Citations, citations...)
+		}
 		if u.links != nil {
-			p.records = *u.links
+			p.links = append(p.links, *u.links)
 			p.Citations = append(p.Citations, u.links.Citations...)
 		}
 	}
@@ -567,7 +657,7 @@ func planHistoryRewrite(ctx context.Context, repo, specRel, archiveRel string, u
 // both edits and counting each changed file once.
 type historyCitationRewritePlan struct {
 	spec.HistoryRewritePlan
-	records spec.RecordLinkPlan
+	links []spec.RecordLinkPlan
 }
 
 func (p historyCitationRewritePlan) Apply(ctx context.Context, root string) (int, int, error) {
@@ -575,25 +665,50 @@ func (p historyCitationRewritePlan) Apply(ctx context.Context, root string) (int
 	if err != nil {
 		return citations, files, err
 	}
-	links, records, err := p.records.Apply(ctx, root)
-	if err != nil {
-		return citations + links, files + records, err
+	changed := map[string]bool{}
+	for path := range p.Files {
+		changed[path] = true
 	}
-	overlap := 0
-	for path := range p.records.Files {
-		if _, ok := p.Files[path]; ok {
-			overlap++
+	for _, plan := range p.links {
+		links, rewritten, err := plan.Apply(ctx, root)
+		overlap := 0
+		for path := range plan.Files {
+			if changed[path] {
+				overlap++
+			}
+			changed[path] = true
+		}
+		citations += links
+		files += rewritten - overlap
+		if err != nil {
+			return citations, files, err
 		}
 	}
-	return citations + links, files + records - overlap, nil
+	return citations, files, nil
 }
-func planRecordLinksUnit(ctx context.Context, root, archiveRel string, selected []historyUnit) (historyUnit, error) {
+
+func onlyHistoryADRRefusals(units []historyUnit) bool {
+	for _, u := range units {
+		if !strings.HasPrefix(u.name, "docs/adr/") && !strings.HasPrefix(u.name, "docs/history/adr/") && !strings.HasPrefix(u.name, "_archived/adr/") {
+			return false
+		}
+	}
+	return true
+}
+
+func planLinksUnit(ctx context.Context, root, specRel, archiveRel, name string, selected []historyUnit) (historyUnit, error) {
 	skip := map[string]bool{}
 	for _, u := range selected {
 		for _, path := range u.files {
 			skip[path] = true
 		}
 	}
-	links, err := spec.PlanRecordLinks(ctx, root, archiveRel, skip)
-	return historyUnit{name: "record-links", links: &links}, err
+	var links spec.RecordLinkPlan
+	var err error
+	if name == "live-links" {
+		links, err = spec.PlanLiveLinks(ctx, root, specRel, archiveRel, skip)
+	} else {
+		links, err = spec.PlanRecordLinks(ctx, root, archiveRel, skip)
+	}
+	return historyUnit{name: name, links: &links}, err
 }

@@ -9,13 +9,15 @@ QA, an override or supersession receives `no-qa`.
 
 ```bash
 roundfix history sanitize
+roundfix history sanitize --format json
 roundfix history sanitize --batch 40 --advise
 roundfix history sanitize --apply --batch 40
 roundfix history sanitize --apply --batch 1 --promote docs/history/specs/example/references/lesson.md
 ```
 
 Units are ordered by Legacy Archive Folder slug, then `findings`, `backlog`,
-`adr`, `reviews`, `handoffs` and `superseded`. Legacy Archive Folders use Lenient Legacy Reading: the
+`adr`, `reviews`, `handoffs` and `superseded`, then `record-links` and
+`live-links`. Legacy Archive Folders use Lenient Legacy Reading: the
 Task Graph tolerates projection rows outside the graph and retired Task types,
 and the plan names each tolerance as `tolerates <folder>: <tolerance>`. Active
 Specs keep strict reading. Each kind counts as one unit while files remain
@@ -72,8 +74,10 @@ The family units include `docs/history/<kind>/`, the legacy trees
 `docs/findings/_archived/` and `_archived/{findings,backlog,adr}/`, terminal
 Findings and Backlog Entries directly in their active directories, retired
 ADRs directly in `docs/adr/`, and finished Review Artifacts under the Spec
-Root's review roots. A superseded ADR needs an accepted successor that names
-it; otherwise the `adr` unit is refused by name. Unknown or missing lifecycle
+Root's review roots. A superseded ADR naming an accepted successor leaves even
+when the successor does not name it yet: the plan appends its lineage line.
+An ADR without an accepted successor is refused by its repository-relative
+path while every other retired ADR leaves. Unknown or missing lifecycle
 statuses in active directories remain untouched. Active directory roots stay.
 
 The `superseded` citation check reads every tracked Markdown file surviving the
@@ -88,6 +92,36 @@ holding the target wins. A self-link becomes the Git Locator of the source
 folder. When neither path has a qualifying commit, the record-relative path
 and its pull request are used. Code spans, fences, URLs and Git Locators are
 not relative links. A record removed by the same plan is skipped.
+
+
+A superseded ADR's accepted successor receives a missing lineage line exactly
+as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.` The date
+is HEAD's committer date in UTC (`YYYY-MM-DD`); the locator is the removed
+path's Git Locator. Apply appends the line after a blank line, preserves the
+successor's existing bytes and never adds the same line twice. Several lines
+for one successor follow removal-path order. Each line is a History Citation:
+`cites <successor>:<n> names <removed>; rewrites to <line>` in history text,
+and under `citations` in JSON. Baseline text prefixes the citation with `- `;
+its Plan Digest binds the exact line, and an uncommitted successor refuses
+the ADR unit. Successors are cited, never listed as removal paths.
+
+A superseded ADR with no accepted successor stays with this reason:
+`superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated`.
+History text prints `refused <path>: <reason>`; baseline text prefixes it with
+`- `. JSON lists `{"unit":"<path>","reason":"<reason>"}` under `refused`.
+The refusal names that ADR's repository-relative path, leaves the other
+retired ADRs eligible and does not change the command's exit code.
+
+After `record-links`, `live-links` repairs missing relative links in Live
+Documents and `docs/user-guide/` pages, including the configured Spec Root.
+It writes the Git Locator printed by `SC-HISTORY-RETAINED`, changes only link
+spans and skips Archive Records, removed pages, self-links, code spans,
+fences, URLs and existing Git Locators. A second plan after apply has no
+`live-links` unit.
+
+The repair line is `live-links: rewrites <l> link(s) in <n> file(s)`.
+JSON lists unit `live-links`, action `rewrite`, sorted page `paths`, `files`
+and `links`; its citations and replacement text join the Plan Digest.
 
 The repair line is `record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
 Rewritten records count toward units, while the file and byte totals count only

@@ -139,6 +139,14 @@ recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
 Archive Advice before it happens. Use repeatable `--promote <path>` to copy a
 confirmed candidate to `docs/references/` in the archive change.
 
+Use `roundfix archive <slug> --plan --offline` when no judge may be contacted,
+including every QA Task. The offline plan loads no judge and reads no Judge
+Key Variable. After the evidence line it prints `judge: skipped (offline)`,
+then each candidate in file order as
+`candidate <file> <bytes> bytes: no advice (offline)`.
+`--offline` without `--plan` exits `2` with `--offline requires --plan`.
+The plain `--plan` form keeps Archive Advice.
+
 ### Archive Relink
 
 When the repository root is inside a Git work tree, the archive performs an
@@ -214,5 +222,35 @@ reaches. After removals, citations in surviving Archive Records, Live Documents
 and the user guide become Git Locators; other citations are listed and left.
 The removal units run before `record-links`, which skips records the plan removes.
 The repair line reads `record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
+
+A superseded ADR's accepted successor receives a missing lineage line exactly
+as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.` The date
+is HEAD's committer date in UTC (`YYYY-MM-DD`); the locator is the removed
+path's Git Locator. Apply appends the line after a blank line, preserves the
+successor's existing bytes and never adds the same line twice. Several lines
+for one successor follow removal-path order. Each line is a History Citation:
+`cites <successor>:<n> names <removed>; rewrites to <line>` in history text,
+and under `citations` in JSON. Baseline text prefixes the citation with `- `;
+its Plan Digest binds the exact line, and an uncommitted successor refuses
+the ADR unit. Successors are cited, never listed as removal paths.
+
+A superseded ADR with no accepted successor stays with this reason:
+`superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated`.
+History text prints `refused <path>: <reason>`; baseline text prefixes it with
+`- `. JSON lists `{"unit":"<path>","reason":"<reason>"}` under `refused`.
+The refusal names that ADR's repository-relative path, leaves the other
+retired ADRs eligible and does not change the command's exit code.
+
+After `record-links`, `live-links` repairs missing relative links in Live
+Documents and `docs/user-guide/` pages, including the configured Spec Root.
+It writes the Git Locator printed by `SC-HISTORY-RETAINED`, changes only link
+spans and skips Archive Records, removed pages, self-links, code spans,
+fences, URLs and existing Git Locators. A second plan after apply has no
+`live-links` unit.
+
+The repair line is `live-links: rewrites <l> link(s) in <n> file(s)`.
+JSON lists unit `live-links`, action `rewrite`, sorted page `paths`, `files`
+and `links`; its citations and replacement text join the Plan Digest.
+
 Each `--apply --batch <n>` is one reviewable, revertible Pull Request; the
 command never commits, tags, pushes or opens one.

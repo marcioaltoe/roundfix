@@ -166,11 +166,11 @@ func TestHistorySanitizeRefusesAKindUnitAndPlansTheRest(t *testing.T) {
 	t.Parallel()
 	h := newHistoryFixture(t, true)
 	historyWrite(t, filepath.Join(h.repo, "docs/adr/0001-old.md"), "---\nstatus: superseded\nsuperseded_by: ADR-0002\n---\n# Old\n")
-	historyWrite(t, filepath.Join(h.repo, "docs/adr/0002-new.md"), "---\nstatus: accepted\n---\n# New\n")
+	historyWrite(t, filepath.Join(h.repo, "docs/adr/0002-new.md"), "---\nstatus: proposed\n---\n# New\n")
 	historyCommit(t, h.repo, "Malformed Finding")
 	before := historySnapshot(t, h.repo)
 	code, out, err := historyRun(t, h, "sanitize")
-	if code != 0 || err != "" || !strings.Contains(out, "refused adr: superseded ADR 0001-old.md") || !strings.Contains(out, "does not name it") || !strings.Contains(out, "backlog: removes") || !strings.Contains(out, "reviews: removes") || strings.Count(out, "\nfolder ") != 3 {
+	if code != 0 || err != "" || !strings.Contains(out, "refused docs/adr/0001-old.md: superseded ADR has no accepted successor") || !strings.Contains(out, "backlog: removes") || !strings.Contains(out, "reviews: removes") || strings.Count(out, "\nfolder ") != 3 {
 		t.Fatalf("%d %s %s", code, out, err)
 	}
 	historyUnchanged(t, h, before, "")

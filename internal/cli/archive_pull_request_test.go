@@ -120,7 +120,7 @@ func TestArchiveHelpNamesThePullRequestOption(t *testing.T) {
 	const help = `Usage:
   roundfix archive <slug>
   roundfix archive <slug> --qa-override --approval <source> --reason <text>
-  roundfix archive <slug> --plan
+  roundfix archive <slug> --plan [--offline]
   roundfix archive <slug> --pull-request <number>
 
 Archives a Spec after verifying either every Task is completed and the newest
@@ -139,6 +139,7 @@ the observed QA outcome and archived HEAD. It is refused when QA already
 qualifies for normal archive.
 
 Options:
+  --offline      With --plan, skip Archive Advice and contact no judge
   --qa-override  Archive despite failed, missing, or unreadable QA evidence
   --approval     Source of the maintainer authority for the override
   --reason       Reason the unmet QA prerequisite is being waived

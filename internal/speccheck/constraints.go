@@ -199,6 +199,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	if err := detectSurfaceRecord(&result, repoRoot, specDir, graph); err != nil {
 		return result, err
 	}
+	if err := detectSkillVersion(&result, repoRoot, specDir, graph); err != nil {
+		return result, err
+	}
 	if err := detectGlossary(&result, repoRoot, []string{filepath.Join(specDir, "_prd.md"), techSpecPath}, StageAll, graph); err != nil {
 		return result, err
 	}

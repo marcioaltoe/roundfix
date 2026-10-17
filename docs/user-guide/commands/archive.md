@@ -3,7 +3,7 @@
 ```bash
 roundfix archive <slug>
 roundfix archive <slug> --qa-override --approval <source> --reason <text>
-roundfix archive <slug> --plan
+roundfix archive <slug> --plan [--offline]
 roundfix archive <slug> --pull-request <n>
 roundfix archive <slug> --promote <path> [--promote <path> ...]
 ```
@@ -42,6 +42,13 @@ Archive Advice from Jev. Advice is advisory and is skipped when the judge key
 is absent or the monthly ceiling is reached. The plan leaves repository files
 unchanged. Use repeatable `--promote <path>` to copy a confirmed candidate to
 `docs/references/` during the archive change.
+For a plan that contacts no judge, use `roundfix archive <slug> --plan --offline`.
+It skips loading the judge and reading Judge Key Variables, prints
+`judge: skipped (offline)` after the evidence line, and lists each candidate in
+file order as `candidate <file> <bytes> bytes: no advice (offline)`.
+A QA Task always uses this offline form. `--offline` without `--plan` exits
+`2` with `--offline requires --plan`. `--plan` alone keeps Archive Advice.
+
 Existing archived folders retain their legacy link semantics.
 
 A Spec that will not be delivered is cancelled with `roundfix cancel`.
