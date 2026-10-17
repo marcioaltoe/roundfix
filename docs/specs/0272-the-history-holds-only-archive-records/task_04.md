@@ -117,7 +117,25 @@ refresh that reports the repository current.
 11. MUST, when this Task removes or renames a test, regenerate the test
     inventory with `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
     after its last test change, so `TestCoverageEquivalence` reports no
-    regression.
+    regression. The sanctioned regeneration in `_authorization.md` already
+    declares that command, so this Task MUST NOT edit
+    `internal/spec/coverage_test.go`.
+12. MUST run both Managed Refresh runs on the tree as it is, with the tracked
+    `CLAUDE.md` link left a link: task_06 makes the citation scan skip it, so
+    no file is materialized, replaced or restored around a refresh.
+13. MUST change the two Repository Contract Tests that read the removed
+    families, and name each change in the Result:
+    `TestDocsLayoutGuideNamesEveryHistoryFamily` in
+    `internal/docscontract/publicdocs_test.go` becomes
+    `TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily`, which requires the
+    guide to name `spec.ArchiveDir(spec.ArchiveKindSpec)` and to name no other
+    kind's `spec.ArchiveDir`; and `copyTrackedRepository` in
+    `skills/baseline_skill_contract_test.go` skips a tracked path the working
+    tree no longer holds (`os.ErrNotExist` from `os.Lstat`), because the
+    change removes it, so `TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical`
+    copies the tree the commit will hold. Every other Repository Contract
+    Test passes unchanged; `make verify-contracts` measured on 2026-10-17
+    against this Task's first delivery found only these two.
 
 ## Subtasks
 
@@ -182,11 +200,13 @@ refresh that reports the repository current.
 - deletes: `docs/history/findings`
 - deletes: `docs/history/backlog`
 - interface: `docs/references/coverage-record.json`
+- interface: `internal/docscontract/publicdocs_test.go`
+- interface: `skills/baseline_skill_contract_test.go`
 
 ## Verification
 
 - `out="$(go test -count=1 -v -run '^(TestTheRetirementRuleIsStatedOnce|TestTheDocsLayoutRegionStaysLean|TestTheRetirementClauseCarriesTheSentinel|TestTheRetirementClauseReplacesTheClausesItAbsorbs|TestTheCaptureTriggerAsksForAConditionalLesson)$' ./internal/baseline 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheRetirementRuleIsStatedOnce TestTheDocsLayoutRegionStaysLean TestTheRetirementClauseCarriesTheSentinel TestTheRetirementClauseReplacesTheClausesItAbsorbs TestTheCaptureTriggerAsksForAConditionalLesson; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing passing test %s\n' "$name" >&2; exit 1; }; done; go test -count=1 -run 'Clause|Retire|Catalog|Formatter|PlanCharacterization|Compatibility|ModuleVersion|SourceBaseline' ./internal/baseline || exit 1; go test -count=1 -run '^TestArchiveLayoutCharacterization' ./internal/spec || exit 1` — expected: exit 0. Before this Task the five clause tests do not exist, so the PASS check fails.
-- `matches="$(find docs/history -type f ! -path 'docs/history/specs/*' -print)" || exit 1; test -z "$matches" || { printf 'retained history:\n%s\n' "$matches" >&2; exit 1; }; superseded="$(find docs/history/specs -name '012[0-9]-*.md' -print)" || exit 1; test -z "$superseded" || { printf 'superseded records remain:\n%s\n' "$superseded" >&2; exit 1; }; if tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'Write each as a reduced entry'; then printf 'guide still writes reduced entries\n' >&2; exit 1; fi; tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'Git Locator' || { printf 'guide does not name the Git Locator\n' >&2; exit 1; }; dir="$(mktemp -d)" || exit 1; go build -buildvcs=false -o "$dir/roundfix" ./cmd/roundfix || exit 1; HOME="$dir" "$dir/roundfix" baseline update --repo . --no-skills --format text || { printf 'the Managed Refresh is not current\n' >&2; exit 1; }; HOME="$dir" "$dir/roundfix" spec check 0272-the-history-holds-only-archive-records || exit 1; go test -count=1 -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' ./internal/docscontract || exit 1` — expected: exit 0. Before this Task the History Root holds reduced entries and the refresh exits 3, so the command fails.
+- `matches="$(find docs/history -type f ! -path 'docs/history/specs/*' -print)" || exit 1; test -z "$matches" || { printf 'retained history:\n%s\n' "$matches" >&2; exit 1; }; superseded="$(find docs/history/specs -name '012[0-9]-*.md' -print)" || exit 1; test -z "$superseded" || { printf 'superseded records remain:\n%s\n' "$superseded" >&2; exit 1; }; if tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'Write each as a reduced entry'; then printf 'guide still writes reduced entries\n' >&2; exit 1; fi; tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'Git Locator' || { printf 'guide does not name the Git Locator\n' >&2; exit 1; }; dir="$(mktemp -d)" || exit 1; go build -buildvcs=false -o "$dir/roundfix" ./cmd/roundfix || exit 1; HOME="$dir" "$dir/roundfix" baseline update --repo . --no-skills --format text || { printf 'the Managed Refresh is not current\n' >&2; exit 1; }; HOME="$dir" "$dir/roundfix" spec check 0272-the-history-holds-only-archive-records || exit 1; go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent|TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily)$' ./internal/docscontract || exit 1; go test -count=1 -tags repocontract -run '^TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical$' ./skills || exit 1` — expected: exit 0. Before this Task the History Root holds reduced entries and the refresh exits 3, so the command fails.
 
 ## References
 
