@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -115,3 +115,32 @@ record.
 - `_prd.md` → Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 6; Invariants 1 and 5; Current behavior; Testing Approach; Build Order 1
 - ADR-0281; ADR-0266; ADR-0259; ADR-0271
+
+## Result
+
+Implementation and diagnosis evidence for Daemon settlement:
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Probe process, parent and group are recorded and named | The fixture writes `Pid`, `Ppid` and `Pgid` on each start. `TestDeliveryProbeReportRecordsTheProbeStart` asserts a positive PID, the test binary as parent, its process group, the recorded inode and the exact live report. |
+| Created, rewritten in place, replaced and absent forms are distinguished | `TestDeliveryProbeReportFormsEachEnd` checks exact strings for all four forms crossed with recorded/unrecorded starts and live/canceled contexts (16 cases). The real-fixture test also checks a canceled call excludes the previous start. |
+| F6's failure carries the report and its passing assertions are preserved | F6 uses `step` and appends the report to the existing `log=%q want=%q` failure line. Its assertions, `assertStarts` comparisons and both in-place build declarations are unchanged. The focused delivery selection below exercised F6 and the existing item binary and signal tests. |
+| Diagnosis records suite and recurrence counts and sender | [diagnosis/f6-sender.md](diagnosis/f6-sender.md) records ten suites, zero F6 recurrences and `sender: not reproduced`, with base commit, applied changes, start times, durations, exit statuses, signal-line counts and relative raw-log paths. |
+
+Focused checks:
+
+- `go test -count=1 -run '^TestDelivery(ProbeReport|Step|Steps|ItemBinary)' ./internal/cli`: exit 0 (`roundfix/internal/cli`, 1.746 s) after the final code edit. An earlier run caught an incorrect expectation in the new canceled-context test; it was corrected to API Contract 1's literal `context context canceled` (the prefix plus the error text).
+- Read the report helper and fixture diff: collection uses only `Lstat`, recorded JSON lines and `ctx.Err()` around one `stepExecutable` call; no additional process, sleep or wait was introduced. No production file or existing signal test was changed. Both new top-level tests call `t.Parallel()` first; neither rebuilds an item binary in place.
+
+Required diagnosis (research, separate from Daemon Verification):
+
+- Ran `go test -count=1 -parallel 16 ./...` ten consecutive times at `e5da154a7bf5d991d0b796f187e1abeb25c00312` with this Task's code changes applied, isolated temporary homes and raw logs outside the checkout. Each suite preserved the checkout fingerprint, recorded zero signal-related lines and did not reproduce F6. No diagnostic-report lookup was triggered.
+- Each suite exited 1 on the unrelated `TestGuidanceCompositionJourney/rust-cli`: rustup could not select `rustfmt` because the temporary home had no default toolchain. All ten attempts were counted; no failed suite was rerun to obtain a pass. This environment limitation remains a follow-up outside this Task's slice.
+- The diagnosis record is intentionally not a claim of ten clean acceptance suites or of an identified signal sender. Task 02 retains ownership of replacing both in-place builds.
+
+The authored `## Verification` commands and the repository Verification commands were not run. Task status, terminal verdict and settlement remain Daemon-owned; no commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T121021Z_d7caac86f32133f1`
+- Source commit: `3bf5497bf4b8bee039c3b4f2c52fd1a3266c1f40`

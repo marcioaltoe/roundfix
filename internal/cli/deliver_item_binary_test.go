@@ -19,11 +19,11 @@ import (
 )
 
 const deliveryItemFixtureSource = `package main
-import ("encoding/json"; "fmt"; "os"; "strconv")
+import ("encoding/json"; "fmt"; "os"; "strconv"; "syscall")
 func main() {
  dir, err := os.Getwd(); if err != nil { panic(err) }
  file, err := os.OpenFile(os.Getenv("DELIVERY_ITEM_RECORD"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); if err != nil { panic(err) }
- err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home string }{os.Args[1:], dir, os.Getenv("HOME")}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
+ err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home string; Pid, Ppid, Pgid int }{os.Args[1:], dir, os.Getenv("HOME"), os.Getpid(), os.Getppid(), syscall.Getpgrp()}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
  if len(os.Args) == 3 && os.Args[1] == "migrate" && os.Args[2] == "--check" {
   fmt.Fprint(os.Stderr, os.Getenv("DELIVERY_ITEM_STDERR")); fmt.Fprint(os.Stdout, os.Getenv("DELIVERY_ITEM_STDOUT"))
   code, err := strconv.Atoi(os.Getenv("DELIVERY_ITEM_PROBE_EXIT")); if err != nil { panic(err) }; os.Exit(code)
@@ -32,8 +32,9 @@ func main() {
 }`
 
 type deliveryItemStart struct {
-	Args      []string
-	Dir, Home string
+	Args            []string
+	Dir, Home       string
+	Pid, Ppid, Pgid int
 }
 type deliveryItemFixture struct {
 	workflow                 *commandDeliveryWorkflow
@@ -191,7 +192,7 @@ func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
 				setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "\nprobe schema differs\nsecond line\n")
 				detail = "probe schema differs"
 			}
-			executable, err := f.workflow.stepExecutable(commandContextForTest(t, t.Context()), f.repo, "widget", "review")
+			executable, err, report := f.step(t, commandContextForTest(t, t.Context()), "review")
 			owner, ownerErr := os.Executable()
 			if err != nil || ownerErr != nil || executable != owner {
 				t.Fatalf("executable=%q err=%v ownerErr=%v", executable, err, ownerErr)
@@ -202,7 +203,7 @@ func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
 			}
 			want := "roundfix: notice: Delivery Queue item widget: review runs the owner's binary; the item binary's migrate --check exited 2: " + detail + "\n"
 			if f.log.String() != want {
-				t.Fatalf("log=%q want=%q", f.log.String(), want)
+				t.Fatalf("log=%q want=%q; %s", f.log.String(), want, report)
 			}
 			f.assertStarts(t, []string{"migrate", "--check"})
 		})
