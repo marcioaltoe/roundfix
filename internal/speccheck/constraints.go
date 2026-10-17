@@ -146,6 +146,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		return result, fmt.Errorf("detect backlog promotion: %w", err)
 	}
 
+	if err := detectClarificationRecord(&result, repoRoot, filepath.Join(specDir, "_prd.md")); err != nil {
+		return result, err
+	}
 	prd, present, err := readConstraintArtifact(repoRoot, filepath.Join(specDir, "_prd.md"))
 	if err != nil {
 		return result, err
@@ -191,6 +194,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		return result, err
 	}
 	if err := detectSkillsDeclaration(&result, repoRoot, filepath.Join(specDir, "_prd.md"), StageAll, graph); err != nil {
+		return result, err
+	}
+	if err := detectSurfaceRecord(&result, repoRoot, specDir, graph); err != nil {
 		return result, err
 	}
 	if err := detectGlossary(&result, repoRoot, []string{filepath.Join(specDir, "_prd.md"), techSpecPath}, StageAll, graph); err != nil {

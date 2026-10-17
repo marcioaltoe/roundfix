@@ -156,7 +156,7 @@ symbolic link; dropped paths are journaled and warned
 
 At the QA Report commit boundary, the Secret Scan checks the files that commit
 would stage. A Secret Match refuses the commit with `QA evidence carries a
-secret: <path>:<line> (<kind>)`, recording only its path, line and kind. The
+secret: <path>:<line>: <kind>`, recording only its path, line and kind. The
 Final Push scans the commits it would send and refuses the push when it finds a
 Secret Match.
 

@@ -30,6 +30,6 @@ skill and does not declare the mirror, the version record and the record step.
 ## Evidence
 
 Raised on 2026-10-16 while authoring Spec 0274
-(`docs/specs/0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd/`),
+(`docs/history/specs/0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd.md`),
 whose task_01, task_02 and task_04 each raise the `roundfix` skill version;
 the rule is stated in `docs/agents/specific-repository.md`.

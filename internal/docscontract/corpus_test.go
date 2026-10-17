@@ -292,6 +292,8 @@ func checkCorpusSpec(specsRoot, repoRoot, slug string, work *corpusSweepWork) (s
 }
 
 var corpusFindingCodes = []string{
+	speccheck.CodeDecisionsUnrecorded,
+	speccheck.CodeSurfaceRecordUntasked,
 	speccheck.CodeQABytesPinned,
 	speccheck.CodeConsumersUnproven,
 	speccheck.CodeAbsenceUnproven,

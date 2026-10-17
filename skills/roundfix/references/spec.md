@@ -63,6 +63,22 @@ oldest commit that added it; an uncommitted PRD is held.
   without a skills Task or an unchanged entry with its map Task. Runs from
   the Tasks stage.
 
+- `SC-SURFACE-RECORD-UNTASKED` — a pending non-QA Task declares a user
+  guide page without declaring `docs/references/behavior-surfaces.json`
+  under `interface:` or `creates:` and naming `-record-skill-coverage` in a
+  requirement, or an authorization Limits line names the record. The guide
+  Task itself must declare both; another Task cannot cover it. Runs from the
+  Tasks stage as a gap, with no horizon; skips repositories without the record
+  and Specs without a Task Graph.
+
+- `SC-DECISIONS-UNRECORDED` — a PRD's `## Decisions` section lacks both a
+  dated answer and the autonomous-route line naming its decision source. A gap
+  from the PRD stage that reads shape only. Its horizon is the oldest commit
+  that added `.agents/skills/write-prd/references/clarification-record.md`: a
+  PRD whose adding commit is at or after it, or an uncommitted PRD, is held;
+  earlier PRDs and repositories without the guide skip the code. A missing
+  PRD skips it with its path.
+
 - `SC-RECEIPT-UNPROVEN`: a written Claim Receipt has an unresolved source, fewer than three words, or a quote absent from its source.
 - `SC-RECEIPT-MISSING`: a held Spec attributes a claim to an accepted ADR without a receipt for that record in the same paragraph.
 - `SC-TRANSCRIPT-UNDECLARED`: a held TechSpec has no Surface Transcripts declaration.
