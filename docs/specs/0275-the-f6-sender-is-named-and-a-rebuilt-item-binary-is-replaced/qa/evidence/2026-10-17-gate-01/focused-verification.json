@@ -1,0 +1,26 @@
+[
+  {
+    "task": "task_01.md",
+    "authored_command": "out=\"$(go test -count=1 -v -run '^(TestDeliveryProbeReportFormsEachEnd|TestDeliveryProbeReportRecordsTheProbeStart|TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate|TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments|TestDeliveryStepRunsTheItemBinary|TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe)$' ./internal/cli 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestDeliveryProbeReportFormsEachEnd TestDeliveryProbeReportRecordsTheProbeStart TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments TestDeliveryStepRunsTheItemBinary TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done",
+    "exit": 0,
+    "raw": "task_01-verification-1.log"
+  },
+  {
+    "task": "task_01.md",
+    "authored_command": "f=docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/diagnosis/f6-sender.md; test -f \"$f\" || { printf 'missing %s\\n' \"$f\" >&2; exit 1; }; grep -Eq '^suites:.([1-9]|10)$' \"$f\" || { printf 'missing suites line in %s\\n' \"$f\" >&2; exit 1; }; grep -Eq '^recurrences:.[0-9]+$' \"$f\" || { printf 'missing recurrences line in %s\\n' \"$f\" >&2; exit 1; }; grep -Eq '^sender:.(kernel.code.signing|process.signal|not.reproduced)$' \"$f\" || { printf 'missing sender line in %s\\n' \"$f\" >&2; exit 1; }; grep -Eq '^diagnostic.report:..+' \"$f\" || { printf 'missing diagnostic report line in %s\\n' \"$f\" >&2; exit 1; }",
+    "exit": 0,
+    "raw": "task_01-verification-2.log"
+  },
+  {
+    "task": "task_02.md",
+    "authored_command": "out=\"$(go test -count=1 -v -run '^(TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns|TestDeliveryStepRunsTheItemBinary|TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments|TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate|TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe|TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary|TestDeliveryProbeReportFormsEachEnd|TestDeliveryProbeReportRecordsTheProbeStart)$' ./internal/cli 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns TestDeliveryStepRunsTheItemBinary TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary TestDeliveryProbeReportFormsEachEnd TestDeliveryProbeReportRecordsTheProbeStart; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name \" || { printf 'missing passing test %s\\n' \"$name\" >&2; exit 1; }; done",
+    "exit": 0,
+    "raw": "task_02-verification-1.log"
+  },
+  {
+    "task": "task_02.md",
+    "authored_command": "matches=\"$(grep -n -F \"' bin/roundfix\\\"\" internal/cli/deliver_item_binary_test.go internal/cli/deliver_item_binary_signal_unix_test.go)\"; test -z \"$matches\" || { printf 'a delivery fixture still copies onto its item binary:\\n%s\\n' \"$matches\" >&2; exit 1; }",
+    "exit": 0,
+    "raw": "task_02-verification-2.log"
+  }
+]

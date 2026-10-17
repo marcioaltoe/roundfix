@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,15 @@
+Outside evidence, read during this gate.
+
+Apple Developer Documentation
+https://developer.apple.com/documentation/security/updating-mac-software
+Quote: "macOS caches information about the code’s signature in the kernel."; "temporary file".
+The current first-party documentation JSON confirms that modifying an existing executable preserves stale kernel signature metadata and recommends replacement using a separately written file. This supports copy then rename.
+
+Open Radar FB8914243
+https://openradar.appspot.com/FB8914243
+Quote: "It’s killed by the kernel with a SIGKILL."
+This independent historical report describes rewriting a Mach-O file and signature verification causing the kernel to kill the new invocation. It supports the macOS regression mechanism without identifying a historical F6 holder.
+
+Local man eslogger (read only, exit 0).
+Quote: "eslogger must be run as super-user"; "Full Disk Access".
+The manual attributes these requirements to Endpoint Security and responsible-process TCC authorization. It supports the declared human tracing boundary. eslogger was not executed.

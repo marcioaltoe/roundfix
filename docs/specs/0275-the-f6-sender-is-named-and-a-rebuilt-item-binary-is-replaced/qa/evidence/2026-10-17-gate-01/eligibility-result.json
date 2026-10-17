@@ -1,0 +1,11 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "qa-report",
+    "accept",
+    "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/qa/qa-report-2026-10-17-01.md"
+  ],
+  "exit": 0,
+  "wall_seconds": 0.011,
+  "output": "eligibility-final.txt"
+}

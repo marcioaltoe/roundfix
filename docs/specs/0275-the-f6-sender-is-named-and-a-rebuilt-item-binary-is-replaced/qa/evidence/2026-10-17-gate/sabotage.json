@@ -1,0 +1,34 @@
+{
+  "head": "a14a3594523d721d607da451a97015cc45d17abc",
+  "command": "go test -count=1 -run ^TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns$ ./internal/cli",
+  "runs": [
+    {
+      "form": "in-place sabotage",
+      "exit": 1,
+      "start": "2026-10-17 10:23:41 BRT",
+      "wall_seconds": 6.469,
+      "expected_notice_seen": true
+    },
+    {
+      "form": "restored replacement",
+      "exit": 0,
+      "wall_seconds": 4.294
+    }
+  ],
+  "diagnostic_reports": [
+    {
+      "file": "roundfix-2026-10-17-102348.ips",
+      "parentProc": "cli.test",
+      "termination": {
+        "flags": 66,
+        "code": 1,
+        "namespace": "CODESIGNING",
+        "indicator": "Taskgated Invalid Signature"
+      },
+      "captureTime": "2026-10-17 10:23:48.1474 -0300",
+      "procName": "roundfix"
+    }
+  ],
+  "disposable_worktree_removed": true,
+  "diagnostic_note": "Diagnostic file became visible after the immediate post-test scan; its capture time matches the sabotaged test invocation."
+}

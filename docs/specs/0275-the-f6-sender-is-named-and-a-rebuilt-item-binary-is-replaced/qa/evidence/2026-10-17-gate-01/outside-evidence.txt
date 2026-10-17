@@ -1,0 +1,15 @@
+Apple Developer Documentation: Updating Mac Software
+https://developer.apple.com/documentation/security/updating-mac-software
+First-party documentation JSON: https://developer.apple.com/tutorials/data/documentation/security/updating-mac-software.json
+Quote: “macOS caches information about the code’s signature in the kernel.”
+Quote: “write the updated code to a temporary file”
+Supports the design: the kernel caches the signature; replacing the file avoids the stale-cache mismatch caused by rewriting its contents.
+
+Open Radar FB8914243
+https://openradar.appspot.com/FB8914243
+Quote: “It’s killed by the kernel with a SIGKILL.”
+Supports the design: rewriting the contents of a Mach-O executable can produce an invalid signature and a kernel kill.
+
+Local macOS man eslogger (read through man eslogger; no tracing command executed)
+Quote: “eslogger must be run as super-user and requires the responsible process to have TCC Full Disk Access authorization.”
+Supports the privilege boundary: identifying a process sender requires maintainer-controlled privileges; the kernel-code-signing diagnostic can be read without using that tracing tool.

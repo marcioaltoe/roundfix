@@ -1,0 +1,92 @@
+[
+  {
+    "log": "suite-01/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (15.41s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (2.50s)"
+    ]
+  },
+  {
+    "log": "suite-02/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (18.32s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (4.43s)"
+    ]
+  },
+  {
+    "log": "suite-03/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (61.85s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (15.10s)"
+    ]
+  },
+  {
+    "log": "suite-04/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (13.03s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (2.51s)"
+    ]
+  },
+  {
+    "log": "suite-05/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (14.36s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (2.63s)"
+    ]
+  },
+  {
+    "log": "suite-06/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (12.74s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (1.91s)"
+    ]
+  },
+  {
+    "log": "suite-07/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (14.70s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (4.58s)"
+    ]
+  },
+  {
+    "log": "suite-08/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (16.44s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (3.33s)"
+    ]
+  },
+  {
+    "log": "suite-09/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (18.68s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (4.57s)"
+    ]
+  },
+  {
+    "log": "suite-10/raw.log",
+    "f6_failures": 0,
+    "signal_lines": 0,
+    "failed_tests": [
+      "--- FAIL: TestGuidanceCompositionJourney (35.46s)",
+      "--- FAIL: TestGuidanceCompositionJourney/rust-cli (6.16s)"
+    ]
+  }
+]

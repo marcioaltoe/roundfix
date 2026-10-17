@@ -1,0 +1,202 @@
+[
+  {
+    "suite": 1,
+    "start": "2026-10-17 10:47:08 BRT",
+    "load_average": [
+      2.88818359375,
+      9.47216796875,
+      11.7890625
+    ],
+    "wall_seconds": 276.621,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-01.log",
+    "start_epoch": 1792244828.522248,
+    "end_epoch": 1792245105.1431491
+  },
+  {
+    "suite": 2,
+    "start": "2026-10-17 10:51:45 BRT",
+    "load_average": [
+      21.5751953125,
+      23.7158203125,
+      18.1708984375
+    ],
+    "wall_seconds": 270.623,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-02.log",
+    "start_epoch": 1792245105.143285,
+    "end_epoch": 1792245375.7666109
+  },
+  {
+    "suite": 3,
+    "start": "2026-10-17 10:56:15 BRT",
+    "load_average": [
+      12.103515625,
+      23.53515625,
+      20.3017578125
+    ],
+    "wall_seconds": 335.573,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-03.log",
+    "start_epoch": 1792245375.766777,
+    "end_epoch": 1792245711.339978
+  },
+  {
+    "suite": 4,
+    "start": "2026-10-17 11:01:51 BRT",
+    "load_average": [
+      15.99755859375,
+      23.84716796875,
+      22.015625
+    ],
+    "wall_seconds": 336.978,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-04.log",
+    "start_epoch": 1792245711.37117,
+    "end_epoch": 1792246048.3493671
+  },
+  {
+    "suite": 5,
+    "start": "2026-10-17 11:07:28 BRT",
+    "load_average": [
+      24.28857421875,
+      27.310546875,
+      24.33203125
+    ],
+    "wall_seconds": 261.132,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-05.log",
+    "start_epoch": 1792246048.3497002,
+    "end_epoch": 1792246309.4821389
+  },
+  {
+    "suite": 6,
+    "start": "2026-10-17 11:11:49 BRT",
+    "load_average": [
+      23.4931640625,
+      31.4599609375,
+      27.73193359375
+    ],
+    "wall_seconds": 263.678,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-06.log",
+    "start_epoch": 1792246309.4823198,
+    "end_epoch": 1792246573.16031
+  },
+  {
+    "suite": 7,
+    "start": "2026-10-17 11:16:13 BRT",
+    "load_average": [
+      28.08544921875,
+      31.35693359375,
+      28.98095703125
+    ],
+    "wall_seconds": 294.847,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-07.log",
+    "start_epoch": 1792246573.1604989,
+    "end_epoch": 1792246868.0071738
+  },
+  {
+    "suite": 8,
+    "start": "2026-10-17 11:21:08 BRT",
+    "load_average": [
+      25.21630859375,
+      32.2236328125,
+      30.74853515625
+    ],
+    "wall_seconds": 296.562,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-08.log",
+    "start_epoch": 1792246868.007752,
+    "end_epoch": 1792247164.569786
+  },
+  {
+    "suite": 9,
+    "start": "2026-10-17 11:26:04 BRT",
+    "load_average": [
+      24.18310546875,
+      35.37744140625,
+      33.67041015625
+    ],
+    "wall_seconds": 256.784,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-09.log",
+    "start_epoch": 1792247164.5700421,
+    "end_epoch": 1792247421.353836
+  },
+  {
+    "suite": 10,
+    "start": "2026-10-17 11:30:21 BRT",
+    "load_average": [
+      23.31787109375,
+      34.9716796875,
+      34.6708984375
+    ],
+    "wall_seconds": 256.696,
+    "exit": 0,
+    "counts": {
+      "was killed by signal": 0,
+      "signal: killed": 0,
+      "exited -1": 0,
+      "suiteguard: helper residue": 0
+    },
+    "raw": "suite-10.log",
+    "start_epoch": 1792247421.3540711,
+    "end_epoch": 1792247678.050004
+  }
+]

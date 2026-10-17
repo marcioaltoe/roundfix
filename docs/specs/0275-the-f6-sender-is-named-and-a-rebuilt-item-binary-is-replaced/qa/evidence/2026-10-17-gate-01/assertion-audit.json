@@ -1,0 +1,69 @@
+{
+  "head": "252a78f7a1a5f314b4e2cee6db31aee101165171",
+  "base": "57859fdee14f04adff70bb85377b81c85166328b",
+  "tests": [
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryStepRunsTheItemBinary",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "step collection and failure report only"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryStepParksWhenTheItemBuildFails",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_test.go",
+      "test": "TestDeliveryItemBinaryThatCannotStartReturnsAParkError",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_signal_unix_test.go",
+      "test": "TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    },
+    {
+      "file": "internal/cli/deliver_item_binary_signal_unix_test.go",
+      "test": "TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary",
+      "assertions_unchanged": true,
+      "task02_body_byte_identical": true,
+      "allowed_task01_change": "none"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "head": "252a78f7a1a5f314b4e2cee6db31aee101165171",
+  "delivery_base": "57859fdee14f04adff70bb85377b81c85166328b",
+  "changed_paths": [
+    "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/diagnosis/f6-sender.md",
+    "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/task_01.md",
+    "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/task_02.md",
+    "internal/cli/deliver_item_binary_rebuild_test.go",
+    "internal/cli/deliver_item_binary_signal_unix_test.go",
+    "internal/cli/deliver_item_binary_test.go",
+    "internal/cli/deliver_item_probe_report_test.go"
+  ],
+  "task_commits": [
+    {
+      "commit": "d82275c5b0902687f7798363ec23b857144de378",
+      "command": "git diff-tree --no-commit-id --name-only -r d82275c5b0902687f7798363ec23b857144de378",
+      "actual": [
+        "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/diagnosis/f6-sender.md",
+        "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/task_01.md",
+        "internal/cli/deliver_item_binary_test.go",
+        "internal/cli/deliver_item_probe_report_test.go"
+      ],
+      "declared": [
+        "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/diagnosis/f6-sender.md",
+        "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/task_01.md",
+        "internal/cli/deliver_item_binary_test.go",
+        "internal/cli/deliver_item_probe_report_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "commit": "252a78f7a1a5f314b4e2cee6db31aee101165171",
+      "command": "git diff-tree --no-commit-id --name-only -r 252a78f7a1a5f314b4e2cee6db31aee101165171",
+      "actual": [
+        "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/task_02.md",
+        "internal/cli/deliver_item_binary_rebuild_test.go",
+        "internal/cli/deliver_item_binary_signal_unix_test.go",
+        "internal/cli/deliver_item_binary_test.go"
+      ],
+      "declared": [
+        "docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/task_02.md",
+        "internal/cli/deliver_item_binary_rebuild_test.go",
+        "internal/cli/deliver_item_binary_signal_unix_test.go",
+        "internal/cli/deliver_item_binary_test.go"
+      ],
+      "undeclared": []
+    }
+  ],
+  "governed_patterns_checked": 11,
+  "governed_changed_paths": [],
+  "protected_tooling_changed_paths": [],
+  "production_changed_paths": [],
+  "authorization": "approved; paths: []; no governed mutation"
+}

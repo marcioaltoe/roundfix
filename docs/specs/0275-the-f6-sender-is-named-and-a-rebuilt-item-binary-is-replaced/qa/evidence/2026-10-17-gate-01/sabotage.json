@@ -1,0 +1,23 @@
+{
+  "head": "252a78f7a1a5f314b4e2cee6db31aee101165171",
+  "changed_file": "internal/cli/deliver_item_binary_test.go",
+  "changed_symbol": "deliveryItemBuildCommand",
+  "red_exit": 1,
+  "exact_signal_notice": true,
+  "green_exit": 0,
+  "diagnostics": [
+    {
+      "file": "roundfix-2026-10-17-113517.ips",
+      "parent_process": "cli.test",
+      "termination_namespace": "CODESIGNING",
+      "indicator": "Taskgated Invalid Signature",
+      "capture_time": "2026-10-17 11:35:17.6260 -0300",
+      "proc_name": "roundfix",
+      "proc_path_redacted": true,
+      "capture_matches_red_invocation": true,
+      "association": "roundfix process; cli.test parent; CODESIGNING; capture during the red invocation; exact executable path is privacy-redacted by macOS"
+    }
+  ],
+  "restored_diff_empty": true,
+  "worktree_remove_exit": 0
+}

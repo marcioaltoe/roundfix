@@ -1,0 +1,8 @@
+Spec 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  vocabulary documentation detector: missing docs/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced/_techspec.md Vocabulary Contract

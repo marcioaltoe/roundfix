@@ -1,0 +1,9 @@
+archive plan for 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced: removes 29 file(s) (105349 bytes) and writes docs/history/specs/0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-17.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 18 file(s) (24592 bytes) under qa/evidence/
+candidate diagnosis/f6-sender.md 2381 bytes: transient_evidence (p=0.81)
+candidate references/2026-10-13-trace-the-sender-of-the-f6-signal.md 1106 bytes: repository_record (p=0.90)
+relinks docs/backlog/2026-10-16-an-item-binary-built-in-place-can-be-killed-by-code-signing.md: 1 citation(s)
+promote with: roundfix archive 0275-the-f6-sender-is-named-and-a-rebuilt-item-binary-is-replaced --promote <path>
+
+exit: 0

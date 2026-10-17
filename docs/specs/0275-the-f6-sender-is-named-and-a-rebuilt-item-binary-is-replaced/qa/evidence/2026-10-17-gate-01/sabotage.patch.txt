@@ -1,0 +1,13 @@
+diff --git a/internal/cli/deliver_item_binary_test.go b/internal/cli/deliver_item_binary_test.go
+index 745a4f09..c8de69a2 100644
+--- a/internal/cli/deliver_item_binary_test.go
++++ b/internal/cli/deliver_item_binary_test.go
+@@ -44,7 +44,7 @@ type deliveryItemFixture struct {
+ }
+ 
+ func deliveryItemBuildCommand(binary string) string {
+-	return "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix.next && mv -f bin/roundfix.next bin/roundfix"
++	return "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix"
+ }
+ 
+ func newDeliveryItemFixture(t *testing.T) *deliveryItemFixture {

@@ -1,0 +1,21 @@
+{
+  "head": "a14a3594523d721d607da451a97015cc45d17abc",
+  "rows": {
+    "pass": 8,
+    "fail": 1,
+    "blocked_environment": 1,
+    "pending": 0,
+    "blocked_finding": 0,
+    "blocked_declared": 0,
+    "skipped": 0
+  },
+  "coverage_closed": true,
+  "input_blocks": 10,
+  "evidence_references_checked": 11,
+  "missing_evidence_paths": [],
+  "secret_matches": [],
+  "seeded_auditor_identity_preserved": true,
+  "mechanical_skips_preserved": true,
+  "temporary_worktree_removed": true,
+  "eligibility_exit": 1
+}
