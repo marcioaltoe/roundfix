@@ -136,6 +136,7 @@ type CarryForward struct {
 	TaskFile      string   `json:"taskFile"`
 	InputsMoved   bool     `json:"inputsMoved"`
 	MovedInputs   []string `json:"movedInputs"`
+	AmendedInputs []string `json:"amendedInputs"`
 	Action        string   `json:"action"`
 	RefusalReason string   `json:"refusalReason"`
 }

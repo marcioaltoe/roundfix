@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -128,3 +128,55 @@ repositories.
 - `_prd.md` → Sources; Goals; User Story 4; Core Feature 7; Core Feature 9; Success Metric 4; Glossary
 - `_techspec.md` → API Contract 6; API Contract 7; API Contract 9; Invariant 6; Current behavior; Testing Approach; Build Order 3
 - ADR-0284; ADR-0170; ADR-0158; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. The Daemon-owned
+`status: in_progress` is preserved; the Task Graph and every other Task file
+are unchanged. The initial worktree change was the Daemon's status edit in
+this Task file.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| An amendment outside a settled Task's Binding Text carries it and lists the amended files. | `PlanningBinding` extracts the ordered node fields and projection row, or the referenced level 2–4 sections. The new carry command test adds Tooling authority to both planning files and a corrective node and row to the manifest, then proves all three paths appear in `amendedInputs`, the implementation is carried, the amendment survives, and the existing Run/commit provenance is written. |
+| A changed named section, Task file or non-planning input refuses the whole set with today's reason. | The new refusal command test exercises a named TechSpec section, the Task file, `AGENTS.md`, `CONTEXT.md`, the implementation skill, an ordinary Context path, an explicit Context path to the Task's own planning file amended outside its named section, and another Spec's planning file. Each asserts the exact `Task task_01 declared input(s) moved: <path>` reason, whole-set refusal, unchanged target HEAD, and absence of either Task's implementation. Existing retry-refusal and staged-carry regressions also passed. |
+| Reconcile text and JSON show amended inputs and earlier refusal text is preserved. | The carry command test checks JSON's three amended paths and the adjacent text lines `moved-inputs` then `amended-inputs`. Refusal cases check `"amendedInputs":[]`. Every candidate constructor initializes the list. The existing retry refusal tests retain their names and expectations, including the amending commits and recovery commands. |
+
+The parser tests cover dependency order, another Task's node and row, manifest
+prose, changed own row, missing node/row, fenced rows and headings, singular
+and plural forms, numbered units, ASCII and Unicode ranges, colon units,
+unresolved units, missing or fenced bullets, wrapped bullets, section order,
+repeated headings, level boundaries and Git text line endings. Both bindings
+are read using the settlement parent's Task declaration. Explicit Context
+paths always retain whole-file comparison.
+
+### Focused checks
+
+- Before implementation, `go test ./internal/spec -run '^TestPlanningBindingReadsTheTaskNodeAndRow$' -count=1` failed to compile because `PlanningBinding` did not exist.
+- Before planner integration, `go test ./internal/cli -run '^TestCarryForwardCarriesATaskOverAnAmendmentOutsideItsBindingText$' -count=1` reproduced the refusal naming all three amended planning files.
+- `go test ./internal/spec -run '^TestPlanningBindingReads' -count=1` — exit 0 after the final parser/test edits.
+- `go test ./internal/cli -run '^(TestCarryForwardCarriesATaskOverAnAmendmentOutsideItsBindingText|TestCarryForwardRefusesATaskWhoseBindingTextChanged|TestRetryRefusal.*|TestCarryForwardInputsResolveAgainstStagedCarries|TestInspectSpecCarryForwards)$' -count=1` — exit 0 after the final command/test edits.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/spec -o /tmp/roundfix-0277-task03-spec.test.exe` — exit 0.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/cli -o /tmp/roundfix-0277-task03-cli.test.exe` — compilation blocked by existing Unix-only tests assigned to Task 02: `deliver_item_probe_report_test.go` (`syscall.Stat_t`, `syscall.Getpgrp`), `detach_fixture_group_other_test.go` (`syscall.Kill`), `detach_test.go` (`store.SignalProvenProcess`, `syscall.Wait4`), and `implement_detach_teardown_test.go` (Unix process APIs). These files were not changed. The new Task 03 tests use portable APIs and call `t.Parallel()` first.
+- `git diff --check` — exit 0. A read-only scope inspection found all 15 changed paths in this Task's declared Context or this Task file, preserved status and QA settlement bytes, matching canonical/embedded Roundfix skill files, and no old blanket Spec-moved wording in the guides or either skill copy.
+
+### Documentation and generated records
+
+The Reconcile guide and canonical reference describe Binding Text, conservative
+whole-file fallback, strict Context inputs, `amended-inputs` text, and
+`amendedInputs` JSON including the empty list. `CONTEXT.md` adds Binding Text
+and revises Task Carry-Forward through domain-modeling, linked to ADR-0284.
+No text inside a QA settlement section changed.
+
+- `make skills-sync` — exit 0; mirrors generated from canonical skills.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — exit 0; generated Roundfix version `0.1.91` in both skill copies and its version record.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — exit 0; regenerated the Reconcile guide fingerprint.
+- `make baseline-digests` — exit 0, `changed:false`; no derived Baseline files changed.
+
+No record or mirror was hand-edited. Declared Verification, selected repository
+Verification and incremental Verification were left to the Daemon. No commit,
+push or pull request was created. The CLI Windows compilation limit above is
+follow-up evidence for Task 02, outside this diff.

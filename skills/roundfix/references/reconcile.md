@@ -105,6 +105,36 @@ cannot be proved. A Task already completed on the checkout is reported as
 `already completed; nothing to carry`; it is not staged or proved and never
 refuses the remaining set. When every candidate is already completed, the
 command succeeds without moving `HEAD`.
+A settled Task can be carried over an amendment of its own Spec's `_prd.md`,
+`_techspec.md` or `_tasks.md` when its Binding Text is unchanged. In the manifest,
+Binding Text is the Task's graph node (`id`, `file`, `needs` in order) and its
+projection table row. In the PRD and TechSpec it is every section named by the
+Task's References bullet for that file, from its level 2–4 heading to the next
+heading of the same or a higher level. Matching ignores case, accepts singular
+or plural forms, and drops numbered suffixes, ranges, commas and `and`; a unit
+ends at its first `:`. Headings inside fenced blocks do not match. A missing
+node, row or References bullet, or any unresolved unit, binds the whole file
+and keeps the moved-input refusal.
+
+Both bindings use the Task file at the settlement parent and compare that
+parent's planning text with the accumulating staged target. A changed Binding
+Text still refuses the whole remaining set. The Task file, `AGENTS.md`,
+`CONTEXT.md`, the `implement-task` skill and every explicit Context path still
+refuse on any change. This rule also serves Implement Preflight and Delivery
+Retry; their refusal reasons and recovery commands are unchanged.
+
+Each candidate lists tolerated planning amendments separately. Text prints these
+lines in order (repository-relative paths replace the placeholders):
+
+```text
+  moved-inputs: []
+  amended-inputs: [<paths>]
+```
+
+The `carryForwards` JSON entry includes `"movedInputs":[]` and
+`"amendedInputs":["<path>"]`. `amendedInputs` is `[]` when there are no tolerated
+amendments; those paths do not appear in `movedInputs` or set `inputsMoved`.
+
 Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout receives those commits only through a fast-forward merge, and carry-forward leaves its Git configuration unchanged.
 There is no force bypass.
 

@@ -1322,6 +1322,7 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  task-file: %s\n", textReconcileValue(candidate.TaskFile))
 		fmt.Fprintf(&output, "  inputs-moved: %t\n", candidate.InputsMoved)
 		fmt.Fprintf(&output, "  moved-inputs: %v\n", candidate.MovedInputs)
+		fmt.Fprintf(&output, "  amended-inputs: %v\n", candidate.AmendedInputs)
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(candidate.RefusalReason))
 	}

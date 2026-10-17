@@ -251,11 +251,12 @@ func inspectCarryForwardsForRun(
 			continue
 		}
 		candidate := spec.CarryForward{
-			TaskID:      task.ID,
-			RunID:       run.ID,
-			TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
-			MovedInputs: []string{},
-			Action:      carryForwardCompletedAction,
+			TaskID:        task.ID,
+			RunID:         run.ID,
+			TaskFile:      filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
+			MovedInputs:   []string{},
+			AmendedInputs: []string{},
+			Action:        carryForwardCompletedAction,
 		}
 		if taskCommits := commitsByTask[task.ID]; len(taskCommits) == 1 {
 			candidate.Commit = taskCommits[0]
@@ -265,10 +266,11 @@ func inspectCarryForwardsForRun(
 	for index, task := range remainingTasks {
 		taskEvidence := evidence[task.ID]
 		candidate := spec.CarryForward{
-			TaskID:      task.ID,
-			RunID:       run.ID,
-			TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
-			MovedInputs: []string{},
+			TaskID:        task.ID,
+			RunID:         run.ID,
+			TaskFile:      filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
+			MovedInputs:   []string{},
+			AmendedInputs: []string{},
 		}
 		if !taskEvidence.verificationPassed {
 			candidate.Action = "refuse"
@@ -397,11 +399,12 @@ func unstagedCarryForwards(
 			continue
 		}
 		entries = append(entries, spec.CarryForward{
-			TaskID:      task.ID,
-			RunID:       run.ID,
-			TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
-			MovedInputs: []string{},
-			Action:      "refuse",
+			TaskID:        task.ID,
+			RunID:         run.ID,
+			TaskFile:      filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
+			MovedInputs:   []string{},
+			AmendedInputs: []string{},
+			Action:        "refuse",
 			RefusalReason: fmt.Sprintf(
 				"Task %s was not evaluated: Task %s could not be staged, so the set has no baseline to prove it against",
 				task.ID,
@@ -576,8 +579,9 @@ func inspectCarryForwardCandidate(ctx context.Context, stagingWorktree string, c
 		return fmt.Errorf("read Task %s declared inputs: %w", candidate.TaskID, err)
 	}
 	moved := make([]string, 0)
+	amended := make([]string, 0)
 	for _, input := range inputs {
-		_, existed, err := reconcileGitBlob(ctx, stagingWorktree, parent, input)
+		parentInput, existed, err := reconcileGitBlob(ctx, stagingWorktree, parent, input)
 		if err != nil {
 			return fmt.Errorf("read Task %s input %s from %s: %w", candidate.TaskID, input, parent, err)
 		}
@@ -592,11 +596,40 @@ func inspectCarryForwardCandidate(ctx context.Context, stagingWorktree string, c
 		if err != nil {
 			return fmt.Errorf("compare Task %s input %s against %s: %w", candidate.TaskID, input, parent, err)
 		}
-		if changed {
-			moved = append(moved, input)
+		if !changed {
+			continue
 		}
+		// Only the three planning files in this Task's own Spec can be
+		// amended without moving its contract. Both bindings use the Task
+		// declaration that the settled implementation actually received.
+		if filepath.Dir(input) == filepath.Dir(candidate.TaskFile) &&
+			slices.Contains([]string{"_prd.md", "_techspec.md", "_tasks.md"}, filepath.Base(input)) {
+			before, wholeBefore, err := spec.PlanningBinding(input, parentInput, candidate.TaskID, parentTask)
+			if err != nil {
+				return fmt.Errorf("read Task %s planning binding in %s at %s: %w", candidate.TaskID, input, parent, err)
+			}
+			if !wholeBefore {
+				targetInput, err := os.ReadFile(filepath.Join(stagingWorktree, filepath.FromSlash(input)))
+				if err != nil && !errors.Is(err, os.ErrNotExist) {
+					return fmt.Errorf("read Task %s staged planning input %s: %w", candidate.TaskID, input, err)
+				}
+				if err == nil {
+					after, wholeAfter, err := spec.PlanningBinding(input, targetInput, candidate.TaskID, parentTask)
+					if err != nil {
+						return fmt.Errorf("read Task %s staged planning binding in %s: %w", candidate.TaskID, input, err)
+					}
+					if !wholeAfter && before == after {
+						amended = append(amended, input)
+						continue
+					}
+				}
+			}
+		}
+		moved = append(moved, input)
 	}
 	slices.Sort(moved)
+	slices.Sort(amended)
+	candidate.AmendedInputs = amended
 	candidate.MovedInputs = moved
 	candidate.InputsMoved = len(moved) > 0
 	return nil
