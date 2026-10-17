@@ -999,6 +999,7 @@
       "TestBaselineUpdateKeepsASetupSnapshotDifference",
       "TestBaselineUpdateListsHistoryCitationsTranscript",
       "TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState",
+      "TestBaselineUpdateNamesEveryFileItWillRemove",
       "TestBaselineUpdateNamesTheMissingIncrementalDecision",
       "TestBaselineUpdateNewDecisionRequiresActionWithoutWrites",
       "TestBaselineUpdateNoHistorySkipsTheSection",

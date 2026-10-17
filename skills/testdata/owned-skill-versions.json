@@ -507,6 +507,10 @@
       {
         "version": "0.1.81",
         "digest": "71ee75cf081b686340fcdfa46d19bee555ca05a623b7077f1b25af93911b0324"
+      },
+      {
+        "version": "0.1.82",
+        "digest": "337a4d60ef390a5890318e6dd084f45e477e7485d34c7ff978d24479f05c25d2"
       }
     ],
     "setup-context-driven": [

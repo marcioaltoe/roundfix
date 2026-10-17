@@ -44,13 +44,14 @@ type baselineUpdateHistoryTag struct {
 	PushCommand string `json:"pushCommand,omitempty"`
 }
 type baselineUpdateHistoryUnit struct {
-	Unit        string `json:"unit"`
-	Action      string `json:"action"`
-	Record      string `json:"record,omitempty"`
-	Disposition string `json:"disposition,omitempty"`
-	Files       int    `json:"files"`
-	Bytes       int64  `json:"bytes"`
-	Links       int    `json:"links,omitempty"`
+	Unit        string   `json:"unit"`
+	Action      string   `json:"action"`
+	Paths       []string `json:"paths"`
+	Record      string   `json:"record,omitempty"`
+	Disposition string   `json:"disposition,omitempty"`
+	Files       int      `json:"files"`
+	Bytes       int64    `json:"bytes"`
+	Links       int      `json:"links,omitempty"`
 }
 type baselineUpdateHistoryRefusal struct {
 	Unit   string `json:"unit"`
@@ -244,7 +245,13 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 			p.Report.Refused = append(p.Report.Refused, baselineUpdateHistoryRefusal{Unit: name, Reason: historyRefusalLine(u.refusal)})
 			continue
 		}
-		report := baselineUpdateHistoryUnit{Unit: name, Files: len(u.files)}
+		report := baselineUpdateHistoryUnit{Unit: name, Files: len(u.files), Paths: append([]string{}, u.files...)}
+		if u.links != nil {
+			for path := range u.links.Files {
+				report.Paths = append(report.Paths, path)
+			}
+		}
+		sort.Strings(report.Paths)
 		if c := u.conversion; c != nil {
 			report.Action = "convert"
 			report.Record = c.RecordPath
@@ -556,6 +563,9 @@ func printBaselineUpdateHistory(w io.Writer, h baselineUpdateHistory) {
 				fmt.Fprintf(w, "- record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.Links, u.Files)
 			case "remove":
 				fmt.Fprintf(w, "- %s: removes %d file(s) (%d bytes)\n", u.Unit, u.Files, u.Bytes)
+			}
+			for _, path := range u.Paths {
+				fmt.Fprintf(w, "  - %s\n", path)
 			}
 		}
 	}

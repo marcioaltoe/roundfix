@@ -142,6 +142,12 @@ deliberately with `roundfix baseline skills restore --profile <id> --skill <name
 A missing skill, or one that no longer matches its lock, is still restored under
 `skills.drifted`.
 
+The history plan names every file it will remove before approval. Each pending
+unit carries sorted repository-relative `paths` in JSON: the files a removal
+or conversion deletes, or the Archive Records `record-links` rewrites. Text
+prints the same paths in the same order as `  - <path>` lines directly under
+each unit's summary.
+
 When Pending History exists, the managed refresh adds a `History` section to
 the plan. Text lists each planned history unit and its result, then prints
 `History: <status>`, `History units:`, `History applied:`, `History refused:`

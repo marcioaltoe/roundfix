@@ -178,7 +178,7 @@ func TestBaselineUpdateListsHistoryCitationsTranscript(t *testing.T) {
 	assertBaselineCitationJSON(t, output, "staleCitations", []baselineUpdateHistoryCitation{})
 	u := r.History.Units[0]
 	output, stderr, code = baselineCitationGoRun(t, h)
-	want := fmt.Sprintf("Baseline update: plan ready\nCategory: approval\nResult: guidance matches the current Baseline catalog; 1 history unit(s) pending sanitize\n...\nHistory: pending\nHistory units: 1 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\n", u.Files, u.Bytes, u.Unit, u.Files, u.Bytes, u.Record, u.Disposition)
+	want := fmt.Sprintf("Baseline update: plan ready\nCategory: approval\nResult: guidance matches the current Baseline catalog; 1 history unit(s) pending sanitize\n...\nHistory: pending\nHistory units: 1 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\n  - %s/_prd.md\n  - %s\n", u.Files, u.Bytes, u.Unit, u.Files, u.Bytes, u.Record, u.Disposition, baselineCitationFolder, baselineCitationLesson)
 	want += baselineCitationLines(false, h.revision) + fmt.Sprintf("History tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", h.revision, r.PlanDigest, r.PlanDigest)
 	assertBaselineCitationTranscript(t, output, stderr, code, want, 1, "exit status 3\n")
 	baselineHistoryUnchanged(t, h, before, refs, index)
@@ -374,7 +374,7 @@ func TestBaselineUpdateWithoutCitationsKeepsDigestAndText(t *testing.T) {
 	assertBaselineCitationJSON(t, output, "staleCitations", []baselineUpdateHistoryCitation{})
 	u := r.History.Units[0]
 	_, output, stderr, code = baselineHistoryRun(t, h, "text")
-	want := fmt.Sprintf("Baseline update: plan ready\nCategory: approval\nResult: guidance matches the current Baseline catalog; 1 history unit(s) pending sanitize\n...\nHistory: pending\nHistory units: 1 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\nHistory tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", u.Files, u.Bytes, u.Unit, u.Files, u.Bytes, u.Record, u.Disposition, h.revision, digest, digest)
+	want := fmt.Sprintf("Baseline update: plan ready\nCategory: approval\nResult: guidance matches the current Baseline catalog; 1 history unit(s) pending sanitize\n...\nHistory: pending\nHistory units: 1 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\n  - %s/_prd.md\n  - %s\nHistory tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", u.Files, u.Bytes, u.Unit, u.Files, u.Bytes, u.Record, u.Disposition, baselineCitationFolder, baselineCitationLesson, h.revision, digest, digest)
 	assertBaselineCitationTranscript(t, output, stderr, code, want, 3)
 }
 

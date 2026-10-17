@@ -82,6 +82,12 @@ lists, and `baseline.history.citation.unscanned` when a tracked file could not
 be scanned. The Plan Digest covers these warnings. Planning never rewrites a
 citation, and apply writes the same files.
 
+The history plan names every file it will remove before approval. Each pending
+unit carries sorted repository-relative `paths` in JSON: the files a removal
+or conversion deletes, or the Archive Records `record-links` rewrites. Text
+prints the same paths in the same order as `  - <path>` lines directly under
+each unit's summary.
+
 When Pending History exists, the managed refresh adds a `History` section to
 the plan. Text output lists the history units and their planned records or
 removals and `record-links` repairs, with `History: <status>`, `History units:`, `History applied:`,
