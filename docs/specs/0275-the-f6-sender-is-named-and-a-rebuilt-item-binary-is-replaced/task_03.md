@@ -34,7 +34,13 @@ provider, reads a credential or reads another repository.
    `suiteguard: helper residue`. The row passes only when all ten exit 0 with
    every count zero. On the first failing suite it stops, keeps the output,
    records the failing test and the child's Signal Exit, and fails the row; it
-   never reruns a failed suite to obtain a pass.
+   never reruns a failed suite to obtain a pass. From the start of the first
+   suite until the tenth ends, the QA Agent creates, changes or removes no
+   file under the checkout, the QA directory included: the suite guard
+   fingerprints the whole checkout, so a QA file written mid-suite fails the
+   suite with a guard violation, as the first gate of 2026-10-17 did. Notes,
+   timings and outputs go to the temporary directory, and the evidence
+   directory and the QA Report are written only after the last suite ends.
 3. MUST, when a suite of Requirement 2 shows a Signal Exit, read
    `~/Library/Logs/DiagnosticReports` in the Agent turn for a
    `roundfix-*.ips` report written during that suite with parent process
