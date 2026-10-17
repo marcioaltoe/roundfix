@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -23,8 +24,18 @@ type HistoryKindPlan struct {
 	Action                HistoryKindAction
 	Files                 []string
 	BytesBefore           int64
+	Lineage               []HistoryLineage
+	Refused               []HistoryRefusal
 	specRoot, archiveRoot string
 }
+
+// HistoryLineage is the exact line appended to an accepted successor.
+type HistoryLineage struct{ Successor, Removed, Line string }
+
+// HistoryRefusal leaves one superseded ADR for a maintainer to resolve.
+type HistoryRefusal struct{ Path, Reason string }
+
+const historyADRRefusal = "superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated"
 
 var historyEntryProvenance = regexp.MustCompile("^Full text in Git at `([[:xdigit:]]{40}|[[:xdigit:]]{64})`: `([^`\\r\\n]+)`\\.$")
 var historyEntryLink = regexp.MustCompile(`\]\(([^\s)]+)`)
@@ -48,7 +59,7 @@ func PlanHistoryKinds(ctx context.Context, repositoryRoot string) ([]HistoryKind
 		if err != nil {
 			return nil, err
 		}
-		if len(plan.Files) > 0 {
+		if len(plan.Files) > 0 || len(plan.Refused) > 0 {
 			plans = append(plans, plan)
 		}
 	}
@@ -111,8 +122,30 @@ func PlanHistoryKind(ctx context.Context, repositoryRoot string, kind ArchiveKin
 				return err
 			}
 			if ClassifyADR(content).Reason == "superseded" {
-				if err := historyADRSuccessor(repositoryRoot, filepath.Base(path), content); err != nil {
+				successor, next, err := historyADRSuccessor(repositoryRoot, content)
+				if err != nil {
 					return err
+				}
+				if successor == "" {
+					seen[rel] = true
+					plan.Refused = append(plan.Refused, HistoryRefusal{Path: rel, Reason: historyADRRefusal})
+					return nil
+				}
+				id := "ADR-" + strings.SplitN(filepath.Base(path), "-", 2)[0]
+				if !historyEntryNamesPath(string(next), id) && !historyEntryNamesPath(string(next), filepath.Base(path)) {
+					date, err := archiveGitRead(ctx, repositoryRoot, "show", "-s", "--format=%cI", "HEAD")
+					if err != nil {
+						return fmt.Errorf("read lineage date: %w", err)
+					}
+					committed, err := time.Parse(time.RFC3339, strings.TrimSpace(string(date)))
+					if err != nil {
+						return fmt.Errorf("parse lineage date: %w", err)
+					}
+					locator, err := ResolveGitLocator(ctx, repositoryRoot, rel, "", "")
+					if err != nil {
+						return err
+					}
+					plan.Lineage = append(plan.Lineage, HistoryLineage{Successor: successor, Removed: rel, Line: fmt.Sprintf("Supersedes %s (%s); Git keeps its text at %s.", id, committed.UTC().Format("2006-01-02"), locator.Text(false))})
 				}
 			}
 		}
@@ -200,11 +233,6 @@ func PlanHistoryKind(ctx context.Context, repositoryRoot string, kind ArchiveKin
 				retired = status == "declined" || status == "deferred" || status == "done" || status == "deprecated" || status == "superseded" || status == "closed" || status == "cancelled"
 			case ArchiveKindADR:
 				retired = ClassifyADR(content).Retired
-				if retired && ClassifyADR(content).Reason == "superseded" {
-					if err := historyADRSuccessor(repositoryRoot, entry.Name(), content); err != nil {
-						return plan, err
-					}
-				}
 			}
 			if retired {
 				if err := add(path); err != nil {
@@ -214,42 +242,88 @@ func PlanHistoryKind(ctx context.Context, repositoryRoot string, kind ArchiveKin
 		}
 	}
 	sort.Strings(plan.Files)
+	sort.Slice(plan.Lineage, func(i, j int) bool { return plan.Lineage[i].Removed < plan.Lineage[j].Removed })
+	sort.Slice(plan.Refused, func(i, j int) bool { return plan.Refused[i].Path < plan.Refused[j].Path })
 	return plan, nil
 }
 
-func historyADRSuccessor(root, name string, content []byte) error {
+func historyADRSuccessor(root string, content []byte) (string, []byte, error) {
 	front, _, err := splitFrontmatter(content)
 	if err != nil {
-		return fmt.Errorf("superseded ADR %s has no accepted successor naming it", name)
+		return "", nil, nil
 	}
 	var metadata struct {
 		Successor string `yaml:"superseded_by"`
 	}
 	if err := yaml.Unmarshal(front, &metadata); err != nil {
-		return fmt.Errorf("read superseded ADR %s: %w", name, err)
+		return "", nil, fmt.Errorf("read superseded ADR: %w", err)
 	}
-	number := strings.TrimPrefix(metadata.Successor, "ADR-")
-	if number != "" && number != metadata.Successor {
-		entries, err := os.ReadDir(filepath.Join(root, "docs/adr"))
+	number, ok := strings.CutPrefix(metadata.Successor, "ADR-")
+	if !ok || number == "" {
+		return "", nil, nil
+	}
+	entries, err := os.ReadDir(filepath.Join(root, "docs/adr"))
+	if errors.Is(err, os.ErrNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("read successor directory: %w", err)
+	}
+	for _, entry := range entries {
+		if !entry.Type().IsRegular() || !strings.HasPrefix(entry.Name(), number+"-") || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		path := "docs/adr/" + entry.Name()
+		if err := historyRewriteRegularFile(root, path); err != nil {
+			return "", nil, err
+		}
+		next, err := os.ReadFile(filepath.Join(root, path))
 		if err != nil {
-			return err
+			return "", nil, fmt.Errorf("read successor %s: %w", path, err)
 		}
-		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasPrefix(entry.Name(), number+"-") {
-				continue
-			}
-			next, err := os.ReadFile(filepath.Join(root, "docs/adr", entry.Name()))
-			if err != nil {
-				return err
-			}
-			status, _ := retirementStatus(next)
-			id := "ADR-" + strings.SplitN(name, "-", 2)[0]
-			if status == "accepted" && (historyEntryNamesPath(string(next), id) || historyEntryNamesPath(string(next), name)) {
-				return nil
-			}
+		if status, _ := retirementStatus(next); status == "accepted" {
+			return path, next, nil
 		}
 	}
-	return fmt.Errorf("superseded ADR %s: accepted successor %s does not name it", name, metadata.Successor)
+	return "", nil, nil
+}
+
+func appendHistoryLineage(content []byte, line string) []byte {
+	for _, existing := range strings.Split(string(content), "\n") {
+		if existing == line {
+			return content
+		}
+	}
+	next := append([]byte(nil), content...)
+	if len(next) > 0 && next[len(next)-1] != '\n' {
+		next = append(next, '\n')
+	}
+	next = append(next, '\n')
+	next = append(next, line...)
+	return append(next, '\n')
+}
+
+// LineageCitations lists the exact lines apply will append, in removal order.
+func (p HistoryKindPlan) LineageCitations(root string) ([]HistoryCitation, error) {
+	contents := map[string][]byte{}
+	var citations []HistoryCitation
+	for _, lineage := range p.Lineage {
+		content, ok := contents[lineage.Successor]
+		if !ok {
+			var err error
+			content, err = os.ReadFile(filepath.Join(root, lineage.Successor))
+			if err != nil {
+				return nil, fmt.Errorf("read successor %s: %w", lineage.Successor, err)
+			}
+		}
+		next := appendHistoryLineage(content, lineage.Line)
+		if len(next) != len(content) {
+			line := strings.Count(string(next[:len(next)-len(lineage.Line)-1]), "\n") + 1
+			citations = append(citations, HistoryCitation{Path: lineage.Successor, Line: line, Target: lineage.Removed, Rewrite: lineage.Line})
+		}
+		contents[lineage.Successor] = next
+	}
+	return citations, nil
 }
 
 // ApplyHistoryKind validates every path before removing the first file.
@@ -304,6 +378,14 @@ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
 			}
 		}
 	}
+	for _, lineage := range plan.Lineage {
+		if plan.Kind != ArchiveKindADR || filepath.ToSlash(filepath.Dir(lineage.Successor)) != "docs/adr" {
+			return fmt.Errorf("invalid lineage successor %q", lineage.Successor)
+		}
+		if err := historyRewriteRegularFile(repositoryRoot, lineage.Successor); err != nil {
+			return err
+		}
+	}
 	protected := map[string]bool{"docs/adr": true, "docs/backlog": true, "docs/findings": true, specRoot: true, "docs/history": true, "docs": true, ".": true}
 	for _, path := range plan.Files {
 		if err := os.Remove(filepath.Join(repositoryRoot, path)); err != nil {
@@ -322,6 +404,20 @@ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
 			}
 		}
 	}
+	for _, lineage := range plan.Lineage {
+		path := filepath.Join(repositoryRoot, lineage.Successor)
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read lineage successor %s: %w", lineage.Successor, err)
+		}
+		next := appendHistoryLineage(content, lineage.Line)
+		if len(next) != len(content) {
+			if err := os.WriteFile(path, next, 0o644); err != nil {
+				return fmt.Errorf("write lineage successor %s: %w", lineage.Successor, err)
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -144,7 +144,8 @@ A missing skill, or one that no longer matches its lock, is still restored under
 
 The history plan names every file it will remove before approval. Each pending
 unit carries sorted repository-relative `paths` in JSON: the files a removal
-or conversion deletes, or the Archive Records `record-links` rewrites. Text
+or conversion deletes, the Archive Records `record-links` rewrites, or the live pages `live-links`
+rewrites. Text
 prints the same paths in the same order as `  - <path>` lines directly under
 each unit's summary.
 
@@ -193,11 +194,13 @@ a tag. Other citations are listed and left unchanged. The rewrite reads only
 this repository and writes only the planned citing files.
 
 History units are Legacy Archive Folder conversions, then `findings`,
-`backlog`, `adr`, `reviews`, `handoffs` and `superseded` removals, followed by `record-links` repairs. They include
+`backlog`, `adr`, `reviews`, `handoffs` and `superseded` removals, followed by `record-links` and `live-links` repairs. They include
 Reduced History Entries, legacy family trees, terminal active Findings and
 Backlog Entries, retired ADRs and finished Review Artifacts the Baseline used
-to relocate. A superseded ADR whose accepted successor does not name it refuses
-that unit. The `superseded` unit holds only uncited Archive Records without
+to relocate. A superseded ADR naming an accepted successor leaves, and the plan
+appends a missing lineage line to that successor. An ADR without an accepted
+successor is refused by its own path while the other ADRs leave. The
+`superseded` unit holds only uncited Archive Records without
 regeneration grants. Its citation check covers every surviving tracked Markdown
 file outside skill trees and `testdata`, including bounded slugs in front matter.
 Legacy Spec folder relocations and the live review root rename still apply.
@@ -213,6 +216,37 @@ not relative links. A record removed by the same plan is skipped.
 The repair line is `- record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
 A JSON `rewrite` unit carries `links`; `History units` file and byte totals
 count only files that leave the tree.
+
+
+A superseded ADR's accepted successor receives a missing lineage line exactly
+as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.` The date
+is HEAD's committer date in UTC (`YYYY-MM-DD`); the locator is the removed
+path's Git Locator. Apply appends the line after a blank line, preserves the
+successor's existing bytes and never adds the same line twice. Several lines
+for one successor follow removal-path order. Each line is a History Citation:
+`cites <successor>:<n> names <removed>; rewrites to <line>` in history text,
+and under `citations` in JSON. Baseline text prefixes the citation with `- `;
+its Plan Digest binds the exact line, and an uncommitted successor refuses
+the ADR unit. Successors are cited, never listed as removal paths.
+
+A superseded ADR with no accepted successor stays with this reason:
+`superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated`.
+History text prints `refused <path>: <reason>`; baseline text prefixes it with
+`- `. JSON lists `{"unit":"<path>","reason":"<reason>"}` under `refused`.
+The refusal names that ADR's repository-relative path, leaves the other
+retired ADRs eligible and does not change the command's exit code.
+
+After `record-links`, `live-links` repairs missing relative links in Live
+Documents and `docs/user-guide/` pages, including the configured Spec Root.
+It writes the Git Locator printed by `SC-HISTORY-RETAINED`, changes only link
+spans and skips Archive Records, removed pages, self-links, code spans,
+fences, URLs and existing Git Locators. A second plan after apply has no
+`live-links` unit.
+
+The repair line is `- live-links: rewrites <l> link(s) in <n> file(s)`.
+JSON lists unit `live-links`, action `rewrite`, sorted page `paths`, `files`
+and `links`; its citations and replacement text join the Plan Digest.
+Text lists each page as `  - <path>` immediately after the repair line.
 
 Removal lines read `- <unit>: removes <n> file(s) (<b> bytes)`. A rewritten
 citation appends `; rewrites to <replacement>`. `History applied:` drops the

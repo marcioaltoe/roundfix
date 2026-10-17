@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -148,3 +148,119 @@ repositories.
 - `_prd.md` → Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Core Feature 9; Success Metric 1
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 10; Invariants 1, 2 and 3; Current behavior; Testing Approach; Build Order 1
 - ADR-0282; ADR-0278; ADR-0254; ADR-0260
+
+## Result
+
+Implemented this Task's history slice. Task status and declared Verification
+remain Daemon-owned.
+
+- `HistoryKindPlan` now carries lineage additions and per-path refusals.
+  Superseded ADRs with accepted successors remain eligible for removal even
+  when the successor lacks their name. Apply appends the exact dated line
+  after removals, preserving the successor's existing bytes and suppressing
+  duplicate lines. The committer date is converted to UTC; locator resolution
+  uses the removed path with empty provenance and pull-request arguments.
+- Both commands list lineage additions as History Citations. Baseline's digest
+  binds their exact replacement text and its dirty-path check includes the
+  successor, which remains outside the unit's removal paths. Missing or
+  proposed successors produce the specified refusal by ADR path while other
+  retired ADRs remain selected. An apply containing only these ADR refusals
+  exits successfully under the existing clean-tree and tag preconditions.
+- `PlanLiveLinks` walks the history gate's live-page roots and shares the
+  existing missing-link scan, locator resolver and link-span rewrite. Both
+  commands select `live-links` after `record-links`, freeze its rewrites,
+  report its paths and citations, and compose both repair units with removal
+  rewrites. History sanitize also accepts `--format text|json` to expose the
+  required unit, refusal and citation JSON; advice retains text output.
+- Updated the two guides and three canonical Roundfix references, replaced
+  the old whole-unit refusal wording, and synchronized the shipped mirrors.
+  The owned-skill recorder raised Roundfix to `0.1.86`; the Behavior Surface
+  Record was regenerated. No record or mirror was hand-edited.
+
+Acceptance evidence:
+
+1. `TestHistoryADRPlanWritesTheLineageASuccessorLacks` exercises active and
+   legacy ADR paths, multiple lineage lines in removal-path order, successor
+   endings with and without newlines, exact original-byte preservation, a
+   committer timestamp whose UTC date differs, exact locator bytes, citation
+   line numbers, and repeat plan/apply without a second lineage line.
+2. `TestHistoryADRPlanRefusesOnlyAnADRWithoutAnAcceptedSuccessor` checks the
+   exact refusal reason and paths for absent and proposed successors while a
+   rejected ADR is removed. The updated existing refusal test keeps its name
+   and verifies the new path-based text while other units remain planned.
+3. Both `TestLiveLinksPlan...` tests cover Live Documents, a custom Spec Root,
+   guide pages, Git Locators, unchanged code/fences/URLs/self-links/records,
+   skipped removed pages and symlinks, apply bytes and a second empty plan.
+   `TestHistorySanitizeAppliesTheAdopterShapes` runs public preview and apply,
+   then `speccheck.Check`; its only `SC-HISTORY-RETAINED` finding names the
+   retained ADR. A second plan lists only that refusal.
+4. The two new command tests check text and JSON lineage citations, refusals
+   and the `live-links` unit with sorted paths. The baseline test changes only
+   the planned lineage citation's replacement text with the revision and
+   units held fixed and observes a different digest. It also applies through
+   digest confirmation and verifies that a dirty successor refuses the ADR
+   unit.
+
+Focused implementation checks (all final runs exited 0):
+
+- `go test ./internal/spec -run '^Test(HistoryADRPlan|LiveLinksPlan)' -count=1`
+- `go test ./internal/cli -run 'Test(HistorySanitizeAppliesTheAdopterShapes|BaselineUpdatePlansLineageAndLiveLinks|HistorySanitizeRefusesAKindUnitAndPlansTheRest)$' -count=1`
+- `go test ./internal/spec -run '^Test(PlanHistoryKindsOrdersAndMeasures|ApplyHistoryKindRemovesEveryRetiredKind|HistoryCitationsNameMarkdownThatCitesARemovedPath|PlanRecordLinksResolvesAgainstTheRecordThenItsSource)$' -count=1`
+- `go test ./internal/cli -run '^Test(HistorySanitizePlanTranscript|HistorySanitizeApplyTranscript|HistorySanitizeRewritesBrokenRecordLinks|BaselineUpdateRewritesBrokenRecordLinks|BaselineUpdateNamesEveryFileItWillRemove|BaselineUpdateRefusesUnitsWithUncommittedChanges|BaselineUpdatePlansPendingHistoryWithoutWrites|BaselineUpdateAppliesPendingHistoryAndCreatesTheTag|BaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest)$' -count=1`
+- `go test ./internal/cli -run '^Test(HistorySanitizeUsageErrors|HistorySanitizeWithNothingPending|HistorySanitizeAppliesTheNextBatch|HistorySanitizePlanWritesNothing|HistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch|HistorySanitizeApplyRefusesWhenEveryExaminedUnitIsRefused)$' -count=1`
+
+Required regeneration (all exited 0):
+
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+- `make baseline-digests` — repository-required follow-through for the owned
+  skill edit; reported `changed: false` and left derived artifacts unchanged.
+
+Inspection also confirmed identical canonical/shipped Roundfix skill files,
+byte-identical QA settlement sections, no history-gate change, no renamed or
+removed tests, and clean `git diff --check`. The initial focused runs exposed
+a missing isolated Git identity in the date fixture and omitted lineage
+citations in command report composition; both were corrected before the
+successful focused runs above.
+
+The authored Verification, repository Verification and incremental
+Verification were not run. No commit, push, pull request, Task Graph edit or
+other Task-file edit was performed. No follow-up outside this Task was added.
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon's diagnostic artifact
+`verification/batch-001-attempt-1.log`. Its failure was the existing
+`TestPlanHistoryKindsRefusesASupersededADRItsSuccessorDoesNotName`, which still
+asserted the whole-planner error that API Contracts 1 and 2 replace. This
+assertion was missed in the initial focused selections.
+
+Updated that test in `internal/spec/history_removal_test.go`, retaining its
+name and first-statement `t.Parallel()`. It now asserts that an accepted
+successor missing the predecessor's name produces a removal and one lineage
+addition without a refusal; a proposed successor produces the exact per-path
+refusal without a planner error; and an accepted successor already naming
+the predecessor needs no extra lineage and keeps its bytes when apply removes
+the predecessor. This repairs the Task's intentionally changed contract and
+preserves the existing named-successor coverage. Production behavior was not
+changed in this repair.
+
+Focused repair evidence:
+
+- `go test ./internal/spec -run '^Test(PlanHistoryKindsRefusesASupersededADRItsSuccessorDoesNotName|HistoryADRPlan)' -count=1`
+  — exit 0, covering the repaired existing test and both new ADR planner tests.
+- `git diff --check` — exit 0 after the repair.
+
+Scope addition for Daemon recording: `internal/spec/history_removal_test.go`
+is an ordinary test path absent from this Task's original Context list; its
+changed assertion directly covers the Task's lineage/refusal contract. No
+existing test was renamed or removed. Task status remains Daemon-owned; no
+authored Verification command was rerun, and no commit, push or pull request
+was created.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/spec/history_removal_test.go`

@@ -177,7 +177,7 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 			}
 		}
 		if u.links != nil {
-			u, err = planRecordLinksUnit(ctx, root, archiveRel, p.selected)
+			u, err = planLinksUnit(ctx, root, specRel, archiveRel, u.name, p.selected)
 			if err != nil {
 				return blocked(err)
 			}
@@ -189,12 +189,25 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 		if err != nil {
 			return blocked(err)
 		}
+		if u.kind != nil {
+			for _, refusal := range u.kind.Refused {
+				p.Report.Refused = append(p.Report.Refused, baselineUpdateHistoryRefusal{Unit: refusal.Path, Reason: refusal.Reason})
+			}
+			if len(u.files) == 0 && u.refusal == nil {
+				continue
+			}
+		}
 		name := u.name
 		if u.folder {
 			name = archiveRel + "/" + u.name
 		}
 		if u.refusal == nil {
 			paths := append([]string(nil), u.files...)
+			if u.kind != nil {
+				for _, lineage := range u.kind.Lineage {
+					paths = append(paths, lineage.Successor)
+				}
+			}
 			if u.links != nil {
 				for path := range u.links.Files {
 					paths = append(paths, path)
@@ -560,7 +573,11 @@ func printBaselineUpdateHistory(w io.Writer, h baselineUpdateHistory) {
 			case "convert":
 				fmt.Fprintf(w, "- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\n", u.Unit, u.Files, u.Bytes, u.Record, u.Disposition)
 			case "rewrite":
-				fmt.Fprintf(w, "- record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.Links, u.Files)
+				if u.Unit == "live-links" {
+					fmt.Fprintf(w, "- live-links: rewrites %d link(s) in %d file(s)\n", u.Links, u.Files)
+				} else {
+					fmt.Fprintf(w, "- record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.Links, u.Files)
+				}
 			case "remove":
 				fmt.Fprintf(w, "- %s: removes %d file(s) (%d bytes)\n", u.Unit, u.Files, u.Bytes)
 			}
