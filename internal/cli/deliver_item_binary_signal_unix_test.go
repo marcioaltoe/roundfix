@@ -5,7 +5,6 @@ package cli
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"roundfix/internal/testfixture"
@@ -28,7 +27,7 @@ func newDeliverySignalItemFixture(t *testing.T, step string) *deliveryItemFixtur
 	t.Helper()
 	f := newDeliveryItemFixture(t)
 	binary := testfixture.FixtureBinary(t, "signal-item-roundfix", deliverySignalItemFixtureSource)
-	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix"
+	f.workflow.loaded.Config.Delivery.ItemBinary.Build = deliveryItemBuildCommand(binary)
 	setCommandEnvForTest(t, "DELIVERY_ITEM_SIGNAL_STEP", step)
 	return f
 }

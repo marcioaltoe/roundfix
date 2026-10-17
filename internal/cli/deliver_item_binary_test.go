@@ -19,11 +19,12 @@ import (
 )
 
 const deliveryItemFixtureSource = `package main
-import ("encoding/json"; "fmt"; "os"; "strconv")
+import ("encoding/json"; "fmt"; "io"; "os"; "strconv"; "syscall")
 func main() {
+ if len(os.Args) == 2 && os.Args[1] == "hold" { if _, err := io.Copy(io.Discard, os.Stdin); err != nil { panic(err) }; return }
  dir, err := os.Getwd(); if err != nil { panic(err) }
  file, err := os.OpenFile(os.Getenv("DELIVERY_ITEM_RECORD"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); if err != nil { panic(err) }
- err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home string }{os.Args[1:], dir, os.Getenv("HOME")}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
+ err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home string; Pid, Ppid, Pgid int }{os.Args[1:], dir, os.Getenv("HOME"), os.Getpid(), os.Getppid(), syscall.Getpgrp()}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
  if len(os.Args) == 3 && os.Args[1] == "migrate" && os.Args[2] == "--check" {
   fmt.Fprint(os.Stderr, os.Getenv("DELIVERY_ITEM_STDERR")); fmt.Fprint(os.Stdout, os.Getenv("DELIVERY_ITEM_STDOUT"))
   code, err := strconv.Atoi(os.Getenv("DELIVERY_ITEM_PROBE_EXIT")); if err != nil { panic(err) }; os.Exit(code)
@@ -32,13 +33,18 @@ func main() {
 }`
 
 type deliveryItemStart struct {
-	Args      []string
-	Dir, Home string
+	Args            []string
+	Dir, Home       string
+	Pid, Ppid, Pgid int
 }
 type deliveryItemFixture struct {
 	workflow                 *commandDeliveryWorkflow
 	repo, home, record, head string
 	log                      bytes.Buffer
+}
+
+func deliveryItemBuildCommand(binary string) string {
+	return "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix.next && mv -f bin/roundfix.next bin/roundfix"
 }
 
 func newDeliveryItemFixture(t *testing.T) *deliveryItemFixture {
@@ -75,7 +81,7 @@ func newDeliveryItemFixture(t *testing.T) *deliveryItemFixture {
 	f.workflow = &commandDeliveryWorkflow{store: db, git: preflight.ExecGitRunner{}, log: &f.log, loaded: roundconfig.Loaded{GitRoot: f.repo, HomeDir: f.home}}
 	f.workflow.loaded.Config.Specs.Root = "docs/specs"
 	f.workflow.loaded.Config.Defaults.ArtifactDir = filepath.Join(root, "artifacts")
-	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{Path: "bin/roundfix", Build: "mkdir -p bin && cp '" + strings.ReplaceAll(binary, "'", "'\"'\"'") + "' bin/roundfix"}
+	f.workflow.loaded.Config.Delivery.ItemBinary = roundconfig.ItemBinaryDeclaration{Path: "bin/roundfix", Build: deliveryItemBuildCommand(binary)}
 	setCommandEnvForTest(t, "DELIVERY_ITEM_RECORD", f.record)
 	setCommandEnvForTest(t, "DELIVERY_ITEM_PROBE_EXIT", "0")
 	setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "")
@@ -191,7 +197,7 @@ func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
 				setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "\nprobe schema differs\nsecond line\n")
 				detail = "probe schema differs"
 			}
-			executable, err := f.workflow.stepExecutable(commandContextForTest(t, t.Context()), f.repo, "widget", "review")
+			executable, err, report := f.step(t, commandContextForTest(t, t.Context()), "review")
 			owner, ownerErr := os.Executable()
 			if err != nil || ownerErr != nil || executable != owner {
 				t.Fatalf("executable=%q err=%v ownerErr=%v", executable, err, ownerErr)
@@ -202,7 +208,7 @@ func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
 			}
 			want := "roundfix: notice: Delivery Queue item widget: review runs the owner's binary; the item binary's migrate --check exited 2: " + detail + "\n"
 			if f.log.String() != want {
-				t.Fatalf("log=%q want=%q", f.log.String(), want)
+				t.Fatalf("log=%q want=%q; %s", f.log.String(), want, report)
 			}
 			f.assertStarts(t, []string{"migrate", "--check"})
 		})
