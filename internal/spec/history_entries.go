@@ -621,7 +621,7 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 			}
 			contents[c.Path] = content
 		}
-		scope := c.Path == "AGENTS.md" || IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
+		scope := historyRootInstructionCarrier(c.Path) || IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
 		if scope {
 			if err := historyRewriteRegularFile(root, c.Path); err != nil {
 				return p, err
@@ -682,6 +682,13 @@ func (p HistoryRewritePlan) Apply(ctx context.Context, root string) (citations, 
 		files++
 	}
 	return citations, files, nil
+}
+
+// A root instruction carrier is read by every Agent session, so a citation in
+// it is rewritten like one in a Live Document. A carrier that is a tracked
+// symbolic link never reaches here; its target is rewritten under its own path.
+func historyRootInstructionCarrier(path string) bool {
+	return path == "AGENTS.md" || path == "CLAUDE.md"
 }
 
 // Refuse a symlink before a citation rewrite can read or write through it.

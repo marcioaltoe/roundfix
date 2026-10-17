@@ -59,3 +59,36 @@ func TestHistoryCitationsSkipATrackedSymbolicLink(t *testing.T) {
 		t.Fatalf("AGENTS.md does not carry the Git Locator: %q", content)
 	}
 }
+
+func TestHistoryRewriteCoversARegularClaudeCarrier(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	removed := "docs/history/findings/retired.md"
+	historyEntryWrite(t, root, removed, "# Retired\n")
+	historyEntryWrite(t, root, "AGENTS.md", "[retired](docs/history/findings/retired.md)\n")
+	historyEntryWrite(t, root, "CLAUDE.md", "See [retired](docs/history/findings/retired.md).\n")
+	gittest.InitRepo(t, root, "-b", "main")
+	gittest.Run(t, root, "add", ".")
+	gittest.Run(t, root, "commit", "-m", "history fixture")
+	gittest.Run(t, root, "tag", "-a", "history-full", "-m", "full history")
+
+	plan, err := PlanHistoryRewrite(t.Context(), root, "docs/specs", "docs/history/specs", []string{removed}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Files) != 2 || plan.Files["AGENTS.md"] == nil || plan.Files["CLAUDE.md"] == nil {
+		t.Fatalf("rewrite files = %v, want AGENTS.md and CLAUDE.md", plan.Files)
+	}
+	if _, _, err := plan.Apply(t.Context(), root); err != nil {
+		t.Fatal(err)
+	}
+	for _, carrier := range []string{"AGENTS.md", "CLAUDE.md"} {
+		content, err := os.ReadFile(filepath.Join(root, carrier))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(content), "docs/history/findings/retired.md@") || strings.Contains(string(content), "](docs/history/findings/retired.md)") {
+			t.Fatalf("%s does not carry the Git Locator in place of the link: %q", carrier, content)
+		}
+	}
+}
