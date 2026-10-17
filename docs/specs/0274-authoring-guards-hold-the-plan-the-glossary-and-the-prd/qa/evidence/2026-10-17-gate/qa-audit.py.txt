@@ -1,0 +1,93 @@
+import sys
+sys.argv=sys.argv[:1]
+exec(compile(open('/private/tmp/roundfix-0274-qa.py').read(),'/private/tmp/roundfix-0274-qa.py','exec'))
+def gittext(ref,path): return run(['git','show',ref+':'+path],expected=0).stdout
+
+def q6():
+ test(ROOT,GLOSS)
+ p=run(['./bin/roundfix','spec','check',SPEC.name,'--strict'],cli=True,expected=0)
+ text=(ROOT/'CONTEXT.md').read_text(); terms=lambda x:re.findall(r'^\*\*(.+?)\*\*:',x,re.M)
+ old=set(terms(gittext(BASE,'CONTEXT.md'))); new=set(terms(text)); assert new-old=={'Clarification Record'} and not old-new
+ entry=text.split('**Clarification Record**:',1)[1].split('\n**',1)[0]; note('Delivered entry: '+entry); assert 'ADR-0280' in entry
+ assert '- adds: **Clarification Record**' in (SPEC/'_prd.md').read_text()
+ note('Only one new term; all five live glossary rules passed and the strict public check independently confirms no glossary finding.')
+ finish('Q6','pass','Clarification Record is the only newly introduced glossary term, is defined beside Glossary Declaration, cites accepted ADR-0280, and passes all five live rules. Strict CLI check has no findings; no other added term needs a definition.')
+
+def q7():
+ commits=[('task_01','4ab01874b2bf1d6deba0aa1aa0a632079f008b20','d25aee624173579fd696464dcd9a057daac1dfba'),('task_02','2cbd87722e60a81797ff32c7648fead3d9e5bbce',BASE),('task_03','ae0eb42c2d0c78a679a8fd3fb50f87fdf93498c3',BASE),('task_04',HEAD,BASE)]
+ issues=[]; authpath=str(SPEC.relative_to(ROOT)/'_authorization.md')
+ # Mechanical authorization rows are preserved, not repeated. Command audit here reads all Task scope and protected bytes.
+ note('Seeded mechanical grant outcomes retained for tasks 01, 02 and 04; no uncovered tooling commit exists.')
+ historical=(ROOT/'internal/speccheck/governed.go').read_text().split('paths: exactGovernedPaths(',1)[1].split('),',1)[0]
+ exact=set(re.findall(r'"([^"]+)"',historical))
+ for task,commitsha,grant in commits:
+  paths=run(['git','diff-tree','--no-commit-id','--name-only','-r',commitsha],expected=0).stdout.splitlines()
+  taskpath=str(SPEC.relative_to(ROOT)/(task+'.md')); authored=gittext(commitsha,taskpath)
+  context=authored.split('## Context',1)[1].split('\n## ',1)[0]
+  declared=set(re.findall(r'^- (?:interface|creates|deletes): `([^`]+)`',context,re.M))
+  if '## Recorded paths' in authored: declared.update(re.findall(r'`([^`]+)`',authored.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+  extras=set(paths)-declared-{taskpath}; note(task+' changed '+str(len(paths))+' paths; undeclared: '+str(sorted(extras))); issues.extend(task+' undeclared: '+x for x in extras)
+  granttext=gittext(grant,authpath); bounds=set(re.findall(r'^  - ([^\n]+)$',granttext.split('paths:',1)[1].split('operations:',1)[0],re.M))
+  governed=[p for p in paths if p.startswith('.agents/skills/') or re.match(r'^skills/[^/]+/(SKILL\.md|agents/)',p) or p in exact]
+  note(task+' governed paths: '+json.dumps(governed)); issues.extend(task+' unbounded governed: '+p for p in governed if p not in bounds)
+  run(['git','merge-base','--is-ancestor',grant,commitsha+'^'],expected=0)
+  # Task 03 must preserve term names and order.
+  if task=='task_03':
+   t=lambda x:re.findall(r'^\*\*(.+?)\*\*:',x,re.M)
+   assert t(gittext(commitsha+'^','CONTEXT.md'))==t(gittext(commitsha,'CONTEXT.md'))
+  for p in paths:
+   if p.endswith('/SKILL.md'):
+    old=gittext(commitsha+'^',p); new=gittext(commitsha,p)
+    def settlement(s):
+     m=re.search(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',s,re.M|re.S); return m.group(0) if m else ''
+    assert settlement(old)==settlement(new),p
+ protected=['Makefile','.github/workflows','go.mod','go.sum','internal/baseline/assets/modules','internal/daemon/task_engine.go','internal/secretscan/scan.go','.agents/skills/grilling','.agents/skills/grill-with-docs','CHANGELOG.md']
+ changed=run(['git','diff','--name-only',BASE,HEAD,'--']+protected,expected=0).stdout; assert changed=='',changed
+ note('All named protected paths retain delivery-base bytes; all changed QA settlement sections retain parent bytes.')
+ record=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())
+ for skill in ['roundfix','write-tasks','write-prd','write-techspec']:
+  path='.agents/skills/'+skill+'/SKILL.md'; old=gittext(BASE,path); new=(ROOT/path).read_text()
+  ov=re.search(r'^version: (.+)$',old,re.M)[1]; nv=re.search(r'^version: (.+)$',new,re.M)[1]
+  assert tuple(map(int,nv.split('.')))>tuple(map(int,ov.split('.'))); assert any(v['version']==nv for v in record['skills'][skill])
+  assert (ROOT/path).read_bytes()==(ROOT/'skills'/skill/'SKILL.md').read_bytes(); note(skill+': '+ov+' -> '+nv+'; recorded; canonical equals mirror')
+ codepaths=['docs/user-guide/commands/spec.md','.agents/skills/roundfix/references/spec.md','skills/roundfix/references/spec.md','CONTEXT.md']
+ for path in codepaths:
+  text=(ROOT/path).read_text()
+  for code in ['SC-SURFACE-RECORD-UNTASKED','SC-DECISIONS-UNRECORDED']:
+   found=code in text; note(path+': '+code+': '+('present' if found else 'ABSENT'))
+   if not found: issues.append(path+' omits '+code)
+ obsolete=[]
+ for directory in ['docs/agents','docs/user-guide','.agents/skills','skills']:
+  for path in (ROOT/directory).rglob('*.md'):
+   if '<line> (<kind>)' in ' '.join(path.read_text().split()): obsolete.append(str(path.relative_to(ROOT)))
+ assert not obsolete,obsolete
+ note('No obsolete parenthesized refusal remains in guides and skill copies.')
+ note('Audit issues: '+json.dumps(issues)); assert issues==['CONTEXT.md omits SC-SURFACE-RECORD-UNTASKED','CONTEXT.md omits SC-DECISIONS-UNRECORDED'],issues
+ finish('Q7','fail','F1: Requirement 10 explicitly requires both new codes in the glossary; CONTEXT.md contains neither. All actual Task paths are declared (plus the assigned Task file), governed edits are bounded in operative predecessor grants, protected paths and settlement sections retain bytes, all four skill versions rose and are recorded, mirrors match, and no obsolete refusal remains. Q7.txt contains every Task diff-tree and scope comparison.')
+
+def q8():
+ note('Outside sources assessed offline from the PRD quoted passages; authorization prohibits every QA row from reaching the network. No live lookup attempted.')
+ quotes=[('The Go Blog, Testable Examples in Go','https://go.dev/blog/examples','Having executable documentation for a package guarantees that the information will not go out of date as the API changes.','Supports deriving documented output from its producer and testing it; does not establish this implementation correct.'),('Vale, Vocabularies','https://docs.vale.sh/keys/vocabularies','Entries in `reject.txt` are automatically added to an existence rule (`Vale.Avoid`) that will flag all occurrences as errors.','Supports explicit vocabulary lists and automatic prose checks; does not justify all five glossary rules by itself.'),('MADR template','https://github.com/adr/madr/blob/main/template/adr-template.md','decision-makers: {list everyone involved in the decision}','Supports recording decision participants; an explicit autonomous-route shape remains a project decision.')]
+ for title,url,quote,assessment in quotes: note(title+'\n'+url+'\nQuoted published passage: '+quote+'\nAssessment: '+assessment)
+ finish('Q8','pass','All three pre-Run quoted published passages were assessed offline: Go Blog supports executable documentation; Vale supports mechanical vocabulary rules; MADR supports identifying decision makers. Exact quotes, URLs and limits are in Q8.txt. Sources originate outside this Spec; current remote page contents were not verified because the authorization forbids network. Offline quoted passages make this row reachable under qa-gate.')
+
+def q9():
+ authority=gittext(BASE,str(SPEC.relative_to(ROOT)/'_authorization.md')); assert 'status: approved' in authority
+ run(['git','merge-base','--is-ancestor',BASE,HEAD],expected=0)
+ note('Pull Request fact: none open on the Spec target branch, as supplied by the Daemon; Run branch is not published.')
+ note('Approval: recorded maintainer delivery authority (approved grant at '+BASE+') permits implement, commit, push, pull_request and merge for this consuming Spec; no reviewer acceptance or Merge-Ready acceptance exists yet.')
+ note('Checks/status: Daemon ran make verify-changed at candidate '+HEAD+'; pass, exit 0; diagnostics removed on success. This gate did not rerun it.')
+ note('Unresolved review threads: none because no Pull Request exists (supplied fact).')
+ note('Merge-Ready acceptance: none yet; this is a pre-PR graph gate and is not a claim of merge readiness.')
+ note('Review-artifact ancestry: no review artifact exists yet. Claimed candidate '+HEAD+' is the current audited HEAD; no evidence is attributed to another head.')
+ assert run(['git','rev-parse','HEAD'],expected=0).stdout.strip()==HEAD
+ finish('Q9','blocked (environment: no open Pull Request)','No open Pull Request per Daemon fact. Equivalent controls: approved delivery authority at f363ad6d, Daemon make verify-changed pass at ab913cb4, no unresolved threads because no PR exists, no Merge-Ready acceptance yet, and no review artifact yet; every candidate claim names the audited head. This row supplies pre-PR equivalents and makes no merge-readiness claim.')
+
+def q10():
+ note('Repository Verification supplied by Daemon: make verify-changed; pass (exit 0); diagnostics removed on success; candidate '+HEAD+'. Recorded fact, not an Agent rerun.')
+ finish('Q10','pass','Daemon-provided make verify-changed passed with exit 0 at the audited head; diagnostics removed on success. The repository Verification was not rerun.')
+
+for func in [q6,q7,q8,q9,q10]:
+ try: func()
+ except Exception as e:
+  note('Audit interruption: '+repr(e)); (EVD/'audit-interruption.txt').write_text('\n'.join(LOG)); raise

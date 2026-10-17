@@ -1,0 +1,13 @@
+Outside sources assessed offline from the PRD quoted passages; authorization prohibits every QA row from reaching the network. No live lookup attempted.
+The Go Blog, Testable Examples in Go
+https://go.dev/blog/examples
+Quoted published passage: Having executable documentation for a package guarantees that the information will not go out of date as the API changes.
+Assessment: Supports deriving documented output from its producer and testing it; does not establish this implementation correct.
+Vale, Vocabularies
+https://docs.vale.sh/keys/vocabularies
+Quoted published passage: Entries in `reject.txt` are automatically added to an existence rule (`Vale.Avoid`) that will flag all occurrences as errors.
+Assessment: Supports explicit vocabulary lists and automatic prose checks; does not justify all five glossary rules by itself.
+MADR template
+https://github.com/adr/madr/blob/main/template/adr-template.md
+Quoted published passage: decision-makers: {list everyone involved in the decision}
+Assessment: Supports recording decision participants; an explicit autonomous-route shape remains a project decision.

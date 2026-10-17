@@ -1,0 +1,56 @@
+$ go test -count=1 -tags docscontract -v -run ^(TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt|TestTheQASecretRefusalContractRejectsTheParenthesizedForm)$ ./internal/docscontract
+working directory: audited repository
+stdout:
+=== RUN   TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== PAUSE TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== RUN   TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== PAUSE TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== CONT  TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== CONT  TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+--- PASS: TestTheQASecretRefusalContractRejectsTheParenthesizedForm (0.01s)
+--- PASS: TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt (0.06s)
+PASS
+ok  	roundfix/internal/docscontract	0.492s
+stderr:
+exit: 0
+
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/secret-0.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== PAUSE TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== CONT  TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+    command_documentation_test.go:126: .agents/skills/roundfix/references/implement.md: found QA secret refusal "QA evidence carries a secret: <path>:<line> (<kind>)`, recording only its path, line and kind. The Final Push runs the same scan over the commits it would send and refuses the push when a Secret Match is found. 6. Without `--spec`, Interactive Input lists the repository's active Specs from the resolved Spec Root under an `Active Specs:` picker that accepts a number or a slug, and the Agent field suggests the remembered Agent. Agent selection then asks for Agent Model and Default Reasoning Effort using the selected runtime's effective configuration as the default. Interactive Input asks nothing about QA: the gate is an authoring decision recorded in the Task Graph, not a per-run choice. The Agent is remembered across runs; the Spec slug and selection overrides never are. `--no-input` fails instead of opening Interactive Input. 7. Discover spec Runs with the bounded `roundfix runs list` or open the Run Browser with `roundfix attach` when the Run ID was not captured. Follow `roundfix events <run-id> --follow` for unattended JSONL monitoring. Attach directly with `roundfix attach <run-id>` for the Live Run View; it shows the Spec's Tasks as Work Items in the shared cockpit. 8. `implement.auto_push` is a bool in config, default `false`. User Config can provide a default, and Project Config can override it: ```yaml implement: auto_push: true ``` The push uses the branch's detected upstream. Missing upstream prints one stderr note and leaves a Clean Run Clean. Integration Pending, Unresolved, Failed, Stopped, and failing-QA Runs do not invoke the pusher. Push failure ends the Run Failed. 9. Task Capacity and Verification Capacity are independent config-only limits for one Implement Run. `worktree.concurrency` is Task Capacity, defaults to `2`, and limits concurrent Task Worktree lifecycles. `verification.concurrency` is Verification Capacity, defaults to `1`, and limits concurrent Task Verification attempts. Both must be positive integers; Project Config overrides User Config, which overrides built-ins. Neither setting coordinates other Runs, CI, or external processes. The recommended split overlaps implementation while serializing the complete repository gate: ```yaml worktree: concurrency: 2 verification: concurrency: 1 ``` Every normal attempt journals `waiting` before it acquires shared capacity, then `started`, command results, and `verdict`. A deterministic failure releases capacity before one Verification Feedback repair turn and reacquires capacity for the final Daemon attempt. Exit `75` from a project-authored Verification wrapper is the sole Temporary Verification Failure signal. Roundfix retains the diagnostics and grants the Task one exclusive retry across its Verification lifecycle. The retry waits for other Verification attempts in that Run to drain, consumes the entire Verification Capacity, and does not consume the Agent repair. A repeated exit `75` exhausts the retry and fails the Task. Roundfix never classifies a failure from logs, timing, ports, package names, or framework text. `worktree.location` is the parent directory, default `~/.roundfix/worktrees`; Roundfix always appends `<repo-slug>/<run-id>` or `<repo-slug>/<run-id>.<task_id>`. `worktree.copy` copies repository-relative, gitignored files into each new worktree. `worktree.bootstrap` runs in each new worktree after copy and before Agent work; `worktree.bootstrap_timeout` defaults to `10m`. ```yaml worktree: location: \"~/.roundfix/worktrees\" concurrency: 2 copy: [] bootstrap: \"\" bootstrap_timeout: 10m ``` For a stateful monorepo that uses one shared database, keep Task execution sequential so bootstrap runs once on the reused Run Worktree: ```yaml worktree: concurrency: 1 copy: [\".env\", \"packages/backend/.env\"] bootstrap: \"bun install && bun run db:migrate && bun run db:seed\" bootstrap_timeout: 10m ``` 10. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside the current repository. This resolves that repository's Spec target and records a Stop Request; the Run stops after the current Work Item settles. Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway Run. It proves the recorded owner exited before cleaning up registered active Agent Sessions, and reports Stopped and releases the Active Run lock only after that proof. A failed proof leaves the Run Active with its Agent Sessions unchanged and its lock retained. ### Token usage The Implement Run's terminal summary prints a `Tokens:` line after its outcome on every outcome. It reports recorded tokens and how many prompts reported, plus adapter-reported cost by currency and Agent Session coverage. Entirely unreported usage says `none reported`, never `0 tokens`; no usage rows says `no prompts recorded`. Roundfix sums increases in cumulative Agent Session cost readings and starts a new count when a reading decreases. It computes no price from tokens. Prompts outside a Run, including the pre-PR review, do not count. Use `roundfix runs show <run-id>` for per-scope details.", want prefix "QA evidence carries a secret: <path>:<line>: <kind>"
+--- FAIL: TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt (0.03s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.440s
+FAIL
+stderr:
+exit: 1
+
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/secret-1.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== PAUSE TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== CONT  TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+    command_documentation_test.go:126: docs/user-guide/commands/implement.md: found QA secret refusal "QA evidence carries a secret: <path>:<line> (<kind>)`, recording only its path, line and kind. The Final Push scans the commits it would send and refuses the push when it finds a Secret Match. The `Tokens:` line follows the outcome on every terminal Implement Run, before any `pushed` line. It reads the Run's recorded sums after the Run ends, using the same phrases as `runs show`: `<tokens> from <reported> of <n> prompt(s)`, or `none reported by <n> prompt(s)`, followed by the reported cost. With no usage rows it prints `Tokens: no prompts recorded`. Preflight refusals and an already-completed Spec create no Run and have no token total. Usage output does not change exit codes. See [Token usage](../usage.md#token-usage) for the measurement's limits.", want prefix "QA evidence carries a secret: <path>:<line>: <kind>"
+--- FAIL: TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt (0.04s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.437s
+FAIL
+stderr:
+exit: 1
+

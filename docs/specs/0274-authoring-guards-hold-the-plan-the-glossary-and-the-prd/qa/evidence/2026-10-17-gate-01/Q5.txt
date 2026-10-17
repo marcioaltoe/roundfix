@@ -1,0 +1,779 @@
+$ git show 2c332844ef6eda97b444c6e737477e47045ab2c5:internal/docscontract/testdata/corpus-golden.json
+working directory: audited repository
+stdout:
+{
+  "schema": "roundfix-speccheck-corpus/v2",
+  "update": "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. SC-VERIFY-WRAP-FRAGILE joined the characterized code set at 0. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change. Spec 0191 Task 01 adds proved Claim Receipts and the contract horizon; SC-RECEIPT-UNPROVEN and SC-RECEIPT-MISSING join the characterized code set at 0, with every earlier count unchanged. Spec 0191 Task 02 adds declared, well-formed and traced Surface Transcripts; SC-TRANSCRIPT-UNDECLARED, SC-TRANSCRIPT-MALFORMED and SC-TRANSCRIPT-UNGATED join at 0, with every earlier count unchanged. SC-GLOSSARY-UNDECLARED, SC-GLOSSARY-UNPLANNED and SC-GLOSSARY-MISSING join the characterized code set at 0. SC-SKILLS-UNTASKED and SC-SKILLS-MALFORMED join the characterized code set at 0, with every earlier count unchanged. SC-ABSENCE-UNPROVEN, SC-ADR-ALTERNATIVES-UNRELATED and SC-COVERAGE-UNREAD join the characterized code set at 0, with every earlier count unchanged. SC-CONSUMERS-UNPROVEN joins the characterized code set at 0, with every earlier count unchanged. SC-QA-BYTES-PINNED joins the characterized code set at 0, with every earlier count unchanged. SC-HISTORY-RETAINED joins at 0, gated on the recorded retirement rule.",
+  "active": {
+    "SC-QA-BYTES-PINNED": 0,
+    "SC-CONSUMERS-UNPROVEN": 0,
+    "SC-ABSENCE-UNPROVEN": 0,
+    "SC-ADR-ALTERNATIVES-UNRELATED": 0,
+    "SC-COVERAGE-UNREAD": 0,
+    "SC-SKILLS-UNTASKED": 0,
+    "SC-SKILLS-MALFORMED": 0,
+    "SC-GLOSSARY-UNDECLARED": 0,
+    "SC-GLOSSARY-UNPLANNED": 0,
+    "SC-GLOSSARY-MISSING": 0,
+    "SC-ADR-RELATED": 0,
+    "SC-ADR-UNLISTED": 0,
+    "SC-ARCHIVE-LICENSE": 0,
+    "SC-HISTORY-RETAINED": 0,
+    "SC-CITATION-UNSUPPORTED": 0,
+    "SC-CLI-UNDOCUMENTED": 0,
+    "SC-CONSTRAINT-MISSING": 0,
+    "SC-CONSTRAINT-SOURCE": 0,
+    "SC-CONSTRAINT-UNREASONED": 0,
+    "SC-CONTRACT-UNDECLARED": 0,
+    "SC-COVERAGE-UNMAPPED": 0,
+    "SC-COVERAGE-UNTASKED": 0,
+    "SC-FINDING-LIFECYCLE": 0,
+    "SC-LOOP-ORDER-DIVERGENT": 0,
+    "SC-METRIC-UNDECLARED": 0,
+    "SC-RECEIPT-MISSING": 0,
+    "SC-RECEIPT-UNPROVEN": 0,
+    "SC-REF-UNRESOLVED": 0,
+    "SC-REHEARSAL-UNDECLARED": 0,
+    "SC-REQUIREMENT-CONTRADICTORY": 0,
+    "SC-ROLLUP-MEMBER": 0,
+    "SC-TOOLING-UNAUTHORIZED": 0,
+    "SC-TOOLING-UNBOUNDED": 0,
+    "SC-TOOLING-UNDECLARED": 0,
+    "SC-TRANSCRIPT-MALFORMED": 0,
+    "SC-TRANSCRIPT-UNDECLARED": 0,
+    "SC-TRANSCRIPT-UNGATED": 0,
+    "SC-VERIFY-INVERTED-EXIT": 0,
+    "SC-VERIFY-NON-HERMETIC": 0,
+    "SC-VERIFY-VACUOUS-COMMAND": 0,
+    "SC-VERIFY-WORK-INDEPENDENT": 0,
+    "SC-VERIFY-WRAP-FRAGILE": 0,
+    "SC-VOCABULARY-UNDOCUMENTED": 0
+  }
+}
+stderr:
+exit: 0
+
+Earlier counts unchanged: 43; new keys both zero.
+$ go test -count=1 -v -run ^(TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord|TestSurfaceRecordGapNamesLimitsThatForbidTheRecord|TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself|TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict|TestClarificationRecordGapNamesAPRDWithoutTheRecord|TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute|TestClarificationRecordSkipsAPRDBeforeItsHorizon|TestClarificationRecordRunsFromThePRDStageAndFailsStrict)$ ./internal/speccheck
+working directory: audited repository
+stdout:
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon
+=== RUN   TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+=== PAUSE TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord
+=== RUN   TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+=== PAUSE TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself
+=== RUN   TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+=== PAUSE TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon
+=== CONT  TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous
+=== CONT  TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+=== CONT  TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+--- PASS: TestSurfaceRecordGapNamesLimitsThatForbidTheRecord (0.04s)
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+--- PASS: TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict (0.07s)
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+--- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord (0.00s)
+    --- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section (0.17s)
+    --- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing (0.18s)
+    --- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing (0.19s)
+    --- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section (0.17s)
+    --- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date (0.17s)
+    --- PASS: TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape (0.17s)
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+--- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself (0.00s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory (0.04s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record (0.03s)
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+--- PASS: TestClarificationRecordRunsFromThePRDStageAndFailsStrict (0.43s)
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+--- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute (0.00s)
+    --- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated (0.43s)
+    --- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both (0.44s)
+    --- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous (0.44s)
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+--- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon (0.00s)
+    --- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide (0.09s)
+    --- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD (0.10s)
+    --- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together (0.15s)
+    --- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted (0.20s)
+    --- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD (0.24s)
+    --- PASS: TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide (0.25s)
+--- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord (0.00s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task (0.03s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction (0.02s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted (0.02s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record (0.02s)
+    --- PASS: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step (0.02s)
+PASS
+suiteguard: guard cost: measured 2569 paths; fingerprint took 376.257792ms before and 69.189292ms after
+ok  	roundfix/internal/speccheck	1.288s
+stderr:
+exit: 0
+
+$ make skills-sync-check
+working directory: audited repository
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.311s
+stderr:
+exit: 0
+
+Passed make skills-sync-check
+$ go test -count=1 -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills
+working directory: audited repository
+stdout:
+ok  	roundfix/skills	0.139s
+stderr:
+exit: 0
+
+Passed go test -count=1 -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills
+$ go test -count=1 ./internal/speccheck
+working directory: audited repository
+stdout:
+ok  	roundfix/internal/speccheck	9.062s
+stderr:
+exit: 0
+
+Passed go test -count=1 ./internal/speccheck
+$ go test -count=1 -run ^TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095$ ./internal/spec
+working directory: audited repository
+stdout:
+ok  	roundfix/internal/spec	0.434s
+stderr:
+exit: 0
+
+Passed go test -count=1 -run ^TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095$ ./internal/spec
+$ go test -count=1 -run ^(TestRunSpecCheckCleanText|TestSpecCheckRunVerification|TestRunSpecCheckGapStrictPromotion)$ ./internal/cli
+working directory: audited repository
+stdout:
+ok  	roundfix/internal/cli	1.400s
+stderr:
+exit: 0
+
+Passed go test -count=1 -run ^(TestRunSpecCheckCleanText|TestSpecCheckRunVerification|TestRunSpecCheckGapStrictPromotion)$ ./internal/cli
+$ go test -count=1 -run SpecConsistency|^TestQAReportWithASecretMatchSettlesFailedWithoutACommit$ ./internal/daemon
+working directory: audited repository
+stdout:
+ok  	roundfix/internal/daemon	0.806s
+stderr:
+exit: 0
+
+Passed go test -count=1 -run SpecConsistency|^TestQAReportWithASecretMatchSettlesFailedWithoutACommit$ ./internal/daemon
+$ go test -count=1 -run ^TestRepositoryContractTestsDeclareTheirRelevance$ ./internal/verifyselect
+working directory: audited repository
+stdout:
+ok  	roundfix/internal/verifyselect	0.440s
+stderr:
+exit: 0
+
+Passed go test -count=1 -run ^TestRepositoryContractTestsDeclareTheirRelevance$ ./internal/verifyselect
+$ go test -count=1 -tags docscontract -v -run ^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors|TestTheSkillCoverageMapIsCurrent|TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt|TestTheQASecretRefusalContractRejectsTheParenthesizedForm|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce|TestGlossaryContractReportsAPlantedViolationOfEachRule)$ ./internal/docscontract
+working directory: audited repository
+stdout:
+=== RUN   TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== PAUSE TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== RUN   TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== PAUSE TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== RUN   TestCheckCorpusGolden
+--- PASS: TestCheckCorpusGolden (0.89s)
+=== RUN   TestCheckActiveCorpusHasNoErrors
+--- PASS: TestCheckActiveCorpusHasNoErrors (0.94s)
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.04s)
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== PAUSE TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== CONT  TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+=== CONT  TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/links
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries
+--- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule (0.01s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/links (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- PASS: TestTheQASecretRefusalContractRejectsTheParenthesizedForm (0.01s)
+--- PASS: TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt (0.03s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.04s)
+PASS
+ok  	roundfix/internal/docscontract	2.176s
+stderr:
+exit: 0
+
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-oofiae33/removed-surface.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -v -run ^(TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord|TestSurfaceRecordGapNamesLimitsThatForbidTheRecord|TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself|TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict)$ ./internal/speccheck
+working directory: disposable repository
+stdout:
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord
+=== RUN   TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+=== PAUSE TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself
+=== RUN   TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+=== PAUSE TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself
+=== CONT  TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide
+=== CONT  TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+=== RUN   TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+=== PAUSE TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+=== RUN   TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+=== PAUSE TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides
+=== NAME  TestSurfaceRecordGapNamesLimitsThatForbidTheRecord
+    surface_record_test.go:118: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide
+--- FAIL: TestSurfaceRecordGapNamesLimitsThatForbidTheRecord (0.03s)
+=== CONT  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+=== NAME  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record
+    surface_record_test.go:170: skips = []speccheck.SkippedDetector{speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/modules/autonomous-work.json"}, speccheck.SkippedDetector{Code:"SC-HISTORY-RETAINED", Missing:"recorded guide.docs-layout region does not carry A retirement deletes the file"}, speccheck.SkippedDetector{Code:"SC-FINDING-LIFECYCLE", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ROLLUP-MEMBER", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ARCHIVE-LICENSE", Missing:"docs/history/findings"}, speccheck.SkippedDetector{Code:"SC-BACKLOG-UNMOVED", Missing:"docs/backlog"}, speccheck.SkippedDetector{Code:"SC-DECISIONS-UNRECORDED", Missing:"a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"}, speccheck.SkippedDetector{Code:"SC-VOCABULARY-UNDOCUMENTED", Missing:"docs/specs/proof/_techspec.md Vocabulary Contract"}, speccheck.SkippedDetector{Code:"SC-SKILLS-MALFORMED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNDECLARED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-ADR-UNLISTED", Missing:"docs/adr"}, speccheck.SkippedDetector{Code:"SC-ADR-RELATED", Missing:"docs/adr"}, speccheck.SkippedDetector{Code:"SC-CITATION-UNSUPPORTED", Missing:"docs/adr"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNDECLARED", Missing:".agents/skills/write-techspec/references/concrete-contracts.md"}, speccheck.SkippedDetector{Code:"SC-RECEIPT-MISSING", Missing:".agents/skills/write-techspec/references/concrete-contracts.md"}, speccheck.SkippedDetector{Code:"SC-REF-UNRESOLVED", Missing:"docs/specs/proof/references/_index.md"}}, want record skip
+=== NAME  TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict
+    surface_record_test.go:188: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+--- FAIL: TestSurfaceRecordRunsAtTheTasksStageAndFailsStrict (0.04s)
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 2
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+=== NAME  TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory
+    surface_record_test.go:170: skips = []speccheck.SkippedDetector{speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/modules/autonomous-work.json"}, speccheck.SkippedDetector{Code:"SC-HISTORY-RETAINED", Missing:"recorded guide.docs-layout region does not carry A retirement deletes the file"}, speccheck.SkippedDetector{Code:"SC-FINDING-LIFECYCLE", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ROLLUP-MEMBER", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ARCHIVE-LICENSE", Missing:"docs/history/findings"}, speccheck.SkippedDetector{Code:"SC-BACKLOG-UNMOVED", Missing:"docs/backlog"}, speccheck.SkippedDetector{Code:"SC-DECISIONS-UNRECORDED", Missing:"a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"}, speccheck.SkippedDetector{Code:"SC-VOCABULARY-UNDOCUMENTED", Missing:"docs/specs/proof/_techspec.md Vocabulary Contract"}, speccheck.SkippedDetector{Code:"SC-SKILLS-MALFORMED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNDECLARED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-ADR-UNLISTED", Missing:"docs/adr"}, speccheck.SkippedDetector{Code:"SC-ADR-RELATED", Missing:"docs/adr"}, speccheck.SkippedDetector{Code:"SC-CITATION-UNSUPPORTED", Missing:"docs/adr"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNDECLARED", Missing:".agents/skills/write-techspec/references/concrete-contracts.md"}, speccheck.SkippedDetector{Code:"SC-RECEIPT-MISSING", Missing:".agents/skills/write-techspec/references/concrete-contracts.md"}, speccheck.SkippedDetector{Code:"SC-REF-UNRESOLVED", Missing:"docs/specs/proof/references/_index.md"}}, want record skip
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+--- FAIL: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself (0.00s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/creates_record (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/non-markdown_guide (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/multiple_guides (0.03s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/interface_record (0.03s)
+    --- FAIL: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_record (0.04s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/completed (0.04s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/instruction_guide (0.04s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/QA_Task (0.04s)
+    --- PASS: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/no_guide (0.03s)
+    --- FAIL: TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself/record_directory (0.03s)
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 2
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== CONT  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 2
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== NAME  TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step
+    surface_record_test.go:87: SC-SURFACE-RECORD-UNTASKED findings = []speccheck.Finding(nil), want 1
+--- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord (0.00s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_only_in_Verification (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/0268_plan (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_and_step_in_another_Task (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_instruction (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_only_deleted (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/record_without_step (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/step_without_record (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/deletes/0268_plan (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_instruction (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_without_record (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_without_step (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/step_only_in_Verification (0.04s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_instruction (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_only_deleted (0.04s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/record_and_step_in_another_Task (0.04s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/creates/0268_plan (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_only_deleted (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_only_in_Verification (0.03s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/step_without_record (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_and_step_in_another_Task (0.02s)
+    --- FAIL: TestSurfaceRecordGapNamesAGuideTaskWithoutItsRecord/interface/record_without_step (0.02s)
+FAIL
+suiteguard: guard cost: measured 2541 paths; fingerprint took 86.2985ms before and 74.7235ms after
+FAIL	roundfix/internal/speccheck	0.572s
+FAIL
+stderr:
+exit: 1
+
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-oofiae33/removed-clarify.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -v -run ^(TestClarificationRecordGapNamesAPRDWithoutTheRecord|TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute|TestClarificationRecordSkipsAPRDBeforeItsHorizon|TestClarificationRecordRunsFromThePRDStageAndFailsStrict)$ ./internal/speccheck
+working directory: disposable repository
+stdout:
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon
+=== RUN   TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+=== PAUSE TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+=== CONT  TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous
+=== RUN   TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both
+=== PAUSE TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both
+=== CONT  TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+=== RUN   TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+=== PAUSE TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+=== RUN   TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+=== PAUSE TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted
+    clarification_record_test.go:124: uncommitted findings = []speccheck.Finding(nil), want one gap
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+=== NAME  TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together
+    clarification_record_test.go:154: same-commit findings = []speccheck.Finding(nil), want one gap
+=== NAME  TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide
+    clarification_record_test.go:140: stage "prd" skips = []speccheck.SkippedDetector{speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/modules/autonomous-work.json"}, speccheck.SkippedDetector{Code:"SC-HISTORY-RETAINED", Missing:"recorded guide.docs-layout region does not carry A retirement deletes the file"}, speccheck.SkippedDetector{Code:"SC-FINDING-LIFECYCLE", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ROLLUP-MEMBER", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ARCHIVE-LICENSE", Missing:"docs/history/findings"}, speccheck.SkippedDetector{Code:"SC-BACKLOG-UNMOVED", Missing:"docs/backlog"}, speccheck.SkippedDetector{Code:"SC-SKILLS-MALFORMED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNDECLARED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-RECEIPT-MISSING", Missing:".agents/skills/write-techspec/references/concrete-contracts.md"}, speccheck.SkippedDetector{Code:"SC-QA-BYTES-PINNED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CONSUMERS-UNPROVEN", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ABSENCE-UNPROVEN", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-ALTERNATIVES-UNRELATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNREAD", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-SURFACE-RECORD-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-MALFORMED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNGATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNMAPPED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CONTRACT-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VOCABULARY-UNDOCUMENTED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-UNLISTED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-RELATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REF-UNRESOLVED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-WORK-INDEPENDENT", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-INVERTED-EXIT", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-WRAP-FRAGILE", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-NON-HERMETIC", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-VACUOUS-COMMAND", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REQUIREMENT-CONTRADICTORY", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REHEARSAL-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-QA-VERIFICATION-AUTHORED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ORDINAL-CLAIMED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-WAVE-COLLISION", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CLI-UNDOCUMENTED", Missing:"stage prd"}}, want "a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+=== NAME  TestClarificationRecordRunsFromThePRDStageAndFailsStrict
+    clarification_record_test.go:181: stage "prd" findings = []speccheck.Finding(nil), want one gap
+=== NAME  TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section
+    clarification_record_test.go:62: findings = []speccheck.Finding(nil), want []speccheck.Finding{speccheck.Finding{Code:"SC-DECISIONS-UNRECORDED", Severity:"gap", Summary:"docs/specs/0200-clarification/_prd.md has no Clarification Record", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0200-clarification/_prd.md", Line:1}}, Fix:"Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule \"Clarification Record\".", declaredVocabularySpec:""}}
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+=== NAME  TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD
+    clarification_record_test.go:140: stage "prd" skips = []speccheck.SkippedDetector{speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/modules/autonomous-work.json"}, speccheck.SkippedDetector{Code:"SC-HISTORY-RETAINED", Missing:"recorded guide.docs-layout region does not carry A retirement deletes the file"}, speccheck.SkippedDetector{Code:"SC-FINDING-LIFECYCLE", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ROLLUP-MEMBER", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ARCHIVE-LICENSE", Missing:"docs/history/findings"}, speccheck.SkippedDetector{Code:"SC-BACKLOG-UNMOVED", Missing:"docs/backlog"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNDECLARED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-SKILLS-MALFORMED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-CONSTRAINT-MISSING", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-CONSTRAINT-UNREASONED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-CONSTRAINT-SOURCE", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNAUTHORIZED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNBOUNDED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNTYPED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNAPPROVED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-RECEIPT-UNPROVEN", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-RECEIPT-MISSING", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-METRIC-UNDECLARED", Missing:"docs/specs/0200-clarification/_prd.md"}, speccheck.SkippedDetector{Code:"SC-QA-BYTES-PINNED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CONSUMERS-UNPROVEN", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ABSENCE-UNPROVEN", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-ALTERNATIVES-UNRELATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNREAD", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-SURFACE-RECORD-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-MALFORMED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNGATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNMAPPED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CONTRACT-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VOCABULARY-UNDOCUMENTED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-UNLISTED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-RELATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REF-UNRESOLVED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-WORK-INDEPENDENT", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-INVERTED-EXIT", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-WRAP-FRAGILE", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-NON-HERMETIC", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-VACUOUS-COMMAND", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REQUIREMENT-CONTRADICTORY", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REHEARSAL-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-QA-VERIFICATION-AUTHORED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ORDINAL-CLAIMED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-WAVE-COLLISION", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CLI-UNDOCUMENTED", Missing:"stage prd"}}, want "docs/specs/0200-clarification/_prd.md"
+--- FAIL: TestClarificationRecordRunsFromThePRDStageAndFailsStrict (0.13s)
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+=== CONT  TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+=== CONT  TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+=== NAME  TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section
+    clarification_record_test.go:62: findings = []speccheck.Finding(nil), want []speccheck.Finding{speccheck.Finding{Code:"SC-DECISIONS-UNRECORDED", Severity:"gap", Summary:"docs/specs/0200-clarification/_prd.md has no Clarification Record", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0200-clarification/_prd.md", Line:3}}, Fix:"Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule \"Clarification Record\".", declaredVocabularySpec:""}}
+--- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute (0.00s)
+    --- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/dated (0.19s)
+    --- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/autonomous (0.19s)
+    --- PASS: TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute/both (0.19s)
+=== NAME  TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD
+    clarification_record_test.go:168: reintroduced-guide findings = []speccheck.Finding(nil), want one gap
+=== NAME  TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide
+    clarification_record_test.go:140: stage "prd" skips = []speccheck.SkippedDetector{speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"docs/agents/autonomous-work.md"}, speccheck.SkippedDetector{Code:"SC-LOOP-ORDER-DIVERGENT", Missing:"internal/baseline/assets/modules/autonomous-work.json"}, speccheck.SkippedDetector{Code:"SC-HISTORY-RETAINED", Missing:"recorded guide.docs-layout region does not carry A retirement deletes the file"}, speccheck.SkippedDetector{Code:"SC-FINDING-LIFECYCLE", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ROLLUP-MEMBER", Missing:"docs/findings"}, speccheck.SkippedDetector{Code:"SC-ARCHIVE-LICENSE", Missing:"docs/history/findings"}, speccheck.SkippedDetector{Code:"SC-BACKLOG-UNMOVED", Missing:"docs/backlog"}, speccheck.SkippedDetector{Code:"SC-SKILLS-MALFORMED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"docs/references/skill-coverage.json"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNDECLARED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"CONTEXT.md or GLOSSARY.md"}, speccheck.SkippedDetector{Code:"SC-RECEIPT-MISSING", Missing:".agents/skills/write-techspec/references/concrete-contracts.md"}, speccheck.SkippedDetector{Code:"SC-QA-BYTES-PINNED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CONSUMERS-UNPROVEN", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ABSENCE-UNPROVEN", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-ALTERNATIVES-UNRELATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNREAD", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-SKILLS-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-SURFACE-RECORD-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-UNPLANNED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-GLOSSARY-MISSING", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-MALFORMED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TRANSCRIPT-UNGATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNMAPPED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CONTRACT-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VOCABULARY-UNDOCUMENTED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-UNLISTED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ADR-RELATED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-COVERAGE-UNTASKED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REF-UNRESOLVED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-WORK-INDEPENDENT", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-INVERTED-EXIT", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-WRAP-FRAGILE", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-NON-HERMETIC", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-VERIFY-VACUOUS-COMMAND", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REQUIREMENT-CONTRADICTORY", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-REHEARSAL-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-QA-VERIFICATION-AUTHORED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-ORDINAL-CLAIMED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-WAVE-COLLISION", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-TOOLING-UNDECLARED", Missing:"stage prd"}, speccheck.SkippedDetector{Code:"SC-CLI-UNDOCUMENTED", Missing:"stage prd"}}, want "a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"
+--- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon (0.00s)
+    --- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon/uncommitted (0.08s)
+    --- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon/guide_and_PRD_added_together (0.11s)
+    --- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon/before_guide (0.12s)
+    --- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon/missing_PRD (0.14s)
+    --- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon/without_guide (0.08s)
+    --- FAIL: TestClarificationRecordSkipsAPRDBeforeItsHorizon/oldest_guide_addition_holds_an_intermediate_PRD (0.21s)
+=== NAME  TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing
+    clarification_record_test.go:62: findings = []speccheck.Finding(nil), want []speccheck.Finding{speccheck.Finding{Code:"SC-DECISIONS-UNRECORDED", Severity:"gap", Summary:"docs/specs/0200-clarification/_prd.md has no Clarification Record", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0200-clarification/_prd.md", Line:1}}, Fix:"Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule \"Clarification Record\".", declaredVocabularySpec:""}}
+=== NAME  TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing
+    clarification_record_test.go:62: findings = []speccheck.Finding(nil), want []speccheck.Finding{speccheck.Finding{Code:"SC-DECISIONS-UNRECORDED", Severity:"gap", Summary:"docs/specs/0200-clarification/_prd.md has no Clarification Record", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0200-clarification/_prd.md", Line:1}}, Fix:"Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule \"Clarification Record\".", declaredVocabularySpec:""}}
+=== NAME  TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape
+    clarification_record_test.go:62: findings = []speccheck.Finding(nil), want []speccheck.Finding{speccheck.Finding{Code:"SC-DECISIONS-UNRECORDED", Severity:"gap", Summary:"docs/specs/0200-clarification/_prd.md has no Clarification Record", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0200-clarification/_prd.md", Line:3}}, Fix:"Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule \"Clarification Record\".", declaredVocabularySpec:""}}
+=== NAME  TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date
+    clarification_record_test.go:62: findings = []speccheck.Finding(nil), want []speccheck.Finding{speccheck.Finding{Code:"SC-DECISIONS-UNRECORDED", Severity:"gap", Summary:"docs/specs/0200-clarification/_prd.md has no Clarification Record", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0200-clarification/_prd.md", Line:3}}, Fix:"Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule \"Clarification Record\".", declaredVocabularySpec:""}}
+--- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord (0.00s)
+    --- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord/no_section (0.14s)
+    --- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord/answer_outside_section (0.13s)
+    --- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_source_missing (0.10s)
+    --- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord/autonomous_period_missing (0.12s)
+    --- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord/invalid_date (0.10s)
+    --- FAIL: TestClarificationRecordGapNamesAPRDWithoutTheRecord/neither_shape (0.09s)
+FAIL
+suiteguard: guard cost: measured 2541 paths; fingerprint took 106.305458ms before and 72.765042ms after
+FAIL	roundfix/internal/speccheck	0.714s
+FAIL
+stderr:
+exit: 1
+

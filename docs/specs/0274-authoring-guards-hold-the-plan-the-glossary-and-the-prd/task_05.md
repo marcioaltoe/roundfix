@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

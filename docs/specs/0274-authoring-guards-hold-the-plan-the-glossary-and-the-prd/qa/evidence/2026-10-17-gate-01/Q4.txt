@@ -1,0 +1,376 @@
+$ git init -b main
+working directory: disposable repository
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/clarification/.git/
+stderr:
+exit: 0
+
+$ git config user.name QA
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git config user.email qa@example.invalid
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git config core.hooksPath /dev/null
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git add --all
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git commit -qm PRD before horizon
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git add --all
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git commit -qm add clarification guide
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git add --all
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ git commit -qm later PRDs with and without records
+working directory: disposable repository
+stdout:
+stderr:
+exit: 0
+
+$ ./bin/roundfix spec check 0200-earlier --stage prd --strict
+working directory: disposable repository
+stdout:
+Spec 0200-earlier
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-QA-BYTES-PINNED: missing stage prd
+  SC-CONSUMERS-UNPROVEN: missing stage prd
+  SC-ABSENCE-UNPROVEN: missing stage prd
+  SC-ADR-ALTERNATIVES-UNRELATED: missing stage prd
+  SC-COVERAGE-UNREAD: missing stage prd
+  SC-SKILLS-UNTASKED: missing stage prd
+  SC-SURFACE-RECORD-UNTASKED: missing stage prd
+  SC-GLOSSARY-UNPLANNED: missing stage prd
+  SC-GLOSSARY-MISSING: missing stage prd
+  SC-TRANSCRIPT-UNDECLARED: missing stage prd
+  SC-TRANSCRIPT-MALFORMED: missing stage prd
+  SC-TRANSCRIPT-UNGATED: missing stage prd
+  SC-COVERAGE-UNMAPPED: missing stage prd
+  SC-CONTRACT-UNDECLARED: missing stage prd
+  vocabulary documentation detector: missing stage prd
+  SC-ADR-UNLISTED: missing stage prd
+  SC-ADR-RELATED: missing stage prd
+  SC-COVERAGE-UNTASKED: missing stage prd
+  SC-REF-UNRESOLVED: missing stage prd
+  SC-VERIFY-WORK-INDEPENDENT: missing stage prd
+  SC-VERIFY-INVERTED-EXIT: missing stage prd
+  SC-VERIFY-WRAP-FRAGILE: missing stage prd
+  SC-VERIFY-NON-HERMETIC: missing stage prd
+  SC-VERIFY-VACUOUS-COMMAND: missing stage prd
+  SC-REQUIREMENT-CONTRADICTORY: missing stage prd
+  SC-REHEARSAL-UNDECLARED: missing stage prd
+  SC-QA-VERIFICATION-AUTHORED: missing stage prd
+  SC-ORDINAL-CLAIMED: missing stage prd
+  SC-WAVE-COLLISION: missing stage prd
+  SC-TOOLING-UNDECLARED: missing stage prd
+  SC-CLI-UNDOCUMENTED: missing stage prd
+stderr:
+exit: 0
+
+$ ./bin/roundfix spec check 0200-earlier --stage prd --strict --format json
+working directory: disposable repository
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"0200-earlier","findings":[],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-DECISIONS-UNRECORDED","missing":"a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-QA-BYTES-PINNED","missing":"stage prd"},{"code":"SC-CONSUMERS-UNPROVEN","missing":"stage prd"},{"code":"SC-ABSENCE-UNPROVEN","missing":"stage prd"},{"code":"SC-ADR-ALTERNATIVES-UNRELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNREAD","missing":"stage prd"},{"code":"SC-SKILLS-UNTASKED","missing":"stage prd"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"stage prd"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"stage prd"},{"code":"SC-GLOSSARY-MISSING","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-MALFORMED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNGATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNMAPPED","missing":"stage prd"},{"code":"SC-CONTRACT-UNDECLARED","missing":"stage prd"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"stage prd"},{"code":"SC-ADR-UNLISTED","missing":"stage prd"},{"code":"SC-ADR-RELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNTASKED","missing":"stage prd"},{"code":"SC-REF-UNRESOLVED","missing":"stage prd"},{"code":"SC-VERIFY-WORK-INDEPENDENT","missing":"stage prd"},{"code":"SC-VERIFY-INVERTED-EXIT","missing":"stage prd"},{"code":"SC-VERIFY-WRAP-FRAGILE","missing":"stage prd"},{"code":"SC-VERIFY-NON-HERMETIC","missing":"stage prd"},{"code":"SC-VERIFY-VACUOUS-COMMAND","missing":"stage prd"},{"code":"SC-REQUIREMENT-CONTRADICTORY","missing":"stage prd"},{"code":"SC-REHEARSAL-UNDECLARED","missing":"stage prd"},{"code":"SC-QA-VERIFICATION-AUTHORED","missing":"stage prd"},{"code":"SC-ORDINAL-CLAIMED","missing":"stage prd"},{"code":"SC-WAVE-COLLISION","missing":"stage prd"},{"code":"SC-TOOLING-UNDECLARED","missing":"stage prd"},{"code":"SC-CLI-UNDOCUMENTED","missing":"stage prd"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+stderr:
+exit: 0
+
+Independent JSON read for 0200-earlier: exit 0
+$ ./bin/roundfix spec check 0201-no-section --stage prd --strict
+working directory: disposable repository
+stdout:
+Spec 0201-no-section
+[error] SC-DECISIONS-UNRECORDED: docs/specs/0201-no-section/_prd.md has no Clarification Record
+  at docs/specs/0201-no-section/_prd.md:1
+  fix: Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule "Clarification Record".
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-QA-BYTES-PINNED: missing stage prd
+  SC-CONSUMERS-UNPROVEN: missing stage prd
+  SC-ABSENCE-UNPROVEN: missing stage prd
+  SC-ADR-ALTERNATIVES-UNRELATED: missing stage prd
+  SC-COVERAGE-UNREAD: missing stage prd
+  SC-SKILLS-UNTASKED: missing stage prd
+  SC-SURFACE-RECORD-UNTASKED: missing stage prd
+  SC-GLOSSARY-UNPLANNED: missing stage prd
+  SC-GLOSSARY-MISSING: missing stage prd
+  SC-TRANSCRIPT-UNDECLARED: missing stage prd
+  SC-TRANSCRIPT-MALFORMED: missing stage prd
+  SC-TRANSCRIPT-UNGATED: missing stage prd
+  SC-COVERAGE-UNMAPPED: missing stage prd
+  SC-CONTRACT-UNDECLARED: missing stage prd
+  vocabulary documentation detector: missing stage prd
+  SC-ADR-UNLISTED: missing stage prd
+  SC-ADR-RELATED: missing stage prd
+  SC-COVERAGE-UNTASKED: missing stage prd
+  SC-REF-UNRESOLVED: missing stage prd
+  SC-VERIFY-WORK-INDEPENDENT: missing stage prd
+  SC-VERIFY-INVERTED-EXIT: missing stage prd
+  SC-VERIFY-WRAP-FRAGILE: missing stage prd
+  SC-VERIFY-NON-HERMETIC: missing stage prd
+  SC-VERIFY-VACUOUS-COMMAND: missing stage prd
+  SC-REQUIREMENT-CONTRADICTORY: missing stage prd
+  SC-REHEARSAL-UNDECLARED: missing stage prd
+  SC-QA-VERIFICATION-AUTHORED: missing stage prd
+  SC-ORDINAL-CLAIMED: missing stage prd
+  SC-WAVE-COLLISION: missing stage prd
+  SC-TOOLING-UNDECLARED: missing stage prd
+  SC-CLI-UNDOCUMENTED: missing stage prd
+stderr:
+exit: 1
+
+$ ./bin/roundfix spec check 0201-no-section --stage prd --strict --format json
+working directory: disposable repository
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"0201-no-section","findings":[{"code":"SC-DECISIONS-UNRECORDED","severity":"error","summary":"docs/specs/0201-no-section/_prd.md has no Clarification Record","where":[{"path":"docs/specs/0201-no-section/_prd.md","line":1}],"fix":"Under ## Decisions, write one - YYYY-MM-DD: \u003cquestion\u003e — \u003canswer\u003e line for each question a person answered, or the line Autonomous route: no person present; decisions taken from \u003csource\u003e., following the write-prd rule \"Clarification Record\"."}],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-QA-BYTES-PINNED","missing":"stage prd"},{"code":"SC-CONSUMERS-UNPROVEN","missing":"stage prd"},{"code":"SC-ABSENCE-UNPROVEN","missing":"stage prd"},{"code":"SC-ADR-ALTERNATIVES-UNRELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNREAD","missing":"stage prd"},{"code":"SC-SKILLS-UNTASKED","missing":"stage prd"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"stage prd"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"stage prd"},{"code":"SC-GLOSSARY-MISSING","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-MALFORMED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNGATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNMAPPED","missing":"stage prd"},{"code":"SC-CONTRACT-UNDECLARED","missing":"stage prd"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"stage prd"},{"code":"SC-ADR-UNLISTED","missing":"stage prd"},{"code":"SC-ADR-RELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNTASKED","missing":"stage prd"},{"code":"SC-REF-UNRESOLVED","missing":"stage prd"},{"code":"SC-VERIFY-WORK-INDEPENDENT","missing":"stage prd"},{"code":"SC-VERIFY-INVERTED-EXIT","missing":"stage prd"},{"code":"SC-VERIFY-WRAP-FRAGILE","missing":"stage prd"},{"code":"SC-VERIFY-NON-HERMETIC","missing":"stage prd"},{"code":"SC-VERIFY-VACUOUS-COMMAND","missing":"stage prd"},{"code":"SC-REQUIREMENT-CONTRADICTORY","missing":"stage prd"},{"code":"SC-REHEARSAL-UNDECLARED","missing":"stage prd"},{"code":"SC-QA-VERIFICATION-AUTHORED","missing":"stage prd"},{"code":"SC-ORDINAL-CLAIMED","missing":"stage prd"},{"code":"SC-WAVE-COLLISION","missing":"stage prd"},{"code":"SC-TOOLING-UNDECLARED","missing":"stage prd"},{"code":"SC-CLI-UNDOCUMENTED","missing":"stage prd"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+stderr:
+exit: 1
+
+Independent JSON read for 0201-no-section: exit 1
+$ ./bin/roundfix spec check 0202-empty-shape --stage prd --strict
+working directory: disposable repository
+stdout:
+Spec 0202-empty-shape
+[error] SC-DECISIONS-UNRECORDED: docs/specs/0202-empty-shape/_prd.md has no Clarification Record
+  at docs/specs/0202-empty-shape/_prd.md:3
+  fix: Under ## Decisions, write one - YYYY-MM-DD: <question> — <answer> line for each question a person answered, or the line Autonomous route: no person present; decisions taken from <source>., following the write-prd rule "Clarification Record".
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-QA-BYTES-PINNED: missing stage prd
+  SC-CONSUMERS-UNPROVEN: missing stage prd
+  SC-ABSENCE-UNPROVEN: missing stage prd
+  SC-ADR-ALTERNATIVES-UNRELATED: missing stage prd
+  SC-COVERAGE-UNREAD: missing stage prd
+  SC-SKILLS-UNTASKED: missing stage prd
+  SC-SURFACE-RECORD-UNTASKED: missing stage prd
+  SC-GLOSSARY-UNPLANNED: missing stage prd
+  SC-GLOSSARY-MISSING: missing stage prd
+  SC-TRANSCRIPT-UNDECLARED: missing stage prd
+  SC-TRANSCRIPT-MALFORMED: missing stage prd
+  SC-TRANSCRIPT-UNGATED: missing stage prd
+  SC-COVERAGE-UNMAPPED: missing stage prd
+  SC-CONTRACT-UNDECLARED: missing stage prd
+  vocabulary documentation detector: missing stage prd
+  SC-ADR-UNLISTED: missing stage prd
+  SC-ADR-RELATED: missing stage prd
+  SC-COVERAGE-UNTASKED: missing stage prd
+  SC-REF-UNRESOLVED: missing stage prd
+  SC-VERIFY-WORK-INDEPENDENT: missing stage prd
+  SC-VERIFY-INVERTED-EXIT: missing stage prd
+  SC-VERIFY-WRAP-FRAGILE: missing stage prd
+  SC-VERIFY-NON-HERMETIC: missing stage prd
+  SC-VERIFY-VACUOUS-COMMAND: missing stage prd
+  SC-REQUIREMENT-CONTRADICTORY: missing stage prd
+  SC-REHEARSAL-UNDECLARED: missing stage prd
+  SC-QA-VERIFICATION-AUTHORED: missing stage prd
+  SC-ORDINAL-CLAIMED: missing stage prd
+  SC-WAVE-COLLISION: missing stage prd
+  SC-TOOLING-UNDECLARED: missing stage prd
+  SC-CLI-UNDOCUMENTED: missing stage prd
+stderr:
+exit: 1
+
+$ ./bin/roundfix spec check 0202-empty-shape --stage prd --strict --format json
+working directory: disposable repository
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"0202-empty-shape","findings":[{"code":"SC-DECISIONS-UNRECORDED","severity":"error","summary":"docs/specs/0202-empty-shape/_prd.md has no Clarification Record","where":[{"path":"docs/specs/0202-empty-shape/_prd.md","line":3}],"fix":"Under ## Decisions, write one - YYYY-MM-DD: \u003cquestion\u003e — \u003canswer\u003e line for each question a person answered, or the line Autonomous route: no person present; decisions taken from \u003csource\u003e., following the write-prd rule \"Clarification Record\"."}],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-QA-BYTES-PINNED","missing":"stage prd"},{"code":"SC-CONSUMERS-UNPROVEN","missing":"stage prd"},{"code":"SC-ABSENCE-UNPROVEN","missing":"stage prd"},{"code":"SC-ADR-ALTERNATIVES-UNRELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNREAD","missing":"stage prd"},{"code":"SC-SKILLS-UNTASKED","missing":"stage prd"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"stage prd"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"stage prd"},{"code":"SC-GLOSSARY-MISSING","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-MALFORMED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNGATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNMAPPED","missing":"stage prd"},{"code":"SC-CONTRACT-UNDECLARED","missing":"stage prd"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"stage prd"},{"code":"SC-ADR-UNLISTED","missing":"stage prd"},{"code":"SC-ADR-RELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNTASKED","missing":"stage prd"},{"code":"SC-REF-UNRESOLVED","missing":"stage prd"},{"code":"SC-VERIFY-WORK-INDEPENDENT","missing":"stage prd"},{"code":"SC-VERIFY-INVERTED-EXIT","missing":"stage prd"},{"code":"SC-VERIFY-WRAP-FRAGILE","missing":"stage prd"},{"code":"SC-VERIFY-NON-HERMETIC","missing":"stage prd"},{"code":"SC-VERIFY-VACUOUS-COMMAND","missing":"stage prd"},{"code":"SC-REQUIREMENT-CONTRADICTORY","missing":"stage prd"},{"code":"SC-REHEARSAL-UNDECLARED","missing":"stage prd"},{"code":"SC-QA-VERIFICATION-AUTHORED","missing":"stage prd"},{"code":"SC-ORDINAL-CLAIMED","missing":"stage prd"},{"code":"SC-WAVE-COLLISION","missing":"stage prd"},{"code":"SC-TOOLING-UNDECLARED","missing":"stage prd"},{"code":"SC-CLI-UNDOCUMENTED","missing":"stage prd"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+stderr:
+exit: 1
+
+Independent JSON read for 0202-empty-shape: exit 1
+$ ./bin/roundfix spec check 0203-dated --stage prd --strict
+working directory: disposable repository
+stdout:
+Spec 0203-dated
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-QA-BYTES-PINNED: missing stage prd
+  SC-CONSUMERS-UNPROVEN: missing stage prd
+  SC-ABSENCE-UNPROVEN: missing stage prd
+  SC-ADR-ALTERNATIVES-UNRELATED: missing stage prd
+  SC-COVERAGE-UNREAD: missing stage prd
+  SC-SKILLS-UNTASKED: missing stage prd
+  SC-SURFACE-RECORD-UNTASKED: missing stage prd
+  SC-GLOSSARY-UNPLANNED: missing stage prd
+  SC-GLOSSARY-MISSING: missing stage prd
+  SC-TRANSCRIPT-UNDECLARED: missing stage prd
+  SC-TRANSCRIPT-MALFORMED: missing stage prd
+  SC-TRANSCRIPT-UNGATED: missing stage prd
+  SC-COVERAGE-UNMAPPED: missing stage prd
+  SC-CONTRACT-UNDECLARED: missing stage prd
+  vocabulary documentation detector: missing stage prd
+  SC-ADR-UNLISTED: missing stage prd
+  SC-ADR-RELATED: missing stage prd
+  SC-COVERAGE-UNTASKED: missing stage prd
+  SC-REF-UNRESOLVED: missing stage prd
+  SC-VERIFY-WORK-INDEPENDENT: missing stage prd
+  SC-VERIFY-INVERTED-EXIT: missing stage prd
+  SC-VERIFY-WRAP-FRAGILE: missing stage prd
+  SC-VERIFY-NON-HERMETIC: missing stage prd
+  SC-VERIFY-VACUOUS-COMMAND: missing stage prd
+  SC-REQUIREMENT-CONTRADICTORY: missing stage prd
+  SC-REHEARSAL-UNDECLARED: missing stage prd
+  SC-QA-VERIFICATION-AUTHORED: missing stage prd
+  SC-ORDINAL-CLAIMED: missing stage prd
+  SC-WAVE-COLLISION: missing stage prd
+  SC-TOOLING-UNDECLARED: missing stage prd
+  SC-CLI-UNDOCUMENTED: missing stage prd
+stderr:
+exit: 0
+
+$ ./bin/roundfix spec check 0203-dated --stage prd --strict --format json
+working directory: disposable repository
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"0203-dated","findings":[],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-QA-BYTES-PINNED","missing":"stage prd"},{"code":"SC-CONSUMERS-UNPROVEN","missing":"stage prd"},{"code":"SC-ABSENCE-UNPROVEN","missing":"stage prd"},{"code":"SC-ADR-ALTERNATIVES-UNRELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNREAD","missing":"stage prd"},{"code":"SC-SKILLS-UNTASKED","missing":"stage prd"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"stage prd"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"stage prd"},{"code":"SC-GLOSSARY-MISSING","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-MALFORMED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNGATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNMAPPED","missing":"stage prd"},{"code":"SC-CONTRACT-UNDECLARED","missing":"stage prd"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"stage prd"},{"code":"SC-ADR-UNLISTED","missing":"stage prd"},{"code":"SC-ADR-RELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNTASKED","missing":"stage prd"},{"code":"SC-REF-UNRESOLVED","missing":"stage prd"},{"code":"SC-VERIFY-WORK-INDEPENDENT","missing":"stage prd"},{"code":"SC-VERIFY-INVERTED-EXIT","missing":"stage prd"},{"code":"SC-VERIFY-WRAP-FRAGILE","missing":"stage prd"},{"code":"SC-VERIFY-NON-HERMETIC","missing":"stage prd"},{"code":"SC-VERIFY-VACUOUS-COMMAND","missing":"stage prd"},{"code":"SC-REQUIREMENT-CONTRADICTORY","missing":"stage prd"},{"code":"SC-REHEARSAL-UNDECLARED","missing":"stage prd"},{"code":"SC-QA-VERIFICATION-AUTHORED","missing":"stage prd"},{"code":"SC-ORDINAL-CLAIMED","missing":"stage prd"},{"code":"SC-WAVE-COLLISION","missing":"stage prd"},{"code":"SC-TOOLING-UNDECLARED","missing":"stage prd"},{"code":"SC-CLI-UNDOCUMENTED","missing":"stage prd"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+stderr:
+exit: 0
+
+Independent JSON read for 0203-dated: exit 0
+$ ./bin/roundfix spec check 0204-autonomous --stage prd --strict
+working directory: disposable repository
+stdout:
+Spec 0204-autonomous
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-QA-BYTES-PINNED: missing stage prd
+  SC-CONSUMERS-UNPROVEN: missing stage prd
+  SC-ABSENCE-UNPROVEN: missing stage prd
+  SC-ADR-ALTERNATIVES-UNRELATED: missing stage prd
+  SC-COVERAGE-UNREAD: missing stage prd
+  SC-SKILLS-UNTASKED: missing stage prd
+  SC-SURFACE-RECORD-UNTASKED: missing stage prd
+  SC-GLOSSARY-UNPLANNED: missing stage prd
+  SC-GLOSSARY-MISSING: missing stage prd
+  SC-TRANSCRIPT-UNDECLARED: missing stage prd
+  SC-TRANSCRIPT-MALFORMED: missing stage prd
+  SC-TRANSCRIPT-UNGATED: missing stage prd
+  SC-COVERAGE-UNMAPPED: missing stage prd
+  SC-CONTRACT-UNDECLARED: missing stage prd
+  vocabulary documentation detector: missing stage prd
+  SC-ADR-UNLISTED: missing stage prd
+  SC-ADR-RELATED: missing stage prd
+  SC-COVERAGE-UNTASKED: missing stage prd
+  SC-REF-UNRESOLVED: missing stage prd
+  SC-VERIFY-WORK-INDEPENDENT: missing stage prd
+  SC-VERIFY-INVERTED-EXIT: missing stage prd
+  SC-VERIFY-WRAP-FRAGILE: missing stage prd
+  SC-VERIFY-NON-HERMETIC: missing stage prd
+  SC-VERIFY-VACUOUS-COMMAND: missing stage prd
+  SC-REQUIREMENT-CONTRADICTORY: missing stage prd
+  SC-REHEARSAL-UNDECLARED: missing stage prd
+  SC-QA-VERIFICATION-AUTHORED: missing stage prd
+  SC-ORDINAL-CLAIMED: missing stage prd
+  SC-WAVE-COLLISION: missing stage prd
+  SC-TOOLING-UNDECLARED: missing stage prd
+  SC-CLI-UNDOCUMENTED: missing stage prd
+stderr:
+exit: 0
+
+$ ./bin/roundfix spec check 0204-autonomous --stage prd --strict --format json
+working directory: disposable repository
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"0204-autonomous","findings":[],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-QA-BYTES-PINNED","missing":"stage prd"},{"code":"SC-CONSUMERS-UNPROVEN","missing":"stage prd"},{"code":"SC-ABSENCE-UNPROVEN","missing":"stage prd"},{"code":"SC-ADR-ALTERNATIVES-UNRELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNREAD","missing":"stage prd"},{"code":"SC-SKILLS-UNTASKED","missing":"stage prd"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"stage prd"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"stage prd"},{"code":"SC-GLOSSARY-MISSING","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-MALFORMED","missing":"stage prd"},{"code":"SC-TRANSCRIPT-UNGATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNMAPPED","missing":"stage prd"},{"code":"SC-CONTRACT-UNDECLARED","missing":"stage prd"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"stage prd"},{"code":"SC-ADR-UNLISTED","missing":"stage prd"},{"code":"SC-ADR-RELATED","missing":"stage prd"},{"code":"SC-COVERAGE-UNTASKED","missing":"stage prd"},{"code":"SC-REF-UNRESOLVED","missing":"stage prd"},{"code":"SC-VERIFY-WORK-INDEPENDENT","missing":"stage prd"},{"code":"SC-VERIFY-INVERTED-EXIT","missing":"stage prd"},{"code":"SC-VERIFY-WRAP-FRAGILE","missing":"stage prd"},{"code":"SC-VERIFY-NON-HERMETIC","missing":"stage prd"},{"code":"SC-VERIFY-VACUOUS-COMMAND","missing":"stage prd"},{"code":"SC-REQUIREMENT-CONTRADICTORY","missing":"stage prd"},{"code":"SC-REHEARSAL-UNDECLARED","missing":"stage prd"},{"code":"SC-QA-VERIFICATION-AUTHORED","missing":"stage prd"},{"code":"SC-ORDINAL-CLAIMED","missing":"stage prd"},{"code":"SC-WAVE-COLLISION","missing":"stage prd"},{"code":"SC-TOOLING-UNDECLARED","missing":"stage prd"},{"code":"SC-CLI-UNDOCUMENTED","missing":"stage prd"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+stderr:
+exit: 0
+
+Independent JSON read for 0204-autonomous: exit 0

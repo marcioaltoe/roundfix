@@ -1,0 +1,305 @@
+$ go test -count=1 -tags docscontract -v -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce|TestGlossaryContractReportsAPlantedViolationOfEachRule)$ ./internal/docscontract
+working directory: audited repository
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== PAUSE TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/links
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries
+--- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule (0.01s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/links (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+PASS
+ok  	roundfix/internal/docscontract	0.323s
+stderr:
+exit: 0
+
+Allowlist:  = []struct{ phrase, reason string }{
+	{"Better Auth", "Authentication product named by the adopter decision."},
+	{"Claude Code", "Coding runtime product named by the Supervisor and background-task entries."},
+	{"Conventional Commits", "External commit-message convention used by Backlog Entry types."},
+	{"Agent Client Protocol", "External protocol used by ACP Runtimes."},
+	{"Coverage Map", "TechSpec section label read by Coverage Cross-Read."},
+	{"Success Metrics", "PRD section label checked by Metric Declaration Gap."},
+	{"API Contracts", "TechSpec section label checked by Contract Declaration Gap."},
+}
+
+
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/glossary-0.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+=== NAME  TestGlossaryPhrasesAreDefinedTerms
+    user_guide_contract_test.go:524: CONTEXT.md:179: Spec: undefined phrase "Mystery Violet Contraption"
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- FAIL: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.450s
+FAIL
+stderr:
+exit: 1
+
+Exactly TestGlossaryPhrasesAreDefinedTerms failed; other four live rules passed.
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/glossary-1.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+=== NAME  TestGlossaryLinksNameAcceptedADRs
+    user_guide_contract_test.go:539: CONTEXT.md:179: Spec: link "docs/specs/0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd/_prd.md": destination must be a file directly under docs/adr/
+--- FAIL: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.434s
+FAIL
+stderr:
+exit: 1
+
+Exactly TestGlossaryLinksNameAcceptedADRs failed; other four live rules passed.
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/glossary-2.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+=== NAME  TestGlossaryClosedListsEqualTheirConstants
+    user_guide_contract_test.go:546: Task Type: code spans = ["backend" "chore" "data" "docs" "frontend" "infra" "test"], want ["backend" "chore" "data" "docs" "frontend" "infra" "qa" "test"]
+--- FAIL: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.461s
+FAIL
+stderr:
+exit: 1
+
+Exactly TestGlossaryClosedListsEqualTheirConstants failed; other four live rules passed.
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/glossary-3.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+=== NAME  TestGlossaryAvoidLinesArePlainLists
+    user_guide_contract_test.go:553: CONTEXT.md:229: Task Type: want exactly one final _Avoid_: plain list
+--- FAIL: TestGlossaryAvoidLinesArePlainLists (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.04s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.657s
+FAIL
+stderr:
+exit: 1
+
+Exactly TestGlossaryAvoidLinesArePlainLists failed; other four live rules passed.
+$ git archive --format=tar --output /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0274-gate-qvt8esz7/glossary-4.tar HEAD
+working directory: audited repository
+stdout:
+stderr:
+exit: 0
+
+$ go test -count=1 -tags docscontract -v -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$ ./internal/docscontract
+working directory: disposable repository
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+=== NAME  TestGlossaryStatesEachRuleOnce
+    user_guide_contract_test.go:560: Task Graph: repeats sentence owned by Spec: "An otherwise ordinary sentence records a deliberately repeated obligation for this glossary check."
+--- FAIL: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.01s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.447s
+FAIL
+stderr:
+exit: 1
+
+Exactly TestGlossaryStatesEachRuleOnce failed; other four live rules passed.
