@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.87.0] - 2026-10-17
+
+### The history cleanup reaches every adopter, and the review sees a large Spec
+
+- **Superseded ADRs.** A superseded ADR whose accepted successor does not name it no longer refuses the whole `adr` unit. The plan removes it and appends a dated lineage line to the successor: `Supersedes ADR-<n> (<date>); Git keeps its text at <Git Locator>.` Only an ADR with no accepted successor is refused, by its own path, with the fix to make (ADR-0282).
+- **Live links.** A new `live-links` unit in `roundfix history sanitize` and `roundfix baseline update` gives a Git Locator to every Live Document or user guide link to a missing file. These are the same links `SC-HISTORY-RETAINED` reports.
+- **Review of a large Spec.** The pre-PR review diff omits deletions of retired history (`retired-history`) and the files a declared regeneration writes (`generated`), as listed in the base commit's Project Config. A candidate still above the bound is reviewed in up to four Review Segments of consecutive commits in one round, and their findings are merged into one record. Convention C2 asks for settlement sections only where the Daemon writes them (conventions v3).
+- **Owned skill versions.** `roundfix spec check` reports `SC-SKILL-VERSION-UNTASKED` for a pending Task that edits an owned skill without declaring its mirror, both `SKILL.md` files, the version record and the `-record-skill-versions` step.
+- **Offline archive plan.** `roundfix archive <slug> --plan --offline` skips the archive-value judge, and the `qa-gate` skill uses it, so an offline QA gate never contacts a provider.
+- **Item binary copy.** The Delivery Queue copies each built item binary to a fresh file under the item's artifact directory and runs that copy. A `delivery.item_binary` build that writes in place therefore never rewrites a running binary. The copy is written under the fork lock, so its first start cannot fail with `text file busy`.
+- **Adopters.** vortex, fluxus and oraculum can now apply `roundfix baseline update` with a green check.
+
 ## [0.86.0] - 2026-10-17
 
 ### The F6 sender is named, and a rebuilt item binary is replaced
