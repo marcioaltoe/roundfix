@@ -23,6 +23,7 @@ regeneration:
 promoted: []
 relinked:
   - docs/backlog/2026-10-16-spec-check-does-not-flag-an-owned-skill-edit-without-its-version-record.md
+pull_request: "562"
 ---
 
 # Authoring guards hold the plan, the glossary and the PRD to their rules
