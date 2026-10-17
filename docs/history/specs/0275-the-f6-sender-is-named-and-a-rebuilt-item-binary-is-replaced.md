@@ -21,6 +21,7 @@ regeneration: []
 promoted: []
 relinked:
   - docs/backlog/2026-10-16-an-item-binary-built-in-place-can-be-killed-by-code-signing.md
+pull_request: "565"
 ---
 
 # The F6 sender is named, and a rebuilt item binary is replaced
