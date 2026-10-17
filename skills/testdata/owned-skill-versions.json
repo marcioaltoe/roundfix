@@ -551,6 +551,10 @@
       {
         "version": "0.1.91",
         "digest": "8983a7999e861e43e2d2e4954e1d294afe1934c94cb8c73c2a92086a3a160d6d"
+      },
+      {
+        "version": "0.1.92",
+        "digest": "732032efc7abaf36544b55854dc9b15d4de639b22eb058017a33543e692347ae"
       }
     ],
     "setup-context-driven": [

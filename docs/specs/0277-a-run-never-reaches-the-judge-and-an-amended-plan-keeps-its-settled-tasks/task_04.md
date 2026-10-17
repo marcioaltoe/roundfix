@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,62 @@ verifiable on its own through planner tests on temporary repositories.
 - `_prd.md` → Sources; Goals; User Story 5; Core Feature 8; Core Feature 9; Success Metric 5
 - `_techspec.md` → API Contract 8; API Contract 9; Invariant 7; Current behavior; Testing Approach; Build Order 4
 - ADR-0282; ADR-0278; ADR-0254; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+
+## Result
+
+Implemented the Task 04 slice for Daemon Verification. Task status and the
+Subtasks and Acceptance Criteria checkboxes remain Daemon-owned.
+
+### Implementation and acceptance evidence
+
+- Every accepted `superseded_by` form: the shared planner matches an ADR
+  identifier or number against the filename's numeric prefix, and a stem,
+  filename or path against the exact accepted filename in `docs/adr/`.
+  `TestHistoryADRSuccessorResolvesEveryAcceptedForm` covers all six reference
+  spellings, exact selection beside an accepted same-number decoy, missing
+  names, a proposed successor and unknown or non-scalar values. Refusals
+  retain the removed ADR's path and the existing reason.
+- Existing predecessor lineage: `supersedes` accepts the reference forms as a
+  scalar or a list, preserving the existing text recognition.
+  `TestHistoryADRSuccessorThatSupersedesInFrontMatterGetsNoLineage` covers
+  each form in both shapes, unrelated ADRs, a different slug and a numeric
+  prefix collision. It checks lineage citations and applied successor bytes.
+  The existing exact-lineage and per-path refusal tests also passed unchanged.
+- Fluxus shape: `TestHistoryPlanRemovesTheFluxusShapeWithoutALineageLine`
+  plans and applies removal from `_archived/adr/` with number-and-slug
+  references in both fields, no refusal, no lineage citation and byte-identical
+  successor content.
+- Added the forms beside the existing refusal in both command guides and the
+  canonical Roundfix archive and baseline references. The mirror and record
+  generators produced the embedded copies, Roundfix version `0.1.92`, its
+  version record and the two changed guide fingerprints. No generated file
+  was hand-edited. Protected QA settlement sections remain byte-identical.
+
+### Focused checks
+
+- Before the production edit,
+  `go test ./internal/spec -run '^(TestHistoryADRSuccessor|TestHistoryPlanRemovesTheFluxusShape)' -count=1`
+  exited 1: the new reference spellings were unresolved, number and stem
+  predecessor references gained lineage, and the legacy-root shape was refused.
+- After the edit,
+  `go test ./internal/spec -run '^(TestHistoryADR|TestHistoryPlanRemovesTheFluxusShape)' -count=1`
+  exited 0, covering the three new tests and the existing exact-lineage and
+  refusal regressions.
+- `go test ./internal/cli -run '^(TestHistorySanitizeAppliesTheAdopterShapes|TestBaselineUpdatePlansLineageAndLiveLinks)$' -count=1`
+  exited 0 for both shared-planner consumers.
+- `GOOS=windows GOARCH=amd64 go test -c -o "$task04_windows_dir/spec.test.exe" ./internal/spec`
+  exited 0; `task04_windows_dir` was created with
+  `mktemp -d /private/tmp/roundfix-task04-windows.XXXXXX`.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and generated the version bump and record.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and generated the Behavior Surface Record.
+- `git diff --check` exited 0. Direct byte comparisons confirmed the three
+  changed canonical/mirror pairs agree and every Roundfix `### QA settlement`
+  section matches `HEAD`.
+
+The declared Verification and repository Verification were not run; the
+Daemon owns those checks and Task settlement. No commit, push or pull request
+was made. No follow-up outside this Task's slice was required.
