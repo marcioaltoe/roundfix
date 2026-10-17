@@ -103,6 +103,10 @@ fixtures, both commands and the skill and glossary checks.
    **History Relocation** (never into the Findings, Backlog, ADR or Review
    families) and **History Citation** (rewritten to a Git Locator in Archive
    Records, Live Documents and the user guide).
+10. MUST, when this Task removes or renames a test, regenerate the test
+    inventory with `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+    after its last test change, so `TestCoverageEquivalence` reports no
+    regression.
 
 ## Subtasks
 
@@ -170,6 +174,7 @@ fixtures, both commands and the skill and glossary checks.
 - interface: `skills/testdata/owned-skill-versions.json`
 - interface: `docs/references/behavior-surfaces.json`
 - interface: `CONTEXT.md`
+- interface: `docs/references/coverage-record.json`
 
 ## Verification
 
