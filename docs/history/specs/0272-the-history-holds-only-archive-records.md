@@ -37,6 +37,7 @@ regeneration:
     outputs:
       - docs/references/coverage-record.json
 promoted: []
+pull_request: "555"
 ---
 
 # The history holds only Archive Records
