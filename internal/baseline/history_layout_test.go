@@ -38,7 +38,6 @@ func TestDiscoverHistoryLayoutLegacyArchiveShapes(t *testing.T) {
 				"docs/findings/_archived/2026-08-01-widget.md": "nested finding\n",
 			},
 			want: []HistoryRelocation{
-				{From: "docs/findings/_archived/2026-08-01-widget.md", To: "docs/history/findings/2026-08-01-widget.md", ContentIdentity: historyFixtureIdentity("nested finding\n")},
 				{From: "docs/specs/_archived/0001-widget/_prd.md", To: "docs/history/specs/0001-widget/_prd.md", ContentIdentity: historyFixtureIdentity("nested spec\n")},
 				{From: "docs/specs/_archived/0001-widget/task_01.md", To: "docs/history/specs/0001-widget/task_01.md", ContentIdentity: historyFixtureIdentity("nested task\n")},
 			},
@@ -52,9 +51,6 @@ func TestDiscoverHistoryLayoutLegacyArchiveShapes(t *testing.T) {
 				"_archived/backlog/2026-08-02-gadget.md":  "root backlog\n",
 			},
 			want: []HistoryRelocation{
-				{From: "_archived/adr/0042-gadget.md", To: "docs/history/adr/0042-gadget.md", ContentIdentity: historyFixtureIdentity("root ADR\n")},
-				{From: "_archived/backlog/2026-08-02-gadget.md", To: "docs/history/backlog/2026-08-02-gadget.md", ContentIdentity: historyFixtureIdentity("root backlog\n")},
-				{From: "_archived/findings/2026-08-02-gadget.md", To: "docs/history/findings/2026-08-02-gadget.md", ContentIdentity: historyFixtureIdentity("root finding\n")},
 				{From: "_archived/specs/0002-gadget/_prd.md", To: "docs/history/specs/0002-gadget/_prd.md", ContentIdentity: historyFixtureIdentity("root spec\n")},
 			},
 		},
@@ -132,11 +128,8 @@ func TestDiscoverHistoryLayoutClassifiesActiveDocuments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 	}
-	want := []HistoryRelocation{
-		{From: "docs/adr/0040-retired.md", To: "docs/history/adr/0040-retired.md", ContentIdentity: historyFixtureIdentity("---\nstatus: superseded\n---\n")},
-		{From: "docs/backlog/2026-08-11-declined.md", To: "docs/history/backlog/2026-08-11-declined.md", ContentIdentity: historyFixtureIdentity("---\nstatus: declined\n---\n")},
-	}
-	if !reflect.DeepEqual(got, want) {
+	want := []HistoryRelocation{}
+	if len(got) != len(want) {
 		t.Fatalf("DiscoverHistoryLayout() relocations = %#v, want %#v", got, want)
 	}
 	if len(collisions) != 0 {
@@ -145,7 +138,7 @@ func TestDiscoverHistoryLayoutClassifiesActiveDocuments(t *testing.T) {
 	historyAssertUnchanged(t, repo, before)
 }
 
-func TestHistoryLayoutRelocatesLegacyReviewRootWhateverItsLiveness(t *testing.T) {
+func TestHistoryLayoutRelocatesOnlyLiveAndUndecidableLegacyReviews(t *testing.T) {
 	t.Parallel()
 
 	repo := t.TempDir()
@@ -174,7 +167,6 @@ func TestHistoryLayoutRelocatesLegacyReviewRootWhateverItsLiveness(t *testing.T)
 	wantDestinations := map[string]string{
 		"docs/specs/_reviews/pr-101/": "docs/specs/reviews/pr-101/",
 		"docs/specs/_reviews/pr-102/": "docs/specs/reviews/pr-102/",
-		"docs/specs/_reviews/pr-103/": "docs/history/reviews/pr-103/",
 	}
 	seen := make(map[string]bool, len(wantDestinations))
 	for _, relocation := range got {
@@ -426,4 +418,32 @@ func historyWriteReviewOutcome(t *testing.T, reviewDir string, state string, mer
 	if err := os.WriteFile(filepath.Join(reviewDir, "outcome.md"), []byte(content), 0o644); err != nil {
 		t.Fatalf("write Review Artifact outcome fixture: %v", err)
 	}
+}
+
+func TestDiscoverHistoryLayoutRelocatesNothingIntoRetiredFamilies(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	historyWriteFiles(t, repo, map[string]string{
+		"docs/findings/_archived/old.md":      "old\n",
+		"_archived/findings/old.md":           "old\n",
+		"_archived/adr/old.md":                "old\n",
+		"_archived/backlog/old.md":            "old\n",
+		"docs/adr/0001-old.md":                "---\nstatus: deprecated\n---\n",
+		"docs/backlog/closed.md":              "---\nstatus: closed\nreason: done\n---\n",
+		"docs/specs/reviews/pr-1/outcome.md":  "---\npull_request_state: closed\nrecorded_at: 2026-10-16\n---\n",
+		"docs/specs/_reviews/pr-2/outcome.md": "---\npull_request_state: closed\nrecorded_at: 2026-10-16\n---\n",
+		"_archived/specs/0001-legacy/_prd.md": "# Legacy\n",
+		"docs/specs/_reviews/pr-3/outcome.md": "---\npull_request_state: open\nrecorded_at: 2026-10-16\n---\n",
+	})
+	before := historySnapshot(t, repo)
+	relocations, collisions, err := DiscoverHistoryLayout(t.Context(), repo)
+	if err != nil || len(collisions) != 0 || len(relocations) != 2 {
+		t.Fatalf("layout=%v %v %v", relocations, collisions, err)
+	}
+	for _, r := range relocations {
+		if r.To != "docs/history/specs/0001-legacy/_prd.md" && r.To != "docs/specs/reviews/pr-3/outcome.md" {
+			t.Fatalf("retired relocation=%+v", r)
+		}
+	}
+	historyAssertUnchanged(t, repo, before)
 }

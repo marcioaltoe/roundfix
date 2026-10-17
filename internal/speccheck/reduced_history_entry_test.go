@@ -4,17 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
 func historyEntryWriteReduced(t *testing.T, root, path, front string) {
 	t.Helper()
-	content, err := spec.ReduceHistoryEntry([]byte(front+"\n# Retired entry\n\nOriginal observation.\n\n## Evidence\nLong full text.\n"), strings.Repeat("a", 40), path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	writeFindingsArtifact(t, root, path, string(content))
+	content := front + "\n# Retired entry\n\nOriginal observation.\n\nFull text in Git at `" + strings.Repeat("a", 40) + "`: `" + path + "`.\n"
+	writeFindingsArtifact(t, root, path, content)
 }
 
 func TestReducedFindingsKeepTheirLicensesAndMembers(t *testing.T) {

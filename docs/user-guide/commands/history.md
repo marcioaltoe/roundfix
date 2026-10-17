@@ -1,11 +1,11 @@
 # `history`
 
-`roundfix history sanitize` plans the existing history. It converts a Legacy
-Archive Folder to one Archive Record, reduces retired Findings and Backlog
-Entries to their front matter, title, first paragraph and Git provenance, and
-removes retired Review Artifacts and handoffs. Retired ADRs and existing records
-stay whole. A folder without QA, an override or supersession receives `no-qa`;
-that disposition records absent QA rather than inventing a passing verdict.
+`roundfix history sanitize` converts each Legacy Archive Folder to one Archive
+Record and removes retired Findings, Rollups, Backlog Entries, ADRs, Review
+Artifacts and handoffs. A Reduced History Entry is pending like a full file.
+The `superseded` unit removes uncited superseded Archive Records without
+regeneration grants. Delivered and cancelled records stay. A folder without
+QA, an override or supersession receives `no-qa`.
 
 ```bash
 roundfix history sanitize
@@ -15,14 +15,13 @@ roundfix history sanitize --apply --batch 1 --promote docs/history/specs/example
 ```
 
 Units are ordered by Legacy Archive Folder slug, then `findings`, `backlog`,
-`reviews` and `handoffs`. Legacy Archive Folders use Lenient Legacy Reading: the
+`adr`, `reviews`, `handoffs` and `superseded`. Legacy Archive Folders use Lenient Legacy Reading: the
 Task Graph tolerates projection rows outside the graph and retired Task types,
 and the plan names each tolerance as `tolerates <folder>: <tolerance>`. Active
 Specs keep strict reading. Each kind counts as one unit while files remain
 pending. `--batch <n>` selects the next positive number of units it can convert;
 Refused Units do not count toward `n`. Without it the plan shows all pending
-units. A later batch starts from the next remaining unit. Already reduced
-entries are skipped.
+units. A later batch starts from the next remaining unit. No new Reduced History Entry is written.
 
 Lenient Legacy Reading also accepts a legacy list of maps in `unproven`. Each
 map becomes one stable text line in the Archive Record; active Specs continue to
@@ -40,9 +39,8 @@ summary is read from the PRD's title paragraph, or from the first paragraph
 after its first `## ` heading when that paragraph is empty; block quote markers
 are removed before its lines are joined. Legacy Link Rebase rewrites the
 relative destinations in the outcome and in each promoted copy: a destination
-inside the folder points to its promoted copy or the Archive Record, and every
-other destination keeps the same repository path. Records written before this
-version keep their bytes. A Refused Unit is listed as `refused <unit>: <reason>`,
+inside the folder points to its promoted copy or becomes a Git Locator, and
+every other destination keeps the same repository path. A Refused Unit is listed as `refused <unit>: <reason>`,
 with the reason on one line, and remains untouched.
 
 `roundfix baseline update` plans these same units at once as Pending History and
@@ -60,9 +58,28 @@ history sanitize plan: <u> unit(s) pending; <f> file(s) (<b> bytes) leave docs/h
 Each folder line reports removed file count and bytes, record path and size,
 disposition and delivery (`delivery <12-hex> #<pr>`, `delivery <12-hex>` or
 `delivery unknown`). Candidate lines list files outside core artifacts and
-`qa/evidence/`, using the archive plan's grouping. Kind lines report reductions
-or removals. `cites <path>:<line> names <target>` reports tracked Markdown outside
-the History Root that cites a removed path; citations never refuse the batch.
+`qa/evidence/`, using the archive plan's grouping. Removal units print `<unit>: removes <n> file(s) (<b> bytes)`.
+`cites <path>:<line> names <target>` reports tracked Markdown, including Archive
+Records. A citation in an Archive Record, a Live Document or `docs/user-guide/`
+appends `; rewrites to <replacement>`; apply rewrites it with the Citation
+Rewrite. A removed link becomes its label followed by the Git Locator
+`` `<path>@<commit>` ``; a prose path becomes the locator. Other citations are
+listed and left unchanged. A Reduced History Entry uses its original provenance
+path and commit when that commit qualifies. The rewrite changes only the
+planned citing files and skips files removed by the same plan.
+
+The family units include `docs/history/<kind>/`, the legacy trees
+`docs/findings/_archived/` and `_archived/{findings,backlog,adr}/`, terminal
+Findings and Backlog Entries directly in their active directories, retired
+ADRs directly in `docs/adr/`, and finished Review Artifacts under the Spec
+Root's review roots. A superseded ADR needs an accepted successor that names
+it; otherwise the `adr` unit is refused by name. Unknown or missing lifecycle
+statuses in active directories remain untouched. Active directory roots stay.
+
+The `superseded` citation check reads every tracked Markdown file surviving the
+plan, outside `.agents/skills/`, `skills/` and `testdata` directories. Relative
+links, bounded record paths and bounded slugs all count, including front matter
+values. Text already inside a Git Locator does not count.
 
 When a unit cannot be converted, the plan continues and lists
 `refused <unit>: <reason>`. Its first line adds `; <r> unit(s) refused`. A failed
@@ -77,7 +94,7 @@ request when skipped. Advice never changes selection or the command's success.
 The judge log is the only advice write and stays outside the repository.
 
 `--apply` requires `--batch`. It validates the entire batch before writing and
-uses `HEAD` for records' `source_revision` and reduced entries' full-text revision.
+uses `HEAD` for records' `source_revision`.
 `--promote` is repeatable, requires `--apply`, and names repository-relative files
 inside selected folders. It writes each file to
 `docs/references/<basename>` after applying Legacy Link Rebase to its relative
@@ -87,7 +104,7 @@ removing the folder.
 The confirmation is one line:
 
 ```text
-history sanitize applied <n> unit(s): wrote <r> Archive Record(s), reduced <f> file(s), removed <d> file(s) (<b> bytes) kept in Git at <12-hex> and tag history-full; promoted <p> file(s) to docs/references/; <remaining> unit(s) remain
+history sanitize applied <n> unit(s): wrote <r> Archive Record(s), removed <d> file(s) (<b> bytes) kept in Git at <12-hex> and tag history-full; rewrote <c> citation(s) in <m> file(s); promoted <p> file(s) to docs/references/; <remaining> unit(s) remain
 ```
 
 Apply prints each `refused <unit>: <reason>` line before the confirmation. When
@@ -100,8 +117,7 @@ Refusals use Preflight Validation on stderr and exit `2`: invalid or missing
 batch values, unknown flags, extra arguments or unknown subcommands; advice
 without a batch or with apply; promotion without apply; an external Spec Root
 or no Git repository; a dirty tree including staged and untracked files; a
-missing, lightweight or non-ancestor `history-full` tag; a tag missing any path
-removed or rewritten; and any Git failure while reading delivery history.
+missing, lightweight or non-ancestor `history-full` tag; a removed path neither the tag nor a commit the default branch reaches holds; and any Git failure while reading delivery history.
 Promotions outside the batch or inside a Refused Unit, duplicate promotion
 destinations and promotion errors are also refusals before writing. An individual
 unit conversion error is listed as a Refused Unit instead of stopping the plan.
@@ -129,8 +145,10 @@ Run this after the implementation merges, outside a Task.
    git push origin history-full
    ```
 
-   Apply requires that tag to be an ancestor of `HEAD` and to hold every path
-   the batch removes or rewrites. Recover a full file with
+   Apply requires that tag to be an ancestor of `HEAD`. Each removed path must
+   be held by the tag or a commit the default branch reaches; paths written
+   after the tag can therefore be removed. Otherwise apply refuses by name:
+   `history-full does not hold <path> and no commit the default branch reaches holds it`. Recover a full file with
    `git show history-full:docs/history/<path>` or use its record's revision.
 
 2. Save `roundfix history sanitize`'s plan. Request `--batch 40 --advise` per

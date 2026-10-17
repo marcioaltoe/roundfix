@@ -165,7 +165,7 @@ func TestHistorySanitizePlanWritesNothing(t *testing.T) {
 		files += len(c.Files)
 		size += c.Bytes
 	}
-	kinds, e := spec.PlanHistoryKinds(h.repo, h.revision)
+	kinds, e := spec.PlanHistoryKinds(t.Context(), h.repo)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -173,16 +173,12 @@ func TestHistorySanitizePlanWritesNothing(t *testing.T) {
 		files += len(k.Files)
 		size += k.BytesBefore
 	}
-	fmt.Fprintf(&expected, "history sanitize plan: 7 unit(s) pending; %d file(s) (%d bytes) leave docs/history\n", files, size)
+	fmt.Fprintf(&expected, "history sanitize plan: 8 unit(s) pending; %d file(s) (%d bytes) leave docs/history\n", files, size)
 	for _, c := range conversions {
 		fmt.Fprintf(&expected, "folder %s: removes %d file(s) (%d bytes) and writes %s (%d bytes, no-qa, delivery %.12s #42)\ncandidate %s/references/lesson.md 20 bytes\n", c.Folder, len(c.Files), c.Bytes, c.RecordPath, len(c.Rendered), h.revision, c.Folder)
 	}
 	for _, k := range kinds {
-		if k.Action == "reduce" {
-			fmt.Fprintf(&expected, "%s: reduces %d file(s) from %d to %d bytes\n", k.Kind, len(k.Files), k.BytesBefore, k.BytesAfter)
-		} else {
-			fmt.Fprintf(&expected, "%s: removes %d file(s) (%d bytes)\n", k.Kind, len(k.Files), k.BytesBefore)
-		}
+		fmt.Fprintf(&expected, "%s: removes %d file(s) (%d bytes)\n", k.Kind, len(k.Files), k.BytesBefore)
 	}
 	expected.WriteString("cites README.md:3 names docs/history/specs/aaa/references/lesson.md\napply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)\n")
 	if out != expected.String() {
@@ -197,7 +193,7 @@ func TestHistorySanitizeAppliesTheNextBatch(t *testing.T) {
 	original := snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/ccc"))
 	before := historySnapshot(t, h.repo)
 	code, out, err := historyRun(t, h, "sanitize", "--apply", "--batch", "2")
-	if code != 0 || err != "" || !strings.Contains(out, "applied 2 unit(s): wrote 2 Archive Record(s)") || !strings.Contains(out, "5 unit(s) remain") {
+	if code != 0 || err != "" || !strings.Contains(out, "applied 2 unit(s): wrote 2 Archive Record(s)") || !strings.Contains(out, "6 unit(s) remain") {
 		t.Fatalf("%d %s %s", code, out, err)
 	}
 	for _, slug := range []string{"aaa", "bbb"} {
@@ -223,7 +219,7 @@ func TestHistorySanitizeAppliesTheNextBatch(t *testing.T) {
 	}
 	revision := historyCommit(t, h.repo, "Batch one")
 	code, out, err = historyRun(t, h, "sanitize", "--apply", "--batch", "1")
-	if code != 0 || !strings.Contains(out, "4 unit(s) remain") {
+	if code != 0 || !strings.Contains(out, "5 unit(s) remain") {
 		t.Fatalf("%d %s %s", code, out, err)
 	}
 	data, e := os.ReadFile(filepath.Join(h.repo, "docs/history/specs/ccc.md"))
@@ -235,20 +231,12 @@ func TestHistorySanitizeAppliesTheNextBatch(t *testing.T) {
 		t.Fatalf("record=%+v err=%v", record, e)
 	}
 	historyCommit(t, h.repo, "Batch two")
-	code, out, err = historyRun(t, h, "sanitize", "--apply", "--batch", "4")
-	if code != 0 || !strings.Contains(out, "reduced 2 file(s), removed 2 file(s)") {
+	code, out, err = historyRun(t, h, "sanitize", "--apply", "--batch", "5")
+	if code != 0 || !strings.Contains(out, "removed 5 file(s)") {
 		t.Fatalf("%d %s %s", code, out, err)
 	}
-	for _, kind := range []string{"findings", "backlog"} {
-		data, e := os.ReadFile(filepath.Join(h.repo, "docs/history", kind, "entry.md"))
-		if e != nil || !spec.IsReducedHistoryEntry(data) {
-			t.Fatalf("kind %s not reduced: %v", kind, e)
-		}
-	}
-	assertPathMissing(t, filepath.Join(h.repo, "docs/history/reviews"))
-	assertPathMissing(t, filepath.Join(h.repo, "docs/history/handoffs"))
-	if data, e := os.ReadFile(filepath.Join(h.repo, "docs/history/adr/retired.md")); e != nil || string(data) != "Keep whole\n" {
-		t.Fatal("ADR changed")
+	for _, kind := range []string{"findings", "backlog", "adr", "reviews", "handoffs"} {
+		assertPathMissing(t, filepath.Join(h.repo, "docs/history", kind))
 	}
 }
 func TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag(t *testing.T) {
@@ -270,13 +258,16 @@ func TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag(t *testing.T) {
 		})
 	}
 }
-func TestHistorySanitizeRefusesATagWithoutTheBatchPaths(t *testing.T) {
+func TestHistorySanitizeAcceptsDefaultBranchPathsWrittenAfterTheTag(t *testing.T) {
 	t.Parallel()
 	h := newHistoryFixture(t, false)
 	historyTag(t, h)
 	historyWrite(t, filepath.Join(h.repo, "docs/history/reviews/pr-1/r.md"), "review")
 	historyCommit(t, h.repo, "Later history")
-	historyRefusal(t, h, "sanitize", "--apply", "--batch", "1")
+	code, out, err := historyRun(t, h, "sanitize", "--apply", "--batch", "1")
+	if code != 0 || err != "" || !strings.Contains(out, "removed 1 file(s)") {
+		t.Fatalf("%d %s %s", code, out, err)
+	}
 }
 func TestHistorySanitizeRefusesADirtyTree(t *testing.T) {
 	t.Parallel()
@@ -453,12 +444,12 @@ func TestHistorySanitizeFolderCitationsAndKindNamedSlugs(t *testing.T) {
 	historyWrite(t, filepath.Join(h.repo, "README.md"), "# Fixture\n\nFolder docs/history/specs/findings/\n")
 	historyCommit(t, h.repo, "History")
 	code, out, err := historyRun(t, h, "sanitize")
-	if code != 0 || !strings.Contains(out, "cites README.md:3 names docs/history/specs/findings/") || !strings.Contains(out, "findings: reduces 1 file(s)") {
+	if code != 0 || !strings.Contains(out, "cites README.md:3 names docs/history/specs/findings/") || !strings.Contains(out, "findings: removes 1 file(s)") {
 		t.Fatalf("%d %s %s", code, out, err)
 	}
 	historyTag(t, h)
 	code, out, err = historyRun(t, h, "sanitize", "--apply", "--batch", "9")
-	if code != 0 || !strings.Contains(out, "wrote 1 Archive Record(s), reduced 1 file(s)") {
+	if code != 0 || !strings.Contains(out, "wrote 1 Archive Record(s), removed 2 file(s)") {
 		t.Fatalf("%d %s %s", code, out, err)
 	}
 }

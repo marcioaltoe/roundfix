@@ -1,32 +1,32 @@
 package spec
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // HistoryKindAction describes how a retired family leaves its full text in Git.
 type HistoryKindAction string
 
-// HistoryKindPlan contains only pending files and their measured replacement.
+// HistoryKindPlan contains pending files and the bytes that leave the tree.
 type HistoryKindPlan struct {
-	Kind                    ArchiveKind
-	Action                  HistoryKindAction
-	Files                   []string
-	BytesBefore, BytesAfter int64
-	reduced                 map[string][]byte
+	Kind                  ArchiveKind
+	Action                HistoryKindAction
+	Files                 []string
+	BytesBefore           int64
+	specRoot, archiveRoot string
 }
 
-var historyEntryProvenance = regexp.MustCompile("^Full text in Git at `([[:xdigit:]]{40}|[[:xdigit:]]{64})`: `[^`\\r\\n]+`\\.$")
+var historyEntryProvenance = regexp.MustCompile("^Full text in Git at `([[:xdigit:]]{40}|[[:xdigit:]]{64})`: `([^`\\r\\n]+)`\\.$")
 var historyEntryLink = regexp.MustCompile(`\]\(([^\s)]+)`)
 
 // IsReducedHistoryEntry recognizes the provenance line at the end of an entry.
@@ -40,78 +40,11 @@ func IsReducedHistoryEntry(content []byte) bool {
 	return false
 }
 
-// ReduceHistoryEntry preserves lifecycle metadata and a short, recoverable record.
-func ReduceHistoryEntry(content []byte, revision, path string) ([]byte, error) {
-	if IsReducedHistoryEntry(content) {
-		return nil, fmt.Errorf("reduce history entry %q: already reduced", path)
-	}
-	lines := bytes.SplitAfter(content, []byte("\n"))
-	frontEnd := 0
-	if len(lines) > 0 && strings.TrimRight(string(lines[0]), "\r\n") == "---" {
-		frontEnd = len(lines[0])
-		closed := false
-		for _, line := range lines[1:] {
-			frontEnd += len(line)
-			if strings.TrimRight(string(line), "\r\n") == "---" {
-				closed = true
-				break
-			}
-		}
-		if !closed {
-			frontEnd = 0
-		}
-	}
-	if frontEnd == 0 {
-		return nil, fmt.Errorf("reduce history entry %q: missing front matter", path)
-	}
-	body := strings.Split(string(content[frontEnd:]), "\n")
-	titleIndex := -1
-	for i, line := range body {
-		if strings.HasPrefix(line, "# ") {
-			titleIndex = i
-			break
-		}
-	}
-	if titleIndex < 0 {
-		return nil, fmt.Errorf("reduce history entry %q: missing title", path)
-	}
-	var paragraph []string
-	for _, line := range body[titleIndex+1:] {
-		line = strings.TrimSpace(line)
-		if line == "" || historyEntryHeading(line) {
-			if len(paragraph) > 0 {
-				break
-			}
-			continue
-		}
-		paragraph = append(paragraph, line)
-	}
-	provenance := fmt.Sprintf("Full text in Git at `%s`: `%s`.", revision, path)
-	if !historyEntryProvenance.MatchString(provenance) {
-		return nil, fmt.Errorf("reduce history entry %q: invalid Git provenance", path)
-	}
-	result := append([]byte(nil), content[:frontEnd]...)
-	if len(result) > 0 && result[len(result)-1] != '\n' {
-		result = append(result, '\n')
-	}
-	result = append(result, []byte("\n"+strings.TrimSuffix(body[titleIndex], "\r")+"\n\n")...)
-	if len(paragraph) > 0 {
-		result = append(result, []byte(strings.Join(strings.Fields(strings.Join(paragraph, " ")), " ")+"\n\n")...)
-	}
-	return append(result, []byte(provenance+"\n")...), nil
-}
-
-func historyEntryHeading(line string) bool {
-	text := strings.TrimLeft(line, "#")
-	count := len(line) - len(text)
-	return count > 0 && count <= 6 && (text == "" || strings.HasPrefix(text, " ") || strings.HasPrefix(text, "\t"))
-}
-
-// PlanHistoryKinds measures pending families without reading retired ADRs.
-func PlanHistoryKinds(repositoryRoot, revision string) ([]HistoryKindPlan, error) {
+// PlanHistoryKinds plans every retired family in a stable order.
+func PlanHistoryKinds(ctx context.Context, repositoryRoot string) ([]HistoryKindPlan, error) {
 	var plans []HistoryKindPlan
-	for _, kind := range []ArchiveKind{ArchiveKindFinding, ArchiveKindBacklog, ArchiveKindReview, ArchiveKindHandoff} {
-		plan, err := PlanHistoryKind(repositoryRoot, revision, kind)
+	for _, kind := range []ArchiveKind{ArchiveKindFinding, ArchiveKindBacklog, ArchiveKindADR, ArchiveKindReview, ArchiveKindHandoff} {
+		plan, err := PlanHistoryKind(ctx, repositoryRoot, kind)
 		if err != nil {
 			return nil, err
 		}
@@ -122,77 +55,243 @@ func PlanHistoryKinds(repositoryRoot, revision string) ([]HistoryKindPlan, error
 	return plans, nil
 }
 
-// PlanHistoryKind measures one pending family independently of other kinds.
-func PlanHistoryKind(repositoryRoot, revision string, kind ArchiveKind) (HistoryKindPlan, error) {
-	plan := HistoryKindPlan{Kind: kind, Action: "remove", reduced: make(map[string][]byte)}
-	if kind == ArchiveKindFinding || kind == ArchiveKindBacklog {
-		plan.Action = "reduce"
+func historyKindRoots(kind ArchiveKind, specRoot string) []string {
+	roots := []string{ArchiveDir(kind)}
+	switch kind {
+	case ArchiveKindFinding:
+		roots = append(roots, "docs/findings/_archived", "_archived/findings")
+	case ArchiveKindBacklog:
+		roots = append(roots, "_archived/backlog")
+	case ArchiveKindADR:
+		roots = append(roots, "_archived/adr")
+	case ArchiveKindReview:
+		roots = append(roots, specRoot+"/_reviews", specRoot+"/reviews")
 	}
-	root := filepath.Join(repositoryRoot, ArchiveDir(kind))
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
-		if errors.Is(walkErr, os.ErrNotExist) && path == root {
-			return nil
-		}
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		if !entry.Type().IsRegular() {
-			return fmt.Errorf("history entry %q is not a regular file", path)
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
+	return roots
+}
+
+// PlanHistoryKind measures a family independently, including legacy locations.
+// The optional Spec Root is repository-relative and defaults to docs/specs.
+func PlanHistoryKind(ctx context.Context, repositoryRoot string, kind ArchiveKind, specRoots ...string) (HistoryKindPlan, error) {
+	plan := HistoryKindPlan{Kind: kind, Action: "remove", specRoot: "docs/specs"}
+	if len(specRoots) > 0 {
+		plan.specRoot = specRoots[0]
+	}
+	if !historyRepositoryPath(plan.specRoot) {
+		return plan, fmt.Errorf("invalid Spec Root %q", plan.specRoot)
+	}
+	switch kind {
+	case ArchiveKindFinding, ArchiveKindBacklog, ArchiveKindADR, ArchiveKindReview, ArchiveKindHandoff:
+	default:
+		return plan, fmt.Errorf("plan history kind %q: unsupported kind", kind)
+	}
+	seen := map[string]bool{}
+	add := func(path string) error {
+		if err := ctx.Err(); err != nil {
 			return err
-		}
-		if plan.Action == "reduce" && IsReducedHistoryEntry(content) {
-			return nil
 		}
 		rel, err := filepath.Rel(repositoryRoot, path)
 		if err != nil {
 			return err
 		}
 		rel = filepath.ToSlash(rel)
-		if plan.Action == "reduce" {
-			reduced, err := ReduceHistoryEntry(content, revision, rel)
+		if seen[rel] {
+			return nil
+		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("Spec contains symlink or non-regular history entry %q", rel)
+		}
+		if kind == ArchiveKindADR {
+			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			plan.reduced[rel] = reduced
-			plan.BytesAfter += int64(len(reduced))
+			if ClassifyADR(content).Reason == "superseded" {
+				if err := historyADRSuccessor(repositoryRoot, filepath.Base(path), content); err != nil {
+					return err
+				}
+			}
 		}
+		seen[rel] = true
 		plan.Files = append(plan.Files, rel)
-		plan.BytesBefore += int64(len(content))
+		plan.BytesBefore += info.Size()
 		return nil
-	})
-	if err != nil {
-		return plan, fmt.Errorf("plan history kind %s: %w", kind, err)
+	}
+	walk := func(rel string) error {
+		root := filepath.Join(repositoryRoot, rel)
+		return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+			if errors.Is(err, os.ErrNotExist) && path == root {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				return ctx.Err()
+			}
+			return add(path)
+		})
+	}
+	roots := historyKindRoots(kind, plan.specRoot)
+	for _, root := range roots {
+		if kind == ArchiveKindReview && root != ArchiveDir(kind) {
+			entries, err := os.ReadDir(filepath.Join(repositoryRoot, root))
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			if err != nil {
+				return plan, err
+			}
+			for _, entry := range entries {
+				if !entry.IsDir() {
+					continue
+				}
+				dir := filepath.Join(root, entry.Name())
+				state, _, err := ClassifyReview(ctx, repositoryRoot, filepath.Join(repositoryRoot, dir))
+				if err != nil {
+					return plan, err
+				}
+				if state == ReviewFinished {
+					if err := walk(dir); err != nil {
+						return plan, err
+					}
+				}
+			}
+		} else if err := walk(root); err != nil {
+			return plan, fmt.Errorf("plan history kind %s: %w", kind, err)
+		}
+	}
+	active := ""
+	switch kind {
+	case ArchiveKindFinding:
+		active = "docs/findings"
+	case ArchiveKindBacklog:
+		active = "docs/backlog"
+	case ArchiveKindADR:
+		active = "docs/adr"
+	}
+	if active != "" {
+		entries, err := os.ReadDir(filepath.Join(repositoryRoot, active))
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return plan, err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+				continue
+			}
+			path := filepath.Join(repositoryRoot, active, entry.Name())
+			if !entry.Type().IsRegular() {
+				return plan, fmt.Errorf("active history entry %s is not a regular file", path)
+			}
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return plan, err
+			}
+			status, _ := retirementStatus(content)
+			retired := false
+			switch kind {
+			case ArchiveKindFinding:
+				retired = status == "deferred" || status == "done" || status == "deprecated" || status == "superseded" || status == "closed" || status == "cancelled"
+			case ArchiveKindBacklog:
+				retired = status == "declined" || status == "deferred" || status == "done" || status == "deprecated" || status == "superseded" || status == "closed" || status == "cancelled"
+			case ArchiveKindADR:
+				retired = ClassifyADR(content).Retired
+				if retired && ClassifyADR(content).Reason == "superseded" {
+					if err := historyADRSuccessor(repositoryRoot, entry.Name(), content); err != nil {
+						return plan, err
+					}
+				}
+			}
+			if retired {
+				if err := add(path); err != nil {
+					return plan, err
+				}
+			}
+		}
 	}
 	sort.Strings(plan.Files)
 	return plan, nil
 }
 
-// ApplyHistoryKind touches only a plan's files and directories they leave empty.
+func historyADRSuccessor(root, name string, content []byte) error {
+	front, _, err := splitFrontmatter(content)
+	if err != nil {
+		return fmt.Errorf("superseded ADR %s has no accepted successor naming it", name)
+	}
+	var metadata struct {
+		Successor string `yaml:"superseded_by"`
+	}
+	if err := yaml.Unmarshal(front, &metadata); err != nil {
+		return fmt.Errorf("read superseded ADR %s: %w", name, err)
+	}
+	number := strings.TrimPrefix(metadata.Successor, "ADR-")
+	if number != "" && number != metadata.Successor {
+		entries, err := os.ReadDir(filepath.Join(root, "docs/adr"))
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasPrefix(entry.Name(), number+"-") {
+				continue
+			}
+			next, err := os.ReadFile(filepath.Join(root, "docs/adr", entry.Name()))
+			if err != nil {
+				return err
+			}
+			status, _ := retirementStatus(next)
+			id := "ADR-" + strings.SplitN(name, "-", 2)[0]
+			if status == "accepted" && (historyEntryNamesPath(string(next), id) || historyEntryNamesPath(string(next), name)) {
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("superseded ADR %s: accepted successor %s does not name it", name, metadata.Successor)
+}
+
+// ApplyHistoryKind validates every path before removing the first file.
 func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
-	action := HistoryKindAction("remove")
+	repositoryRoot = filepath.Clean(repositoryRoot)
+	if plan.Action != "remove" {
+		return fmt.Errorf("apply history kind %s: invalid action %q", plan.Kind, plan.Action)
+	}
 	switch plan.Kind {
-	case ArchiveKindFinding, ArchiveKindBacklog:
-		action = "reduce"
-	case ArchiveKindReview, ArchiveKindHandoff:
+	case ArchiveKindFinding, ArchiveKindBacklog, ArchiveKindADR, ArchiveKindReview, ArchiveKindHandoff, ArchiveKindSpec:
 	default:
 		return fmt.Errorf("apply history kind %q: unsupported kind", plan.Kind)
 	}
-	if plan.Action != action {
-		return fmt.Errorf("apply history kind %s: invalid action %q", plan.Kind, plan.Action)
+	specRoot := plan.specRoot
+	if specRoot == "" {
+		specRoot = "docs/specs"
 	}
-	root := filepath.Join(repositoryRoot, ArchiveDir(plan.Kind))
-	// Validate the entire file list before the first mutation.
+	if !historyRepositoryPath(specRoot) || (plan.archiveRoot != "" && !historyRepositoryPath(plan.archiveRoot)) {
+		return fmt.Errorf("invalid history plan root")
+	}
+	roots := historyKindRoots(plan.Kind, specRoot)
+	if plan.Kind == ArchiveKindSpec && plan.archiveRoot != "" {
+		roots = []string{plan.archiveRoot}
+	}
 	for _, path := range plan.Files {
-		if filepath.ToSlash(filepath.Clean(path)) != path || !strings.HasPrefix(path, ArchiveDir(plan.Kind)+"/") {
+		allowed := false
+		for _, root := range roots {
+			allowed = allowed || archivePathUnder(path, root)
+		}
+		for _, active := range []struct {
+			kind ArchiveKind
+			root string
+		}{{ArchiveKindFinding, "docs/findings"}, {ArchiveKindBacklog, "docs/backlog"}, {ArchiveKindADR, "docs/adr"}} {
+			allowed = allowed || (plan.Kind == active.kind && filepath.ToSlash(filepath.Dir(path)) == active.root)
+		}
+		if !allowed || filepath.IsAbs(path) || filepath.ToSlash(filepath.Clean(path)) != path || strings.Contains(path, "\\") {
 			return fmt.Errorf("apply history kind %s: path outside kind: %q", plan.Kind, path)
 		}
-		for current := filepath.Join(repositoryRoot, path); ; current = filepath.Dir(current) {
+		if plan.Kind == ArchiveKindSpec && (filepath.ToSlash(filepath.Dir(path)) != roots[0] || !strings.HasSuffix(path, ".md")) {
+			return fmt.Errorf("apply history records: invalid path %q", path)
+		}
+		for current := filepath.Join(repositoryRoot, path); current != repositoryRoot; current = filepath.Dir(current) {
 			info, err := os.Lstat(current)
 			if err != nil {
 				return fmt.Errorf("inspect history entry %q: %w", current, err)
@@ -203,43 +302,23 @@ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
 			if current == filepath.Join(repositoryRoot, path) && !info.Mode().IsRegular() {
 				return fmt.Errorf("inspect history entry %q: not a regular file", current)
 			}
-			if current == root {
-				break
-			}
-		}
-		if action == "reduce" && plan.reduced[path] == nil {
-			return fmt.Errorf("apply history entry %q: missing planned bytes", path)
 		}
 	}
+	protected := map[string]bool{"docs/adr": true, "docs/backlog": true, "docs/findings": true, specRoot: true, "docs/history": true, "docs": true, ".": true}
 	for _, path := range plan.Files {
-		absolute := filepath.Join(repositoryRoot, path)
-		var err error
-		if action == "reduce" {
-			err = os.WriteFile(absolute, plan.reduced[path], 0o644)
-		} else {
-			err = os.Remove(absolute)
+		if err := os.Remove(filepath.Join(repositoryRoot, path)); err != nil {
+			return fmt.Errorf("remove history entry %q: %w", path, err)
 		}
-		if err != nil {
-			return fmt.Errorf("apply history entry %q: %w", path, err)
-		}
-		if action == "remove" {
-			for dir := filepath.Dir(absolute); ; dir = filepath.Dir(dir) {
-				entries, err := os.ReadDir(dir)
-				if errors.Is(err, os.ErrNotExist) {
-					break
-				}
-				if err != nil {
-					return fmt.Errorf("read history directory %q: %w", dir, err)
-				}
-				if len(entries) != 0 {
-					break
-				}
-				if err := os.Remove(dir); err != nil {
-					return fmt.Errorf("remove empty history directory %q: %w", dir, err)
-				}
-				if dir == root {
-					break
-				}
+		for dir := filepath.ToSlash(filepath.Dir(path)); !protected[dir]; dir = filepath.ToSlash(filepath.Dir(dir)) {
+			entries, err := os.ReadDir(filepath.Join(repositoryRoot, dir))
+			if err != nil {
+				return fmt.Errorf("read history directory %q: %w", dir, err)
+			}
+			if len(entries) != 0 {
+				break
+			}
+			if err := os.Remove(filepath.Join(repositoryRoot, dir)); err != nil {
+				return fmt.Errorf("prune history directory %q: %w", dir, err)
 			}
 		}
 	}
@@ -248,40 +327,68 @@ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
 
 // HistoryCitation locates a tracked Markdown line naming a removed path.
 type HistoryCitation struct {
-	Path   string
-	Line   int
-	Target string
+	Path    string
+	Line    int
+	Target  string
+	Rewrite string
 }
 
-// HistoryCitations reports citations as advice; a citation never refuses a plan.
+// HistoryCitations reads tracked Markdown, including Archive Records, and skips
+// sources removed by the same plan.
 func HistoryCitations(ctx context.Context, repositoryRoot string, removed []string) ([]HistoryCitation, error) {
-	output, err := exec.CommandContext(ctx, "git", "-C", repositoryRoot, "ls-files", "-z", "--", "*.md").Output()
+	output, err := archiveGitRead(ctx, repositoryRoot, "ls-files", "-z", "--", "*.md")
 	if err != nil {
 		return nil, fmt.Errorf("list history citation sources: %w", err)
 	}
+	if len(removed) == 0 {
+		return nil, nil
+	}
+	// Match canonical paths, but preserve the caller's target spelling in the
+	// report. Consumers use a trailing slash to identify a removed folder.
+	requested := append([]string(nil), removed...)
+	sort.Strings(requested)
+	originalTargets := make(map[string]string, len(requested))
+	var targets []string
+	for _, target := range requested {
+		canonical := strings.TrimSuffix(target, "/")
+		if _, exists := originalTargets[canonical]; !exists {
+			originalTargets[canonical] = target
+			targets = append(targets, canonical)
+		}
+	}
 	var citations []HistoryCitation
-	targets := append([]string(nil), removed...)
-	sort.Strings(targets)
 	for _, path := range strings.Split(string(output), "\x00") {
-		if path == "" || strings.HasPrefix(path, "docs/history/") {
+		if path == "" || historyPathRemoved(path, targets) {
 			continue
 		}
+		if err := historyRewriteRegularFile(repositoryRoot, path); err != nil {
+			if errors.Is(err, os.ErrNotExist) && strings.HasPrefix(path, "docs/history/") {
+				continue
+			}
+			return nil, err
+		}
 		content, err := os.ReadFile(filepath.Join(repositoryRoot, path))
+		if errors.Is(err, os.ErrNotExist) && strings.HasPrefix(path, "docs/history/") {
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("read history citation source %q: %w", path, err)
 		}
-		for i, line := range strings.Split(string(content), "\n") {
-			for j, target := range targets {
-				if target == "" || (j > 0 && targets[j-1] == target) {
-					continue
-				}
-				if historyEntryCitesPath(line, path, strings.TrimSuffix(target, "/")) {
-					citations = append(citations, HistoryCitation{Path: path, Line: i + 1, Target: target})
-				}
-			}
+		for _, citation := range archiveContentCitations(content, path, targets, "") {
+			citation.Target = originalTargets[citation.Target]
+			citations = append(citations, citation)
 		}
 	}
 	return citations, nil
+}
+
+func historyPathRemoved(path string, removed []string) bool {
+	for _, target := range removed {
+		if path == target || archivePathUnder(path, strings.TrimSuffix(target, "/")) {
+			return true
+		}
+	}
+	return false
 }
 
 func historyEntryCitesPath(line, source, target string) bool {
@@ -299,6 +406,9 @@ func historyEntryCitesPath(line, source, target string) bool {
 }
 
 func historyEntryNamesPath(line, target string) bool {
+	if target == "" {
+		return false
+	}
 	for start := 0; start < len(line); {
 		i := strings.Index(line[start:], target)
 		if i < 0 {
@@ -306,11 +416,271 @@ func historyEntryNamesPath(line, target string) bool {
 		}
 		i += start
 		end := i + len(target)
-		boundary := func(c byte) bool { return strings.ContainsRune(" \t\r`\"'()[]<>#.,;:", rune(c)) }
+		boundary := func(c byte) bool { return citationPathBoundary(c) }
+		suffix := strings.TrimLeft(line[end:], "`")
+		if (end < len(line) && line[end] == '@') || strings.HasPrefix(suffix, " (not reachable from any branch or tag)") || strings.HasPrefix(suffix, " (pull request #") {
+			start = end
+			continue
+		}
 		if (i == 0 || boundary(line[i-1])) && (end == len(line) || line[end] == '/' || boundary(line[end])) {
 			return true
 		}
 		start = end
 	}
 	return false
+}
+
+// PlanSupersededRecords selects only records no surviving tracked Markdown cites.
+// A grant always keeps its record; keeping a record also keeps records it cites.
+func PlanSupersededRecords(ctx context.Context, root, archiveRootRel string, removed []string) (HistoryKindPlan, error) {
+	plan := HistoryKindPlan{Kind: ArchiveKindSpec, Action: "remove", archiveRoot: archiveRootRel, specRoot: "docs/specs"}
+	if archiveRootRel != ArchiveDir(ArchiveKindSpec) {
+		plan.specRoot = filepath.ToSlash(filepath.Dir(archiveRootRel))
+	}
+	entries, err := os.ReadDir(filepath.Join(root, archiveRootRel))
+	if errors.Is(err, os.ErrNotExist) {
+		return plan, nil
+	}
+	if err != nil {
+		return plan, err
+	}
+	candidates := map[string]ArchiveRecord{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		path := archiveRootRel + "/" + entry.Name()
+		content, err := os.ReadFile(filepath.Join(root, path))
+		if err != nil {
+			return plan, err
+		}
+		if !IsArchiveRecord(entry.Name(), content) {
+			continue
+		}
+		record, err := ParseArchiveRecord(content)
+		if err != nil {
+			return plan, err
+		}
+		if record.Disposition == ArchiveSuperseded && len(record.Regeneration) == 0 {
+			candidates[path] = record
+		}
+	}
+	if len(candidates) == 0 {
+		return plan, nil
+	}
+	output, err := archiveGitRead(ctx, root, "ls-files", "-z", "--", "*.md")
+	if err != nil {
+		return plan, err
+	}
+	sources := map[string][]byte{}
+	for _, path := range strings.Split(string(output), "\x00") {
+		if path == "" || historyPathRemoved(path, removed) || strings.HasPrefix(path, ".agents/skills/") || strings.HasPrefix(path, "skills/") || strings.Contains("/"+path, "/testdata/") {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(root, path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return plan, err
+		}
+		sources[path] = content
+	}
+	for changed := true; changed; {
+		changed = false
+		for path, content := range sources {
+			if _, removing := candidates[path]; removing {
+				continue
+			}
+			for target, record := range candidates {
+				if len(archiveContentCitations(content, path, []string{target}, "")) > 0 || historyEntryNamesPath(string(content), record.Spec) {
+					delete(candidates, target)
+					changed = true
+				}
+			}
+		}
+	}
+	for path := range candidates {
+		info, err := os.Lstat(filepath.Join(root, path))
+		if err != nil {
+			return plan, err
+		}
+		if !info.Mode().IsRegular() {
+			return plan, fmt.Errorf("superseded record %s is not a regular file", path)
+		}
+		plan.Files = append(plan.Files, path)
+		plan.BytesBefore += info.Size()
+	}
+	sort.Strings(plan.Files)
+	return plan, nil
+}
+
+// HistoryRewritePlan binds the citing files and destinations before any removal.
+// Apply re-reads only these files, preserving edits made by the Baseline stage.
+type HistoryRewritePlan struct {
+	Citations []HistoryCitation
+	Files     map[string][]byte
+	Count     int
+	rewrite   CitationRewrite
+}
+
+// PlanHistoryRewrite plans the shared Citation Rewrite for removed files and
+// folder moves. It only reads the repository and never rewrites a removed source.
+func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel string, removed []string, moves map[string]string) (HistoryRewritePlan, error) {
+	p := HistoryRewritePlan{Files: map[string][]byte{}}
+	locators := map[string]GitLocator{}
+	for source, destination := range moves {
+		if !historyRepositoryPath(source) || !historyRepositoryPath(destination) {
+			return p, fmt.Errorf("invalid citation move %q to %q", source, destination)
+		}
+	}
+	for _, path := range removed {
+		if !historyRepositoryPath(path) {
+			return p, fmt.Errorf("invalid removal path %q", path)
+		}
+		if _, moved := moves[path]; moved {
+			continue
+		}
+		locator, err := ResolveGitLocator(ctx, root, path, "history-full", "")
+		if err != nil {
+			return p, err
+		}
+		content, err := os.ReadFile(filepath.Join(root, path))
+		if err != nil {
+			return p, err
+		}
+		if IsReducedHistoryEntry(content) {
+			lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+			match := historyEntryProvenance.FindStringSubmatch(lines[len(lines)-1])
+			original, err := ResolveGitLocator(ctx, root, match[2], match[1], "")
+			if err != nil {
+				return p, err
+			}
+			// Only the named provenance commit can select its original active path.
+			if original.Commit == match[1] {
+				locator = original
+			}
+		}
+		locators[path] = locator
+	}
+	p.rewrite = CitationRewrite{Moves: moves, Locate: func(path string) (GitLocator, bool, error) { l, ok := locators[path]; return l, ok, nil }}
+	targets := append([]string(nil), removed...)
+	folders := map[string]bool{}
+	for path := range moves {
+		if !historyPathRemoved(path, targets) {
+			targets = append(targets, path)
+			folders[path] = true
+		}
+	}
+	citations, err := HistoryCitations(ctx, root, targets)
+	if err != nil {
+		return p, err
+	}
+	contents := map[string][]byte{}
+	for _, c := range citations {
+		broader := false
+		for _, other := range citations {
+			if c.Path == other.Path && c.Line == other.Line && c.Target != other.Target && strings.HasPrefix(other.Target, strings.TrimSuffix(c.Target, "/")+"/") {
+				broader = true
+				break
+			}
+		}
+		if broader {
+			continue
+		}
+
+		if historyPathRemoved(c.Path, removed) {
+			continue
+		}
+		content, ok := contents[c.Path]
+		if !ok {
+			content, err = os.ReadFile(filepath.Join(root, c.Path))
+			if err != nil {
+				return p, err
+			}
+			contents[c.Path] = content
+		}
+		scope := IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
+		if scope {
+			if err := historyRewriteRegularFile(root, c.Path); err != nil {
+				return p, err
+			}
+			if destination, ok := moves[c.Target]; ok {
+				c.Rewrite = destination
+			} else if locator, ok := locators[c.Target]; ok {
+				c.Rewrite = locator.Text(false)
+			}
+			if _, planned := p.Files[c.Path]; !planned {
+				next, count, err := p.rewrite.Apply(content, c.Path, c.Path)
+				if err != nil {
+					return p, err
+				}
+				if count > 0 {
+					p.Files[c.Path] = next
+					p.Count += count
+				}
+			}
+		}
+		if folders[c.Target] {
+			c.Target += "/"
+		}
+		p.Citations = append(p.Citations, c)
+	}
+	return p, nil
+}
+
+// Apply writes only the files listed by the plan and counts actual replacements.
+func (p HistoryRewritePlan) Apply(ctx context.Context, root string) (citations, files int, err error) {
+	paths := make([]string, 0, len(p.Files))
+	for path := range p.Files {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return citations, files, err
+		}
+		if err := historyRewriteRegularFile(root, path); err != nil {
+			return citations, files, err
+		}
+		content, readErr := os.ReadFile(filepath.Join(root, path))
+		if readErr != nil {
+			return citations, files, fmt.Errorf("read planned citation %s: %w", path, readErr)
+		}
+		next, count, rewriteErr := p.rewrite.Apply(content, path, path)
+		if rewriteErr != nil {
+			return citations, files, rewriteErr
+		}
+		if count == 0 {
+			continue
+		}
+		if writeErr := os.WriteFile(filepath.Join(root, path), next, 0o644); writeErr != nil {
+			return citations, files, fmt.Errorf("rewrite citation %s: %w", path, writeErr)
+		}
+		citations += count
+		files++
+	}
+	return citations, files, nil
+}
+
+// Refuse a symlink before a citation rewrite can read or write through it.
+func historyRewriteRegularFile(root, path string) error {
+	if !historyRepositoryPath(path) {
+		return fmt.Errorf("invalid citing path %q", path)
+	}
+	root = filepath.Clean(root)
+	for current := filepath.Join(root, path); current != root; current = filepath.Dir(current) {
+		info, err := os.Lstat(current)
+		if err != nil {
+			return fmt.Errorf("inspect citing file %s: %w", path, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || (current == filepath.Join(root, path) && !info.Mode().IsRegular()) {
+			return fmt.Errorf("citing file %s is not a regular repository file", path)
+		}
+	}
+	return nil
+}
+
+func historyRepositoryPath(path string) bool {
+	return path != "" && path != "." && !filepath.IsAbs(path) && path != ".." && !strings.HasPrefix(path, "../") && !strings.Contains(path, "\\") && filepath.ToSlash(filepath.Clean(path)) == path
 }

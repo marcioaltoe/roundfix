@@ -25,3 +25,7 @@ Inside a repository with Pending History, the notice also says
 baseline update to plan them`. Outside a repository it says to run
 `roundfix baseline update` in each adopted repository. The notice reports the
 pending sanitize and does not apply it or change the upgrade result.
+
+A Reduced History Entry counts as Pending History. The notice includes retired
+ADRs and uncited superseded Archive Records without regeneration grants, as
+well as legacy folders and the other retired families.

@@ -101,18 +101,23 @@ func baselineCitationGoRun(t *testing.T, h historyFixture, args ...string) (stri
 	return stdout.String(), stderr.String(), code
 }
 
-func baselineCitationLines(promoted bool) string {
+func baselineCitationLines(promoted bool, revision string) string {
 	suffix := " (live; promote with --promote " + baselineCitationLesson + ")"
 	if promoted {
 		suffix = " (promoted to " + baselineCitationDestination + ")"
 	}
-	return "History citations: 2\n- cites " + baselineCitationFinding + ":7 names " + baselineCitationLesson + suffix + "\n- cites " + baselineCitationHandoff + ":3 names " + baselineCitationFolder + "/_prd.md\n"
+	return "History citations: 2\n- cites " + baselineCitationFinding + ":7 names " + baselineCitationLesson + suffix + "; rewrites to " + func() string {
+		if promoted {
+			return baselineCitationDestination
+		}
+		return "`" + baselineCitationLesson + "@" + revision + "`"
+	}() + "\n- cites " + baselineCitationHandoff + ":3 names " + baselineCitationFolder + "/_prd.md\n"
 }
 
-func baselineCitationExpected(promoted bool) []baselineUpdateHistoryCitation {
-	c := baselineUpdateHistoryCitation{Path: baselineCitationFinding, Line: 7, Target: baselineCitationLesson, Live: true, Offer: baselineCitationLesson}
+func baselineCitationExpected(promoted bool, revision string) []baselineUpdateHistoryCitation {
+	c := baselineUpdateHistoryCitation{Path: baselineCitationFinding, Line: 7, Target: baselineCitationLesson, Live: true, Offer: baselineCitationLesson, Rewrite: "`" + baselineCitationLesson + "@" + revision + "`"}
 	if promoted {
-		c.Offer, c.PromotedTo = "", baselineCitationDestination
+		c.Offer, c.PromotedTo, c.Rewrite = "", baselineCitationDestination, baselineCitationDestination
 	}
 	return []baselineUpdateHistoryCitation{c, {Path: baselineCitationHandoff, Line: 3, Target: baselineCitationFolder + "/_prd.md", Live: false}}
 }
@@ -140,6 +145,9 @@ func assertBaselineCitationJSON(t *testing.T, output, field string, want []basel
 		if c.PromotedTo != "" {
 			keys["promotedTo"] = true
 		}
+		if c.Rewrite != "" {
+			keys["rewrite"] = true
+		}
 		if len(raw[i]) != len(keys) {
 			t.Fatalf("citation keys=%v want=%v", raw[i], keys)
 		}
@@ -166,12 +174,12 @@ func TestBaselineUpdateListsHistoryCitationsTranscript(t *testing.T) {
 	if code != 3 || stderr != "" || r.State != "plan_ready" || r.History.Status != "pending" || len(r.History.Units) != 1 {
 		t.Fatalf("%d %s %s", code, output, stderr)
 	}
-	assertBaselineCitationJSON(t, output, "citations", baselineCitationExpected(false))
+	assertBaselineCitationJSON(t, output, "citations", baselineCitationExpected(false, h.revision))
 	assertBaselineCitationJSON(t, output, "staleCitations", []baselineUpdateHistoryCitation{})
 	u := r.History.Units[0]
 	output, stderr, code = baselineCitationGoRun(t, h)
 	want := fmt.Sprintf("Baseline update: plan ready\nCategory: approval\nResult: guidance matches the current Baseline catalog; 1 history unit(s) pending sanitize\n...\nHistory: pending\nHistory units: 1 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (%s)\n", u.Files, u.Bytes, u.Unit, u.Files, u.Bytes, u.Record, u.Disposition)
-	want += baselineCitationLines(false) + fmt.Sprintf("History tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", h.revision, r.PlanDigest, r.PlanDigest)
+	want += baselineCitationLines(false, h.revision) + fmt.Sprintf("History tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", h.revision, r.PlanDigest, r.PlanDigest)
 	assertBaselineCitationTranscript(t, output, stderr, code, want, 1, "exit status 3\n")
 	baselineHistoryUnchanged(t, h, before, refs, index)
 }
@@ -185,23 +193,21 @@ func TestBaselineUpdatePromotesOnlyOnRequestTranscript(t *testing.T) {
 	if code != 3 || stderr != "" || preview.PlanDigest == promoted.PlanDigest {
 		t.Fatalf("promotion preview: %d %s %s", code, output, stderr)
 	}
-	assertBaselineCitationJSON(t, output, "citations", baselineCitationExpected(true))
+	assertBaselineCitationJSON(t, output, "citations", baselineCitationExpected(true, h.revision))
 	if !reflect.DeepEqual(before, historySnapshot(t, h.repo)) {
 		t.Fatal("promotion preview wrote files")
 	}
 	output, stderr, code = baselineCitationGoRun(t, h, "--yes", "--promote", baselineCitationLesson)
 	u := preview.History.Units[0]
-	want := fmt.Sprintf("Baseline update: verified\n...\nHistory: applied\nHistory applied: 1 unit(s): wrote 1 Archive Record(s), reduced 0 file(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full\n", u.Files, u.Bytes, h.revision)
-	want += baselineCitationLines(true) + fmt.Sprintf("History tag: created annotated history-full at %.12s; push it with git push origin history-full\n...\n", h.revision)
+	want := fmt.Sprintf("Baseline update: verified\n...\nHistory: applied\nHistory applied: 1 unit(s): wrote 1 Archive Record(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full; rewrote 1 citation(s) in 1 file(s)\n", u.Files, u.Bytes, h.revision)
+	want += baselineCitationLines(true, h.revision) + fmt.Sprintf("History tag: created annotated history-full at %.12s; push it with git push origin history-full\n...\n", h.revision)
 	assertBaselineCitationTranscript(t, output, stderr, code, want, 0)
 	after := historySnapshot(t, h.repo)
 	if !bytes.Equal(after[baselineCitationDestination], before[baselineCitationLesson]) {
 		t.Fatal("copy differs from removed source")
 	}
-	for _, path := range []string{baselineCitationFinding, baselineCitationHandoff} {
-		if !bytes.Equal(before[path], after[path]) {
-			t.Fatalf("citing file changed: %s", path)
-		}
+	if bytes.Equal(before[baselineCitationFinding], after[baselineCitationFinding]) || !bytes.Equal(before[baselineCitationHandoff], after[baselineCitationHandoff]) {
+		t.Fatal("rewrite scope differs")
 	}
 	record, err := spec.ParseArchiveRecord(after[baselineCitationFolder+".md"])
 	if err != nil || !reflect.DeepEqual(record.Promoted, []string{baselineCitationDestination}) || len(record.Relinked) != 0 {
@@ -222,10 +228,8 @@ func TestBaselineUpdatePromotesOnlyOnRequestTranscript(t *testing.T) {
 		if _, exists := after[baselineCitationDestination]; exists {
 			t.Fatal("promotion without --promote")
 		}
-		for _, path := range []string{baselineCitationFinding, baselineCitationHandoff} {
-			if !bytes.Equal(before[path], after[path]) {
-				t.Fatalf("citing file changed: %s", path)
-			}
+		if !bytes.Contains(after[baselineCitationFinding], []byte("`"+baselineCitationLesson+"@"+h.revision+"`")) || !bytes.Equal(before[baselineCitationHandoff], after[baselineCitationHandoff]) {
+			t.Fatal("locator or advisory scope differs")
 		}
 		record, err := spec.ParseArchiveRecord(after[baselineCitationFolder+".md"])
 		if err != nil || len(record.Promoted) != 0 {
@@ -246,12 +250,11 @@ func TestBaselineUpdateReportsStaleHistoryCitationsTranscript(t *testing.T) {
 	if code != 0 || stderr != "" || r.State != "current" || r.Category != "" || r.History.Status != "current" || r.PlanDigest != baselineHistoryDigest(t, h) {
 		t.Fatalf("%d %s %s", code, output, stderr)
 	}
-	wantCitations := baselineCitationExpected(false)
-	wantCitations[0].Offer = ""
+	wantCitations := baselineCitationExpected(false, h.revision)[1:]
 	assertBaselineCitationJSON(t, output, "staleCitations", wantCitations)
 	assertBaselineCitationJSON(t, output, "citations", []baselineUpdateHistoryCitation{})
 	output, stderr, code = baselineCitationGoRun(t, h)
-	want := "Baseline update: current\nResult: the repository already matches the current Baseline catalog\n...\nHistory: current\nHistory stale citations: 2\n"
+	want := "Baseline update: current\nResult: the repository already matches the current Baseline catalog\n...\nHistory: current\nHistory stale citations: 1\n"
 	for _, c := range wantCitations {
 		want += fmt.Sprintf("- cites %s:%d names %s; history-full holds it: git show history-full:%s\n", c.Path, c.Line, c.Target, c.Target)
 	}
@@ -348,7 +351,6 @@ func TestBaselineUpdateWithoutCitationsKeepsDigestAndText(t *testing.T) {
 		Paths        []string `json:"paths"`
 		Record       string   `json:"record,omitempty"`
 		RecordDigest string   `json:"recordDigest,omitempty"`
-		BytesAfter   *int64   `json:"bytesAfter,omitempty"`
 	}
 	c := p.selected[0].conversion
 	recordHash := sha256.Sum256(c.Rendered)
@@ -382,23 +384,25 @@ func TestBaselineUpdateHistoryCitationBoundaries(t *testing.T) {
 	historyWrite(t, filepath.Join(h.repo, baselineCitationFinding), "[lesson](../history/specs/0001-legacy/references/2026-01-01-lesson.md)\n[core](../history/specs/0001-legacy/_prd.md)\n[folder](../history/specs/0001-legacy/)\n[reduced](../history/findings/retired.md)\n[removed](../history/reviews/pr-1/review.md)\n")
 	historyWrite(t, filepath.Join(h.repo, "docs/history/findings/retired.md"), "---\nstatus: closed\n---\n\n# Retired\n\nFirst paragraph.\n\n## Detail\n\nFull detail.\n")
 	historyWrite(t, filepath.Join(h.repo, "docs/history/reviews/pr-1/review.md"), "# Review\n")
+	lessonRevision := h.revision
 	h.revision = historyCommit(t, h.repo, "Mixed history")
 	r, output, stderr, code := baselineHistoryRun(t, h, "json")
 	if code != 3 || stderr != "" || r.History.Status != "pending" || len(r.History.Units) != 3 {
 		t.Fatalf("%d %s %s", code, output, stderr)
 	}
 	want := []baselineUpdateHistoryCitation{
-		{Path: baselineCitationFinding, Line: 1, Target: baselineCitationLesson, Live: true, Offer: baselineCitationLesson},
-		{Path: baselineCitationFinding, Line: 2, Target: baselineCitationFolder + "/_prd.md", Live: true},
-		{Path: baselineCitationFinding, Line: 5, Target: "docs/history/reviews/pr-1/review.md", Live: true},
+		{Path: baselineCitationFinding, Line: 1, Target: baselineCitationLesson, Live: true, Offer: baselineCitationLesson, Rewrite: "`" + baselineCitationLesson + "@" + lessonRevision + "`"},
+		{Path: baselineCitationFinding, Line: 2, Target: baselineCitationFolder + "/_prd.md", Live: true, Rewrite: baselineCitationFolder + ".md"},
+		{Path: baselineCitationFinding, Line: 3, Target: baselineCitationFolder + "/", Live: true, Rewrite: baselineCitationFolder + ".md"},
+		{Path: baselineCitationFinding, Line: 4, Target: "docs/history/findings/retired.md", Live: true, Rewrite: "`docs/history/findings/retired.md@" + h.revision + "`"},
+		{Path: baselineCitationFinding, Line: 5, Target: "docs/history/reviews/pr-1/review.md", Live: true, Rewrite: "`docs/history/reviews/pr-1/review.md@" + h.revision + "`"},
 		{Path: baselineCitationHandoff, Line: 3, Target: baselineCitationFolder + "/_prd.md"},
-		{Path: baselineCitationFinding, Line: 3, Target: baselineCitationFolder + "/", Live: true},
 	}
 	assertBaselineCitationJSON(t, output, "citations", want)
 	_, output, stderr, code = baselineHistoryRun(t, h, "text")
 	for _, line := range []string{
-		"- cites " + baselineCitationFinding + ":2 names " + baselineCitationFolder + "/_prd.md (live)\n",
-		"- cites " + baselineCitationFinding + ":3 names " + baselineCitationFolder + "/ (live)\n",
+		"- cites " + baselineCitationFinding + ":2 names " + baselineCitationFolder + "/_prd.md (live); rewrites to " + baselineCitationFolder + ".md\n",
+		"- cites " + baselineCitationFinding + ":3 names " + baselineCitationFolder + "/ (live); rewrites to " + baselineCitationFolder + ".md\n",
 	} {
 		if !strings.Contains(output, line) {
 			t.Fatalf("missing %q\n%s", line, output)

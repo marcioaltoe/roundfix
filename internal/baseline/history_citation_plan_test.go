@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	planCitationSource = "docs/adr/0040-retired.md"
+	planCitationSource = "_archived/specs/0001-legacy/_prd.md"
 	planCitationPath   = "docs/references/layout.md"
 )
 
@@ -22,13 +22,13 @@ func TestBaselinePlanReportsRelocationCitations(t *testing.T) {
 	t.Parallel()
 	repository := newPlanRepository(t)
 	writeInspectionFile(t, repository, planCitationSource, "---\nstatus: superseded\n---\n\n# Retired decision\n")
-	writeInspectionFile(t, repository, planCitationPath, "See [the retired decision](../adr/0040-retired.md).\n")
+	writeInspectionFile(t, repository, planCitationPath, "See [the retired decision](../../_archived/specs/0001-legacy/_prd.md).\n")
 	commitInspectionRepository(t, repository, "seed cited retired ADR")
 
 	plan := buildTestPlan(t, repository)
 	warning := planRelocationCitationWarning(t, plan)
 	if warning.Path != planCitationPath ||
-		!strings.Contains(warning.Message, "line 1 cites ../adr/0040-retired.md") {
+		!strings.Contains(warning.Message, "line 1 cites ../../_archived/specs/0001-legacy/_prd.md") {
 		t.Fatalf("Relocation Citation warning = %#v, want citing path and line", warning)
 	}
 
@@ -48,7 +48,7 @@ func TestRelocationCitationsBindThePlanDigestOnly(t *testing.T) {
 	t.Parallel()
 	repository := newPlanRepository(t)
 	writeInspectionFile(t, repository, planCitationSource, "---\nstatus: superseded\n---\n")
-	writeInspectionFile(t, repository, planCitationPath, "docs/adr/0040-retired.md\n")
+	writeInspectionFile(t, repository, planCitationPath, "_archived/specs/0001-legacy/_prd.md\n")
 	commitInspectionRepository(t, repository, "seed citation-bound plan")
 
 	withCitation := buildTestPlan(t, repository)
@@ -83,7 +83,7 @@ func TestRelocationCitationsLeaveApplyUnchanged(t *testing.T) {
 	t.Parallel()
 	withCitationRepository := newPlanRepository(t)
 	writeInspectionFile(t, withCitationRepository, planCitationSource, "---\nstatus: superseded\n---\n")
-	writeInspectionFile(t, withCitationRepository, planCitationPath, "docs/adr/0040-retired.md\n")
+	writeInspectionFile(t, withCitationRepository, planCitationPath, "_archived/specs/0001-legacy/_prd.md\n")
 	commitInspectionRepository(t, withCitationRepository, "seed apply comparison")
 
 	cloneParent := t.TempDir()

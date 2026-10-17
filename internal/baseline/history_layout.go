@@ -55,11 +55,8 @@ type historyLayoutTree struct {
 
 var legacyHistoryLayoutTrees = []historyLayoutTree{
 	{from: "docs/specs/_archived", kind: spec.ArchiveKindSpec},
-	{from: "docs/findings/_archived", kind: spec.ArchiveKindFinding},
+
 	{from: "_archived/specs", kind: spec.ArchiveKindSpec},
-	{from: "_archived/findings", kind: spec.ArchiveKindFinding},
-	{from: "_archived/adr", kind: spec.ArchiveKindADR},
-	{from: "_archived/backlog", kind: spec.ArchiveKindBacklog},
 }
 
 func historyMoveSourceRoot(source string) string {
@@ -113,25 +110,6 @@ func discoverHistoryLayout(ctx context.Context, root string) (historyLayoutRepor
 		if err := historyLayoutAppendTree(root, tree.from, to, &sources); err != nil {
 			return historyLayoutReport{}, err
 		}
-	}
-
-	if err := historyLayoutAppendRetiredDocuments(
-		root,
-		"docs/adr",
-		spec.ArchiveDir(spec.ArchiveKindADR),
-		spec.ClassifyADR,
-		&sources,
-	); err != nil {
-		return historyLayoutReport{}, err
-	}
-	if err := historyLayoutAppendRetiredDocuments(
-		root,
-		"docs/backlog",
-		spec.ArchiveDir(spec.ArchiveKindBacklog),
-		spec.ClassifyBacklogEntry,
-		&sources,
-	); err != nil {
-		return historyLayoutReport{}, err
 	}
 
 	retainedReviews := make([]Finding, 0)
@@ -202,29 +180,6 @@ func historyLayoutAppendTree(root string, fromRoot string, toRoot string, source
 	return nil
 }
 
-func historyLayoutAppendRetiredDocuments(
-	root string,
-	fromRoot string,
-	toRoot string,
-	classify func([]byte) spec.Retirement,
-	sources *[]historyLayoutSource,
-) error {
-	candidates := make([]historyLayoutSource, 0)
-	if err := historyLayoutAppendTree(root, fromRoot, toRoot, &candidates); err != nil {
-		return err
-	}
-	for _, candidate := range candidates {
-		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(candidate.from)))
-		if err != nil {
-			return fmt.Errorf("read active document %q: %w", candidate.from, err)
-		}
-		if classify(content).Retired {
-			*sources = append(*sources, candidate)
-		}
-	}
-	return nil
-}
-
 func historyLayoutAppendReviews(
 	ctx context.Context,
 	root string,
@@ -274,7 +229,7 @@ func historyLayoutAppendReviews(
 			}
 			to = path.Join("docs/specs/reviews", entry.Name())
 		case spec.ReviewFinished:
-			to = path.Join(spec.ArchiveDir(spec.ArchiveKindReview), entry.Name())
+			continue
 		default:
 			// Preserve the prior non-finished decision if ReviewLiveness gains
 			// another answer before Baseline reporting learns how to name it.

@@ -87,11 +87,8 @@ func TestUpgradeNoticeIsSilentWithoutPendingHistory(t *testing.T) {
 	prepareNoticeUpgrade(t, "current")
 	repo := commandEnvironmentForTest(t).workDir
 	mustMkdir(t, filepath.Join(repo, "docs/specs"))
-	for _, kind := range []string{"findings", "backlog"} {
-		dir := filepath.Join(repo, "docs/history", kind)
-		mustMkdir(t, dir)
-		mustWrite(t, filepath.Join(dir, "reduced.md"), "---\nstatus: closed\n---\n\n# Reduced entry\n\nFull text in Git at `"+strings.Repeat("a", 40)+"`: `docs/history/"+kind+"/reduced.md`.\n")
-	}
+	mustMkdir(t, filepath.Join(repo, "docs/history/specs"))
+	mustWrite(t, filepath.Join(repo, "docs/history/specs/0001-kept.md"), "# Kept Archive Record\n")
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 	if code != exitOK || stdout.String() != "already current 1.0.0\n" || stderr.String() != upgradeFixtureNotice() {

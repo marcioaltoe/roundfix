@@ -97,7 +97,7 @@ func TestTheRetirementClausesRenderInTheDocsLayoutGuide(t *testing.T) {
 	}
 }
 
-func TestAFindingInTheGuideReducedFormNeedsNoSanitize(t *testing.T) {
+func TestAFindingInTheGuideReducedFormNeedsRemoval(t *testing.T) {
 	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
 	asset, ok := catalog.Module("context-workflow")
@@ -147,19 +147,13 @@ func TestAFindingInTheGuideReducedFormNeedsNoSanitize(t *testing.T) {
 			if got := spec.IsReducedHistoryEntry([]byte(tc.content)); got != tc.reduced {
 				t.Fatalf("IsReducedHistoryEntry = %v, want %v; line %q", got, tc.reduced, line)
 			}
-			plan, err := spec.PlanHistoryKind(root, revision, spec.ArchiveKindFinding)
+			plan, err := spec.PlanHistoryKind(t.Context(), root, spec.ArchiveKindFinding)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if tc.reduced {
-				if len(plan.Files) != 0 {
-					t.Fatalf("guide form needs sanitize: %+v", plan)
-				}
-			} else {
-				want := spec.ArchiveDir(spec.ArchiveKindFinding) + "/" + basename
-				if len(plan.Files) != 1 || plan.Files[0] != want || plan.Action != "reduce" {
-					t.Fatalf("missing provenance must plan reduction of %s: %+v", want, plan)
-				}
+			want := spec.ArchiveDir(spec.ArchiveKindFinding) + "/" + basename
+			if len(plan.Files) != 1 || plan.Files[0] != want || plan.Action != "remove" {
+				t.Fatalf("legacy entry must plan removal: %+v", plan)
 			}
 		})
 	}

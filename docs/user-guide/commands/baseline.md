@@ -146,8 +146,8 @@ When Pending History exists, the managed refresh adds a `History` section to
 the plan. Text lists each planned history unit and its result, then prints
 `History: <status>`, `History units:`, `History applied:`, `History refused:`
 and `History tag:` lines when those values exist. Refusal reasons are one line.
-Uncommitted changes and paths outside the coverage of an existing History Full
-Tag are refused and left untouched; a refusal does not block the Baseline Plan
+Uncommitted changes and removed paths held by neither the History Full Tag nor
+a commit the default branch reaches are refused by name and left untouched; a refusal does not block the Baseline Plan
 or change the update's state. A repository-wide history precondition such as an
 invalid tag makes the history section `blocked` with a one-line result.
 
@@ -167,7 +167,7 @@ History stale citations: <n>
 JSON includes `history.citations` and `history.staleCitations` arrays.
 Citation objects carry `path`, `line`, `target` and `live`, with
 `offer` for the Live Document promotion offer and `promotedTo` after a
-promotion. Stale History Citations are reported outside the digest, state,
+promotion. A rewritten citation also carries `rewrite`. Stale History Citations are reported outside the digest, state,
 category and exit code.
 
 The repeatable `--promote <path>` flag copies a selected Legacy Archive
@@ -176,7 +176,34 @@ clean repository-relative file inside a selected folder, outside Refused Units,
 non-core, unique by basename among promotions, and absent from
 `docs/references/`. The update refuses `--promote` with `--no-history`,
 invalid values, refused units or occupied destinations with category `invalid`
-and writes nothing. It never rewrites citing files.
+and writes nothing.
+
+After removals the update rewrites citations in surviving Archive Records, Live
+Documents and `docs/user-guide/` pages using the shared Citation Rewrite. A
+removed link becomes its label followed by a Git Locator, `` `<path>@<commit>` ``;
+prose paths become locators too. A Reduced History Entry uses its provenance
+path and commit when that commit remains reachable from the default branch or
+a tag. Other citations are listed and left unchanged. The rewrite reads only
+this repository and writes only the planned citing files.
+
+History units are Legacy Archive Folder conversions, then `findings`,
+`backlog`, `adr`, `reviews`, `handoffs` and `superseded` removals. They include
+Reduced History Entries, legacy family trees, terminal active Findings and
+Backlog Entries, retired ADRs and finished Review Artifacts the Baseline used
+to relocate. A superseded ADR whose accepted successor does not name it refuses
+that unit. The `superseded` unit holds only uncited Archive Records without
+regeneration grants. Its citation check covers every surviving tracked Markdown
+file outside skill trees and `testdata`, including bounded slugs in front matter.
+Legacy Spec folder relocations and the live review root rename still apply.
+
+Removal lines read `- <unit>: removes <n> file(s) (<b> bytes)`. A rewritten
+citation appends `; rewrites to <replacement>`. `History applied:` drops the
+old reduction count and appends `; rewrote <c> citation(s) in <m> file(s)` after
+the History Full Tag clause. JSON unit actions are `convert` or `remove` and
+omit `bytesAfter`; `applied.reduced` stays 0 and the applied object adds
+`rewrittenCitations` and `rewrittenFiles`. The Plan Digest binds the removals
+and each citation's `rewrite`, with no `bytesAfter`. A plan writes nothing and
+a second update reports the applied units current.
 
 Adopter note: if an earlier `roundfix baseline update` or Sanitize Batch
 already broke citations, run `roundfix baseline update` with the History Full

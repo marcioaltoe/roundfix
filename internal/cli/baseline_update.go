@@ -264,7 +264,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 		historyPlan = planBaselineUpdateHistory(ctx, request.repo, environment)
 	}
 	result.History = historyPlan.Report
-	if err := historyPlan.promote(request.promote); err != nil {
+	if err := historyPlan.promote(ctx, request.promote); err != nil {
 		return writeBaselineUpdateFailure(result, err, "invalid", "correct --promote and rerun roundfix baseline update", exitPreflight, jsonOutput, stdout, stderr)
 	}
 	result.History = historyPlan.Report
