@@ -2,6 +2,24 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.84.0] - 2026-10-17
+
+### The history holds only Archive Records
+
+- **A retirement deletes.** A Finding, Rollup or Backlog Entry with a terminal status, a finished handoff or Review Artifact, and a rejected, deprecated or superseded ADR leave the tree in the change that records the status. No Reduced History Entry is written, and Git keeps every text (ADR-0278).
+- **Git Locator.** A citation of a deleted file becomes `` `<path>@<commit>` ``, naming a commit the default branch or a tag reaches. When no reachable commit holds the file, it names the path with the record's pull request. This applies to the Archive Command's outcome, its promoted copies, the Legacy Link Rebase, `roundfix history sanitize` and the history section of `roundfix baseline update`. An Archive Record no longer links to itself.
+- **History cleanup.** `history sanitize` and `baseline update` remove the retired families, the legacy `_archived/` trees and the `superseded` Archive Records that nothing cites and that hold no regeneration grant. They rewrite every citation the removal breaks and give each broken Archive Record link a Git Locator in a new `record-links` unit. The plan names every file it will remove: a `paths` list in JSON, and one `  - <path>` line per file in text. A removed path must be held by `history-full` or by a commit the default branch reaches. A tracked symbolic link such as `CLAUDE.md -> AGENTS.md` is skipped, and its target is rewritten under its own path.
+- **Spec Consistency Check.** `SC-HISTORY-RETAINED` reports any of the following, each with the Git Locator or deletion to make:
+  - a file in a retired history family;
+  - a terminal Finding in `docs/findings/`;
+  - a relative link from an Archive Record, a Live Document or a user guide page to a missing file.
+
+  It applies once the repository's Baseline carries the new retirement clause. Claim Receipts and Rollup members fall back to Git for a removed ADR or Finding.
+- **Baseline.** `context-workflow` states the retirement rule once, absorbing two clauses. `secondbrain` captures a Finding's lesson in the Inbox only when no ADR, record or reference already states it. The rendered docs-layout region is at most 11,000 bytes.
+- **This repository.** 139 retired history files and the ten superseded records 0120 to 0129 left `docs/history`, and their 46 citations now carry Git Locators.
+- **Adopters.** Run `roundfix baseline update` after the `history-full` tag is on the remote. Review the listed removals, then apply with `--yes`.
+- **Skills, guides and glossary.** Updated the `roundfix` and `archive-spec` skills, the `history`, `baseline`, `archive`, `spec` and `upgrade` guides, and the glossary, which adds Git Locator.
+
 ## [0.83.0] - 2026-10-16
 
 ### The queue reports a gone owner, and a dismissal survives a fix
