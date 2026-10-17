@@ -773,6 +773,10 @@ _Avoid_: Row status, verdict
 A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect ([ADR-0196](docs/adr/0196-a-pre-pr-review-finding-parks-only-after-validation.md)).
 _Avoid_: Review exemption, ignore list
 
+**Review Segment**:
+One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound, each within the bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md)).
+_Avoid_: Review round, independent review
+
 **Reviewer Lineage**:
 The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md)).
 _Avoid_: Review cache, third round

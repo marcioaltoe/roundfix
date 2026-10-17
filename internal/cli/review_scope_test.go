@@ -54,15 +54,11 @@ func assertReviewScope(t *testing.T, fixture reviewCommandFixture, runner *revie
 	if !ok {
 		t.Fatalf("missing diff end marker %q", marker)
 	}
-	qa, upstream := 0, 0
+	counts := make(map[string]int)
 	for _, path := range want {
-		if path.Reason == "qa-evidence" {
-			qa++
-		} else {
-			upstream++
-		}
+		counts[path.Reason]++
 	}
-	summary := fmt.Sprintf("Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills.\n", qa, upstream)
+	summary := fmt.Sprintf("Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills, %d of archived Spec sources, %d of retired history, %d of generated files.\n", counts["qa-evidence"], counts["upstream-skill"], counts["archived-spec-source"], counts["retired-history"], counts["generated"])
 	if !strings.HasPrefix(after, summary) {
 		t.Fatalf("missing summary %q", summary)
 	}
@@ -325,5 +321,111 @@ func TestReviewAdmitsADiffExactlyAtTheBound(t *testing.T) {
 	code, record, stderr := runLineageReview(t, fixture)
 	if code != exitOK || record.DiffBytes != reviewDiffBound || runner.preparedCalls != 1 {
 		t.Fatalf("exit=%d diffBytes=%d stderr=%q calls=%d", code, record.DiffBytes, stderr, runner.preparedCalls)
+	}
+}
+
+func TestReviewOmitsRetiredHistoryAndGeneratedFiles(t *testing.T) {
+	t.Parallel()
+	runner := newLineageRunner("No findings.")
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	config, err := os.ReadFile(filepath.Join(fixture.repository, ".roundfixrc.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	commitScopeFile(t, fixture, "docs/history/retired.md", "retired payload\n")
+	fixture.baseCommit = commitScopeFile(t, fixture, ".roundfixrc.yml", string(config)+"delivery:\n  derived_paths:\n    - paths: ['generated/*.json']\n      regenerate: make generate\n")
+	gittest.Run(t, fixture.repository, "rm", "docs/history/retired.md")
+	gittest.Run(t, fixture.repository, "commit", "-m", "test: retire history")
+	commitScopeFile(t, fixture, "generated/data.json", "generated payload\n")
+	commitScopeFile(t, fixture, "source.go", "package example\n")
+	code, record, stderr := fixture.run(t)
+	if code != exitOK {
+		t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	assertReviewScope(t, fixture, &runner.reviewCommandRunner, record, []reviewOmittedPath{{Path: "docs/history/retired.md", Reason: "retired-history"}, {Path: "generated/data.json", Reason: "generated"}}, "--- END CANDIDATE DIFF ---")
+	if !strings.Contains(runner.request.Prompt, "+package example") {
+		t.Fatal("authored source missing")
+	}
+}
+
+func TestReviewReadsDerivedPathsFromTheBaseCommit(t *testing.T) {
+	t.Parallel()
+	for _, directory := range []bool{false, true} {
+		t.Run(fmt.Sprint(directory), func(t *testing.T) {
+			runner := newLineageRunner("No findings.")
+			fixture := newReviewCommandFixture(t, "codex", runner)
+			config, err := os.ReadFile(filepath.Join(fixture.repository, ".roundfixrc.yml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			pattern := "authored/*.go"
+			if directory {
+				pattern = "authored/"
+			}
+			commit := commitScopeFile(t, fixture, ".roundfixrc.yml", string(config)+fmt.Sprintf("delivery:\n  derived_paths:\n    - paths: [%q]\n      regenerate: make generate\n", pattern))
+			if directory {
+				fixture.baseCommit = commit
+			}
+			commitScopeFile(t, fixture, "authored/source.go", "package reviewed\n")
+			code, record, stderr := fixture.run(t)
+			if code != exitOK || len(record.OmittedPaths) != 0 || !strings.Contains(runner.request.Prompt, "+package reviewed") {
+				t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
+			}
+		})
+	}
+}
+
+func TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence(t *testing.T) {
+	t.Parallel()
+	runner := newLineageRunner("No findings.")
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	config, err := os.ReadFile(filepath.Join(fixture.repository, ".roundfixrc.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	commitScopeFile(t, fixture, "skills-lock.json", `{"skills":{"external":{}}}`)
+	for _, file := range []string{"docs/history/specs/old/qa/evidence/raw.txt", "docs/history/retired.txt"} {
+		commitScopeFile(t, fixture, file, "retired payload\n")
+	}
+	recordPath := "docs/history/specs/0001-record.md"
+	commitScopeFile(t, fixture, recordPath, "---\nschema: roundfix/archive-record/v1\n---\n")
+	fixture.baseCommit = commitScopeFile(t, fixture, ".roundfixrc.yml", string(config)+"delivery:\n  derived_paths:\n    - paths: ['docs/history/specs/old/qa/evidence/*', 'docs/history/retired.txt', '.agents/skills/external/*']\n      regenerate: make generate\n")
+	gittest.Run(t, fixture.repository, "rm", recordPath, "docs/history/retired.txt", "docs/history/specs/old/qa/evidence/raw.txt")
+	gittest.Run(t, fixture.repository, "commit", "-m", "test: remove historical files")
+	commitScopeFile(t, fixture, ".agents/skills/external/SKILL.md", "upstream payload\n")
+	code, record, stderr := fixture.run(t)
+	if code != exitOK {
+		t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	assertReviewScope(t, fixture, &runner.reviewCommandRunner, record, []reviewOmittedPath{{Path: ".agents/skills/external/SKILL.md", Reason: "upstream-skill"}, {Path: "docs/history/retired.txt", Reason: "retired-history"}, {Path: "docs/history/specs/old/qa/evidence/raw.txt", Reason: "qa-evidence"}}, "--- END CANDIDATE DIFF ---")
+	if !strings.Contains(runner.request.Prompt, "diff --git a/"+recordPath) {
+		t.Fatal("Archive Record was omitted")
+	}
+}
+
+type unreadableReviewConfigGit struct{ preflight.ExecGitRunner }
+
+func (runner unreadableReviewConfigGit) RunGit(ctx context.Context, root string, args ...string) (string, error) {
+	if len(args) == 2 && args[0] == "show" && strings.HasSuffix(args[1], ":.roundfixrc.yml") {
+		return "", errors.New("config object unreadable")
+	}
+	return runner.ExecGitRunner.RunGit(ctx, root, args...)
+}
+
+func TestReviewBlocksOnUnreadableBaseDerivedDeclarations(t *testing.T) {
+	t.Parallel()
+	runner := &reviewCommandRunner{}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	config, err := os.ReadFile(filepath.Join(fixture.repository, ".roundfixrc.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture.baseCommit = commitScopeFile(t, fixture, ".roundfixrc.yml", string(config))
+	commitScopeFile(t, fixture, "source.go", "package reviewed\n")
+	withReviewSpecGitRunner(t, unreadableReviewConfigGit{})
+	code, record, stderr := fixture.run(t)
+	assertBlockedReviewCommand(t, code, record, stderr, "review scope: read derived paths:")
+	if runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {
+		t.Fatal("unreadable base reached provider")
 	}
 }

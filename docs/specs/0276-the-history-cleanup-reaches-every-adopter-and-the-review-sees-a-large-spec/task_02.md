@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -141,3 +141,91 @@ no provider call.
 - `_prd.md` → Goals; User Story 3; User Story 4; Core Feature 3; Core Feature 4; Core Feature 5; Core Feature 9; Success Metric 2; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 4; API Contract 5; API Contract 6; API Contract 10; Invariants 4, 5 and 6; Current behavior; Testing Approach; Build Order 2
 - ADR-0282; ADR-0196; ADR-0197; ADR-0227
+
+
+## Result
+
+Implemented this Task's review slice; status and terminal Verification remain
+Daemon-owned.
+
+### Acceptance evidence
+
+- Omissions: `reviewScopedDiff` reads derived declarations through
+  `DeliveryConfigAtCommit` at the immutable candidate base, with no User
+  Config input. Exact/glob file declarations omit generated files; directory
+  entries and declarations added by the candidate omit nothing. Deleted
+  history is omitted except Archive Records. The five-reason precedence and
+  exact summary are implemented. Focused checks passed for
+  `TestReviewOmitsRetiredHistoryAndGeneratedFiles`,
+  `TestReviewReadsDerivedPathsFromTheBaseCommit`,
+  `TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence`,
+  `TestReviewBlocksOnUnreadableBaseDerivedDeclarations`, and the existing
+  QA-evidence, upstream-skill and round-2 scope checks.
+- Review Segments: Codex round 1 greedily packs first-parent commits into at
+  most four bounded ranges. Every individual commit must fit, including a
+  rewrite whose combined range hides its size. Sequential `RunPrepared`
+  calls share one prepared session; Spec context occurs only in the first
+  prompt. Findings receive global IDs and their segment number, and their
+  anchors are validated against their own segment diff. One candidate-head
+  record holds the ranges and summed bytes; the answer preserves each
+  segment's messages under the specified separators. Classification failures
+  stop subsequent prompts. The convention validator, reuse and lineage remain
+  per candidate head. Focused checks passed for
+  `TestReviewSegmentsACandidateAboveTheBound`,
+  `TestReviewBlocksACandidateNeedingMoreThanFourSegments`,
+  `TestReviewSegmentsStopAtTheFirstBlockedAnswer`,
+  `TestReviewGreedilyPacksFourSegments`, and
+  `TestReviewBlocksAnOversizedCommitHiddenByItsRange`.
+  `TestReviewBlocksAboveTheBoundWithoutAProviderCall`,
+  `TestReviewCommandKeepsTheCodexDiffByteBound` and
+  `TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound` passed without
+  edits. Segment fixtures also prove that a candidate-added declaration
+  cannot hide subsequent segments, and that same-head reuse sends no further
+  prompts. The supporting production helper is
+  `internal/cli/review_segments.go`, an ordinary path for this Task's slice.
+- C2: the prompt uses `roundfix/delivery-conventions/v3` and API Contract 6's
+  exact text. C1 and C3–C5 keep their bytes.
+  `TestDeliveryConventionC2ExemptsTheQATask` passed using a committed completed
+  QA Task without settlement sections, constructing the prompt without a
+  provider call.
+- Documentation and vocabulary: the review guide and canonical skill
+  reference describe both new reasons, precedence, the summary, segments,
+  refusals, record fields and the v3 C2 text. `CONTEXT.md` defines Review
+  Segment beside Reviewer Lineage with ADR-0282. Focused glossary contracts
+  passed. A direct document audit confirmed exact normalized C2 text in the
+  guide and both skill references, no old v2 name there, matching reference
+  mirrors and byte-identical QA settlement sections against HEAD.
+
+### Focused commands and outcomes
+
+- Initial regression signal:
+  `rtk proxy go test ./internal/cli -run 'TestReviewOmitsRetired|TestDeliveryConventionC2' -count=1`
+  exited 1 before implementation: missing omissions and the old v2 C2 prompt.
+- Final focused implementation check:
+  `rtk proxy go test ./internal/cli -run '^(TestReview(Omits|Reads|Scopes|Blocks|KeepsDeleted|Segments|Greedily|CommandKeepsTheCodexDiffByteBound|CommandSendsAClaudePromptBeyondTheCodexByteBound)|TestDeliveryConvention)' -count=1`
+  exited 0 after the final source edit. All reviewer execution used local
+  fakes and disposable repositories.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1`
+  exited 0.
+- Required generation: `rtk proxy make skills-sync` exited 0;
+  `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and recorded Roundfix version `0.1.87` in both skill sources and
+  the owned-version record;
+  `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0, including a re-record after the final command-source edit.
+  Mirrors and generated records were not hand-edited.
+- `rtk proxy make baseline-digests` exited 0 and reported no derived changes.
+- `rtk proxy git diff --check` exited 0. Final changed-file inspection is
+  limited to this review slice, its documentation, the generated skill and
+  surface records, and this Task's Result; the status edit predated this turn.
+
+The declared Verification command, repository Verification and full test
+suite were not run. No other Task or Task Graph was edited, and no commit,
+push or Pull Request was made. The Daemon owns settlement and any required
+Recorded paths entry for the supporting helper.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/review_segments.go`
