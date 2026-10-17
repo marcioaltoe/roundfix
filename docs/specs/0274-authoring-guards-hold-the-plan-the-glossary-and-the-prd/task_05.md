@@ -86,8 +86,11 @@ another repository.
     `internal/daemon/task_engine.go` and `internal/secretscan/scan.go` did not
     change; that the Roundfix, write-tasks, write-prd and write-techspec skill
     versions were raised and recorded; that no `### QA settlement` section
-    changed; and that the user guide changes, skill references and glossary
-    name both codes. It also searches the repository's guides and skill copies
+    changed; that the user guide changes and skill references name both
+    codes; and that the glossary defines **Clarification Record**, the one
+    term the PRD's Glossary declares (no Task adds a check code to
+    `CONTEXT.md`; amended 2026-10-17 after the first QA gate read this row as
+    asking the glossary for both codes). It also searches the repository's guides and skill copies
     for `<line> (<kind>)` and records that none remains. This row reads Task
     commits, so it declares a `commit_range` input.
 11. MUST record the non-waivable Pull Request row as
