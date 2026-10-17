@@ -114,6 +114,10 @@ refresh that reports the repository current.
    `spec.RetirementRuleSentinel`), `TestTheRetirementClauseReplacesTheClausesItAbsorbs`
    (the Standard TypeScript Source Baseline records both removed clauses as
    replaced) and `TestTheCaptureTriggerAsksForAConditionalLesson`.
+11. MUST, when this Task removes or renames a test, regenerate the test
+    inventory with `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+    after its last test change, so `TestCoverageEquivalence` reports no
+    regression.
 
 ## Subtasks
 
@@ -177,6 +181,7 @@ refresh that reports the repository current.
 - interface: `docs/references/behavior-surfaces.json`
 - deletes: `docs/history/findings`
 - deletes: `docs/history/backlog`
+- interface: `docs/references/coverage-record.json`
 
 ## Verification
 
