@@ -63,6 +63,14 @@ oldest commit that added it; an uncommitted PRD is held.
   without a skills Task or an unchanged entry with its map Task. Runs from
   the Tasks stage.
 
+- `SC-SURFACE-RECORD-UNTASKED` — a pending non-QA Task declares a user
+  guide page without declaring `docs/references/behavior-surfaces.json`
+  under `interface:` or `creates:` and naming `-record-skill-coverage` in a
+  requirement, or an authorization Limits line names the record. The guide
+  Task itself must declare both; another Task cannot cover it. Runs from the
+  Tasks stage as a gap, with no horizon; skips repositories without the record
+  and Specs without a Task Graph.
+
 - `SC-RECEIPT-UNPROVEN`: a written Claim Receipt has an unresolved source, fewer than three words, or a quote absent from its source.
 - `SC-RECEIPT-MISSING`: a held Spec attributes a claim to an accepted ADR without a receipt for that record in the same paragraph.
 - `SC-TRANSCRIPT-UNDECLARED`: a held TechSpec has no Surface Transcripts declaration.

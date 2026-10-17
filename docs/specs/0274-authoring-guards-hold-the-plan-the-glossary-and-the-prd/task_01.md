@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -123,3 +123,96 @@ verifiable on its own through the detector tests on temporary repositories.
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Core Feature 5; Success Metric 1; Success Metric 5
 - `_techspec.md` → API Contract 1; API Contract 5; Invariants 1, 2 and 6; Current behavior; Testing Approach; Build Order 1
 - ADR-0280; ADR-0256; ADR-0182; ADR-0117
+
+
+## Result
+
+Implemented the Task 01 slice for Daemon Verification. Status and the authored
+Verification remain Daemon-owned; no commit, push or Pull Request was made.
+The starting worktree contained only the Daemon's `pending` to `in_progress`
+change in this Task file, which was preserved.
+
+### Implementation
+
+- Added `detectSurfaceRecord` and `CodeSurfaceRecordUntasked`, called beside
+  `detectSkillsDeclaration` in the full sweep and registered at `StageTasks`.
+  Each eligible guide Task must itself declare the record under `interface:`
+  or `creates:` and name `-record-skill-coverage` in a requirement. Findings
+  are gaps with no history horizon, located at the guide's Context line.
+- Completed Tasks, the manifest QA Task, Tasks of type `qa`, and Tasks without
+  a changed Markdown guide do not enter the guide check. Declared CLI source
+  files do not imply help changes. Missing/non-regular records and absent
+  Task Graphs produce explicit skips. Authorization Limits lines naming the
+  record produce separate gaps at those lines. Both fixes name the
+  write-tasks rule "Skills Tasks for changed Behavior Surfaces".
+- Added the four required parallel tests using the existing disposable Spec
+  fixtures. They cover the three-guide Spec 0268 shape, record without step,
+  step without record, another Task owning both, invalid record declaration
+  kinds, a step only in Verification, fixed declarations, completed and QA
+  Tasks, absent/non-regular records, and stage/strict behavior.
+- Added the code to the corpus registry, golden and archive-layout
+  characterization at the measured active count of zero. Appended the exact
+  required update sentence to both pins; all 43 earlier counts stay zero.
+- Documented the code in the spec guide and Roundfix reference, and the
+  per-guide-Task record requirement and authorization Limits rule in
+  write-tasks. The skill generators raised Roundfix from `0.1.82` to
+  `0.1.83` and write-tasks from `0.0.15` to `0.0.16`, recorded both versions,
+  synchronized the mirrors, and re-recorded the spec guide's fingerprint.
+  No mirror, version record or Behavior Surface Record was hand-edited.
+
+### Focused checks and acceptance evidence
+
+1. **Pending guide Task without its record or step yields one Context gap;
+   strict promotion fails:**
+   `rtk proxy go test ./internal/speccheck -run '^TestSurfaceRecord' -count=1 -v`
+   exited 0, with all four required top-level tests passing. The gap test
+   asserts the exact API Contract summary, one location at the guide Context
+   line, gap severity and the fix's rule name for each declaration kind.
+   The stage/strict test asserts promotion to error, the mechanism used by
+   `--strict`. Another Task's record and step do not satisfy the guide Task.
+2. **Limits naming the record yields a gap at that line:**
+   `TestSurfaceRecordGapNamesLimitsThatForbidTheRecord` passes in that focused
+   run, asserting line 9 and proving mentions before and after Limits do not
+   create findings. The Spec 0268 case asserts two gaps total: the guide Task
+   and its authorization Limits. Before wiring the detector,
+   `rtk proxy go test ./internal/speccheck -run '^TestSurfaceRecordGapNamesLimitsThatForbidTheRecord$' -count=1`
+   exited 1 because it found zero gaps instead of one, reproducing the defect.
+3. **Fixed, completed and QA Tasks yield none:**
+   `TestSurfaceRecordAcceptsAGuideTaskThatRecordsItself` passes in the focused
+   run for both allowed record declaration kinds, multiple guides, completed
+   and QA Tasks, instruction-only/non-Markdown references and a declared CLI
+   source without a guide. Initial QA fixtures failed graph validation because
+   manifest `qa:` and type `qa` must agree; the fixture was corrected to that
+   existing contract, without changing production graph validation.
+4. **Missing record and early stages skip:**
+   The acceptance test asserts the record-path skip for missing and directory
+   records; the stage/strict test asserts PRD and TechSpec stage skips, full
+   and Tasks-stage findings, and the `_tasks.md` skip for an absent graph.
+5. **Every earlier corpus count is unchanged:**
+   `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$' -count=1 -v`
+   first printed the measured counts, with the new code at zero and every
+   existing code at zero; its mismatch was the intentionally unpinned new key.
+   After updating the two pins, the same focused command exited 0. A final
+   read-only comparison against `HEAD` confirmed the 43 earlier counts are
+   identical and both update strings carry exactly the requested sentence.
+
+Required source regeneration also exited 0:
+
+- `rtk proxy make skills-sync`
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+- `rtk proxy make baseline-digests` — repository-required regeneration after
+  owned skill edits; reported `changed:false`, with derived artifacts already
+  matching their sources.
+
+Final inspection found both changed skill mirrors byte-identical to their
+canonical directories, every `### QA settlement` section unchanged, and only
+the 17 paths declared by this Task changed or new. `rtk proxy git diff --check`
+exited 0. No other Task file or Task Graph manifest changed. The full declared
+Verification and repository Verification were not run; the Daemon runs those
+after this handoff. No follow-up outside Task 01's slice was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T091437Z_5c530d78d16d2f6a`
+- Source commit: `718944ac9bf45b4d763a15d34030020754d43838`

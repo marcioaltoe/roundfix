@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.15
+  version: 0.0.16
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.15
+version: 0.0.16
 ---
 
 # Write Tasks
@@ -138,6 +138,15 @@ section and include a non-QA Task declaring the map under `interface:` or
 the surface. `SC-SKILLS-MALFORMED` reports an entry of another shape, an
 unknown surface or a blank reason. Both rules begin at the commit that
 added the map; repositories without one skip them.
+
+A non-QA Task declaring a Markdown page under `docs/user-guide/` under
+`interface:`, `creates:` or `deletes:` must also declare
+`docs/references/behavior-surfaces.json` under `interface:` or `creates:`
+and name the `-record-skill-coverage` step in a requirement. Another Task
+cannot cover it: the guide Task's own settlement checks its fingerprint.
+The Spec's `_authorization.md` Limits must never forbid that record.
+`SC-SURFACE-RECORD-UNTASKED` reports either gap from the Tasks stage, with no
+horizon, in repositories that have the record.
 
 ## Decomposition rules
 
