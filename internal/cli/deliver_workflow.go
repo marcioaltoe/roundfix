@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -1586,9 +1587,9 @@ func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, wor
 	if err != nil {
 		return "", fmt.Errorf("build item binary: %w", err)
 	}
-	executable, err := filepath.Abs(filepath.Join(workDir, filepath.FromSlash(declaration.Path)))
+	executable, err := copyDeliveryItemBinary(filepath.Join(workDir, filepath.FromSlash(declaration.Path)), filepath.Join(artifactDir, "delivery", specSlug, "item-binary"))
 	if err != nil {
-		return "", fmt.Errorf("resolve item binary: %w", err)
+		return "", fmt.Errorf("copy item binary: %w", err)
 	}
 	probe, err := workflow.runRoundfix(ctx, executable, workDir, "migrate", "--check")
 	if err != nil {
@@ -1609,6 +1610,47 @@ func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, wor
 		return "", fmt.Errorf("write item binary fallback: %w", err)
 	}
 	return os.Executable()
+}
+
+// Publish a new inode even for identical builds: an earlier step may still map
+// the previous copy at this hash's path.
+func copyDeliveryItemBinary(source, root string) (destination string, resultErr error) {
+	info, err := os.Lstat(source)
+	if err != nil {
+		return "", err
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("%q is not a regular file", source)
+	}
+	content, err := os.ReadFile(source)
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256(content)
+	directory := filepath.Join(root, fmt.Sprintf("%x", digest)[:16])
+	if err := os.MkdirAll(directory, 0755); err != nil {
+		return "", err
+	}
+	temporary, err := os.CreateTemp(directory, ".item-binary-*")
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if err := os.Remove(temporary.Name()); err != nil && !errors.Is(err, os.ErrNotExist) {
+			resultErr = errors.Join(resultErr, err)
+		}
+	}()
+	_, writeErr := temporary.Write(content)
+	modeErr := temporary.Chmod(0755)
+	closeErr := temporary.Close()
+	if err := errors.Join(writeErr, modeErr, closeErr); err != nil {
+		return "", err
+	}
+	destination = filepath.Join(directory, filepath.Base(source))
+	if err := os.Rename(temporary.Name(), destination); err != nil {
+		return "", err
+	}
+	return destination, nil
 }
 
 func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, executable, workDir string, args ...string) (roundfixCommandResult, error) {

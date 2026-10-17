@@ -24,7 +24,7 @@ import (
 var archiveUsage = `Usage:
   roundfix archive <slug>
   roundfix archive <slug> --qa-override --approval <source> --reason <text>
-  roundfix archive <slug> --plan
+  roundfix archive <slug> --plan [--offline]
   roundfix archive <slug> --pull-request <number>
 
 Archives a Spec after verifying either every Task is completed and the newest
@@ -43,6 +43,7 @@ the observed QA outcome and archived HEAD. It is refused when QA already
 qualifies for normal archive.
 
 Options:
+  --offline      With --plan, skip Archive Advice and contact no judge
   --qa-override  Archive despite failed, missing, or unreadable QA evidence
   --approval     Source of the maintainer authority for the override
   --reason       Reason the unmet QA prerequisite is being waived
@@ -60,6 +61,7 @@ type archiveCommandRequest struct {
 	approval    string
 	reason      string
 	plan        bool
+	offline     bool
 	promote     []string
 	pullRequest string
 }
@@ -361,6 +363,7 @@ func parseArchiveCommand(args []string) (archiveCommandRequest, error) {
 	flags.SetOutput(io.Discard)
 	flags.BoolVar(&req.qaOverride, "qa-override", false, "Archive with a QA override")
 	flags.BoolVar(&req.plan, "plan", false, "Plan the archive without changing the repository")
+	flags.BoolVar(&req.offline, "offline", false, "With --plan, skip Archive Advice and contact no judge")
 	flags.StringVar(&req.approval, "approval", "", "Override approval source")
 	flags.StringVar(&req.reason, "reason", "", "Override reason")
 	flags.StringVar(&req.pullRequest, "pull-request", "", "Store the delivery pull request number in the Archive Record")
@@ -370,6 +373,9 @@ func parseArchiveCommand(args []string) (archiveCommandRequest, error) {
 	}
 	if remaining := flags.Args(); len(remaining) > 0 {
 		return req, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
+	}
+	if req.offline && !req.plan {
+		return req, validationError{message: "--offline requires --plan"}
 	}
 	req.approval = strings.TrimSpace(req.approval)
 	req.reason = strings.TrimSpace(req.reason)
@@ -459,26 +465,29 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 			candidates = append(candidates, name)
 		}
 	}
-	q, err := judge.Load()
-	if err != nil {
-		printPreflightFailure("archive", err, stderr)
-		return exitPreflight
-	}
-	keys := map[string]string{}
-	allowed := map[string]bool{}
-	for _, key := range q.KeyVariables() {
-		allowed[key] = true
-	}
-	for _, entry := range environment.environ {
-		name, value, _ := strings.Cut(entry, "=")
-		if allowed[name] {
-			keys[name] = value
+	var report judge.ArchiveAdviceReport
+	if !req.offline {
+		q, err := judge.Load()
+		if err != nil {
+			printPreflightFailure("archive", err, stderr)
+			return exitPreflight
 		}
-	}
-	report, err := judge.AdviseArchive(ctx, q.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.ArchiveAdviceRequest{RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Files: candidates, Keys: keys, HomeDir: loaded.HomeDir, Transport: environment.dependencies.judgeTransport, Now: environment.dependencies.judgeNow})
-	if err != nil {
-		printPreflightFailure("archive", err, stderr)
-		return exitPreflight
+		keys := map[string]string{}
+		allowed := map[string]bool{}
+		for _, key := range q.KeyVariables() {
+			allowed[key] = true
+		}
+		for _, entry := range environment.environ {
+			name, value, _ := strings.Cut(entry, "=")
+			if allowed[name] {
+				keys[name] = value
+			}
+		}
+		report, err = judge.AdviseArchive(ctx, q.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.ArchiveAdviceRequest{RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Files: candidates, Keys: keys, HomeDir: loaded.HomeDir, Transport: environment.dependencies.judgeTransport, Now: environment.dependencies.judgeNow})
+		if err != nil {
+			printPreflightFailure("archive", err, stderr)
+			return exitPreflight
+		}
 	}
 	relRecord := filepath.ToSlash(filepath.Join(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug+".md"))
 	relRecord, _ = filepathRelSlash(loaded.GitRoot, relRecord)
@@ -518,6 +527,17 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 	fmt.Fprintf(stdout, "archive plan for %s: removes %d file(s) (%d bytes) and writes %s\n", req.slug, len(files), totalBytes, relRecord)
 	fmt.Fprintf(stdout, "core %d file(s): %s\n", len(core), strings.Join(core, ", "))
 	fmt.Fprintf(stdout, "evidence %d file(s) (%d bytes) under qa/evidence/\n", len(evidence), evidenceBytes)
+	if req.offline {
+		fmt.Fprintln(stdout, "judge: skipped (offline)")
+		for _, name := range candidates {
+			stat, err := os.Stat(filepath.Join(specDir, filepath.FromSlash(name)))
+			if err != nil {
+				printPreflightFailure("archive", err, stderr)
+				return exitPreflight
+			}
+			fmt.Fprintf(stdout, "candidate %s %d bytes: no advice (offline)\n", name, stat.Size())
+		}
+	}
 	for _, advice := range report.Advice {
 		stat, _ := os.Stat(filepath.Join(specDir, filepath.FromSlash(advice.File)))
 		size := int64(0)

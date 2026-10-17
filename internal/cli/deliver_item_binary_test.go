@@ -21,10 +21,10 @@ import (
 const deliveryItemFixtureSource = `package main
 import ("encoding/json"; "fmt"; "io"; "os"; "strconv"; "syscall")
 func main() {
- if len(os.Args) == 2 && os.Args[1] == "hold" { if _, err := io.Copy(io.Discard, os.Stdin); err != nil { panic(err) }; return }
+ if len(os.Args) == 2 && os.Args[1] == "hold" { fmt.Fprintln(os.Stdout, "ready"); if _, err := io.Copy(io.Discard, os.Stdin); err != nil { panic(err) }; return }
  dir, err := os.Getwd(); if err != nil { panic(err) }
  file, err := os.OpenFile(os.Getenv("DELIVERY_ITEM_RECORD"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); if err != nil { panic(err) }
- err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home string; Pid, Ppid, Pgid int }{os.Args[1:], dir, os.Getenv("HOME"), os.Getpid(), os.Getppid(), syscall.Getpgrp()}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
+ err = json.NewEncoder(file).Encode(struct { Args []string; Dir, Home, Executable string; Pid, Ppid, Pgid int }{os.Args[1:], dir, os.Getenv("HOME"), os.Args[0], os.Getpid(), os.Getppid(), syscall.Getpgrp()}); if err != nil { panic(err) }; if err = file.Close(); err != nil { panic(err) }
  if len(os.Args) == 3 && os.Args[1] == "migrate" && os.Args[2] == "--check" {
   fmt.Fprint(os.Stderr, os.Getenv("DELIVERY_ITEM_STDERR")); fmt.Fprint(os.Stdout, os.Getenv("DELIVERY_ITEM_STDOUT"))
   code, err := strconv.Atoi(os.Getenv("DELIVERY_ITEM_PROBE_EXIT")); if err != nil { panic(err) }; os.Exit(code)
@@ -33,9 +33,9 @@ func main() {
 }`
 
 type deliveryItemStart struct {
-	Args            []string
-	Dir, Home       string
-	Pid, Ppid, Pgid int
+	Args                  []string
+	Dir, Home, Executable string
+	Pid, Ppid, Pgid       int
 }
 type deliveryItemFixture struct {
 	workflow                 *commandDeliveryWorkflow
@@ -108,8 +108,9 @@ func (f *deliveryItemFixture) starts(t *testing.T) []deliveryItemStart {
 	}
 	return starts
 }
-func (f *deliveryItemFixture) selectionLine(step string) string {
-	return fmt.Sprintf("roundfix: Delivery Queue item widget: %s runs the item binary %s\n", step, filepath.Join(f.repo, "bin/roundfix"))
+func (f *deliveryItemFixture) selectionLine(t *testing.T, step string) string {
+	t.Helper()
+	return fmt.Sprintf("roundfix: Delivery Queue item widget: %s runs the item binary %s\n", step, f.copyPath(t))
 }
 func (f *deliveryItemFixture) assertStarts(t *testing.T, args ...[]string) {
 	t.Helper()
@@ -133,10 +134,10 @@ func TestDeliveryStepRunsTheItemBinary(t *testing.T) {
 	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	executable, err := f.workflow.stepExecutable(commandContextForTest(t, t.Context()), f.repo, "widget", "implement")
-	if err != nil || executable != filepath.Join(f.repo, "bin/roundfix") {
+	if err != nil || executable != f.copyPath(t) {
 		t.Fatalf("executable=%q err=%v", executable, err)
 	}
-	if f.log.String() != f.selectionLine("implement") {
+	if f.log.String() != f.selectionLine(t, "implement") {
 		t.Fatalf("log=%q", f.log.String())
 	}
 	f.assertStarts(t, []string{"migrate", "--check"})
@@ -172,7 +173,7 @@ func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
 				t.Fatalf("step error=%v", err)
 			}
 			f.assertStarts(t, []string{"migrate", "--check"}, args)
-			if f.log.String() != f.selectionLine(step) {
+			if f.log.String() != f.selectionLine(t, step) {
 				t.Fatalf("log=%q", f.log.String())
 			}
 		})
@@ -281,7 +282,7 @@ func TestDeliveryItemBinaryThatCannotStartReturnsAParkError(t *testing.T) {
 	f := newDeliveryItemFixture(t)
 	f.workflow.loaded.Config.Delivery.ItemBinary.Build = "mkdir -p bin"
 	_, err := f.workflow.Archive(commandContextForTest(t, t.Context()), f.repo, "widget", f.head)
-	if err == nil || !strings.HasPrefix(err.Error(), fmt.Sprintf("run item binary %q: ", filepath.Join(f.repo, "bin/roundfix"))) {
+	if err == nil || !strings.HasPrefix(err.Error(), "copy item binary: ") {
 		t.Fatalf("error=%v", err)
 	}
 	f.assertStarts(t)

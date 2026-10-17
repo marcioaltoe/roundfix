@@ -139,6 +139,14 @@ recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
 Archive Advice before it happens. Use repeatable `--promote <path>` to copy a
 confirmed candidate to `docs/references/` in the archive change.
 
+Use `roundfix archive <slug> --plan --offline` when no judge may be contacted,
+including every QA Task. The offline plan loads no judge and reads no Judge
+Key Variable. After the evidence line it prints `judge: skipped (offline)`,
+then each candidate in file order as
+`candidate <file> <bytes> bytes: no advice (offline)`.
+`--offline` without `--plan` exits `2` with `--offline requires --plan`.
+The plain `--plan` form keeps Archive Advice.
+
 ### Archive Relink
 
 When the repository root is inside a Git work tree, the archive performs an

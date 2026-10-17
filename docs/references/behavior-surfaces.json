@@ -1,7 +1,7 @@
 {
   "schemaVersion": "roundfix/behavior-surfaces/v1",
   "surfaces": {
-    "command archive": "sha256:444c5d8d7d8b9cb3227ea0a462e4402d4bf9beab346bd5df55890e945bcdbf8e",
+    "command archive": "sha256:42da2d138931eb109fc99512f659e25db3bc36fd8a3c0bfc48eeb701ac31cbb6",
     "command attach": "sha256:14d983efd7310a0d43d8bf05b595fa3230ccdaf817f10719deb443b82950098c",
     "command baseline apply": "sha256:d981a824a83163f519d2cb23248f54ab031b5ef585f112b92860bf30e6e70886",
     "command baseline assets sync": "sha256:8ecacd9e28d8fc9babeb232d2682ed7408776acd1dffce421b82a97f30d616aa",
@@ -61,11 +61,11 @@
     "config keys": "sha256:39de6a92dc64e38eb7c464cc93d5fc73c0dd0b564b52badfb17d5beca3e587f6",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
     "guide docs/user-guide/commands.md": "sha256:546d0c320ebcc3e8c4ba2851bd1568625761dad2d87d5034c02187d3075288f4",
-    "guide docs/user-guide/commands/archive.md": "sha256:1c30d0acbca6783c3712750dc1e876c4387cb6b0566367c719037524c4828def",
+    "guide docs/user-guide/commands/archive.md": "sha256:5544ca6fcfa465f34c15d151b23783620cc15ac68d18dff25aca94a00b89704e",
     "guide docs/user-guide/commands/attach.md": "sha256:9439b3d9af405b2891440462b7947c94a41d3e34e31569a0e0d1ff2dcd2ea1a2",
     "guide docs/user-guide/commands/baseline.md": "sha256:06f4b7c405771918d8fc8f4fec24faa0b1898f91093821f5890f343d1561aa18",
     "guide docs/user-guide/commands/cancel.md": "sha256:ef1a4f08a8e41e31f9d04f74d18c880a33b30e4bd6076d431082252f5483650a",
-    "guide docs/user-guide/commands/deliver.md": "sha256:46c393975bcb009e6a660e6d7f06e4b79d43abbc52d816cbff8d96f9873dcb67",
+    "guide docs/user-guide/commands/deliver.md": "sha256:83aeb8e8516f1edfd8f0f351686cf32b271da64d71939604457a92d5a13fc245",
     "guide docs/user-guide/commands/detached-runs.md": "sha256:6d9cebf3be1297220cace3da26e478f843b8a3ac95a99d5a773cfce8f5c5bae4",
     "guide docs/user-guide/commands/doctor.md": "sha256:d6451629e5df7f2e33e32594ee2704ec198827b55c2d7b1394a9d52207ccde32",
     "guide docs/user-guide/commands/events.md": "sha256:cf3c8060b695c2aadc498e171e7350da36f57a1f5c2997424a4f9c5112eb0959",

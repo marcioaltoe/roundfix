@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -140,3 +140,102 @@ and through delivery tests that rebuild in place while a copy runs.
 - `_prd.md` → Goals; User Story 6; User Story 7; Core Feature 7; Core Feature 8; Core Feature 9; Success Metric 5; Success Metric 6
 - `_techspec.md` → API Contract 8; API Contract 9; API Contract 10; Surface Transcript 1; Invariants 7 and 8; Current behavior; Testing Approach; Build Order 4
 - ADR-0282; ADR-0281; ADR-0225; ADR-0273
+
+## Result
+
+Implemented the Task 04 slice for Daemon Verification. Task status and the
+Subtasks/Acceptance Criteria checkboxes remain Daemon-owned. No declared
+Verification command, selected repository Verification, commit, push or Pull
+Request operation was run.
+
+### Acceptance evidence
+
+- Offline archive plan: `runArchivePlan` bypasses `judge.Load`, Judge Key
+  Variable inspection and `judge.AdviseArchive` when `--offline` is set. It
+  prints the skip line after evidence and every candidate in sorted plan file
+  order. `TestArchivePlanOfflineTranscript` passed with the complete ordered
+  Surface Transcript 1, empty stderr, exit 0 and unchanged Spec files.
+  `TestArchivePlanOfflineSkipsTheJudge` passed with every Judge Key Variable
+  populated in the isolated command environment and zero transport calls.
+- Flag validation and the existing plan: `TestArchiveOfflineRequiresPlan`
+  passed with the exact `--offline requires --plan` preflight transcript and
+  exit 2. `TestArchiveHelpNamesThePullRequestOption` passed with the new usage
+  and option. `TestArchivePlanWithoutAKeyPrintsNoAdvice` passed for the plain
+  `--plan` form. Its judge loading, key handling and advice formatting remain
+  inside the original online path.
+- QA instruction: the canonical qa-gate Outcome section now runs
+  `roundfix archive <slug> --plan --offline` and states that a QA Task never
+  contacts the judge. Searched guides, canonical/distributed skill copies and
+  `internal/` for archive-plan instructions. The qa-gate pair was the only
+  QA-specific instruction; the generic archive operator instructions still
+  describe optional advice and now document the offline form. No Go source
+  renders that QA instruction. Direct comparisons against HEAD and
+  `TestSettlementGuidanceIsOneTable` proved the protected settlement sections
+  unchanged.
+- Delivery copy: successful builds are read only as regular files, hashed,
+  written through a sibling temporary file with mode 0755, closed and renamed
+  into `delivery/<slug>/item-binary/<first 16 SHA-256 hex>/<base name>` under
+  the artifact directory. Only the published copy is probed and selected;
+  its absolute path appears in the selection line. Copy failures return
+  `copy item binary: <error>` before any probe. Existing owner fallback is
+  preserved.
+- Running-copy isolation: `TestDeliveryStepRunsACopyOfTheItemBinary` passed
+  for the exact hash path, matching bytes, mode, selection transcript and
+  recorded executable paths of both probe and step.
+  `TestDeliveryRebuildInPlaceNeverRewritesARunningCopy` passed while a pipe
+  held the first executable copy running: an in-place build preserved the
+  build-output inode, left the held copy's bytes and identity unchanged,
+  probed a different artifact copy and left no temporary files. A repeated
+  identical build also replaced its published copy with a new inode.
+  `TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput` passed for a
+  non-regular output and blocked publication; neither ran a probe, and failed
+  publication cleaned its temporary file. Existing argument, fallback,
+  build-error, missing-output, rebuild, probe-report and signal tests passed.
+
+### Focused checks and generators
+
+- Before implementation,
+  `go test ./internal/cli -run '^(TestArchivePlanOfflineTranscript|TestArchiveOfflineRequiresPlan|TestDeliveryStepRunsACopyOfTheItemBinary)$' -count=1`
+  failed as expected: undefined `--offline` and selection of the build output.
+- After implementation,
+  `go test ./internal/cli -run '^(TestArchivePlanOffline.*|TestArchiveOfflineRequiresPlan|TestDelivery(Step.*|StepsStart.*|RebuildInPlace.*|ItemBinary.*|ProbeReport.*)|TestArchiveHelpNamesThePullRequestOption|TestArchivePlanWithoutAKeyPrintsNoAdvice)$' -count=1 -v`
+  passed, including all five required new tests and the intentional existing
+  contract changes.
+- `go test ./internal/cli -run '^TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput$' -count=1 -v`
+  passed both copy-error cases.
+- `make skills-sync` succeeded. The owning record command
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  succeeded and raised Roundfix to 0.1.89 and qa-gate to 0.0.16 in both copies.
+- The owning Behavior Surface Record command
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  succeeded, updating only the archive command and archive/deliver guide
+  fingerprints. No mirror or record was hand-edited.
+- The repository-required `make baseline-digests` succeeded with
+  `changed: false`; no derived Baseline artifact changed.
+- `go test ./skills -run '^(TestSettlementGuidanceIsOneTable|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical)$' -count=1`
+  passed. Direct file comparisons confirmed all four changed canonical/mirror
+  pairs match, and the changed skills' QA settlement sections equal HEAD.
+- `GOOS=linux go build ./internal/cli` passed for the other platform named
+  by the updated delivery signal test's build constraint.
+- `git diff --check` passed.
+
+### Additional affected test consumers
+
+Three existing test files also consume the intentionally changed executable
+selection or its shared selection-line helper:
+`internal/cli/deliver_item_binary_rebuild_test.go`,
+`internal/cli/deliver_item_probe_report_test.go`, and
+`internal/cli/deliver_item_binary_signal_unix_test.go`.
+Their assertions/call sites now expect the copy; their tests were neither
+renamed nor removed. Build-output inode assertions still inspect the build
+output. No other Task or Task Graph file was edited.
+
+Daemon-owned Verification and settlement remain pending.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/deliver_item_binary_rebuild_test.go`
+- `internal/cli/deliver_item_binary_signal_unix_test.go`
+- `internal/cli/deliver_item_probe_report_test.go`
