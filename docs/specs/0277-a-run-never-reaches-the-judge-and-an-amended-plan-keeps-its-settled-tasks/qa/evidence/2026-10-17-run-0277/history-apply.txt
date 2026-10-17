@@ -1,0 +1,7 @@
+command: ./bin/roundfix history sanitize --apply --batch 1
+working directory: /private/tmp/roundfix-0277-qa-w2o8m02x/history-fixture
+exit: 0
+stdout:
+history sanitize applied 1 unit(s): wrote 0 Archive Record(s), removed 1 file(s) (57 bytes) kept in Git at 6eca83452311 and tag history-full; rewrote 0 citation(s) in 0 file(s); promoted 0 file(s) to docs/references/; 0 unit(s) remain
+
+stderr:

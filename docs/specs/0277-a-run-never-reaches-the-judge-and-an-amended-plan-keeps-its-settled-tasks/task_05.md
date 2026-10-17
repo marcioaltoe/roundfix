@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

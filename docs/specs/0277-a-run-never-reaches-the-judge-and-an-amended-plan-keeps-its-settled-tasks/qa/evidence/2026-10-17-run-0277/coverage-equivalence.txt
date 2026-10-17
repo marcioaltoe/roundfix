@@ -1,0 +1,26 @@
+command: go test -count=1 -v -run ^TestCoverageEquivalence$ ./internal/spec
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks-196634dfde570327-b1c8f42e-46a508c0/run_20261017T210659Z_bf9b102645f6f0d3
+exit: 0
+stdout:
+=== RUN   TestCoverageEquivalence
+=== PAUSE TestCoverageEquivalence
+=== CONT  TestCoverageEquivalence
+    coverage_test.go:73: coverage addition: package "roundfix/internal/cli" now executes "TestArchivePlanInsideARunMatchesItsTranscript"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/cli" now executes "TestCarryForwardCarriesATaskOverAnAmendmentOutsideItsBindingText"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/cli" now executes "TestCarryForwardRefusesATaskWhoseBindingTextChanged"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/cli" now executes "TestHistorySanitizeAdviceSkipsInsideARun"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/cli" now executes "TestSpecJudgeSkipsInsideARun"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/daemon" now executes "TestEnginePassesRunIDToEveryVerificationCommand"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/judge" now executes "TestArchiveAdviceSendsNothingInsideARun"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/judge" now executes "TestJudgeSendsNothingInsideARun"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/spec" now executes "TestHistoryADRSuccessorResolvesEveryAcceptedForm"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/spec" now executes "TestHistoryADRSuccessorThatSupersedesInFrontMatterGetsNoLineage"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/spec" now executes "TestHistoryPlanRemovesTheFluxusShapeWithoutALineageLine"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/spec" now executes "TestPlanningBindingReadsTheSectionsTheReferencesName"
+    coverage_test.go:73: coverage addition: package "roundfix/internal/spec" now executes "TestPlanningBindingReadsTheTaskNodeAndRow"
+--- PASS: TestCoverageEquivalence (0.51s)
+PASS
+suiteguard: guard cost: measured 2566 paths; fingerprint took 112.683875ms before and 58.894041ms after
+ok  	roundfix/internal/spec	0.924s
+
+stderr:

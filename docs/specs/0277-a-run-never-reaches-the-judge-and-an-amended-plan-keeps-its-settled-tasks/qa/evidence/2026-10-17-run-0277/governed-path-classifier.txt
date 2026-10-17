@@ -1,0 +1,21 @@
+command: go test -overlay /private/tmp/roundfix-0277-qa-in78ubyg/overlay.json -count=1 -v -run ^TestQAGovernedPaths$ ./internal/speccheck
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks-196634dfde570327-b1c8f42e-46a508c0/run_20261017T210659Z_bf9b102645f6f0d3
+exit: 0
+stdout:
+=== RUN   TestQAGovernedPaths
+=== PAUSE TestQAGovernedPaths
+=== CONT  TestQAGovernedPaths
+    qa_governed_test.go:3: GOVERNED:.agents/skills/roundfix/SKILL.md
+    qa_governed_test.go:3: GOVERNED:.agents/skills/roundfix/references/archive.md
+    qa_governed_test.go:3: GOVERNED:.agents/skills/roundfix/references/baseline.md
+    qa_governed_test.go:3: GOVERNED:.agents/skills/roundfix/references/reconcile.md
+    qa_governed_test.go:3: GOVERNED:.agents/skills/roundfix/references/spec.md
+    qa_governed_test.go:3: GOVERNED:docs/references/coverage-record.json
+    qa_governed_test.go:3: GOVERNED:internal/baseline/repository_test.go
+    qa_governed_test.go:3: GOVERNED:skills/roundfix/SKILL.md
+--- PASS: TestQAGovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 2592 paths; fingerprint took 395.516958ms before and 63.193625ms after
+ok  	roundfix/internal/speccheck	0.730s
+
+stderr:

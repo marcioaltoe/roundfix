@@ -1,0 +1,74 @@
+from pathlib import Path
+import subprocess, os, tempfile, json, shutil, re, sys, tarfile, io
+ROOT=Path.cwd(); SLUG='0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks'; SPEC=ROOT/'docs/specs'/SLUG; REPORT=SPEC/'qa/qa-report-2026-10-17.md'; EVID=SPEC/'qa/evidence/2026-10-17-run-0277'; TMP=Path(tempfile.mkdtemp(prefix='roundfix-0277-qa-',dir='/private/tmp')); HOME=TMP/'home'; HOME.mkdir()
+original=os.environ.copy()
+caches={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE','GOPATH']}
+ENV={k:original[k] for k in ['PATH','TMPDIR','SYSTEMROOT','SDKROOT','DEVELOPER_DIR'] if k in original};ENV.update(caches);ENV.update(HOME=str(HOME),GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',ROUNDFIX_RUN_ID='qa-run')
+BASE=subprocess.check_output(['git','merge-base','HEAD','main'],text=True).strip(); HEAD=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+def run(name,args,cwd=ROOT,extra=None,expected=0):
+ e=ENV.copy();e.update(extra or {}); p=subprocess.run(args,cwd=cwd,env=e,capture_output=True,text=True)
+ log='command: '+ ' '.join(args)+'\nworking directory: '+str(cwd)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr
+ (EVID/(name+'.txt')).write_text(log);print(name+': exit '+str(p.returncode),flush=True)
+ if p.returncode!=expected: print((p.stdout+p.stderr)[-6000:],flush=True);raise RuntimeError(name+' unexpected exit')
+ return p
+
+def row(n,status,evidence):
+ t=REPORT.read_text(); t=re.sub(r'^\| '+str(n)+r' \| [^|]* \|', '| '+str(n)+' | '+status+' |',t,flags=re.M)
+ start=t.index('### '+str(n)+'\n'); end=t.find('\n### ',start+1);end=len(t) if end<0 else end
+ part=t[start:end].replace('Evidence: pending.','Evidence: '+evidence);t=t[:start]+part+t[end:];REPORT.write_text(t)
+
+def test(name,packages,pattern=None,tags=None,count=1,cwd=ROOT,expected=0):
+ args=['go','test','-count='+str(count),'-v'];
+ if tags:args+=['-tags',tags]
+ if pattern:args+=['-run',pattern]
+ return run(name,args+packages,cwd,expected=expected)
+
+def archive(name,revision):
+ dest=TMP/name;dest.mkdir();raw=subprocess.check_output(['git','archive',revision],cwd=ROOT);tarfile.open(fileobj=io.BytesIO(raw)).extractall(dest,filter='data');return dest
+
+def write(root,path,text):
+ f=root/path;f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text)
+
+def git(root,*args):
+ p=subprocess.run(['git',*args],cwd=root,env=ENV,capture_output=True,text=True); assert p.returncode==0,p.stderr;return p.stdout.strip()
+
+def fixture(name):
+ r=TMP/name;r.mkdir();git(r,'init','-b','main');git(r,'config','user.name','QA');git(r,'config','user.email','qa@example.invalid');write(r,'.gitignore','bin/\n');(r/'bin').mkdir();(r/'bin/roundfix').symlink_to(ROOT/'bin/roundfix');return r
+
+def commit(r):git(r,'add','.');git(r,'commit','-m','docs: disposable QA fixture')
+
+def marker_tests():
+ test('marker-judge',['./internal/judge'],'^(TestJudgeSendsNothingInsideARun|TestArchiveAdviceSendsNothingInsideARun|TestWithoutKeyVariablesRemovesEveryJudgeVariable)$')
+ test('marker-agent',['./internal/agent'],'^TestNoAgentSessionReceivesAJudgeKeyVariable$')
+ test('marker-daemon',['./internal/daemon'],'^(TestVerificationReceivesNoJudgeKeyVariable|TestEnginePassesRunIDToEveryVerificationCommand)$')
+ test('marker-cli',['./internal/cli'],'^(TestSpecJudgeSkipsInsideARun|TestArchivePlanInsideARunMatchesItsTranscript|TestHistorySanitizeAdviceSkipsInsideARun)$')
+
+def transcript():
+ r=fixture('archive-fixture');slug='0300-qa-fixture';s=r/'docs/specs'/slug
+ write(s,'_prd.md','---\nspec: '+slug+'\nstatus: active\n---\n# Fixture\n')
+ write(s,'_tasks.md','---\nschema: spec-tasks/v1\nspec: '+slug+'\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n# Tasks\n\n| id | title | type | complexity | needs |\n| --- | --- | --- | --- | --- |\n| task_01 | Fixture | backend | low | — |\n')
+ write(s,'task_01.md','---\ntask: task_01\nspec: '+slug+'\nstatus: completed\ntype: backend\ncomplexity: low\n---\n# Task\n')
+ write(s,'references/knowledge.md','# Knowledge\nA reusable lesson.\n');commit(r)
+ before={str(p.relative_to(s)):p.read_bytes() for p in s.rglob('*') if p.is_file()};core=sorted(x for x in before if x!='references/knowledge.md')
+ want=f'archive plan for {slug}: removes {len(before)} file(s) ({sum(map(len,before.values()))} bytes) and writes docs/history/specs/{slug}.md\ncore {len(core)} file(s): '+', '.join(core)+f'\nevidence 0 file(s) (0 bytes) under qa/evidence/\ncandidate references/knowledge.md {len(before["references/knowledge.md"])} bytes: no advice (inside Run qa-run, named by ROUNDFIX_RUN_ID)\npromote with: roundfix archive {slug} --promote <path>\n'
+ for i in range(2):
+  p=run('archive-transcript-'+str(i+1),['./bin/roundfix','archive',slug,'--plan'],r);assert p.stdout==want and p.stderr=='',(p.stdout,want)
+ assert git(r,'status','--porcelain')=='';assert before=={str(p.relative_to(s)):p.read_bytes() for p in s.rglob('*') if p.is_file()};assert not list(HOME.glob('.roundfix/judge/*'))
+ print('Transcript exact match, repeated without mutation or Judge Log.',flush=True)
+
+if __name__=='__main__':
+ mode=sys.argv[1]
+ if mode=='marker':
+  transcript();marker_tests();row(2,'pass','[archive-transcript-1.txt](evidence/2026-10-17-run-0277/archive-transcript-1.txt), repeat -2, and marker-{judge,agent,daemon,cli}.txt. Exact transcript, empty stderr, exit 0 twice, unchanged committed fixture and no Judge Log; local counting-server/key-present and injected-transport tests passed, including engine probe/Task/repository Run IDs.');
+ elif mode=='tests':
+  test('skills',['./skills']);run('skills-sync',['make','skills-sync-check']);test('judge-all',['./internal/judge']);test('cli-combined',['./internal/cli'],'Judge|Archive|History|CarryForward|Retry|Reconcile|BaselineUpdate');test('spec-combined',['./internal/spec'],'History|CarryForward|PlanningBinding|CoverageEquivalence');test('docscontract',['./internal/docscontract'],tags='docscontract');test('worktree-all',['./internal/worktree']);run('package-vet',['go','vet','./internal/agent','./internal/baseline','./internal/cli','./internal/verifyselect']);
+ elif mode=='stress':
+  test('bootstrap-stress-50',['./internal/worktree'],'^TestBootstrapSerializesAcrossSiblings$',count=50)
+ elif mode=='outside':
+  p=run('go-buildconstraint',['go','help','buildconstraint']);assert '"unix", if GOOS is a Unix or Unix-like system' in p.stdout;row(10,'pass','[go-buildconstraint.txt](evidence/2026-10-17-run-0277/go-buildconstraint.txt), exit 0. The local toolchain independently states: `"unix", if GOOS is a Unix or Unix-like system.` The adjacent list also identifies target operating system tags; this supports excluding Unix test files from Windows, not runtime validation of their behavior.')
+ elif mode=='windows':
+  run('windows-vet-head',['go','vet','-tags','repocontract docscontract','./...'],extra={'GOOS':'windows'});run('windows-build-head',['go','build','-buildvcs=false','./...'],extra={'GOOS':'windows'});test('windows-contract',['./internal/verifyselect'],'^TestEveryTestCompilesForWindows$',tags='repocontract');b=archive('windows-base',BASE);run('windows-vet-base',['go','vet','-tags','repocontract docscontract','./...'],b,{'GOOS':'windows'},1)
+  r=archive('windows-sabotage',HEAD);f=r/'internal/judge/qa_windows_sabotage_test.go';f.write_text('package judge\nimport "syscall"\nvar _ = syscall.Kill\n');p=test('windows-sabotage',['./internal/verifyselect'],'^TestEveryTestCompilesForWindows$',tags='repocontract',cwd=r,expected=1);assert 'qa_windows_sabotage_test.go' in p.stdout+p.stderr and 'undefined: syscall.Kill' in p.stdout+p.stderr
+  test('coverage-equivalence',['./internal/spec'],'^TestCoverageEquivalence$')
+  record=json.loads((ROOT/'docs/references/coverage-record.json').read_text());(EVID/'coverage-shape.txt').write_text(str(type(record))+'\n'+str(list(record) if isinstance(record,dict) else record[:1]))
+ print('mode '+mode+' complete; scratch '+str(TMP),flush=True)

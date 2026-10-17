@@ -1,0 +1,17 @@
+command: go test -count=1 -v -run ^(TestVerificationReceivesNoJudgeKeyVariable|TestEnginePassesRunIDToEveryVerificationCommand)$ ./internal/daemon
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks-196634dfde570327-b1c8f42e-46a508c0/run_20261017T210659Z_bf9b102645f6f0d3
+exit: 0
+stdout:
+=== RUN   TestVerificationReceivesNoJudgeKeyVariable
+=== PAUSE TestVerificationReceivesNoJudgeKeyVariable
+=== RUN   TestEnginePassesRunIDToEveryVerificationCommand
+=== PAUSE TestEnginePassesRunIDToEveryVerificationCommand
+=== CONT  TestVerificationReceivesNoJudgeKeyVariable
+=== CONT  TestEnginePassesRunIDToEveryVerificationCommand
+--- PASS: TestVerificationReceivesNoJudgeKeyVariable (0.02s)
+--- PASS: TestEnginePassesRunIDToEveryVerificationCommand (0.24s)
+PASS
+suiteguard: guard cost: measured 2559 paths; fingerprint took 90.400167ms before and 71.864708ms after
+ok  	roundfix/internal/daemon	0.729s
+
+stderr:

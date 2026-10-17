@@ -1,0 +1,7 @@
+command: ./bin/roundfix history sanitize
+working directory: /private/tmp/roundfix-0277-qa-w2o8m02x/history-fixture
+exit: 0
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr:

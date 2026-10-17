@@ -1,0 +1,99 @@
+--- before.go
++++ after.go
+@@ -475,6 +475,7 @@
+ 
+ 	start := make(chan struct{})
+ 	events := make(chan bootstrapSiblingEvent, siblings*2)
++	qaStarts := make(chan struct{}, siblings)
+ 	endedByTask := make(map[string]<-chan bootstrapSiblingEvent, siblings)
+ 	for sibling := range siblings {
+ 		taskID := fmt.Sprintf("task_%02d", sibling+1)
+@@ -496,7 +497,7 @@
+ 				roundCtx,
+ 				worktreeDir,
+ 				BootstrapSpec{Command: command, Timeout: testwait.Bound(t)},
+-				&bootstrapStartWriter{taskID: taskID, events: events},
++				&bootstrapStartWriter{taskID: taskID, events: events, qaStarts: qaStarts},
+ 			)
+ 			result := bootstrapSiblingEvent{taskID: taskID, err: err}
+ 			ended <- result
+@@ -504,6 +505,7 @@
+ 		}()
+ 	}
+ 	close(start)
++	testwait.Until[struct{}, struct{}](t, "first QA bootstrap start", qaStarts, nil)
+ 
+ 	seen := make(map[string]struct{}, siblings)
+ 	completed := 0
+@@ -520,7 +522,7 @@
+ 				t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, event.taskID)
+ 			}
+ 			seen[event.taskID] = struct{}{}
+-			releaseBootstrap(t, round, event.taskID, releasePath, bootstrapSiblingNames(seen), endedByTask[event.taskID])
++			releaseBootstrap(t, round, event.taskID, releasePath, bootstrapSiblingNames(seen), endedByTask[event.taskID], qaStarts, len(seen) == siblings)
+ 			continue
+ 		}
+ 		if event.err != nil {
+@@ -624,6 +626,7 @@
+ 	events chan<- bootstrapSiblingEvent
+ 	buffer bytes.Buffer
+ 	once   sync.Once
++	qaStarts chan<- struct{}
+ }
+ 
+ func (writer *bootstrapStartWriter) Write(p []byte) (int, error) {
+@@ -633,17 +636,34 @@
+ 	}
+ 	if strings.Contains(writer.buffer.String(), "bootstrap-started\n") {
+ 		writer.once.Do(func() {
+-			writer.events <- bootstrapSiblingEvent{taskID: writer.taskID, started: true}
++			if writer.qaStarts != nil { writer.qaStarts <- struct{}{} }; writer.events <- bootstrapSiblingEvent{taskID: writer.taskID, started: true}
+ 		})
+ 	}
+ 	return written, nil
+ }
+ 
+-func releaseBootstrap(t *testing.T, round int, taskID string, path string, startedSoFar []string, ended <-chan bootstrapSiblingEvent) {
++func releaseBootstrap(t *testing.T, round int, taskID string, path string, startedSoFar []string, ended <-chan bootstrapSiblingEvent, qaStarts <-chan struct{}, last bool) {
+ 	t.Helper()
+ 	waitingFor := fmt.Sprintf("round %d sibling %s bootstrap release; siblings started so far: %v", round, taskID, startedSoFar)
+ 	testwait.Poll(t, waitingFor, ended, func() (bool, string) {
+-		released, err := tryWriteBootstrapRelease(path)
++		released, err := tryWriteBootstrapRelease(path, func(release *os.File) {
++        testwait.Until[bootstrapSiblingEvent, struct{}](t, "released QA sibling end", ended, nil)
++        if last { return }
++        testwait.Until[struct{}, struct{}](t, "next QA sibling start", qaStarts, nil)
++        testwait.Poll[struct{}](t, "QA held-writer reader probe", nil, func() (bool, string) {
++            probe, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NONBLOCK, 0)
++            if probe != nil { _ = probe.Close() }
++            if true {
++                if errors.Is(err, syscall.ENXIO) { return false, "next sibling has not opened shared FIFO" }
++                if err != nil { t.Fatalf("reader probe: %v", err) }
++                t.Log("held writer: released sibling ended; another reader reached the shared FIFO")
++            } else {
++                if !errors.Is(err, syscall.ENXIO) { t.Fatalf("released sibling FIFO still has a reader: %v", err) }
++                t.Log("held writer: released sibling ended; its own FIFO has no next sibling reader")
++            }
++            return true, "reader state observed"
++        })
++    })
+ 		if err != nil {
+ 			t.Fatalf("round %d: release sibling %s bootstrap: %v; siblings started so far: %v", round, taskID, err, startedSoFar)
+ 		}
+@@ -654,7 +674,7 @@
+ 	})
+ }
+ 
+-func tryWriteBootstrapRelease(path string) (bool, error) {
++func tryWriteBootstrapRelease(path string, afterWrite ...func(*os.File)) (bool, error) {
+ 	// A non-blocking write-only open reports that no reader exists instead of
+ 	// waiting forever when the sibling exited before opening its read end.
+ 	release, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NONBLOCK, 0)
+@@ -668,6 +688,7 @@
+ 		_ = release.Close()
+ 		return false, fmt.Errorf("write bootstrap release FIFO: %w", err)
+ 	}
++	for _, after := range afterWrite { after(release) }
+ 	if err := release.Close(); err != nil {
+ 		return false, fmt.Errorf("close bootstrap release FIFO: %w", err)
+ 	}

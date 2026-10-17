@@ -1,0 +1,111 @@
+task_01 ad36e2733d63585d21570828577f2b3dc052337b
+authorization ancestor: bbd151aea916f18625d3a58b07e6b56181c59bf1
+  .agents/skills/roundfix/SKILL.md [Context]
+  .agents/skills/roundfix/references/archive.md [Context]
+  .agents/skills/roundfix/references/spec.md [Context]
+  CONTEXT.md [Context]
+  docs/references/behavior-surfaces.json [Context]
+  docs/specs/0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks/task_01.md [own Task]
+  docs/user-guide/commands/archive.md [Context]
+  docs/user-guide/commands/history.md [Context]
+  docs/user-guide/commands/spec.md [Context]
+  internal/agent/acpx_runner.go [Context]
+  internal/agent/judge_keys_test.go [Context]
+  internal/cli/archive.go [Context]
+  internal/cli/history.go [Context]
+  internal/cli/judge_run_marker_test.go [Context]
+  internal/cli/spec_judge.go [Context]
+  internal/daemon/daemon.go [Context]
+  internal/daemon/engine.go [Context]
+  internal/daemon/task_engine.go [Recorded path]
+  internal/daemon/verification_environment_test.go [Context]
+  internal/daemon/verification_probe.go [Context]
+  internal/judge/archive_advice.go [Context]
+  internal/judge/environment.go [Context]
+  internal/judge/environment_test.go [Context]
+  internal/judge/judge.go [Context]
+  internal/judge/run_marker_test.go [Context]
+  skills/roundfix/SKILL.md [Context]
+  skills/roundfix/references/archive.md [Context]
+  skills/roundfix/references/spec.md [Context]
+  skills/testdata/owned-skill-versions.json [Context]
+
+task_02 62d6af08670727a3aceba0018a94475032f05129
+authorization ancestor: bbd151aea916f18625d3a58b07e6b56181c59bf1
+  docs/references/coverage-record.json [Context]
+  docs/specs/0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks/task_02.md [own Task]
+  internal/agent/acpx_integration_test.go [Context]
+  internal/agent/acpx_integration_unix_test.go [Context]
+  internal/baseline/release_gate_test.go [Recorded path]
+  internal/baseline/repository_test.go [Context]
+  internal/baseline/repository_unix_test.go [Context]
+  internal/cli/deliver_item_binary_rebuild_test.go [Recorded path]
+  internal/cli/deliver_item_binary_test.go [Recorded path]
+  internal/cli/deliver_item_probe_report_test.go [Context]
+  internal/cli/deliver_item_probe_report_unix_test.go [Context]
+  internal/cli/detach_fixture_group_other_test.go [Context]
+  internal/cli/detach_test.go [Context]
+  internal/cli/detach_unix_test.go [Context]
+  internal/cli/implement_detach_teardown_test.go [Context]
+  internal/cli/implement_test.go [Context]
+  internal/cli/implement_unix_test.go [Context]
+  internal/suiteguardcontract/repository_gate_test.go [Recorded path]
+  internal/testfixture/real_time_budget_test.go [Recorded path]
+  internal/verifyselect/windows_test_compile_repocontract_test.go [Context]
+  internal/worktree/worktree_test.go [Context]
+
+task_03 96100d759770cd0472beaf8dc939118cc7725380
+authorization ancestor: bbd151aea916f18625d3a58b07e6b56181c59bf1
+  .agents/skills/roundfix/SKILL.md [Context]
+  .agents/skills/roundfix/references/reconcile.md [Context]
+  CONTEXT.md [Context]
+  docs/references/behavior-surfaces.json [Context]
+  docs/specs/0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks/task_03.md [own Task]
+  docs/user-guide/commands/reconcile.md [Context]
+  internal/cli/carryforward.go [Context]
+  internal/cli/carryforward_amendment_test.go [Context]
+  internal/cli/reconcile.go [Context]
+  internal/spec/carry_forward_binding.go [Context]
+  internal/spec/carry_forward_binding_test.go [Context]
+  internal/spec/spec.go [Context]
+  skills/roundfix/SKILL.md [Context]
+  skills/roundfix/references/reconcile.md [Context]
+  skills/testdata/owned-skill-versions.json [Context]
+
+task_04 2214833f0f6aac1ca59e2721d0a5a55db2b4d0e4
+authorization ancestor: bbd151aea916f18625d3a58b07e6b56181c59bf1
+  .agents/skills/roundfix/SKILL.md [Context]
+  .agents/skills/roundfix/references/archive.md [Context]
+  .agents/skills/roundfix/references/baseline.md [Context]
+  docs/references/behavior-surfaces.json [Context]
+  docs/specs/0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks/task_04.md [own Task]
+  docs/user-guide/commands/baseline.md [Context]
+  docs/user-guide/commands/history.md [Context]
+  internal/spec/history_entries.go [Context]
+  internal/spec/history_successor_forms_test.go [Context]
+  skills/roundfix/SKILL.md [Context]
+  skills/roundfix/references/archive.md [Context]
+  skills/roundfix/references/baseline.md [Context]
+  skills/testdata/owned-skill-versions.json [Context]
+
+GovernedPath classifier: 8 changed paths, each authorized before its Task commit:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/baseline.md
+.agents/skills/roundfix/references/reconcile.md
+.agents/skills/roundfix/references/spec.md
+docs/references/coverage-record.json
+internal/baseline/repository_test.go
+skills/roundfix/SKILL.md
+
+Delivery Base byte invariants passed: Makefile, go.mod, go.sum, .roundfixrc.yml, internal/worktree/worktree.go, internal/daemon/qa_format.go, internal/notify/notify.go, .github/workflows/*, internal/baseline/assets/modules/*
+
+task_01 Roundfix skill 0.1.89 -> 0.1.90, both version fields/mirror/version record agree; QA settlement unchanged
+
+task_03 Roundfix skill 0.1.90 -> 0.1.91, both version fields/mirror/version record agree; QA settlement unchanged
+
+task_04 Roundfix skill 0.1.91 -> 0.1.92, both version fields/mirror/version record agree; QA settlement unchanged
+
+Stale guide/skill wording search: zero matches. All required documentation strings present.
+Glossary terms present: Run Marker, Binding Text, Judge Key Variables, Task Carry-Forward
+No additional domain term introduced by these changes; JSON amendedInputs and ROUNDFIX_RUN_ID are representations of declared terms.

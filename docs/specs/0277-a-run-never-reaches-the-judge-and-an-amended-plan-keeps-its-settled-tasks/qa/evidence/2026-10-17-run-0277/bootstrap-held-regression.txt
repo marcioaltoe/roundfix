@@ -1,0 +1,13 @@
+command: go test -count=1 -v -run ^TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling$ ./internal/worktree
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks-196634dfde570327-b1c8f42e-46a508c0/run_20261017T210659Z_bf9b102645f6f0d3
+exit: 0
+stdout:
+=== RUN   TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling
+=== PAUSE TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling
+=== CONT  TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling
+--- PASS: TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling (0.03s)
+PASS
+suiteguard: guard cost: measured 2573 paths; fingerprint took 89.00225ms before and 69.04625ms after
+ok  	roundfix/internal/worktree	0.349s
+
+stderr:

@@ -1,0 +1,18 @@
+import importlib.util,shutil,json
+sp=importlib.util.spec_from_file_location('qa','/private/tmp/roundfix-0277-qa.py');q=importlib.util.module_from_spec(sp);sp.loader.exec_module(q)
+r=q.fixture('history-fixture')
+for path in ['docs/agents/setup-context.json','docs/agents/docs-layout.md']:
+ (r/path).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(q.ROOT/path,r/path)
+q.write(r,'docs/specs/0300-active/_prd.md','---\nspec: 0300-active\nstatus: active\n---\n# Active fixture\n')
+q.write(r,'docs/specs/0300-active/_tasks.md','---\nschema: spec-tasks/v1\nspec: 0300-active\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n# Tasks\n')
+q.write(r,'docs/specs/0300-active/task_01.md','---\ntask: task_01\nspec: 0300-active\nstatus: pending\ntype: backend\ncomplexity: low\n---\n# Task\n')
+old='docs/history/adr/0002-old.md';new='docs/adr/0064-new.md';original='---\nstatus: accepted\nsupersedes: 0002-old\n---\n# New\n\nKeep the successor bytes.\n'
+q.write(r,old,'---\nstatus: superseded\nsuperseded_by: 0064-new\n---\n# Old\n');q.write(r,new,original);q.commit(r);q.git(r,'tag','-a','history-full','-m','disposable QA history anchor')
+p=q.run('history-plan',['./bin/roundfix','history','sanitize','--format','json'],r);data=json.loads(p.stdout);assert 'refused' not in data or not data['refused'],p.stdout
+p=q.run('history-apply',['./bin/roundfix','history','sanitize','--apply','--batch','1'],r);assert 'refused' not in p.stdout and not p.stderr
+assert not (r/old).exists();assert (r/new).read_text()==original
+(q.EVID/'history-independent-state.txt').write_text('git diff --name-status:\n'+q.git(r,'diff','--name-status')+'\nretired ADR absent: yes\nsuccessor byte-identical: yes\nactive Spec present: yes\n')
+q.git(r,'add','-A');q.git(r,'commit','-m','docs: disposable QA sanitation result')
+p=q.run('history-reopen-plan',['./bin/roundfix','history','sanitize'],r);assert '0 unit(s) pending' in p.stdout and not p.stderr
+q.test('history-required-tests',['./internal/spec'],'^(TestHistoryADRSuccessorResolvesEveryAcceptedForm|TestHistoryADRSuccessorThatSupersedesInFrontMatterGetsNoLineage|TestHistoryPlanRemovesTheFluxusShapeWithoutALineageLine)$')
+q.row(6,'pass','[history-plan.txt](evidence/2026-10-17-run-0277/history-plan.txt), history-apply, history-independent-state and history-reopen-plan record the built public CLI: no refused units, retired ADR removed, no lineage citation, byte-identical accepted successor, and a fresh plan with zero pending units. Setup/docs-layout were copied from the audited head; fixture has an active Spec and annotated history-full tag. All three named history tests passed, covering all accepted reference spellings and refusal controls.')

@@ -1,0 +1,7 @@
+command: ./bin/roundfix history sanitize --format json
+working directory: /private/tmp/roundfix-0277-qa-w2o8m02x/history-fixture
+exit: 0
+stdout:
+{"status":"pending","units":[{"unit":"adr","action":"remove","paths":["docs/history/adr/0002-old.md"],"files":1,"bytes":57}],"refused":[],"citations":[],"staleCitations":[]}
+
+stderr:

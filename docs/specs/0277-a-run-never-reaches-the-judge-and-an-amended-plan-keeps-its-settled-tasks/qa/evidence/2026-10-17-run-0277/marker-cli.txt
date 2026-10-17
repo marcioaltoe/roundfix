@@ -1,0 +1,29 @@
+command: go test -count=1 -v -run ^(TestSpecJudgeSkipsInsideARun|TestArchivePlanInsideARunMatchesItsTranscript|TestHistorySanitizeAdviceSkipsInsideARun)$ ./internal/cli
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0277-a-run-never-reaches-the-judge-and-an-amended-plan-keeps-its-settled-tasks-196634dfde570327-b1c8f42e-46a508c0/run_20261017T210659Z_bf9b102645f6f0d3
+exit: 0
+stdout:
+=== RUN   TestSpecJudgeSkipsInsideARun
+=== PAUSE TestSpecJudgeSkipsInsideARun
+=== RUN   TestArchivePlanInsideARunMatchesItsTranscript
+=== PAUSE TestArchivePlanInsideARunMatchesItsTranscript
+=== RUN   TestHistorySanitizeAdviceSkipsInsideARun
+=== PAUSE TestHistorySanitizeAdviceSkipsInsideARun
+=== CONT  TestSpecJudgeSkipsInsideARun
+=== CONT  TestHistorySanitizeAdviceSkipsInsideARun
+=== CONT  TestArchivePlanInsideARunMatchesItsTranscript
+=== RUN   TestArchivePlanInsideARunMatchesItsTranscript/key=false
+=== PAUSE TestArchivePlanInsideARunMatchesItsTranscript/key=false
+=== RUN   TestArchivePlanInsideARunMatchesItsTranscript/key=true
+=== PAUSE TestArchivePlanInsideARunMatchesItsTranscript/key=true
+=== CONT  TestArchivePlanInsideARunMatchesItsTranscript/key=false
+=== CONT  TestArchivePlanInsideARunMatchesItsTranscript/key=true
+--- PASS: TestSpecJudgeSkipsInsideARun (0.02s)
+--- PASS: TestArchivePlanInsideARunMatchesItsTranscript (0.00s)
+    --- PASS: TestArchivePlanInsideARunMatchesItsTranscript/key=true (0.15s)
+    --- PASS: TestArchivePlanInsideARunMatchesItsTranscript/key=false (0.15s)
+--- PASS: TestHistorySanitizeAdviceSkipsInsideARun (0.21s)
+PASS
+suiteguard: guard cost: measured 2560 paths; fingerprint took 89.067125ms before and 70.028292ms after
+ok  	roundfix/internal/cli	0.795s
+
+stderr:
