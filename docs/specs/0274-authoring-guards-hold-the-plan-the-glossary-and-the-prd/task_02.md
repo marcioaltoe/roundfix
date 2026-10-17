@@ -28,11 +28,9 @@ mirror, version and Behavior Surface Record checks.
    `docs/user-guide/commands/implement.md`, keeping the rest of each sentence,
    and running `make skills-sync` for the mirror. No text inside any
    `### QA settlement` section may change.
-2. MUST add `internal/docscontract/qa_secret_refusal_test.go` under the
-   `docscontract` build tag with a `//verify:relevant` directive naming
-   `internal/secretscan/`, `internal/daemon/`, `docs/user-guide/`,
-   `docs/agents/`, `.agents/skills/`, `skills/` and `CONTEXT.md`, implementing
-   API Contract 2 of `_techspec.md` in
+2. MUST add, to the existing `internal/docscontract/command_documentation_test.go`
+   (`docscontract` build tag, `//verify:always`), and to no new file,
+   implementing API Contract 2 of `_techspec.md` in
    `TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt`, and
    `TestTheQASecretRefusalContractRejectsTheParenthesizedForm`, which runs the
    same comparison on the old sentence and requires a failure naming it. Both
@@ -70,7 +68,8 @@ None. This Task changes documentation and adds a contract test; no code consumes
 - instruction: `docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md`
 - instruction: `internal/daemon/task_engine.go`
 - instruction: `internal/secretscan/scan.go`
-- creates: `internal/docscontract/qa_secret_refusal_test.go`
+- interface: `internal/docscontract/command_documentation_test.go`
+- instruction: `internal/verifyselect/contracts_repository_test.go`
 - interface: `.agents/skills/roundfix/references/implement.md`
 - interface: `skills/roundfix/references/implement.md`
 - interface: `docs/user-guide/commands/implement.md`

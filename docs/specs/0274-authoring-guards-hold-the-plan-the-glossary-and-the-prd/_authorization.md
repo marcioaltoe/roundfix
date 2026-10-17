@@ -85,8 +85,8 @@ Tasks declare and every planning file. Seventeen of them are governed.
 
 The new detectors `internal/speccheck/surface_record.go` and
 `internal/speccheck/clarification_record.go` and their tests; the new
-contract tests `internal/docscontract/qa_secret_refusal_test.go` and
-`internal/docscontract/glossary_contract_test.go`;
+contract tests added to `internal/docscontract/command_documentation_test.go` and
+`internal/docscontract/user_guide_contract_test.go` (amended 2026-10-17; neither is governed);
 `internal/docscontract/corpus_test.go`; the mirrors
 `skills/roundfix/references/spec.md`,
 `skills/roundfix/references/implement.md` and

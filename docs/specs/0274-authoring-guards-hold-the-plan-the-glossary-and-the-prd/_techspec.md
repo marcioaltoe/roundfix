@@ -133,9 +133,11 @@ on the authoring branch at `9e723b82`:
   `detectClarificationRecord` and its horizon, called from `Check` in
   `constraints.go` and from the authoring-stage sweep in `coherence.go`, which
   registers the code at `StagePRD`.
-- `internal/docscontract/qa_secret_refusal_test.go` (new) parses the Daemon's
+- `internal/docscontract/command_documentation_test.go` (existing, `//verify:always`) gains the QA secret refusal
+  tests, which parse the Daemon's
   non-test sources with `go/parser` and imports `internal/secretscan`.
-- `internal/docscontract/glossary_contract_test.go` (new) reads `CONTEXT.md`
+- `internal/docscontract/user_guide_contract_test.go` (existing, `//verify:always`) gains the glossary contract
+  tests, which read `CONTEXT.md`
   and `docs/adr/`, and imports `internal/spec`, `internal/speccheck`,
   `internal/worktree` and `internal/agent` for the mapped constants. Its
   allowlist and mapping are two package-level tables at the top of the file.
@@ -282,8 +284,8 @@ tests are not a command surface.
 Deviations from the PRD: None.
 
 - Goal 1, User Story 1, Core Feature 1, Success Metric 1 → `detectSurfaceRecord` (API Contract 1)
-- Goal 2, User Story 2, Core Feature 2, Success Metric 2 → `qa_secret_refusal_test.go` (API Contract 2)
-- Goal 3, User Story 3, Core Feature 3, Success Metric 3 → `glossary_contract_test.go` (API Contract 4)
+- Goal 2, User Story 2, Core Feature 2, Success Metric 2 → the QA secret refusal tests in `command_documentation_test.go` (API Contract 2)
+- Goal 3, User Story 3, Core Feature 3, Success Metric 3 → the glossary contract tests in `user_guide_contract_test.go` (API Contract 4)
 - Goal 4, User Story 4, Core Feature 4, Success Metric 4 → `detectClarificationRecord` (API Contract 3), the `write-prd` and `write-techspec` skills
 - Core Feature 5 → the `spec` and `implement` user guides, the Roundfix `spec` and `implement` references, the `write-tasks` skill, `CONTEXT.md`
 - Success Metric 5 → corpus pins, API Contract 5, Invariant 6
@@ -333,9 +335,9 @@ repositories with the speccheck fixtures already used by
 - `internal/speccheck/clarification_record_test.go`: missing section, a
   section with neither shape, an invalid date, each valid shape, a PRD before
   the horizon, an uncommitted PRD, and the PRD stage with `--strict`.
-- `internal/docscontract/qa_secret_refusal_test.go`: the live documents, and a
+- the QA secret refusal tests in `internal/docscontract/command_documentation_test.go`: the live documents, and a
   helper case showing the parenthesized sentence fails.
-- `internal/docscontract/glossary_contract_test.go`: one top-level test per
+- the glossary contract tests in `internal/docscontract/user_guide_contract_test.go`: one top-level test per
   rule on the live `CONTEXT.md`, and one that plants a violation of each rule
   in a synthetic glossary and requires each rule to fail.
 - No existing test changes except the corpus pins, whose update text gains
@@ -385,3 +387,14 @@ artifacts. Rebase on main after 0272 merges and run the strict check again.
   symbol is added for the test.
 - The allowlist and mapping are tables in the glossary test, each allowlist
   entry with its reason. See ADR-0280.
+
+## Amendment of 2026-10-17
+
+The first Run settled task_01 and stopped at task_02 and task_03 on
+`TestRepositoryContractTestsDeclareTheirRelevance`
+(`internal/verifyselect/contracts_repository_test.go`): every `docscontract`
+file is an always Repository Contract Test, and the suite pins nine such
+files, so a new file with a `//verify:relevant` directive fails it twice over.
+The two contract test sets now live in existing `//verify:always` files,
+`command_documentation_test.go` and `user_guide_contract_test.go`, one per
+Task, so the two Tasks share no file and the pinned count holds.
