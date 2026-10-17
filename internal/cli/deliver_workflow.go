@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -1631,58 +1632,56 @@ func copyDeliveryItemBinary(source, root string) (destination string, resultErr 
 	if err := os.MkdirAll(directory, 0755); err != nil {
 		return "", err
 	}
-	temporary, err := os.CreateTemp(directory, ".item-binary-*")
-	if err != nil {
-		return "", err
+	// The copy is open for writing only while syscall.ForkLock is held, so no
+	// child forked by another goroutine can inherit the descriptor and make the
+	// first start of the copy fail with ETXTBSY (https://go.dev/issue/22315).
+	name, writeErr := writeDeliveryItemBinary(directory, content)
+	if name != "" {
+		defer func() {
+			if err := os.Remove(name); err != nil && !errors.Is(err, os.ErrNotExist) {
+				resultErr = errors.Join(resultErr, err)
+			}
+		}()
 	}
-	defer func() {
-		if err := os.Remove(temporary.Name()); err != nil && !errors.Is(err, os.ErrNotExist) {
-			resultErr = errors.Join(resultErr, err)
-		}
-	}()
-	_, writeErr := temporary.Write(content)
-	modeErr := temporary.Chmod(0755)
-	closeErr := temporary.Close()
-	if err := errors.Join(writeErr, modeErr, closeErr); err != nil {
-		return "", err
+	if writeErr != nil {
+		return "", writeErr
 	}
 	destination = filepath.Join(directory, filepath.Base(source))
-	if err := os.Rename(temporary.Name(), destination); err != nil {
+	if err := os.Rename(name, destination); err != nil {
 		return "", err
 	}
 	return destination, nil
 }
 
-// deliveryTextBusyRetries bounds the retries of a start that fails with
-// ETXTBSY: a child that another goroutine forked while the item binary copy was
-// still open for writing holds that descriptor until its own exec, so a start
-// in that window fails before the program runs (https://go.dev/issue/22315).
-const deliveryTextBusyRetries = 5
+// writeDeliveryItemBinary writes content to a new executable file in directory
+// and returns its name; the file is created, written and closed under
+// syscall.ForkLock.
+func writeDeliveryItemBinary(directory string, content []byte) (string, error) {
+	syscall.ForkLock.Lock()
+	defer syscall.ForkLock.Unlock()
+	temporary, err := os.CreateTemp(directory, ".item-binary-*")
+	if err != nil {
+		return "", err
+	}
+	_, writeErr := temporary.Write(content)
+	modeErr := temporary.Chmod(0755)
+	closeErr := temporary.Close()
+	return temporary.Name(), errors.Join(writeErr, modeErr, closeErr)
+}
 
 func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, executable, workDir string, args ...string) (roundfixCommandResult, error) {
-	for attempt := 0; ; attempt++ {
-		command := exec.CommandContext(ctx, executable, args...)
-		command.Dir = workDir
-		command.Env = deliveryCommandEnvironment(commandDependenciesForContext(ctx).environ(), workflow.loaded.HomeDir)
-		var stdout bytes.Buffer
-		var stderr bytes.Buffer
-		command.Stdout = &stdout
-		command.Stderr = &stderr
-		runErr := command.Run()
-		if exit, ok := childexit.From(runErr); ok {
-			return roundfixCommandResult{stdout: stdout.String(), stderr: stderr.String(), exitCode: exit.Code, exit: exit}, nil
-		}
-		if !deliveryTextFileBusy(runErr) || attempt == deliveryTextBusyRetries {
-			return roundfixCommandResult{}, runErr
-		}
-		timer := time.NewTimer(time.Duration(10<<attempt) * time.Millisecond)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return roundfixCommandResult{}, runErr
-		case <-timer.C:
-		}
+	command := exec.CommandContext(ctx, executable, args...)
+	command.Dir = workDir
+	command.Env = deliveryCommandEnvironment(commandDependenciesForContext(ctx).environ(), workflow.loaded.HomeDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	runErr := command.Run()
+	if exit, ok := childexit.From(runErr); ok {
+		return roundfixCommandResult{stdout: stdout.String(), stderr: stderr.String(), exitCode: exit.Code, exit: exit}, nil
 	}
+	return roundfixCommandResult{}, runErr
 }
 
 func (workflow *commandDeliveryWorkflow) latestImplementRun(ctx context.Context, gitRoot, specSlug string) (store.Run, bool, error) {
