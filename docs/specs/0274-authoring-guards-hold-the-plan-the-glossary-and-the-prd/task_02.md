@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -87,3 +87,21 @@ None. This Task changes documentation and adds a contract test; no code consumes
 - `_prd.md` → Goals; User Story 2; Core Feature 2; Core Feature 5; Success Metric 2
 - `_techspec.md` → API Contract 2; API Contract 5; Invariant 4; Current behavior; Build Order 2
 - ADR-0273; ADR-0280
+
+## Result
+
+Implemented the assigned documentation and contract-test slice.
+
+- The canonical Roundfix `implement` reference and the user guide now state `QA evidence carries a secret: <path>:<line>: <kind>`. `make skills-sync` refreshed the mirror, and canonical/mirror comparisons matched.
+- `internal/docscontract/command_documentation_test.go` now derives the documented form from the Daemon string literal and `secretscan.Match.String()`, checks every relevant Markdown file, and includes the negative parenthesized-form case. Both tests call `t.Parallel()` first.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run 'TestTheQASecretRefusal'`: passed after the mirror sync; this focused run exercised both new contract tests.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed and recorded Roundfix skill version `0.1.84`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed and refreshed the `implement` guide Behavior Surface fingerprint.
+- The Daemon refusal source, `secretscan.Match.String()`, the existing QA secret settlement test, `CHANGELOG.md`, and all `### QA settlement` sections were left unchanged.
+
+The Daemon-owned declared Verification and Task status were not changed or run in this handoff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T095043Z_d5b2f5791da3cba6`
+- Source commit: `26be1a00e117a1580bbcb07df2b8d44e527780a2`
