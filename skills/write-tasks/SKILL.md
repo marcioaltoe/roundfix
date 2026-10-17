@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.16
+  version: 0.0.17
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.16
+version: 0.0.17
 ---
 
 # Write Tasks
@@ -300,6 +300,19 @@ When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
 outcome remains ambiguous, split the Task so each slice has one dominant outcome;
 do not encode multiple values and do not defer the classification.
+
+## Owned skill versions
+
+A non-QA Task declaring a file of an owned skill under
+`.agents/skills/<name>/` also declares its mirror under `skills/<name>/`,
+both `.agents/skills/<name>/SKILL.md` and `skills/<name>/SKILL.md`, and
+`skills/testdata/owned-skill-versions.json`. Owned skills are the `skills`
+keys of that version record. Use `deletes:` for both sides of a file deletion;
+use `interface:` or `creates:` for other mirror declarations, the `SKILL.md`
+pair and the record. Name the `-record-skill-versions` step in a requirement.
+Another Task cannot cover this work: `SC-SKILL-VERSION-UNTASKED` reports a gap
+for each owned skill whose editing Task lacks its own declarations or step.
+An `instruction:` path is read-only and does not declare an edit.
 
 ## Surface Transcripts in Tasks
 

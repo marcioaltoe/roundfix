@@ -71,6 +71,15 @@ oldest commit that added it; an uncommitted PRD is held.
   Tasks stage as a gap, with no horizon; skips repositories without the record
   and Specs without a Task Graph.
 
+- `SC-SKILL-VERSION-UNTASKED` — a pending non-QA Task declares a file of
+  an owned skill under `.agents/skills/<name>/` without its mirror, both
+  `SKILL.md` files, `skills/testdata/owned-skill-versions.json`, or a
+  requirement naming `-record-skill-versions`. Mirror deletions use
+  `deletes:`; other declarations use `interface:` or `creates:`. The Task
+  itself declares the work; another Task cannot cover it. A gap with no
+  horizon from the Tasks stage; skips repositories without the version record
+  and Specs without a Task Graph.
+
 - `SC-DECISIONS-UNRECORDED` — a PRD's `## Decisions` section lacks both a
   dated answer and the autonomous-route line naming its decision source. A gap
   from the PRD stage that reads shape only. Its horizon is the oldest commit

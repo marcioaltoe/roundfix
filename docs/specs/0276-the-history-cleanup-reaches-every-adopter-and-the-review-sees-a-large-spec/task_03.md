@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -126,3 +126,70 @@ is verifiable on its own through detector tests on temporary repositories.
 - `_prd.md` → Goals; User Story 5; Core Feature 6; Core Feature 9; Success Metric 4
 - `_techspec.md` → API Contract 7; API Contract 10; Invariant 9; Current behavior; Testing Approach; Build Order 3
 - ADR-0282; ADR-0189; ADR-0280
+
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. Status remains
+Daemon-owned; the declared Verification and repository gates were not run.
+
+### Implementation and acceptance evidence
+
+- Missing owned-skill work: `detectSkillVersion` reads ownership from the
+  version record's `skills` keys and evaluates each eligible Task separately.
+  It emits one gap per skill at its first mutating Context declaration, with
+  API Contract 7's summary and ordered missing-declaration fix. Mirrors must
+  match deletions; other mirror, SKILL.md and record declarations must be
+  writable. A requirement must name `-record-skill-versions`; Verification
+  text and another Task's declarations cannot supply the step.
+  `TestSkillVersionGapNamesATaskWithoutItsRecord` exercises each missing
+  component, all missing components, another Task, instruction-only and
+  deleted records, wrong mirror kinds, and multiple paths and skills. An
+  instruction citing the same path first does not move the finding's line.
+- Accepted declarations and exclusions:
+  `TestSkillVersionGapAcceptsATaskThatRecordsItsVersion` exercises complete
+  interface and creates declarations, a reference deletion with its mirror
+  deletion, multiple skills, an upstream skill, a completed Task, a QA Task,
+  and an instruction-only skill reference. They yield no skill-version gap.
+- Missing inputs and stage behavior:
+  `TestSkillVersionGapSkipsWithoutTheRecord` exercises an absent record, a
+  non-file record and an absent graph, asserting their skip paths; malformed
+  and unreadable records return errors. The detector is next to
+  `detectSurfaceRecord` in `Check` and registered at `StageTasks`.
+  `TestSkillVersionGapRunsAtTheTasksStageAndFailsStrict` asserts PRD and
+  TechSpec stage skips, findings in both full and Tasks sweeps, and strict
+  promotion to error. The detector has no contract horizon.
+- Corpus counts: the focused corpus test passed before the detector change.
+  After registering the code, its diagnostic measured
+  `SC-SKILL-VERSION-UNTASKED: 0` and every earlier count unchanged. The golden
+  and archive-layout characterization now pin that count and append the
+  required identical update sentence. The final focused corpus and
+  characterization checks passed.
+- Documentation: added the guide table row, Roundfix reference bullet and
+  write-tasks "Owned skill versions" section. Generated mirrors and version
+  records carry Roundfix 0.1.88 and write-tasks 0.0.17. Re-recorded the
+  Behavior Surface Record for the changed guide. Baseline regeneration
+  reported no derived changes.
+
+### Focused checks and generation
+
+- Before implementation,
+  `go test ./internal/speccheck -run '^TestSkillVersionGapNamesATaskWithoutItsRecord$/interface/record$' -count=1`
+  exited 1: the expected finding was absent.
+- `go test ./internal/speccheck -run 'TestSkillVersionGap' -count=1` exited 0
+  with all four new detector tests and their subtests passing.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestCheckCorpusGolden|TestStageScopeDefaultSweepIsUnchanged)$' -count=1`
+  exited 0.
+- `go test ./internal/spec -run 'ArchiveLayoutCharacterization' -count=1`
+  exited 0.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and generated both skills' version changes and record entries.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and regenerated the Behavior Surface Record.
+- `make baseline-digests` exited 0 with `changed: false`.
+- `git diff --check` exited 0. A focused scope inspection confirmed all
+  17 changed paths are declared by this Task, its authored fields are
+  preserved, both skill mirrors match, and QA settlement text is unchanged.
+
+The Daemon owns the declared Verification, settlement and any Task commit.
