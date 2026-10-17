@@ -32,4 +32,4 @@ delivery_commit: 00382172007d15ef7de178659bc84a4e92c156a4
 
 # Queue items that stay current with main
 
-This is a bug fix with two causes, both recorded on 2026-10-04 in the operator's intervention log and adopted from two Backlog Entries: [queued Specs raise the same skill version](references/2026-10-04-queued-specs-raise-the-same-skill-version.md) and [a docs fix after archive forces a manual Pull Request](references/2026-10-04-a-docs-fix-after-archive-forces-a-manual-pull-request.md).
+This is a bug fix with two causes, both recorded on 2026-10-04 in the operator's intervention log and adopted from two Backlog Entries: queued Specs raise the same skill version (`docs/history/specs/0228-queue-items-that-stay-current-with-main/references/2026-10-04-queued-specs-raise-the-same-skill-version.md@a30dc847a037fe584812b4471aa7da1701a9ec59`) and a docs fix after archive forces a manual Pull Request (`docs/history/specs/0228-queue-items-that-stay-current-with-main/references/2026-10-04-a-docs-fix-after-archive-forces-a-manual-pull-request.md@a30dc847a037fe584812b4471aa7da1701a9ec59`).

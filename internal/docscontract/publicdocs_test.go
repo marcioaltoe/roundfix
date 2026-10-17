@@ -352,18 +352,21 @@ func TestGuidanceCompositionDocumentation(t *testing.T) {
 	}
 }
 
-func TestDocsLayoutGuideNamesEveryHistoryFamily(t *testing.T) {
+func TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily(t *testing.T) {
 	t.Parallel()
 
 	root := baselineDocumentationRepoRoot()
 	guide := readBaselineDocumentation(t, filepath.Join(root, "docs", "agents", "docs-layout.md"))
+	specDirectory := spec.ArchiveDir(spec.ArchiveKindSpec)
+	if !strings.Contains(guide, specDirectory) {
+		t.Fatalf("docs layout guide does not name %s for Archive Records", specDirectory)
+	}
 	for _, kind := range spec.ArchiveKinds() {
-		directory := spec.ArchiveDir(kind)
-		if directory == "" {
-			t.Fatalf("ArchiveKinds() includes %q without an archive directory", kind)
+		if kind == spec.ArchiveKindSpec {
+			continue
 		}
-		if !strings.Contains(guide, directory) {
-			t.Fatalf("docs layout guide does not name %s for archive kind %q", directory, kind)
+		if directory := spec.ArchiveDir(kind); directory != "" && strings.Contains(guide, directory) {
+			t.Fatalf("docs layout guide names retired archive family %s for kind %q", directory, kind)
 		}
 	}
 }

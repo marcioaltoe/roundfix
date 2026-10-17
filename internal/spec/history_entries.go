@@ -361,6 +361,9 @@ func HistoryCitations(ctx context.Context, repositoryRoot string, removed []stri
 		if path == "" || historyPathRemoved(path, targets) {
 			continue
 		}
+		if historyTrackedSymlink(repositoryRoot, path) {
+			continue
+		}
 		if err := historyRewriteRegularFile(repositoryRoot, path); err != nil {
 			if errors.Is(err, os.ErrNotExist) && strings.HasPrefix(path, "docs/history/") {
 				continue
@@ -477,6 +480,19 @@ func PlanSupersededRecords(ctx context.Context, root, archiveRootRel string, rem
 		if path == "" || historyPathRemoved(path, removed) || strings.HasPrefix(path, ".agents/skills/") || strings.HasPrefix(path, "skills/") || strings.Contains("/"+path, "/testdata/") {
 			continue
 		}
+		info, err := os.Lstat(filepath.Join(root, path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return plan, err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		if err := historyRewriteRegularFile(root, path); err != nil {
+			return plan, err
+		}
 		content, err := os.ReadFile(filepath.Join(root, path))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
@@ -513,6 +529,11 @@ func PlanSupersededRecords(ctx context.Context, root, archiveRootRel string, rem
 	}
 	sort.Strings(plan.Files)
 	return plan, nil
+}
+
+func historyTrackedSymlink(root, path string) bool {
+	info, err := os.Lstat(filepath.Join(root, path))
+	return err == nil && info.Mode()&os.ModeSymlink != 0
 }
 
 // HistoryRewritePlan binds the citing files and destinations before any removal.
@@ -600,7 +621,7 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 			}
 			contents[c.Path] = content
 		}
-		scope := IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
+		scope := c.Path == "AGENTS.md" || IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
 		if scope {
 			if err := historyRewriteRegularFile(root, c.Path); err != nil {
 				return p, err

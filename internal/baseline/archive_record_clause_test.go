@@ -37,6 +37,9 @@ func TestArchiveRecordClausesAreAppended(t *testing.T) {
 			for _, clause := range rule.Clauses {
 				if clause.ID == entry.clauseID {
 					found = strings.Contains(clause.Guidance, entry.sentence)
+					if moduleID == "context-workflow" && strings.Contains(clause.Guidance, "docs/history/findings/") {
+						t.Errorf("%s still names a retired Findings history family", clause.ID)
+					}
 				}
 			}
 		}

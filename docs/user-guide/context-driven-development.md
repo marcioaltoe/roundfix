@@ -480,17 +480,14 @@ why the rest is unnecessary. Use `deferred` only with a recorded reason not to
 implement. Update `updated_at` for every lifecycle change or addendum and keep
 `created_at` unchanged.
 
-Move terminal Findings and Rollups (`done`, `deferred`, `deprecated`, `superseded`,
-`closed`, or `cancelled`) to `docs/history/findings/` in the same operation that
-records their disposition. Terminal Backlog Entries move to
-`docs/history/backlog/`. Write each as a reduced entry: its front matter, which
-keeps the reason and any valid absorption pointer, its title, its first
-paragraph, and a final line naming a
-commit that holds its full text. Delete a finished Review Artifact or a
-confirmed handoff instead of moving it into history; Git keeps it. Update
-dependent references. A reference already adopted by a Spec stays in
-that Spec's `references/` and archives with it. Unknown statuses require a
-declaration correction; they do not imply a terminal disposition.
+A retirement deletes a terminal Finding, Rollup or Backlog Entry, a confirmed
+handoff, a finished Review Artifact, or a retired ADR in the change that
+records its disposition. Git keeps the text. A citation of a deleted file uses
+the Git Locator printed by `roundfix spec check`; the runtime's history
+sanitize removes files an earlier layout left under the History Root. A
+reference already adopted by a Spec stays in that Spec's `references/` and
+archives with it. Unknown statuses require a declaration correction; they do
+not imply a terminal disposition.
 
 ### Profile alignment and adaptation
 

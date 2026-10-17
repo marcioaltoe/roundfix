@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 12,
+  "version": 13,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -122,7 +122,7 @@
         {
           "id": "clause.secondbrain.capture-trigger",
           "enforcement": "mandatory",
-          "guidance": "Observing a defect, an improvement worth making, or a feature idea obliges capture: create one pending Inbox Entry under `inbox/<destination>/` for the project that owns the fix, which is frequently not the project the session is running in. Read the destination's existing pending and triaged entries first and extend a strong verified match instead of duplicating it. Capture is an obligation, not a permission; an observation left only in a session transcript is lost when that session ends."
+          "guidance": "Observing a defect, an improvement worth making, or a feature idea obliges capture: create one pending Inbox Entry under `inbox/<destination>/` for the project that owns the fix, which is frequently not the project the session is running in. Read the destination's existing pending and triaged entries first and extend a strong verified match instead of duplicating it. When a Finding closes, state whether its change teaches a lesson that its ADR, Archive Record or reference does not already state. Only then capture one pending Inbox Entry with its source pinned as `<repository>@<commit>:<path>`. Capture is an obligation, not a permission; an observation left only in a session transcript is lost when that session ends."
         },
         {
           "id": "clause.secondbrain.capture-self-contained",

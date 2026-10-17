@@ -46,5 +46,5 @@ contracts trace to the [Roundfix glossary](../../../CONTEXT.md#language),
 [ADR-0142](../../adr/0142-head-bound-review-source-evidence-decides-the-watch-outcome.md),
 Spec 0039,
 and the
-[detached-watch finding](../../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
+detached-watch finding (`docs/history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md@a30dc847a037fe584812b4471aa7da1701a9ec59`).
 

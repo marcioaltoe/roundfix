@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:2316be6b91c4f8b730a6fff830f16b2c3adc8a49afcd4713f4ae2347070c0dc4",
+  "catalogDigest": "sha256:a5c687aa60ad35f3d967cb4bdc3094f404c8ff103f39447c4c5e83c8d4fa22ba",
   "modules": [
     "core",
     "context-workflow",
@@ -84,7 +84,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "075133b92e02ebe7f77c6fa97a0d0dbf8975ecb4af5bf3b40614a569f14cbee0"
+      "digest": "356823bbd0c1fcf7eb05c4e235fcb8639b720afbc8ab6d596b25f583853daef6"
     },
     {
       "id": "root.context-workflow",
@@ -237,7 +237,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "2c00c5160845ba6e36c0e0af1f1d0da97e4420e5f985993bdcd88829d3f8269a"
+      "digest": "d1df25c7f77e78d3f816b5f2c542eca9236c25a681ff2aefe9b862237a60c1e0"
     },
     {
       "id": "root.repository-extension",

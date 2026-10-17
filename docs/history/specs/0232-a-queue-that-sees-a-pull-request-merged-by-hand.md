@@ -32,4 +32,4 @@ delivery_commit: f2bc1e05d5b0d1bc2da1d4b7aca118dd144feafa
 
 # A queue that sees a Pull Request merged by hand
 
-This is a bug fix adopted from one Backlog Entry, [a Pull Request merged by hand stays parked](references/2026-10-05-a-pull-request-merged-by-hand-stays-parked.md), recorded on 2026-10-05 from the operator's intervention log. When the operator merges a parked item's Pull Request by hand, the Delivery Queue never learns it, and no command answers the item's Pending Question.
+This is a bug fix adopted from one Backlog Entry, a Pull Request merged by hand stays parked (`docs/history/specs/0232-a-queue-that-sees-a-pull-request-merged-by-hand/references/2026-10-05-a-pull-request-merged-by-hand-stays-parked.md@a30dc847a037fe584812b4471aa7da1701a9ec59`), recorded on 2026-10-05 from the operator's intervention log. When the operator merges a parked item's Pull Request by hand, the Delivery Queue never learns it, and no command answers the item's Pending Question.

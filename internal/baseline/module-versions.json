@@ -53,6 +53,10 @@
       {
         "version": 25,
         "digest": "sha256:01b5b981111c31f4dc346b8455db7e5f8d1ac16db9425d041413445ad86d6364"
+      },
+      {
+        "version": 26,
+        "digest": "sha256:0bf1d7c694a2d17c7a493357e64e84c19c7d4105893f672a412aa3d82065122d"
       }
     ],
     "core": [
@@ -129,6 +133,10 @@
       {
         "version": 12,
         "digest": "sha256:71cff35a1c62ff5353e3943f5848d8640ca813da8caf758a3e8151c8c075216d"
+      },
+      {
+        "version": 13,
+        "digest": "sha256:afd2fb32724c921ff59b34517d7face9644ee8ce3b8ca299a3cfcbddbb2f6ed9"
       }
     ],
     "spec-workflow": [

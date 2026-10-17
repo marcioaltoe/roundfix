@@ -51,10 +51,10 @@ func TestLifecycleClausesCarryTheScopedWording(t *testing.T) {
 		"clause.context.backlog-01-operational-contract": {
 			"# open | promoted | declined | deferred | done",
 			"Set `status: declined` or `status: deferred` only with a non-null `reason`.",
-			"(`declined`, `deferred`, `done`,",
+			"Every terminal Backlog Entry is deleted in the change that records its disposition under the retirement clause",
 		},
 		"clause.context.inbox-01-triage":            {"Preserve the boundary between evidence and intent:"},
-		"clause.context.docs-one-job-per-directory": {"A finished orphan Review Artifact retires"},
+		"clause.context.docs-one-job-per-directory": {"The history root `docs/history/` holds Archive Records"},
 	}
 	for _, clause := range embeddedBaselineClauses(t) {
 		phrases, ok := want[clause.ID]

@@ -161,4 +161,4 @@ and
 Spec 0038.
 Adjacent terminal-cleanup diagnostics remain traced through the
 [Stop Command](stop.md#stop) to the
-[detached-watch finding](../../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+detached-watch finding (`docs/history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md@a30dc847a037fe584812b4471aa7da1701a9ec59`).

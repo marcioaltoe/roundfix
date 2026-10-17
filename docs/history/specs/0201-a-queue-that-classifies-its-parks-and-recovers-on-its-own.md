@@ -25,4 +25,4 @@ delivery_commit: 7a2ed622b7e4a11343e7b1c52ae8b023a3b473d7
 
 # A queue that classifies its parks and recovers on its own
 
-The v0.22.0 Delivery Queue ran from 11:41 to 18:26 on 2026-09-30 and needed twelve manual interventions. Only Spec 0199 went from start to merge through the queue, and it still needed two manual steps. The finding [2026-09-30-the-v0-22-0-queue-needed-twelve-manual-interventions.md](../../history/findings/2026-09-30-the-v0-22-0-queue-needed-twelve-manual-interventions.md) groups them by class. Three classes are the queue's own:
+The v0.22.0 Delivery Queue ran from 11:41 to 18:26 on 2026-09-30 and needed twelve manual interventions. Only Spec 0199 went from start to merge through the queue, and it still needed two manual steps. The finding 2026-09-30-the-v0-22-0-queue-needed-twelve-manual-interventions.md (`docs/history/findings/2026-09-30-the-v0-22-0-queue-needed-twelve-manual-interventions.md@a30dc847a037fe584812b4471aa7da1701a9ec59`) groups them by class. Three classes are the queue's own:

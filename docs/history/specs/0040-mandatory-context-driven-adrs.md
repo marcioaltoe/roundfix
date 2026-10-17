@@ -30,4 +30,4 @@ delivery_commit: 8122ceeab1cc8fa6d46616801489e375e1610e19
 
 # Mandatory Context-Driven ADRs
 
-> Superseded without implementation by > [Spec 0047](../../0047-context-driven-guidance-composition/_prd.md) and > [Spec 0048](../../0048-context-driven-project-decisions-and-spec-constraints/_prd.md). > The replacement contracts keep operative guidance independent of ADR > existence and require explicit confirmation of identifier policy.
+> Superseded without implementation by > Spec 0047 (`docs/0047-context-driven-guidance-composition/_prd.md` (pull request #35)) and > Spec 0048 (`docs/0048-context-driven-project-decisions-and-spec-constraints/_prd.md` (pull request #35)). > The replacement contracts keep operative guidance independent of ADR > existence and require explicit confirmation of identifier policy.

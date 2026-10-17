@@ -240,7 +240,7 @@ Do **not** take model identifiers from `internal/agent/catalog.go`. That
 hardcoded list is stale against this adapter: it offers `claude-opus-5` and
 `claude-opus-4-8`, neither of which the adapter advertises. The adapter is the
 source; the catalog is a copy nothing checks. See
-[the finding](../history/findings/2026-08-07-claude-agent-selections-are-never-proven.md).
+the finding (`docs/history/findings/2026-08-07-claude-agent-selections-are-never-proven.md@a30dc847a037fe584812b4471aa7da1701a9ec59`).
 
 | Benchmark name | Runtime | Agent Selection model | Selectable |
 | --- | --- | --- | --- |
