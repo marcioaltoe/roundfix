@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.86.0] - 2026-10-17
+
+### The F6 sender is named, and a rebuilt item binary is replaced
+
+- **F6 diagnosed.** The `SIGKILL (9)` that killed item binary probes in the test suite comes from macOS's code-signing check. The kill happens when a signed executable is rewritten in place while a copy of it still runs. The diagnosis is recorded with its `CODESIGNING` crash report, and a sabotage that holds the old binary reproduces the kill on demand.
+- **Tests replace what they rebuild.** The Delivery Queue item binary fixtures write each rebuild to a sibling file and rename it over the old one, never `cp` onto a running binary (ADR-0281). The item binary tests report how a probe ended: its exit code, or the signal that killed it. Ten consecutive full suites passed with no Signal Exit.
+- **Production builds** that write the item binary in place are covered by the next release.
+
 ## [0.85.0] - 2026-10-17
 
 ### Authoring guards hold the plan, the glossary and the PRD to their rules
