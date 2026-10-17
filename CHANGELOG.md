@@ -2,6 +2,23 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.85.0] - 2026-10-17
+
+### Authoring guards hold the plan, the glossary and the PRD to their rules
+
+- **Guide Task without its record.** `roundfix spec check` reports `SC-SURFACE-RECORD-UNTASKED` in two cases. The first is a pending non-QA Task that changes a page under `docs/user-guide/` without declaring `docs/references/behavior-surfaces.json` and naming its `-record-skill-coverage` step. The second is a Spec whose authorization Limits name that record. Another Task cannot cover the guide Task, because it settles first (ADR-0280).
+- **Clarification Record.** A PRD's `## Decisions` section says who settled its questions: one dated line per answer a person gave, or the autonomous-route line naming the source of the decisions. `SC-DECISIONS-UNRECORDED` reports a PRD without it. PRDs committed before the `write-prd` skill's new clarification-record reference are skipped. The `write-prd` and `write-techspec` skills describe the record.
+- **QA secret refusal.** The `roundfix` skill and the `implement` guide state the refusal exactly as the Daemon prints it. A contract test derives the text from the Daemon and the secret scanner, so the two cannot drift again.
+- **Glossary contract.** A Repository Contract Test holds `CONTEXT.md` to the rules it applies to Specs:
+  - every bold phrase is a defined term;
+  - every link names an accepted ADR;
+  - closed lists equal their constants;
+  - `_Avoid_` lines are plain lists;
+  - each rule is stated once.
+
+  The glossary gaps it found are fixed.
+- **Skills, guides and glossary.** Updated the `roundfix`, `write-tasks`, `write-prd` and `write-techspec` skills and the `spec` and `implement` guides. The glossary adds Clarification Record.
+
 ## [0.84.0] - 2026-10-17
 
 ### The history holds only Archive Records
