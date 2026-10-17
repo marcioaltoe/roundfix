@@ -112,6 +112,15 @@ both commands, their text and JSON, a second run, and the upgrade notice.
     as Pending History, with the phrase `Reduced History Entry`; then
     re-record the Behavior Surface Record with
     `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+12. MUST, because this Task removes and renames tests, regenerate the test
+    inventory with `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+    after its last test change, so `TestCoverageEquivalence` reports no
+    regression; MUST replace every remaining caller of the retired reduction
+    writer, including the legacy fixture in
+    `internal/speccheck/reduced_history_entry_test.go`, with literal legacy
+    bytes, and keep `TestReducedFindingsKeepTheirLicensesAndMembers` and
+    `TestReducedFindingWithABrokenLicenseStillFails` asserting what they
+    assert today.
 
 ## Subtasks
 
@@ -163,6 +172,10 @@ both commands, their text and JSON, a second run, and the upgrade notice.
 - interface: `docs/user-guide/commands/baseline.md`
 - interface: `docs/user-guide/commands/upgrade.md`
 - interface: `docs/references/behavior-surfaces.json`
+- interface: `docs/references/coverage-record.json`
+- interface: `internal/speccheck/reduced_history_entry_test.go`
+- interface: `internal/baseline/reduced_retirement_clauses_test.go`
+- interface: `internal/cli/baseline_update.go`
 
 ## Verification
 
