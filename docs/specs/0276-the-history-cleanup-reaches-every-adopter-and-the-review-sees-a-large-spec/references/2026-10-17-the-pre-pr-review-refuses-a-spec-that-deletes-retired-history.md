@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-17
-spec: null
+spec: 0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec
 reason: null
 ---
 

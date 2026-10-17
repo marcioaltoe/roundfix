@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-16T00:00:00Z
-updated_at: 2026-10-16T00:00:00Z
+updated_at: 2026-10-17T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -96,3 +96,5 @@ killed by a signal.
 - A user's `delivery.item_binary` build that writes into its output in place
   can meet the same kill when an earlier item binary still runs; the Delivery
   Queue does not change here.
+
+**Extended by [ADR-0282](0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md) (2026-10-17).** The Delivery Queue now copies the built item binary to a new file under the item's artifact directory and runs that copy, so an in-place `delivery.item_binary` build never rewrites a running item binary.
