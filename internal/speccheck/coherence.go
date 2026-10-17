@@ -47,6 +47,7 @@ type stagedDetector struct {
 }
 
 var stagedDetectors = []stagedDetector{
+	{code: CodeDecisionsUnrecorded, stage: StagePRD},
 	{code: CodeQABytesPinned, stage: StageTasks},
 	{code: CodeConsumersUnproven, stage: StageTasks},
 	{code: CodeAbsenceUnproven, stage: StageTechSpec},
@@ -144,6 +145,9 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 	}
 
 	prdPath := filepath.Join(specDir, "_prd.md")
+	if err := detectClarificationRecord(&result, repoRoot, prdPath); err != nil {
+		return result, err
+	}
 	prd, present, err := readConstraintArtifact(repoRoot, prdPath)
 	if err != nil {
 		return result, err

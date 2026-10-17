@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -135,3 +135,87 @@ tests on temporary repositories.
 - `_prd.md` → Goals; User Story 4; Core Feature 4; Core Feature 5; Success Metric 4; Success Metric 5; Glossary; Decisions
 - `_techspec.md` → API Contract 3; API Contract 5; Invariants 3 and 6; Current behavior; Data Models; Testing Approach; Build Order 4
 - ADR-0280; ADR-0244; ADR-0117
+
+## Result
+
+Implemented the Task 04 slice for Daemon Verification; status and settlement
+remain Daemon-owned.
+
+### Implementation and acceptance evidence
+
+- A PRD at the guide horizon without either record shape now yields exactly
+  one `SC-DECISIONS-UNRECORDED` gap. Both `Check` and the authoring-stage sweep
+  call the detector before their missing-PRD return, and the code is registered
+  at `StagePRD`. `TestClarificationRecordGapNamesAPRDWithoutTheRecord` checks
+  the exact summary, heading-or-line-1 location, severity and fix for absent
+  sections, missing shapes, invalid calendar dates and text outside Decisions.
+  `TestClarificationRecordRunsFromThePRDStageAndFailsStrict` exercises PRD,
+  TechSpec, Tasks and full stages and the shared `PromoteGaps` strict policy.
+  The CLI exit checks remain part of Daemon Verification.
+- A valid dated answer, the autonomous-route line, or both together satisfy
+  the check without judging whether a person was present.
+  `TestClarificationRecordAcceptsADatedAnswerOrTheAutonomousRoute` exercises
+  each shape through every stage, including a valid leap-day answer.
+- The detector uses the oldest guide-adding commit and Git ancestry. Earlier
+  PRDs and repositories without the guide skip with the specified horizon
+  text; missing PRDs skip with their path; an uncommitted PRD is held.
+  `TestClarificationRecordSkipsAPRDBeforeItsHorizon` exercises those cases,
+  the inclusive same-commit boundary, and a guide deleted and later re-added.
+  Every new top-level test calls `t.Parallel()` first.
+- The new clarification guide, write-prd Clarify and Record decisions steps,
+  PRD template, write-techspec minimal PRD contract, spec user guide and
+  Roundfix reference describe the record and its horizon. The new glossary
+  entry sits beside Glossary Declaration and links accepted ADR-0280. The
+  focused glossary contracts pass. QA settlement sections retain their bytes.
+- The focused corpus measurement reported `SC-DECISIONS-UNRECORDED` at 0,
+  with all earlier counts unchanged. The code joins `corpusFindingCodes`, the
+  corpus golden and its archive-layout characterization; both update texts
+  append the required sentence. A subsequent focused corpus check passes.
+- Canonical skills were synchronized through `make skills-sync`; the owned
+  version recorder raised Roundfix to `0.1.85`, write-prd to `0.0.12`, and
+  write-techspec to `0.0.13` in both copies and recorded their digests. The
+  coverage recorder changed only the spec user guide's fingerprint. Neither
+  mirrors nor version/coverage records were edited by hand.
+
+### Focused commands and outcomes
+
+- `rtk go test ./internal/speccheck -run ClarificationRecord -count=1`:
+  initially failed to compile because the detector constants did not exist;
+  after implementation, the missing-PRD case exposed a full-sweep early return.
+  Moving the detector before that return made all four tests pass.
+- `rtk go test ./internal/speccheck -run 'ClarificationRecord|Glossary|CheckStage' -count=1`:
+  exit 0, 44 tests/subtests passed, including the additional horizon boundaries.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$' -count=1`:
+  measured the new code at 0 before updating the golden; the intentional code-set
+  mismatch was the only change in the reported counts.
+- `rtk go test -tags docscontract ./internal/docscontract -run 'TestCheckCorpusGolden|TestGlossary' -count=1`:
+  exit 0, 43 tests/subtests passed after updating the pins and glossary.
+- `make skills-sync`: exit 0.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit 0; generated the three skill version increments and their records.
+- `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  exit 0; generated the spec guide fingerprint.
+- `make baseline-digests`: automatic approval review rejected workspace
+  regeneration because it could rewrite derived files outside this Task's
+  scope. It was not retried in this workspace.
+- `rtk proxy go test -tags repocontract ./skills -run '^TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical$' -count=1`:
+  exit 0; the existing contract regenerates only in a disposable repository
+  copy and confirms Baseline, characterization and archived artifacts retain
+  their bytes after an owned skill edit. No Baseline artifact changed here.
+- `rtk git diff --check`: exit 0. A read-only Python postflight also confirmed
+  all 24 changed paths are declared by task_04, canonical skill bytes match
+  mirrors, QA settlement sections are unchanged, earlier corpus counts are
+  identical, only the spec guide fingerprint moved, and status is still
+  `in_progress`.
+
+### Handoff limits
+
+The authored Verification command, repository Verification and incremental
+Verification were not run. The Daemon owns those gates and the Task verdict.
+No other Task file or Task Graph manifest was edited; no commit, push or pull
+request was created. No implementation follow-up was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261017T101202Z_03bf9e36c3f11f8c`
+- Source commit: `ab913cb454d59fc92a27c27e517ed1bb83bf776d`

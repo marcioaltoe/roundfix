@@ -94,7 +94,12 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
 
 ## Decisions
 
-<!-- Product decisions made during clarification, one line each.
+<!-- Clarification Record: write one `- YYYY-MM-DD: <question> — <answer>`
+     line for each question a person answered, with a valid calendar date.
+     When no person was present, write the line
+     `Autonomous route: no person present; decisions taken from <source>.`
+     naming the source the author decided from. Both shapes may appear together.
+     See references/clarification-record.md.
      Decisions that passed the ADR gate link to their ADR: `See ADR-0012.` -->
 
 ## Open Questions

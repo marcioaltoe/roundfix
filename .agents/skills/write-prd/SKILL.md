@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.11
+  version: 0.0.12
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.11
+version: 0.0.12
 ---
 
 # Write PRD
@@ -98,7 +98,12 @@ applicable or not applicable with a reason and cite the operative
 
 ### 3. Clarify
 
-Ask **one question per message**, multiple-choice whenever the options are enumerable:
+When a person drives authoring, use grilling as the interactive entry and keep
+answers already given. When no person is present, settle questions from the
+available sources and name that route in the Clarification Record; do not
+invent an interview. Follow [references/clarification-record.md](references/clarification-record.md).
+
+When a person is present, ask **one question per message**, multiple-choice whenever the options are enumerable:
 
 ```text
 Which failure behavior should an expired import have?
@@ -111,6 +116,14 @@ C) Park it for manual review — keeps the import available for an operator to r
 Ask through the structured question tool the session exposes. Without one, show the same single question in chat and accept a custom answer. Always state a suggested default and the one-line reason. Cover, in order of importance: goals and success criteria, functional scope, non-goals, constraints, risks. Stop asking when the remaining unknowns don't change what gets built.
 
 ### 4. Record decisions
+
+Write the Clarification Record under `## Decisions`: one
+`- YYYY-MM-DD: <question> — <answer>` line per question a person answered,
+using the answer's actual date, or
+`Autonomous route: no person present; decisions taken from <source>.`
+naming the source the author decided from. Both shapes may appear together.
+`SC-DECISIONS-UNRECORDED` reports neither shape from the PRD stage, under the
+guide's adding-commit horizon; the check reads shape only.
 
 A product decision that is hard to reverse, surprising without context, and the result of a real trade-off becomes an ADR at `docs/adr/NNNN-slug.md`, continuing the repository's numbering. Keep it to 1–3 sentences: context, decision, why. Decisions that fail that three-part gate just live in the PRD body.
 
@@ -267,3 +280,4 @@ store or ask for any Jev key: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
 ## References
 
 - [references/prd-template.md](references/prd-template.md) — the full `_prd.md` template. Read it before writing the file.
+- [references/clarification-record.md](references/clarification-record.md) — the Clarification Record shapes, authoring routes and check horizon.

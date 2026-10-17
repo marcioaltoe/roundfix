@@ -1231,6 +1231,10 @@ actual QA and Task evidence while retaining non-QA completion, source integrity
 and separate delivery gates.
 _Avoid_: QA pass, QA bypass, Implement Clean
 
+**Clarification Record**:
+The `## Decisions` section of a PRD that says who settled its questions: one dated line for each question a person answered, or the autonomous-route line naming the source of the author's decisions ([ADR-0280](docs/adr/0280-a-guide-task-records-its-own-surface-fingerprint-a-prd-records-who-decided-and-the-glossary-is-held-to-its-own-rule.md)).
+_Avoid_: Interview transcript, assumed approval, unrecorded clarification
+
 **Glossary Declaration**:
 The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
 _Avoid_: Vocabulary Contract, term list, glossary candidates

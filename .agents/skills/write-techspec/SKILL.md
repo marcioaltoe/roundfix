@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.12
+  version: 0.0.13
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.12
+version: 0.0.13
 ---
 
 # Write TechSpec
@@ -20,7 +20,7 @@ Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's 
 `$ARGUMENTS` names the spec (slug or path), or describes a refactor/bug fix. Pick the mode by whether product behavior changes:
 
 - **Feature work** (product behavior changes) — `docs/specs/<slug>/_prd.md` must exist; if it doesn't, stop and point the user at `write-prd`. Product decisions need the product conversation first. If the PRD contains low-level technical decisions that belong here, surface that as a finding and propose relocating them rather than silently duplicating.
-- **Refactor or bug fix** (no product behavior change) — this skill is the pipeline entry point; no PRD interview happens. When no spec folder exists yet, mint one following `write-prd`'s numbering rule (`<spec-root>/NNNN-<kebab-slug>/`, scanning both the configured Spec Root and its resolved archive directory — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` otherwise — for the highest prefix), and write a **minimal `_prd.md`** carrying only the contract downstream skills parse: the frontmatter (`spec`, `status: active`, `surfaces`), a problem statement, Project Constraints, goals, core features, and non-goals — engineering-framed, a few lines each. It exists so `write-tasks`, `qa-gate`, and `archive-spec` keep a single artifact contract; it is not a product document. If the "refactor" turns out to change product behavior, stop and route to `write-prd`.
+- **Refactor or bug fix** (no product behavior change) — this skill is the pipeline entry point; no PRD interview happens. When no spec folder exists yet, mint one following `write-prd`'s numbering rule (`<spec-root>/NNNN-<kebab-slug>/`, scanning both the configured Spec Root and its resolved archive directory — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` otherwise — for the highest prefix), and write a **minimal `_prd.md`** carrying only the contract downstream skills parse: the frontmatter (`spec`, `status: active`, `surfaces`), a problem statement, Project Constraints, goals, core features, non-goals, and a Clarification Record under `## Decisions` — engineering-framed, a few lines each. The record follows write-prd's [clarification guide](../write-prd/references/clarification-record.md): one `- YYYY-MM-DD: <question> — <answer>` line per question a person answered, or `Autonomous route: no person present; decisions taken from <source>.` naming the source of the author's decisions when no person was present. It exists so `write-tasks`, `qa-gate`, and `archive-spec` keep a single artifact contract; it is not a product document. If the "refactor" turns out to change product behavior, stop and route to `write-prd`.
 
 ## Ground rules
 
