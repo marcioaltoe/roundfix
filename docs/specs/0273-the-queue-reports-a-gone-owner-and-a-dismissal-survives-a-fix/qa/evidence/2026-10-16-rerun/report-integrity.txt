@@ -1,0 +1,3 @@
+Report parser: valid; eligibility: qualifying partial; environment: 1 (pre-PR); finding: 0; declared: 0; skipped: 0
+Secret Pattern matches: 0
+exit: 0

@@ -1,0 +1,3 @@
+$ go build -buildvcs=false -o /private/tmp/rf273-rerun-s1suy30p/base-roundfix ./cmd/roundfix
+
+exit: 0

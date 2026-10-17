@@ -1,0 +1,2 @@
+roundfix 0.82.0 (11a8c1fd-dirty, built 2026-10-16 15:51:20 -0300)
+exit: 0

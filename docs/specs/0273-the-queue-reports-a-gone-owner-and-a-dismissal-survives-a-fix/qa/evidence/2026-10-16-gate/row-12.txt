@@ -1,0 +1,8 @@
+$ git grep -n -E an unchanged reviewed -- . :(exclude)docs/history/** :(exclude)docs/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix/** :(exclude)**/*_test.go
+exit: 1
+$ git grep -n -E moved-head.*dismissals -- . :(exclude)docs/history/** :(exclude)docs/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix/** :(exclude)**/*_test.go
+exit: 1
+$ git grep -n -E to equal reviewed head -- . :(exclude)docs/history/** :(exclude)docs/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix/** :(exclude)**/*_test.go
+exit: 1
+Whitespace-normalized candidate follow-up found no wrapped old rule. Exit 1 on git grep means no matches.
+All three old-wording searches and the wrapped-line follow-up found no stale dismissal rule outside exclusions.

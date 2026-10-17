@@ -1,0 +1,5 @@
+package main
+import("fmt";"os";"path/filepath";"roundfix/internal/secretscan";"roundfix/internal/spec")
+func main(){report,e:=spec.ReadQAReportFile(os.Args[1]);must(e);must(spec.QAReportEligibility(os.Args[2],report));if report.Verdict!=spec.VerdictPartial||report.RowsBlockedEnvironment!=1||report.RowsBlockedPrePullRequest!=1||report.RowsBlockedFinding!=0||report.RowsBlockedDeclared!=0||report.RowsSkipped!=0{panic("unexpected report counts")};fmt.Println("Report parser: valid; eligibility: qualifying partial; environment: 1 (pre-PR); finding: 0; declared: 0; skipped: 0")
+count:=0;e=filepath.WalkDir(os.Args[3],func(path string,d os.DirEntry,e error)error{if e!=nil{return e};if d.IsDir(){return nil};data,e:=os.ReadFile(path);if e!=nil{return e};for _,m:=range secretscan.ScanContent(path,data){fmt.Println(m.String());count++};return nil});must(e);fmt.Printf("Secret Pattern matches: %d\n",count);if count>0{os.Exit(1)}}
+func must(e error){if e!=nil{panic(e)}}

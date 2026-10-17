@@ -1,0 +1,3 @@
+$ git diff --exit-code
+
+exit: 0

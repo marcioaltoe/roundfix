@@ -1,0 +1,8 @@
+QA-001: Unauthorized provider requests during archive plan
+Command: ./bin/roundfix archive <spec> --plan
+The qa-gate skill Outcome follow-up requested an archive plan. The Agent executed it without first checking its advisory provider behavior or removing inherited judge credentials. internal/cli/archive.go invokes judge.AdviseArchive; internal/judge/archive_advice.go sends up to 6000 bytes of each non-core candidate as state with its relative file name.
+Two reference files, both below that limit, were submitted: references/2026-10-14-a-dismissal-after-a-committed-fix-needs-a-reset.md (1226 bytes), and references/2026-10-14-deliver-status-does-not-say-the-queue-owner-is-gone.md (972 bytes).
+The temporary-home Judge Log records two archive-value responses, status 200, one attempt each, via openrouter; response model typesafe/jev-1.13-20260917. The model/request/cost metadata is preserved in execution-incident.json. No precondition or product-flow provider requests appear in that temporary-home log.
+The requests authenticated through inherited ROUNDFIX_OPENROUTER_JUDGE_API_KEY. Its value was never printed or copied into QA evidence; this nevertheless violated the Spec prohibition on provider requests and credential reads by QA commands.
+No archive, Git commit, push, Pull Request or real-home database operation occurred. The payload disclosure cannot be undone by deleting local fixtures. No additional provider or network requests were attempted after identifying it.
+Prevention for any later authorized rerun: remove all judge key variables, including ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY and ROUNDFIX_TYPESAFE_API_KEY, before launching any CLI command; omit the optional advisory archive plan from this offline gate.

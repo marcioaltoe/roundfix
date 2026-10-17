@@ -1,0 +1,14 @@
+$ ./bin/roundfix review dispose F1 --dismiss --evidence not a defect
+stdout:
+stderr:
+roundfix: review dispose refused: dismissal at HEAD "d1fde511f24e8a4485baf5d106b95bbf321b6226" after reviewed head "b3a41d71322f842d50d5f072c9d5fe00842b2d88" requires the anchor of finding "F1" (review.txt:1-1) to be unchanged
+exit: 2
+
+$ ./bin/roundfix review dispose F1 --dismiss --evidence not a defect
+stdout:
+stderr:
+roundfix: review dispose refused: dismissal at HEAD "d1fde511f24e8a4485baf5d106b95bbf321b6226" after reviewed head "b3a41d71322f842d50d5f072c9d5fe00842b2d88" requires the anchor of finding "F1" (review.txt:1-1) to be unchanged
+exit: 2
+
+Repeated refusal and independent ledger reopen: bytes unchanged.
+Surface Transcript 5 matches exactly. Changed anchor refused twice without ledger mutation.

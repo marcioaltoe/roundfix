@@ -1,0 +1,4 @@
+$ go test -count=1 -tags docscontract -run ^TestTheSkillCoverageMapIsCurrent$ ./internal/docscontract
+ok  	roundfix/internal/docscontract	0.466s
+
+exit: 0

@@ -1,0 +1,3 @@
+$ go test -count=1 -run Delivery ./internal/store
+ok  	roundfix/internal/store	1.121s
+exit: 0

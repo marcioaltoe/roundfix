@@ -1,0 +1,11 @@
+Report closure: one frontmatter; verdict fail; closed; 14 rows; 13 pass; 1 environment block; 0 pending.
+Daemon-owned auditor identity, authorization audit and mechanical skips preserved. Every row has typed inputs and a resolving evidence file.
+Repository Secret Pattern scanner: Secret Pattern matches: 0
+$ ./bin/roundfix qa-report accept docs/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix/qa/qa-report-2026-10-16.md
+roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"
+exit: 1 (expected refusal for a failing report)
+Removed only QA-created scratch worktree head-worktree.
+Removed only QA-created scratch worktree base-worktree.
+Final repository status:
+?? docs/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix/qa/
+

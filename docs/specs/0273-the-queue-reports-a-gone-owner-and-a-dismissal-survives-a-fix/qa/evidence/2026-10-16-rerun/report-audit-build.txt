@@ -1,0 +1,3 @@
+$ go build -o /private/tmp/rf273-rerun-s1suy30p/report-audit ./qa273audit
+
+exit: 0

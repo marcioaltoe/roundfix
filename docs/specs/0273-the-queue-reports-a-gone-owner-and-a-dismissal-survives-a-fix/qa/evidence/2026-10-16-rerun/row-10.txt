@@ -1,0 +1,17 @@
+Outside-evidence provenance: published primary sources, preserved as attributed passages in _prd.md -> Acceptance evidence during planning. Offline passage review only; no fresh remote retrieval. _authorization.md Limits forbids network access, so no lookup was attempted.
+psutil issue 2400 — https://github.com/giampaolo/psutil/issues/2400
+Published passage: "pair strategy used by psutil is the best we can do."
+Supports the recorded PID/start-time pair; live match and mismatch observations distinguish reuse.
+r-lib/ps low-level process documentation — https://github.com/r-lib/ps/blob/main/R/low-level.R
+Published passage: "The pid and the start time pair serves as the identifier of the process, as process ids might be reused"
+Supports start-time identity rather than PID-only ownership.
+GitHub Changelog: Precision review comment outdating — https://github.blog/changelog/2018-09-24-precision-review-comment-outdating/
+Published passage: "the exact line of code that anchors the comment must change to outdate the conversation."
+Supports retaining a finding across unrelated fixes. This Spec deliberately requires the same line numbers, so moved anchors remain refused.
+GitHub REST review comments reference — https://docs.github.com/en/rest/pulls/comments
+Published passage: "may render your comment outdated if a subsequent commit modifies the line you specify as the position."
+Supports checking the anchored code when HEAD changes; changed anchors were refused without appending.
+git-merge-base manual — https://git-scm.com/docs/git-merge-base
+Published passage: "exit with status 0 if true, or with status 1 if not. Errors are signaled by a non-zero status that is not 1."
+Supports treating non-descendant status 1 separately from operational errors; ancestry and failure-path tests cover this distinction.
+All five published passages available offline were checked against the design and observed behavior; each supports it. Remote freshness was not verified, as authorization forbids network access.

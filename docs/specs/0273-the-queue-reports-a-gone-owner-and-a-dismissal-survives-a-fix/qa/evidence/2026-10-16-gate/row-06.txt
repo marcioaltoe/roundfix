@@ -1,0 +1,20 @@
+$ ./bin/roundfix review dispose F2 --fixed-by d9626785a53fa2923f311530edb3f5cffb5a0734
+stdout:
+{"repository":"/private/tmp/rf273-ftknwn15/dismiss-after-fix-v2","headCommit":"ad9d2eab363f491cacbb189a77ee7dfdf8c62e0c","finding":"F2","text":"review.txt:2: Failure: needs correction","disposition":"fixed","fixedBy":"d9626785a53fa2923f311530edb3f5cffb5a0734","recordedAt":"2026-10-16T18:55:30Z"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix review dispose F1 --dismiss --evidence not a defect
+stdout:
+{"repository":"/private/tmp/rf273-ftknwn15/dismiss-after-fix-v2","headCommit":"ad9d2eab363f491cacbb189a77ee7dfdf8c62e0c","finding":"F1","text":"review.txt:1: Failure: claimed defect","disposition":"dismissed","evidence":"not a defect","recordedAt":"2026-10-16T18:55:30Z","currentHead":"d9626785a53fa2923f311530edb3f5cffb5a0734"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix review dispose F1 --dismiss --evidence not a defect
+stdout:
+stderr:
+roundfix: review dispose refused: finding "F1" already has a disposition
+exit: 2
+
+Independent duplicate-command read and ledger reopen preserve reviewed head, currentHead and exactly one appended F1; double submission adds nothing.
+Surface Transcript 4 matches full JSON field order, empty stderr and exit 0. Fixed F2 then dismissed F1 after its fix; fresh CLI duplicate refusal and ledger reread preserve exactly one dismissal.

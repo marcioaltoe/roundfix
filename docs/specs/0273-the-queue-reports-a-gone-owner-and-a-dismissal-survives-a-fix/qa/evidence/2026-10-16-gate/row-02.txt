@@ -1,0 +1,71 @@
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	checking	-	-
+Owner: Delivery Queue owner PID 1073741824 is not running; run roundfix deliver resume
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0
+
+absent owner: full queue and owner records unchanged after reopen
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	checking	-	-
+Owner: Delivery Queue owner PID 43811 has a different process identity; run roundfix deliver resume
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0
+
+different identity: full queue and owner records unchanged after reopen
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	checking	-	-
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+stderr:
+roundfix: Delivery Queue owner PID 43811 could not be checked: owner process 43811 failed step "prove owner process identity": owner process identity is unreadable: recorded owner identity is not comparable on darwin
+exit: 0
+
+unreadable identity: full queue and owner records unchanged after reopen
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	checking	-	-
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0
+
+proven live owner: full queue and owner records unchanged after reopen
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	checking	-	-
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0
+
+no recorded owner: full queue and owner records unchanged after reopen
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	merged	-	-
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0
+
+all items merged: no Owner line, queue unchanged
+$ ./bin/roundfix deliver status
+stdout:
+0300-example	parked	-	-
+Park: 0300-example unclassified: resolve the blocker, then run roundfix deliver retry 0300-example
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+Pending question: 0300-example parked 
+Answer: resolve the blocker, then run roundfix deliver retry 0300-example
+stderr:
+exit: 0
+
+all items parked: no Owner line, queue unchanged
+Owned sleep process terminated through its Popen handle and reaped.
+Surface Transcript 1 matches exactly. Six owner cases plus merged and parked suppression passed; every fresh database read preserved the entire queue.

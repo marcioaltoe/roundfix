@@ -1,0 +1,5 @@
+$ git worktree add --detach /private/tmp/rf273-rerun-s1suy30p/base-tree 123f6524f2ea8b9a49655ba5fe0972f3d409a6b3
+HEAD is now at 123f6524 docs: plan the history, queue, authoring and F6 Specs (0272-0275) (#546)
+Preparing worktree (detached HEAD 123f6524)
+
+exit: 0

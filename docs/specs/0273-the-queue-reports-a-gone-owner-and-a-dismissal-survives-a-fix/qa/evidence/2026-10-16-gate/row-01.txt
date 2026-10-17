@@ -1,0 +1,14 @@
+roundfix 0.82.0 (11a8c1fd-dirty, built 2026-10-16 15:51:20 -0300)
+exit: 0
+
+Spec 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix/_techspec.md Vocabulary Contract
+exit: 0
+
+make build: exit 0
+Daemon-provided repository Verification: make verify-changed; pass, exit 0; diagnostics removed on success.
+Build passed. Static gate recorded as a supervised Daemon fact at the audited head; repository Verification was not rerun.

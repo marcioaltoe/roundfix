@@ -1,0 +1,21 @@
+$ go test -count=1 -run Deliver|ReviewDispose|Disposition|Correction|Lineage|Reus ./internal/cli
+ok  	roundfix/internal/cli	16.833s
+exit: 0
+
+$ go test -count=1 -run Delivery ./internal/store
+ok  	roundfix/internal/store	1.121s
+exit: 0
+
+All 22 explicitly named tests from task_01/task_02/task_03 passed with --- PASS evidence (21 CLI, one store); see named-tests.txt. All new test paths are additions; no preexisting CLI/store test file changed. See row-13.txt for git diff-tree statuses.
+$ make skills-sync-check
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.553s
+exit: 0
+$ go test -count=1 -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills
+ok  	roundfix/skills	0.189s
+exit: 0
+$ go test -count=1 -tags docscontract -run ^TestTheSkillCoverageMapIsCurrent$ ./internal/docscontract
+ok  	roundfix/internal/docscontract	0.452s
+exit: 0
+
+Required broad CLI and store selections passed, all 22 authored named tests passed without skips, and documentation/mirror/version checks passed. Existing test files are unchanged.

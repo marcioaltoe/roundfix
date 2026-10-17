@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
