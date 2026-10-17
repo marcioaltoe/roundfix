@@ -1653,19 +1653,36 @@ func copyDeliveryItemBinary(source, root string) (destination string, resultErr 
 	return destination, nil
 }
 
+// deliveryTextBusyRetries bounds the retries of a start that fails with
+// ETXTBSY: a child that another goroutine forked while the item binary copy was
+// still open for writing holds that descriptor until its own exec, so a start
+// in that window fails before the program runs (https://go.dev/issue/22315).
+const deliveryTextBusyRetries = 5
+
 func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, executable, workDir string, args ...string) (roundfixCommandResult, error) {
-	command := exec.CommandContext(ctx, executable, args...)
-	command.Dir = workDir
-	command.Env = deliveryCommandEnvironment(commandDependenciesForContext(ctx).environ(), workflow.loaded.HomeDir)
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	command.Stdout = &stdout
-	command.Stderr = &stderr
-	runErr := command.Run()
-	if exit, ok := childexit.From(runErr); ok {
-		return roundfixCommandResult{stdout: stdout.String(), stderr: stderr.String(), exitCode: exit.Code, exit: exit}, nil
+	for attempt := 0; ; attempt++ {
+		command := exec.CommandContext(ctx, executable, args...)
+		command.Dir = workDir
+		command.Env = deliveryCommandEnvironment(commandDependenciesForContext(ctx).environ(), workflow.loaded.HomeDir)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		command.Stdout = &stdout
+		command.Stderr = &stderr
+		runErr := command.Run()
+		if exit, ok := childexit.From(runErr); ok {
+			return roundfixCommandResult{stdout: stdout.String(), stderr: stderr.String(), exitCode: exit.Code, exit: exit}, nil
+		}
+		if !deliveryTextFileBusy(runErr) || attempt == deliveryTextBusyRetries {
+			return roundfixCommandResult{}, runErr
+		}
+		timer := time.NewTimer(time.Duration(10<<attempt) * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return roundfixCommandResult{}, runErr
+		case <-timer.C:
+		}
 	}
-	return roundfixCommandResult{}, runErr
 }
 
 func (workflow *commandDeliveryWorkflow) latestImplementRun(ctx context.Context, gitRoot, specSlug string) (store.Run, bool, error) {
