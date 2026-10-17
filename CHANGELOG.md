@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.83.0] - 2026-10-16
+
+### The queue reports a gone owner, and a dismissal survives a fix
+
+- **Gone Queue Owner.** When an item can still advance, `roundfix deliver status` proves the recorded Queue Owner the way `deliver resume` and `deliver retry` do: an absent PID, or a live PID whose start-time identity differs from the recorded one, adds one `Owner:` line naming the PID, the state and `roundfix deliver resume`. Status stays read-only; an unreadable identity writes a diagnostic to stderr and adds no line (ADR-0279).
+- **Owning checkout.** `deliver status`, `resume`, `retry` and `stop` run inside an item worktree that has no Delivery Queue of its own name the item and the checkout whose queue holds it, and say to run the command there, instead of only saying that no queue exists.
+- **Dismissal after a fix.** `roundfix review dispose <id> --dismiss` also accepts a dismissal when HEAD descends from the reviewed head and the finding's anchored lines are byte-identical at both commits, so one finding can be fixed and another dismissed without resetting the branch. The disposition stays tied to the reviewed head and records the proving HEAD in a new optional `currentHead` field; a missing, changed, moved or deleted anchor, or a head that does not descend, is refused with its reason.
+- **Skills and guides.** The `deliver` and `review` command guides and the `roundfix` skill's `deliver` and `review` references describe the owner line, the refusal and the dismissal.
+- **Glossary.** Revises Queue Owner and the pre-PR review verdict reuse.
+
 ## [0.82.0] - 2026-10-14
 
 ### History sanitize records keep their summary, links and dates
