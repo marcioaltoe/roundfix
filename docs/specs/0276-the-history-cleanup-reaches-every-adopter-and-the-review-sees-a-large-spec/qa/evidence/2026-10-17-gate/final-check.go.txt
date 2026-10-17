@@ -1,0 +1,13 @@
+package main
+import("fmt";"os";"path/filepath";"roundfix/internal/spec";"roundfix/internal/secretscan")
+func main(){
+ dir:=os.Args[1]
+ report,err:=spec.ReadQAReport(dir);if err!=nil{panic(err)}
+ if err:=spec.QAReportEligibility(dir,report);err!=nil{panic(err)}
+ fmt.Printf("Report verdict: %s; eligibility: accepted; environment rows outside exemptions: %d\n",report.Verdict,report.EnvironmentRowsNeedingOverride())
+ files,matches:=0,0
+ err=filepath.WalkDir(filepath.Join(dir,"qa"),func(path string,entry os.DirEntry,err error)error{if err!=nil{return err};if entry.IsDir(){return nil};data,err:=os.ReadFile(path);if err!=nil{return err};files++;for _,m:=range secretscan.ScanContent(path,data){fmt.Println(m.String());matches++};return nil})
+ if err!=nil{panic(err)}
+ fmt.Printf("QA files scanned: %d; Secret Matches: %d\n",files,matches)
+ if matches>0{os.Exit(1)}
+}

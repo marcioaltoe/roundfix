@@ -1,0 +1,5 @@
+make build: exit 0
+./bin/roundfix --version: roundfix 0.86.0 (e6575228-dirty, built 2026-10-17 13:56:54 -0300)
+Daemon fact: make verify-changed: pass (exit 0), not rerun.
+Audited head: e6575228aae034a4ef68119f76099bdf21032aff
+Strict precondition: exit 0, no findings.

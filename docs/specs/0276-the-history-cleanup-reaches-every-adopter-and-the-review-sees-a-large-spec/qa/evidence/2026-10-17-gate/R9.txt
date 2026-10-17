@@ -1,0 +1,132 @@
+$ git diff-tree --no-commit-id --name-only -r 7071af18e02b7fae8fa47549c4130de60ff63a54
+exit: 0
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/baseline.md
+.agents/skills/roundfix/references/setup.md
+docs/references/behavior-surfaces.json
+docs/specs/0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec/task_01.md
+docs/user-guide/commands/baseline.md
+docs/user-guide/commands/history.md
+internal/cli/baseline_update_history.go
+internal/cli/history.go
+internal/cli/history_adopter_test.go
+internal/cli/history_refusal_test.go
+internal/spec/history_entries.go
+internal/spec/history_lineage_test.go
+internal/spec/history_removal_test.go
+internal/spec/live_links.go
+internal/spec/live_links_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/roundfix/references/baseline.md
+skills/roundfix/references/setup.md
+skills/testdata/owned-skill-versions.json
+stderr:
+
+Task 01: 22 actual paths; undeclared []; Recorded paths ['internal/spec/history_removal_test.go']
+$ git diff-tree --no-commit-id --name-only -r 927c828fe32d2e08f7e4b8da4bdf80cb5108d2fe
+exit: 0
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/review.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec/task_02.md
+docs/user-guide/commands/review.md
+internal/cli/review.go
+internal/cli/review_convention_qa_task_test.go
+internal/cli/review_conventions.go
+internal/cli/review_scope_test.go
+internal/cli/review_segment_test.go
+internal/cli/review_segments.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json
+stderr:
+
+Task 02: 15 actual paths; undeclared []; Recorded paths ['internal/cli/review_segments.go']
+$ git diff-tree --no-commit-id --name-only -r 27a8b90ab7b8d6dd97e5667c48377e857b2233fc
+exit: 0
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+.agents/skills/write-tasks/SKILL.md
+docs/references/behavior-surfaces.json
+docs/specs/0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec/task_03.md
+docs/user-guide/commands/spec.md
+internal/docscontract/corpus_test.go
+internal/docscontract/testdata/corpus-golden.json
+internal/spec/archive_layout_characterization_test.go
+internal/speccheck/coherence.go
+internal/speccheck/constraints.go
+internal/speccheck/skill_version.go
+internal/speccheck/skill_version_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+skills/write-tasks/SKILL.md
+stderr:
+
+Task 03: 17 actual paths; undeclared []; Recorded paths []
+$ git diff-tree --no-commit-id --name-only -r e6575228aae034a4ef68119f76099bdf21032aff
+exit: 0
+stdout:
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/deliver.md
+docs/references/behavior-surfaces.json
+docs/specs/0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec/task_04.md
+docs/user-guide/commands/archive.md
+docs/user-guide/commands/deliver.md
+internal/cli/archive.go
+internal/cli/archive_plan_offline_test.go
+internal/cli/archive_pull_request_test.go
+internal/cli/deliver_item_binary_copy_test.go
+internal/cli/deliver_item_binary_rebuild_test.go
+internal/cli/deliver_item_binary_signal_unix_test.go
+internal/cli/deliver_item_binary_test.go
+internal/cli/deliver_item_probe_report_test.go
+internal/cli/deliver_workflow.go
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+stderr:
+
+Task 04: 22 actual paths; undeclared []; Recorded paths ['internal/cli/deliver_item_binary_rebuild_test.go', 'internal/cli/deliver_item_binary_signal_unix_test.go', 'internal/cli/deliver_item_probe_report_test.go']
+$ git diff --name-only f887c3c3a13fcfb3574ae9bc30efe5e250257512 e6575228aae034a4ef68119f76099bdf21032aff -- Makefile .github/workflows go.mod go.sum .roundfixrc.yml internal/baseline/assets/modules internal/speccheck/history_retained.go
+exit: 0
+stdout:
+stderr:
+
+roundfix version 0.1.85 -> 0.1.89; canonical and mirror match; version-record tests verify digest.
+write-tasks version 0.0.16 -> 0.0.17; canonical and mirror match; version-record tests verify digest.
+qa-gate version 0.0.15 -> 0.0.16; canonical and mirror match; version-record tests verify digest.
+Protected files: unchanged from Delivery Base. All protected QA settlement blocks byte-identical. No stale v2 or whole-unit refusal instruction found.
+Glossary: **Review Segment**:
+No other new domain term: new flags, detector code and JSON fields reuse existing domain terms.
+Archive-plan instruction search (operator examples are distinct from QA instructions):
+docs/user-guide/commands/archive.md:6: roundfix archive <slug> --plan [--offline]
+docs/user-guide/commands/archive.md:39: Use `roundfix archive <slug> --plan` to list the core artifacts, QA evidence,
+docs/user-guide/commands/archive.md:45: For a plan that contacts no judge, use `roundfix archive <slug> --plan --offline`.
+.agents/skills/roundfix/references/archive.md:138: recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
+.agents/skills/roundfix/references/archive.md:142: Use `roundfix archive <slug> --plan --offline` when no judge may be contacted,
+skills/roundfix/references/archive.md:138: recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
+skills/roundfix/references/archive.md:142: Use `roundfix archive <slug> --plan --offline` when no judge may be contacted,
+.agents/skills/qa-gate/SKILL.md:641: `roundfix archive <slug> --plan --offline` to list the cut and its candidates.
+skills/qa-gate/SKILL.md:641: `roundfix archive <slug> --plan --offline` to list the cut and its candidates.
+$ git diff --name-status
+exit: 0
+stdout:
+stderr:
+
+$ git status --short
+exit: 0
+stdout:
+?? docs/specs/0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec/qa/
+stderr:
+

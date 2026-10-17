@@ -1,0 +1,28 @@
+$ go test -count=1 -v -run SpecConsistency ./internal/daemon
+exit: 0
+stdout:
+=== RUN   TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== PAUSE TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== RUN   TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== PAUSE TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== RUN   TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== PAUSE TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== RUN   TestSpecConsistencyCheckerErrorFailsTheCheck
+=== PAUSE TestSpecConsistencyCheckerErrorFailsTheCheck
+=== RUN   TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== PAUSE TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== CONT  TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== CONT  TestSpecConsistencyCheckerErrorFailsTheCheck
+=== CONT  TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== CONT  TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== CONT  TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+--- PASS: TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork (0.16s)
+--- PASS: TestSettlementIgnoresASpecConsistencyFindingPresentAtStart (0.18s)
+--- PASS: TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced (0.19s)
+--- PASS: TestSpecConsistencyCheckerErrorFailsTheCheck (0.20s)
+--- PASS: TestSpecConsistencyRepairKeepsTheTaskStartBaseline (0.20s)
+PASS
+suiteguard: guard cost: measured 2552 paths; fingerprint took 96.310209ms before and 69.079333ms after
+ok  	roundfix/internal/daemon	0.702s
+stderr:
+

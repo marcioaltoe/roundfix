@@ -1,0 +1,21 @@
+$ go test -count=1 -v -run ^TestReviewReadsDerivedPathsFromTheBaseCommit$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestReviewReadsDerivedPathsFromTheBaseCommit
+=== PAUSE TestReviewReadsDerivedPathsFromTheBaseCommit
+=== CONT  TestReviewReadsDerivedPathsFromTheBaseCommit
+=== RUN   TestReviewReadsDerivedPathsFromTheBaseCommit/false
+    review_scope_test.go:372: exit=0 record={Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:595 OmittedPaths:[{Path:authored/source.go Reason:generated}] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewReadsDerivedPathsFromTheBaseCommitfalse3291382915/002 BaseCommit:72c89e7ffea5bb43cf9cc7bbe1aa69124012c895 BaseTipCommit:72c89e7ffea5bb43cf9cc7bbe1aa69124012c895 HeadCommit:6f930874f8dd0dd79c43ca981ab13a0597ecbd87 Provider:codex Source:project Outcome:reviewed Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewReadsDerivedPathsFromTheBaseCommitfalse3291382915/003/artifacts/pre-pr-review/6d2ad354f05b616d/pre-pr-review-answer.txt Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:0x338cac5b0180 Lineage:0x338cac1c60a0} stderr=""
+=== RUN   TestReviewReadsDerivedPathsFromTheBaseCommit/true
+--- FAIL: TestReviewReadsDerivedPathsFromTheBaseCommit (0.33s)
+    --- FAIL: TestReviewReadsDerivedPathsFromTheBaseCommit/false (0.17s)
+    --- PASS: TestReviewReadsDerivedPathsFromTheBaseCommit/true (0.16s)
+FAIL
+suiteguard: guard cost: measured 2543 paths; fingerprint took 86.357708ms before and 72.505875ms after
+FAIL	roundfix/internal/cli	0.893s
+FAIL
+stderr:
+
+Mutation source: git archive e6575228aae034a4ef68119f76099bdf21032aff
+Mutation path: internal/cli/review.go
+Expected named assertion failure observed; no compile failure.

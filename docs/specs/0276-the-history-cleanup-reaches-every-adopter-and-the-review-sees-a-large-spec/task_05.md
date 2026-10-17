@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0276-the-history-cleanup-reaches-every-adopter-and-the-review-sees-a-large-spec
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

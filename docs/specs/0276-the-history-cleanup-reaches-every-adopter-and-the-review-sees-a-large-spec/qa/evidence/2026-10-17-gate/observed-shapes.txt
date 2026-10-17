@@ -1,0 +1,34 @@
+$ go test -count=1 -v -run ^(TestBaselineUpdatePlansLineageAndLiveLinks|TestReviewOmitsRetiredHistoryAndGeneratedFiles|TestReviewBlocksACandidateNeedingMoreThanFourSegments|TestDeliveryConventionC2ExemptsTheQATask)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestBaselineUpdatePlansLineageAndLiveLinks
+=== PAUSE TestBaselineUpdatePlansLineageAndLiveLinks
+=== RUN   TestDeliveryConventionC2ExemptsTheQATask
+=== PAUSE TestDeliveryConventionC2ExemptsTheQATask
+=== RUN   TestReviewOmitsRetiredHistoryAndGeneratedFiles
+=== PAUSE TestReviewOmitsRetiredHistoryAndGeneratedFiles
+=== RUN   TestReviewBlocksACandidateNeedingMoreThanFourSegments
+=== PAUSE TestReviewBlocksACandidateNeedingMoreThanFourSegments
+=== CONT  TestBaselineUpdatePlansLineageAndLiveLinks
+=== CONT  TestReviewOmitsRetiredHistoryAndGeneratedFiles
+=== CONT  TestReviewBlocksACandidateNeedingMoreThanFourSegments
+=== CONT  TestDeliveryConventionC2ExemptsTheQATask
+    review_convention_qa_task_test.go:23: QA C2: The Daemon writes a Task file's status after the Task's Verification passes, its `## Result` and `## Carry-forward provenance` sections for non-QA Tasks only, and `## Recorded paths` only when a Task changed a path it did not declare; a QA Task settles on its committed QA Report and carries none of these sections. A Result that calls status Daemon-owned agrees with a `completed` status.
+--- PASS: TestDeliveryConventionC2ExemptsTheQATask (0.17s)
+=== NAME  TestReviewOmitsRetiredHistoryAndGeneratedFiles
+    review_scope_test.go:343: QA omission record: {Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:139 OmittedPaths:[{Path:docs/history/retired.md Reason:retired-history} {Path:generated/data.json Reason:generated}] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewOmitsRetiredHistoryAndGeneratedFiles3400151339/002 BaseCommit:10a64c7e03341661a295746123cf692992af6f1b BaseTipCommit:10a64c7e03341661a295746123cf692992af6f1b HeadCommit:7079d0277733695e1074edd2739a7643d45db22d Provider:codex Source:project Outcome:reviewed Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewOmitsRetiredHistoryAndGeneratedFiles3400151339/003/artifacts/pre-pr-review/74a922ed4564cb60/pre-pr-review-answer.txt Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:0x3eddde7944b0 Lineage:0x3eddde719540}
+    review_scope_test.go:344: QA omission summary: Omitted from this diff (not reviewed): 0 path(s) of QA evidence, 0 of upstream-managed skills, 0 of archived Spec sources, 1 of retired history, 1 of generated files.
+--- PASS: TestReviewOmitsRetiredHistoryAndGeneratedFiles (0.35s)
+=== NAME  TestReviewBlocksACandidateNeedingMoreThanFourSegments
+    review_segment_test.go:144: QA fifth-segment reason: review diff too large: 3059185 bytes after omitting 0 path(s) needs 5 review segments; a review allows at most 4
+--- PASS: TestReviewBlocksACandidateNeedingMoreThanFourSegments (0.69s)
+=== NAME  TestBaselineUpdatePlansLineageAndLiveLinks
+    history_adopter_test.go:154: QA baseline JSON: {"history":{"status":"pending","revision":"4022dd1d7f8d407548390de0059f761511533786","tag":{"name":"history-full","action":"create","commit":"4022dd1d7f8d407548390de0059f761511533786","pushCommand":"git push origin history-full"},"units":[{"unit":"adr","action":"remove","paths":["docs/adr/0001-old.md","docs/adr/0003-rejected.md"],"files":2,"bytes":93},{"unit":"live-links","action":"rewrite","paths":["docs/references/live.md","docs/user-guide/live.md"],"files":2,"bytes":0,"links":2}],"refused":[{"unit":"docs/history/adr/0004-kept.md","reason":"superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated"}],"citations":[{"path":"docs/adr/0002-new.md","line":6,"target":"docs/adr/0001-old.md","live":false,"rewrite":"Supersedes ADR-0001 (2026-10-17); Git keeps its text at `docs/adr/0001-old.md@4022dd1d7f8d407548390de0059f761511533786`."},{"path":"docs/references/live.md","line":3,"target":"docs/specs/old/_techspec.md","live":true,"rewrite":"`docs/specs/old/_techspec.md@f17659f2bb27105e03ffcecf6f5deaa417a9047b`"},{"path":"docs/user-guide/live.md","line":3,"target":"docs/specs/old/_techspec.md","live":false,"rewrite":"`docs/specs/old/_techspec.md@f17659f2bb27105e03ffcecf6f5deaa417a9047b`"}],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":false,"state":"plan_ready","category":"approval","message":"guidance matches the current Baseline catalog; 2 history unit(s) pending sanitize","nextAction":"review the plan and rerun with --confirm-plan sha256:3753de9d642a7942e20fdfb45d632bf0f21772d482d40302c7a94151751b9392, or use --yes to approve the digest computed in one invocation","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:a5c687aa60ad35f3d967cb4bdc3094f404c8ff103f39447c4c5e83c8d4fa22ba"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:a5c687aa60ad35f3d967cb4bdc3094f404c8ff103f39447c4c5e83c8d4fa22ba"},"fileChanges":[],"retention":[],"warnings":[],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:3753de9d642a7942e20fdfb45d632bf0f21772d482d40302c7a94151751b9392","skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[],"differing":[]}}
+=== RUN   TestBaselineUpdatePlansLineageAndLiveLinks/dirty_successor_refuses_ADR_unit
+--- PASS: TestBaselineUpdatePlansLineageAndLiveLinks (2.61s)
+    --- PASS: TestBaselineUpdatePlansLineageAndLiveLinks/dirty_successor_refuses_ADR_unit (0.80s)
+PASS
+suiteguard: guard cost: measured 2543 paths; fingerprint took 240.031708ms before and 72.344208ms after
+ok  	roundfix/internal/cli	3.347s
+stderr:
+
