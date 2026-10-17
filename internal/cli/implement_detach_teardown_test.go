@@ -1,3 +1,5 @@
+//go:build unix
+
 // Suite: detached test fixture ownership.
 // Invariant: fixture processes end when their owning test binary is killed.
 // Boundary IN: the compiled test binary, private TMPDIR and recorded PIDs.

@@ -180,42 +180,6 @@ func TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments(t *testing.T) {
 	}
 }
 
-func TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate(t *testing.T) {
-	t.Parallel()
-	f := newDeliveryItemFixture(t)
-	setCommandEnvForTest(t, "DELIVERY_ITEM_PROBE_EXIT", "2")
-	setCommandEnvForTest(t, cliTestHelperEnv, "1")
-	for _, stream := range []string{"stderr", "stdout"} {
-		t.Run(stream, func(t *testing.T) {
-			if err := os.Remove(f.record); err != nil && !os.IsNotExist(err) {
-				t.Fatal(err)
-			}
-			f.log.Reset()
-			setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "\n  \n")
-			setCommandEnvForTest(t, "DELIVERY_ITEM_STDOUT", "\nstdout reason\nlater\n")
-			detail := "stdout reason"
-			if stream == "stderr" {
-				setCommandEnvForTest(t, "DELIVERY_ITEM_STDERR", "\nprobe schema differs\nsecond line\n")
-				detail = "probe schema differs"
-			}
-			executable, err, report := f.step(t, commandContextForTest(t, t.Context()), "review")
-			owner, ownerErr := os.Executable()
-			if err != nil || ownerErr != nil || executable != owner {
-				t.Fatalf("executable=%q err=%v ownerErr=%v", executable, err, ownerErr)
-			}
-			result, err := f.workflow.runRoundfix(commandContextForTest(t, t.Context()), executable, f.repo, "--version")
-			if err != nil || result.exitCode != 0 || result.stdout == "" {
-				t.Fatalf("owner result=%+v err=%v", result, err)
-			}
-			want := "roundfix: notice: Delivery Queue item widget: review runs the owner's binary; the item binary's migrate --check exited 2: " + detail + "\n"
-			if f.log.String() != want {
-				t.Fatalf("log=%q want=%q; %s", f.log.String(), want, report)
-			}
-			f.assertStarts(t, []string{"migrate", "--check"})
-		})
-	}
-}
-
 func TestDeliveryStepParksWhenTheItemBuildFails(t *testing.T) {
 	t.Parallel()
 	f := newDeliveryItemFixture(t)

@@ -43,34 +43,6 @@ func TestToolingAuthorizationJourneyCoreClause(t *testing.T) {
 	}
 }
 
-func TestBaselineReleaseGate(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		{name: "greenfield", run: TestGreenfieldPlanBacksUpWithoutImport},
-		{name: "preservation", run: TestPreservationPlanAcceptsCompleteDecisionDocument},
-		{name: "profile selection", run: TestProfileAlignmentResolvesExactlyOneProfile},
-		{name: "stale plan", run: TestApplyStalePreimage},
-		{name: "cross-clone apply", run: TestApplyCrossClone},
-		{name: "unsafe carrier", run: TestInstructionAliasUnsafeTargetsBlock},
-		{name: "rollback", run: TestTransactionRollback},
-		{name: "semantic redistribution rollback", run: TestRepositoryRuleBlockRollbackRestoresSemanticGuide},
-		{name: "Profile adaptation rollback", run: TestProfileDraftRollbackRestoresMissingProfile},
-		{name: "recovery", run: TestTransactionRecovery},
-		{name: "empty reapply", run: TestEmptyReapply},
-		{name: "Profile divergence adaptation", run: TestProfileDivergenceResolution},
-		{name: "universal capability remediation", run: TestUniversalCapabilityRemediation},
-		{name: "rejected-plan revision", run: TestRejectedPlanRevision},
-		{name: "renewed approval", run: TestRevisionRequiresNewApproval},
-	}
-	for _, test := range tests {
-		t.Run(test.name, test.run)
-	}
-}
-
 func TestBaselineFindingRegressions(t *testing.T) {
 	t.Parallel()
 

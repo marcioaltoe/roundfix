@@ -32,7 +32,7 @@ var realTimeBudgetCeilings = map[string]realTimeBudgetCeiling{
 	"internal/agent/acpx_runner_test.go":         {1, "StopGrace is unused by the successful prompt; it bounds no cancellation child."},
 	"internal/agent/cursor_login_test.go":        {1, "The caller deadline is asserted against a login fixture that blocks."},
 	"internal/cli/cli_test.go":                   {2, "Review and check deadlines are data for the fake watch clock and sleeper."},
-	"internal/cli/detach_test.go":                {2, "The asserted liveness and Run-creation deadlines race owner-watched blocking child modes."},
+	"internal/cli/detach_unix_test.go":           {2, "The asserted liveness and Run-creation deadlines race owner-watched blocking child modes."},
 	"internal/cli/gc_run_retention_test.go":      {3, "Sweep budgets are measured by the injected retention clock."},
 	"internal/cli/orphan_unix_test.go":           {1, "Teardown reaps an already killed or exited owner; it bounds no child startup."},
 	"internal/cli/readiness_forge_test.go":       {1, "The probe deadline is asserted against a child that never answers before cancellation."},

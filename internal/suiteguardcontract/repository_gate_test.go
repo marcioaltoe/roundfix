@@ -1,5 +1,5 @@
 // Suite: repository-contract gate completeness.
-// Invariant: every test requiring the repocontract build tag runs in the repository gate.
+// Invariant: every repocontract test runs in the legacy gate or the discovered Full Contract Run.
 // Boundary IN: Go test declarations and repository-gate wiring in the module Makefile.
 // Boundary OUT: behavior inside each repository-contract test.
 package suiteguardcontract
@@ -46,6 +46,59 @@ func TestRepositoryGateAuditNamesAMissingContractTest(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertRepositoryGateFindingContains(t, findings, "TestFixtureRepositoryContract")
+
+	// ADR-0253 makes discovery, rather than the legacy list, the source of
+	// every contract. A discovery command must also execute its entire output.
+	const fullRun = `
+VERIFY_SELECT := $(GO) run $(RUN_FLAGS) ./cmd/verify-select
+
+verify-contracts:
+	@invocations="$$( $(VERIFY_SELECT) -contracts -all )" || exit $$?; \
+	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
+		if [ -n "$$packages" ]; then \
+			$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
+		fi; \
+	done
+`
+	for _, scenario := range []struct {
+		name, replace, with string
+		wantMissing         bool
+	}{
+		{name: "full discovery covers an unlisted contract"},
+		{name: "selective discovery is insufficient", replace: "-contracts -all", with: "-contracts", wantMissing: true},
+		{name: "selector must execute Go", replace: "$(GO) run $(RUN_FLAGS)", with: "echo", wantMissing: true},
+		{name: "nonempty package selections must execute", replace: `if [ -n "$$packages" ]`, with: `if [ -z "$$packages" ]`, wantMissing: true},
+		{name: "selector must be the repository command", replace: "./cmd/verify-select", with: "./cmd/other", wantMissing: true},
+		{name: "discovery output must reach the loop", replace: "| while read", with: "; while read", wantMissing: true},
+		{name: "tag must be forwarded", replace: `-tags "$$tag"`, with: "-tags docscontract", wantMissing: true},
+		{name: "test names must be forwarded", replace: `-run "$$tests"`, with: "-run TestOther", wantMissing: true},
+		{name: "packages must be forwarded", replace: `"$$tests" $$packages`, with: `"$$tests" ./internal/other`, wantMissing: true},
+		{name: "selector failure must propagate", replace: `)" || exit $$?;`, with: `)";`, wantMissing: true},
+		{name: "test failure must propagate", replace: `$$packages || exit $$?;`, with: `$$packages;`, wantMissing: true},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			root := newRepositoryGateFixture(t, "TestSomeOtherContract", "./...")
+			makefilePath := filepath.Join(root, "Makefile")
+			makefile, err := os.ReadFile(makefilePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			recipe := fullRun
+			if scenario.replace != "" {
+				recipe = strings.Replace(recipe, scenario.replace, scenario.with, 1)
+			}
+			writeRepositoryGateFixtureFile(t, makefilePath, string(makefile)+recipe)
+			findings, err := auditRepositoryGate(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if scenario.wantMissing {
+				assertRepositoryGateFindingContains(t, findings, "TestFixtureRepositoryContract")
+			} else if len(findings) != 0 {
+				t.Fatalf("full discovery must cover the unlisted contract: %v", findings)
+			}
+		})
+	}
 }
 
 func TestRepositoryGateAuditNamesADroppedRepositoryWideRun(t *testing.T) {
@@ -80,9 +133,10 @@ func auditRepositoryGate(repositoryRoot string) ([]string, error) {
 			listed[name] = struct{}{}
 		}
 	}
+	fullDiscovery := makeRunsAllDiscoveredContracts(makefile)
 	for _, name := range contractTests {
-		if _, ok := listed[name]; !ok {
-			findings = append(findings, fmt.Sprintf("repository-contract test %s is missing from REPO_CONTRACT_TESTS", name))
+		if _, ok := listed[name]; !ok && !fullDiscovery {
+			findings = append(findings, fmt.Sprintf("repository-contract test %s is missing from REPO_CONTRACT_TESTS and the Full Contract Run", name))
 		}
 	}
 
@@ -105,6 +159,35 @@ func auditRepositoryGate(repositoryRoot string) ([]string, error) {
 
 	sort.Strings(findings)
 	return findings, nil
+}
+
+// makeRunsAllDiscoveredContracts recognizes the Full Contract Run of ADR-0253.
+// Both discovery and its execution loop must be wired, including failure
+// propagation: merely naming the selector does not run an unlisted contract.
+func makeRunsAllDiscoveredContracts(makefile []byte) bool {
+	selector, found := makeVariable(makefile, "VERIFY_SELECT")
+	if !found {
+		return false
+	}
+	fields := strings.Fields(selector)
+	if len(fields) < 3 || fields[0] != "$(GO)" || fields[1] != "run" || fields[len(fields)-1] != "./cmd/verify-select" {
+		return false
+	}
+	recipe, found := makeTargetRecipe(makefile, "verify-contracts")
+	if !found {
+		return false
+	}
+	for _, required := range []string{
+		`invocations="$$( $(VERIFY_SELECT) -contracts -all )" || exit $$?;`,
+		`printf '%s\n' "$$invocations" | while read -r tag tests packages; do`,
+		`if [ -n "$$packages" ]; then`,
+		`$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?;`,
+	} {
+		if !strings.Contains(recipe, required) {
+			return false
+		}
+	}
+	return true
 }
 
 func repositoryContractTests(repositoryRoot string) ([]string, error) {

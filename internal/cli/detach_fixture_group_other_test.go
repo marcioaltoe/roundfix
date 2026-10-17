@@ -1,4 +1,4 @@
-//go:build !darwin && !linux
+//go:build unix && !darwin && !linux
 
 package cli
 
