@@ -21,11 +21,12 @@ violation of each rule.
 
 1. MUST answer the adopted Backlog Entry of 2026-10-16,
    [the glossary is not held to the rule it applies to Specs](references/2026-10-16-the-glossary-is-not-held-to-the-rule-it-applies-to-specs.md),
-   by adding `internal/docscontract/glossary_contract_test.go` under the
-   `docscontract` build tag with a `//verify:relevant` directive naming
-   `CONTEXT.md`, `docs/adr/`, `internal/spec/task_type.go`,
-   `internal/speccheck/mechanical.go`, `internal/worktree/worktree.go` and
-   `internal/agent/selection_assignment.go` (ADR-0280).
+   by adding its tests to the existing `internal/docscontract/user_guide_contract_test.go`
+   (`docscontract` build tag, `//verify:always`) and to no new file, because
+   `TestRepositoryContractTestsDeclareTheirRelevance` in
+   `internal/verifyselect/contracts_repository_test.go` requires every
+   `docscontract` file to be an always contract and pins their number at nine
+   (ADR-0280).
 2. MUST implement the five rules of API Contract 4 exactly as written, one
    top-level test each on the live `CONTEXT.md`:
    `TestGlossaryPhrasesAreDefinedTerms`, `TestGlossaryLinksNameAcceptedADRs`,
@@ -78,7 +79,8 @@ None. This Task adds a contract test and rewords glossary prose; no code consume
 - instruction: `docs/adr/0244-a-spec-declares-the-domain-terms-it-introduces-and-the-check-holds-them-to-the-glossary.md`
 - instruction: `.agents/skills/domain-modeling/SKILL.md`
 - instruction: `internal/speccheck/glossary.go`
-- creates: `internal/docscontract/glossary_contract_test.go`
+- interface: `internal/docscontract/user_guide_contract_test.go`
+- instruction: `internal/verifyselect/contracts_repository_test.go`
 - interface: `CONTEXT.md`
 
 ## Verification
