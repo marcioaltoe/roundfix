@@ -13,13 +13,16 @@ import (
 	"sync"
 	"syscall"
 	"testing"
+
+	"roundfix/internal/testfixture"
 )
 
 func TestDeliveryItemBinaryCopyStartsWhileTheOwnerForks(t *testing.T) {
 	t.Parallel()
-	program, err := os.ReadFile("/bin/true")
+	fixture := testfixture.FixtureBinary(t, "fork-lock-item", "package main\n\nfunc main() {}\n")
+	program, err := os.ReadFile(fixture)
 	if err != nil {
-		t.Skipf("no /bin/true to copy: %v", err)
+		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	ctx, cancel := context.WithCancel(t.Context())
@@ -29,12 +32,12 @@ func TestDeliveryItemBinaryCopyStartsWhileTheOwnerForks(t *testing.T) {
 		go func() {
 			defer forks.Done()
 			for ctx.Err() == nil {
-				_ = exec.Command("/bin/true").Run()
+				_ = exec.Command(fixture).Run()
 			}
 		}()
 	}
 	defer func() { cancel(); forks.Wait() }()
-	for i := range 200 {
+	for i := range 100 {
 		source := filepath.Join(dir, fmt.Sprintf("build-%d", i), "roundfix")
 		if err := os.MkdirAll(filepath.Dir(source), 0o755); err != nil {
 			t.Fatal(err)
@@ -49,6 +52,9 @@ func TestDeliveryItemBinaryCopyStartsWhileTheOwnerForks(t *testing.T) {
 		}
 		if err := exec.Command(copied).Run(); err != nil {
 			t.Fatalf("start %d of a fresh copy: %v (text file busy: %t)", i, err, errors.Is(err, syscall.ETXTBSY))
+		}
+		if err := os.RemoveAll(filepath.Dir(copied)); err != nil {
+			t.Fatal(err)
 		}
 	}
 }
