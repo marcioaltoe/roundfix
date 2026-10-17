@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-14T23:44:53Z
+updated_at: 2026-10-17T20:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -80,3 +80,5 @@ must prove depends on it, and the operator keeps running it outside Runs.
   place to narrow it, and its tests name each kind's shape.
 - Git hooks and the QA format command keep the Run's environment; they are
   repository configuration, not commands a Spec or an Agent chooses.
+
+**Amended by [ADR-0283](0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md) (2026-10-17).** Every Agent Session and Verification command of a Run also receives the Run Marker `ROUNDFIX_RUN_ID`, and the judge sends nothing while it is set, because an Agent runtime that re-reads the user's shell startup can export a judge key again; the Judge Key Variables also include `TYPESAFE_API_KEY`.

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-07T00:00:00Z
-updated_at: 2026-10-07T00:00:00Z
+updated_at: 2026-10-17T20:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -68,3 +68,5 @@ command to run. Rule, guide and clause versions inside a module stay
 hand-maintained. A version number may be skipped when a Task records twice,
 as ADR-0233 accepts for skills. Adding a release platform changes the
 coverage record, which is then re-recorded deliberately.
+
+**Extended by [ADR-0285](0285-every-test-file-compiles-for-windows-and-a-repository-contract-proves-it.md) (2026-10-17).** A test that needs Unix lives in a `unix`-constrained file, so the record's Windows list names only tests that compile there, and a Repository Contract Test compiles every test for Windows.

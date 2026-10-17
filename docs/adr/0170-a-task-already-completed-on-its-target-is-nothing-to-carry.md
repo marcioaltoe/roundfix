@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-29T00:00:00Z
-updated_at: 2026-09-29T00:00:00Z
+updated_at: 2026-10-17T20:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -44,3 +44,5 @@ This refines
 [ADR-0053](0053-terminal-run-worktree-reconciliation-is-proof-based.md) and
 [ADR-0158](0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)
 without superseding either.
+
+**Extended by [ADR-0284](0284-carry-forward-binds-a-task-to-the-planning-text-it-references.md) (2026-10-17).** An amendment of the PRD, the TechSpec or the Task Graph manifest refuses a settled Task only when it changes that Task's Binding Text; a refused Task still refuses the whole remaining set.
