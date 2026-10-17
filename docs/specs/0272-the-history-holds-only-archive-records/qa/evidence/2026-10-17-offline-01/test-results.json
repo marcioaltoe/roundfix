@@ -1,0 +1,47 @@
+{
+  "groups": [
+    {
+      "package": "./internal/spec",
+      "tags": "",
+      "exit": 0,
+      "log": "tests-internal-spec.txt"
+    },
+    {
+      "package": "./internal/cli",
+      "tags": "",
+      "exit": 0,
+      "log": "tests-internal-cli.txt"
+    },
+    {
+      "package": "./internal/docscontract",
+      "tags": "docscontract",
+      "exit": 0,
+      "log": "tests-internal-docscontract-docscontract.txt"
+    },
+    {
+      "package": "./internal/baseline",
+      "tags": "",
+      "exit": 0,
+      "log": "tests-internal-baseline.txt"
+    },
+    {
+      "package": "./internal/speccheck",
+      "tags": "",
+      "exit": 0,
+      "log": "tests-internal-speccheck.txt"
+    },
+    {
+      "package": "./skills",
+      "tags": "",
+      "exit": 0,
+      "log": "tests-skills.txt"
+    },
+    {
+      "package": "./skills",
+      "tags": "repocontract",
+      "exit": 0,
+      "log": "tests-skills-repocontract.txt"
+    }
+  ],
+  "missing_named_tests": []
+}

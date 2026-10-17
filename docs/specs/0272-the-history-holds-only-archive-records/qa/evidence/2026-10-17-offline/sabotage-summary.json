@@ -1,0 +1,61 @@
+{
+  "base": "7d3d05843280e0980c2d62a257af826806cc7018",
+  "results": [
+    {
+      "case": "family-findings",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "family-backlog",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "family-adr",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "family-reviews",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "family-handoffs",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "reduced",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "done-finding",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "broken-record",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    },
+    {
+      "case": "self-record",
+      "audited_exit": 1,
+      "base_exit": 0,
+      "sentinel_absent_exit": 0
+    }
+  ],
+  "unreachable_commit": "b5603fd809aa82a66716d6eed6fff6ed2a40a71a",
+  "unreachable_exit": 1
+}

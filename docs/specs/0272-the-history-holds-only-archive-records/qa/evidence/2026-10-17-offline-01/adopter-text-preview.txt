@@ -1,0 +1,37 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0272-the-history-holds-only-archive-records-82392213e09195f8-b832685a-bb83ae64/run_20261017T074441Z_7010289b20c58c7a/bin/roundfix baseline update --repo . --no-skills --format text
+stdout:
+Baseline update: plan ready
+Category: approval
+Result: guidance matches the current Baseline catalog; 5 history unit(s) pending sanitize
+Prior catalog: sha256:a5c687aa60ad35f3d967cb4bdc3094f404c8ff103f39447c4c5e83c8d4fa22ba
+Current catalog: sha256:a5c687aa60ad35f3d967cb4bdc3094f404c8ff103f39447c4c5e83c8d4fa22ba
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+History: pending
+History units: 5 (6 file(s), 961 bytes leave docs/history)
+- findings: removes 2 file(s) (272 bytes)
+  - _archived/findings/legacy.md
+  - docs/history/findings/reduced.md
+- backlog: removes 2 file(s) (215 bytes)
+  - docs/backlog/2026-10-16-done.md
+  - docs/history/backlog/reduced.md
+- adr: removes 1 file(s) (37 bytes)
+  - docs/adr/old.md
+- superseded: removes 1 file(s) (437 bytes)
+  - docs/history/specs/0003-uncited.md
+- record-links: rewrites 1 link(s) in 1 Archive Record(s)
+  - docs/history/specs/0001-kept.md
+History citations: 2
+- cites docs/user-guide/a.md:3 names docs/history/findings/reduced.md; rewrites to `docs/findings/original.md@16b72fe238c39402b00d8f6fc94b10b3a24831ba`
+- cites docs/history/specs/0001-kept.md:24 names docs/history/specs/file.md; rewrites to `docs/specs/0001-kept/file.md@16b72fe238c39402b00d8f6fc94b10b3a24831ba`
+History tag: history-full at 9fa6460291fd holds every planned path
+Plan Digest: sha256:97f2a82a28db3fe4b429c18a6651d3e53901ec792a097b2ebe7df2ff66e27269
+Next action: review the plan and rerun with --confirm-plan sha256:97f2a82a28db3fe4b429c18a6651d3e53901ec792a097b2ebe7df2ff66e27269, or use --yes to approve the digest computed in one invocation
+stderr:
+exit: 3

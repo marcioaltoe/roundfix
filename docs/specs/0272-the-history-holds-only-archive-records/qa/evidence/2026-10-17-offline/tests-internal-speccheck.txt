@@ -1,0 +1,679 @@
+$ go test -count=1 -v -run '(Receipt|Rollup|Backlog|Citation|Archive|History|Finding)|(^(TestHistoryRetainedIsSilentBeforeTheBaselineCarriesTheRule|TestHistoryRetainedReportsRetainedFamiliesAndTerminalFindings|TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator|TestHistoryRetainedReportsAGitLocatorNoReachableCommitHolds|TestReceiptsResolveARemovedADRThroughGit|TestRollupMembersResolveThroughGit|TestTerminalBacklogEntryFixSaysDelete)$)' ./internal/speccheck
+stdout:
+=== RUN   TestAGuideWithUnreadableHistoryHoldsEverySpec
+=== PAUSE TestAGuideWithUnreadableHistoryHoldsEverySpec
+=== RUN   TestADeferredBacklogEntryIsTerminal
+=== PAUSE TestADeferredBacklogEntryIsTerminal
+=== RUN   TestADeferredBacklogEntryLeftActiveIsReported
+=== PAUSE TestADeferredBacklogEntryLeftActiveIsReported
+=== RUN   TestHistoryRetainedIsSilentBeforeTheBaselineCarriesTheRule
+=== PAUSE TestHistoryRetainedIsSilentBeforeTheBaselineCarriesTheRule
+=== RUN   TestHistoryRetainedReportsRetainedFamiliesAndTerminalFindings
+=== PAUSE TestHistoryRetainedReportsRetainedFamiliesAndTerminalFindings
+=== RUN   TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator
+=== PAUSE TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator
+=== RUN   TestHistoryRetainedReportsAGitLocatorNoReachableCommitHolds
+=== PAUSE TestHistoryRetainedReportsAGitLocatorNoReachableCommitHolds
+=== RUN   TestReceiptsResolveARemovedADRThroughGit
+=== PAUSE TestReceiptsResolveARemovedADRThroughGit
+=== RUN   TestRollupMembersResolveThroughGit
+=== PAUSE TestRollupMembersResolveThroughGit
+=== RUN   TestTerminalBacklogEntryFixSaysDelete
+=== PAUSE TestTerminalBacklogEntryFixSaysDelete
+=== RUN   TestReceiptCharacterizationKeepsEveryParsedClaim
+=== PAUSE TestReceiptCharacterizationKeepsEveryParsedClaim
+=== RUN   TestAVerbatimReceiptIsProven
+=== PAUSE TestAVerbatimReceiptIsProven
+=== RUN   TestAReceiptThatWrapsAcrossLinesIsProven
+=== PAUSE TestAReceiptThatWrapsAcrossLinesIsProven
+=== RUN   TestAReceiptWithOneChangedWordIsUnproven
+=== PAUSE TestAReceiptWithOneChangedWordIsUnproven
+=== RUN   TestAReceiptWithAnUnresolvedSourceIsUnproven
+=== PAUSE TestAReceiptWithAnUnresolvedSourceIsUnproven
+=== RUN   TestAReceiptThroughASymbolicLinkDoesNotResolve
+=== PAUSE TestAReceiptThroughASymbolicLinkDoesNotResolve
+=== RUN   TestAReceiptShorterThanThreeWordsIsUnproven
+=== PAUSE TestAReceiptShorterThanThreeWordsIsUnproven
+=== RUN   TestAFileReceiptIsProvedAgainstTheFile
+=== PAUSE TestAFileReceiptIsProvedAgainstTheFile
+=== RUN   TestAReceiptInsideAFencedBlockIsNotRead
+=== PAUSE TestAReceiptInsideAFencedBlockIsNotRead
+=== RUN   TestAHeldAttributionWithoutAReceiptIsAGap
+=== PAUSE TestAHeldAttributionWithoutAReceiptIsAGap
+=== RUN   TestAReceiptForAnotherRecordDoesNotCoverTheClaim
+=== PAUSE TestAReceiptForAnotherRecordDoesNotCoverTheClaim
+=== RUN   TestAHeldAttributionWithItsReceiptHasNoGap
+=== PAUSE TestAHeldAttributionWithItsReceiptHasNoGap
+=== RUN   TestAReceiptInAnotherParagraphDoesNotCoverTheClaim
+=== PAUSE TestAReceiptInAnotherParagraphDoesNotCoverTheClaim
+=== RUN   TestASpecThatIsNotHeldStillProvesItsReceipts
+=== PAUSE TestASpecThatIsNotHeldStillProvesItsReceipts
+=== RUN   TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo
+=== PAUSE TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo
+=== RUN   TestReceiptPairingPreservesClaimsAndSourceLines
+=== PAUSE TestReceiptPairingPreservesClaimsAndSourceLines
+=== RUN   TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup
+=== PAUSE TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles
+=== PAUSE TestReceiptPathsMustBeCleanRelativeRegularFiles
+=== RUN   TestReceiptsResolveArchivedAndInactiveRecords
+=== PAUSE TestReceiptsResolveArchivedAndInactiveRecords
+=== RUN   TestMissingReceiptsIgnoreUnresolvedAndInactiveClaims
+=== PAUSE TestMissingReceiptsIgnoreUnresolvedAndInactiveClaims
+=== RUN   TestReceiptStagesReadOnlyAvailableAuthoringArtifacts
+=== PAUSE TestReceiptStagesReadOnlyAvailableAuthoringArtifacts
+=== RUN   TestNoPRDSkipsBothReceiptDetectors
+=== PAUSE TestNoPRDSkipsBothReceiptDetectors
+=== RUN   TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak
+=== PAUSE TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak
+=== RUN   TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks
+=== PAUSE TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks
+=== RUN   TestShortReceiptIsRefusedBeforeReadingItsSource
+=== PAUSE TestShortReceiptIsRefusedBeforeReadingItsSource
+=== RUN   TestAFileInAReceiptDirectoryPositionDoesNotResolve
+=== PAUSE TestAFileInAReceiptDirectoryPositionDoesNotResolve
+=== RUN   TestABacktickedDecisionIdentifierIsNotAPathReceipt
+=== PAUSE TestABacktickedDecisionIdentifierIsNotAPathReceipt
+=== RUN   TestAReceiptSourceTokenCannotContainUnicodeWhitespace
+=== PAUSE TestAReceiptSourceTokenCannotContainUnicodeWhitespace
+=== RUN   TestAReceiptAllowsUnicodeWhitespaceAfterItsColon
+=== PAUSE TestAReceiptAllowsUnicodeWhitespaceAfterItsColon
+=== RUN   TestReportShapeFindingsNamesAPendingRow
+=== PAUSE TestReportShapeFindingsNamesAPendingRow
+=== RUN   TestReportShapeFindingsAcceptsAClosedReport
+=== PAUSE TestReportShapeFindingsAcceptsAClosedReport
+=== RUN   TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour
+=== PAUSE TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour
+=== RUN   TestTaskContextResolvesThroughTheArchive
+=== PAUSE TestTaskContextResolvesThroughTheArchive
+=== RUN   TestAShallowHistoryKeepsTheFullRelatedCheck
+=== PAUSE TestAShallowHistoryKeepsTheFullRelatedCheck
+=== RUN   TestTheHorizonLeavesUnlistedCitationsChecked
+=== PAUSE TestTheHorizonLeavesUnlistedCitationsChecked
+=== RUN   TestArchiveLicenseResolvesThroughTheRecordOrGit
+=== PAUSE TestArchiveLicenseResolvesThroughTheRecordOrGit
+=== RUN   TestArchivedSlugsIncludeArchiveRecords
+=== PAUSE TestArchivedSlugsIncludeArchiveRecords
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord
+=== PAUSE TestTaskContextResolvesThroughTheArchiveRecord
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision
+=== PAUSE TestArchivedTaskContextRecoversASquashDroppedRevision
+=== RUN   TestCheckBacklogUnmoved
+=== PAUSE TestCheckBacklogUnmoved
+=== RUN   TestTerminalBacklogEntryLeftActiveIsUnmoved
+=== PAUSE TestTerminalBacklogEntryLeftActiveIsUnmoved
+=== RUN   TestCitationCharacterization
+=== PAUSE TestCitationCharacterization
+=== RUN   TestCitationCharacterizationExistingChecksOnlyListAndAccount
+=== PAUSE TestCitationCharacterizationExistingChecksOnlyListAndAccount
+=== RUN   TestCitationCharacterizationReadsACitedRecordBody
+=== PAUSE TestCitationCharacterizationReadsACitedRecordBody
+=== RUN   TestASpecCitationInATaskResultIsNotAnObligation
+=== PAUSE TestASpecCitationInATaskResultIsNotAnObligation
+=== RUN   TestASpecCitationInADaemonSectionIsNotAnObligation
+=== PAUSE TestASpecCitationInADaemonSectionIsNotAnObligation
+=== RUN   TestASpecCitationInAQAReportIsNotAnObligation
+=== PAUSE TestASpecCitationInAQAReportIsNotAnObligation
+=== RUN   TestAnAuthoredSpecCitationStillMustBeListed
+=== PAUSE TestAnAuthoredSpecCitationStillMustBeListed
+=== RUN   TestCheckFindingLifecycle
+=== PAUSE TestCheckFindingLifecycle
+=== RUN   TestCheckRollupMember
+=== PAUSE TestCheckRollupMember
+=== RUN   TestCheckArchiveLicense
+=== PAUSE TestCheckArchiveLicense
+=== RUN   TestArchivedFindingClosesWithReasonAndEvidence
+=== PAUSE TestArchivedFindingClosesWithReasonAndEvidence
+=== RUN   TestArchivedFindingWithOnlyClosureReasonIsRefused
+=== PAUSE TestArchivedFindingWithOnlyClosureReasonIsRefused
+=== RUN   TestArchivedFindingWithOnlyClosureEvidenceIsRefused
+=== PAUSE TestArchivedFindingWithOnlyClosureEvidenceIsRefused
+=== RUN   TestArchivedFindingWithABlankClosureReasonIsRefused
+=== PAUSE TestArchivedFindingWithABlankClosureReasonIsRefused
+=== RUN   TestArchivedFindingClosureCannotHideAnInvalidAbsorber
+=== PAUSE TestArchivedFindingClosureCannotHideAnInvalidAbsorber
+=== RUN   TestCitationAcceptsWrittenForms
+=== PAUSE TestCitationAcceptsWrittenForms
+=== RUN   TestCitationFailureNamesTheRecognisedForm
+=== PAUSE TestCitationFailureNamesTheRecognisedForm
+=== RUN   TestCitationReportsAnUnsupportedClaim
+=== PAUSE TestCitationReportsAnUnsupportedClaim
+=== RUN   TestCitationAcceptsASupportedClaim
+=== PAUSE TestCitationAcceptsASupportedClaim
+=== RUN   TestCitationBareListingIsNotAClaim
+=== PAUSE TestCitationBareListingIsNotAClaim
+=== RUN   TestCitationReportsHowManyClaimsItResolved
+=== PAUSE TestCitationReportsHowManyClaimsItResolved
+=== RUN   TestAdoptedBacklogEntryLeftInPlaceIsRefused
+=== PAUSE TestAdoptedBacklogEntryLeftInPlaceIsRefused
+=== RUN   TestAdoptedFindingLeftInPlaceIsRefused
+=== PAUSE TestAdoptedFindingLeftInPlaceIsRefused
+=== RUN   TestCheckCitationCoverageErrorLocations
+=== PAUSE TestCheckCitationCoverageErrorLocations
+=== RUN   TestStageScopeRunsTheCitationDetectorInAuthoringStages
+=== PAUSE TestStageScopeRunsTheCitationDetectorInAuthoringStages
+=== RUN   TestCoherenceFindingsRetainDeclarationSourceLines
+=== PAUSE TestCoherenceFindingsRetainDeclarationSourceLines
+=== RUN   TestConstraintReaderCharacterizesGrantCitation
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation
+=== RUN   TestCitationResolvesInExternalSpecRoot
+=== PAUSE TestCitationResolvesInExternalSpecRoot
+=== RUN   TestCitationRejectsEscapeFromSpecRoot
+=== PAUSE TestCitationRejectsEscapeFromSpecRoot
+=== RUN   TestAuditRefusesOutOfGrantUnderBothCitationForms
+=== PAUSE TestAuditRefusesOutOfGrantUnderBothCitationForms
+=== RUN   TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode
+=== PAUSE TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode
+=== RUN   TestFindingBlocksOnlyTheRowsItNames
+=== PAUSE TestFindingBlocksOnlyTheRowsItNames
+=== RUN   TestMechanicalStageCarriableCarriesUnchangedEvidenceWithCitation
+=== PAUSE TestMechanicalStageCarriableCarriesUnchangedEvidenceWithCitation
+=== RUN   TestMechanicalStageCarriablePreservesOriginalEstablishingCitation
+=== PAUSE TestMechanicalStageCarriablePreservesOriginalEstablishingCitation
+=== RUN   TestMechanicalReportsAllFindings
+=== PAUSE TestMechanicalReportsAllFindings
+=== RUN   TestReducedFindingsKeepTheirLicensesAndMembers
+=== PAUSE TestReducedFindingsKeepTheirLicensesAndMembers
+=== RUN   TestReducedFindingWithABrokenLicenseStillFails
+=== PAUSE TestReducedFindingWithABrokenLicenseStillFails
+=== RUN   TestRenderVocabularySkipDoesNotLookLikeFinding
+=== PAUSE TestRenderVocabularySkipDoesNotLookLikeFinding
+=== RUN   TestCheckVocabularyInvalidPatternReturnsFinding
+=== PAUSE TestCheckVocabularyInvalidPatternReturnsFinding
+=== RUN   TestCheckVocabularyUnreadablePathsReturnFindings
+=== PAUSE TestCheckVocabularyUnreadablePathsReturnFindings
+=== CONT  TestAGuideWithUnreadableHistoryHoldsEverySpec
+=== CONT  TestArchivedSlugsIncludeArchiveRecords
+=== CONT  TestCitationAcceptsASupportedClaim
+=== CONT  TestCheckFindingLifecycle
+=== CONT  TestCitationCharacterizationExistingChecksOnlyListAndAccount
+=== CONT  TestAnAuthoredSpecCitationStillMustBeListed
+=== CONT  TestASpecCitationInAQAReportIsNotAnObligation
+=== CONT  TestASpecCitationInADaemonSectionIsNotAnObligation
+=== RUN   TestCheckFindingLifecycle/red_missing_lifecycle_frontmatter
+=== RUN   TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths
+=== CONT  TestASpecCitationInATaskResultIsNotAnObligation
+=== PAUSE TestCheckFindingLifecycle/red_missing_lifecycle_frontmatter
+=== RUN   TestAnAuthoredSpecCitationStillMustBeListed/Task_Requirements
+=== PAUSE TestAnAuthoredSpecCitationStillMustBeListed/Task_Requirements
+=== RUN   TestCheckFindingLifecycle/red_unknown_lifecycle_value
+=== CONT  TestCitationCharacterizationReadsACitedRecordBody
+=== RUN   TestCitationCharacterizationExistingChecksOnlyListAndAccount/unlisted_checks_the_PRD_inventory
+=== RUN   TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md
+=== PAUSE TestCitationCharacterizationExistingChecksOnlyListAndAccount/unlisted_checks_the_PRD_inventory
+=== PAUSE TestCheckFindingLifecycle/red_unknown_lifecycle_value
+=== PAUSE TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md
+=== PAUSE TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths
+=== RUN   TestCitationCharacterizationExistingChecksOnlyListAndAccount/related_checks_the_ADR_citation_graph
+=== PAUSE TestCitationCharacterizationExistingChecksOnlyListAndAccount/related_checks_the_ADR_citation_graph
+=== CONT  TestAuditRefusesOutOfGrantUnderBothCitationForms
+=== RUN   TestCheckFindingLifecycle/green_exact_lifecycle_values
+=== PAUSE TestCheckFindingLifecycle/green_exact_lifecycle_values
+=== RUN   TestCheckFindingLifecycle/presence_aware_without_findings_directory
+=== PAUSE TestCheckFindingLifecycle/presence_aware_without_findings_directory
+=== RUN   TestAnAuthoredSpecCitationStillMustBeListed/TechSpec
+=== CONT  TestCheckVocabularyUnreadablePathsReturnFindings
+=== PAUSE TestAnAuthoredSpecCitationStillMustBeListed/TechSpec
+=== RUN   TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md
+=== RUN   TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance
+=== PAUSE TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md
+=== RUN   TestAuditRefusesOutOfGrantUnderBothCitationForms/backticked_repository_path
+=== PAUSE TestAuditRefusesOutOfGrantUnderBothCitationForms/backticked_repository_path
+=== PAUSE TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance
+=== RUN   TestCheckVocabularyUnreadablePathsReturnFindings/emitting_path
+=== PAUSE TestCheckVocabularyUnreadablePathsReturnFindings/emitting_path
+=== CONT  TestRenderVocabularySkipDoesNotLookLikeFinding
+=== RUN   TestAnAuthoredSpecCitationStillMustBeListed/adopted_reference
+=== PAUSE TestAnAuthoredSpecCitationStillMustBeListed/adopted_reference
+=== CONT  TestCheckVocabularyInvalidPatternReturnsFinding
+=== CONT  TestReducedFindingWithABrokenLicenseStillFails
+=== RUN   TestCheckVocabularyUnreadablePathsReturnFindings/documenting_path
+=== PAUSE TestCheckVocabularyUnreadablePathsReturnFindings/documenting_path
+=== RUN   TestAuditRefusesOutOfGrantUnderBothCitationForms/Spec-relative_Markdown_path
+=== PAUSE TestAuditRefusesOutOfGrantUnderBothCitationForms/Spec-relative_Markdown_path
+=== CONT  TestReducedFindingsKeepTheirLicensesAndMembers
+=== CONT  TestMechanicalReportsAllFindings
+--- PASS: TestReducedFindingWithABrokenLicenseStillFails (0.02s)
+=== CONT  TestMechanicalStageCarriablePreservesOriginalEstablishingCitation
+--- PASS: TestReducedFindingsKeepTheirLicensesAndMembers (0.02s)
+=== CONT  TestMechanicalStageCarriableCarriesUnchangedEvidenceWithCitation
+=== CONT  TestFindingBlocksOnlyTheRowsItNames
+--- PASS: TestCitationAcceptsASupportedClaim (0.02s)
+=== RUN   TestFindingBlocksOnlyTheRowsItNames/one_named_row_leaves_the_others_measurable
+=== PAUSE TestFindingBlocksOnlyTheRowsItNames/one_named_row_leaves_the_others_measurable
+=== RUN   TestFindingBlocksOnlyTheRowsItNames/every_named_row_can_still_block_the_matrix
+=== PAUSE TestFindingBlocksOnlyTheRowsItNames/every_named_row_can_still_block_the_matrix
+=== CONT  TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode
+--- PASS: TestASpecCitationInATaskResultIsNotAnObligation (0.02s)
+--- PASS: TestArchivedSlugsIncludeArchiveRecords (0.02s)
+=== CONT  TestCheckBacklogUnmoved
+=== CONT  TestCitationCharacterization
+=== RUN   TestCheckBacklogUnmoved/red_promoted_entry_never_moved
+=== PAUSE TestCheckBacklogUnmoved/red_promoted_entry_never_moved
+=== RUN   TestCheckBacklogUnmoved/red_CRLF_promoted_entry_never_moved
+=== PAUSE TestCheckBacklogUnmoved/red_CRLF_promoted_entry_never_moved
+=== RUN   TestCheckBacklogUnmoved/red_promoted_without_a_Spec
+=== PAUSE TestCheckBacklogUnmoved/red_promoted_without_a_Spec
+=== RUN   TestCheckBacklogUnmoved/red_promoted_to_an_unresolvable_Spec
+=== PAUSE TestCheckBacklogUnmoved/red_promoted_to_an_unresolvable_Spec
+=== RUN   TestCheckBacklogUnmoved/green_open_entry_stays_put
+=== PAUSE TestCheckBacklogUnmoved/green_open_entry_stays_put
+=== RUN   TestCheckBacklogUnmoved/red_declined_entry_must_be_deleted
+=== PAUSE TestCheckBacklogUnmoved/red_declined_entry_must_be_deleted
+=== RUN   TestCheckBacklogUnmoved/skips_when_no_backlog_directory_exists
+=== PAUSE TestCheckBacklogUnmoved/skips_when_no_backlog_directory_exists
+=== RUN   TestCheckBacklogUnmoved/skips_when_the_backlog_directory_is_empty
+=== PAUSE TestCheckBacklogUnmoved/skips_when_the_backlog_directory_is_empty
+=== RUN   TestCheckBacklogUnmoved/wraps_detector_errors_with_operation_context
+=== PAUSE TestCheckBacklogUnmoved/wraps_detector_errors_with_operation_context
+=== CONT  TestTerminalBacklogEntryLeftActiveIsUnmoved
+--- PASS: TestCheckVocabularyInvalidPatternReturnsFinding (0.03s)
+=== CONT  TestArchivedTaskContextRecoversASquashDroppedRevision
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/record
+--- PASS: TestAGuideWithUnreadableHistoryHoldsEverySpec (0.03s)
+=== CONT  TestASpecThatIsNotHeldStillProvesItsReceipts
+--- PASS: TestCitationCharacterizationReadsACitedRecordBody (0.03s)
+=== CONT  TestArchiveLicenseResolvesThroughTheRecordOrGit
+--- PASS: TestTerminalBacklogEntryLeftActiveIsUnmoved (0.01s)
+=== CONT  TestTheHorizonLeavesUnlistedCitationsChecked
+=== CONT  TestAShallowHistoryKeepsTheFullRelatedCheck
+--- PASS: TestASpecThatIsNotHeldStillProvesItsReceipts (0.01s)
+--- PASS: TestCitationCharacterization (0.03s)
+=== CONT  TestTaskContextResolvesThroughTheArchive
+=== RUN   TestTaskContextResolvesThroughTheArchive/docs/specs
+--- PASS: TestRenderVocabularySkipDoesNotLookLikeFinding (0.06s)
+=== CONT  TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour
+--- PASS: TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour (0.03s)
+=== CONT  TestReportShapeFindingsAcceptsAClosedReport
+--- PASS: TestReportShapeFindingsAcceptsAClosedReport (0.00s)
+=== CONT  TestReportShapeFindingsNamesAPendingRow
+--- PASS: TestReportShapeFindingsNamesAPendingRow (0.00s)
+=== CONT  TestAReceiptAllowsUnicodeWhitespaceAfterItsColon
+--- PASS: TestAReceiptAllowsUnicodeWhitespaceAfterItsColon (0.00s)
+=== CONT  TestAReceiptSourceTokenCannotContainUnicodeWhitespace
+--- PASS: TestAReceiptSourceTokenCannotContainUnicodeWhitespace (0.00s)
+=== CONT  TestABacktickedDecisionIdentifierIsNotAPathReceipt
+--- PASS: TestABacktickedDecisionIdentifierIsNotAPathReceipt (0.00s)
+=== CONT  TestAFileInAReceiptDirectoryPositionDoesNotResolve
+--- PASS: TestAFileInAReceiptDirectoryPositionDoesNotResolve (0.00s)
+=== CONT  TestShortReceiptIsRefusedBeforeReadingItsSource
+--- PASS: TestShortReceiptIsRefusedBeforeReadingItsSource (0.00s)
+=== CONT  TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks
+--- PASS: TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode (0.10s)
+=== CONT  TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak
+--- PASS: TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak (0.00s)
+=== CONT  TestNoPRDSkipsBothReceiptDetectors
+--- PASS: TestNoPRDSkipsBothReceiptDetectors (0.00s)
+=== CONT  TestReceiptStagesReadOnlyAvailableAuthoringArtifacts
+=== RUN   TestReceiptStagesReadOnlyAvailableAuthoringArtifacts/techspec
+=== RUN   TestTaskContextResolvesThroughTheArchive/planning
+=== RUN   TestReceiptStagesReadOnlyAvailableAuthoringArtifacts/#00
+=== RUN   TestArchiveLicenseResolvesThroughTheRecordOrGit/Git_fails_without_HEAD
+=== RUN   TestReceiptStagesReadOnlyAvailableAuthoringArtifacts/tasks
+--- PASS: TestReceiptStagesReadOnlyAvailableAuthoringArtifacts (0.07s)
+    --- PASS: TestReceiptStagesReadOnlyAvailableAuthoringArtifacts/techspec (0.01s)
+    --- PASS: TestReceiptStagesReadOnlyAvailableAuthoringArtifacts/#00 (0.02s)
+    --- PASS: TestReceiptStagesReadOnlyAvailableAuthoringArtifacts/tasks (0.03s)
+=== CONT  TestMissingReceiptsIgnoreUnresolvedAndInactiveClaims
+=== RUN   TestArchiveLicenseResolvesThroughTheRecordOrGit/outside_Git
+--- PASS: TestMissingReceiptsIgnoreUnresolvedAndInactiveClaims (0.02s)
+=== CONT  TestReceiptsResolveArchivedAndInactiveRecords
+--- PASS: TestTaskContextResolvesThroughTheArchive (0.17s)
+    --- PASS: TestTaskContextResolvesThroughTheArchive/docs/specs (0.09s)
+    --- PASS: TestTaskContextResolvesThroughTheArchive/planning (0.08s)
+=== CONT  TestReceiptPathsMustBeCleanRelativeRegularFiles
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles/../outside.md
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles//etc/passwd
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles/internal/../source.md
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles/./source.md
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles/directory
+=== RUN   TestReceiptPathsMustBeCleanRelativeRegularFiles/absent.md
+--- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles (0.01s)
+    --- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles/../outside.md (0.00s)
+    --- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles//etc/passwd (0.00s)
+    --- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles/internal/../source.md (0.00s)
+    --- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles/./source.md (0.00s)
+    --- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles/directory (0.00s)
+    --- PASS: TestReceiptPathsMustBeCleanRelativeRegularFiles/absent.md (0.00s)
+=== CONT  TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup
+=== RUN   TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup/Reads_the_cited_record
+=== RUN   TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup/reads_cited_record
+=== RUN   TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup/reads_the_**cited**_record
+--- PASS: TestArchiveLicenseResolvesThroughTheRecordOrGit (0.22s)
+    --- PASS: TestArchiveLicenseResolvesThroughTheRecordOrGit/Git_fails_without_HEAD (0.04s)
+    --- PASS: TestArchiveLicenseResolvesThroughTheRecordOrGit/outside_Git (0.03s)
+=== CONT  TestReceiptPairingPreservesClaimsAndSourceLines
+--- PASS: TestReceiptPairingPreservesClaimsAndSourceLines (0.00s)
+=== CONT  TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo
+=== RUN   TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo/one
+--- PASS: TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup (0.02s)
+    --- PASS: TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup/Reads_the_cited_record (0.01s)
+    --- PASS: TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup/reads_cited_record (0.01s)
+    --- PASS: TestReceiptProofIsCaseSensitiveAndDoesNotStripMarkup/reads_the_**cited**_record (0.01s)
+=== CONT  TestStageScopeRunsTheCitationDetectorInAuthoringStages
+=== RUN   TestStageScopeRunsTheCitationDetectorInAuthoringStages/PRD
+=== PAUSE TestStageScopeRunsTheCitationDetectorInAuthoringStages/PRD
+=== RUN   TestStageScopeRunsTheCitationDetectorInAuthoringStages/TechSpec
+=== PAUSE TestStageScopeRunsTheCitationDetectorInAuthoringStages/TechSpec
+=== CONT  TestCitationRejectsEscapeFromSpecRoot
+=== RUN   TestCitationRejectsEscapeFromSpecRoot/upward_traversal
+=== PAUSE TestCitationRejectsEscapeFromSpecRoot/upward_traversal
+=== RUN   TestCitationRejectsEscapeFromSpecRoot/symlink_outside_root
+=== PAUSE TestCitationRejectsEscapeFromSpecRoot/symlink_outside_root
+=== CONT  TestCitationResolvesInExternalSpecRoot
+=== RUN   TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo/two
+--- PASS: TestTheHorizonLeavesUnlistedCitationsChecked (0.25s)
+=== CONT  TestConstraintReaderCharacterizesGrantCitation
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/citation_forms
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/citation_forms
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role
+=== CONT  TestCoherenceFindingsRetainDeclarationSourceLines
+--- PASS: TestCoherenceFindingsRetainDeclarationSourceLines (0.00s)
+=== CONT  TestAReceiptThatWrapsAcrossLinesIsProven
+=== RUN   TestAReceiptThatWrapsAcrossLinesIsProven/ADR-0116:___"reads_the_cited_record"
+--- PASS: TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo (0.04s)
+    --- PASS: TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo/one (0.02s)
+    --- PASS: TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo/two (0.02s)
+=== CONT  TestAReceiptInAnotherParagraphDoesNotCoverTheClaim
+=== RUN   TestAReceiptInAnotherParagraphDoesNotCoverTheClaim/__
+=== RUN   TestAReceiptThatWrapsAcrossLinesIsProven/ADR-0116:_"reads_the___cited_record"
+--- PASS: TestMechanicalStageCarriableCarriesUnchangedEvidenceWithCitation (0.28s)
+=== CONT  TestAHeldAttributionWithItsReceiptHasNoGap
+--- PASS: TestAShallowHistoryKeepsTheFullRelatedCheck (0.27s)
+=== CONT  TestAReceiptForAnotherRecordDoesNotCoverTheClaim
+--- PASS: TestAReceiptThatWrapsAcrossLinesIsProven (0.02s)
+    --- PASS: TestAReceiptThatWrapsAcrossLinesIsProven/ADR-0116:___"reads_the_cited_record" (0.01s)
+    --- PASS: TestAReceiptThatWrapsAcrossLinesIsProven/ADR-0116:_"reads_the___cited_record" (0.01s)
+=== CONT  TestAHeldAttributionWithoutAReceiptIsAGap
+=== RUN   TestAReceiptInAnotherParagraphDoesNotCoverTheClaim/_-_
+=== CONT  TestAReceiptInsideAFencedBlockIsNotRead
+--- PASS: TestMechanicalStageCarriablePreservesOriginalEstablishingCitation (0.30s)
+--- PASS: TestAHeldAttributionWithoutAReceiptIsAGap (0.02s)
+=== CONT  TestAFileReceiptIsProvedAgainstTheFile
+--- PASS: TestAHeldAttributionWithItsReceiptHasNoGap (0.02s)
+=== CONT  TestAReceiptShorterThanThreeWordsIsUnproven
+--- PASS: TestAReceiptShorterThanThreeWordsIsUnproven (0.00s)
+=== CONT  TestAReceiptThroughASymbolicLinkDoesNotResolve
+=== RUN   TestAReceiptThroughASymbolicLinkDoesNotResolve/inside/file
+--- PASS: TestAReceiptInsideAFencedBlockIsNotRead (0.00s)
+=== CONT  TestAReceiptWithAnUnresolvedSourceIsUnproven
+--- PASS: TestAReceiptForAnotherRecordDoesNotCoverTheClaim (0.02s)
+=== CONT  TestAReceiptWithOneChangedWordIsUnproven
+--- PASS: TestAFileReceiptIsProvedAgainstTheFile (0.01s)
+=== CONT  TestAdoptedBacklogEntryLeftInPlaceIsRefused
+=== RUN   TestAReceiptThroughASymbolicLinkDoesNotResolve/inside/directory
+--- PASS: TestAReceiptInAnotherParagraphDoesNotCoverTheClaim (0.04s)
+    --- PASS: TestAReceiptInAnotherParagraphDoesNotCoverTheClaim/__ (0.02s)
+    --- PASS: TestAReceiptInAnotherParagraphDoesNotCoverTheClaim/_-_ (0.02s)
+=== CONT  TestCheckCitationCoverageErrorLocations
+=== RUN   TestCheckCitationCoverageErrorLocations/citation-dirty
+=== PAUSE TestCheckCitationCoverageErrorLocations/citation-dirty
+=== RUN   TestCheckCitationCoverageErrorLocations/coverage-unmapped
+=== PAUSE TestCheckCitationCoverageErrorLocations/coverage-unmapped
+=== RUN   TestCheckCitationCoverageErrorLocations/coverage-untasked
+=== PAUSE TestCheckCitationCoverageErrorLocations/coverage-untasked
+=== RUN   TestCheckCitationCoverageErrorLocations/reference-unresolved
+=== PAUSE TestCheckCitationCoverageErrorLocations/reference-unresolved
+=== RUN   TestCheckCitationCoverageErrorLocations/reference-index-unresolved
+=== PAUSE TestCheckCitationCoverageErrorLocations/reference-index-unresolved
+=== CONT  TestAdoptedFindingLeftInPlaceIsRefused
+--- PASS: TestAReceiptWithOneChangedWordIsUnproven (0.01s)
+=== CONT  TestCitationReportsHowManyClaimsItResolved
+=== RUN   TestAReceiptThroughASymbolicLinkDoesNotResolve/outside/file
+--- PASS: TestCitationReportsHowManyClaimsItResolved (0.00s)
+=== CONT  TestCitationBareListingIsNotAClaim
+--- PASS: TestAdoptedBacklogEntryLeftInPlaceIsRefused (0.02s)
+=== CONT  TestArchivedFindingWithABlankClosureReasonIsRefused
+=== RUN   TestAReceiptThroughASymbolicLinkDoesNotResolve/outside/directory
+--- PASS: TestAReceiptWithAnUnresolvedSourceIsUnproven (0.03s)
+=== CONT  TestCitationReportsAnUnsupportedClaim
+--- PASS: TestAdoptedFindingLeftInPlaceIsRefused (0.02s)
+=== CONT  TestCitationFailureNamesTheRecognisedForm
+--- PASS: TestArchivedFindingWithABlankClosureReasonIsRefused (0.01s)
+=== CONT  TestCitationAcceptsWrittenForms
+=== RUN   TestCitationAcceptsWrittenForms/English_conjunction_separates_decision_numbers
+=== PAUSE TestCitationAcceptsWrittenForms/English_conjunction_separates_decision_numbers
+=== RUN   TestCitationAcceptsWrittenForms/Portuguese_conjunction_separates_decision_numbers
+=== PAUSE TestCitationAcceptsWrittenForms/Portuguese_conjunction_separates_decision_numbers
+=== RUN   TestCitationAcceptsWrittenForms/a_four-digit_year_in_the_obligations_row_is_not_a_decision_number
+=== PAUSE TestCitationAcceptsWrittenForms/a_four-digit_year_in_the_obligations_row_is_not_a_decision_number
+=== RUN   TestCitationAcceptsWrittenForms/bare_decision_number_outside_obligations_is_not_a_citation
+=== PAUSE TestCitationAcceptsWrittenForms/bare_decision_number_outside_obligations_is_not_a_citation
+=== CONT  TestArchivedFindingClosureCannotHideAnInvalidAbsorber
+=== RUN   TestArchivedFindingClosureCannotHideAnInvalidAbsorber/invalid_absorber_remains_an_error
+=== PAUSE TestArchivedFindingClosureCannotHideAnInvalidAbsorber/invalid_absorber_remains_an_error
+=== RUN   TestArchivedFindingClosureCannotHideAnInvalidAbsorber/missing_license_fix_names_both_routes
+=== PAUSE TestArchivedFindingClosureCannotHideAnInvalidAbsorber/missing_license_fix_names_both_routes
+=== CONT  TestArchivedFindingClosesWithReasonAndEvidence
+--- PASS: TestArchivedFindingClosesWithReasonAndEvidence (0.01s)
+=== CONT  TestArchivedFindingWithOnlyClosureEvidenceIsRefused
+--- PASS: TestAReceiptThroughASymbolicLinkDoesNotResolve (0.04s)
+    --- PASS: TestAReceiptThroughASymbolicLinkDoesNotResolve/inside/file (0.01s)
+    --- PASS: TestAReceiptThroughASymbolicLinkDoesNotResolve/inside/directory (0.01s)
+    --- PASS: TestAReceiptThroughASymbolicLinkDoesNotResolve/outside/file (0.01s)
+    --- PASS: TestAReceiptThroughASymbolicLinkDoesNotResolve/outside/directory (0.01s)
+=== CONT  TestArchivedFindingWithOnlyClosureReasonIsRefused
+--- PASS: TestArchivedFindingWithOnlyClosureEvidenceIsRefused (0.00s)
+=== CONT  TestHistoryRetainedReportsAGitLocatorNoReachableCommitHolds
+--- PASS: TestCitationBareListingIsNotAClaim (0.02s)
+=== CONT  TestAVerbatimReceiptIsProven
+--- PASS: TestArchivedFindingWithOnlyClosureReasonIsRefused (0.00s)
+=== CONT  TestReceiptCharacterizationKeepsEveryParsedClaim
+--- PASS: TestAVerbatimReceiptIsProven (0.00s)
+=== CONT  TestTerminalBacklogEntryFixSaysDelete
+--- PASS: TestCitationReportsAnUnsupportedClaim (0.02s)
+=== CONT  TestRollupMembersResolveThroughGit
+--- PASS: TestCitationFailureNamesTheRecognisedForm (0.02s)
+=== CONT  TestReceiptsResolveARemovedADRThroughGit
+--- PASS: TestTerminalBacklogEntryFixSaysDelete (0.02s)
+=== CONT  TestHistoryRetainedIsSilentBeforeTheBaselineCarriesTheRule
+--- PASS: TestMechanicalReportsAllFindings (0.42s)
+=== CONT  TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator
+--- PASS: TestReceiptCharacterizationKeepsEveryParsedClaim (0.06s)
+=== CONT  TestHistoryRetainedReportsRetainedFamiliesAndTerminalFindings
+=== CONT  TestTaskContextResolvesThroughTheArchiveRecord
+--- PASS: TestCitationResolvesInExternalSpecRoot (0.28s)
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord/docs/specs
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord/docs/specs/active
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/adding_subject
+--- PASS: TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks (0.71s)
+=== CONT  TestADeferredBacklogEntryIsTerminal
+--- PASS: TestADeferredBacklogEntryIsTerminal (0.00s)
+=== CONT  TestCheckArchiveLicense
+=== RUN   TestCheckArchiveLicense/red_missing_license
+=== PAUSE TestCheckArchiveLicense/red_missing_license
+=== RUN   TestCheckArchiveLicense/red_unresolved_license
+=== PAUSE TestCheckArchiveLicense/red_unresolved_license
+=== RUN   TestCheckArchiveLicense/green_rollup_active_Spec_and_archived_Spec_licenses
+=== PAUSE TestCheckArchiveLicense/green_rollup_active_Spec_and_archived_Spec_licenses
+=== RUN   TestCheckArchiveLicense/presence_aware_without_archive
+=== PAUSE TestCheckArchiveLicense/presence_aware_without_archive
+=== CONT  TestCheckRollupMember
+=== RUN   TestCheckRollupMember/red_unresolved_declared_member
+=== PAUSE TestCheckRollupMember/red_unresolved_declared_member
+=== RUN   TestCheckRollupMember/green_unresolved_and_archived_members
+=== PAUSE TestCheckRollupMember/green_unresolved_and_archived_members
+=== RUN   TestCheckRollupMember/presence_aware_without_rollups
+=== PAUSE TestCheckRollupMember/presence_aware_without_rollups
+=== CONT  TestADeferredBacklogEntryLeftActiveIsReported
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord/docs/specs/archived
+--- PASS: TestADeferredBacklogEntryLeftActiveIsReported (0.00s)
+=== CONT  TestCitationCharacterizationExistingChecksOnlyListAndAccount/unlisted_checks_the_PRD_inventory
+=== CONT  TestCitationCharacterizationExistingChecksOnlyListAndAccount/related_checks_the_ADR_citation_graph
+--- PASS: TestCitationCharacterizationExistingChecksOnlyListAndAccount (0.00s)
+    --- PASS: TestCitationCharacterizationExistingChecksOnlyListAndAccount/unlisted_checks_the_PRD_inventory (0.01s)
+    --- PASS: TestCitationCharacterizationExistingChecksOnlyListAndAccount/related_checks_the_ADR_citation_graph (0.03s)
+=== CONT  TestCheckFindingLifecycle/red_missing_lifecycle_frontmatter
+=== CONT  TestCheckFindingLifecycle/presence_aware_without_findings_directory
+=== CONT  TestCheckFindingLifecycle/green_exact_lifecycle_values
+=== CONT  TestCheckFindingLifecycle/red_unknown_lifecycle_value
+--- PASS: TestCheckFindingLifecycle (0.00s)
+    --- PASS: TestCheckFindingLifecycle/red_missing_lifecycle_frontmatter (0.00s)
+    --- PASS: TestCheckFindingLifecycle/presence_aware_without_findings_directory (0.00s)
+    --- PASS: TestCheckFindingLifecycle/green_exact_lifecycle_values (0.01s)
+    --- PASS: TestCheckFindingLifecycle/red_unknown_lifecycle_value (0.01s)
+=== CONT  TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md
+=== CONT  TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md
+=== CONT  TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths
+--- PASS: TestASpecCitationInAQAReportIsNotAnObligation (0.00s)
+    --- PASS: TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md (0.02s)
+    --- PASS: TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md (0.02s)
+--- PASS: TestReceiptsResolveArchivedAndInactiveRecords (0.70s)
+=== CONT  TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance
+=== CONT  TestAnAuthoredSpecCitationStillMustBeListed/Task_Requirements
+--- PASS: TestASpecCitationInADaemonSectionIsNotAnObligation (0.00s)
+    --- PASS: TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths (0.02s)
+    --- PASS: TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance (0.02s)
+=== CONT  TestAnAuthoredSpecCitationStillMustBeListed/adopted_reference
+=== CONT  TestAnAuthoredSpecCitationStillMustBeListed/TechSpec
+--- PASS: TestHistoryRetainedIsSilentBeforeTheBaselineCarriesTheRule (0.56s)
+=== CONT  TestCheckVocabularyUnreadablePathsReturnFindings/emitting_path
+=== CONT  TestAuditRefusesOutOfGrantUnderBothCitationForms/backticked_repository_path
+--- PASS: TestAnAuthoredSpecCitationStillMustBeListed (0.00s)
+    --- PASS: TestAnAuthoredSpecCitationStillMustBeListed/Task_Requirements (0.01s)
+    --- PASS: TestAnAuthoredSpecCitationStillMustBeListed/adopted_reference (0.02s)
+    --- PASS: TestAnAuthoredSpecCitationStillMustBeListed/TechSpec (0.02s)
+=== CONT  TestAuditRefusesOutOfGrantUnderBothCitationForms/Spec-relative_Markdown_path
+--- PASS: TestHistoryRetainedReportsRetainedFamiliesAndTerminalFindings (0.54s)
+=== CONT  TestCheckVocabularyUnreadablePathsReturnFindings/documenting_path
+=== CONT  TestFindingBlocksOnlyTheRowsItNames/one_named_row_leaves_the_others_measurable
+--- PASS: TestCheckVocabularyUnreadablePathsReturnFindings (0.00s)
+    --- PASS: TestCheckVocabularyUnreadablePathsReturnFindings/emitting_path (0.03s)
+    --- PASS: TestCheckVocabularyUnreadablePathsReturnFindings/documenting_path (0.02s)
+=== CONT  TestFindingBlocksOnlyTheRowsItNames/every_named_row_can_still_block_the_matrix
+=== CONT  TestCheckBacklogUnmoved/red_promoted_entry_never_moved
+=== CONT  TestCheckBacklogUnmoved/red_declined_entry_must_be_deleted
+--- PASS: TestRollupMembersResolveThroughGit (0.69s)
+=== CONT  TestCheckBacklogUnmoved/wraps_detector_errors_with_operation_context
+--- PASS: TestReceiptsResolveARemovedADRThroughGit (0.69s)
+=== CONT  TestCheckBacklogUnmoved/skips_when_the_backlog_directory_is_empty
+=== CONT  TestCheckBacklogUnmoved/skips_when_no_backlog_directory_exists
+=== CONT  TestCheckBacklogUnmoved/red_promoted_to_an_unresolvable_Spec
+--- PASS: TestFindingBlocksOnlyTheRowsItNames (0.00s)
+    --- PASS: TestFindingBlocksOnlyTheRowsItNames/one_named_row_leaves_the_others_measurable (0.07s)
+    --- PASS: TestFindingBlocksOnlyTheRowsItNames/every_named_row_can_still_block_the_matrix (0.08s)
+=== CONT  TestCheckBacklogUnmoved/green_open_entry_stays_put
+=== CONT  TestCheckBacklogUnmoved/red_promoted_without_a_Spec
+=== CONT  TestCheckBacklogUnmoved/red_CRLF_promoted_entry_never_moved
+=== CONT  TestStageScopeRunsTheCitationDetectorInAuthoringStages/PRD
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord/planning
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord/planning/active
+=== CONT  TestCitationRejectsEscapeFromSpecRoot/upward_traversal
+=== CONT  TestStageScopeRunsTheCitationDetectorInAuthoringStages/TechSpec
+=== CONT  TestCitationRejectsEscapeFromSpecRoot/symlink_outside_root
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/citation_forms
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_legacy_repository_path_resolves
+--- PASS: TestStageScopeRunsTheCitationDetectorInAuthoringStages (0.00s)
+    --- PASS: TestStageScopeRunsTheCitationDetectorInAuthoringStages/PRD (0.00s)
+    --- PASS: TestStageScopeRunsTheCitationDetectorInAuthoringStages/TechSpec (0.00s)
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_legacy_repository_path_resolves
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_Spec-contained_repository_path_resolves
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_Spec-contained_repository_path_resolves
+--- PASS: TestCheckBacklogUnmoved (0.00s)
+    --- PASS: TestCheckBacklogUnmoved/red_promoted_entry_never_moved (0.01s)
+    --- PASS: TestCheckBacklogUnmoved/wraps_detector_errors_with_operation_context (0.00s)
+    --- PASS: TestCheckBacklogUnmoved/red_declined_entry_must_be_deleted (0.01s)
+    --- PASS: TestCheckBacklogUnmoved/skips_when_the_backlog_directory_is_empty (0.01s)
+    --- PASS: TestCheckBacklogUnmoved/skips_when_no_backlog_directory_exists (0.01s)
+    --- PASS: TestCheckBacklogUnmoved/green_open_entry_stays_put (0.01s)
+    --- PASS: TestCheckBacklogUnmoved/red_promoted_to_an_unresolvable_Spec (0.02s)
+    --- PASS: TestCheckBacklogUnmoved/red_promoted_without_a_Spec (0.01s)
+    --- PASS: TestCheckBacklogUnmoved/red_CRLF_promoted_entry_never_moved (0.01s)
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/citation_forms/Spec-relative_Markdown_link_resolves
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/citation_forms/Spec-relative_Markdown_link_resolves
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role
+=== CONT  TestCheckCitationCoverageErrorLocations/citation-dirty
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/dated_record_is_validated
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/dated_record_is_validated
+=== RUN   TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/undated_Spec_record_is_validated
+=== PAUSE TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/undated_Spec_record_is_validated
+=== CONT  TestCheckCitationCoverageErrorLocations/reference-unresolved
+=== CONT  TestCheckCitationCoverageErrorLocations/reference-index-unresolved
+=== CONT  TestCheckCitationCoverageErrorLocations/coverage-untasked
+=== CONT  TestCheckCitationCoverageErrorLocations/coverage-unmapped
+=== CONT  TestCitationAcceptsWrittenForms/English_conjunction_separates_decision_numbers
+=== CONT  TestArchivedFindingClosureCannotHideAnInvalidAbsorber/invalid_absorber_remains_an_error
+=== CONT  TestCitationAcceptsWrittenForms/bare_decision_number_outside_obligations_is_not_a_citation
+--- PASS: TestCitationRejectsEscapeFromSpecRoot (0.00s)
+    --- PASS: TestCitationRejectsEscapeFromSpecRoot/symlink_outside_root (0.12s)
+    --- PASS: TestCitationRejectsEscapeFromSpecRoot/upward_traversal (0.12s)
+=== CONT  TestCitationAcceptsWrittenForms/a_four-digit_year_in_the_obligations_row_is_not_a_decision_number
+--- PASS: TestCheckCitationCoverageErrorLocations (0.00s)
+    --- PASS: TestCheckCitationCoverageErrorLocations/citation-dirty (0.03s)
+    --- PASS: TestCheckCitationCoverageErrorLocations/reference-unresolved (0.05s)
+    --- PASS: TestCheckCitationCoverageErrorLocations/reference-index-unresolved (0.02s)
+    --- PASS: TestCheckCitationCoverageErrorLocations/coverage-unmapped (0.02s)
+    --- PASS: TestCheckCitationCoverageErrorLocations/coverage-untasked (0.06s)
+=== CONT  TestCitationAcceptsWrittenForms/Portuguese_conjunction_separates_decision_numbers
+=== CONT  TestArchivedFindingClosureCannotHideAnInvalidAbsorber/missing_license_fix_names_both_routes
+--- PASS: TestArchivedFindingClosureCannotHideAnInvalidAbsorber (0.00s)
+    --- PASS: TestArchivedFindingClosureCannotHideAnInvalidAbsorber/invalid_absorber_remains_an_error (0.02s)
+    --- PASS: TestArchivedFindingClosureCannotHideAnInvalidAbsorber/missing_license_fix_names_both_routes (0.00s)
+=== CONT  TestCheckArchiveLicense/red_missing_license
+=== CONT  TestCheckRollupMember/red_unresolved_declared_member
+=== CONT  TestCheckArchiveLicense/presence_aware_without_archive
+=== CONT  TestCheckArchiveLicense/green_rollup_active_Spec_and_archived_Spec_licenses
+--- PASS: TestCitationAcceptsWrittenForms (0.00s)
+    --- PASS: TestCitationAcceptsWrittenForms/English_conjunction_separates_decision_numbers (0.02s)
+    --- PASS: TestCitationAcceptsWrittenForms/Portuguese_conjunction_separates_decision_numbers (0.02s)
+    --- PASS: TestCitationAcceptsWrittenForms/a_four-digit_year_in_the_obligations_row_is_not_a_decision_number (0.02s)
+    --- PASS: TestCitationAcceptsWrittenForms/bare_decision_number_outside_obligations_is_not_a_citation (0.02s)
+=== CONT  TestCheckArchiveLicense/red_unresolved_license
+=== CONT  TestCheckRollupMember/presence_aware_without_rollups
+=== CONT  TestCheckRollupMember/green_unresolved_and_archived_members
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_legacy_repository_path_resolves
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/citation_forms/Spec-relative_Markdown_link_resolves
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_Spec-contained_repository_path_resolves
+--- PASS: TestCheckArchiveLicense (0.00s)
+    --- PASS: TestCheckArchiveLicense/red_missing_license (0.00s)
+    --- PASS: TestCheckArchiveLicense/presence_aware_without_archive (0.00s)
+    --- PASS: TestCheckArchiveLicense/red_unresolved_license (0.01s)
+    --- PASS: TestCheckArchiveLicense/green_rollup_active_Spec_and_archived_Spec_licenses (0.02s)
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/dated_record_is_validated
+=== CONT  TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/undated_Spec_record_is_validated
+--- PASS: TestCheckRollupMember (0.00s)
+    --- PASS: TestCheckRollupMember/presence_aware_without_rollups (0.01s)
+    --- PASS: TestCheckRollupMember/red_unresolved_declared_member (0.01s)
+    --- PASS: TestCheckRollupMember/green_unresolved_and_archived_members (0.02s)
+--- PASS: TestConstraintReaderCharacterizesGrantCitation (0.00s)
+    --- PASS: TestConstraintReaderCharacterizesGrantCitation/citation_forms (0.00s)
+        --- PASS: TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_legacy_repository_path_resolves (0.00s)
+        --- PASS: TestConstraintReaderCharacterizesGrantCitation/citation_forms/Spec-relative_Markdown_link_resolves (0.00s)
+        --- PASS: TestConstraintReaderCharacterizesGrantCitation/citation_forms/backticked_Spec-contained_repository_path_resolves (0.00s)
+    --- PASS: TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role (0.00s)
+        --- PASS: TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/undated_Spec_record_is_validated (0.01s)
+        --- PASS: TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_role/dated_record_is_validated (0.01s)
+--- PASS: TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator (0.85s)
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/unreachable_forge
+--- PASS: TestAuditRefusesOutOfGrantUnderBothCitationForms (0.00s)
+    --- PASS: TestAuditRefusesOutOfGrantUnderBothCitationForms/Spec-relative_Markdown_path (0.35s)
+    --- PASS: TestAuditRefusesOutOfGrantUnderBothCitationForms/backticked_repository_path (0.35s)
+=== RUN   TestTaskContextResolvesThroughTheArchiveRecord/planning/archived
+--- PASS: TestHistoryRetainedReportsAGitLocatorNoReachableCommitHolds (0.99s)
+--- PASS: TestTaskContextResolvesThroughTheArchiveRecord (0.90s)
+    --- PASS: TestTaskContextResolvesThroughTheArchiveRecord/docs/specs (0.55s)
+        --- PASS: TestTaskContextResolvesThroughTheArchiveRecord/docs/specs/active (0.28s)
+        --- PASS: TestTaskContextResolvesThroughTheArchiveRecord/docs/specs/archived (0.27s)
+    --- PASS: TestTaskContextResolvesThroughTheArchiveRecord/planning (0.35s)
+        --- PASS: TestTaskContextResolvesThroughTheArchiveRecord/planning/active (0.23s)
+        --- PASS: TestTaskContextResolvesThroughTheArchiveRecord/planning/archived (0.13s)
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/planning
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/planning/record
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/planning/adding_subject
+=== RUN   TestArchivedTaskContextRecoversASquashDroppedRevision/planning/unreachable_forge
+--- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision (2.26s)
+    --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs (1.50s)
+        --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/record (0.66s)
+        --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/adding_subject (0.60s)
+        --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/docs/specs/unreachable_forge (0.24s)
+    --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/planning (0.75s)
+        --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/planning/record (0.26s)
+        --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/planning/adding_subject (0.27s)
+        --- PASS: TestArchivedTaskContextRecoversASquashDroppedRevision/planning/unreachable_forge (0.22s)
+PASS
+suiteguard: guard cost: measured 2600 paths; fingerprint took 97.241625ms before and 68.310334ms after
+ok  	roundfix/internal/speccheck	2.804s
+stderr:
+exit: 0

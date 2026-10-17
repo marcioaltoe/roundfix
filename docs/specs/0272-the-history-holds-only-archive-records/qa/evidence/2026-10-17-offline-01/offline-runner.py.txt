@@ -1,0 +1,159 @@
+import os, sys, subprocess, tempfile, json, re, shutil, hashlib, tarfile, io, shlex
+from pathlib import Path
+P=json.loads(Path('/private/tmp/roundfix-0272-qa-plan.json').read_text()); ROOT=Path(P['root']); REPORT=ROOT/P['report']; EV=ROOT/P['ev']; SCR=Path(Path('/private/tmp/roundfix-0272-qa-location').read_text()); BIN=ROOT/'bin/roundfix'
+ENV=os.environ.copy(); ENV.update(HOME=str(SCR/'home'),GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1',GIT_TERMINAL_PROMPT='0',GOPROXY='off',GOSUMDB='off')
+for k in list(ENV):
+ if any(x in k for x in ['API_KEY','TOKEN','SECRET','PASSWORD']): ENV.pop(k)
+# Cache paths remain in memory only, never in evidence.
+caches=json.loads(subprocess.check_output(['go','env','-json','GOCACHE','GOMODCACHE'],text=True)); ENV.update(caches)
+def run(args,cwd=ROOT,log=None,ok=None):
+ p=subprocess.run([str(x) for x in args],cwd=cwd,env=ENV,text=True,capture_output=True)
+ if log: (EV/log).write_text('$ '+shlex.join([str(x) for x in args])+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'exit: '+str(p.returncode)+'\n')
+ if ok is not None and p.returncode not in ok: raise AssertionError(f'{args}: exit {p.returncode}\n{p.stdout}\n{p.stderr}')
+ return p
+
+def git(repo,*args): return run(['git','-c','core.fsmonitor=false',*args],repo,ok=[0]).stdout.strip()
+def write(repo,path,text):
+ p=repo/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+def init(name):
+ r=Path(tempfile.mkdtemp(prefix=name+'-',dir=SCR));git(r,'init','-q','-b','main');git(r,'config','user.name','Roundfix QA');git(r,'config','user.email','qa@example.test');git(r,'config','commit.gpgsign','false');git(r,'config','core.hooksPath','/dev/null');return r
+def commit(r,msg='test: isolated fixture'):
+ git(r,'add','-A');git(r,'commit','-qm',msg);return git(r,'rev-parse','HEAD')
+def cli(r,args,log,ok=None,binary=BIN): return run([binary,*args],r,log,ok)
+def row(i,status,detail):
+ t=REPORT.read_text();t=re.sub(r'(?m)^\| '+i+r' \| [^|]+ \|(?= [^|\n]+ \|$)',f'| {i} | {status} |',t)
+ start=t.index('### '+i+'\n');end=t.find('\n### ',start+1);end=len(t) if end<0 else end
+ block=t[start:end];block=block[:block.index('\n```\n',block.index('```yaml'))+len('\n```\n')]+'\n'+detail+'\n';t=t[:start]+block+t[end:];REPORT.write_text(t);print('ROW',i,status,flush=True)
+def record(slug,rev,outcome='Preserved outcome.',disp='no-qa'):
+ return f'---\nschema: roundfix/archive-record/v1\nspec: {slug}\ntitle: Fixture record\nstatus: archived\ncreated: "2026-10-01"\narchived: "2026-10-17"\ndisposition: {disp}\nsource: docs/specs/{slug}\nsource_revision: {rev}\n'+('superseded_by: 0001-kept\n' if disp=='superseded' else '')+'qa_task: ""\nqa_report: ""\nqa_verdict: ""\nunproven: []\nadrs: []\nsources: []\nregeneration: []\npromoted: []\npull_request: "42"\n---\n\n# Fixture record\n\n'+outcome+'\n'
+def snapshot(r):
+ files={}
+ for p in r.rglob('*'):
+  if '.git' in p.relative_to(r).parts: continue
+  if p.is_symlink(): files[str(p.relative_to(r))]='symlink:'+os.readlink(p)
+  elif p.is_file(): files[str(p.relative_to(r))]=hashlib.sha256(p.read_bytes()).hexdigest()
+ return {'files':files,'refs':git(r,'for-each-ref'),'index':git(r,'ls-files','--stage')}
+def basebuild():
+ b=SCR/'base-worktree';p=run(['git','worktree','add','--detach',b,P['base']],log='base-worktree-add.txt',ok=[0])
+ try:
+  # Keep the comparison binary under its own worktree's bin/ path.
+  run(['make','build'],b,'base-build.txt',[0]);shutil.copy2(b/'bin/roundfix',SCR/'base-roundfix')
+ finally: run(['git','worktree','remove','--force',b],log='base-worktree-remove.txt',ok=[0])
+ cli(ROOT,['--version'],'base-version.txt',[0],SCR/'base-roundfix')
+
+def sabotage():
+ r=init('sabotage');write(r,'docs/specs/demo/_prd.md',fixture_prd());write(r,'docs/agents/domain.md','# Domain\n');write(r,'docs/agents/agent-instructions.md','# Agent instructions\n');write(r,'docs/agents/setup-context.json','{"managedArtifacts":[{"id":"guide.docs-layout","path":"docs/agents/layout.md"}]}')
+ def guide(rule):write(r,'docs/agents/layout.md','<!-- setup-context-driven:begin id=guide.docs-layout version=0.0.1 -->\n'+rule+'\n<!-- setup-context-driven:end id=guide.docs-layout -->\n')
+ guide('A retirement deletes the file');write(r,'docs/specs/0001-old/file.md','# Original\n');rev=commit(r);git(r,'rm','-r','docs/specs/0001-old');write(r,'docs/history/specs/0001-old.md',record('0001-old',rev));commit(r)
+ args=['spec','check','demo','--stage','prd']
+ cli(r,args,'sabotage-clean-head.txt',[0]);cli(r,args,'sabotage-clean-base.txt',[0],SCR/'base-roundfix')
+ plants=[(f'family-{f}',f'docs/history/{f}/retired.md','# Retired\n') for f in ['findings','backlog','adr','reviews','handoffs']]
+ plants += [('reduced','docs/history/findings/reduced.md',f'---\nstatus: done\n---\n# Reduced\n\nSummary.\n\nFull text in Git at `{rev}`: `docs/findings/original.md`.\n'),('done-finding','docs/findings/2026-10-16-done.md','---\nstatus: done\n---\n# Closed\n'),('broken-record','docs/history/specs/0001-old.md',record('0001-old',rev,'[missing](file.md).')),('self-record','docs/history/specs/0001-old.md',record('0001-old',rev,'[self](0001-old.md).'))]
+ results=[]
+ for name,path,text in plants:
+  target=r/path;old=target.read_text() if target.exists() else None;write(r,path,text)
+  current=cli(r,args,'sabotage-'+name+'-head.txt');base=cli(r,args,'sabotage-'+name+'-base.txt',binary=SCR/'base-roundfix')
+  guide('Old layout; no deletion sentence.');disabled=cli(r,args,'sabotage-'+name+'-disabled.txt');guide('A retirement deletes the file')
+  assert current.returncode==1 and 'SC-HISTORY-RETAINED' in current.stdout+current.stderr,(name,current.stdout,current.stderr)
+  assert ('Delete '+path in current.stdout+current.stderr) or ('@'+rev in current.stdout+current.stderr),(name,'fix')
+  results.append({'case':name,'audited_exit':current.returncode,'base_exit':base.returncode,'sentinel_absent_exit':disabled.returncode})
+  if old is None:target.unlink()
+  else:target.write_text(old)
+ # Deleted branch makes an object existing in Git but unreachable from every ref.
+ git(r,'checkout','-b','test/unreachable');write(r,'docs/specs/lost/file.md','# Branch only\n');lost=commit(r);git(r,'checkout','main');git(r,'branch','-D','test/unreachable')
+ write(r,'docs/history/specs/0001-old.md',record('0001-old',rev,f'`docs/specs/lost/file.md@{lost}`.'));p=cli(r,args,'sabotage-unreachable.txt');assert p.returncode==1 and 'SC-HISTORY-RETAINED' in p.stdout and '(pull request #42)' in p.stdout
+ (EV/'sabotage-summary.json').write_text(json.dumps({'base':P['base'],'results':results,'unreachable_commit':lost,'unreachable_exit':p.returncode},indent=2))
+ assert all(x['base_exit']==0 and x['sentinel_absent_exit']==0 for x in results),results
+ row('03','pass','Built a second binary with make build from a detached temporary worktree at the actual merge base with main, then removed that worktree. The version is captured in base-version.txt. All nine plants failed only the audited binary with exit 1, SC-HISTORY-RETAINED and deletion or a Git Locator Fix. Every plant passed the delivery-base binary and the audited binary with the sentinel absent; the unplanted tree passed both. The unreachable-object plant additionally failed with a pull-request fallback Fix. Evidence: [all outcomes](evidence/2026-10-17-offline-01/sabotage-summary.json), [base version](evidence/2026-10-17-offline-01/base-version.txt), [base build](evidence/2026-10-17-offline-01/base-build.txt) and per-case logs.')
+
+def transcripts():
+ r=init('transcripts');(r/'docs/specs').mkdir(parents=True);write(r,'README.md','# Fixture\n');write(r,'docs/findings/original.md','# Original\n\nFull finding.\n');provenance=commit(r);git(r,'rm','docs/findings/original.md');retired='docs/history/findings/reduced.md';content=f'---\nstatus: done\n---\n\n# Reduced\n\nSummary.\n\nFull text in Git at `{provenance}`: `docs/findings/original.md`.\n';write(r,retired,content);write(r,'docs/user-guide/a.md','# Guide\n\n[finding](../history/findings/reduced.md)\n');rev=commit(r);git(r,'tag','-a','history-full','-m','Full history')
+ before=snapshot(r);p=cli(r,['history','sanitize'],'transcript-1.txt',[0]);want=f'history sanitize plan: 1 unit(s) pending; 1 file(s) ({len(content)} bytes) leave docs/history\nfindings: removes 1 file(s) ({len(content)} bytes)\ncites docs/user-guide/a.md:3 names {retired}; rewrites to `docs/findings/original.md@{provenance}`\napply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)\n';assert p.stdout==want and p.stderr=='';assert snapshot(r)==before
+ row('07','pass','Executed Surface Transcript 1 through the Run-built CLI in the declared reduced-Finding fixture. Every stdout line matched exactly after substituting declared byte/path/locator placeholders; stderr was empty and exit was 0. File bytes, refs and index were unchanged. Evidence: [transcript](evidence/2026-10-17-offline-01/transcript-1.txt).')
+ p=cli(r,['history','sanitize','--apply','--batch','1'],'transcript-2.txt',[0]);want=f'history sanitize applied 1 unit(s): wrote 0 Archive Record(s), removed 1 file(s) ({len(content)} bytes) kept in Git at {rev[:12]} and tag history-full; rewrote 1 citation(s) in 1 file(s); promoted 0 file(s) to docs/references/; 0 unit(s) remain\n';assert p.stdout==want and p.stderr=='';assert not (r/retired).exists();assert (r/'docs/user-guide/a.md').read_text()==f'# Guide\n\nfinding (`docs/findings/original.md@{provenance}`)\n';q=cli(r,['history','sanitize'],'transcript-second-plan.txt',[0]);assert q.stdout=='history sanitize plan: 0 unit(s) pending; nothing pending\n';assert git(r,'show','history-full:'+retired)==content.strip()
+ row('08','pass','Executed Surface Transcript 2 on the same fixture. All stdout bytes matched declared substitutions, stderr was empty and exit was 0. Independent reads confirmed the file is removed, the guide carries the original reachable provenance, and history-full retains the full original. A fresh CLI invocation reported zero pending units. Evidence: [apply](evidence/2026-10-17-offline-01/transcript-2.txt), [second plan](evidence/2026-10-17-offline-01/transcript-second-plan.txt).')
+
+
+def fixture_prd():
+ return "# Demo\n\n## Project Constraints\n\n- Identifier strategy: not applicable — no new identifier. Source: `docs/agents/domain.md`.\n- Authentication and HTTP: not applicable — no transport. Source: `docs/agents/agent-instructions.md`.\n- Active ADR obligations: not applicable — no ADR. Source: `docs/agents/domain.md`.\n- Tooling authority: not applicable — no tooling changes. Source: `docs/agents/agent-instructions.md`.\n\n## Success Metrics\n\nNone. This isolated fixture measures CLI behavior.\n"
+
+def adopter():
+ r=init('adopter');write(r,'.agents/skills/context7/SKILL.md','# context7\n');write(r,'.agents/skills/exa-web-search/SKILL.md','# exa\n');write(r,'Makefile','verify:\n\t@true\nverify-incremental:\n\t@true\n');commit(r)
+ decisions=['preservation.mode=greenfield','language.generated=English','verification.gate=make verify','verification.incremental=make verify-incremental','branch.prefix=<type>/','spec.scaffold=true','domain.layout=single-context','triage.external=false','autonomous.enabled=true','runtime.backend=codex gpt-5.5 xhigh','runtime.design=claude opus xhigh','secondbrain.enabled=false','repository.extension.enabled=false']
+ args=['baseline','plan','--repo','.', '--profile','go-cli-tui','--format','json']
+ for d in decisions:args+=['--decision',d]
+ p=cli(r,args,'adopter-initial-plan.txt',[0]);plan=json.loads(p.stdout);(SCR/'adoption-plan.json').write_text(p.stdout)
+ digest=plan['planDigest'];cli(r,['baseline','apply','--repo','.','--plan',str(SCR/'adoption-plan.json'),'--confirm-plan',digest,'--format','json'],'adopter-initial-apply.txt',[0]);commit(r)
+ # Original content and source folder are committed before the retirement fixture.
+ write(r,'docs/findings/original.md','# Original\n\nFull original finding.\n');write(r,'docs/specs/0001-kept/file.md','# Source file\n');original=commit(r)
+ git(r,'rm','-r','docs/findings/original.md','docs/specs/0001-kept')
+ removals=['docs/history/findings/reduced.md','docs/history/backlog/reduced.md','docs/adr/old.md','docs/backlog/2026-10-16-done.md','_archived/findings/legacy.md','docs/history/specs/0003-uncited.md']
+ reduced=f'---\nstatus: done\n---\n\n# Reduced\n\nSummary.\n\nFull text in Git at `{original}`: `docs/findings/original.md`.\n'
+ write(r,removals[0],reduced);write(r,removals[1],reduced);write(r,removals[2],'---\nstatus: deprecated\n---\n# Old ADR\n');write(r,removals[3],'---\ntype: fix\nstatus: done\nreason: finished\ncreated: 2026-10-16\n---\n# Finished\n');write(r,removals[4],reduced)
+ write(r,'docs/history/specs/0001-kept.md',record('0001-kept',original,'See [source](file.md).'));write(r,'docs/history/specs/0002-cited.md',record('0002-cited',original,'Retired.', 'superseded'));write(r,removals[5],record('0003-uncited',original,'Retired.','superseded'))
+ write(r,'docs/user-guide/a.md','# Guide\n\n[finding](../history/findings/reduced.md)\n\nKeep [record](../history/specs/0002-cited.md).\n');commit(r);git(r,'tag','-a','history-full','-m','Preserve full history')
+ (r/'docs/specs').mkdir(parents=True,exist_ok=True)
+ before=snapshot(r);args=['baseline','update','--repo','.','--no-skills','--format','json'];p=cli(r,args,'adopter-preview.txt',[3]);preview=json.loads(p.stdout);assert snapshot(r)==before;h=preview['history'];assert not h.get('refused'),h
+ raw=json.dumps(h);missing_preview_paths=[x for x in removals if x not in p.stdout];assert sum(u['files'] for u in h['units'] if u['action']=='remove')==len(removals); listed=[x for u in h['units'] if u['action']=='remove' for x in u['paths']]; assert sorted(listed)==sorted(removals) and len(set(listed))==len(removals); assert all(u['paths']==sorted(u['paths']) for u in h['units']); assert next(u for u in h['units'] if u['unit']=='record-links')['paths']==['docs/history/specs/0001-kept.md'];assert 'record-links' in raw and 'rewrite' in raw;assert 'bytesAfter' not in raw
+ textplan=cli(r,['baseline','update','--repo','.','--no-skills','--format','text'],'adopter-text-preview.txt',[3]); assert snapshot(r)==before; assert all('  - '+x+'\n' in textplan.stdout for x in removals+['docs/history/specs/0001-kept.md']); assert not missing_preview_paths; p=cli(r,args+['--yes'],'adopter-apply.txt',[0]);applied=json.loads(p.stdout);assert all(not (r/x).exists() for x in removals);assert (r/'docs/history/specs/0002-cited.md').exists();assert '](' not in (r/'docs/history/specs/0001-kept.md').read_text();assert f'docs/findings/original.md@{original}' in (r/'docs/user-guide/a.md').read_text();assert 'docs/specs/0001-kept/file.md@'+original in (r/'docs/history/specs/0001-kept.md').read_text()
+ p=cli(r,args,'adopter-second-run.txt',[0]);second=json.loads(p.stdout);assert second['history']['status']=='current',second['history'];assert git(r,'cat-file','-t','history-full')=='tag'
+ (EV/'adopter-assertions.json').write_text(json.dumps({'expected_removals':removals,'paths_not_named_in_preview':missing_preview_paths,'preview_immutable':True,'cited_superseded_kept':True,'annotated_tag':True,'original_commit':original,'history_after':second['history'],'preview':h,'applied':applied['history']},indent=2))
+ row('06','fail' if missing_preview_paths else 'pass','Created and adopted a synthetic go-cli-tui repository through public baseline plan/apply using the source fixture decisions and seed. Added every authored retired shape, a cited and uncited superseded record, broken record link, guide citation and annotated history-full tag. Preview exited 3 and preserved files/index/refs. It lists all removal units and total file counts plus rewrite destinations and record-links, every removal exactly once in sorted paths lists and the record-links paths. The text preview prints every path as an indented line; both previews leave files, refs and index unchanged. --yes nevertheless exited 0 and removed exactly the six expected paths, kept the cited superseded record and repaired citations. A fresh invocation exited 0 with history current. Evidence: [assertions including omitted paths](evidence/2026-10-17-offline-01/adopter-assertions.json), [preview](evidence/2026-10-17-offline-01/adopter-preview.txt), [apply](evidence/2026-10-17-offline-01/adopter-apply.txt), [second run](evidence/2026-10-17-offline-01/adopter-second-run.txt).')
+
+def locator_sweep():
+ # Same public detector covers Live Documents, Archive Records and user-guide pages.
+ p=cli(ROOT,['spec','check','0272-the-history-holds-only-archive-records','--stage','prd'],'locator-public-check.txt',[0]);assert '[error] SC-HISTORY-RETAINED' not in p.stdout
+ roots=['AGENTS.md','CONTEXT.md','README.md','docs/agents','docs/adr','docs/references','docs/user-guide','docs/history/specs','docs/specs']
+ files=[]
+ for rel in roots:
+  path=ROOT/rel
+  if path.is_file() and not path.is_symlink():files.append(path)
+  elif path.is_dir():files.extend(x for x in path.rglob('*.md') if not x.is_symlink() and '/qa/' not in str(x))
+ found={}
+ for f in set(files):
+  for m in re.finditer(r'`([^`\s]+)@([0-9a-fA-F]{64}|[0-9a-fA-F]{40})`',f.read_text()):
+   if m[1].startswith(('http:','https:')):continue
+   found.setdefault((m[1],m[2]),[]).append(str(f.relative_to(ROOT)))
+ checks=[];bad=[];cache={}
+ for (path,rev),sources in sorted(found.items()):
+  if rev not in cache:
+   cache[rev]=git(ROOT,'for-each-ref','--contains',rev,'--format=%(refname)','refs/heads/main','refs/tags')
+  holds=run(['git','cat-file','-e',rev+':'+path]).returncode==0
+  item={'path':path,'commit':rev,'holds':holds,'reachable_refs':cache[rev].splitlines(),'sources':sorted(set(sources))};checks.append(item)
+  if not holds or not cache[rev]:bad.append(item)
+ (EV/'locator-sweep.json').write_text(json.dumps({'unique_pairs':len(checks),'invalid':bad,'checks':checks},indent=2));assert not bad,bad
+ row('04','pass','A fresh public spec check at prd stage exited 0 without retained-history diagnostics; this exercises broken/self links and locator validation over its production document scope. Independently enumerated '+str(len(checks))+' unique Git Locator pairs from Archive Records, Live Documents and user-guide pages: git cat-file confirmed every path at its commit; git for-each-ref --contains confirmed main or a tag reaches each. The deleted-branch plant failed with SC-HISTORY-RETAINED and a pull-request fallback; the required ResolveGitLocator negative test is recorded in row 10. Evidence: [independent Git sweep](evidence/2026-10-17-offline-01/locator-sweep.json), [public check](evidence/2026-10-17-offline-01/locator-public-check.txt), [unreachable plant](evidence/2026-10-17-offline-01/sabotage-unreachable.txt).')
+
+def clauses():
+ clauses=[]
+ for name in ['context-workflow','secondbrain']:
+  mod=json.loads((ROOT/f'internal/baseline/assets/modules/{name}.json').read_text())
+  for rule in mod['rules']:
+   for c in rule.get('clauses',[]):clauses.append((c['id'],c.get('guidance','')))
+ violations=[]
+ for ident,guidance in clauses:
+  if ident=='clause.context.findings-09-archive':continue
+  for forbidden in ['A retirement deletes the file','docs/history/findings/','docs/history/backlog/','docs/history/adr/','reduced entry','stay whole','capture door']:
+   if forbidden in guidance:violations.append((ident,forbidden))
+ assert not violations,violations
+ s=dict(clauses)['clause.context.findings-09-archive'];assert s.startswith('A retirement deletes the file')
+ (EV/'clause-sweep.json').write_text(json.dumps({'clause_count':len(clauses),'violations':violations,'retirement_clause':s},indent=2));row('05','pass','Measured the rendered managed region at 9,664 bytes including both marker lines (below 11,000). Scanned every clause of both changed modules; only clause.context.findings-09-archive states the retirement rule. No other clause carries retired-family paths, reduced-entry, stay-whole or capture-door wording. Named behavioral tests independently cover the sentinel, replaced identities and conditional lesson capture (row 10). Evidence: [byte count](evidence/2026-10-17-offline-01/region.json), [clause assertions](evidence/2026-10-17-offline-01/clause-sweep.json).')
+
+
+def archive_flow():
+ r=init('archive');slug='0001-owner';d='docs/specs/'+slug
+ write(r,d+'/_prd.md','---\nspec: '+slug+'\nstatus: active\ncreated: 2026-10-01\n---\n\n'+fixture_prd())
+ write(r,d+'/_tasks.md','---\nschema: spec-tasks/v1\nspec: '+slug+'\nqa: task_02\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_02\n      file: task_02.md\n      needs: [task_01]\n---\n\n# Graph\n')
+ for n in [1,2]:write(r,d+f'/task_{n:02d}.md',f'---\ntask: task_{n:02d}\nspec: {slug}\nstatus: completed\ntype: '+('qa' if n==2 else 'backend')+'\n---\n\n# Completed fixture task\n\n## Verification\n\n- `true`\n')
+ write(r,d+'/references/adopted.md','---\ntype: fix\nstatus: promoted\ncreated: 2026-10-01\nspec: 0001-owner\n---\n\n# Adopted intent\n')
+ write(r,d+'/references/knowledge.md','# Knowledge\n\nRead [PRD](../_prd.md) and [ADR](../../../adr/rule.md).\n')
+ write(r,'docs/adr/rule.md','# Rule\n');write(r,d+'/qa/evidence/output.txt','Local evidence.\n')
+ write(r,d+'/qa/qa-report-2026-10-17.md','---\nverdict: pass\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n# QA Report\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 01 | pass | Fixture |\n\n## Outcome\n\nSee [adopted](../references/adopted.md) and [evidence](evidence/output.txt).\n')
+ parent=commit(r);cli(r,['archive',slug,'--plan'],'archive-fixture-plan.txt',[0]);p=cli(r,['archive',slug,'--promote','references/knowledge.md'],'archive-cli.txt',[0]);assert not (r/d).exists();rec=(r/'docs/history/specs/0001-owner.md').read_text();copy=(r/'docs/references/knowledge.md').read_text();assert d+'/references/adopted.md@'+parent in rec;assert d+'/qa/evidence/output.txt@'+parent in rec;assert d+'/_prd.md@'+parent in copy;assert '[ADR](../adr/rule.md)' in copy
+ for dest in re.findall(r'\]\(([^)]+)\)',copy):assert (r/'docs/references'/dest).exists(),dest
+ assert not re.search(r'\]\([^)]*0001-owner\.md',rec)
+ head=commit(r,'docs: archive isolated fixture');assert git(r,'show',head+':docs/references/knowledge.md')==copy.strip();(EV/'archive-record.md.txt').write_text(rec);(EV/'archive-promoted.md.txt').write_text(copy);(EV/'archive-fixture.json').write_text(json.dumps({'repo':str(r),'parent':parent,'head':head,'slug':slug},indent=2));print('ARCHIVE CLI OK; exact-proof overlay pending',flush=True)
+
+
+if __name__=='__main__':
+ globals()[sys.argv[1]]()

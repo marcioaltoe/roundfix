@@ -1,0 +1,19 @@
+{
+  "base": "7d3d05843280e0980c2d62a257af826806cc7018",
+  "base_archive_records": 254,
+  "head_archive_records": 244,
+  "removed_records": [
+    "docs/history/specs/0120-knowledge-lifecycle-and-durable-capture.md",
+    "docs/history/specs/0121-baseline-decisions-and-complete-regeneration.md",
+    "docs/history/specs/0122-verified-content-and-terminal-settlement.md",
+    "docs/history/specs/0123-runtime-readiness-and-model-capabilities.md",
+    "docs/history/specs/0124-verification-capacity-and-measured-economics.md",
+    "docs/history/specs/0125-repository-identity-and-run-branch-policy.md",
+    "docs/history/specs/0126-agent-review-before-pull-request.md",
+    "docs/history/specs/0127-durable-unattended-spec-workflow.md",
+    "docs/history/specs/0128-release-planning-with-bare-stable-tags.md",
+    "docs/history/specs/0129-spec-authoring-and-gate-recovery.md"
+  ],
+  "extra_delivered_record": "docs/history/specs/0273-the-queue-reports-a-gone-owner-and-a-dismissal-survives-a-fix.md",
+  "extra_record_delivery_commit": "3cc87a34"
+}

@@ -1,0 +1,1351 @@
+{
+  "tasks": [
+    {
+      "task": "task_01",
+      "commit": "429e6a516042ad62e998ae53eafc73c094e66c8a",
+      "grant_revision": "adc564d01b63161458ff13cbaf549de099c46edc",
+      "grant_is_ancestor": true,
+      "paths": [
+        {
+          "path": "docs/references/behavior-surfaces.json",
+          "declared_by": "docs/references/behavior-surfaces.json"
+        },
+        {
+          "path": "docs/specs/0272-the-history-holds-only-archive-records/task_01.md",
+          "declared_by": "docs/specs/0272-the-history-holds-only-archive-records/task_01.md"
+        },
+        {
+          "path": "docs/user-guide/commands/archive.md",
+          "declared_by": "docs/user-guide/commands/archive.md"
+        },
+        {
+          "path": "docs/user-guide/commands/deliver.md",
+          "declared_by": "docs/user-guide/commands/deliver.md"
+        },
+        {
+          "path": "internal/cli/archive.go",
+          "declared_by": "internal/cli/archive.go"
+        },
+        {
+          "path": "internal/cli/archive_git_locator_test.go",
+          "declared_by": "internal/cli/archive_git_locator_test.go"
+        },
+        {
+          "path": "internal/cli/archive_relink_test.go",
+          "declared_by": "internal/cli/archive_relink_test.go"
+        },
+        {
+          "path": "internal/cli/deliver_archive_relink_test.go",
+          "declared_by": "internal/cli/deliver_archive_relink_test.go"
+        },
+        {
+          "path": "internal/cli/deliver_workflow.go",
+          "declared_by": "internal/cli/deliver_workflow.go"
+        },
+        {
+          "path": "internal/cli/history_link_rebase_test.go",
+          "declared_by": "internal/cli/history_link_rebase_test.go"
+        },
+        {
+          "path": "internal/spec/archive.go",
+          "declared_by": "internal/spec/archive.go"
+        },
+        {
+          "path": "internal/spec/archive_record.go",
+          "declared_by": "internal/spec/archive_record.go"
+        },
+        {
+          "path": "internal/spec/git_locator.go",
+          "declared_by": "internal/spec/git_locator.go"
+        },
+        {
+          "path": "internal/spec/git_locator_test.go",
+          "declared_by": "internal/spec/git_locator_test.go"
+        },
+        {
+          "path": "internal/spec/history_sanitize.go",
+          "declared_by": "internal/spec/history_sanitize.go"
+        },
+        {
+          "path": "internal/spec/legacy_link_rebase.go",
+          "declared_by": "internal/spec/legacy_link_rebase.go"
+        },
+        {
+          "path": "internal/spec/legacy_link_rebase_test.go",
+          "declared_by": "internal/spec/legacy_link_rebase_test.go"
+        },
+        {
+          "path": "internal/spec/live_citations.go",
+          "declared_by": "internal/spec/live_citations.go"
+        }
+      ],
+      "undeclared": [],
+      "authorized_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/agents/docs-layout.md",
+        "docs/agents/secondbrain.md",
+        "docs/agents/setup-context.json",
+        "docs/references/coverage-record.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md",
+        "internal/baseline/assets/modules/context-workflow.json",
+        "internal/baseline/assets/modules/secondbrain.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive.go",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/backlog.go",
+        "internal/speccheck/backlog_test.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/constraints.go",
+        "skills/archive-spec/SKILL.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "protected_changed": []
+    },
+    {
+      "task": "task_02",
+      "commit": "30433de76a1b5e3db80666381a12dbe04a9e07bf",
+      "grant_revision": "24aeeb4aec42874f4740ecedaad976f384cc4696",
+      "grant_is_ancestor": true,
+      "paths": [
+        {
+          "path": "docs/references/behavior-surfaces.json",
+          "declared_by": "docs/references/behavior-surfaces.json"
+        },
+        {
+          "path": "docs/references/coverage-record.json",
+          "declared_by": "docs/references/coverage-record.json"
+        },
+        {
+          "path": "docs/specs/0272-the-history-holds-only-archive-records/task_02.md",
+          "declared_by": "docs/specs/0272-the-history-holds-only-archive-records/task_02.md"
+        },
+        {
+          "path": "docs/user-guide/commands/baseline.md",
+          "declared_by": "docs/user-guide/commands/baseline.md"
+        },
+        {
+          "path": "docs/user-guide/commands/history.md",
+          "declared_by": "docs/user-guide/commands/history.md"
+        },
+        {
+          "path": "docs/user-guide/commands/upgrade.md",
+          "declared_by": "docs/user-guide/commands/upgrade.md"
+        },
+        {
+          "path": "internal/baseline/history_citation_plan_test.go",
+          "declared_by": "internal/baseline/history_citation_plan_test.go"
+        },
+        {
+          "path": "internal/baseline/history_layout.go",
+          "declared_by": "internal/baseline/history_layout.go"
+        },
+        {
+          "path": "internal/baseline/history_layout_test.go",
+          "declared_by": "internal/baseline/history_layout_test.go"
+        },
+        {
+          "path": "internal/baseline/reduced_retirement_clauses_test.go",
+          "declared_by": "internal/baseline/reduced_retirement_clauses_test.go"
+        },
+        {
+          "path": "internal/baseline/transaction_test.go",
+          "declared_by": "internal/baseline/transaction_test.go"
+        },
+        {
+          "path": "internal/cli/baseline_history_citation_test.go",
+          "declared_by": "internal/cli/baseline_history_citation_test.go"
+        },
+        {
+          "path": "internal/cli/baseline_update.go",
+          "declared_by": "internal/cli/baseline_update.go"
+        },
+        {
+          "path": "internal/cli/baseline_update_citations_test.go",
+          "declared_by": "internal/cli/baseline_update_citations_test.go"
+        },
+        {
+          "path": "internal/cli/baseline_update_history.go",
+          "declared_by": "internal/cli/baseline_update_history.go"
+        },
+        {
+          "path": "internal/cli/baseline_update_history_test.go",
+          "declared_by": "internal/cli/baseline_update_history_test.go"
+        },
+        {
+          "path": "internal/cli/history.go",
+          "declared_by": "internal/cli/history.go"
+        },
+        {
+          "path": "internal/cli/history_refusal_test.go",
+          "declared_by": "internal/cli/history_refusal_test.go"
+        },
+        {
+          "path": "internal/cli/history_removal_test.go",
+          "declared_by": "internal/cli/history_removal_test.go"
+        },
+        {
+          "path": "internal/cli/history_test.go",
+          "declared_by": "internal/cli/history_test.go"
+        },
+        {
+          "path": "internal/cli/upgrade.go",
+          "declared_by": "internal/cli/upgrade.go"
+        },
+        {
+          "path": "internal/cli/upgrade_notice_test.go",
+          "declared_by": "internal/cli/upgrade_notice_test.go"
+        },
+        {
+          "path": "internal/spec/history_entries.go",
+          "declared_by": "internal/spec/history_entries.go"
+        },
+        {
+          "path": "internal/spec/history_entries_test.go",
+          "declared_by": "internal/spec/history_entries_test.go"
+        },
+        {
+          "path": "internal/spec/history_removal_test.go",
+          "declared_by": "internal/spec/history_removal_test.go"
+        },
+        {
+          "path": "internal/speccheck/reduced_history_entry_test.go",
+          "declared_by": "internal/speccheck/reduced_history_entry_test.go"
+        }
+      ],
+      "undeclared": [],
+      "authorized_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/agents/docs-layout.md",
+        "docs/agents/secondbrain.md",
+        "docs/agents/setup-context.json",
+        "docs/references/coverage-record.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md",
+        "internal/baseline/assets/modules/context-workflow.json",
+        "internal/baseline/assets/modules/secondbrain.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/docscontract/publicdocs_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive.go",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/backlog.go",
+        "internal/speccheck/backlog_test.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/constraints.go",
+        "skills/archive-spec/SKILL.md",
+        "skills/baseline_skill_contract_test.go",
+        "skills/roundfix/SKILL.md"
+      ],
+      "protected_changed": []
+    },
+    {
+      "task": "task_03",
+      "commit": "1d0bc0cd91de4ca13c56c16f95fa0731ba76a3f5",
+      "grant_revision": "24aeeb4aec42874f4740ecedaad976f384cc4696",
+      "grant_is_ancestor": true,
+      "paths": [
+        {
+          "path": ".agents/skills/archive-spec/SKILL.md",
+          "declared_by": ".agents/skills/archive-spec/SKILL.md"
+        },
+        {
+          "path": ".agents/skills/roundfix/SKILL.md",
+          "declared_by": ".agents/skills/roundfix/SKILL.md"
+        },
+        {
+          "path": ".agents/skills/roundfix/references/archive.md",
+          "declared_by": ".agents/skills/roundfix/references/archive.md"
+        },
+        {
+          "path": ".agents/skills/roundfix/references/baseline.md",
+          "declared_by": ".agents/skills/roundfix/references/baseline.md"
+        },
+        {
+          "path": ".agents/skills/roundfix/references/deliver.md",
+          "declared_by": ".agents/skills/roundfix/references/deliver.md"
+        },
+        {
+          "path": ".agents/skills/roundfix/references/setup.md",
+          "declared_by": ".agents/skills/roundfix/references/setup.md"
+        },
+        {
+          "path": ".agents/skills/roundfix/references/spec.md",
+          "declared_by": ".agents/skills/roundfix/references/spec.md"
+        },
+        {
+          "path": "CONTEXT.md",
+          "declared_by": "CONTEXT.md"
+        },
+        {
+          "path": "docs/references/behavior-surfaces.json",
+          "declared_by": "docs/references/behavior-surfaces.json"
+        },
+        {
+          "path": "docs/references/coverage-record.json",
+          "declared_by": "docs/references/coverage-record.json"
+        },
+        {
+          "path": "docs/specs/0272-the-history-holds-only-archive-records/task_03.md",
+          "declared_by": "docs/specs/0272-the-history-holds-only-archive-records/task_03.md"
+        },
+        {
+          "path": "docs/user-guide/commands/baseline.md",
+          "declared_by": "docs/user-guide/commands/baseline.md"
+        },
+        {
+          "path": "docs/user-guide/commands/history.md",
+          "declared_by": "docs/user-guide/commands/history.md"
+        },
+        {
+          "path": "docs/user-guide/commands/spec.md",
+          "declared_by": "docs/user-guide/commands/spec.md"
+        },
+        {
+          "path": "internal/cli/baseline_update_history.go",
+          "declared_by": "internal/cli/baseline_update_history.go"
+        },
+        {
+          "path": "internal/cli/history.go",
+          "declared_by": "internal/cli/history.go"
+        },
+        {
+          "path": "internal/cli/history_record_links_test.go",
+          "declared_by": "internal/cli/history_record_links_test.go"
+        },
+        {
+          "path": "internal/docscontract/corpus_test.go",
+          "declared_by": "internal/docscontract/corpus_test.go"
+        },
+        {
+          "path": "internal/docscontract/testdata/corpus-golden.json",
+          "declared_by": "internal/docscontract/testdata/corpus-golden.json"
+        },
+        {
+          "path": "internal/spec/archive_layout_characterization_test.go",
+          "declared_by": "internal/spec/archive_layout_characterization_test.go"
+        },
+        {
+          "path": "internal/spec/record_links.go",
+          "declared_by": "internal/spec/record_links.go"
+        },
+        {
+          "path": "internal/spec/record_links_test.go",
+          "declared_by": "internal/spec/record_links_test.go"
+        },
+        {
+          "path": "internal/speccheck/backlog.go",
+          "declared_by": "internal/speccheck/backlog.go"
+        },
+        {
+          "path": "internal/speccheck/backlog_deferred_test.go",
+          "declared_by": "internal/speccheck/backlog_deferred_test.go"
+        },
+        {
+          "path": "internal/speccheck/backlog_test.go",
+          "declared_by": "internal/speccheck/backlog_test.go"
+        },
+        {
+          "path": "internal/speccheck/citations.go",
+          "declared_by": "internal/speccheck/citations.go"
+        },
+        {
+          "path": "internal/speccheck/citations_test.go",
+          "declared_by": "internal/speccheck/citations_test.go"
+        },
+        {
+          "path": "internal/speccheck/coherence.go",
+          "declared_by": "internal/speccheck/coherence.go"
+        },
+        {
+          "path": "internal/speccheck/constraints.go",
+          "declared_by": "internal/speccheck/constraints.go"
+        },
+        {
+          "path": "internal/speccheck/history_retained.go",
+          "declared_by": "internal/speccheck/history_retained.go"
+        },
+        {
+          "path": "internal/speccheck/history_retained_test.go",
+          "declared_by": "internal/speccheck/history_retained_test.go"
+        },
+        {
+          "path": "internal/speccheck/receipts.go",
+          "declared_by": "internal/speccheck/receipts.go"
+        },
+        {
+          "path": "internal/speccheck/receipts_test.go",
+          "declared_by": "internal/speccheck/receipts_test.go"
+        },
+        {
+          "path": "skills/archive-spec/SKILL.md",
+          "declared_by": "skills/archive-spec/SKILL.md"
+        },
+        {
+          "path": "skills/roundfix/SKILL.md",
+          "declared_by": "skills/roundfix/SKILL.md"
+        },
+        {
+          "path": "skills/roundfix/references/archive.md",
+          "declared_by": "skills/roundfix/references/archive.md"
+        },
+        {
+          "path": "skills/roundfix/references/baseline.md",
+          "declared_by": "skills/roundfix/references/baseline.md"
+        },
+        {
+          "path": "skills/roundfix/references/deliver.md",
+          "declared_by": "skills/roundfix/references/deliver.md"
+        },
+        {
+          "path": "skills/roundfix/references/setup.md",
+          "declared_by": "skills/roundfix/references/setup.md"
+        },
+        {
+          "path": "skills/roundfix/references/spec.md",
+          "declared_by": "skills/roundfix/references/spec.md"
+        },
+        {
+          "path": "skills/testdata/owned-skill-versions.json",
+          "declared_by": "skills/testdata/owned-skill-versions.json"
+        }
+      ],
+      "undeclared": [],
+      "authorized_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/agents/docs-layout.md",
+        "docs/agents/secondbrain.md",
+        "docs/agents/setup-context.json",
+        "docs/references/coverage-record.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md",
+        "internal/baseline/assets/modules/context-workflow.json",
+        "internal/baseline/assets/modules/secondbrain.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/docscontract/publicdocs_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive.go",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/backlog.go",
+        "internal/speccheck/backlog_test.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/constraints.go",
+        "skills/archive-spec/SKILL.md",
+        "skills/baseline_skill_contract_test.go",
+        "skills/roundfix/SKILL.md"
+      ],
+      "protected_changed": []
+    },
+    {
+      "task": "task_04",
+      "commit": "f61afa85aeefd195eb8d88f7729c91f346dce202",
+      "grant_revision": "7d3d05843280e0980c2d62a257af826806cc7018",
+      "grant_is_ancestor": true,
+      "paths": [
+        {
+          "path": "docs/agents/docs-layout.md",
+          "declared_by": "docs/agents/docs-layout.md"
+        },
+        {
+          "path": "docs/agents/secondbrain.md",
+          "declared_by": "docs/agents/secondbrain.md"
+        },
+        {
+          "path": "docs/agents/setup-context.json",
+          "declared_by": "docs/agents/setup-context.json"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-06-atomic-inbox-capture-helper.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-08-a-failed-proof-appends-a-cleanup-error-the-maintainer-cannot-act-on.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-08-a-runtime-that-advertises-a-catalog-is-not-unusable.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-08-record-usage-per-agent-session.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-09-a-verification-command-passes-only-by-exiting-zero.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-09-the-canonical-method-lives-in-rendered-guides-instead-of-skills.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-09-the-qa-gate-commits-scratch-repositories-and-binaries.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-09-the-roundfix-skill-carries-nine-commands-in-one-file.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-10-an-excluded-artifact-outlives-the-decision-that-excluded-it.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-10-one-reader-in-cli-still-couples-verify-to-the-docs-tree.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-10-the-gate-accepts-a-manifest-that-names-a-catalog-that-is-gone.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-10-the-preflight-reads-the-catalog-fixtures-as-repository-carriers.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-12-a-hook-failure-kills-a-run-that-already-verified-its-work.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-12-a-redirected-verification-hands-the-agent-an-empty-diagnostic.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-12-archive-refuses-a-graph-that-declined-the-qa-gate.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-12-release-plan-requires-a-v-prefixed-tag.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-12-speak-acp-directly-instead-of-through-acpx.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-12-the-secondbrain-guide-permits-capture-without-triggering-it.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-13-a-refused-gate-writes-a-report-its-own-contract-rejects.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-13-the-changed-path-audit-does-not-know-sanctioned-fallout.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-a-spec-archives-before-continuous-integration-answers.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-a-spec-that-coins-a-term-cannot-pass-its-own-gate.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-staging-a-task-commit-fails-when-the-task-deleted-a-file.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-the-archive-destination-still-depends-on-which-spec-root-is-configured.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-the-blocked-row-parser-requires-a-literal-the-message-never-names.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-the-prd-template-and-the-checker-disagree-on-the-tooling-row.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-the-underscored-orphan-review-root-is-never-migrated.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-08-14-the-vacuous-verification-event-lists-the-commands-that-passed.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-09-25-jev-gateway-baseline-before-routing.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-10-03-a-grok-fallback-for-docs-and-chore.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-10-05-the-judge-log-under-counts-router-spend.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/backlog/2026-10-12-the-worktree-admin-lock-test-is-timing-dependent.md",
+          "declared_by": "docs/history/backlog"
+        },
+        {
+          "path": "docs/history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-17-global-run-storage-sanitation-and-compaction.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-23-setup-context-driven-adoption-process-improvements.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-24-greenfield-agent-guidance-acceptance-target.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-25-npm-trusted-publishing-and-release-preflight.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-25-spec-owned-reference-lifecycle.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-26-baseline-profile-refresh-retention-gap.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-26-claude-adapter-configoptions-migration.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-26-vortex-baseline-capability-remediation.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-27-bare-go-build-writes-an-untracked-root-binary.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-27-claude-adapter-standardization.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-27-derived-skill-digest-pins-have-no-regeneration-path.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-27-owner-identity-forks-ps-and-fails-closed-under-load.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-27-sandboxed-agents-cannot-reach-the-default-go-cache.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-28-failed-qa-runs-strand-branches-that-block-review-runs.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-28-profiles-configure-replaces-the-whole-profiles-map.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-28-same-day-qa-reruns-are-ignored-by-the-verdict-selector.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-28-tooling-tasks-need-a-green-repo-and-an-undocumented-commit-choreography.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-29-doctor-requires-roundfix-own-development-skills.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-29-qa-cycle-cost-is-cold-environments-and-agent-turns.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-29-qa-cycle-latency-and-detector-placement.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-29-qa-gate-round-economics.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-30-baseline-digest-regeneration-cannot-bootstrap.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-30-failed-qa-runs-accumulate-unreleasable-run-branches.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-30-run-termination-does-not-reach-the-acpx-child.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-30-the-autonomous-loop-orders-qa-before-its-own-preconditions.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-01-characterization-corpus-is-outside-the-regeneration-command.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-02-a-spec-cycle-leaves-branches-and-worktrees-nobody-audits.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-02-a-verification-naming-a-missing-test-passes-vacuously.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-03-a-200ms-attach-budget-fails-under-ci-load.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-03-a-recording-order-defect-blocked-every-public-qa-row.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-03-gate-and-review-rounds-need-a-convergence-rule.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-a-doctor-next-action-that-does-not-reach-green.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-a-finding-does-not-prevent-the-recurrence-it-describes.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-a-spec-archives-with-pass-while-a-user-story-was-never-exercised.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-a-static-gate-row-reported-one-instance-per-cycle.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-an-accepted-gap-has-no-terminal-state-so-the-loop-cannot-close.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-branch-integrity-preflight-prescribes-a-remedy-that-reintroduces-superseded-work.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-fail-fast-verification-spends-the-single-repair-turn-on-the-first-of-n-defects.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-pre-contract-spec-graphs-run-with-no-qa-gate-and-say-nothing.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-review-runs-halt-autonomous-delivery-on-unrelated-dirty-files.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-the-documented-sandbox-escape-does-not-exist-on-the-codex-adapter.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-watch-derives-a-review-head-it-never-checks-is-reachable.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-04-what-still-needs-a-supervisor-between-a-prd-and-a-merge.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-agent-full-access-passes-config-validation-and-fails-every-task.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-an-absence-grep-rejects-the-work-it-was-written-to-protect.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-archive-refuses-a-spec-whose-graph-declined-the-qa-gate.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-authored-verification-gates-are-untested-code.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-authoring-has-no-procedure-for-a-disproven-premise.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-contract-seams-between-daemon-gate-and-archive.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-five-frictions-from-a-full-autonomous-spec-night.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-o-loop-devolve-controle-por-motivos-mecanicos.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-preflight-prescribes-integrating-a-superseded-run-branch.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-review-issues-have-no-identity-across-rounds.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-what-a-six-spec-autonomous-session-asks-roundfix-to-change.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-what-roundfix-should-do-differently-measured-over-one-queue-night.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-05-what-this-repository-should-change-after-a-full-queue-night.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-a-promoted-backlog-entry-has-nowhere-valid-to-go.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-a-test-mutates-the-repository-another-test-is-reading.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-authoring-rules-a-release-night-made-checkable.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-every-run-that-failed-tonight-failed-on-a-contract.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-manual-thread-resolution-is-load-bearing-and-undocumented.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-minting-an-adr-opens-gaps-no-one-can-ever-close.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-rollup-agent-selection-and-execution-environments.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-rollup-baseline-and-derived-tooling.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-rollup-qa-gates-and-verification-evidence.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-rollup-review-and-delivery-convergence.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-rollup-run-lifecycle-and-branch-integrity.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-rollup-spec-authoring-and-contract-enforcement.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-six-parallel-runs-on-one-machine-show-the-seams.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-the-detach-tests-leak-the-process-they-prove-survives.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-the-gate-checks-that-adrs-were-cited-not-that-they-were-obeyed.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-the-loop-cannot-fix-comments-about-its-own-artifacts.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-the-qa-gate-and-the-pull-request-cannot-both-be-current.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-06-three-gigabytes-of-event-journal-inside-the-retention-window.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-a-live-contract-lives-inside-an-archived-spec.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-a-sixty-four-value-bound-locks-out-the-opencode-runtime.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-changing-the-http-contract-discards-its-exceptions.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-claude-agent-selections-are-never-proven.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-greenfield-adoption-cannot-satisfy-its-own-gate.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-the-only-gate-reports-green-on-a-red-suite.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-the-setup-refresh-interviews-a-repository-that-already-answered.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-07-two-http-contract-defaults-and-only-one-is-read.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-10-a-fake-adapter-goes-silent-under-a-dense-start.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-10-a-head-the-loop-did-not-push-is-a-head-nobody-reviews.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-14-a-review-retires-on-whatever-the-object-store-happens-to-hold.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-14-preflight-starves-when-the-machine-is-busy.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-26-a-qa-tasks-authored-verification-is-never-executed.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-08-26-the-daemon-has-no-postcondition-so-a-task-settles-clean-breaking-the-tree.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-09-08-run-branches-ignore-the-selected-prefix.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-09-16-a-qa-commit-can-carry-verifier-output.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-09-25-an-opt-in-jev-judgment-layer-is-proposed.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-09-29-the-first-full-queue-trial-needed-manual-recovery.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-09-30-jev-judgments-measured-against-the-spec-archive.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-09-30-the-v0-22-0-queue-needed-twelve-manual-interventions.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/findings/2026-10-01-the-skills-catalog-reshaped-the-baseline-inputs.md",
+          "declared_by": "docs/history/findings"
+        },
+        {
+          "path": "docs/history/specs/0037-terminal-outcome-integrity.md",
+          "declared_by": "docs/history/specs/0037-terminal-outcome-integrity.md"
+        },
+        {
+          "path": "docs/history/specs/0039-review-source-evidence-and-detached-outcomes.md",
+          "declared_by": "docs/history/specs/0039-review-source-evidence-and-detached-outcomes.md"
+        },
+        {
+          "path": "docs/history/specs/0040-mandatory-context-driven-adrs.md",
+          "declared_by": "docs/history/specs/0040-mandatory-context-driven-adrs.md"
+        },
+        {
+          "path": "docs/history/specs/0046-public-context-driven-baseline-command.md",
+          "declared_by": "docs/history/specs/0046-public-context-driven-baseline-command.md"
+        },
+        {
+          "path": "docs/history/specs/0047-context-driven-guidance-composition.md",
+          "declared_by": "docs/history/specs/0047-context-driven-guidance-composition.md"
+        },
+        {
+          "path": "docs/history/specs/0048-context-driven-project-decisions-and-spec-constraints.md",
+          "declared_by": "docs/history/specs/0048-context-driven-project-decisions-and-spec-constraints.md"
+        },
+        {
+          "path": "docs/history/specs/0052-claude-adapter-standardization.md",
+          "declared_by": "docs/history/specs/0052-claude-adapter-standardization.md"
+        },
+        {
+          "path": "docs/history/specs/0053-qa-gate-reachability-and-verdict-semantics.md",
+          "declared_by": "docs/history/specs/0053-qa-gate-reachability-and-verdict-semantics.md"
+        },
+        {
+          "path": "docs/history/specs/0054-tooling-task-and-verification-hygiene.md",
+          "declared_by": "docs/history/specs/0054-tooling-task-and-verification-hygiene.md"
+        },
+        {
+          "path": "docs/history/specs/0055-owner-identity-without-fork.md",
+          "declared_by": "docs/history/specs/0055-owner-identity-without-fork.md"
+        },
+        {
+          "path": "docs/history/specs/0056-profiles-configure-merge-semantics.md",
+          "declared_by": "docs/history/specs/0056-profiles-configure-merge-semantics.md"
+        },
+        {
+          "path": "docs/history/specs/0057-baseline-capability-evidence-and-retention.md",
+          "declared_by": "docs/history/specs/0057-baseline-capability-evidence-and-retention.md"
+        },
+        {
+          "path": "docs/history/specs/0058-npm-trusted-publishing-and-release-preflight.md",
+          "declared_by": "docs/history/specs/0058-npm-trusted-publishing-and-release-preflight.md"
+        },
+        {
+          "path": "docs/history/specs/0059-run-storage-compaction-and-global-sanitation.md",
+          "declared_by": "docs/history/specs/0059-run-storage-compaction-and-global-sanitation.md"
+        },
+        {
+          "path": "docs/history/specs/0060-spec-owned-reference-lifecycle.md",
+          "declared_by": "docs/history/specs/0060-spec-owned-reference-lifecycle.md"
+        },
+        {
+          "path": "docs/history/specs/0061-repository-derived-skill-requirements.md",
+          "declared_by": "docs/history/specs/0061-repository-derived-skill-requirements.md"
+        },
+        {
+          "path": "docs/history/specs/0062-baseline-digest-regeneration-bootstrap.md",
+          "declared_by": "docs/history/specs/0062-baseline-digest-regeneration-bootstrap.md"
+        },
+        {
+          "path": "docs/history/specs/0079-one-door-for-fleet-knowledge.md",
+          "declared_by": "docs/history/specs/0079-one-door-for-fleet-knowledge.md"
+        },
+        {
+          "path": "docs/history/specs/0120-knowledge-lifecycle-and-durable-capture.md",
+          "declared_by": "docs/history/specs/0120-knowledge-lifecycle-and-durable-capture.md"
+        },
+        {
+          "path": "docs/history/specs/0121-baseline-decisions-and-complete-regeneration.md",
+          "declared_by": "docs/history/specs/0121-baseline-decisions-and-complete-regeneration.md"
+        },
+        {
+          "path": "docs/history/specs/0122-verified-content-and-terminal-settlement.md",
+          "declared_by": "docs/history/specs/0122-verified-content-and-terminal-settlement.md"
+        },
+        {
+          "path": "docs/history/specs/0123-runtime-readiness-and-model-capabilities.md",
+          "declared_by": "docs/history/specs/0123-runtime-readiness-and-model-capabilities.md"
+        },
+        {
+          "path": "docs/history/specs/0124-verification-capacity-and-measured-economics.md",
+          "declared_by": "docs/history/specs/0124-verification-capacity-and-measured-economics.md"
+        },
+        {
+          "path": "docs/history/specs/0125-repository-identity-and-run-branch-policy.md",
+          "declared_by": "docs/history/specs/0125-repository-identity-and-run-branch-policy.md"
+        },
+        {
+          "path": "docs/history/specs/0126-agent-review-before-pull-request.md",
+          "declared_by": "docs/history/specs/0126-agent-review-before-pull-request.md"
+        },
+        {
+          "path": "docs/history/specs/0127-durable-unattended-spec-workflow.md",
+          "declared_by": "docs/history/specs/0127-durable-unattended-spec-workflow.md"
+        },
+        {
+          "path": "docs/history/specs/0128-release-planning-with-bare-stable-tags.md",
+          "declared_by": "docs/history/specs/0128-release-planning-with-bare-stable-tags.md"
+        },
+        {
+          "path": "docs/history/specs/0129-spec-authoring-and-gate-recovery.md",
+          "declared_by": "docs/history/specs/0129-spec-authoring-and-gate-recovery.md"
+        },
+        {
+          "path": "docs/history/specs/0193-baseline-guides-that-describe-the-product-as-it-is.md",
+          "declared_by": "docs/history/specs/0193-baseline-guides-that-describe-the-product-as-it-is.md"
+        },
+        {
+          "path": "docs/history/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own.md",
+          "declared_by": "docs/history/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own.md"
+        },
+        {
+          "path": "docs/history/specs/0213-a-test-suite-that-does-not-flake.md",
+          "declared_by": "docs/history/specs/0213-a-test-suite-that-does-not-flake.md"
+        },
+        {
+          "path": "docs/history/specs/0222-a-review-through-claude-that-keeps-its-verdict.md",
+          "declared_by": "docs/history/specs/0222-a-review-through-claude-that-keeps-its-verdict.md"
+        },
+        {
+          "path": "docs/history/specs/0228-queue-items-that-stay-current-with-main.md",
+          "declared_by": "docs/history/specs/0228-queue-items-that-stay-current-with-main.md"
+        },
+        {
+          "path": "docs/history/specs/0231-checks-that-hold-in-delivery.md",
+          "declared_by": "docs/history/specs/0231-checks-that-hold-in-delivery.md"
+        },
+        {
+          "path": "docs/history/specs/0232-a-queue-that-sees-a-pull-request-merged-by-hand.md",
+          "declared_by": "docs/history/specs/0232-a-queue-that-sees-a-pull-request-merged-by-hand.md"
+        },
+        {
+          "path": "docs/history/specs/0233-a-light-tier-on-open-models.md",
+          "declared_by": "docs/history/specs/0233-a-light-tier-on-open-models.md"
+        },
+        {
+          "path": "docs/history/specs/0235-one-qa-partial-policy.md",
+          "declared_by": "docs/history/specs/0235-one-qa-partial-policy.md"
+        },
+        {
+          "path": "docs/history/specs/0237-review-selection-failures-that-say-why.md",
+          "declared_by": "docs/history/specs/0237-review-selection-failures-that-say-why.md"
+        },
+        {
+          "path": "docs/history/specs/0239-a-glossary-every-spec-keeps-current.md",
+          "declared_by": "docs/history/specs/0239-a-glossary-every-spec-keeps-current.md"
+        },
+        {
+          "path": "docs/history/specs/0240-a-lost-rollout-is-infrastructure.md",
+          "declared_by": "docs/history/specs/0240-a-lost-rollout-is-infrastructure.md"
+        },
+        {
+          "path": "docs/history/specs/0241-retire-the-fool-autoresearch-and-council.md",
+          "declared_by": "docs/history/specs/0241-retire-the-fool-autoresearch-and-council.md"
+        },
+        {
+          "path": "docs/history/specs/0252-one-gate-per-run-and-a-smaller-baseline.md",
+          "declared_by": "docs/history/specs/0252-one-gate-per-run-and-a-smaller-baseline.md"
+        },
+        {
+          "path": "docs/history/specs/0262-a-run-worktree-under-a-symlinked-root-is-cleaned.md",
+          "declared_by": "docs/history/specs/0262-a-run-worktree-under-a-symlinked-root-is-cleaned.md"
+        },
+        {
+          "path": "docs/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md",
+          "declared_by": "docs/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md"
+        },
+        {
+          "path": "docs/references/behavior-surfaces.json",
+          "declared_by": "docs/references/behavior-surfaces.json"
+        },
+        {
+          "path": "docs/references/coverage-record.json",
+          "declared_by": "docs/references/coverage-record.json"
+        },
+        {
+          "path": "docs/references/jev-router-measurement-2026-10-04.md",
+          "declared_by": "docs/references/jev-router-measurement-2026-10-04.md"
+        },
+        {
+          "path": "docs/references/model-selection.md",
+          "declared_by": "docs/references/model-selection.md"
+        },
+        {
+          "path": "docs/references/skill-coverage.json",
+          "declared_by": "docs/references/skill-coverage.json"
+        },
+        {
+          "path": "docs/specs/0272-the-history-holds-only-archive-records/task_04.md",
+          "declared_by": "docs/specs/0272-the-history-holds-only-archive-records/task_04.md"
+        },
+        {
+          "path": "docs/user-guide/commands/detached-runs.md",
+          "declared_by": "docs/user-guide/commands/detached-runs.md"
+        },
+        {
+          "path": "docs/user-guide/commands/reconcile.md",
+          "declared_by": "docs/user-guide/commands/reconcile.md"
+        },
+        {
+          "path": "docs/user-guide/commands/stop.md",
+          "declared_by": "docs/user-guide/commands/stop.md"
+        },
+        {
+          "path": "docs/user-guide/context-driven-development.md",
+          "declared_by": "docs/user-guide/context-driven-development.md"
+        },
+        {
+          "path": "docs/user-guide/usage.md",
+          "declared_by": "docs/user-guide/usage.md"
+        },
+        {
+          "path": "internal/baseline/adopter_neutral_clauses_test.go",
+          "declared_by": "internal/baseline/adopter_neutral_clauses_test.go"
+        },
+        {
+          "path": "internal/baseline/archive_record_clause_test.go",
+          "declared_by": "internal/baseline/archive_record_clause_test.go"
+        },
+        {
+          "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+          "declared_by": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md"
+        },
+        {
+          "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md",
+          "declared_by": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md"
+        },
+        {
+          "path": "internal/baseline/assets/modules/context-workflow.json",
+          "declared_by": "internal/baseline/assets/modules/context-workflow.json"
+        },
+        {
+          "path": "internal/baseline/assets/modules/secondbrain.json",
+          "declared_by": "internal/baseline/assets/modules/secondbrain.json"
+        },
+        {
+          "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+          "declared_by": "internal/baseline/assets/profiles/standard-typescript-monorepo.json"
+        },
+        {
+          "path": "internal/baseline/clause_characterization_test.go",
+          "declared_by": "internal/baseline/clause_characterization_test.go"
+        },
+        {
+          "path": "internal/baseline/history_sanitize_clause_test.go",
+          "declared_by": "internal/baseline/history_sanitize_clause_test.go"
+        },
+        {
+          "path": "internal/baseline/module-versions.json",
+          "declared_by": "internal/baseline/module-versions.json"
+        },
+        {
+          "path": "internal/baseline/reduced_retirement_clauses_test.go",
+          "declared_by": "internal/baseline/reduced_retirement_clauses_test.go"
+        },
+        {
+          "path": "internal/baseline/retirement_rule_clauses_test.go",
+          "declared_by": "internal/baseline/retirement_rule_clauses_test.go"
+        },
+        {
+          "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+          "declared_by": "internal/baseline/testdata/catalog.diagnostics.golden.json"
+        },
+        {
+          "path": "internal/baseline/testdata/catalog.digest",
+          "declared_by": "internal/baseline/testdata/catalog.digest"
+        },
+        {
+          "path": "internal/baseline/testdata/catalog.normalized.json",
+          "declared_by": "internal/baseline/testdata/catalog.normalized.json"
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+          "declared_by": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json"
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+          "declared_by": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json"
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+          "declared_by": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json"
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+          "declared_by": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+        },
+        {
+          "path": "internal/cli/history_symlink_test.go",
+          "declared_by": "internal/cli/history_symlink_test.go"
+        },
+        {
+          "path": "internal/docscontract/publicdocs_test.go",
+          "declared_by": "internal/docscontract/publicdocs_test.go"
+        },
+        {
+          "path": "internal/spec/archive_layout_characterization_test.go",
+          "declared_by": "internal/spec/archive_layout_characterization_test.go"
+        },
+        {
+          "path": "internal/spec/history_entries.go",
+          "declared_by": "internal/spec/history_entries.go"
+        },
+        {
+          "path": "internal/spec/history_symlink_test.go",
+          "declared_by": "internal/spec/history_symlink_test.go"
+        },
+        {
+          "path": "skills/baseline_skill_contract_test.go",
+          "declared_by": "skills/baseline_skill_contract_test.go"
+        }
+      ],
+      "undeclared": [],
+      "authorized_paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/setup.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/agents/docs-layout.md",
+        "docs/agents/secondbrain.md",
+        "docs/agents/setup-context.json",
+        "docs/references/coverage-record.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md",
+        "internal/baseline/assets/modules/context-workflow.json",
+        "internal/baseline/assets/modules/secondbrain.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/docscontract/publicdocs_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive.go",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/backlog.go",
+        "internal/speccheck/backlog_test.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/constraints.go",
+        "skills/archive-spec/SKILL.md",
+        "skills/baseline_skill_contract_test.go",
+        "skills/roundfix/SKILL.md"
+      ],
+      "protected_changed": []
+    }
+  ],
+  "issues": []
+}

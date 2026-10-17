@@ -1,0 +1,21 @@
+import importlib.util,re,json
+from pathlib import Path
+sp=importlib.util.spec_from_file_location('qa','/private/tmp/roundfix-0272-qa-runner.py');q=importlib.util.module_from_spec(sp);sp.loader.exec_module(q)
+groups={};names=set()
+for n in range(1,5):
+ t=(q.ROOT/f'docs/specs/0272-the-history-holds-only-archive-records/task_{n:02d}.md').read_text();v=t.split('## Verification\n')[1].split('\n## ')[0]
+ for m in re.finditer(r"go test(?P<flags>.*?) -run '(?P<pat>[^']+)' (?P<packages>(?:\./[\w/]+ ?)+)",v):
+  tag=re.search(r'-tags (\w+)',m['flags']);tag=tag[1] if tag else ''
+  for pkg in m['packages'].split():groups.setdefault((pkg,tag),set()).add(m['pat'])
+  names.update(re.findall(r'Test\w+',m['pat']))
+(q.EV/'test-plan.json').write_text(json.dumps({'groups':[{'package':p,'tags':t,'patterns':sorted(v)} for (p,t),v in groups.items()],'required_named_tests':sorted(names)},indent=2))
+results=[]
+for (pkg,tag),patterns in groups.items():
+ args=['go','test','-count=1','-v']
+ if tag:args+=['-tags',tag]
+ pattern='|'.join('('+p+')' for p in sorted(patterns));args+=['-run',pattern,pkg]
+ log='tests-'+pkg.replace('./','').replace('/','-')+('-'+tag if tag else '')+'.txt';print('RUN',pkg,tag,flush=True)
+ p=q.run(args,log=log);results.append({'package':pkg,'tags':tag,'exit':p.returncode,'log':log});print('EXIT',p.returncode,pkg,flush=True)
+ passed=set(re.findall(r'--- PASS: (Test\w+)',p.stdout));names-=passed
+(q.EV/'test-results.json').write_text(json.dumps({'groups':results,'missing_named_tests':sorted(names)},indent=2));assert all(x['exit']==0 for x in results) and not names,results
+q.row('10','pass','Executed the union of every test selection named in tasks 01–04 Verification, grouped by package and build tags to avoid repeated identical runs. All commands exited 0; each explicitly named top-level test appeared with PASS, including unreachable locator refusal, archive delivery exactness, removal coverage, legacy conversion, clause enforcement and symlink preservation. No selected repository Verification command was rerun. Evidence: [declared test plan](evidence/2026-10-17-offline/test-plan.json), [results](evidence/2026-10-17-offline/test-results.json) and exact command/stdout/stderr logs beside them.')

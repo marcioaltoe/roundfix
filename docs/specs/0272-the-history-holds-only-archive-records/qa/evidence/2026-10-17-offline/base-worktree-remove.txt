@@ -1,0 +1,4 @@
+$ git worktree remove --force /private/tmp/roundfix-0272-qa-olcgfa70/base-worktree
+stdout:
+stderr:
+exit: 0

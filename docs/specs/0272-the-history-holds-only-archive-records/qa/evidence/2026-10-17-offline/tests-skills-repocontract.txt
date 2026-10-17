@@ -1,0 +1,8 @@
+$ go test -count=1 -v -tags repocontract -run '(^TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical$)' ./skills
+stdout:
+=== RUN   TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical
+--- PASS: TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (11.64s)
+PASS
+ok  	roundfix/skills	11.932s
+stderr:
+exit: 0

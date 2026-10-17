@@ -1,0 +1,164 @@
+{
+  "expected_removals": [
+    "docs/history/findings/reduced.md",
+    "docs/history/backlog/reduced.md",
+    "docs/adr/old.md",
+    "docs/backlog/2026-10-16-done.md",
+    "_archived/findings/legacy.md",
+    "docs/history/specs/0003-uncited.md"
+  ],
+  "paths_not_named_in_preview": [
+    "docs/history/backlog/reduced.md",
+    "docs/adr/old.md",
+    "docs/backlog/2026-10-16-done.md",
+    "_archived/findings/legacy.md",
+    "docs/history/specs/0003-uncited.md"
+  ],
+  "preview_immutable": true,
+  "cited_superseded_kept": true,
+  "annotated_tag": true,
+  "original_commit": "f9091d32223bd56d93094f12efa06854221d2256",
+  "history_after": {
+    "status": "current",
+    "message": "read stale history citation source \"_archived/findings/legacy.md\": open /private/tmp/roundfix-0272-qa-olcgfa70/adopter-g4o0sr02/_archived/findings/legacy.md: no such file or directory",
+    "revision": "64467b32726b1342a355fe4c144339c17130f27a",
+    "tag": {
+      "name": "history-full",
+      "action": "present",
+      "commit": "64467b32726b1342a355fe4c144339c17130f27a"
+    },
+    "units": [],
+    "refused": [],
+    "citations": [],
+    "staleCitations": []
+  },
+  "preview": {
+    "status": "pending",
+    "revision": "64467b32726b1342a355fe4c144339c17130f27a",
+    "tag": {
+      "name": "history-full",
+      "action": "present",
+      "commit": "64467b32726b1342a355fe4c144339c17130f27a"
+    },
+    "units": [
+      {
+        "unit": "findings",
+        "action": "remove",
+        "files": 2,
+        "bytes": 272
+      },
+      {
+        "unit": "backlog",
+        "action": "remove",
+        "files": 2,
+        "bytes": 215
+      },
+      {
+        "unit": "adr",
+        "action": "remove",
+        "files": 1,
+        "bytes": 37
+      },
+      {
+        "unit": "superseded",
+        "action": "remove",
+        "files": 1,
+        "bytes": 437
+      },
+      {
+        "unit": "record-links",
+        "action": "rewrite",
+        "files": 1,
+        "bytes": 0,
+        "links": 1
+      }
+    ],
+    "refused": [],
+    "citations": [
+      {
+        "path": "docs/user-guide/a.md",
+        "line": 3,
+        "target": "docs/history/findings/reduced.md",
+        "live": false,
+        "rewrite": "`docs/findings/original.md@f9091d32223bd56d93094f12efa06854221d2256`"
+      },
+      {
+        "path": "docs/history/specs/0001-kept.md",
+        "line": 24,
+        "target": "docs/history/specs/file.md",
+        "live": false,
+        "rewrite": "`docs/specs/0001-kept/file.md@f9091d32223bd56d93094f12efa06854221d2256`"
+      }
+    ],
+    "staleCitations": []
+  },
+  "applied": {
+    "status": "applied",
+    "revision": "64467b32726b1342a355fe4c144339c17130f27a",
+    "tag": {
+      "name": "history-full",
+      "action": "present",
+      "commit": "64467b32726b1342a355fe4c144339c17130f27a"
+    },
+    "units": [
+      {
+        "unit": "findings",
+        "action": "remove",
+        "files": 2,
+        "bytes": 272
+      },
+      {
+        "unit": "backlog",
+        "action": "remove",
+        "files": 2,
+        "bytes": 215
+      },
+      {
+        "unit": "adr",
+        "action": "remove",
+        "files": 1,
+        "bytes": 37
+      },
+      {
+        "unit": "superseded",
+        "action": "remove",
+        "files": 1,
+        "bytes": 437
+      },
+      {
+        "unit": "record-links",
+        "action": "rewrite",
+        "files": 1,
+        "bytes": 0,
+        "links": 1
+      }
+    ],
+    "refused": [],
+    "applied": {
+      "units": 5,
+      "records": 0,
+      "reduced": 0,
+      "removed": 6,
+      "bytes": 961,
+      "rewrittenCitations": 2,
+      "rewrittenFiles": 2
+    },
+    "citations": [
+      {
+        "path": "docs/user-guide/a.md",
+        "line": 3,
+        "target": "docs/history/findings/reduced.md",
+        "live": false,
+        "rewrite": "`docs/findings/original.md@f9091d32223bd56d93094f12efa06854221d2256`"
+      },
+      {
+        "path": "docs/history/specs/0001-kept.md",
+        "line": 24,
+        "target": "docs/history/specs/file.md",
+        "live": false,
+        "rewrite": "`docs/specs/0001-kept/file.md@f9091d32223bd56d93094f12efa06854221d2256`"
+      }
+    ],
+    "staleCitations": []
+  }
+}

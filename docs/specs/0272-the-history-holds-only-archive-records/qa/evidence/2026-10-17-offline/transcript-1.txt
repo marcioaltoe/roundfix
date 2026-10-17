@@ -1,0 +1,8 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0272-the-history-holds-only-archive-records-82392213e09195f8-b832685a-bb83ae64/run_20261017T065250Z_4a0bb2ff0617aa6a/bin/roundfix history sanitize
+stdout:
+history sanitize plan: 1 unit(s) pending; 1 file(s) (136 bytes) leave docs/history
+findings: removes 1 file(s) (136 bytes)
+cites docs/user-guide/a.md:3 names docs/history/findings/reduced.md; rewrites to `docs/findings/original.md@241d1ff0e5f4111061b27cf8a4b96ba5ecce81a1`
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+stderr:
+exit: 0

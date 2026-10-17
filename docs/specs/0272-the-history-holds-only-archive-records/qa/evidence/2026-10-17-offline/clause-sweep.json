@@ -1,0 +1,5 @@
+{
+  "clause_count": 42,
+  "violations": [],
+  "retirement_clause": "A retirement deletes the file. A Finding, Rollup or Backlog Entry with a terminal status (`deferred` included), a handoff on the user's explicit confirmation, a finished Review Artifact, a rejected or deprecated ADR, and a superseded ADR once an accepted successor names it with its date are deleted in the change that records the disposition. Git keeps the text. A Spec that absorbs a source adopts it and its Archive Record names it; any other retirement names its reason in the commit. A citation of a deleted file becomes the Git Locator `roundfix spec check` prints. The runtime's `roundfix history sanitize` removes what an earlier layout left."
+}

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0272-the-history-holds-only-archive-records
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

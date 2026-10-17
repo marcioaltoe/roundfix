@@ -1,0 +1,5 @@
+$ /private/tmp/roundfix-0272-qa01-hbrsthy1/base-roundfix --version
+stdout:
+roundfix 0.83.0 (61d95aa3, built 2026-10-17 05:05:52 -0300)
+stderr:
+exit: 0

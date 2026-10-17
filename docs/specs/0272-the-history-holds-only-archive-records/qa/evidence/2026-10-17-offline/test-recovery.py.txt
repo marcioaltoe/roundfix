@@ -1,0 +1,18 @@
+import importlib.util,json,re,shlex
+sp=importlib.util.spec_from_file_location('qa','/private/tmp/roundfix-0272-qa-runner.py');q=importlib.util.module_from_spec(sp);sp.loader.exec_module(q)
+plan=json.loads((q.EV/'test-plan.json').read_text());results=json.loads((q.EV/'test-results.json').read_text())
+for x in results['groups']:
+ if x['exit']:
+  src=q.EV/x['log'];src.rename(src.with_name(src.stem+'-attempt-1.txt'))
+# Every repository mutation finishes before these guarded processes start.
+recovered=[]
+for x in results['groups']:
+ if not x['exit']:continue
+ group=next(g for g in plan['groups'] if g['package']==x['package'] and g['tags']==x['tags']);args=['go','test','-count=1','-v','-run','|'.join('('+p+')' for p in group['patterns']),group['package']];print('RUN stable tree',x['package'],flush=True);p=q.run(args)
+ target=q.SCR/x['log'];target.write_text('$ '+shlex.join(args)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'exit: '+str(p.returncode)+'\n');recovered.append((x,target,p.returncode));print('EXIT',p.returncode,x['package'],flush=True)
+# Import logs only after both guarded processes have exited.
+for x,target,code in recovered:q.shutil.copyfile(target,q.EV/x['log']);x['exit']=code
+passed=set()
+for x in results['groups']:passed.update(re.findall(r'--- PASS: (Test\w+)',(q.EV/x['log']).read_text()))
+results['missing_named_tests']=sorted(set(plan['required_named_tests'])-passed);results['invalidated_first_attempt']='CLI and baseline suiteguard observed concurrent QA evidence/report writes; rerun only those groups with no repository mutations.';(q.EV/'test-results.json').write_text(json.dumps(results,indent=2));assert all(x['exit']==0 for x in results['groups']) and not results['missing_named_tests'],results
+q.row('10','pass','Executed the union of every test selection named in tasks 01–04 Verification, grouped by package/build tag. All seven final command groups exited 0 and every explicitly named top-level test reports PASS, including unreachable locator refusal, byte-preserving relinks, exact archive/tamper cases, every retired family, tag coverage, record links, rollback/refusal behavior, clauses and symlink preservation. The initial CLI/Baseline attempts were invalidated by concurrent QA evidence writes detected by suiteguard; their failure logs remain as attempt-1. Only those two groups were rerun after all scratch-flow recording stopped, with logs held outside the tree until both processes exited. No repository Verification command was rerun. Evidence: [test plan](evidence/2026-10-17-offline/test-plan.json), [final results](evidence/2026-10-17-offline/test-results.json) and exact command/stdout/stderr logs beside them.')

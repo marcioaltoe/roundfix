@@ -1,0 +1,12 @@
+$ go test -overlay /private/tmp/roundfix-0272-qa-olcgfa70/archive-proof-overlay.json -run '^TestQAArchiveCLICommitIsExact$' -count=1 -v ./internal/cli
+stdout:
+=== RUN   TestQAArchiveCLICommitIsExact
+=== PAUSE TestQAArchiveCLICommitIsExact
+=== CONT  TestQAArchiveCLICommitIsExact
+    qa_gate_archive_overlay_test.go:3: Built-CLI archive commit accepted by exact-archive and reconciliation proofs
+--- PASS: TestQAArchiveCLICommitIsExact (0.16s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 405.231334ms before and 56.98525ms after
+ok  	roundfix/internal/cli	1.113s
+stderr:
+exit: 0

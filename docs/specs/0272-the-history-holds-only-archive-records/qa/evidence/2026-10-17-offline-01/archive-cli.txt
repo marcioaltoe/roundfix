@@ -1,0 +1,5 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0272-the-history-holds-only-archive-records-82392213e09195f8-b832685a-bb83ae64/run_20261017T074441Z_7010289b20c58c7a/bin/roundfix archive 0001-owner --promote references/knowledge.md
+stdout:
+archived 0001-owner -> docs/history/specs/0001-owner.md; removed 8 file(s) (1463 bytes) kept in Git at 3ef9d060d5ec; promoted 1 file(s) to docs/references/
+stderr:
+exit: 0

@@ -1,0 +1,45 @@
+$ go test -overlay /private/tmp/roundfix-0272-qa01-hbrsthy1/audit-overlay.json -run '^TestQATaskGovernedPathsAreAuthorized$' -count=1 -v ./internal/speccheck
+stdout:
+=== RUN   TestQATaskGovernedPathsAreAuthorized
+=== PAUSE TestQATaskGovernedPathsAreAuthorized
+=== CONT  TestQATaskGovernedPathsAreAuthorized
+    qa_gate_overlay_test.go:3: task_01 governed internal/spec/archive.go authorized=true
+    qa_gate_overlay_test.go:3: task_02 governed docs/references/coverage-record.json authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/archive-spec/SKILL.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/roundfix/SKILL.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/roundfix/references/archive.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/roundfix/references/baseline.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/roundfix/references/deliver.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/roundfix/references/setup.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed .agents/skills/roundfix/references/spec.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed docs/references/coverage-record.json authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed internal/docscontract/testdata/corpus-golden.json authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed internal/spec/archive_layout_characterization_test.go authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed internal/speccheck/backlog.go authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed internal/speccheck/backlog_test.go authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed internal/speccheck/coherence.go authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed internal/speccheck/constraints.go authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed skills/archive-spec/SKILL.md authorized=true
+    qa_gate_overlay_test.go:3: task_03 governed skills/roundfix/SKILL.md authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed docs/agents/docs-layout.md authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed docs/agents/secondbrain.md authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed docs/agents/setup-context.json authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed docs/references/coverage-record.json authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/baseline/assets/modules/context-workflow.json authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/baseline/assets/modules/secondbrain.json authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/baseline/assets/profiles/standard-typescript-monorepo.json authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/docscontract/publicdocs_test.go authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed internal/spec/archive_layout_characterization_test.go authorized=true
+    qa_gate_overlay_test.go:3: task_04 governed skills/baseline_skill_contract_test.go authorized=true
+    qa_gate_overlay_test.go:3: task_06 governed .agents/skills/roundfix/SKILL.md authorized=true
+    qa_gate_overlay_test.go:3: task_06 governed .agents/skills/roundfix/references/baseline.md authorized=true
+    qa_gate_overlay_test.go:3: task_06 governed docs/references/coverage-record.json authorized=true
+    qa_gate_overlay_test.go:3: task_06 governed skills/roundfix/SKILL.md authorized=true
+--- PASS: TestQATaskGovernedPathsAreAuthorized (0.01s)
+PASS
+suiteguard: guard cost: measured 2705 paths; fingerprint took 99.518334ms before and 56.924833ms after
+ok  	roundfix/internal/speccheck	0.461s
+stderr:
+exit: 0

@@ -1,0 +1,14 @@
+$ make baseline-digests
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+stderr:
+ok  	roundfix/internal/baseline	0.814s
+ok  	roundfix/skills	0.183s
+ok  	roundfix/internal/baseline	1.153s
+ok  	roundfix/internal/baseline	0.346s
+ok  	roundfix/internal/baseline	0.656s
+ok  	roundfix/internal/baseline	0.718s
+ok  	roundfix/internal/baseline	1.610s
+ok  	roundfix/internal/baseline	0.354s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+exit: 0

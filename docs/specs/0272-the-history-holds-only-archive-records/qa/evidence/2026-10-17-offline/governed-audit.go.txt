@@ -1,0 +1,3 @@
+package speccheck
+import("testing";"os";"encoding/json")
+func TestQATaskGovernedPathsAreAuthorized(t *testing.T){t.Parallel(); b,e:=os.ReadFile(os.Getenv("ROUNDFIX_QA_AUDIT_INPUT"));if e!=nil{t.Fatal(e)};var d struct{Tasks []struct{Task string `json:"task"`;Paths []struct{Path string `json:"path"`} `json:"paths"`;Authorized []string `json:"authorized_paths"`} `json:"tasks"`};if e=json.Unmarshal(b,&d);e!=nil{t.Fatal(e)};for _,task:=range d.Tasks{allowed:=map[string]bool{};for _,p:=range task.Authorized{allowed[p]=true};for _,p:=range task.Paths{if GovernedPath(p.Path){t.Logf("%s governed %s authorized=%v",task.Task,p.Path,allowed[p.Path]);if !allowed[p.Path]{t.Errorf("%s unauthorized: %s",task.Task,p.Path)}}}}}

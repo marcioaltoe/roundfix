@@ -1,0 +1,3 @@
+# Knowledge
+
+Read PRD (`docs/specs/0001-owner/_prd.md@3ef9d060d5ec894e4d7c18798eed8d4b6dcd1963`) and [ADR](../adr/rule.md).

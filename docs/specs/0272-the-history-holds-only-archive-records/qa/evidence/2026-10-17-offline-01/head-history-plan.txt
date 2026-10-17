@@ -1,0 +1,5 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0272-the-history-holds-only-archive-records-82392213e09195f8-b832685a-bb83ae64/run_20261017T074441Z_7010289b20c58c7a/bin/roundfix history sanitize
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+stderr:
+exit: 0

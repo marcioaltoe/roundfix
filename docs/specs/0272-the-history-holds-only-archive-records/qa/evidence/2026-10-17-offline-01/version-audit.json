@@ -1,0 +1,18 @@
+{
+  "context-workflow": {
+    "before": 25,
+    "after": 26
+  },
+  "secondbrain": {
+    "before": 12,
+    "after": 13
+  },
+  "roundfix": {
+    "before": "0.1.79",
+    "after": "0.1.82"
+  },
+  "archive-spec": {
+    "before": "0.0.12",
+    "after": "0.0.13"
+  }
+}
