@@ -102,7 +102,7 @@ them as instructions and change neither.
 
 ## What is not governed
 
-The Go sources and tests under `internal/spec` (task_06's
+The Go sources and tests under `internal/spec` (task_04's
 `internal/spec/history_entries.go` and its tests among them), `internal/cli`,
 `internal/speccheck` and `internal/baseline` other than those listed above;
 `internal/docscontract/corpus_test.go`; `internal/baseline/module-versions.json`
@@ -212,7 +212,9 @@ outside the repository, found only these two; with both changed as task_04
 now requires, all 75 Repository Contract Tests and `go test ./...` passed.
 This amendment adds the two files to `paths` under the same cycle AH grant
 ("testes governados"). The same attempt found that the history citation scan
-stops on the tracked `CLAUDE.md` link; the corrective task_06 fixes it in
-`internal/spec/history_entries.go`, which is not governed. Nothing else
+stops on the tracked `CLAUDE.md` link; task_04 fixes it in
+`internal/spec/history_entries.go`, which is not governed, in the same commit
+as the cleanup (first planned as a corrective task_06, folded into task_04 on
+2026-10-17 because it cannot settle before the cleanup). Nothing else
 changes, and the amendment lands on the default branch before the delivery
 consumes it.
