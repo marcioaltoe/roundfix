@@ -149,6 +149,13 @@ are rewritten to the Archive Record. Every changed Live Document is rewritten
 in place, and the Archive Record carries its sorted paths under the optional
 `relinked` key.
 
+The Archive Command deletes the Spec folder after writing its Archive Record.
+In the copied outcome and each promoted copy, a destination inside the removed
+folder names its promoted copy or becomes a Git Locator, `` `<path>@<commit>` ``,
+never the record itself. The commit must hold the path and be reachable from
+the default branch or a tag. Without one, the path and record's pull request
+name the source instead. Other destinations keep naming the same repository path.
+
 The archive refuses before writing when a promotion destination already exists,
 when two promotions share a basename, or when a Live Document to be rewritten
 has changes not committed at `HEAD`. A Git failure while planning in a work
@@ -180,8 +187,8 @@ next batch's candidate files, and `--promote <path>` copies an explicitly
 selected file to `docs/references/` while applying a batch.
 
 The command converts each Legacy Archive Folder into an Archive Record,
-reduces retired Findings and Backlog Entries to Reduced History Entries, and
-removes retired Review Artifacts and handoffs. A folder without a QA Report,
+removes retired Findings, Rollups, Backlog Entries, ADRs, Review Artifacts and
+handoffs, including every Reduced History Entry left by an older version. A folder without a QA Report,
 override or supersession receives the `no-qa` disposition. A failed QA without
 an override is recorded as `failed-qa`, keeping its verdict and report name.
 A Legacy Archive Folder is read with Lenient Legacy Reading: tolerated rows are
@@ -198,12 +205,14 @@ Finding. An empty PRD `created` falls back to the valid TechSpec date and then t
 the author date of the oldest commit that added the PRD in the two commands that
 read Git. Legacy Link Rebase rewrites the relative destinations in the outcome
 and each promoted copy, pointing folder destinations at their promoted copy or
-the Archive Record while keeping every other destination on the same repository
-path. Records written before this version keep their bytes. `roundfix baseline
-update` plans these same units at once; pass `roundfix baseline update
---no-history` to keep this command's reviewed-batch path.
-Apply requires the annotated `history-full` tag on an ancestor of `HEAD` and
-holding every path the batch rewrites or removes, so the full history remains
-reachable in Git.
+a Git Locator while keeping every other destination on the same repository
+path. Surviving Archive Records with broken or self-links join the final
+`record-links` unit, which rewrites those links to Git Locators. `roundfix baseline update` plans these same units at once; pass `roundfix baseline update --no-history` to keep this command's reviewed-batch path.
+Apply requires the annotated `history-full` tag on an ancestor of `HEAD`.
+Every removed path must be held by that tag or a commit the default branch
+reaches. After removals, citations in surviving Archive Records, Live Documents
+and the user guide become Git Locators; other citations are listed and left.
+The removal units run before `record-links`, which skips records the plan removes.
+The repair line reads `record-links: rewrites <l> link(s) in <n> Archive Record(s)`.
 Each `--apply --batch <n>` is one reviewable, revertible Pull Request; the
 command never commits, tags, pushes or opens one.

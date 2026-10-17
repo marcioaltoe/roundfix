@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"strings"
 	"testing"
 )
@@ -279,10 +280,17 @@ func TestReceiptPathsMustBeCleanRelativeRegularFiles(t *testing.T) {
 
 func TestReceiptsResolveArchivedAndInactiveRecords(t *testing.T) {
 	t.Parallel()
+	if !retainedTestHome(t) {
+		return
+	}
 	root := t.TempDir()
+	gittest.InitRepo(t, root, "-b", "main")
 	writeReceiptFixture(t, root, "docs/history/adr/0116-archived.md", "---\nstatus: superseded\n---\nthree exact words\n")
+	revision := retainedCommit(t, root)
+	gittest.Run(t, root, "rm", "docs/history/adr/0116-archived.md")
+	retainedCommit(t, root)
 	path, proven, reason, err := ProveReceipt(root, Receipt{Source: "ADR-0116", Quote: "three exact words"})
-	if err != nil || !proven || reason != "" || path != "docs/history/adr/0116-archived.md" {
+	if err != nil || !proven || reason != "" || path != "docs/history/adr/0116-archived.md@"+revision {
 		t.Fatalf("proof = %q %v %q %v", path, proven, reason, err)
 	}
 }
@@ -350,9 +358,29 @@ func TestReceiptSyntaxRejectsBareFieldsAndMoreThanOneLineBreak(t *testing.T) {
 
 func TestReceiptSourcesRefuseAmbiguousRecordsAndADRDirectoryLinks(t *testing.T) {
 	t.Parallel()
+	if !retainedTestHome(t) {
+		return
+	}
 	t.Run("ambiguous record", func(t *testing.T) {
 		root := receiptProofFixture(t, `ADR-0116: "reads the cited record"`)
 		writeReceiptFixture(t, root, "docs/adr/0116-duplicate.md", "reads the cited record")
+		requireReceiptProof(t, root, `ADR-0116: "reads the cited record"`, false, "does not resolve to a file")
+	})
+	t.Run("ambiguous Git records", func(t *testing.T) {
+		root := t.TempDir()
+		writeReceiptFixture(t, root, receiptFixturePRD, `ADR-0116: "reads the cited record"`)
+		gittest.InitRepo(t, root, "-b", "main")
+		writeReceiptFixture(t, root, "docs/adr/0116-first.md", "reads the cited record")
+		writeReceiptFixture(t, root, "docs/adr/0116-second.md", "reads the cited record")
+		retainedCommit(t, root)
+		gittest.Run(t, root, "rm", "-r", "docs/adr")
+		retainedCommit(t, root)
+		requireReceiptProof(t, root, `ADR-0116: "reads the cited record"`, false, "does not resolve to a file")
+	})
+	t.Run("uncommitted retired record", func(t *testing.T) {
+		root := t.TempDir()
+		writeReceiptFixture(t, root, receiptFixturePRD, `ADR-0116: "reads the cited record"`)
+		writeReceiptFixture(t, root, "docs/history/adr/0116-only.md", "reads the cited record")
 		requireReceiptProof(t, root, `ADR-0116: "reads the cited record"`, false, "does not resolve to a file")
 	})
 	for _, location := range []string{"docs/adr", "docs/history/adr"} {

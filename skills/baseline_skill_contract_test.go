@@ -1866,6 +1866,9 @@ func copyTrackedRepository(t *testing.T, repoRoot string) string {
 		target := filepath.Join(targetRoot, relative)
 		info, err := os.Lstat(source)
 		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
 			t.Fatalf("inspect repository file %s: %v", relative, err)
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {

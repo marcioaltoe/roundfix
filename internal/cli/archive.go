@@ -189,6 +189,7 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		Slug:           req.slug,
 		QAOverride:     qaOverride,
 		SourceRevision: revision,
+		PullRequest:    req.pullRequest,
 		RepositoryRoot: repositoryRoot,
 		Promote:        req.promote,
 	})

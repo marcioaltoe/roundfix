@@ -141,7 +141,7 @@ One unit of resolvable work that Roundfix picks up and drives to an outcome: a R
 _Avoid_: Ticket, job, to-do
 
 **Backlog Entry**:
-Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status — `declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled` — where `declined` and `deferred` carry a reason and every terminal entry leaves `docs/backlog/` for `docs/history/backlog/` as a Reduced History Entry ([ADR-0092](docs/adr/0092-triage-intent-lives-in-a-typed-backlog.md), [ADR-0258](docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md)); it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
+Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status (`declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled`); a terminal entry is deleted and Git keeps its text, while `declined` and `deferred` carry a reason ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)). Its types express intent through the Conventional Commits vocabulary — `feat`, `fix`, `perf`, `refactor` — and it is never evidence; a `feat` entry is upstream raw material, never the `write-idea` artifact.
 _Avoid_: Finding, idea artifact, untyped suggestion
 
 **Inbox Entry**:
@@ -149,7 +149,7 @@ A fleeting capture written as a file in the Secondbrain's inbox under its destin
 _Avoid_: Project inbox item, uncommitted note, draft artifact
 
 **Rollup**:
-A Finding of `rollup` kind that consolidates related Findings as declared members, supersedes those members, and licenses their archival.
+A Finding of `rollup` kind that consolidates related Findings as declared members and retires by deletion when its work is resolved. Its members resolve as unresolved Findings or through Git, which keeps their retired text ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Summary, digest, archive manifest
 
 **Triage**:
@@ -866,11 +866,15 @@ The Archive Command's pre-write operation that promotes a cited non-core file to
 _Avoid_: Archive rewrite, source duplication, link cleanup
 
 **Legacy Link Rebase**:
-The rewrite a Legacy Archive Folder conversion makes to the relative destinations of the record's outcome and of each promoted copy: a destination inside the folder points at its promoted copy or the Archive Record, and every other destination stays on the same repository path ([ADR-0277](docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md)).
+The rewrite of relative destinations in an Archive Record outcome and each promoted copy: a folder destination points at its promoted copy, or becomes a Git Locator when no copy survives, never the record itself; every other destination keeps the same repository path ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive Relink, broken-link report, arbitrary link rewrite
 
+**Git Locator**:
+The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the default branch or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+_Avoid_: Broken link, branch-only revision, Archive Record
+
 **History Citation**:
-A citation from tracked Markdown outside the History Root to a file or folder a selected history unit removes, which `roundfix baseline update` lists in text and JSON, binds into the Plan Digest, and may offer for `--promote` when it is a Live Document ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
+A citation to a file or folder a selected history unit removes, listed in text and JSON and bound into the Plan Digest. In Archive Records, Live Documents and the user guide it is rewritten to a Git Locator for removed text, or to the surviving record or promoted copy when one exists ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Relocation Citation, broken-link scan, stale citation
 
 **Stale History Citation**:
@@ -914,8 +918,8 @@ The Delivery Queue's commit, made after it opens a Spec's pull request, that sto
 _Avoid_: Archive commit, record backfill, amend
 
 **History Sanitize Command**:
-The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag. `roundfix baseline update` runs the same planning for every convertible unit at once, while this command remains the path for reviewed batches ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
-_Avoid_: Archive Command, history deletion, cleanup command
+The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts Legacy Archive Folders to Archive Records, removes retired families and rewrites their citations to Git Locators after the History Full Tag. `roundfix baseline update` runs the same planning for all eligible units at once ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+_Avoid_: Archive Command, unplanned deletion, cleanup command
 
 **Pending History**:
 The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
@@ -938,7 +942,7 @@ The next units one `--apply` can convert, delivered as one Pull Request with the
 _Avoid_: Archive batch, migration wave, unreviewed cleanup
 
 **Reduced History Entry**:
-A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text. A retirement writes it directly, and the History Sanitize Command reduces the entries retired before ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md), [ADR-0258](docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md)).
+A legacy shape of a retired Finding or Backlog Entry containing its front matter, title, first paragraph and the revision holding its full text. The History Sanitize Command removes it; no retirement writes one ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Summary, Archive Record, truncated history
 
 **History Full Tag**:
@@ -946,11 +950,11 @@ The annotated `history-full` tag on the last commit before the first batch, whic
 _Avoid_: Lightweight tag, batch tag, archive stamp
 
 **History Root**:
-The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own ([ADR-0248](docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md)).
+The single repository directory holding only Archive Records; Git keeps the full text of removed material. It is resolved in one place so every consumer uses the same root ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive folder, `_archived`, attic, trash
 
 **History Relocation**:
-One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+One file carried in the Baseline Plan as an ordered ledger entry of source, destination and content identity, never into the Findings, Backlog, ADR or Review families of the History Root. An occupied destination refuses that relocation by name while its siblings still move ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive move, file migration, relocation payload
 
 **Relocation Citation**:

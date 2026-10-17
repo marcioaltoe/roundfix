@@ -14,7 +14,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"roundfix/internal/gittest"
 	"sort"
 	"strings"
 	"testing"
@@ -270,7 +269,7 @@ func TestHistoryMoveApply(t *testing.T) {
 		t.Parallel()
 		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
 			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
-			"docs/findings/_archived/beta.md":    "beta finding\n",
+			"_archived/specs/0002-beta/_prd.md":  "beta finding\n",
 		})
 
 		tx := beginTestTransaction(t, repo, plan)
@@ -312,44 +311,26 @@ func TestHistoryMoveApply(t *testing.T) {
 func TestHistoryMoveRemovesEmptiedSource(t *testing.T) {
 	t.Parallel()
 
-	t.Run("finished Review Artifact leaves no source shell or rerun finding", func(t *testing.T) {
+	t.Run("legacy folder leaves no source shell", func(t *testing.T) {
 		t.Parallel()
-
-		repo := newPlanRepository(t)
-		head := strings.TrimSpace(gittest.Run(t, repo, "rev-parse", "HEAD"))
-		const reviewPath = "docs/specs/reviews/pr-201"
-		reviewDir := filepath.Join(repo, filepath.FromSlash(reviewPath))
-		historyPersistRound(t, reviewDir, "feature/merged", head)
-		historyWriteReviewOutcome(t, reviewDir, "merged", head)
-		historyWriteFiles(t, repo, map[string]string{
-			path.Join(reviewPath, "issues/001.md"): "finished issue\n",
-		})
-
-		plan := buildTestPlan(t, repo)
-		if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
-			t.Fatalf("ApplyPlan(): %v", err)
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{"_archived/specs/0001-legacy/_prd.md": "legacy\n"})
+		if _, err := ApplyPlan(t.Context(), repo, plan, plan.PlanDigest); err != nil {
+			t.Fatal(err)
 		}
-		if _, err := os.Lstat(reviewDir); !errors.Is(err, fs.ErrNotExist) {
-			t.Fatalf("finished Review Artifact directory error = %v, want not exist", err)
+		if _, err := os.Stat(filepath.Join(repo, "_archived/specs/0001-legacy")); !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("source remains: %v", err)
 		}
-		if info, err := os.Stat(filepath.Dir(reviewDir)); err != nil || !info.IsDir() {
-			t.Fatalf("live Review Artifact root = (%v, %v), want surviving directory", info, err)
-		}
-
-		moves, findings, err := planHistoryMoves(context.Background(), repo)
-		if err != nil {
-			t.Fatalf("planHistoryMoves() rerun: %v", err)
-		}
-		if len(moves) != 0 || len(findings) != 0 {
-			t.Fatalf("planHistoryMoves() rerun = (%#v, %#v), want no relocated Review Artifact", moves, findings)
+		moves, findings, err := planHistoryMoves(t.Context(), repo)
+		if err != nil || len(moves) != 0 || len(findings) != 0 {
+			t.Fatalf("second plan=%v %v %v", moves, findings, err)
 		}
 	})
 
 	t.Run("unmoved file keeps its source directory", func(t *testing.T) {
 		t.Parallel()
 
-		const source = "docs/specs/reviews/pr-202/round-001/round.md"
-		const unmoved = "docs/specs/reviews/pr-202/round-001/keep.txt"
+		const source = "_archived/specs/0002-legacy/nested/round.md"
+		const unmoved = "_archived/specs/0002-legacy/nested/keep.txt"
 		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
 			source: "round metadata\n",
 		})

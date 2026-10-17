@@ -207,13 +207,20 @@ func detectFindingsConsistency(result *Result, repoRoot string) error {
 		detectFindingLifecycle(result, active)
 	}
 
-	activeNames := findingDocumentNames(active)
+	activeNames := map[string]bool{}
+	for _, document := range active {
+		if status := document.frontmatter.status.value; status == "pending" || status == "partial" {
+			activeNames[document.name] = true
+		}
+	}
 	archivedNames := findingDocumentNames(archived)
 	rollups := findingRollups(active)
 	if len(rollups) == 0 {
 		addSkip(result, CodeRollupMember, findingsPath+" rollup")
 	} else {
-		detectRollupMembers(result, rollups, activeNames, archivedNames)
+		if err := detectRollupMembers(result, repoRoot, rollups, activeNames, archivedNames); err != nil {
+			return err
+		}
 	}
 
 	if !archivePresent || len(archived) == 0 {
@@ -399,10 +406,14 @@ func findingDocumentNames(documents []findingDocument) map[string]bool {
 	return names
 }
 
-func detectRollupMembers(result *Result, rollups []findingDocument, active, archived map[string]bool) {
+func detectRollupMembers(result *Result, repoRoot string, rollups []findingDocument, active, archived map[string]bool) error {
+	deleted, err := deletedFindingNames(repoRoot)
+	if err != nil {
+		return err
+	}
 	for _, rollup := range rollups {
 		for _, member := range rollup.frontmatter.members {
-			if active[member.value] || archived[member.value] {
+			if active[member.value] || archived[member.value] || deleted[member.value] {
 				continue
 			}
 			result.Findings = append(result.Findings, Finding{
@@ -410,10 +421,38 @@ func detectRollupMembers(result *Result, rollups []findingDocument, active, arch
 				Severity: SeverityError,
 				Summary:  rollup.displayPath + " declares unresolved member " + strconv.Quote(member.value),
 				Where:    []Location{{Path: rollup.displayPath, Line: member.line}},
-				Fix:      "Restore the declared member " + strconv.Quote(member.value) + " under docs/findings/ or " + spec.ArchiveDir(spec.ArchiveKindFinding) + "/, or update members in " + rollup.displayPath + ".",
+				Fix:      "Restore the declared member " + strconv.Quote(member.value) + " as an unresolved Finding or recover its deletion in Git, or update members in " + rollup.displayPath + ".",
 			})
 		}
 	}
+	return nil
+}
+
+func deletedFindingNames(root string) (map[string]bool, error) {
+	names := map[string]bool{}
+	available, err := historyHasGit(context.Background(), root)
+	if err != nil || !available {
+		return names, err
+	}
+	if _, err := historyGit(context.Background(), root, "rev-parse", "--verify", "--quiet", "HEAD"); err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) && exit.ExitCode() == 1 {
+			return names, nil
+		}
+		return nil, err
+	}
+	out, err := historyGit(context.Background(), root, "log", "--format=", "--name-only", "-z", "--diff-filter=D", "--no-renames", "--full-history", "HEAD", "--", "docs/findings/", "docs/history/findings/")
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range strings.Split(string(out), "\x00") {
+		path = strings.TrimSpace(path)
+		dir := filepath.ToSlash(filepath.Dir(path))
+		if dir == "docs/findings" || dir == "docs/history/findings" {
+			names[filepath.Base(path)] = true
+		}
+	}
+	return names, nil
 }
 
 func repositoryArchivedSpecNames(directory string) (map[string]bool, error) {

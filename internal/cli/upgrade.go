@@ -142,10 +142,10 @@ func printUpgradeRecommendationNotice(ctx context.Context, installedPath string,
 	if err != nil {
 		fmt.Fprintf(stderr, "roundfix: recommendations not checked: %s\n", strings.Join(strings.Fields(err.Error()), " "))
 	}
-	printHistoryNotice(environment, stderr)
+	printHistoryNotice(ctx, environment, stderr)
 }
 
-func printHistoryNotice(environment commandEnvironment, stderr io.Writer) {
+func printHistoryNotice(ctx context.Context, environment commandEnvironment, stderr io.Writer) {
 	loaded, err := loadCommandConfig(environment, io.Discard)
 	if err != nil {
 		return
@@ -158,7 +158,7 @@ func printHistoryNotice(environment commandEnvironment, stderr io.Writer) {
 	if err != nil || root.External {
 		return
 	}
-	units, err := historyInventory(loaded.GitRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	units, err := historyInventory(ctx, loaded.GitRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
 	if err != nil {
 		fmt.Fprintf(stderr, "roundfix: history not checked: %s\n", historyRefusalLine(err))
 		return

@@ -1877,7 +1877,6 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 			return false, nil
 		}
 		allowed[path] = true
-		var blob string
 		if head == "" {
 			info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(path)))
 			if err != nil {
@@ -1886,25 +1885,20 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 			if !info.Mode().IsRegular() {
 				return false, nil
 			}
-			blob, err = workflow.git.RunGit(ctx, root, "hash-object", "--", path)
 		} else {
-			entries, treeErr := workflow.gitTreeEntries(ctx, root, head)
-			if treeErr != nil {
-				return false, treeErr
+			entries, err := workflow.gitTreeEntries(ctx, root, head)
+			if err != nil {
+				return false, err
 			}
 			entry, ok := entries[path]
 			if !ok || (gitTreeEntryKind(entry) != "100644 blob" && gitTreeEntryKind(entry) != "100755 blob") {
 				return false, nil
 			}
-			blob = strings.Fields(entry)[2]
-		}
-		if err != nil {
-			return false, err
 		}
 		matched := ""
 		for name, entry := range sourceTree {
 			fields := strings.Fields(entry)
-			if filepath.Base(name) == filepath.Base(path) && len(fields) == 3 && (gitTreeEntryKind(entry) == "100644 blob" || gitTreeEntryKind(entry) == "100755 blob") && fields[2] == strings.TrimSpace(blob) {
+			if filepath.Base(name) == filepath.Base(path) && len(fields) == 3 && (gitTreeEntryKind(entry) == "100644 blob" || gitTreeEntryKind(entry) == "100755 blob") {
 				if matched != "" {
 					return false, nil
 				}
@@ -1915,6 +1909,28 @@ func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Co
 			return false, nil
 		}
 		promotions[matched] = path
+	}
+	rebase := spec.LegacyLinkRebase{Folder: source, RecordPath: destination + ".md", Files: folderFiles, Promoted: promotions}
+	rebase.Locate = func(path string) (spec.GitLocator, bool, error) {
+		locator, err := spec.ResolveGitLocator(ctx, root, path, parent, record.PullRequest)
+		return locator, true, err
+	}
+	for sourcePath, copyPath := range promotions {
+		original, err := reconcileGitRaw(ctx, root, "show", parent+":"+sourcePath)
+		if err != nil {
+			return false, fmt.Errorf("read promoted source %q: %w", sourcePath, err)
+		}
+		expected, err := rebase.Rebase(original, sourcePath, copyPath)
+		if err != nil {
+			return false, fmt.Errorf("recompute promoted copy %q: %w", copyPath, err)
+		}
+		actual, err := read(copyPath)
+		if err != nil {
+			return false, fmt.Errorf("read promoted copy %q: %w", copyPath, err)
+		}
+		if !bytes.Equal(actual, expected) {
+			return false, nil
+		}
 	}
 	for path := range allowed {
 		if !strings.HasPrefix(path, source+"/") {

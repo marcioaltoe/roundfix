@@ -136,6 +136,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	if err := detectLoopOrderConsistency(&result, repoRoot); err != nil {
 		return result, err
 	}
+	if err := detectHistoryRetained(&result, repoRoot, specsRoot); err != nil {
+		return result, err
+	}
 	if err := detectFindingsConsistency(&result, repoRoot); err != nil {
 		return result, err
 	}

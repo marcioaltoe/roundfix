@@ -80,5 +80,5 @@ The terminology and behavior trace to the
 [Roundfix glossary](../../../CONTEXT.md#language),
 [ADR-0052](../../adr/0052-run-completion-is-compare-and-set.md),
 Spec 0037, and the
-[detached-watch finding](../../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+detached-watch finding (`docs/history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md@a30dc847a037fe584812b4471aa7da1701a9ec59`).
 

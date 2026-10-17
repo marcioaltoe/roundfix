@@ -65,7 +65,7 @@ func archiveRelinkFixture(t *testing.T, inbound bool) (string, commandEnvironmen
 		mustWrite(t, filepath.Join(owner, path), strings.ReplaceAll(content, implementTestSlug, archiveRelinkOwner))
 	}
 	mustMkdir(t, filepath.Dir(filepath.Join(repo, archiveRelinkSource)))
-	mustWrite(t, filepath.Join(repo, archiveRelinkSource), "# Source\n\nPreserve these bytes, including CRLF.\r\n")
+	mustWrite(t, filepath.Join(repo, archiveRelinkSource), "# Source\n\nPreserve these bytes, including CRLF.\r\n[PRD](../_prd.md)\n")
 	if inbound {
 		writeImplementSpec(t, repo, "0002-secondary", []implementSeed{{id: "task_01", status: string(spec.StatusPending)}})
 		prd := filepath.Join(repo, "docs/specs/0002-secondary/_prd.md")
@@ -104,8 +104,8 @@ func TestArchiveRelinksLiveCitationsTranscript(t *testing.T) {
 	if code != exitOK || out.String() != wantOut || errout.String() != wantErr {
 		t.Fatalf("exit=%d stdout=%q want=%q stderr=%q want=%q", code, &out, wantOut, &errout, wantErr)
 	}
-	if got := mustRead(t, filepath.Join(repo, archiveRelinkPromotion)); got != before[archiveRelinkSource] {
-		t.Fatal("promoted bytes differ from source")
+	if got := mustRead(t, filepath.Join(repo, archiveRelinkPromotion)); got != strings.ReplaceAll(before[archiveRelinkSource], "[PRD](../_prd.md)", "PRD (`docs/specs/0001-owner/_prd.md@"+revision+"`)") {
+		t.Fatalf("promoted bytes differ from the rewritten source: %q", got)
 	}
 	assertPathMissing(t, filepath.Join(repo, "docs/specs/0001-owner"))
 	changes := map[string][2]string{

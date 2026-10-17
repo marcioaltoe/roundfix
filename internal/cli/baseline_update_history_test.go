@@ -126,7 +126,7 @@ func TestBaselineUpdatePlansPendingHistoryWithoutWrites(t *testing.T) {
 		total += u.Bytes
 	}
 	a, b, c := r.History.Units[0], r.History.Units[1], r.History.Units[2]
-	want := fmt.Sprintf("History: pending\nHistory units: 3 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (no-qa)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (no-qa)\n- findings: reduces 1 file(s) from %d to %d bytes\nHistory refused: 1\n- refused docs/history/specs/0003-broken: %s\nHistory tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", files, total, a.Unit, a.Files, a.Bytes, a.Record, b.Unit, b.Files, b.Bytes, b.Record, c.Bytes, c.BytesAfter, r.History.Refused[0].Reason, h.revision, r.PlanDigest, r.PlanDigest)
+	want := fmt.Sprintf("History: pending\nHistory units: 3 (%d file(s), %d bytes leave docs/history)\n- folder %s: removes %d file(s) (%d bytes) and writes %s (no-qa)\n  - docs/history/specs/0001-maps-unproven/_prd.md\n- folder %s: removes %d file(s) (%d bytes) and writes %s (no-qa)\n  - docs/history/specs/0002-plain/_prd.md\n- findings: removes 1 file(s) (%d bytes)\n  - docs/history/findings/entry.md\nHistory refused: 1\n- refused docs/history/specs/0003-broken: %s\nHistory tag: creates annotated history-full at %.12s; push it with git push origin history-full\nPlan Digest: %s\nNext action: review the plan and rerun with --confirm-plan %s, or use --yes to approve the digest computed in one invocation\n", files, total, a.Unit, a.Files, a.Bytes, a.Record, b.Unit, b.Files, b.Bytes, b.Record, c.Bytes, r.History.Refused[0].Reason, h.revision, r.PlanDigest, r.PlanDigest)
 	if !strings.HasSuffix(text, want) || !strings.HasPrefix(text, "Baseline update: plan ready\nCategory: approval\nResult: guidance matches the current Baseline catalog; 3 history unit(s) pending sanitize\n") {
 		t.Fatalf("transcript mismatch:\n%s\nwant suffix:\n%s", text, want)
 	}
@@ -140,7 +140,7 @@ func TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag(t *testing.T) {
 	refs, count := baselineHistoryGit(t, h, "for-each-ref"), baselineHistoryGit(t, h, "rev-list", "--count", "HEAD")
 	preview, _, _, _ := baselineHistoryRun(t, h, "json")
 	r, out, stderr, code := baselineHistoryRun(t, h, "json", "--confirm-plan", preview.PlanDigest)
-	if code != 0 || stderr != "" || r.State != "verified" || r.History.Status != "applied" || r.History.Applied.Units != 3 || r.History.Applied.Records != 2 || r.History.Applied.Reduced != 1 || r.ApprovedPlanDigest != preview.PlanDigest {
+	if code != 0 || stderr != "" || r.State != "verified" || r.History.Status != "applied" || r.History.Applied.Units != 3 || r.History.Applied.Records != 2 || r.History.Applied.Reduced != 0 || r.History.Applied.Removed != 3 || r.ApprovedPlanDigest != preview.PlanDigest {
 		t.Fatalf("%d %s %s", code, out, stderr)
 	}
 	for _, slug := range []string{"0001-maps-unproven", "0002-plain"} {
@@ -151,16 +151,13 @@ func TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag(t *testing.T) {
 		}
 		record, err := spec.ParseArchiveRecord(data)
 		if err != nil || record.Disposition != spec.ArchiveNoQA {
-			t.Fatalf("record: %+v %v", record, err)
+			t.Fatalf("record=%+v err=%v", record, err)
 		}
 		if slug == "0001-maps-unproven" && len(record.Unproven) != 1 {
-			t.Fatalf("maps: %+v", record)
+			t.Fatalf("maps=%+v", record)
 		}
 	}
-	data, err := os.ReadFile(filepath.Join(h.repo, "docs/history/findings/entry.md"))
-	if err != nil || !spec.IsReducedHistoryEntry(data) {
-		t.Fatalf("finding %s %v", data, err)
-	}
+	assertPathMissing(t, filepath.Join(h.repo, "docs/history/findings/entry.md"))
 	if !reflect.DeepEqual(broken, snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/0003-broken"))) {
 		t.Fatal("broken folder changed")
 	}
@@ -279,12 +276,12 @@ func TestBaselineUpdateHistoryHonorsAnExistingTag(t *testing.T) {
 		historyLegacyFolder(t, h, "0004-later")
 		h.revision = historyCommit(t, h.repo, "Later history")
 		r, out, stderr, code := baselineHistoryRun(t, h, "json")
-		if code != 3 || stderr != "" || r.History.Tag.Action != "present" || len(r.History.Units) != 3 || len(r.History.Refused) != 2 || r.History.Refused[1].Reason != "history-full does not hold docs/history/specs/0004-later/_prd.md" {
+		if code != 3 || stderr != "" || r.History.Tag.Action != "present" || len(r.History.Units) != 4 || len(r.History.Refused) != 1 {
 			t.Fatalf("%d %s %s", code, out, stderr)
 		}
-		before := snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/0004-later"))
+
 		_, out, stderr, code = baselineHistoryRun(t, h, "json", "--yes")
-		if code != 0 || tag != baselineHistoryGit(t, h, "rev-parse", "history-full") || !reflect.DeepEqual(before, snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/0004-later"))) {
+		if code != 0 || tag != baselineHistoryGit(t, h, "rev-parse", "history-full") {
 			t.Fatalf("%d %s %s", code, out, stderr)
 		}
 	})
@@ -379,11 +376,11 @@ func TestBaselineUpdateHistoryPlanningBoundaries(t *testing.T) {
 		_, out, stderr, code := baselineHistoryRun(t, h, "text", "--confirm-plan", preview.PlanDigest)
 		var removed int
 		var bytes int64
-		for _, u := range preview.History.Units[:2] {
+		for _, u := range preview.History.Units {
 			removed += u.Files
 			bytes += u.Bytes
 		}
-		want := fmt.Sprintf("History: applied\nHistory applied: 3 unit(s): wrote 2 Archive Record(s), reduced 1 file(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full\nHistory refused: 1\n- refused docs/history/specs/0003-broken: %s\nHistory tag: created annotated history-full at %.12s; push it with git push origin history-full\n", removed, bytes, h.revision, preview.History.Refused[0].Reason, h.revision)
+		want := fmt.Sprintf("History: applied\nHistory applied: 3 unit(s): wrote 2 Archive Record(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full; rewrote 0 citation(s) in 0 file(s)\nHistory refused: 1\n- refused docs/history/specs/0003-broken: %s\nHistory tag: created annotated history-full at %.12s; push it with git push origin history-full\n", removed, bytes, h.revision, preview.History.Refused[0].Reason, h.revision)
 		if code != 0 || stderr != "" || !strings.HasPrefix(out, "Baseline update: verified\n") || !strings.Contains(out, want) {
 			t.Fatalf("%d %s %s want %s", code, out, stderr, want)
 		}

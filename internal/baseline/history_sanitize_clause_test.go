@@ -10,7 +10,7 @@ import (
 
 func TestHistorySanitizeClauseIsAppended(t *testing.T) {
 	t.Parallel()
-	const sentence = "When the runtime offers a history sanitize, such as `roundfix history sanitize --apply --batch <n>`, it replaces each Spec folder an earlier archive left under the history root with its Archive Record, reduces each retired Finding and Backlog Entry to its front matter, title, first paragraph and the revision that holds its full text, and removes retired Review Artifacts and handoffs, one reviewed batch at a time after a tag marks the full history; retired ADRs stay whole."
+	const sentence = "The runtime's `roundfix history sanitize` removes what an earlier layout left."
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
@@ -34,7 +34,7 @@ func TestHistorySanitizeClauseIsAppended(t *testing.T) {
 	found := false
 	for _, rule := range document.Rules {
 		for _, clause := range rule.Clauses {
-			if clause.ID == "clause.context.docs-one-job-per-directory" {
+			if clause.ID == "clause.context.findings-09-archive" {
 				found = true
 				if !strings.Contains(clause.Guidance, sentence) {
 					t.Fatal("embedded clause is missing the history sanitize sentence")

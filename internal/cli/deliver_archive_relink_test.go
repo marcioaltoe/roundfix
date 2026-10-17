@@ -30,10 +30,10 @@ func deliveryRelinkFixture(t *testing.T, ambiguous bool) (*commandDeliveryWorkfl
 		t.Fatal(err)
 	}
 	mustMkdir(t, filepath.Join(repo, source, "references"))
-	mustWrite(t, filepath.Join(repo, source, "references/knowledge.md"), "Reusable knowledge\n")
+	mustWrite(t, filepath.Join(repo, source, "references/knowledge.md"), "Reusable knowledge\n[PRD](../_prd.md)\n")
 	if ambiguous {
 		mustMkdir(t, filepath.Join(repo, source, "other"))
-		mustWrite(t, filepath.Join(repo, source, "other/knowledge.md"), "Reusable knowledge\n")
+		mustWrite(t, filepath.Join(repo, source, "other/knowledge.md"), "Reusable knowledge\n[PRD](../_prd.md)\n")
 	}
 	mustMkdir(t, filepath.Dir(filepath.Join(repo, deliveryRelinkPath)))
 	mustWrite(t, filepath.Join(repo, deliveryRelinkPath), "# Secondary\n\n[Source](../"+implementTestSlug+"/references/knowledge.md#lesson)\n[Owner](../"+implementTestSlug+"/_prd.md)\n")

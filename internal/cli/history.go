@@ -17,8 +17,8 @@ import (
 const historyUsage = `Usage:
   roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]
 
-Plans pending legacy folders, findings, backlog, reviews and handoffs in that
-order. Refused Units are listed with their reason, left in place and not counted
+Plans pending legacy folders, findings, backlog, ADRs, reviews, handoffs and superseded records in that
+order, followed by record-links repairs. Refused Units are listed with their reason, left in place and not counted
 toward --batch. Plans write nothing in the repository. Advice is optional and advisory.
 
 Options:
@@ -27,8 +27,8 @@ Options:
   --apply           Apply one batch on a clean tree covered by history-full
   --promote <path>  Copy a repository-relative file in the batch to docs/references/
 
-Apply requires an annotated history-full tag at or before HEAD holding every
-path removed or rewritten. This command never commits, tags or pushes.
+Apply requires an annotated history-full tag at or before HEAD. Every removed
+path must be held by that tag or a commit the default branch reaches. This command never commits, tags or pushes.
 Exit codes: 0 plan, applied or nothing pending; 1 write failure; 2 preflight refusal.
 `
 
@@ -41,8 +41,9 @@ type historyRequest struct {
 type historyUnit struct {
 	folder     bool
 	name       string
-	files      []string // repository-relative paths removed or rewritten
+	files      []string // repository-relative paths removed
 	conversion *spec.LegacyConversion
+	links      *spec.RecordLinkPlan
 	kind       *spec.HistoryKindPlan
 	refusal    error
 }
@@ -79,39 +80,53 @@ func parseHistory(args []string) (historyRequest, error) {
 }
 
 // Inventory preserves unit errors so planning can continue past a refused unit.
-func historyInventory(root, archive string) ([]historyUnit, error) {
+func historyInventory(ctx context.Context, root, archive string) ([]historyUnit, error) {
 	slugs, err := spec.LegacyArchiveFolders(archive)
 	if err != nil {
 		return nil, err
 	}
 	var units []historyUnit
+	var removed []string
+	archiveRel, _ := filepathRelSlash(root, archive)
+	specRootRel := "docs/specs"
+	if archiveRel != spec.ArchiveDir(spec.ArchiveKindSpec) {
+		specRootRel = filepath.ToSlash(filepath.Dir(archiveRel))
+	}
 	for _, slug := range slugs {
 		units = append(units, historyUnit{name: slug, folder: true})
-	}
-	for _, kind := range []spec.ArchiveKind{spec.ArchiveKindFinding, spec.ArchiveKindBacklog, spec.ArchiveKindReview, spec.ArchiveKindHandoff} {
-		dir := filepath.Join(root, spec.ArchiveDir(kind))
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			continue
-		}
-		names, inventoryErr := archivePlanFiles(dir)
-		u := historyUnit{name: string(kind), refusal: inventoryErr}
-		for _, name := range names {
-			rel := filepath.ToSlash(filepath.Join(spec.ArchiveDir(kind), name))
-			if kind == spec.ArchiveKindFinding || kind == spec.ArchiveKindBacklog {
-				data, err := os.ReadFile(filepath.Join(root, rel))
-				if err != nil {
-					u.refusal = err
-					break
-				}
-				if spec.IsReducedHistoryEntry(data) {
-					continue
-				}
+		names, err := archivePlanFiles(filepath.Join(archive, slug))
+		if err == nil {
+			for _, name := range names {
+				removed = append(removed, archiveRel+"/"+slug+"/"+name)
 			}
-			u.files = append(u.files, rel)
 		}
-		if len(u.files) > 0 || u.refusal != nil {
-			units = append(units, u)
+	}
+	for _, kind := range []spec.ArchiveKind{spec.ArchiveKindFinding, spec.ArchiveKindBacklog, spec.ArchiveKindADR, spec.ArchiveKindReview, spec.ArchiveKindHandoff} {
+		plan, err := spec.PlanHistoryKind(ctx, root, kind, specRootRel)
+		if len(plan.Files) > 0 || err != nil {
+			units = append(units, historyUnit{name: string(kind), files: plan.Files, kind: &plan, refusal: err})
+			if err == nil {
+				removed = append(removed, plan.Files...)
+			}
 		}
+	}
+	plan, err := spec.PlanSupersededRecords(ctx, root, archiveRel, removed)
+	if len(plan.Files) > 0 || err != nil {
+		units = append(units, historyUnit{name: "superseded", files: plan.Files, kind: &plan, refusal: err})
+	}
+	if err == nil {
+		removed = append(removed, plan.Files...)
+	}
+	skip := map[string]bool{}
+	for _, path := range removed {
+		skip[path] = true
+	}
+	links, err := spec.PlanRecordLinks(ctx, root, archiveRel, skip)
+	if err != nil {
+		return nil, err
+	}
+	if len(links.Files) > 0 {
+		units = append(units, historyUnit{name: "record-links", links: &links})
 	}
 	return units, nil
 }
@@ -140,7 +155,13 @@ func historyTagCoverage(ctx context.Context, root string, units []historyUnit) e
 	for _, u := range units {
 		for _, p := range u.files {
 			if !paths[p] {
-				return fmt.Errorf("history-full does not hold batch path %s", p)
+				locator, err := spec.ResolveGitLocator(ctx, root, p, "history-full", "")
+				if err != nil {
+					return err
+				}
+				if locator.Commit == "" {
+					return fmt.Errorf("history-full does not hold %s and no commit the default branch reaches holds it", p)
+				}
 			}
 		}
 	}
@@ -169,10 +190,11 @@ func planHistoryUnit(ctx context.Context, repo, specRel, archive, archiveRel, re
 			c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Created: created, Delivery: delivery})
 			u.refusal = err
 			u.conversion = &c
-		} else {
-			k, err := spec.PlanHistoryKind(repo, revision, spec.ArchiveKind(u.name))
+		} else if u.name != "superseded" && u.links == nil {
+			k, err := spec.PlanHistoryKind(ctx, repo, spec.ArchiveKind(u.name), specRel)
 			u.refusal = err
 			u.kind = &k
+			u.files = k.Files
 		}
 	}
 	return u, nil
@@ -220,7 +242,7 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return fail(err)
 	}
 	archive := spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot)
-	units, err := historyInventory(repo, archive)
+	units, err := historyInventory(ctx, repo, archive)
 	if err != nil {
 		return fail(err)
 	}
@@ -243,6 +265,28 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	for _, u := range units {
 		if req.batchSet && len(selected) == req.batch {
 			break
+		}
+		if u.name == "superseded" && !u.folder {
+			var removed []string
+			for _, selectedUnit := range selected {
+				removed = append(removed, selectedUnit.files...)
+			}
+			k, e := spec.PlanSupersededRecords(ctx, repo, archiveRel, removed)
+			u.kind, u.files, u.refusal = &k, k.Files, e
+			if len(k.Files) == 0 && e == nil {
+				total--
+				continue
+			}
+		}
+		if u.links != nil {
+			u, err = planRecordLinksUnit(ctx, repo, archiveRel, selected)
+			if err != nil {
+				return fail(err)
+			}
+			if len(u.links.Files) == 0 {
+				total--
+				continue
+			}
 		}
 		u, err = planHistoryUnit(ctx, repo, specRel, archive, archiveRel, revision, u)
 		if err != nil {
@@ -307,13 +351,17 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		}
 	}
 	if req.apply {
-		return applyHistoryUnits(ctx, repo, revision, selected, len(refused), total-len(selected), stdout, stderr)
+		rewrite, err := planHistoryRewrite(ctx, repo, specRel, archiveRel, selected)
+		if err != nil {
+			return fail(err)
+		}
+		return applyHistoryUnits(ctx, repo, revision, selected, rewrite, len(refused), total-len(selected), stdout, stderr)
 	}
 	return printHistoryPlan(ctx, req, loaded, env, selected, refused, stdout, stderr)
 }
 
-func applyHistoryUnits(ctx context.Context, repo, revision string, units []historyUnit, refused, remaining int, stdout, stderr io.Writer) int {
-	var records, reduced, removed, promoted int
+func applyHistoryUnits(ctx context.Context, repo, revision string, units []historyUnit, rewrite historyCitationRewritePlan, refused, remaining int, stdout, stderr io.Writer) int {
+	var records, removed, promoted int
 	var bytes int64
 	for _, u := range units {
 		err := ctx.Err()
@@ -324,14 +372,10 @@ func applyHistoryUnits(ctx context.Context, repo, revision string, units []histo
 				removed += len(c.Files)
 				bytes += c.Bytes
 				promoted += len(c.Promoted)
-			} else {
+			} else if u.links == nil {
 				err = spec.ApplyHistoryKind(repo, *u.kind)
-				if u.kind.Action == "reduce" {
-					reduced += len(u.files)
-				} else {
-					removed += len(u.files)
-					bytes += u.kind.BytesBefore
-				}
+				removed += len(u.files)
+				bytes += u.kind.BytesBefore
 			}
 		}
 		if err != nil {
@@ -339,7 +383,12 @@ func applyHistoryUnits(ctx context.Context, repo, revision string, units []histo
 			return exitRunFailed
 		}
 	}
-	fmt.Fprintf(stdout, "history sanitize applied %d unit(s): wrote %d Archive Record(s), reduced %d file(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full; promoted %d file(s) to docs/references/%s; %d unit(s) remain\n", len(units), records, reduced, removed, bytes, revision, promoted, historyRefusalSuffix(refused), remaining)
+	rewritten, rewrittenFiles, err := rewrite.Apply(ctx, repo)
+	if err != nil {
+		fmt.Fprintf(stderr, "history sanitize rewrite failed: %v; restore with git restore and git clean\n", err)
+		return exitRunFailed
+	}
+	fmt.Fprintf(stdout, "history sanitize applied %d unit(s): wrote %d Archive Record(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full; rewrote %d citation(s) in %d file(s); promoted %d file(s) to docs/references/%s; %d unit(s) remain\n", len(units), records, removed, bytes, revision, rewritten, rewrittenFiles, promoted, historyRefusalSuffix(refused), remaining)
 	return exitOK
 }
 
@@ -348,6 +397,9 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 	var bytes int64
 	var removed []string
 	for _, u := range units {
+		if u.links != nil {
+			continue
+		}
 		files += len(u.files)
 		removed = append(removed, u.files...)
 		if u.conversion != nil {
@@ -356,34 +408,20 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 			bytes += u.kind.BytesBefore
 		}
 	}
-	citations, err := spec.HistoryCitations(ctx, loaded.GitRoot, removed)
+	archiveRel := spec.ArchiveDir(spec.ArchiveKindSpec)
+	specs, err := config.ResolveSpecsRoot(loaded, loaded.GitRoot)
 	if err != nil {
 		printPreflightFailure("history sanitize", err, stderr)
 		return exitPreflight
 	}
-	folderPaths := []string{}
-	for _, u := range units {
-		if u.conversion != nil {
-			folderPaths = append(folderPaths, u.conversion.Folder+"/")
-		}
-	}
-	folderCitations, err := spec.HistoryCitations(ctx, loaded.GitRoot, folderPaths)
+	specRel, _ := filepathRelSlash(loaded.GitRoot, specs.Path)
+	archiveRel, _ = filepathRelSlash(loaded.GitRoot, spec.ArchiveSpecRoot(specs.Path, specs.BuiltInRoot))
+	rewrite, err := planHistoryRewrite(ctx, loaded.GitRoot, specRel, archiveRel, units)
 	if err != nil {
 		printPreflightFailure("history sanitize", err, stderr)
 		return exitPreflight
 	}
-	for _, c := range folderCitations {
-		found := false
-		for _, existing := range citations {
-			if existing.Path == c.Path && existing.Line == c.Line {
-				found = true
-				break
-			}
-		}
-		if !found {
-			citations = append(citations, c)
-		}
-	}
+	citations := rewrite.Citations
 	fmt.Fprintf(stdout, "history sanitize plan: %d unit(s) pending; %d file(s) (%d bytes) leave docs/history%s\n", len(units), files, bytes, historyRefusalSuffix(len(refused)))
 	for _, u := range units {
 		if c := u.conversion; c != nil {
@@ -454,15 +492,21 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 				}
 				fmt.Fprintf(stdout, "candidate %s/%s %d bytes%s\n", c.Folder, p, info.Size(), suffix)
 			}
-		} else if k := u.kind; k.Action == "reduce" {
-			fmt.Fprintf(stdout, "%s: reduces %d file(s) from %d to %d bytes\n", k.Kind, len(k.Files), k.BytesBefore, k.BytesAfter)
+		} else if u.links != nil {
+			fmt.Fprintf(stdout, "record-links: rewrites %d link(s) in %d Archive Record(s)\n", u.links.Links, len(u.links.Files))
 		} else {
-			fmt.Fprintf(stdout, "%s: removes %d file(s) (%d bytes)\n", k.Kind, len(k.Files), k.BytesBefore)
+			k := u.kind
+			fmt.Fprintf(stdout, "%s: removes %d file(s) (%d bytes)\n", u.name, len(k.Files), k.BytesBefore)
+
 		}
 	}
 	printHistoryRefused(refused, stdout)
 	for _, c := range citations {
-		fmt.Fprintf(stdout, "cites %s:%d names %s\n", c.Path, c.Line, c.Target)
+		fmt.Fprintf(stdout, "cites %s:%d names %s", c.Path, c.Line, c.Target)
+		if c.Rewrite != "" {
+			fmt.Fprintf(stdout, "; rewrites to %s", c.Rewrite)
+		}
+		fmt.Fprintln(stdout)
 	}
 	fmt.Fprintln(stdout, "apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)")
 	return exitOK
@@ -483,4 +527,73 @@ func printHistoryRefused(units []historyUnit, stdout io.Writer) {
 
 func historyRefusalLine(err error) string {
 	return strings.Join(strings.Fields(err.Error()), " ")
+}
+
+// Both commands share the same removal rewrite, frozen before applying units.
+func planHistoryRewrite(ctx context.Context, repo, specRel, archiveRel string, units []historyUnit) (historyCitationRewritePlan, error) {
+	var removed []string
+	moves := map[string]string{}
+	for _, u := range units {
+		removed = append(removed, u.files...)
+		if c := u.conversion; c != nil {
+			promotions := map[string]string{}
+			for _, destination := range c.Promoted {
+				for _, file := range u.files {
+					if filepath.Base(file) == filepath.Base(destination) {
+						promotions[file] = destination
+					}
+				}
+			}
+			for source, destination := range spec.ArchiveCitationMoves(c.Folder, c.RecordPath, u.files, promotions) {
+				moves[source] = destination
+			}
+		}
+	}
+	removal, err := spec.PlanHistoryRewrite(ctx, repo, specRel, archiveRel, removed, moves)
+	p := historyCitationRewritePlan{HistoryRewritePlan: removal}
+	if err != nil {
+		return p, err
+	}
+	for _, u := range units {
+		if u.links != nil {
+			p.records = *u.links
+			p.Citations = append(p.Citations, u.links.Citations...)
+		}
+	}
+	return p, nil
+}
+
+// Removal and record-link rewrites re-read the same records in order, preserving
+// both edits and counting each changed file once.
+type historyCitationRewritePlan struct {
+	spec.HistoryRewritePlan
+	records spec.RecordLinkPlan
+}
+
+func (p historyCitationRewritePlan) Apply(ctx context.Context, root string) (int, int, error) {
+	citations, files, err := p.HistoryRewritePlan.Apply(ctx, root)
+	if err != nil {
+		return citations, files, err
+	}
+	links, records, err := p.records.Apply(ctx, root)
+	if err != nil {
+		return citations + links, files + records, err
+	}
+	overlap := 0
+	for path := range p.records.Files {
+		if _, ok := p.Files[path]; ok {
+			overlap++
+		}
+	}
+	return citations + links, files + records - overlap, nil
+}
+func planRecordLinksUnit(ctx context.Context, root, archiveRel string, selected []historyUnit) (historyUnit, error) {
+	skip := map[string]bool{}
+	for _, u := range selected {
+		for _, path := range u.files {
+			skip[path] = true
+		}
+	}
+	links, err := spec.PlanRecordLinks(ctx, root, archiveRel, skip)
+	return historyUnit{name: "record-links", links: &links}, err
 }

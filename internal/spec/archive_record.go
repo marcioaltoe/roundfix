@@ -62,7 +62,7 @@ type ArchiveRecordInput struct {
 	Unproven                                        []string
 	QAOverride                                      *QAArchiveOverrideRecord
 	Promoted                                        []string
-	Rebase                                          *LegacyLinkRebase // Legacy only; nil keeps the outcome as read.
+	Rebase                                          *LegacyLinkRebase // nil keeps the outcome as read.
 }
 
 func ArchiveRecordPath(root, slug string) string { return filepath.Join(root, slug+".md") }
@@ -287,13 +287,17 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	if r.Disposition == "" {
 		r.Disposition = ArchiveNoQA
 	}
-	if in.Legacy && in.Rebase != nil {
+	if in.Rebase != nil {
 		rel, err := filepath.Rel(in.SpecDir, outcomeSource)
 		if err != nil {
-			return r, fmt.Errorf("resolve legacy outcome source: %w", err)
+			return r, fmt.Errorf("resolve archive outcome source: %w", err)
 		}
 		from := filepath.ToSlash(filepath.Join(in.Rebase.Folder, rel))
-		r.Outcome = string(in.Rebase.Rebase([]byte(r.Outcome), from, in.Rebase.RecordPath))
+		rewritten, err := in.Rebase.Rebase([]byte(r.Outcome), from, in.Rebase.RecordPath)
+		if err != nil {
+			return r, fmt.Errorf("rebase archive outcome: %w", err)
+		}
+		r.Outcome = string(rewritten)
 	}
 	return r, nil
 }
@@ -623,8 +627,17 @@ func RenderArchiveRecord(r ArchiveRecord) ([]byte, error) {
 			for cut > 0 && !utf8.RuneStart(outcome[cut]) {
 				cut--
 			}
+			code := archiveMarkdownCode([]byte(outcome))
+			for cut > 0 && cut < len(code) && code[cut-1] && code[cut] {
+				cut--
+			}
 			shortened := outcome[:cut]
-			end := strings.LastIndexAny(shortened, ".!?")
+			end := -1
+			for i := 0; i < len(shortened); i++ {
+				if !code[i] && strings.ContainsRune(".!?", rune(shortened[i])) {
+					end = i
+				}
+			}
 			if end >= 0 {
 				outcome = shortened[:end+1]
 			} else {

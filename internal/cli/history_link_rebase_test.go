@@ -20,7 +20,10 @@ import (
 const historyLinkFolder = "docs/history/specs/0001-legacy"
 const historyLinkPromotion = historyLinkFolder + "/references/lesson.md"
 const historyLinkSummary = "See [lesson](../../references/lesson.md) and [ADR](../../adr/0001-rule.md)."
-const historyLinkCopy = "# Lesson\n\n[PRD](../history/specs/0001-legacy.md#goals), [notes](../history/specs/0001-legacy.md), [peer](peer.md?raw=1#data), [ADR](../adr/0001-rule.md).\n"
+
+func historyLinkCopy(revision string) string {
+	return "# Lesson\n\nPRD (`" + historyLinkFolder + "/_prd.md@" + revision + "`), notes (`" + historyLinkFolder + "/notes.md@" + revision + "`), [peer](peer.md?raw=1#data), [ADR](../adr/0001-rule.md).\n"
+}
 
 func historyLinkFixture(t *testing.T, h historyFixture) spec.LegacyConversion {
 	t.Helper()
@@ -49,7 +52,7 @@ func assertHistoryLinkWrites(t *testing.T, h historyFixture, plan spec.LegacyCon
 	t.Helper()
 	for _, output := range []struct{ path, want string }{
 		{plan.RecordPath, string(plan.Rendered)},
-		{"docs/references/lesson.md", historyLinkCopy},
+		{"docs/references/lesson.md", historyLinkCopy(plan.Record.SourceRevision)},
 		{"docs/references/peer.md", "# Peer\n\nUnchanged bytes.\n"},
 	} {
 		content, err := os.ReadFile(filepath.Join(h.repo, output.path))

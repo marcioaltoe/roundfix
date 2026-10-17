@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	cliCitationSource = "docs/adr/0040-retired.md"
+	cliCitationSource = "_archived/specs/0001-legacy/_prd.md"
 	cliCitationPath   = "docs/references/layout.md"
 )
 
 func TestBaselinePlanPrintsRelocationCitationWarnings(t *testing.T) {
 	t.Parallel()
 	repository := newBaselineHistoryCitationRepository(t)
-	want := "Warning: baseline.history.citation: " + cliCitationPath + ": line 1 cites ../adr/0040-retired.md"
+	want := "Warning: baseline.history.citation: " + cliCitationPath + ": line 1 cites ../../_archived/specs/0001-legacy/_prd.md"
 
 	t.Run("text", func(t *testing.T) {
 		var stdout bytes.Buffer
@@ -60,7 +60,7 @@ func TestBaselinePlanPrintsRelocationCitationWarnings(t *testing.T) {
 		for _, warning := range plan.Warnings {
 			if warning.Code == "baseline.history.citation" &&
 				warning.Path == cliCitationPath &&
-				strings.Contains(warning.Message, "line 1 cites ../adr/0040-retired.md") {
+				strings.Contains(warning.Message, "line 1 cites ../../_archived/specs/0001-legacy/_prd.md") {
 				return
 			}
 		}
@@ -72,7 +72,7 @@ func TestBaselineUpdateRefusesADigestWhoseCitationsChanged(t *testing.T) {
 	t.Parallel()
 	repository := newBaselineUpdateRepository(t)
 	writeBaselinePlanTestFile(t, repository, cliCitationSource, "---\nstatus: superseded\n---\n")
-	writeBaselinePlanTestFile(t, repository, cliCitationPath, "See [the retired decision](../adr/0040-retired.md).\n")
+	writeBaselinePlanTestFile(t, repository, cliCitationPath, "See [the retired decision](../../_archived/specs/0001-legacy/_prd.md).\n")
 	commitBaselinePlanTestRepository(t, repository)
 
 	preview, stdout, stderr, code := runBaselineUpdateTestCommand(
@@ -111,7 +111,7 @@ func newBaselineHistoryCitationRepository(t *testing.T) string {
 	writeBaselinePlanTestFile(t, repository, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
 	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	writeBaselinePlanTestFile(t, repository, cliCitationSource, "---\nstatus: superseded\n---\n")
-	writeBaselinePlanTestFile(t, repository, cliCitationPath, "See [the retired decision](../adr/0040-retired.md).\n")
+	writeBaselinePlanTestFile(t, repository, cliCitationPath, "See [the retired decision](../../_archived/specs/0001-legacy/_prd.md).\n")
 	commitBaselinePlanTestRepository(t, repository)
 	return repository
 }

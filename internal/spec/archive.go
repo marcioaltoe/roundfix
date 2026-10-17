@@ -80,6 +80,7 @@ type ArchiveRequest struct {
 	ArchivedAt     time.Time
 	QAOverride     *QAArchiveOverride
 	SourceRevision string
+	PullRequest    string
 	Promote        []string
 	RepositoryRoot string
 }
@@ -274,6 +275,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		originals[path] = head
 	}
 	var promoted []string
+	promotionSources := make(map[string]string)
 	copies := make(map[string][]byte)
 	for _, candidate := range req.Promote {
 		clean := filepath.Clean(candidate)
@@ -321,6 +323,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			return ArchiveResult{}, err
 		}
 		copies[destination] = content
+		promotionSources[filePath] = "docs/references/" + base
 		promoted = append(promoted, "docs/references/"+base)
 	}
 	sort.Strings(promoted)
@@ -344,14 +347,45 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	if err != nil {
 		return ArchiveResult{}, err
 	}
+	recordRel, err := filepath.Rel(repositoryRoot, recordPath)
+	if err != nil {
+		return ArchiveResult{}, fmt.Errorf("resolve archive record: %w", err)
+	}
+	rebase := LegacyLinkRebase{Folder: filepath.ToSlash(source), RecordPath: filepath.ToSlash(recordRel), Promoted: map[string]string{}}
+	for path, destination := range promotionSources {
+		rel, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return ArchiveResult{}, fmt.Errorf("resolve promoted source: %w", err)
+		}
+		rebase.Promoted[filepath.ToSlash(filepath.Join(source, rel))] = destination
+	}
+	rebase.Locate = func(path string) (GitLocator, bool, error) {
+		if !inside {
+			return GitLocator{Path: path, PullRequest: req.PullRequest}, true, nil
+		}
+		locator, err := ResolveGitLocator(ctx, canonicalRoot, path, req.SourceRevision, req.PullRequest)
+		return locator, true, err
+	}
+	for path, destination := range promotionSources {
+		rel, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return ArchiveResult{}, fmt.Errorf("resolve promoted source: %w", err)
+		}
+		absolute := filepath.Join(req.RepositoryRoot, filepath.FromSlash(destination))
+		copies[absolute], err = rebase.Rebase(copies[absolute], filepath.ToSlash(filepath.Join(source, rel)), destination)
+		if err != nil {
+			return ArchiveResult{}, fmt.Errorf("rebase promoted copy %q: %w", destination, err)
+		}
+	}
 	var overrideRecord *QAArchiveOverrideRecord
 	if qaOverride != nil {
 		overrideRecord = &QAArchiveOverrideRecord{qaOverride.Approval, qaOverride.Reason, qaOverrideOutcome, qaOverrideQATaskStatus, qaOverride.Revision}
 	}
-	record, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: sourceDir, Slug: req.Slug, Source: filepath.ToSlash(source), SourceRevision: req.SourceRevision, Archived: archivedOn, Unproven: unproven, QAOverride: overrideRecord, Promoted: promoted})
+	record, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: sourceDir, Slug: req.Slug, Source: filepath.ToSlash(source), SourceRevision: req.SourceRevision, Archived: archivedOn, Unproven: unproven, QAOverride: overrideRecord, Promoted: promoted, Rebase: &rebase})
 	if err != nil {
 		return ArchiveResult{}, err
 	}
+	record.PullRequest = req.PullRequest
 	record.Relinked = relinked
 	content, err := RenderArchiveRecord(record)
 	if err != nil {
@@ -608,7 +642,11 @@ func archiveSequenceNode(values []string) *yaml.Node {
 }
 
 // markdownDestination indexes only a destination's bytes, preserving its wrapper and title.
-type markdownDestination struct{ start, end int }
+type markdownDestination struct {
+	start, end                               int
+	linkStart, linkEnd, labelStart, labelEnd int
+	reference                                bool
+}
 type archiveLinkRewrite struct {
 	path         string
 	original     []byte
@@ -768,78 +806,10 @@ func markdownSpace(c byte) bool { return c == ' ' || c == '\t' || c == '\r' || c
 // destinations without reformatting any surrounding Markdown.
 func scanArchiveMarkdown(content []byte) []markdownDestination {
 	masked := bytes.Clone(content)
-	fence := byte(0)
-	fenceLength := 0
-	for start := 0; start < len(masked); {
-		end := bytes.IndexByte(masked[start:], '\n')
-		if end < 0 {
-			end = len(masked)
-		} else {
-			end += start
+	for i, inCode := range archiveMarkdownCode(content) {
+		if inCode && masked[i] != '\n' {
+			masked[i] = ' '
 		}
-		line := masked[start:end]
-		indent := 0
-		for indent < len(line) && indent < 4 && line[indent] == ' ' {
-			indent++
-		}
-		run := 0
-		if indent < 4 && indent < len(line) && (line[indent] == '`' || line[indent] == '~') {
-			for indent+run < len(line) && line[indent+run] == line[indent] {
-				run++
-			}
-		}
-		if fence != 0 {
-			if run >= fenceLength && line[indent] == fence && len(bytes.TrimSpace(line[indent+run:])) == 0 {
-				fence = 0
-			}
-			for i := start; i < end; i++ {
-				masked[i] = ' '
-			}
-		} else if run >= 3 {
-			fence, fenceLength = line[indent], run
-			for i := start; i < end; i++ {
-				masked[i] = ' '
-			}
-		} else {
-			for i := start; i < end; i++ {
-				if masked[i] == '\\' {
-					i++
-					continue
-				}
-				if masked[i] != '`' {
-					continue
-				}
-				n := 1
-				for i+n < end && masked[i+n] == '`' {
-					n++
-				}
-				closeAt := -1
-				for j := i + n; j < end; {
-					if masked[j] != '`' {
-						j++
-						continue
-					}
-					k := j
-					for k < end && masked[k] == '`' {
-						k++
-					}
-					if k-j == n {
-						closeAt = k
-						break
-					}
-					j = k
-				}
-				if closeAt >= 0 {
-					for j := i; j < closeAt; j++ {
-						masked[j] = ' '
-					}
-					i = closeAt - 1
-				} else {
-					i += n - 1
-				}
-			}
-		}
-		start = end + 1
 	}
 	var spans []markdownDestination
 	var labels []int
@@ -923,7 +893,17 @@ func scanArchiveMarkdown(content []byte) []markdownDestination {
 			continue
 		}
 		if k > begin {
-			spans = append(spans, markdownDestination{begin, k})
+			wholeStart, wholeEnd := labelStart, linkEnd
+			if reference && wholeEnd > 0 && content[wholeEnd-1] == '\r' {
+				wholeEnd--
+			}
+			if !reference {
+				wholeEnd++
+				if labelStart > 0 && masked[labelStart-1] == '!' {
+					wholeStart--
+				}
+			}
+			spans = append(spans, markdownDestination{start: begin, end: k, linkStart: wholeStart, linkEnd: wholeEnd, labelStart: labelStart + 1, labelEnd: i, reference: reference})
 		}
 		i = linkEnd
 	}
@@ -976,4 +956,87 @@ func archiveMarkdownLinkEnd(content []byte, end int, reference bool) (int, bool)
 		return k, k == len(content)
 	}
 	return k, k < len(content) && content[k] == ')'
+}
+
+// archiveMarkdownCode marks code spans and fenced blocks using the destination scanner rules.
+func archiveMarkdownCode(content []byte) []bool {
+	masked := bytes.Clone(content)
+	code := make([]bool, len(content))
+	fence := byte(0)
+	fenceLength := 0
+	for start := 0; start < len(masked); {
+		end := bytes.IndexByte(masked[start:], '\n')
+		if end < 0 {
+			end = len(masked)
+		} else {
+			end += start
+		}
+		line := masked[start:end]
+		indent := 0
+		for indent < len(line) && indent < 4 && line[indent] == ' ' {
+			indent++
+		}
+		run := 0
+		if indent < 4 && indent < len(line) && (line[indent] == '`' || line[indent] == '~') {
+			for indent+run < len(line) && line[indent+run] == line[indent] {
+				run++
+			}
+		}
+		if fence != 0 {
+			if run >= fenceLength && line[indent] == fence && len(bytes.TrimSpace(line[indent+run:])) == 0 {
+				fence = 0
+			}
+			for i := start; i < end; i++ {
+				masked[i] = ' '
+				code[i] = true
+			}
+		} else if run >= 3 {
+			fence, fenceLength = line[indent], run
+			for i := start; i < end; i++ {
+				masked[i] = ' '
+				code[i] = true
+			}
+		} else {
+			for i := start; i < end; i++ {
+				if masked[i] == '\\' {
+					i++
+					continue
+				}
+				if masked[i] != '`' {
+					continue
+				}
+				n := 1
+				for i+n < end && masked[i+n] == '`' {
+					n++
+				}
+				closeAt := -1
+				for j := i + n; j < end; {
+					if masked[j] != '`' {
+						j++
+						continue
+					}
+					k := j
+					for k < end && masked[k] == '`' {
+						k++
+					}
+					if k-j == n {
+						closeAt = k
+						break
+					}
+					j = k
+				}
+				if closeAt >= 0 {
+					for j := i; j < closeAt; j++ {
+						masked[j] = ' '
+						code[j] = true
+					}
+					i = closeAt - 1
+				} else {
+					i += n - 1
+				}
+			}
+		}
+		start = end + 1
+	}
+	return code
 }

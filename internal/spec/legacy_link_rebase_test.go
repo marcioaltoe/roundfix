@@ -31,24 +31,28 @@ func TestLegacyLinkRebasePointsFolderLinksAtTheirSurvivingFile(t *testing.T) {
 			`See [probe](references/probe%20data.md?raw=1#result "title").`,
 			`See [probe](../../references/probe%20data.md?raw=1#result "title").`},
 		{"unpromoted file", r.Folder + "/_prd.md", r.RecordPath,
-			"[notes](notes.md)", "[notes](0001-demo.md)"},
+			"[notes](notes.md)", "notes (`" + r.Folder + "/notes.md` (not reachable from any branch or tag))"},
 		{"unlisted descendant", r.Folder + "/_prd.md", r.RecordPath,
-			"[old](evidence/output.txt)", "[old](0001-demo.md)"},
+			"[old](evidence/output.txt)", "old (`" + r.Folder + "/evidence/output.txt` (not reachable from any branch or tag))"},
 		{"core from promoted copy", r.Folder + "/references/probe data.md", "docs/references/probe data.md",
-			"[PRD](../_prd.md#goals)", "[PRD](../history/specs/0001-demo.md#goals)"},
+			"[PRD](../_prd.md#goals)", "PRD (`" + r.Folder + "/_prd.md` (not reachable from any branch or tag))"},
 		{"folder", r.Folder + "/_prd.md", r.RecordPath,
-			"[folder](./)", "[folder](0001-demo.md)"},
+			"[folder](./)", "folder (`" + r.Folder + "` (not reachable from any branch or tag))"},
 		{"reference definition", r.Folder + "/_prd.md", r.RecordPath,
 			"[probe]: <references/probe%20data.md#result> 'Title'\n", "[probe]: <../../references/probe%20data.md#result> 'Title'\n"},
 		{"angle destination", r.Folder + "/_prd.md", r.RecordPath,
 			"![probe](<references/probe data.md>)", "![probe](<../../references/probe%20data.md>)"},
 		{"path text", r.Folder + "/_prd.md", r.RecordPath,
 			"`" + r.Folder + "/_prd.md`\n" + r.Folder + "/\n" + r.Folder + "/references/probe data.md\n" + r.Folder + "/notes.md\n",
-			"`" + r.RecordPath + "`\n" + r.RecordPath + "\ndocs/references/probe data.md\n" + r.Folder + "/notes.md\n"},
+			"`" + r.Folder + "/_prd.md (not reachable from any branch or tag)`\n`" + r.Folder + "` (not reachable from any branch or tag)\ndocs/references/probe data.md\n`" + r.Folder + "/notes.md` (not reachable from any branch or tag)\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := r.Rebase([]byte(tc.content), tc.from, tc.to); string(got) != tc.want {
+			got, err := r.Rebase([]byte(tc.content), tc.from, tc.to)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != tc.want {
 				t.Fatalf("rebase = %q, want %q", got, tc.want)
 			}
 		})
@@ -70,7 +74,10 @@ func TestLegacyLinkRebaseKeepsOutsideTargets(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got := r.Rebase([]byte(tc.content), tc.from, tc.to)
+			got, err := r.Rebase([]byte(tc.content), tc.from, tc.to)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if string(got) != tc.want {
 				t.Fatalf("rebase = %q, want %q", got, tc.want)
 			}
@@ -102,7 +109,10 @@ func TestLegacyLinkRebaseLeavesOtherBytes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			content := []byte(tc.content)
-			got := r.Rebase(content, r.Folder+"/_prd.md", r.RecordPath)
+			got, err := r.Rebase(content, r.Folder+"/_prd.md", r.RecordPath)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if !bytes.Equal(got, content) || string(content) != tc.content {
 				t.Fatalf("bytes changed: %q -> %q", tc.content, got)
 			}
@@ -160,7 +170,7 @@ func TestLegacyConversionRebasesTheOutcomeAndPromotedCopies(t *testing.T) {
 			if err != nil || archived.Record.Outcome != summary {
 				t.Fatalf("folder reader outcome = %q, err = %v, want %q", archived.Record.Outcome, err, summary)
 			}
-			wantCopy := "# Probe\n\n[PRD](../history/specs/demo.md#goals) [ADR](../adr/rule.md).\n"
+			wantCopy := "# Probe\n\nPRD (`docs/history/specs/demo/_prd.md@" + req.SourceRevision + "`) [ADR](../adr/rule.md).\n"
 			if source == "no links" {
 				wantCopy = "# Probe\n\nUnchanged bytes.\n"
 				plain, err := BuildArchiveRecord(ArchiveRecordInput{Legacy: true, SpecDir: folder, Slug: req.Slug, Source: plan.Folder, SourceRevision: req.SourceRevision, Promoted: plan.Promoted})

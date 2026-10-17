@@ -34,7 +34,7 @@ func TestADeferredBacklogEntryLeftActiveIsReported(t *testing.T) {
 	finding := result.Findings[0]
 	if finding.Code != CodeBacklogUnmoved || finding.Severity != SeverityError ||
 		!strings.Contains(finding.Summary, `declares terminal status "deferred"`) ||
-		!strings.Contains(finding.Fix, "docs/history/backlog/") {
+		!strings.Contains(finding.Fix, "Delete "+path) {
 		t.Fatalf("unexpected deferred finding: %+v", finding)
 	}
 	if len(finding.Where) != 1 || finding.Where[0].Path != path || finding.Where[0].Line != 1 {

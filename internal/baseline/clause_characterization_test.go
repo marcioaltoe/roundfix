@@ -10,10 +10,11 @@ import (
 )
 
 type characterizedBaselineClause struct {
-	ID          string `json:"id"`
-	Guidance    string `json:"guidance"`
-	Enforcement string `json:"enforcement"`
-	RuleLevel   bool   `json:"-"`
+	ID          string   `json:"id"`
+	Guidance    string   `json:"guidance"`
+	Enforcement string   `json:"enforcement"`
+	Replaces    []string `json:"replaces,omitempty"`
+	RuleLevel   bool     `json:"-"`
 }
 
 func TestNoTwoBaselineClausesShareText(t *testing.T) {
@@ -231,8 +232,6 @@ func characterizedBaselineForce() map[string]string {
 		"clause.context.findings-07-update-timestamp":                 "mandatory",
 		"clause.context.findings-08-rollup":                           "mandatory",
 		"clause.context.findings-09-archive":                          "mandatory",
-		"clause.context.findings-10-live-work-health":                 "mandatory",
-		"clause.context.findings-11-rollup-closure":                   "mandatory",
 		"clause.context.inbox-01-triage":                              "mandatory",
 		"clause.context.inbox-02-fleet-flow":                          "mandatory",
 		"clause.context.inbox-03-extend-before-minting":               "mandatory",

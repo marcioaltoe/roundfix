@@ -3,7 +3,7 @@ status: done
 created_at: 2026-08-12
 updated_at: 2026-09-08
 kind: finding
-spec: 0129-spec-authoring-and-gate-recovery
+spec: 0159-archive-override-and-authoring-rules
 ---
 
 # Run lifecycle — a queue of eight Specs shows where the loop breaks (2026-08-12)
@@ -171,9 +171,16 @@ until these residuals receive explicit Specs.
 ## Addendum — 2026-09-08 — Implementation owner
 
 The maintainer selected this remaining intent for the implementation queue.
-[0129-spec-authoring-and-gate-recovery](../_prd.md) is its primary owner.
+Its former Spec PRD is the Git Locator `docs/_prd.md` (not reachable from any branch or tag).
 The source moves once into that Spec's reference index; other Specs link this
 owned copy. Its lifecycle status records adoption, not implementation or QA
 completion. Governed mutation and execution still require the consuming grant.
 
-Residual ownership by section: §1→0122, §4→0123, §8→0125, and authoring/temporal prerequisite contracts→0129. Durable execution of the resulting queue is consumed by 0127. Previously delivered subfamilies remain historical evidence.
+Residual ownership by section: §1→0122, §4→0123, §8→0125, and authoring/temporal prerequisite contracts→0159. Durable execution of the resulting queue is consumed by 0127. Previously delivered subfamilies remain historical evidence.
+
+## Addendum — 2026-10-17 — Successor routing
+
+The promoted Finding's prior owner is the Git Locator
+`docs/history/specs/0129-spec-authoring-and-gate-recovery.md@ae593da46d28e20d4c905ea1ebbeca5cbe8d3b90`.
+The 0129 Archive Record names `0159-archive-override-and-authoring-rules` in
+`superseded_by`; routing now belongs to that successor.

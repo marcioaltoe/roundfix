@@ -37,4 +37,4 @@ promoted: []
 
 # One gate per Run and a smaller Baseline
 
-Read-only `./bin/roundfix archive 0252-one-gate-per-run-and-a-smaller-baseline --plan` exited 0; [plan output](evidence/2026-10-08-gate/archive-plan.txt) inventories the Spec core and QA evidence, and identifies no reusable-knowledge candidate. This is an inventory, not an eligibility verdict or archive execution.
+Read-only `./bin/roundfix archive 0252-one-gate-per-run-and-a-smaller-baseline --plan` exited 0; plan output (`docs/history/specs/evidence/2026-10-08-gate/archive-plan.txt` (not reachable from any branch or tag)) inventories the Spec core and QA evidence, and identifies no reusable-knowledge candidate. This is an inventory, not an eligibility verdict or archive execution.

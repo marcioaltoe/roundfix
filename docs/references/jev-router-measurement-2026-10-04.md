@@ -5,7 +5,7 @@
 Date: 2026-10-04
 
 This addendum re-runs the routed replays that the
-[2026-10-02 record](jev-router.md) could not finish: 0194 task_04 (`docs`),
+The 2026-10-02 record `docs/references/jev-router.md` (not reachable from any branch or tag) could not finish: 0194 task_04 (`docs`),
 0200 task_04 (`chore`) and 0195 task_06 (`chore`). The month's ceiling is now
 US$50, set by the maintainer in User Config (`jev.monthly_ceiling_usd: 50`,
 Spec 0225), and the OpenRouter key reports `limit: 50` with
