@@ -20,6 +20,7 @@ paths:
   - internal/baseline/assets/modules/context-workflow.json
   - internal/baseline/assets/modules/secondbrain.json
   - internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  - internal/docscontract/publicdocs_test.go
   - internal/docscontract/testdata/corpus-golden.json
   - internal/spec/archive.go
   - internal/spec/archive_layout_characterization_test.go
@@ -28,6 +29,7 @@ paths:
   - internal/speccheck/coherence.go
   - internal/speccheck/constraints.go
   - skills/archive-spec/SKILL.md
+  - skills/baseline_skill_contract_test.go
   - skills/roundfix/SKILL.md
 operations:
   - implement
@@ -100,7 +102,8 @@ them as instructions and change neither.
 
 ## What is not governed
 
-The Go sources and tests under `internal/spec`, `internal/cli`,
+The Go sources and tests under `internal/spec` (task_06's
+`internal/spec/history_entries.go` and its tests among them), `internal/cli`,
 `internal/speccheck` and `internal/baseline` other than those listed above;
 `internal/docscontract/corpus_test.go`; `internal/baseline/module-versions.json`
 and the catalog and plan characterization goldens under
@@ -193,4 +196,23 @@ the generator's write. This amendment adds that record to `paths` and its
 command to the sanctioned regeneration, under the same cycle AH grant
 ("registros de versão" and "testes governados"); it adds no source path and
 changes nothing else. It lands on the default branch before the delivery
+consumes it.
+
+## Amendment of 2026-10-17, second
+
+The third Run of this Spec's delivery stopped on 2026-10-17 at task_04 after
+two attempts. The cleanup removes `docs/history/findings` and
+`docs/history/backlog`, and two Repository Contract Tests in Governed Paths
+read them: `TestDocsLayoutGuideNamesEveryHistoryFamily` in
+`internal/docscontract/publicdocs_test.go` requires the guide to name every
+retired family, and `copyTrackedRepository` in
+`skills/baseline_skill_contract_test.go` refuses a tracked file the working
+tree has deleted. `make verify-contracts`, run on a copy of the attempt's tree
+outside the repository, found only these two; with both changed as task_04
+now requires, all 75 Repository Contract Tests and `go test ./...` passed.
+This amendment adds the two files to `paths` under the same cycle AH grant
+("testes governados"). The same attempt found that the history citation scan
+stops on the tracked `CLAUDE.md` link; the corrective task_06 fixes it in
+`internal/spec/history_entries.go`, which is not governed. Nothing else
+changes, and the amendment lands on the default branch before the delivery
 consumes it.

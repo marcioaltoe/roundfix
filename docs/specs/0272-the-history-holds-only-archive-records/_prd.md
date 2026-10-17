@@ -98,12 +98,15 @@ it. No Verification here depends on another unmerged Spec.
   `internal/baseline/assets/modules/context-workflow.json`,
   `internal/baseline/assets/modules/secondbrain.json`,
   `internal/baseline/assets/profiles/standard-typescript-monorepo.json`,
+  `internal/docscontract/publicdocs_test.go`,
   `internal/docscontract/testdata/corpus-golden.json`,
   `internal/spec/archive.go`,
   `internal/spec/archive_layout_characterization_test.go`,
   `internal/speccheck/backlog.go`, `internal/speccheck/backlog_test.go`,
   `internal/speccheck/coherence.go`, `internal/speccheck/constraints.go`,
-  `skills/archive-spec/SKILL.md`, `skills/roundfix/SKILL.md`.
+  `skills/archive-spec/SKILL.md`, `skills/baseline_skill_contract_test.go`,
+  `skills/roundfix/SKILL.md`, and, by the amendments of 2026-10-17,
+  `docs/references/coverage-record.json`.
 
 ## Goals
 
