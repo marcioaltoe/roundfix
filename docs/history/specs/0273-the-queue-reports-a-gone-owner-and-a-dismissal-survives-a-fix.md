@@ -20,6 +20,7 @@ sources:
 regeneration:
   - command: make skills-sync
 promoted: []
+pull_request: "547"
 ---
 
 # The queue reports a gone owner, and a dismissal survives a fix
