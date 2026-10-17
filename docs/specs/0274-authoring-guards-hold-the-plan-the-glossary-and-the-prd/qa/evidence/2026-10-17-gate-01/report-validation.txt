@@ -1,4 +1,0 @@
-Report structure, closed coverage, exact carried row, evidence paths, typed inputs, counts and auditor identity: PASS.
-Fresh pass output confirmed for 19 required named behavioral tests.
-No skipped top-level test reported.
-Eight fresh passes + one carried pass + one pre-PR environment block.

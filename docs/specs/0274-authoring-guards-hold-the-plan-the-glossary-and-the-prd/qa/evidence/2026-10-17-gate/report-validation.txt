@@ -1,1 +1,0 @@
-Report structure: one frontmatter; fail; 10 terminal rows; 8 pass, 1 fail, 1 environment block; all row evidence paths and input declarations resolve. Saved CLI JSON confirms the five horizon/shape outcomes. Auditing fields and seeded mechanical sections preserved. No tracked implementation or Task changes.
