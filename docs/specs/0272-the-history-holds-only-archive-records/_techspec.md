@@ -353,7 +353,10 @@ every field it has; `applied.reduced` stays and is always 0.
     the apply lines drop `reduced <f> file(s), ` and gain `; rewrote <c>
     citation(s) in <m> file(s)` after the History Full Tag clause. In
     `baseline update` JSON a unit's `action` is `convert`, `remove` or
-    `rewrite`, `bytesAfter` is omitted, a `rewrite` unit carries `links`, a
+    `rewrite`, `bytesAfter` is omitted, a `rewrite` unit carries `links`,
+    every pending unit carries `paths`, the sorted paths it removes or the
+    records it rewrites, which the text plan prints as `  - <path>` lines
+    under the unit (task_06, added 2026-10-17 for User Story 3), a
     rewritten citation carries `rewrite`, and `applied` gains
     `rewrittenCitations` and `rewrittenFiles` while `reduced` stays 0. The Plan
     Digest's unit carries `action: remove` and no `bytesAfter`, and its

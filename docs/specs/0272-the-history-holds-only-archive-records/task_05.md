@@ -25,7 +25,9 @@ credential or reads another repository.
 1. MUST build the binary with `make build` and run the repository
    Verification, recording its result as a gate fact.
 2. MUST verify Success Metric 1 on the audited head: `docs/history/` holds
-   exactly 243 files, every one an Archive Record directly under
+   exactly the Archive Records of the delivery base minus the ten
+   `superseded` records 0120 to 0129 (243 when this Spec was planned, 244
+   once Spec 0273's record landed), every one an Archive Record directly under
    `docs/history/specs/`, none of the ten `superseded` records 0120 to 0129,
    and no file under the Findings, Backlog, ADR, Review or Handoff family.
 3. MUST verify Success Metric 2 and record the sabotage proof against the
@@ -59,7 +61,7 @@ credential or reads another repository.
    `_archived/findings/` tree, a cited and an uncited `superseded` record, a
    record with a broken relative link, and a user guide page citing a reduced
    entry. Record that `roundfix baseline update --format json` lists every
-   removal, every citation with its `rewrite` and the `record-links` unit
+   removal by path in its unit's `paths` (task_06), every citation with its `rewrite` and the `record-links` unit
    before anything changes and exits 3; that `--yes` applies it; and that a
    second run exits 0 with history `current`. No real repository is cloned.
 7. MUST reproduce Surface Transcript 1 and Surface Transcript 2 through the
@@ -71,8 +73,15 @@ credential or reads another repository.
    the outcome and copy carry Git Locators or rebased destinations, that no
    destination resolves to a missing file, and that `roundfix deliver`'s
    exact-archive proof accepts the commit (the tests task_01 names).
-9. MUST execute the tests task_01, task_02, task_03 and task_04 name in their
-   Verification.
+9. MUST execute the tests task_01, task_02, task_03, task_04 and task_06 name
+   in their Verification. A delivery fixture test that dies with
+   `signal: killed` or SIGKILL (9) meets the macOS code-signing kill of an
+   item binary rewritten in place, the Backlog Entry of 2026-10-16 that Spec
+   0275 fixes in the fixtures: rerun that package alone, with no other QA
+   build or test running, and record the rerun. If it is killed again, record
+   that test `blocked (environment: macOS code signing killed a fixture
+   binary rewritten in place)`, naming the Backlog Entry, and judge the row on
+   the remaining tests.
 10. MUST record, as evidence this Spec did not author, each source of
     `_prd.md` → Acceptance evidence: the quereus documentation conventions
     passage "History is deleted, not archived.", the RFC 2119 section 6
@@ -115,7 +124,7 @@ credential or reads another repository.
 
 ## Acceptance Criteria
 
-- [ ] The History Root of the audited head holds only the 243 Archive Records.
+- [ ] The History Root of the audited head holds only the delivery base's Archive Records minus the ten superseded ones.
 - [ ] Each planted retained file or broken link fails the audited binary and passes the delivery-base binary.
 - [ ] The adopter dry run lists every removal before applying and a second run reports the history current.
 - [ ] The scope audit finds no undeclared Governed Path change.
