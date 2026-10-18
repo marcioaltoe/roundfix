@@ -1,5 +1,0 @@
-git diff --name-status:
-D	docs/history/adr/0002-old.md
-retired ADR absent: yes
-successor byte-identical: yes
-active Spec present: yes
