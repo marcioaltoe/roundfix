@@ -99,6 +99,10 @@
       {
         "version": "0.0.4",
         "digest": "fdb3e5a72048ca6dd4c7f01a4a3ec2b21fcbd336df1c4f77d702e827c82c9ce6"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "510de9617e7f800b8e86c51fe7c4d6c05c4600f06501fcd02e3992b45ca413c8"
       }
     ],
     "qa-gate": [
@@ -587,6 +591,10 @@
       {
         "version": "0.1.99",
         "digest": "1167baea41afdf770c29a983090b28f5fe3533cbcde8e8018082ef0e038240b0"
+      },
+      {
+        "version": "0.1.100",
+        "digest": "9ffe2157e257c94e643bfafa30a95ba43c7cc768f3d6a5af38fdd20fb8d9d6c7"
       }
     ],
     "setup-context-driven": [

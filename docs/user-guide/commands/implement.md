@@ -154,6 +154,13 @@ Daemon Task and QA commits stage only repository paths that do not cross a
 symbolic link; dropped paths are journaled and warned
 (`roundfix: task file <path> kept outside the repository; committed without it`).
 
+Before each Task settles, the Secret Scan reads the lines each Task commit
+adds relative to `HEAD`. A Secret Match settles the Task `failed` with
+`Task commit carries a secret: <path>:<line>: <kind>` and creates no Task
+commit. The reason and the `secret_scan` event carry only path, line and
+kind; the Task's changes stay in the Run Worktree. A Git or read error halts
+the Run as an infrastructure failure.
+
 At the QA Report commit boundary, the Secret Scan checks the files that commit
 would stage. A Secret Match refuses the commit with `QA evidence carries a
 secret: <path>:<line>: <kind>`, recording only its path, line and kind. The
@@ -175,3 +182,11 @@ cost. With no usage rows it prints `Tokens: no prompts recorded`. Preflight
 refusals and an already-completed Spec create no Run and have no token total.
 Usage output does not change exit codes. See
 [Token usage](../usage.md#token-usage) for the measurement's limits.
+
+### Fixture values
+
+The `credential-assignment` Secret Pattern matches an uppercase name ending in
+`API_KEY`, `TOKEN`, `SECRET` or `PASSWORD`, an assignment, and a value of 20 or
+more characters containing both a letter and a digit. A fixture value of
+letters only, or of fewer than 20 characters, does not match this pattern.
+Other Secret Patterns still apply; test files have no exemption.

@@ -164,6 +164,13 @@ the largest carriable Task set, breaking ties with the newest Run.
    Verification precondition. Failed, timed-out, or verdict-changing runs
    restore the original bytes and record the format outcome.
 
+   Before each Task settles, the Secret Scan reads the lines each Task commit
+   adds relative to `HEAD`. A Secret Match settles the Task `failed` with
+   `Task commit carries a secret: <path>:<line>: <kind>` and creates no Task
+   commit. The reason and the `secret_scan` event carry only path, line and
+   kind; the Task's changes stay in the Run Worktree. A Git or read error
+   halts the Run as an infrastructure failure.
+
    The QA Report commit boundary also runs the Secret Scan over the files the
    commit would stage. A Secret Match refuses the commit with `QA evidence
    carries a secret: <path>:<line>: <kind>`, recording only its path, line and
@@ -286,3 +293,11 @@ unreported usage says `none reported`, never `0 tokens`; no usage rows says
 cost readings and starts a new count when a reading decreases. It computes
 no price from tokens. Prompts outside a Run, including the pre-PR review,
 do not count. Use `roundfix runs show <run-id>` for per-scope details.
+
+## Fixture values
+
+The `credential-assignment` Secret Pattern matches an uppercase name ending in
+`API_KEY`, `TOKEN`, `SECRET` or `PASSWORD`, an assignment, and a value of 20 or
+more characters containing both a letter and a digit. A fixture value of
+letters only, or of fewer than 20 characters, does not match this pattern.
+Other Secret Patterns still apply; test files have no exemption.

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -145,3 +145,58 @@ repositories.
 - `_prd.md` → Sources; Goals; User Story 3; Core Feature 3; Core Feature 5; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 4; API Contract 5; API Contract 9; Invariant 2; Current behavior; Testing Approach; Build Order 2
 - ADR-0292; ADR-0273; ADR-0117; ADR-0280; ADR-0189; ADR-0256; ADR-0259; ADR-0285
+
+## Result
+
+Implementation for the Daemon's Verification and settlement:
+
+- `ScanAddedLines` shares the push scan's hunk parser, reports new line
+  numbers and leaves `Commit` empty. The push scan retains its commit metadata.
+- `executeTask` scans prepared stageable paths after the lost-path and
+  authorization checks and before settlement. New paths are scanned whole;
+  paths present in `HEAD` use one diff of their added lines; absent paths
+  contribute nothing. A match enters the existing failed-settlement path,
+  preserves the work and makes no Task commit. Its reason, progress and one
+  `daemon.task` event expose only locations and kinds. Git errors omit command
+  output so a partial patch cannot leak into diagnostics; Git/read errors
+  propagate as infrastructure errors.
+- The implement guide and Roundfix reference describe Task commit refusal.
+  Both and the implement-task skill explain fixture values. The Secret Scan
+  glossary entry names the lines a Task commit would add and cites ADR-0292.
+  Searching guides and both skill trees found the former QA-and-push scan
+  descriptions in the implement guide and reference; both now describe the
+  Task boundary too. QA-specific guidance remains specific to its boundary.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Matching additions fail without a commit | `TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit` exercises both new and tracked files, exact reason, one location-only event, unchanged HEAD, preserved output and diagnostics without any sample byte run. |
+| Neighboring edits and letters-only fixtures commit | `TestTaskCommitScansOnlyTheLinesItAdds` preserves a committed match and edits its neighbor; `TestTaskCommitAcceptsALettersOnlyFixture` commits a 30-letter assignment. Both inspect committed bytes. |
+| Guide, reference, skill and glossary describe the contract | Reviewed their diffs, checked canonical/mirror byte equality, and regenerated the skill versions and Behavior Surface Record. No QA settlement section changed. |
+
+Focused checks run (all exited 0 unless noted):
+
+- Red starting signal: `go test ./internal/secretscan -run '^TestScanAddedLines' -count=1`
+  failed to compile because `ScanAddedLines` did not yet exist.
+- `go test ./internal/secretscan ./internal/daemon -run '^(TestScan|TestTaskCommit)' -count=1`.
+- `go test ./internal/secretscan ./internal/daemon -run '^(TestScan|TestTaskCommit|TestTaskSecretScan|TestQA.*Secret|TestQAReportWith|TestQAReportWithout|TestQAFormatter)' -count=1`.
+  The extra path-set test covers staged additions absent from HEAD, untracked
+  additions, a tracked addition at its new line, deletions, binary content,
+  excluded paths, read errors, Git errors and cancellation.
+- `go test ./internal/daemon -run '^(TestTaskCommit|TestTaskSecretScan|TestFinalPush)' -count=1`.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheQASecretRefusal' -count=1`.
+- `GOOS=windows CGO_ENABLED=0 go test -c -o /tmp/roundfix-task02-secretscan.test.exe ./internal/secretscan`.
+- `GOOS=windows CGO_ENABLED=0 go test -c -o /tmp/roundfix-task02-daemon.test.exe ./internal/daemon`.
+- `make skills-sync`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  recorded implement-task 0.0.5 and Roundfix 0.1.100.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+- `make baseline-digests`: derived artifacts unchanged.
+- `git diff --check`; byte comparison of the three skill mirror pairs and
+  every changed skill's QA settlement section against HEAD; a temporary
+  executable built from the current scanner found no Secret Match in the
+  changed files.
+
+Task status and declared Verification remain Daemon-owned. No commit, push,
+Pull Request, Task Graph or other Task-file change was made.

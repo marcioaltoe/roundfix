@@ -918,7 +918,7 @@ One line that matches a Secret Pattern, reported by path, line and kind and neve
 _Avoid_: Secret Pattern, secret value, evidence sample
 
 **Secret Scan**:
-A check of the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
+A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)).
 _Avoid_: Redaction, post-push scan, advisory check
 
 **Archive Command**:
