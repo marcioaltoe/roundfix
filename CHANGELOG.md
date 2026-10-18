@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.88.0] - 2026-10-18
+
+### A Run never reaches the judge, and an amended plan keeps its settled Tasks
+
+- **Run Marker.** Every Agent session and Verification command of a Run receives `ROUNDFIX_RUN_ID`. While it is set, the judge loads no key, writes no Judge Log and sends nothing, and reports the skip as `inside Run <run-id>`. This holds even when an Agent runtime re-reads the user's shell profile: Codex's shell snapshot re-exported the judge key into the QA gates of Specs 0273 and 0275. `TYPESAFE_API_KEY` joins the variables withheld from Runs (ADR-0283, amending ADR-0273).
+- **Binding Text.** Carry-forward keeps a settled Task when a plan amendment leaves its Binding Text unchanged: its `_tasks.md` node and table row, and the PRD and TechSpec sections its References name. A Task whose referenced section changed is still refused, and `roundfix reconcile` reports the amended inputs (ADR-0284).
+- **ADR reference forms.** The history cleanup resolves `superseded_by` written as `ADR-NNNN`, `NNNN`, `NNNN-slug`, `NNNN-slug.md` or a path. A successor whose `supersedes` front matter names the retired ADR already names it.
+- **Tests compile for Windows.** Unix-only tests moved into `unix`-tagged files, and a repository contract runs `GOOS=windows go vet` over every test (ADR-0285).
+- **Bootstrap test.** `TestBootstrapSerializesAcrossSiblings` gives each sibling its own release FIFO and no longer races on a shared one.
+
 ## [0.87.0] - 2026-10-17
 
 ### The history cleanup reaches every adopter, and the review sees a large Spec
