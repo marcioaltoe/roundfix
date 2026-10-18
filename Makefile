@@ -127,7 +127,7 @@ docs-test: ## Run the repository-markdown contract tests
 # internal/ is one of their inputs and any code change re-runs them. They are
 # repository-consistency gates rather than code tests, so they run here at the
 # pull request boundary instead of in every make verify.
-REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned
+REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows
 
 repo-test: ## Run the repository-contract tests
 	$(GO) test -count=1 -tags repocontract -run '^($(REPO_CONTRACT_TESTS))$$' ./...
