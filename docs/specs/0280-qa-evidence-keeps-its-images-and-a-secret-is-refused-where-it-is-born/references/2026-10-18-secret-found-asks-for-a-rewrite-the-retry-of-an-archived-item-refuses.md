@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-10-18
 updated_at: 2026-10-18
+absorbed_by: 0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born
 ---
 
 # Delivery Queue — `secret-found` asks for a history rewrite that the retry of an archived item refuses (2026-10-18)
@@ -74,3 +75,9 @@ archived on its branch and parked at the final push as `secret-found`.
   location without its value.
 - The retry refusal changed nothing, so the item could still be recovered by
   hand.
+
+## Addendum — 2026-10-18 — Adopted by Spec 0280
+
+[0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born](../_prd.md) adopts this Finding. The source moves once into that Spec's
+reference index; its lifecycle status records adoption, not implementation or
+QA completion.

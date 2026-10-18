@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-17T20:40:00Z
+updated_at: 2026-10-18T18:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -82,3 +82,5 @@ must prove depends on it, and the operator keeps running it outside Runs.
   repository configuration, not commands a Spec or an Agent chooses.
 
 **Amended by [ADR-0283](0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md) (2026-10-17).** Every Agent Session and Verification command of a Run also receives the Run Marker `ROUNDFIX_RUN_ID`, and the judge sends nothing while it is set, because an Agent runtime that re-reads the user's shell startup can export a judge key again; the Judge Key Variables also include `TYPESAFE_API_KEY`.
+
+**Amended by [ADR-0291](0291-qa-evidence-holds-text-and-images-and-the-qa-report-commit-refuses-any-other-binary.md) and [ADR-0292](0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md) (2026-10-18).** The QA Report commit also refuses a binary under the report's `evidence/` directory that is not a PNG or JPEG image; the Secret Scan also reads the lines each Task commit adds, before the Task settles; and a Delivery Retry of a `secret-found` item accepts a Secret Rewrite, a rewritten head whose tree differs from the parked candidate's only at lines that held a Secret Match there.

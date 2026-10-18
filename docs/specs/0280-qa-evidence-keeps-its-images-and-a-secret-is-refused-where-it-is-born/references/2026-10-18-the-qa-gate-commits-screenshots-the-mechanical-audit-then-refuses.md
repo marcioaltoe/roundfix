@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-10-18
 updated_at: 2026-10-18
+absorbed_by: 0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born
 ---
 
 # QA gate — the gate commits screenshots that the next mechanical audit refuses (2026-10-18)
@@ -75,3 +76,9 @@ repository (`useconexus/conexus`), Spec
 - The archive kept the PNGs out of the default branch.
 - The mechanical stage named every offending path, so the workaround was
   mechanical.
+
+## Addendum — 2026-10-18 — Adopted by Spec 0280
+
+[0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born](../_prd.md) adopts this Finding. The source moves once into that Spec's
+reference index; its lifecycle status records adoption, not implementation or
+QA completion.
