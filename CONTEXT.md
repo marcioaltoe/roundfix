@@ -981,8 +981,12 @@ _Avoid_: Broken link, dangling reference, link check
 A repository-declared directory of rebuildable build output retained in a Run Worktree, Task Worktree or Delivery Queue item worktree. It becomes reclaimable when its Run is terminal or its item is merged; active work keeps it ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
 _Avoid_: Run artifacts, shared build cache
 
+**Item Binary**:
+A copy of the Roundfix binary built by a Delivery Queue item for its own steps, retained while that item exists and is not merged. Its copies become reclaimable at merged release and through the GC Command when the item is merged or no longer queued ([ADR-0290](docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)).
+_Avoid_: owner binary, shared binary
+
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, removes declared Worktree Build Caches from ended worktrees, and reports what it freed ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)). A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
+The support command that reclaims Run storage through Journal Retention, Run Retention, orphaned run artifacts and declared Worktree Build Caches of ended worktrees, plus the Item Binary sweep for merged or unqueued items ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md), [ADR-0290](docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)). It reports only what it reclaimed, keeps Active Runs and active-run locks, and removes a Run row only through Run Retention ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:

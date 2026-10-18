@@ -81,5 +81,52 @@ of retention age. Active Runs and items in any other stage keep their caches.
 GC skips worktrees outside `worktree.location`, declared paths that are
 symlinks, and paths that resolve outside their worktree. Source files, Git
 metadata, the user's checkout cache and the shared Go build cache stay intact.
-With `worktree.caches: []`, GC output stays byte-identical. `gc compact` and
+With `worktree.caches: []`, GC omits the Worktree Build Cache section. `gc compact` and
 `gc sanitize` retain their separate scopes.
+
+## Item Binaries
+
+After the Worktree Build Cache section, GC scans
+`<artifact dir>/delivery/*/item-binary` for the repository it runs in. An Item
+Binary directory is reclaimable when that repository's Delivery Queue has no
+item for its slug or holds it at stage `merged`. Every other stage, including
+`parked`, keeps its copies.
+
+When at least one Item Binary directory exists, `roundfix gc --dry-run`
+prints these lines and the sorted reclaimable paths without writing anything:
+
+```text
+  Item Binaries reclaimable: <n>
+  Item Binary bytes reclaimable: <bytes>
+  Item Binaries kept: <n>
+  Reclaimable Item Binaries:
+    <path>
+```
+
+The live report uses `Item Binaries removed`, `Item Binary bytes reclaimed`
+and `Removed Item Binaries`, counting only directories it removed. GC rereads
+the queue immediately before each removal. It keeps symlinked Item Binary
+directories and paths that resolve outside `<artifact dir>/delivery`.
+The item's other artifacts, including `item-binary-build.log` and
+`repository-gate.log`, stay. A removal failure is diagnosed on stderr;
+other removals proceed, and GC exits `1` with the report of successful removals.
+With no Item Binary directory, GC output stays byte-identical.
+
+## Retention policy
+
+[ADR-0290](../../adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)
+defines what Roundfix Home keeps and who reclaims it:
+
+| Area | Kept while | Reclaimed by |
+| --- | --- | --- |
+| Run Event Journal and run artifact directory | the Run is Active or younger than Journal Retention | the GC Command and Run Retention (ADR-0033, ADR-0255) |
+| Run row and its records | the Run is not terminal, is queue-referenced, keeps its Run Worktree, or is younger than Run Retention | Run Retention (ADR-0255) |
+| Run Worktree and Run Branch | reconciliation does not prove them `safe` or `superseded` | `roundfix reconcile --apply` and the Delivery Queue's release after a merge, never by age (ADR-0053, ADR-0212, ADR-0289) |
+| Worktree Build Cache | its Run is not terminal or its item is not `merged` | the GC Command (ADR-0266) |
+| Item Binary | its Delivery Queue item exists and is not `merged` | the Delivery Queue's release after a merge, and the GC Command |
+| Pre-PR Review Records, dispositions and delivery logs | always | nothing |
+| Archive evidence | always | nothing: it lives in Git |
+
+Preview without changing storage with `roundfix gc --dry-run`,
+`roundfix gc compact` and `roundfix reconcile`. Run Worktrees leave only by
+proof; retention age alone never releases them.

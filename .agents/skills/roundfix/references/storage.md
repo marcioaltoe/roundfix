@@ -140,5 +140,46 @@ of retention age. Active Runs and items in any other stage keep their caches.
 GC skips worktrees outside `worktree.location`, declared paths that are
 symlinks, and paths that resolve outside their worktree. Source files, Git
 metadata, the user's checkout cache and the shared Go build cache stay intact.
-With `worktree.caches: []`, GC output stays byte-identical. `gc compact` and
+With `worktree.caches: []`, GC omits the Worktree Build Cache section. `gc compact` and
 `gc sanitize` retain their separate scopes.
+
+## Item Binaries
+
+After the Worktree Build Cache section, GC scans
+`<artifact dir>/delivery/*/item-binary` for the repository it runs in. An Item
+Binary directory is reclaimable when that repository's Delivery Queue has no
+item for its slug or holds it at stage `merged`. Every other stage, including
+`parked`, keeps its copies.
+
+When at least one Item Binary directory exists, `roundfix gc --dry-run`
+prints these lines and the sorted reclaimable paths without writing anything:
+
+```text
+  Item Binaries reclaimable: <n>
+  Item Binary bytes reclaimable: <bytes>
+  Item Binaries kept: <n>
+  Reclaimable Item Binaries:
+    <path>
+```
+
+The live report uses `Item Binaries removed`, `Item Binary bytes reclaimed`
+and `Removed Item Binaries`, counting only directories it removed. GC rereads
+the queue immediately before each removal. It keeps symlinked Item Binary
+directories and paths that resolve outside `<artifact dir>/delivery`.
+The item's other artifacts, including `item-binary-build.log` and
+`repository-gate.log`, stay. A removal failure is diagnosed on stderr;
+other removals proceed, and GC exits `1` with the report of successful removals.
+With no Item Binary directory, GC output stays byte-identical.
+
+## Retention policy
+
+ADR-0290's retention policy is documented in
+`docs/user-guide/commands/gc.md`. Run journals and artifacts follow Journal
+Retention; terminal Run records follow Run Retention. Worktree Build Caches
+follow ended ownership, and Item Binaries stay while their queue item exists
+and is not merged. Run Worktrees and Run Branches leave only when reconciliation
+proves them `safe` or `superseded`, never by age. Pre-PR Review Records,
+dispositions, delivery logs and archive evidence are retained.
+
+Preview without changing storage with `roundfix gc --dry-run`,
+`roundfix gc compact` and `roundfix reconcile`.

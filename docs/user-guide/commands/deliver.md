@@ -225,7 +225,12 @@ It writes a temporary file in that directory, sets mode `0755`, closes it and
 renames it over the final name, including when identical bytes reuse the same
 hash path. A later build can write its output in place without rewriting a
 running copy. Copies accumulate under the item's artifacts, one per distinct
-build; this operation does not reclaim them.
+build. After releasing a merged item's Runs, the Delivery Queue removes its
+`item-binary` directory and keeps its other artifacts, including
+`item-binary-build.log` and `repository-gate.log`. A removal failure joins the
+item's cleanup warning. The GC Command also reclaims Item Binary directories
+for items that are merged or no longer queued; every other stage keeps them.
+Use `roundfix gc --dry-run` to preview that sweep and its reclaimable paths.
 
 The queue probes the copy with `migrate --check`. When that exits `0`, the step
 runs that copy and the owner's console log names its absolute path:

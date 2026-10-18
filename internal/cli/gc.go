@@ -65,6 +65,7 @@ type gcReport struct {
 	CacheDeclared []string
 	BuildCaches   worktreeBuildCacheScan
 	cacheReport   bool
+	ItemBinaries  itemBinaryReport
 }
 
 type gcArtifactDir struct {
@@ -237,7 +238,7 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 
 	report, err := runGC(ctx, opts, loaded)
 	if err != nil {
-		if report.cacheReport {
+		if report.cacheReport || report.ItemBinaries.present {
 			printGCReport(stdout, report)
 		}
 		fmt.Fprintf(stderr, "%s: gc failed: %v\n", app.Name, err)
@@ -745,16 +746,19 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (repo
 	report.CacheDeclared = loaded.Config.Worktree.Caches
 	report.RunRetention = runRetentionReport{retentionDays: loaded.Config.Store.RunRetentionDays, cutoff: commandDependenciesForContext(ctx).gc.now().UTC().Add(-time.Duration(loaded.Config.Store.RunRetentionDays) * 24 * time.Hour), compaction: "not needed"}
 	exists, err := gcDatabaseExists(loaded.HomeDir)
-	if err != nil || !exists {
-		return report, err
-	}
-	runStore, err := openGCStore(ctx, opts.dryRun, loaded.HomeDir)
 	if err != nil {
 		return report, err
 	}
-	defer func() { err = errors.Join(err, runStore.Close()) }()
+	var runStore *store.Store
+	if exists {
+		runStore, err = openGCStore(ctx, opts.dryRun, loaded.HomeDir)
+		if err != nil {
+			return report, err
+		}
+		defer func() { err = errors.Join(err, runStore.Close()) }()
+	}
 	var cacheErr error
-	if len(report.CacheDeclared) > 0 {
+	if runStore != nil && len(report.CacheDeclared) > 0 {
 		report.BuildCaches, cacheErr = scanWorktreeBuildCaches(ctx, runStore, loaded, 0)
 		report.cacheReport = true
 		if !opts.dryRun {
@@ -763,8 +767,12 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (repo
 			cacheErr = errors.Join(cacheErr, removalErr)
 		}
 	}
-	report.RunRetention, err = sweepRunDatabase(ctx, runStore, loaded, runRetentionOptions{dryRun: opts.dryRun})
-	return report, errors.Join(cacheErr, err)
+	var itemErr error
+	report.ItemBinaries, itemErr = sweepItemBinaries(ctx, runStore, loaded, opts.dryRun)
+	if runStore != nil {
+		report.RunRetention, err = sweepRunDatabase(ctx, runStore, loaded, runRetentionOptions{dryRun: opts.dryRun})
+	}
+	return report, errors.Join(cacheErr, itemErr, err)
 }
 
 func runGCJournal(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
@@ -1098,6 +1106,7 @@ func printGCReport(stdout io.Writer, report gcReport) {
 	defer func() {
 		printRunRetentionReport(stdout, report.RunRetention, report.DryRun)
 		printWorktreeBuildCacheReport(stdout, report.CacheDeclared, report.BuildCaches, report.DryRun)
+		printItemBinaryReport(stdout, report.ItemBinaries, report.DryRun)
 	}()
 	if report.Skipped {
 		if report.DryRun {

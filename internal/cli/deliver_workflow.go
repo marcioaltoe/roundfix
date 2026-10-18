@@ -750,7 +750,16 @@ func (workflow *commandDeliveryWorkflow) ReleaseMergedRuns(
 		MergeCommit:  resolvedMergeCommit,
 		PullRequest:  strings.TrimSpace(item.PullRequestNumber),
 	}
-	return releaseMergedSpecRuns(ctx, workflow.store, gitRoot, merged)
+	releaseErr := releaseMergedSpecRuns(ctx, workflow.store, gitRoot, merged)
+	// A workflow without an artifact scope has only Run storage to release.
+	if workflow.loaded.HomeDir == "" && workflow.loaded.Config.Defaults.ArtifactDir == "" {
+		return releaseErr
+	}
+	artifactRoot, err := roundconfig.ResolveArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, gitRoot, workflow.loaded.HomeDir)
+	if err != nil {
+		return errors.Join(releaseErr, fmt.Errorf("resolve merged Item Binary directory: %w", err))
+	}
+	return errors.Join(releaseErr, removeMergedItemBinaries(artifactRoot, item.SpecSlug))
 }
 
 func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(

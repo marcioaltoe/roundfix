@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -136,3 +136,81 @@ own through release and GC tests on temporary artifact directories.
 - `_prd.md` → Sources; Goals; User Story 5; Core Feature 5; Core Feature 6; Core Feature 7; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 8; API Contract 9; API Contract 10; Invariant 5; Current behavior; Testing Approach; Build Order 3
 - ADR-0290; ADR-0282; ADR-0266; ADR-0255; ADR-0033; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+
+## Result
+
+Implementation returned for Daemon Verification; status remains Daemon-owned.
+
+### Implementation and acceptance evidence
+
+- **Merged release removes Item Binaries and retains logs:** after the existing
+  merge-evidence proof and `releaseMergedSpecRuns`, the workflow removes only
+  `delivery/<slug>/item-binary`. Artifact resolution and cleanup errors join
+  the Run-release error, preserving the item's cleanup warning. The delivery
+  engine is unchanged. `TestMergedReleaseReclaimsTheItemBinaries` passed and
+  asserts both `item-binary-build.log` and `repository-gate.log` retain their
+  exact bytes, alongside the Run Worktree release.
+  `TestMergedReleaseJoinsItemBinaryCleanupAndRunErrors` passed and observes
+  both the kept Run's error and the underlying artifact path error.
+- **GC respects queue ownership and dry-run:** the repository-resolved artifact
+  root supplies the candidates; the existing GC readers supply queue state.
+  The sweep retains all nine unmerged stages, including `parked`, and removes
+  only merged or unqueued directories. It remeasures bytes, proves the path
+  again, and rereads the queue immediately before each removal, including when
+  a database appears after initial discovery. Symlinked directories and item
+  ancestors stay; their targets are not measured or removed. New report lines
+  follow Worktree Build Caches, and failed paths do not hide successful removals.
+  `TestGCDryRunListsReclaimableItemBinaries` and
+  `TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems` passed with exact
+  report assertions: two candidates, 20 bytes, one parked directory retained.
+  The dry-run snapshots every path and file byte under the temporary home and
+  observes no change. Seven additional GC tests passed for all stages, changed
+  queue state, byte remeasurement, symlink/ancestor escapes, a newly created
+  queue, absent directories, and partial-success diagnostics.
+- **Guides and skill copies describe reclamation:** the GC guide now includes
+  `## Item Binaries` with the exact report format and `## Retention policy`
+  with ADR-0290's seven-area table and three read-only previews. Both deliver
+  references describe merged release and the GC sweep. The storage reference
+  quotes `Item Binaries reclaimable` and states the retention policy.
+  `CONTEXT.md` adds **Item Binary** and revises **GC Command** through the
+  domain-modeling format, linking ADR-0290. A normalized-text scan across all
+  user guides and both skill trees found no obsolete claims that these copies
+  are never reclaimed. Canonical and distributed Roundfix files are identical;
+  both `### QA settlement` sections match their committed bytes.
+
+### Focused checks and required regeneration
+
+- Before production edits, the three required regression tests failed on the
+  missing release removal and missing GC report. A fixture's duplicate store
+  close was also corrected before the passing checks below.
+- `rtk proxy go test ./internal/cli -run 'Test(MergedRelease|GCItemBinar|GCDryRunListsReclaimableItemBinaries|GCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems)' -count=1 -v`
+  — exit 0; all 11 new top-level tests and the nine stage subtests passed.
+- `rtk proxy go test ./internal/cli -run 'Test(MergedReleaseReclaimsTheItemBinaries|GCDryRunListsReclaimableItemBinaries|GCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems|GCItemBinar|GCDryRunListsWorktreeBuildCaches|DeliverReleaseRemovesEveryProvenRunOfTheMergedSpec|ReleaseMergedRunsStillReleasesWithValidEvidence)$' -count=1`
+  — exit 0; the three required tests and three selected existing release/GC
+  tests passed. The additional GC safety tests were exercised by the preceding
+  focused command, whose prefix selection includes their full names.
+- `rtk proxy env GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-task03-cli-windows.test.exe ./internal/cli`
+  — exit 0 after the final test additions; Windows compilation only.
+- `make skills-sync` — exit 0; generated mirrors, no mirror hand edits.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; generated Roundfix version `0.1.98` in both copies and its record.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0; generated the deliver and GC guide fingerprints.
+- `make baseline-digests` — exit 0, `changed: false`; no derived Baseline
+  artifact changed.
+- `git diff --check` and targeted source/guide inspections — clean before this
+  Result was appended. All new top-level tests call `t.Parallel()` first;
+  fixtures use temporary homes, artifact roots and Run Databases and write
+  plain non-executable byte fixtures.
+
+### Execution boundaries
+
+The configured writable workspace root contains a symlink, so sandboxed
+commands could not start; workspace reads, edits and focused checks used
+approved escalated execution. No real Roundfix Home was read or reclaimed.
+Secondbrain consultation was skipped under the Run-session rule.
+The declared Verification command, selected repository Verification and full
+suites were not run; they remain the Daemon's responsibility. No status,
+Task Graph or other Task was edited, and nothing was committed, pushed or
+published. No follow-up outside this slice was identified.
