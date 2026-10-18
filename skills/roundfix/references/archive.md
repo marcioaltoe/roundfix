@@ -139,13 +139,25 @@ recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
 Archive Advice before it happens. Use repeatable `--promote <path>` to copy a
 confirmed candidate to `docs/references/` in the archive change.
 
+When `ROUNDFIX_RUN_ID` is non-empty in the command's environment, every
+candidate has `no advice (inside Run <run-id>, named by ROUNDFIX_RUN_ID)`.
+Archive Advice selects no transport, reads no key or Judge Log, writes no Judge
+Log and sends no request, even with a judge key present.
+Every Agent Session and Verification command of a Run receives this marker
+with the Run's ID. Roundfix also withholds the Judge Key Variables, including
+`TYPESAFE_API_KEY`, from those children; the marker keeps the judge silent even
+if a runtime restores a key from the user's shell startup.
+
+The advice of `roundfix history sanitize --batch <n> --advise` uses the same
+marker and candidate skip reason.
+
 Use `roundfix archive <slug> --plan --offline` when no judge may be contacted,
 including every QA Task. The offline plan loads no judge and reads no Judge
 Key Variable. After the evidence line it prints `judge: skipped (offline)`,
 then each candidate in file order as
 `candidate <file> <bytes> bytes: no advice (offline)`.
 `--offline` without `--plan` exits `2` with `--offline requires --plan`.
-The plain `--plan` form keeps Archive Advice.
+The plain `--plan` form keeps Archive Advice outside a Run.
 
 ### Archive Relink
 
@@ -233,6 +245,18 @@ for one successor follow removal-path order. Each line is a History Citation:
 and under `citations` in JSON. Baseline text prefixes the citation with `- `;
 its Plan Digest binds the exact line, and an uncommitted successor refuses
 the ADR unit. Successors are cited, never listed as removal paths.
+
+`superseded_by` accepts `ADR-NNNN` or `NNNN` to select an accepted ADR
+under `docs/adr/` by number. It also accepts `NNNN-slug`, `NNNN-slug.md`,
+or a path whose last element is `NNNN-slug.md`; these forms select that
+exact filename under `docs/adr/`. An unknown form, a missing file or a
+successor without `status: accepted` keeps the refusal below.
+
+No lineage line is appended when the successor already names the retired ADR
+in its body, or when its front matter `supersedes` names it as `ADR-NNNN`,
+`NNNN`, `NNNN-slug`, `NNNN-slug.md` or a path ending in `/NNNN-slug.md`.
+Here the number and slug are the retired ADR's; `supersedes` can be a string
+or a list of strings. Naming another ADR does not suppress the lineage line.
 
 A superseded ADR with no accepted successor stays with this reason:
 `superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated`.

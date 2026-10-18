@@ -447,8 +447,13 @@ func TestBootstrapSerializesAcrossSiblings(t *testing.T) {
 	t.Parallel()
 	const rounds = 6
 	for round := range rounds {
-		bootstrapSerializationRound(t, round)
+		bootstrapSerializationRound(t, round, false)
 	}
+}
+
+func TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling(t *testing.T) {
+	t.Parallel()
+	bootstrapSerializationRound(t, 0, true)
 }
 
 type bootstrapSiblingEvent struct {
@@ -460,18 +465,20 @@ type bootstrapSiblingEvent struct {
 // bootstrapSerializationRound runs one round in its own function so the round's
 // context is cancelled when the round ends. Deferring inside the loop instead
 // held every round's cancel until the test returned.
-func bootstrapSerializationRound(t *testing.T, round int) {
+func bootstrapSerializationRound(t *testing.T, round int, holdWriters bool) {
 	t.Helper()
 	const siblings = 4
 
 	roundCtx, cancel := context.WithCancel(t.Context())
-	defer cancel()
+	var workers sync.WaitGroup
+	defer func() {
+		cancel()
+		workers.Wait()
+	}()
 	root := t.TempDir()
 	lockPath := filepath.Join(root, "shared-bootstrap.lock")
-	releasePath := filepath.Join(root, "bootstrap.release")
-	if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
-		t.Fatalf("round %d: create bootstrap release FIFO: %v: %s", round, err, output)
-	}
+	releaseByTask := make(map[string]string, siblings)
+	var heldPaths []string
 
 	start := make(chan struct{})
 	events := make(chan bootstrapSiblingEvent, siblings*2)
@@ -482,6 +489,11 @@ func bootstrapSerializationRound(t *testing.T, round int) {
 		if err := os.Mkdir(worktreeDir, 0o755); err != nil {
 			t.Fatalf("round %d: create sibling %s: %v", round, taskID, err)
 		}
+		releasePath := filepath.Join(worktreeDir, "bootstrap.release")
+		if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
+			t.Fatalf("round %d: create bootstrap release FIFO: %v: %s", round, err, output)
+		}
+		releaseByTask[taskID] = releasePath
 		command := fmt.Sprintf(
 			`mkdir %q || { printf 'lock collision'; exit 70; }; trap 'rmdir %q' EXIT; printf 'bootstrap-started\n'; read release < %q; test "$release" = release`,
 			lockPath,
@@ -490,8 +502,14 @@ func bootstrapSerializationRound(t *testing.T, round int) {
 		)
 		ended := make(chan bootstrapSiblingEvent, 1)
 		endedByTask[taskID] = ended
+		workers.Add(1)
 		go func() {
-			<-start
+			defer workers.Done()
+			select {
+			case <-roundCtx.Done():
+				return
+			case <-start:
+			}
 			err := runBootstrap(
 				roundCtx,
 				worktreeDir,
@@ -520,7 +538,20 @@ func bootstrapSerializationRound(t *testing.T, round int) {
 				t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, event.taskID)
 			}
 			seen[event.taskID] = struct{}{}
-			releaseBootstrap(t, round, event.taskID, releasePath, bootstrapSiblingNames(seen), endedByTask[event.taskID])
+			releasePath := releaseByTask[event.taskID]
+			if holdWriters {
+				release := holdBootstrapRelease(t, event.taskID, releasePath, heldPaths, endedByTask[event.taskID])
+				// Keep every writer open through all later siblings' exits. Each
+				// deferred close runs only once this round has ended.
+				defer func() {
+					if err := release.Close(); err != nil {
+						t.Errorf("close held bootstrap release FIFO: %v", err)
+					}
+				}()
+				heldPaths = append(heldPaths, releasePath)
+			} else {
+				releaseBootstrap(t, round, event.taskID, releasePath, bootstrapSiblingNames(seen), endedByTask[event.taskID])
+			}
 			continue
 		}
 		if event.err != nil {
@@ -652,6 +683,39 @@ func releaseBootstrap(t *testing.T, round int, taskID string, path string, start
 		}
 		return true, "release written"
 	})
+}
+
+// holdBootstrapRelease also proves isolation after the current reader opens:
+// no completed sibling's FIFO may have that reader, even with its writer held.
+func holdBootstrapRelease(t *testing.T, taskID, path string, previousPaths []string, ended <-chan bootstrapSiblingEvent) *os.File {
+	t.Helper()
+	var release *os.File
+	testwait.Poll(t, "held release for "+taskID, ended, func() (bool, string) {
+		var err error
+		release, err = os.OpenFile(path, os.O_WRONLY|syscall.O_NONBLOCK, 0)
+		if errors.Is(err, syscall.ENXIO) {
+			return false, "sibling has not opened the release FIFO"
+		}
+		if err != nil {
+			t.Fatalf("open held release for %s: %v", taskID, err)
+		}
+		return true, "sibling opened its release FIFO"
+	})
+	for _, previous := range previousPaths {
+		probe, err := os.OpenFile(previous, os.O_WRONLY|syscall.O_NONBLOCK, 0)
+		if probe != nil {
+			_ = probe.Close()
+		}
+		if !errors.Is(err, syscall.ENXIO) {
+			_ = release.Close()
+			t.Fatalf("sibling %s reached a completed sibling's release FIFO %s: %v", taskID, previous, err)
+		}
+	}
+	if _, err := io.WriteString(release, "release\n"); err != nil {
+		_ = release.Close()
+		t.Fatalf("write held release for %s: %v", taskID, err)
+	}
+	return release
 }
 
 func tryWriteBootstrapRelease(path string) (bool, error) {

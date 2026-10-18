@@ -35,7 +35,7 @@ func runVerificationEnvironmentFixture() (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	variables := questions.KeyVariables()
+	variables := append(questions.KeyVariables(), "TYPESAFE_API_KEY")
 	var checks []string
 	for index, variable := range variables {
 		if err := os.Setenv(variable, fmt.Sprintf("verification-fixture-%d", index)); err != nil {
@@ -43,6 +43,11 @@ func runVerificationEnvironmentFixture() (bool, error) {
 		}
 		checks = append(checks, fmt.Sprintf(`[ "${%s+x}" = "" ]`, variable))
 	}
+	const runID = "run-verification-fixture"
+	if err := os.Setenv(judge.RunMarkerVariable, "inherited-run"); err != nil {
+		return true, err
+	}
+	checks = append(checks, fmt.Sprintf(`[ "$%s" = "%s" ]`, judge.RunMarkerVariable, runID))
 	const control = "ROUNDFIX_VERIFICATION_ENVIRONMENT_CONTROL"
 	value := fmt.Sprintf("control-%d", len(variables))
 	if err := os.Setenv(control, value); err != nil {
@@ -54,6 +59,7 @@ func runVerificationEnvironmentFixture() (bool, error) {
 		return true, err
 	}
 	_, verifyErr := (ExecVerifier{}).Verify(context.Background(), VerifyRequest{
+		RunID:      runID,
 		WorkDir:    dir,
 		Command:    strings.Join(checks, " && "),
 		OutputPath: filepath.Join(dir, "verification.log"),
@@ -62,10 +68,41 @@ func runVerificationEnvironmentFixture() (bool, error) {
 	if err := errors.Join(verifyErr, cleanupErr); err != nil {
 		return true, err
 	}
+	if os.Getenv(judge.RunMarkerVariable) != "inherited-run" {
+		return true, fmt.Errorf("fixture parent Run Marker changed")
+	}
 	for index, variable := range variables {
 		if os.Getenv(variable) != fmt.Sprintf("verification-fixture-%d", index) {
 			return true, fmt.Errorf("fixture parent variable %s changed", variable)
 		}
 	}
 	return true, nil
+}
+
+func TestEnginePassesRunIDToEveryVerificationCommand(t *testing.T) {
+	t.Parallel()
+	fixture, plan, runner, verifier, committer := settlementRepositoryFixture(t, []string{"declared check"})
+	recording := &qaGateRecordingVerifier{delegate: verifier, onVerify: func(req VerifyRequest) {
+		if req.RunID != plan.RunID {
+			t.Errorf("Verification %q in %q got RunID %q, want %q", req.Command, req.OutputPath, req.RunID, plan.RunID)
+		}
+	}}
+	result, err := fixture.engine(t, runner, recording, committer, fixture.worktree).TaskCycle(t.Context(), plan)
+	if err != nil || result.Completed != 1 {
+		t.Fatalf("TaskCycle=%+v err=%v", result, err)
+	}
+	var probe, task, repository bool
+	for _, req := range recording.requests {
+		switch {
+		case strings.Contains(req.OutputPath, "-probe-"):
+			probe = true
+		case req.Command == "declared check":
+			task = true
+		case req.Command == settlementRepositoryCommand:
+			repository = true
+		}
+	}
+	if !probe || !task || !repository {
+		t.Fatalf("did not exercise every Verification boundary: probe=%t task=%t repository=%t requests=%+v", probe, task, repository, recording.requests)
+	}
 }

@@ -38,6 +38,15 @@ schema is `roundfix/spec-judge/v1`. An advisory asks the author to correct the
 artifact or explain why the text stands. A skipped result proves neither a
 failure nor a clean result.
 
+When `ROUNDFIX_RUN_ID` is non-empty in the command's environment, the judge
+selects no transport, reads no key or Judge Log, writes no Judge Log and sends
+no request. The summary is
+`Judge: skipped: inside Run <run-id>, named by ROUNDFIX_RUN_ID; <n> judgment(s) not asked`.
+Every Agent Session and Verification command of a Run receives this marker
+with the Run's ID. Roundfix also withholds the Judge Key Variables, including
+`TYPESAFE_API_KEY`, from those children; the marker keeps the judge silent even
+if a runtime restores a key from the user's shell startup.
+
 Keys, first set wins: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, then the shared
 `ROUNDFIX_OPENROUTER_API_KEY` (both OpenRouter), then
 `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.
@@ -55,7 +64,7 @@ ceiling is `jev.monthly_ceiling_usd` in User Config, US$5 by default, across
 both transports and every repository using that Roundfix Home. The log
 contains no API key.
 
-The whole run skips without a key, with an unreadable Judge Log, or when the
+The judge also skips without a key, with an unreadable Judge Log, or when the
 monthly ceiling is already reached. Non-English artifacts skip. Individual
 judgments skip when their source does not qualify, the answering model does
 not match the pin, the answer is unreadable, or another client error refuses

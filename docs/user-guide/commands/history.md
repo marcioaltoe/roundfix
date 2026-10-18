@@ -105,6 +105,18 @@ and under `citations` in JSON. Baseline text prefixes the citation with `- `;
 its Plan Digest binds the exact line, and an uncommitted successor refuses
 the ADR unit. Successors are cited, never listed as removal paths.
 
+`superseded_by` accepts `ADR-NNNN` or `NNNN` to select an accepted ADR
+under `docs/adr/` by number. It also accepts `NNNN-slug`, `NNNN-slug.md`,
+or a path whose last element is `NNNN-slug.md`; these forms select that
+exact filename under `docs/adr/`. An unknown form, a missing file or a
+successor without `status: accepted` keeps the refusal below.
+
+No lineage line is appended when the successor already names the retired ADR
+in its body, or when its front matter `supersedes` names it as `ADR-NNNN`,
+`NNNN`, `NNNN-slug`, `NNNN-slug.md` or a path ending in `/NNNN-slug.md`.
+Here the number and slug are the retired ADR's; `supersedes` can be a string
+or a list of strings. Naming another ADR does not suppress the lineage line.
+
 A superseded ADR with no accepted successor stays with this reason:
 `superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated`.
 History text prints `refused <path>: <reason>`; baseline text prefixes it with
@@ -133,11 +145,20 @@ newest QA Report without an override is recorded as `failed-qa`, beside `no-qa`
 for a folder with no QA Report, override or supersession.
 
 `--advise` requires `--batch` and cannot accompany `--apply`. It adds Jev's advice
-for candidate files in selected folders, using the archive judge's process key
+for candidate files in selected folders, using the archive judge's command-environment key
 variables, configured monthly ceiling and log under Roundfix Home. Missing keys,
 reached ceilings and service failures print `no advice (<reason>)` and send no
 request when skipped. Advice never changes selection or the command's success.
 The judge log is the only advice write and stays outside the repository.
+
+When `ROUNDFIX_RUN_ID` is non-empty in the command's environment, every
+candidate has `no advice (inside Run <run-id>, named by ROUNDFIX_RUN_ID)`.
+Archive Advice selects no transport, reads no key or Judge Log, writes no Judge
+Log and sends no request, even with a judge key present.
+Every Agent Session and Verification command of a Run receives this marker
+with the Run's ID. Roundfix also withholds the Judge Key Variables, including
+`TYPESAFE_API_KEY`, from those children; the marker keeps the judge silent even
+if a runtime restores a key from the user's shell startup.
 
 `--apply` requires `--batch`. It validates the entire batch before writing and
 uses `HEAD` for records' `source_revision`.

@@ -132,7 +132,7 @@ func PlanHistoryKind(ctx context.Context, repositoryRoot string, kind ArchiveKin
 					return nil
 				}
 				id := "ADR-" + strings.SplitN(filepath.Base(path), "-", 2)[0]
-				if !historyEntryNamesPath(string(next), id) && !historyEntryNamesPath(string(next), filepath.Base(path)) {
+				if !historyADRNamesPredecessor(next, filepath.Base(path)) {
 					date, err := archiveGitRead(ctx, repositoryRoot, "show", "-s", "--format=%cI", "HEAD")
 					if err != nil {
 						return fmt.Errorf("read lineage date: %w", err)
@@ -253,13 +253,12 @@ func historyADRSuccessor(root string, content []byte) (string, []byte, error) {
 		return "", nil, nil
 	}
 	var metadata struct {
-		Successor string `yaml:"superseded_by"`
+		Successor yaml.Node `yaml:"superseded_by"`
 	}
 	if err := yaml.Unmarshal(front, &metadata); err != nil {
 		return "", nil, fmt.Errorf("read superseded ADR: %w", err)
 	}
-	number, ok := strings.CutPrefix(metadata.Successor, "ADR-")
-	if !ok || number == "" {
+	if metadata.Successor.Kind != yaml.ScalarNode {
 		return "", nil, nil
 	}
 	entries, err := os.ReadDir(filepath.Join(root, "docs/adr"))
@@ -270,7 +269,7 @@ func historyADRSuccessor(root string, content []byte) (string, []byte, error) {
 		return "", nil, fmt.Errorf("read successor directory: %w", err)
 	}
 	for _, entry := range entries {
-		if !entry.Type().IsRegular() || !strings.HasPrefix(entry.Name(), number+"-") || !strings.HasSuffix(entry.Name(), ".md") {
+		if !entry.Type().IsRegular() || !historyADRReferenceNames(metadata.Successor.Value, entry.Name()) {
 			continue
 		}
 		path := "docs/adr/" + entry.Name()
@@ -286,6 +285,48 @@ func historyADRSuccessor(root string, content []byte) (string, []byte, error) {
 		}
 	}
 	return "", nil, nil
+}
+
+// historyADRReferenceNames matches numeric references by number and named
+// references by the exact filename, including the last element of a path.
+func historyADRReferenceNames(reference, name string) bool {
+	if !strings.HasSuffix(name, ".md") {
+		return false
+	}
+	stem := strings.TrimSuffix(name, ".md")
+	number, slug, ok := strings.Cut(stem, "-")
+	if !ok || number == "" || slug == "" || strings.Trim(number, "0123456789") != "" {
+		return false
+	}
+	return reference == "ADR-"+number || reference == number ||
+		reference == stem || reference == name || strings.HasSuffix(reference, "/"+name)
+}
+
+func historyADRNamesPredecessor(content []byte, name string) bool {
+	id := "ADR-" + strings.SplitN(name, "-", 2)[0]
+	if historyEntryNamesPath(string(content), id) || historyEntryNamesPath(string(content), name) {
+		return true
+	}
+	front, _, err := splitFrontmatter(content)
+	if err != nil {
+		return false
+	}
+	var metadata struct {
+		Supersedes yaml.Node `yaml:"supersedes"`
+	}
+	if err := yaml.Unmarshal(front, &metadata); err != nil {
+		return false
+	}
+	references := []*yaml.Node{&metadata.Supersedes}
+	if metadata.Supersedes.Kind == yaml.SequenceNode {
+		references = metadata.Supersedes.Content
+	}
+	for _, reference := range references {
+		if reference.Kind == yaml.ScalarNode && historyADRReferenceNames(reference.Value, name) {
+			return true
+		}
+	}
+	return false
 }
 
 func appendHistoryLineage(content []byte, line string) []byte {

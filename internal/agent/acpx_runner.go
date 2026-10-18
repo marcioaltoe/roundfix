@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"roundfix/internal/config"
+	"roundfix/internal/judge"
 	"roundfix/internal/runevent"
 )
 
@@ -1277,6 +1278,9 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if err != nil {
 		return err
 	}
+	if req.RunID != "" {
+		codexEnv = append(append([]string(nil), codexEnv...), judge.RunMarkerVariable+"="+req.RunID)
+	}
 	session := SessionRef{Name: sessionName, WorkDir: workDir}
 	capabilities, err := runner.startSessionSelection(ctx, req.Runtime, session, adapter, codexEnv, false)
 	if err != nil {
@@ -1433,6 +1437,9 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	codexEnv, err := runner.codexEnvForSession(ctx, req.Runtime, req.Session)
 	if err != nil {
 		return result, err
+	}
+	if req.RunID != "" {
+		codexEnv = append(append([]string(nil), codexEnv...), judge.RunMarkerVariable+"="+req.RunID)
 	}
 	classifyFailure := func(agentOutput bool, failure error) error {
 		return runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, agentOutput, failure)

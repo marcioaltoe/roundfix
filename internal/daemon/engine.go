@@ -415,6 +415,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			}
 		}
 		result, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
+			RunID:      req.RunID,
 			WorkDir:    req.WorkDir,
 			Command:    command,
 			OutputPath: outputPath,

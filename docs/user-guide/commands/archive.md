@@ -42,12 +42,21 @@ Archive Advice from Jev. Advice is advisory and is skipped when the judge key
 is absent or the monthly ceiling is reached. The plan leaves repository files
 unchanged. Use repeatable `--promote <path>` to copy a confirmed candidate to
 `docs/references/` during the archive change.
+When `ROUNDFIX_RUN_ID` is non-empty in the command's environment, every
+candidate has `no advice (inside Run <run-id>, named by ROUNDFIX_RUN_ID)`.
+Archive Advice selects no transport, reads no key or Judge Log, writes no Judge
+Log and sends no request, even with a judge key present.
+Every Agent Session and Verification command of a Run receives this marker
+with the Run's ID. Roundfix also withholds the Judge Key Variables, including
+`TYPESAFE_API_KEY`, from those children; the marker keeps the judge silent even
+if a runtime restores a key from the user's shell startup.
+
 For a plan that contacts no judge, use `roundfix archive <slug> --plan --offline`.
 It skips loading the judge and reading Judge Key Variables, prints
 `judge: skipped (offline)` after the evidence line, and lists each candidate in
 file order as `candidate <file> <bytes> bytes: no advice (offline)`.
 A QA Task always uses this offline form. `--offline` without `--plan` exits
-`2` with `--offline requires --plan`. `--plan` alone keeps Archive Advice.
+`2` with `--offline requires --plan`. `--plan` alone keeps Archive Advice outside a Run.
 
 Existing archived folders retain their legacy link semantics.
 

@@ -162,6 +162,15 @@ question; its recall is low, so no suggestion does not prove no source fits.
 An unknown stage fails with `unsupported --stage "<value>"; use prd, techspec
 or tasks`.
 
+When `ROUNDFIX_RUN_ID` is non-empty in the command's environment, the judge
+selects no transport, reads no key or Judge Log, writes no Judge Log and sends
+no request. The summary is
+`Judge: skipped: inside Run <run-id>, named by ROUNDFIX_RUN_ID; <n> judgment(s) not asked`.
+Every Agent Session and Verification command of a Run receives this marker
+with the Run's ID. Roundfix also withholds the Judge Key Variables, including
+`TYPESAFE_API_KEY`, from those children; the marker keeps the judge silent even
+if a runtime restores a key from the user's shell startup.
+
 Set `ROUNDFIX_OPENROUTER_JUDGE_API_KEY` for OpenRouter first; the shared
 `ROUNDFIX_OPENROUTER_API_KEY` is its fallback, followed by
 `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.

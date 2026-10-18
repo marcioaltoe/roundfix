@@ -677,8 +677,12 @@ _Avoid_: Retry command, auto-settle, task fix command
 The support command that inspects the Run Worktrees and Run Branches of terminal Spec Runs and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.
 _Avoid_: GC Command, Settle Command, automatic integration
 
+**Binding Text**:
+The planning text a Task binds to: its own Task Graph node and projection row, and the PRD and TechSpec sections its References name. A missing node, row, References bullet or named section binds the whole file; a planning amendment preserves a settled Task only when its Binding Text is unchanged ([ADR-0284](docs/adr/0284-carry-forward-binds-a-task-to-the-planning-text-it-references.md)).
+_Avoid_: item-level binding, whole-Spec binding
+
 **Task Carry-Forward**:
-The explicit act that hands a settled Task from a terminal Spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped, Unresolved or Budget Exceeded ([ADR-0158](docs/adr/0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)) and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Spec Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
+The explicit act that hands a settled Task from a terminal Spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped, Unresolved or Budget Exceeded ([ADR-0158](docs/adr/0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)) and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement except planning amendments that preserve its Binding Text ([ADR-0284](docs/adr/0284-carry-forward-binds-a-task-to-the-planning-text-it-references.md)), a clean checkout, and a repository-local Spec Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
 
 **Delivery Queue**:
@@ -1263,8 +1267,12 @@ _Avoid_: Judge budget, key limit, Project Config ceiling
 The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared OpenRouter key for Roundfix; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
 _Avoid_: API key value, generic OpenRouter key, shared key
 
+**Run Marker**:
+The `ROUNDFIX_RUN_ID` variable naming the Run in each of its Agent Session and Verification processes. While it is non-empty, the judge sends nothing and reports the Run as its skip reason, whatever keys the command holds ([ADR-0283](docs/adr/0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md)).
+_Avoid_: Judge Key Variables, Run Worktree location, Roundfix Home
+
 **Judge Key Variables**:
-The variables the judge reads its credentials from, which no Agent Session and no Verification command of a Run receives ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
+The credential variables withheld from every Agent Session and Verification command of a Run: the judge's declared key variables and the generic TypeSafe key `TYPESAFE_API_KEY`. The Run Marker also keeps the judge silent if a runtime restores a key ([ADR-0283](docs/adr/0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md), amending [ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Stage Key, implementation key, credential value
 
 **Tested Base**:

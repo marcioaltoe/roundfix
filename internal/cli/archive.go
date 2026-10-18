@@ -472,6 +472,7 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 			printPreflightFailure("archive", err, stderr)
 			return exitPreflight
 		}
+		runID := commandRunID(environment.environ)
 		keys := map[string]string{}
 		allowed := map[string]bool{}
 		for _, key := range q.KeyVariables() {
@@ -479,11 +480,11 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 		}
 		for _, entry := range environment.environ {
 			name, value, _ := strings.Cut(entry, "=")
-			if allowed[name] {
+			if runID == "" && allowed[name] {
 				keys[name] = value
 			}
 		}
-		report, err = judge.AdviseArchive(ctx, q.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.ArchiveAdviceRequest{RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Files: candidates, Keys: keys, HomeDir: loaded.HomeDir, Transport: environment.dependencies.judgeTransport, Now: environment.dependencies.judgeNow})
+		report, err = judge.AdviseArchive(ctx, q.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.ArchiveAdviceRequest{RunID: runID, RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Files: candidates, Keys: keys, HomeDir: loaded.HomeDir, Transport: environment.dependencies.judgeTransport, Now: environment.dependencies.judgeNow})
 		if err != nil {
 			printPreflightFailure("archive", err, stderr)
 			return exitPreflight

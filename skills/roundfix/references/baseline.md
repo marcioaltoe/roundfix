@@ -161,6 +161,18 @@ and under `citations` in JSON. Baseline text prefixes the citation with `- `;
 its Plan Digest binds the exact line, and an uncommitted successor refuses
 the ADR unit. Successors are cited, never listed as removal paths.
 
+`superseded_by` accepts `ADR-NNNN` or `NNNN` to select an accepted ADR
+under `docs/adr/` by number. It also accepts `NNNN-slug`, `NNNN-slug.md`,
+or a path whose last element is `NNNN-slug.md`; these forms select that
+exact filename under `docs/adr/`. An unknown form, a missing file or a
+successor without `status: accepted` keeps the refusal below.
+
+No lineage line is appended when the successor already names the retired ADR
+in its body, or when its front matter `supersedes` names it as `ADR-NNNN`,
+`NNNN`, `NNNN-slug`, `NNNN-slug.md` or a path ending in `/NNNN-slug.md`.
+Here the number and slug are the retired ADR's; `supersedes` can be a string
+or a list of strings. Naming another ADR does not suppress the lineage line.
+
 A superseded ADR with no accepted successor stays with this reason:
 `superseded ADR has no accepted successor; name the accepted ADR that replaces it in superseded_by, or set its status to deprecated`.
 History text prints `refused <path>: <reason>`; baseline text prefixes it with

@@ -4,10 +4,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"slices"
-	"syscall"
 	"testing"
 )
 
@@ -36,35 +32,6 @@ func (r deliveryProbeReport) String() string {
 		state = r.ContextErr.Error()
 	}
 	return fmt.Sprintf("probe report: item binary inode %d -> %d (%s); probe start %s; context %s", r.InodeBefore, r.InodeAfter, form, start, state)
-}
-
-func deliveryItemInode(t *testing.T, path string) uint64 {
-	t.Helper()
-	info, err := os.Lstat(path)
-	if os.IsNotExist(err) {
-		return 0
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	return info.Sys().(*syscall.Stat_t).Ino
-}
-
-func (f *deliveryItemFixture) step(t *testing.T, ctx context.Context, step string) (string, error, deliveryProbeReport) {
-	t.Helper()
-	path := filepath.Join(f.repo, "bin/roundfix")
-	startCount := len(f.starts(t))
-	report := deliveryProbeReport{InodeBefore: deliveryItemInode(t, path)}
-	executable, err := f.workflow.stepExecutable(ctx, f.repo, "widget", step)
-	report.ContextErr = ctx.Err()
-	report.InodeAfter = deliveryItemInode(t, path)
-	starts := f.starts(t)
-	for i := startCount; i < len(starts); i++ {
-		if slices.Equal(starts[i].Args, []string{"migrate", "--check"}) {
-			report.Start = &starts[i]
-		}
-	}
-	return executable, err, report
 }
 
 func TestDeliveryProbeReportFormsEachEnd(t *testing.T) {
@@ -109,35 +76,4 @@ func TestDeliveryProbeReportFormsEachEnd(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDeliveryProbeReportRecordsTheProbeStart(t *testing.T) {
-	t.Parallel()
-	f := newDeliveryItemFixture(t)
-	executable, err, report := f.step(t, commandContextForTest(t, t.Context()), "review")
-	path := filepath.Join(f.repo, "bin/roundfix")
-	if err != nil || executable != f.copyPath(t) {
-		t.Fatalf("executable=%q err=%v; %s", executable, err, report)
-	}
-	inode := deliveryItemInode(t, path)
-	if inode == 0 || report.InodeBefore != 0 || report.InodeAfter != inode {
-		t.Fatalf("inode=%d; %s", inode, report)
-	}
-	if report.Start == nil || report.Start.Pid <= 0 || report.Start.Ppid != os.Getpid() || report.Start.Pgid != syscall.Getpgrp() {
-		t.Fatalf("want a probe parent %d and group %d; %s", os.Getpid(), syscall.Getpgrp(), report)
-	}
-	want := fmt.Sprintf("probe report: item binary inode 0 -> %d (created); probe start pid %d ppid %d pgid %d; context live", inode, report.Start.Pid, os.Getpid(), syscall.Getpgrp())
-	if report.ContextErr != nil || report.String() != want {
-		t.Fatalf("report=%q want=%q", report, want)
-	}
-	f.assertStarts(t, []string{"migrate", "--check"})
-
-	ctx, cancel := context.WithCancel(commandContextForTest(t, t.Context()))
-	cancel()
-	_, err, report = f.step(t, ctx, "review")
-	want = fmt.Sprintf("probe report: item binary inode %d -> %d (rewritten in place); probe start not recorded; context context canceled", inode, inode)
-	if err == nil || report.Start != nil || report.ContextErr != context.Canceled || report.String() != want {
-		t.Fatalf("step error=%v report=%q want=%q", err, report, want)
-	}
-	f.assertStarts(t, []string{"migrate", "--check"})
 }

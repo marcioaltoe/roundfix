@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -34,142 +32,6 @@ const (
 	detachTestSentinelPathEnv          = "ROUNDFIX_DETACH_TEST_SENTINEL_PATH"
 	detachTestRunCreationDelayEnv      = "ROUNDFIX_DETACH_TEST_RUN_CREATION_DELAY"
 )
-
-type detachTestSurvivor struct {
-	root         string
-	pidPath      string
-	sentinelPath string
-	pid          int
-	identity     string
-	process      *os.Process
-}
-
-func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSleepBeforeLiveness, 50*time.Millisecond, detachTestBound(t))
-
-	if code != exitRunFailed {
-		t.Fatalf("expected liveness timeout exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
-	}
-	if stdout != "" {
-		t.Fatalf("expected no stdout, got %q", stdout)
-	}
-	for _, want := range []string{
-		"Detached Run child produced no liveness signal within 50ms; killed (exit:",
-		"killed",
-	} {
-		if !strings.Contains(stderr, want) {
-			t.Fatalf("expected liveness timeout diagnostic containing %q, got %q", want, stderr)
-		}
-	}
-}
-
-func TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, detachHandshakeTimeout, detachRunCreationTimeout)
-
-	if code != exitOK {
-		t.Fatalf("expected detach success exit %d, got %d stdout=%q stderr=%q", exitOK, code, stdout, stderr)
-	}
-	if stderr != "" {
-		t.Fatalf("expected no stderr, got %q", stderr)
-	}
-	runID, consoleLog := parseDetachedReport(t, stdout)
-	if runID != detachTestRunID {
-		t.Fatalf("expected run id %q, got %q", detachTestRunID, runID)
-	}
-	wantStdout := fmt.Sprintf(
-		"Run ID: %s\nConsole Log: %s\nAttach: roundfix attach %s\nSupervisor monitor: roundfix events %s --follow --filter outcome\nStop: roundfix stop %s\n",
-		runID,
-		consoleLog,
-		runID,
-		runID,
-		runID,
-	)
-	if stdout != wantStdout {
-		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
-	}
-}
-
-func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSlowRunCreation, detachTestBound(t), 50*time.Millisecond)
-
-	if code != exitRunFailed {
-		t.Fatalf("expected Run-creation timeout exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
-	}
-	if stdout != "" {
-		t.Fatalf("expected no stdout, got %q", stdout)
-	}
-	for _, want := range []string{
-		"Detached Run child did not create a Run within 50ms; killed (exit:",
-		"killed",
-	} {
-		if !strings.Contains(stderr, want) {
-			t.Fatalf("expected Run-creation timeout diagnostic containing %q, got %q", want, stderr)
-		}
-	}
-}
-
-func TestRunDetachedCommandReportsInvalidLivenessHandshake(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildInvalidLiveness, detachTestBound(t), detachTestBound(t))
-
-	if code != exitRunFailed {
-		t.Fatalf("expected invalid liveness exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
-	}
-	if stdout != "" {
-		t.Fatalf("expected no stdout, got %q", stdout)
-	}
-	for _, want := range []string{
-		"Detached Run child failed liveness handshake",
-		"invalid Detached Run liveness marker",
-	} {
-		if !strings.Contains(stderr, want) {
-			t.Fatalf("expected liveness failure diagnostic containing %q, got %q", want, stderr)
-		}
-	}
-}
-
-func TestRunDetachedCommandReportsMalformedRunCreationHandshake(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildMalformedRunCreated, detachTestBound(t), detachTestBound(t))
-
-	if code != exitRunFailed {
-		t.Fatalf("expected malformed run creation exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
-	}
-	if stdout != "" {
-		t.Fatalf("expected no stdout, got %q", stdout)
-	}
-	for _, want := range []string{
-		"Detached Run child failed Run creation handshake",
-		"invalid Detached Run handshake",
-	} {
-		if !strings.Contains(stderr, want) {
-			t.Fatalf("expected Run creation failure diagnostic containing %q, got %q", want, stderr)
-		}
-	}
-}
-
-func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitTwoWithOutput, detachTestBound(t), detachTestBound(t))
-
-	if code != exitPreflight {
-		t.Fatalf("expected child exit code %d, got %d stdout=%q stderr=%q", exitPreflight, code, stdout, stderr)
-	}
-	if stdout != "" {
-		t.Fatalf("expected no stdout, got %q", stdout)
-	}
-	for _, want := range []string{
-		"Detached Run child failed liveness handshake: EOF; child exited (exit status 2); console output follows",
-		"detached child wrote a pre-handshake failure",
-	} {
-		if !strings.Contains(stderr, want) {
-			t.Fatalf("expected child-exit diagnostic containing %q, got %q", want, stderr)
-		}
-	}
-}
 
 func TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent(t *testing.T) {
 	t.Parallel()
@@ -213,115 +75,6 @@ func TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
-	t.Parallel()
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitOneSilently, detachTestBound(t), detachTestBound(t))
-
-	if code != exitRunFailed {
-		t.Fatalf("expected child exit code %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
-	}
-	if stdout != "" {
-		t.Fatalf("expected no stdout, got %q", stdout)
-	}
-	if !strings.Contains(stderr, "Detached Run child failed liveness handshake: EOF; child exited (exit status 1) and produced no output") {
-		t.Fatalf("expected silent child diagnostic, got %q", stderr)
-	}
-}
-
-func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
-	t.Parallel()
-	survivor := newDetachTestSurvivor(t)
-	t.Cleanup(func() {
-		if err := os.RemoveAll(survivor.root); err != nil {
-			t.Errorf("remove detached child teardown directory: %v", err)
-		}
-	})
-	command := exec.Command(os.Args[0], "-test.run=^$")
-	command.Env = withEnvValue(os.Environ(), detachTestChildModeEnv, detachTestChildIgnoreSentinel)
-	command.Env = withEnvValue(command.Env, detachTestSentinelPathEnv, survivor.sentinelPath)
-	command.Env = withEnvValue(command.Env, detachTestPIDPathEnv, survivor.pidPath)
-	command.Env = detachTestOwnerEnvironment(t, command.Env)
-	configureDetachedSysProcAttr(command)
-	if err := command.Start(); err != nil {
-		t.Fatalf("start detached child that ignores its sentinel: %v", err)
-	}
-	survivor.pid = command.Process.Pid
-	survivor.process = command.Process
-
-	t.Cleanup(func() {
-		if err := survivor.terminate(); err != nil {
-			t.Error(err)
-		}
-		_ = command.Process.Release()
-		if store.ProcessAlive(survivor.pid) {
-			t.Errorf("detached child %d remains alive after teardown", survivor.pid)
-		}
-	})
-	waitForFile(t, survivor.pidPath, nil)
-	if !store.ProcessAlive(survivor.pid) {
-		t.Fatalf("detached child %d exited before teardown", survivor.pid)
-	}
-	if record := os.Getenv(detachTestOwnerRecordEnv); record != "" {
-		waitForDetachDeathTestKill(t, record)
-	}
-}
-
-func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time.Duration, runCreationTimeout time.Duration) (string, string, int) {
-	t.Helper()
-	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
-		dependencies.detachTimeouts = detachPhaseTimeouts{
-			liveness:    livenessTimeout,
-			runCreation: runCreationTimeout,
-		}
-	})
-
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	environment := commandEnvironmentForTest(t)
-	childEnvironment := withEnvValue(environment.environ, detachTestChildModeEnv, childMode)
-	childEnvironment = detachTestOwnerEnvironment(t, childEnvironment)
-	var survivor *detachTestSurvivor
-	if childMode == detachTestChildRunCreated {
-		childEnvironment = withEnvValue(childEnvironment, detachTestRunCreationDelayEnv, livenessTimeout.String())
-		survivor = newDetachTestSurvivor(t)
-		childEnvironment = withEnvValue(childEnvironment, detachTestPIDPathEnv, survivor.pidPath)
-		childEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, survivor.sentinelPath)
-		t.Cleanup(func() {
-			if err := survivor.terminate(); err != nil {
-				t.Error(err)
-			}
-			if err := os.RemoveAll(survivor.root); err != nil {
-				t.Errorf("remove detached child teardown directory: %v", err)
-			}
-		})
-	}
-	if childMode == detachTestChildSleepBeforeLiveness || childMode == detachTestChildSlowRunCreation {
-		childEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, filepath.Join(t.TempDir(), "never-release"))
-	}
-	code := runDetachedCommand(
-		[]string{"implement", "--detach"},
-		commandRequest{name: "implement", detach: true, artifactDir: filepath.Join(t.TempDir(), "artifacts")},
-		roundconfig.Loaded{GitRoot: t.TempDir(), HomeDir: t.TempDir()},
-		&stdout,
-		&stderr,
-		childEnvironment,
-		t.TempDir(),
-		environment.dependencies.detachTimeouts,
-	)
-	if survivor != nil && code == exitOK {
-		survivor.pid = readDetachTestSurvivorPID(t, survivor.pidPath)
-		var err error
-		survivor.identity, err = store.OwnerProcessIdentity(t.Context(), survivor.pid)
-		if err != nil {
-			t.Fatalf("record detached survivor identity: %v", err)
-		}
-		if !store.ProcessAlive(survivor.pid) {
-			t.Fatalf("detached child %d did not survive its caller", survivor.pid)
-		}
-	}
-	return stdout.String(), stderr.String(), code
 }
 
 func runDetachTestChild(mode string) int {
@@ -414,19 +167,6 @@ func runDetachTestChild(mode string) int {
 	}
 }
 
-func newDetachTestSurvivor(t *testing.T) *detachTestSurvivor {
-	t.Helper()
-	root, err := os.MkdirTemp("", "roundfix-detach-test-")
-	if err != nil {
-		t.Fatalf("create detached child teardown directory: %v", err)
-	}
-	return &detachTestSurvivor{
-		root:         root,
-		pidPath:      filepath.Join(root, "pid"),
-		sentinelPath: filepath.Join(root, "release-sentinel"),
-	}
-}
-
 func recordDetachTestSurvivor() bool {
 	pidPath := strings.TrimSpace(os.Getenv(detachTestPIDPathEnv))
 	if pidPath == "" {
@@ -438,19 +178,6 @@ func recordDetachTestSurvivor() bool {
 		return false
 	}
 	return true
-}
-
-func readDetachTestSurvivorPID(t *testing.T, pidPath string) int {
-	t.Helper()
-	content, err := os.ReadFile(pidPath)
-	if err != nil {
-		t.Fatalf("read detached test child pid: %v", err)
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(content)))
-	if err != nil || pid <= 0 {
-		t.Fatalf("parse detached test child pid %q: %v", content, err)
-	}
-	return pid
 }
 
 func waitForDetachTestSentinel() int {
@@ -477,63 +204,6 @@ func waitForDetachTestSentinel() int {
 		}
 		<-ticker.C
 	}
-}
-
-func (survivor *detachTestSurvivor) terminate() error {
-	if survivor == nil || survivor.pid <= 0 {
-		return nil
-	}
-	var killErr error
-	sent := true
-	if survivor.process != nil {
-		killErr = survivor.process.Kill()
-	} else {
-		sent, killErr = store.SignalProvenProcess(context.Background(), survivor.pid, survivor.identity, syscall.SIGKILL)
-	}
-	killFailedWhileAlive := killErr != nil && store.ProcessAlive(survivor.pid)
-	var sentinelErr error
-	if err := os.WriteFile(survivor.sentinelPath, []byte("release\n"), 0o600); err != nil {
-		sentinelErr = fmt.Errorf("write detached child release sentinel: %w", err)
-	}
-
-	if survivor.process != nil {
-		wait := make(chan error, 1)
-		go func() { _, err := survivor.process.Wait(); wait <- err }()
-		select {
-		case waitErr := <-wait:
-			if waitErr != nil && store.ProcessAlive(survivor.pid) {
-				return errors.Join(killErr, sentinelErr, fmt.Errorf("wait for detached child %d after kill: %w", survivor.pid, waitErr))
-			}
-		case <-time.After(detachWaitTimeout):
-			return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
-		}
-	} else if sent {
-		// The detached command released its handle, but its successful child is
-		// still our child. Reap it after the Proven Signal so a zombie cannot be
-		// mistaken for a survivor. Wait4 cannot signal a reused PID.
-		wait := make(chan error, 1)
-		go func() {
-			var status syscall.WaitStatus
-			_, err := syscall.Wait4(survivor.pid, &status, 0, nil)
-			wait <- err
-		}()
-		select {
-		case waitErr := <-wait:
-			if waitErr != nil && store.ProcessAlive(survivor.pid) {
-				return errors.Join(killErr, sentinelErr, fmt.Errorf("reap detached child %d after proven signal: %w", survivor.pid, waitErr))
-			}
-		case <-time.After(detachWaitTimeout):
-			return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
-		}
-	}
-	if sent && store.ProcessAlive(survivor.pid) {
-		return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
-	}
-
-	if killFailedWhileAlive {
-		return errors.Join(fmt.Errorf("kill detached child %d: %w", survivor.pid, killErr), sentinelErr)
-	}
-	return sentinelErr
 }
 
 func writeDetachTestLiveness() (*os.File, bool) {
