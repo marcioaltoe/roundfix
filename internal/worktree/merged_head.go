@@ -782,40 +782,40 @@ func archivedTaskCompletedAtHead(ctx context.Context, runner gitRunner, root, he
 	return taskCompletedInRoots(ctx, runner, root, head, task, []string{archived.Path})
 }
 
-func dirtyPathsInArchivedSpec(ctx context.Context, runner gitRunner, root, head, slug string, dirty []string) bool {
+func dirtyPathsInArchivedSpec(ctx context.Context, runner gitRunner, root, head, slug string, dirty []string) (outside string, proven bool) {
 	sourceHead, archive, err := archivedSourceAtHead(ctx, runner, root, head, slug)
 	if err != nil {
-		return false
+		return "", false
 	}
 	directories := append(mergedSpecDirectories(slug), archive)
 	if pathsUnderGitDirectories(dirty, directories) {
-		return true
+		return "", true
 	}
 	content, err := gitBlobAtHead(ctx, runner, root, sourceHead, path.Join(archive, "_tasks.md"))
 	if err != nil {
-		return false
+		return "", false
 	}
 	frontmatter, ok := markdownFrontmatter(content)
 	if !ok {
-		return false
+		return "", false
 	}
 	var manifest mergedHeadManifest
 	if err := yaml.Unmarshal(frontmatter, &manifest); err != nil {
-		return false
+		return "", false
 	}
 	scoped := make(map[string]bool)
 	for _, node := range manifest.Graph.Nodes {
 		file, ok := mergedHeadTaskFile(content, node.ID)
 		if !ok {
-			return false
+			return "", false
 		}
 		taskContent, err := gitBlobAtHead(ctx, runner, root, sourceHead, path.Join(archive, file))
 		if err != nil {
-			return false
+			return "", false
 		}
 		// Validate the Task with the shared parser before reading its declarations.
 		if _, err := spec.CarryForwardStatus(file, taskContent); err != nil {
-			return false
+			return "", false
 		}
 		inContext := false
 		for _, line := range strings.Split(string(taskContent), "\n") {
@@ -850,12 +850,24 @@ func dirtyPathsInArchivedSpec(ctx context.Context, runner gitRunner, root, head,
 			}
 		}
 	}
+	dirty = slices.Clone(dirty)
+	slices.Sort(dirty)
 	for _, file := range dirty {
-		if !pathUnderAnyGitDirectory(file, directories) && !scoped[file] {
-			return false
+		if pathUnderAnyGitDirectory(file, directories) {
+			continue
+		}
+		covered := false
+		for declared := range scoped {
+			if file == declared || strings.HasPrefix(file, declared+"/") {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			return file, false
 		}
 	}
-	return true
+	return "", true
 }
 
 func validScopedGitPath(file string) bool {

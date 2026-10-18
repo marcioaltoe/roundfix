@@ -778,6 +778,25 @@ with the Settle Command. For latency-sensitive setups, configure direct
 adapter binaries in acpx config so default adapters do not launch through
 `npx -y` on first use.
 
+## Linux Lane
+
+`delivery.linux_lane` is a boolean, default `false`. Set it to `true` to run
+the Linux Lane after the Delivery Queue's repository Verification passes.
+Project Config replaces User Config for this key; an absent project key
+inherits the user value, and explicit `false` disables it. A non-boolean value
+is refused with `delivery.linux_lane must be boolean`.
+
+```yaml
+delivery:
+  linux_lane: true
+```
+
+The queue reads the key from the fetched default-branch commit, so an opt-in
+on an item branch takes effect after it merges. The lane runs the candidate's
+changed Go packages in a locally available `golang:<go.mod go version>` image,
+with no network or image pull. See [deliver](commands/deliver.md#linux-lane)
+for skip reasons, outcomes, and the lane log.
+
 ## Delivery conflict recovery
 
 `delivery.derived_paths` declares generated paths and the command that rebuilds

@@ -567,6 +567,18 @@
       {
         "version": "0.1.95",
         "digest": "55664fc1fef70316f5651c0da2aef290c07a7d385549322dcd0b59e34f1d5d51"
+      },
+      {
+        "version": "0.1.96",
+        "digest": "a95152c9735f3ac0c8e5e547c738a8f21378626bb6559958f682c7f067c58e2b"
+      },
+      {
+        "version": "0.1.97",
+        "digest": "958d2e0338ae01bbf833e67dc33234896e4c768a20513ce13d6e4850264128b1"
+      },
+      {
+        "version": "0.1.98",
+        "digest": "e92ce0f5f77ecfe28c747f8b7b217a83301473a5826fa4af51ec935919609a30"
       }
     ],
     "setup-context-driven": [

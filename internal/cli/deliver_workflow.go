@@ -750,7 +750,16 @@ func (workflow *commandDeliveryWorkflow) ReleaseMergedRuns(
 		MergeCommit:  resolvedMergeCommit,
 		PullRequest:  strings.TrimSpace(item.PullRequestNumber),
 	}
-	return releaseMergedSpecRuns(ctx, workflow.store, gitRoot, merged)
+	releaseErr := releaseMergedSpecRuns(ctx, workflow.store, gitRoot, merged)
+	// A workflow without an artifact scope has only Run storage to release.
+	if workflow.loaded.HomeDir == "" && workflow.loaded.Config.Defaults.ArtifactDir == "" {
+		return releaseErr
+	}
+	artifactRoot, err := roundconfig.ResolveArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, gitRoot, workflow.loaded.HomeDir)
+	if err != nil {
+		return errors.Join(releaseErr, fmt.Errorf("resolve merged Item Binary directory: %w", err))
+	}
+	return errors.Join(releaseErr, removeMergedItemBinaries(artifactRoot, item.SpecSlug))
 }
 
 func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(
@@ -1443,7 +1452,7 @@ func pullRequestRecordChangeIsExact(before, after []byte, number string) bool {
 	return reflect.DeepEqual(oldRecord, newRecord)
 }
 
-func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, _ string) (delivery.GateResult, error) {
+func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, head string) (delivery.GateResult, error) {
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(
 		workflow.loaded.Config.Defaults.ArtifactDir,
 		workflow.loaded.GitRoot,
@@ -1464,6 +1473,29 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 			return delivery.GateResult{Passed: false, Reason: err.Error()}, nil
 		}
 		return delivery.GateResult{}, err
+	}
+	// The item and the owner's checkout may both carry an unmerged opt-in.
+	// Read the same immutable, fetched default used for delivery declarations.
+	// The lane only adds a check: when that default cannot be read, it is
+	// skipped with its reason and the repository gate's result stands.
+	enabled, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
+	if err != nil {
+		return delivery.GateResult{}, err
+	}
+	if unreadable != "" {
+		if err := workflow.recordLinuxLaneSkip(specSlug, unreadable); err != nil {
+			return delivery.GateResult{}, err
+		}
+		return delivery.GateResult{Passed: true}, nil
+	}
+	if enabled {
+		lane, err := workflow.runLinuxLane(ctx, gitRoot, specSlug, head)
+		if err != nil {
+			return delivery.GateResult{}, err
+		}
+		if lane.Ran && !lane.Passed {
+			return delivery.GateResult{Passed: false, Reason: lane.Reason}, nil
+		}
 	}
 	return delivery.GateResult{Passed: true}, nil
 }

@@ -451,7 +451,7 @@ A recorded terminal reason a Run Branch no longer needs integration and may be d
 _Avoid_: Branch cleanup, forced deletion, reconcile result
 
 **Run Worktree Reconciliation**:
-The proof-based classification of a terminal Spec Run's retained Git surfaces: `safe` when the Run Branch is contained in its target or its content is represented at the merged head; `superseded` when a newer QA Report or the merged-head proof represents its Task or QA Report commits; `unintegrated` when resolved evidence does not represent the Run; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
+The proof-based classification of a terminal Spec Run's retained Git surfaces: `safe` when the Run Branch is contained in its target or its content is represented at the merged head; `superseded` when a newer QA Report or the merged-head proof represents its Task or QA Report commits, archived Spec-directory work, or scoped uncommitted leftovers; `unintegrated` when resolved evidence does not represent the Run; `dirty` when tracked or untracked changes lack archived-Spec supersession proof; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. A declared or recorded path covers the dirty paths beneath it, and a kept dirty Run whose Spec is archived at the proof head names the failing proof or first path outside that scope ([ADR-0289](docs/adr/0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md)); only freshly revalidated `safe` or `superseded` work can be cleaned up.
 _Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
@@ -688,6 +688,10 @@ _Avoid_: replay, resume, automatic carry, QA row carry-forward
 **Delivery Queue**:
 The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
+
+**Linux Lane**:
+The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication ([ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
+_Avoid_: Linux gate, Docker gate, cross-platform Verification
 
 **Queue Owner**:
 The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one. When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
@@ -977,8 +981,12 @@ _Avoid_: Broken link, dangling reference, link check
 A repository-declared directory of rebuildable build output retained in a Run Worktree, Task Worktree or Delivery Queue item worktree. It becomes reclaimable when its Run is terminal or its item is merged; active work keeps it ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)).
 _Avoid_: Run artifacts, shared build cache
 
+**Item Binary**:
+A copy of the Roundfix binary built by a Delivery Queue item for its own steps, retained while that item exists and is not merged. Its copies become reclaimable at merged release and through the GC Command when the item is merged or no longer queued ([ADR-0290](docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)).
+_Avoid_: owner binary, shared binary
+
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window, removes orphaned run artifact directories, runs the Run Retention Sweep without a budget, removes declared Worktree Build Caches from ended worktrees, and reports what it freed ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md)). A Run it already emptied is not counted again. It never touches Active Runs or active-run locks, and it removes a `runs` row only through Run Retention ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
+The support command that reclaims Run storage through Journal Retention, Run Retention, orphaned run artifacts and declared Worktree Build Caches of ended worktrees, plus the Item Binary sweep for merged or unqueued items ([ADR-0266](docs/adr/0266-a-signal-goes-only-to-a-proven-process-and-worktrees-share-one-build-cache.md), [ADR-0290](docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)). It reports only what it reclaimed, keeps Active Runs and active-run locks, and removes a Run row only through Run Retention ([ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:
