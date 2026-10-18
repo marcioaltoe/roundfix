@@ -57,6 +57,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeSkillsUntasked, stage: StageTasks},
 	{code: CodeSurfaceRecordUntasked, stage: StageTasks},
 	{code: CodeSkillVersionUntasked, stage: StageTasks},
+	{code: CodeVerifyPathUndeclared, stage: StageTasks},
 	{code: CodeGlossaryUndeclared, stage: StagePRD},
 	{code: CodeGlossaryUnplanned, stage: StageTasks},
 	{code: CodeGlossaryMissing, stage: StageTasks},

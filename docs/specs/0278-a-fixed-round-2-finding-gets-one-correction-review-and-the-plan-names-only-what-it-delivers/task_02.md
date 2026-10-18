@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -125,3 +125,80 @@ own through check tests on temporary repositories and the corpus golden.
 - `_prd.md` → Sources; Goals; User Story 2; Core Feature 3; Core Feature 5; Success Metric 3
 - `_techspec.md` → API Contract 5; API Contract 7; Invariant 3; Current behavior; Testing Approach; Build Order 2
 - ADR-0287; ADR-0117; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+
+## Result
+
+Implemented the Task 02 slice for ADR-0287 / API Contract 5. Settlement and
+Task status remain Daemon-owned; the declared Verification command was not run.
+
+### Implementation
+
+- Added `SC-VERIFY-PATH-UNDECLARED` as a Tasks-stage error with no horizon,
+  wired through `Check`, `stagedDetectors` and the characterized corpus codes.
+  A missing Task Graph skips with its manifest path.
+- The detector reads Task declarations and recorded paths, follows only
+  dependency-closure `creates:` declarations, accepts their directory prefixes
+  and existing paths via `os.Lstat`, and applies the specified shell-word and
+  operand exclusions. It reads files and executes no command.
+- Added the guide table row, Roundfix reference bullet and `Verification paths`
+  authoring rule. Generated the skill mirrors, Roundfix version 0.1.95,
+  write-tasks version 0.0.18, their version records and the Behavior Surface
+  Record using the repository-owned commands. No mirror, skill version record
+  or Behavior Surface Record was hand-edited.
+- Recorded the measured new corpus count of 0 and the required update sentence
+  in the golden and its characterization pin, preserving every earlier count.
+
+### Acceptance evidence
+
+1. The 0274 shape raises one error naming the path:
+   `TestVerificationPathUndeclaredRaisesTheMissingFile` asserts exactly one
+   error, the exact API Contract 5 summary and fix, the Task file and the
+   Verification command's line. It also exercises command separators,
+   redirections, grep/rg explicit patterns, RTK wrappers and optional `./`,
+   checks Tasks-stage activation, and asserts a command-execution marker stays
+   absent. Before implementation the focused test did not compile because
+   `CodeVerifyPathUndeclared` did not exist; after implementation it passed.
+2. Supplied paths and exclusions raise nothing:
+   `TestVerificationPathUndeclaredIgnoresWhatThePlanProvides` passed for every
+   declaration kind, recorded paths, direct and transitive dependency creates,
+   directory prefixes, existing files/directories, grep/rg patterns,
+   printf/echo operands, negated test/bracket operands, default and configured
+   Spec Roots, completed/in-progress/failed Tasks, QA Tasks and absent graphs.
+   It also covers variables, globs, ellipses and unrecognized roots/words.
+   `TestVerificationPathUndeclaredDoesNotBorrowOtherDeclarations` passed for
+   unrelated creations, dependency declarations other than creates, and the
+   direction and segment boundary of directory-prefix matching.
+3. The active corpus counts 0 and preserves every earlier count:
+   the initial focused corpus sweep measured `SC-VERIFY-PATH-UNDECLARED: 0`.
+   Its output was compared with the previous golden before recording; every
+   earlier count matched. The updated focused corpus and characterization-pin
+   tests passed. A final comparison against HEAD confirmed count preservation.
+
+### Focused checks and regeneration
+
+All commands below exited 0 unless explicitly identified as the initial red
+check. These are focused implementation checks and required regeneration,
+not Daemon settlement Verification.
+
+- Initial red check: `go test ./internal/speccheck -run '^TestVerificationPathUndeclaredRaisesTheMissingFile$' -count=1`
+  exited 1 for the absent detector constant.
+- `go test ./internal/speccheck -run '^TestVerificationPathUndeclared' -count=1`
+- Final detector and adjacent regression selection:
+  `go test ./internal/speccheck -run '^Test(VerificationPathUndeclared|SkillVersionGap|WrapFragileVerification)' -count=1`
+- `go test -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$' -count=1`
+- `go test ./internal/spec -run '^TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095$' -count=1`
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+- `make baseline-digests`: `ok: true`, `changed: false`.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/speccheck -o /tmp/roundfix-task02-speccheck-windows.test.exe`
+  compiled successfully; Windows execution was not performed.
+- `git diff --check` passed. A read-only scope and byte comparison found all
+  17 changed paths declared by this Task, canonical/generated skill mirrors
+  identical, protected QA settlement text unchanged, and all previous corpus
+  counts unchanged. The only pre-existing change was the Daemon's
+  `pending` to `in_progress` update in this Task file, which was preserved.
+
+No follow-up implementation was added. The Task Graph, other Task files and
+Task status were not edited; no commit, push or pull request was created.

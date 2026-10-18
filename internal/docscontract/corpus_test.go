@@ -295,6 +295,7 @@ var corpusFindingCodes = []string{
 	speccheck.CodeDecisionsUnrecorded,
 	speccheck.CodeSurfaceRecordUntasked,
 	speccheck.CodeSkillVersionUntasked,
+	speccheck.CodeVerifyPathUndeclared,
 	speccheck.CodeQABytesPinned,
 	speccheck.CodeConsumersUnproven,
 	speccheck.CodeAbsenceUnproven,
