@@ -1,0 +1,6 @@
+{
+  "revision": "f363ad6d",
+  "cli_exit": 0,
+  "new_code_count": 0,
+  "new_code_findings": []
+}

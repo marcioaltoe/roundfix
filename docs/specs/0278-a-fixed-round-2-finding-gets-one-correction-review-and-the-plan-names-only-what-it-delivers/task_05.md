@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

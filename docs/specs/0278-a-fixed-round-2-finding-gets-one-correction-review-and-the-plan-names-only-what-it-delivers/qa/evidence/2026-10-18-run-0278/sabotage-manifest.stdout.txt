@@ -1,0 +1,10 @@
+=== RUN   TestTheSetupManifestIsCurrent
+=== PAUSE TestTheSetupManifestIsCurrent
+=== CONT  TestTheSetupManifestIsCurrent
+    publicdocs_test.go:1288: Setup Manifest is stale; Managed Refresh proposes changes:
+        docs/agents/setup-context.json
+        regenerate with go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes
+--- FAIL: TestTheSetupManifestIsCurrent (0.08s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.484s
+FAIL

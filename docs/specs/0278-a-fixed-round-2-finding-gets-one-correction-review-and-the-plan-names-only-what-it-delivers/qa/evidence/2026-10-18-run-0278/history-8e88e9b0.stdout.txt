@@ -1,0 +1,9 @@
+commit 8e88e9b0caac559d432d826c021ec3b5e2f0a659
+Author:     Marcio Altoé <marcio.altoe@gmail.com>
+AuthorDate: Tue Oct 13 09:08:44 2026 -0300
+Commit:     GitHub <noreply@github.com>
+CommitDate: Tue Oct 13 09:08:44 2026 -0300
+
+    chore: release v0.72.0 (#513)
+
+2	2	docs/agents/setup-context.json

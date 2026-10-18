@@ -1,0 +1,29 @@
+docs/user-guide/commands/review.md-300-before the new review, and a same-head reuse that resolves to
+docs/user-guide/commands/review.md-301-`findings-dismissed` closes it too. A removed checkout may leave an open
+docs/user-guide/commands/review.md-302-session record; Roundfix does not clean up another checkout's session.
+docs/user-guide/commands/review.md-303-
+docs/user-guide/commands/review.md:304:Except for the one Correction Review above, a third review in a lineage never
+docs/user-guide/commands/review.md-305-calls the reviewer. It closes as `ceiling-closed`, with exit `0`, only when
+docs/user-guide/commands/review.md-306-every standing round-2 finding has
+docs/user-guide/commands/review.md-307-exactly one operator disposition: dismissed with evidence, or fixed by a
+docs/user-guide/commands/review.md-308-commit the current head contains. Otherwise it prints a blocked result with
+--
+skills/roundfix/references/review.md-288-before the new review, and a same-head reuse that resolves to
+skills/roundfix/references/review.md-289-`findings-dismissed` closes it too. A removed checkout may leave an open
+skills/roundfix/references/review.md-290-session record; Roundfix does not clean up another checkout's session.
+skills/roundfix/references/review.md-291-
+skills/roundfix/references/review.md:292:Except for the one Correction Review above, a third review in a lineage never
+skills/roundfix/references/review.md-293-calls the reviewer. It closes as `ceiling-closed`, with exit `0`, only when
+skills/roundfix/references/review.md-294-every standing round-2 finding has
+skills/roundfix/references/review.md-295-exactly one operator disposition: dismissed with evidence, or fixed by a
+skills/roundfix/references/review.md-296-commit the current head contains. Otherwise it prints a blocked result with
+--
+.agents/skills/roundfix/references/review.md-288-before the new review, and a same-head reuse that resolves to
+.agents/skills/roundfix/references/review.md-289-`findings-dismissed` closes it too. A removed checkout may leave an open
+.agents/skills/roundfix/references/review.md-290-session record; Roundfix does not clean up another checkout's session.
+.agents/skills/roundfix/references/review.md-291-
+.agents/skills/roundfix/references/review.md:292:Except for the one Correction Review above, a third review in a lineage never
+.agents/skills/roundfix/references/review.md-293-calls the reviewer. It closes as `ceiling-closed`, with exit `0`, only when
+.agents/skills/roundfix/references/review.md-294-every standing round-2 finding has
+.agents/skills/roundfix/references/review.md-295-exactly one operator disposition: dismissed with evidence, or fixed by a
+.agents/skills/roundfix/references/review.md-296-commit the current head contains. Otherwise it prints a blocked result with

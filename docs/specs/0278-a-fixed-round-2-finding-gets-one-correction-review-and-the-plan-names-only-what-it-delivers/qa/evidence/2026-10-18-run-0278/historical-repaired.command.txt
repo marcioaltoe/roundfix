@@ -1,0 +1,4 @@
+command: ['./bin/roundfix', 'spec', 'check', '0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd', '--stage', 'tasks', '--format', 'json']
+cwd: /private/tmp/roundfix-0278-qa-llgx30k7/historical-repaired
+exit: 0
+elapsed_seconds: 0.701

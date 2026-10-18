@@ -1,0 +1,10 @@
+diff --git a/docs/agents/setup-context.json b/docs/agents/setup-context.json
+index 7a0ab14a..8f2a52e7 100644
+--- a/docs/agents/setup-context.json
++++ b/docs/agents/setup-context.json
+@@ -261 +261 @@
+-      "declarationDigest": "sha256:6f585a0b6f1ef32659e6afd32a3b3b3e08e2aec4434d05b37a06179e3e0aeefe"
++      "declarationDigest": "sha256:badf96b8cce1211265259c935b4e067b956ec63798d4a23b6e605b2ede9a75b6"
+@@ -270 +270 @@
+-      "declarationDigest": "sha256:6f585a0b6f1ef32659e6afd32a3b3b3e08e2aec4434d05b37a06179e3e0aeefe"
++      "declarationDigest": "sha256:badf96b8cce1211265259c935b4e067b956ec63798d4a23b6e605b2ede9a75b6"

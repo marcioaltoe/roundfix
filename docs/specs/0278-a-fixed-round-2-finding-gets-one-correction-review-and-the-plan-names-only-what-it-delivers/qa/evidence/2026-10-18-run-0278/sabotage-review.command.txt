@@ -1,0 +1,4 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^TestCorrectionReviewReviewsTheFixOnce$', './internal/cli']
+cwd: /private/tmp/roundfix-0278-qa-llgx30k7/sabotage-review-final
+exit: 1
+elapsed_seconds: 6.922

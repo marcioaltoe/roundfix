@@ -1,0 +1,124 @@
+{
+  "delivery_base": "a012815ba66b657e01f9e6ba9b90d982c268e3d4",
+  "audited_head": "2b6751421e4f6de4c425f3f34ae386f4fd0c6a9a",
+  "task_commits": [
+    {
+      "task": "task_04",
+      "commit": "2586fc33bc89df88c2908c870dd64812985f1445",
+      "paths": [
+        "docs/specs/0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers/task_04.md",
+        "internal/docscontract/publicdocs_test.go"
+      ],
+      "recorded_paths": [],
+      "outside_declarations": []
+    },
+    {
+      "task": "task_01",
+      "commit": "14a9cf84d915b89303ebbfea49e55df4f29e01d0",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/review.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers/task_01.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/review.md",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_review_correction_test.go",
+        "internal/cli/review.go",
+        "internal/cli/review_correction_test.go",
+        "internal/cli/review_lineage.go",
+        "internal/cli/review_lineage_selection_test.go",
+        "internal/cli/review_lineage_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/review.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "recorded_paths": [
+        "internal/cli/review_lineage_selection_test.go",
+        "internal/cli/review_lineage_test.go"
+      ],
+      "outside_declarations": []
+    },
+    {
+      "task": "task_02",
+      "commit": "2b6751421e4f6de4c425f3f34ae386f4fd0c6a9a",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers/task_02.md",
+        "docs/user-guide/commands/spec.md",
+        "internal/docscontract/corpus_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/constraints.go",
+        "internal/speccheck/verification_path.go",
+        "internal/speccheck/verification_path_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-tasks/SKILL.md"
+      ],
+      "recorded_paths": [],
+      "outside_declarations": []
+    }
+  ],
+  "changed_path_count": 34,
+  "governed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/review.md",
+    ".agents/skills/roundfix/references/spec.md",
+    ".agents/skills/write-tasks/SKILL.md",
+    "internal/docscontract/publicdocs_test.go",
+    "internal/docscontract/testdata/corpus-golden.json",
+    "internal/spec/archive_layout_characterization_test.go",
+    "internal/speccheck/coherence.go",
+    "internal/speccheck/constraints.go",
+    "skills/roundfix/SKILL.md",
+    "skills/write-tasks/SKILL.md"
+  ],
+  "authorized_path_count": 12,
+  "versions": [
+    {
+      "skill": "roundfix",
+      "before": "0.1.92",
+      "after": "0.1.95",
+      "both_version_fields_match": true,
+      "recorded": true
+    },
+    {
+      "skill": "write-tasks",
+      "before": "0.0.17",
+      "after": "0.0.18",
+      "both_version_fields_match": true,
+      "recorded": true
+    }
+  ],
+  "task_01_roundfix_version": "0.1.94",
+  "qa_settlement_sections_unchanged": true,
+  "protected_paths_byte_identical": [
+    "Makefile",
+    ".github/workflows",
+    "go.mod",
+    "go.sum",
+    ".roundfixrc.yml",
+    "internal/baseline/assets/modules",
+    "docs/agents/setup-context.json",
+    "internal/cli/spec_judge.go",
+    "internal/judge",
+    "internal/delivery/engine.go"
+  ],
+  "prior_corpus_counts_unchanged": true,
+  "new_corpus_count": 0,
+  "glossary": {
+    "Correction Review": "defined with ADR-0286",
+    "Reviewer Lineage": "revised; third round retained under Avoid",
+    "other_introduced_domain_terms": "none declared or observed in changed docs"
+  }
+}

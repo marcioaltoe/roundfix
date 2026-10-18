@@ -1,0 +1,13 @@
+diff --git a/internal/cli/review_lineage.go b/internal/cli/review_lineage.go
+index 3949f472..8d45c91a 100644
+--- a/internal/cli/review_lineage.go
++++ b/internal/cli/review_lineage.go
+@@ -73,7 +73,7 @@ func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate rev
+ // planCorrectionReview is called only after lineage descent reached the ceiling.
+ func planCorrectionReview(plan reviewLineagePlan, ledger []reviewFindingDisposition, git preflight.GitRunner) reviewLineagePlan {
+ 	prior := plan.prior
+-	if prior.Outcome != reviewOutcomeFindings || prior.Lineage == nil || prior.Lineage.Round != 2 || prior.Lineage.Correction || prior.HeadCommit == plan.candidate.HeadCommit {
++	if true || prior.Outcome != reviewOutcomeFindings || prior.Lineage == nil || prior.Lineage.Round != 2 || prior.Lineage.Correction || prior.HeadCommit == plan.candidate.HeadCommit {
+ 		return plan
+ 	}
+ 	dispositions := reviewDispositionsAtHead(ledger, prior.Repository, prior.HeadCommit)

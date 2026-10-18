@@ -1,0 +1,19 @@
+{
+  "revision": "d25aee62",
+  "cli_exit": 1,
+  "new_code_count": 1,
+  "new_code_findings": [
+    {
+      "code": "SC-VERIFY-PATH-UNDECLARED",
+      "severity": "error",
+      "summary": "Task task_03 Verification names internal/docscontract/glossary_contract_test.go, which the Task does not declare, no Task it depends on creates, and the checked tree does not hold",
+      "where": [
+        {
+          "path": "docs/specs/0274-authoring-guards-hold-the-plan-the-glossary-and-the-prd/task_03.md",
+          "line": 88
+        }
+      ],
+      "fix": "Declare internal/docscontract/glossary_contract_test.go in this Task, create it in a Task this Task needs, or correct the command, following the write-tasks rule \"Verification paths\"."
+    }
+  ]
+}

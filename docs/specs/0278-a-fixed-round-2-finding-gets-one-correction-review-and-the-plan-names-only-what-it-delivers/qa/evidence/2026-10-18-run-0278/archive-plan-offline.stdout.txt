@@ -1,0 +1,5 @@
+archive plan for 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers: removes 126 file(s) (215483 bytes) and writes docs/history/specs/0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-18.md, task_01.md, task_02.md, task_04.md, task_05.md
+evidence 117 file(s) (85740 bytes) under qa/evidence/
+judge: skipped (offline)
+promote with: roundfix archive 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers --promote <path>

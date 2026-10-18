@@ -1,0 +1,4 @@
+command: ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', '2586fc33bc89df88c2908c870dd64812985f1445']
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers-e40485f733487c29-d70b41f1-f7e028ae/run_20261018T141753Z_41e3e38ba6bfd5d4
+exit: 0
+elapsed_seconds: 0.012
