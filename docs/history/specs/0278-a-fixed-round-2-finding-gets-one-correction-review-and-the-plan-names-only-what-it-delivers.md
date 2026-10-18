@@ -26,8 +26,9 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "575"
 ---
 
 # A fixed round-2 finding gets one Correction Review, and the plan names only what it delivers
 
-The implemented candidate gives an all-fixed round-2 finding exactly one Correction Review of its fix and admits that fix through the retry proof; the historical broken plan raises SC-VERIFY-PATH-UNDECLARED while the repaired plan does not; and a one-byte Makefile change is caught by the Setup Manifest contract. All runnable declared verification Requirements passed, including three required sabotages. The Archive Record may carry this qualifying partial with the two authorization-prohibited literature lookups and the pre-PR/Merge-Ready control explicitly unproven. `./bin/roundfix archive 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers --plan --offline` exited 0, reported the archive cut and `judge: skipped (offline)`, and listed no promotion candidates; at that observation the cut contained 126 files and 117 evidence files.
+The implemented candidate gives an all-fixed round-2 finding exactly one Correction Review of its fix and admits that fix through the retry proof; the historical broken plan raises SC-VERIFY-PATH-UNDECLARED while the repaired plan does not; and a one-byte Makefile change is caught by the Setup Manifest contract. All runnable declared verification Requirements passed, including three required sabotages. The Archive Record may carry this qualifying partial with the two authorization-prohibited literature lookups and the pre-PR/Merge-Ready control explicitly unproven.
