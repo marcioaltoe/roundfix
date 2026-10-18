@@ -42,11 +42,13 @@ func TestARoundRecordNamesItsSelectionEvenWhenItIsThePreferred(t *testing.T) {
 func TestACeilingRecordNamesNoSelection(t *testing.T) {
 	t.Parallel()
 	fixture, runner, second := roundTwoLineageFixture(t)
-	fix := commitLineageFile(t, fixture, "fix.txt", "final correction\n")
+	commitLineageFile(t, fixture, "fix.txt", "final correction\n")
 	for _, outcome := range []reviewOutcome{reviewOutcomeBlocked, reviewOutcomeCeilingClosed} {
 		t.Run(string(outcome), func(t *testing.T) {
 			if outcome == reviewOutcomeCeilingClosed {
-				disposeLineageFinding(t, "--fixed-by", fix)
+				// A dismissal retains ceiling closure; fixing every round-2
+				// finding instead opens the Correction Review (ADR-0286).
+				disposeLineageFinding(t, "--dismiss", "--evidence", "checked the finding against the contract")
 			}
 			var stdout, stderr bytes.Buffer
 			code := runCLI(t, []string{"review", "--base", fixture.baseCommit}, &stdout, &stderr)

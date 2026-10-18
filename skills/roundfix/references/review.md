@@ -33,7 +33,7 @@ omits no generated files. An unreadable base configuration blocks with
 
 Omission precedence is `archived-spec-source`, `qa-evidence`, `upstream-skill`,
 `retired-history`, then `generated`. These rules apply to round one's
-candidate and round two's delta.
+candidate, round two's delta and the Correction Review delta.
 
 After the diff block, the prompt lists the sorted omitted paths and their
 reasons, introduced by `Omitted from this diff (not reviewed): <q> path(s) of
@@ -67,14 +67,16 @@ both `segments` and the finding's `segment` field. Verdict reuse,
 dispositions, convention validation and round accounting remain per candidate
 head: all segments are one round.
 
-A single commit above the bound, or an oversized round-2 delta, still blocks
-with exit `2` before any provider call, readiness probe or session preparation:
+A single commit above the bound, or an oversized round-2 or Correction Review
+delta, still blocks with exit `2` before any provider call, readiness probe or
+session preparation:
 `review diff too large: <bytes> bytes after omitting <n> path(s) exceeds the
 review bound of 917504 bytes`. A candidate needing more than four segments
 blocks at the same boundary with `review diff too large: <bytes> bytes after
 omitting <n> path(s) needs <k> review segments; a review allows at most 4`.
-Round 2 is never segmented. Claude retains its token budget below and is
-never segmented. On a runtime failure carrying
+Round 2 and the Correction Review are never segmented. A Correction Review
+applies the byte bound with either provider. Claude also retains its token
+budget below and is never segmented. On a runtime failure carrying
 `agent.BatchFailureError` stderr, `runtimeStderrTail` records its last 10 lines
 capped at the last 1,024 bytes. The reason text is unchanged; the tail field
 is omitted when empty.
@@ -130,7 +132,8 @@ For `claude`, Roundfix estimates the whole prompt at two bytes per token and
 records the estimate in `estimatedPromptTokens`. An estimate above 500,000
 tokens refuses the review before readiness and any provider call, with a
 reason containing `half of its 1000000-token context window`. The 917504-byte
-diff bound applies to `codex` only; its existing reason text is unchanged.
+diff bound applies to `codex` and to the Correction Review with either
+provider; its existing reason text is unchanged.
 
 A findings record keeps the reviewer's original `findings` text and also lists
 each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
@@ -252,6 +255,22 @@ A rebase, changed provider or merge base, or a head that does not descend
 starts a new lineage at round 1. A blocked review retries its own round with
 its recorded previous data.
 
+When round 2 ends with `findings`, a **Correction Review** reviews the fix once
+if the head moved and descends from the round-2 head, and every standing
+round-2 finding has exactly one valid `fixed` disposition whose fixing commit
+is between those heads. A dismissal does not open it. The reviewer receives
+only the delta from the round-2 head, with those findings and fixing commits,
+in a fresh Agent Session. Its lineage stays `round: 2`, adds `correction: true`,
+and carries the round-2 head, findings and fixing dispositions as
+`previousHead`, `previousFindings` and `previousDispositions`.
+
+A clean or findings-dismissed Correction Review lets Delivery advance.
+Findings park as round-2 findings do, including `corrective-spec-required`
+when they name an archived Spec. A blocked Correction Review retries as a
+Correction Review with its original previous data. Once it produces a verdict,
+it never opens another Correction Review; a further changed head reaches the
+ceiling.
+
 When round 1 leaves standing findings, its reviewer session stays open. The
 checkout record stores the random session name, the selection index into the
 review profile's preferred selection and fallbacks, and `sessionOpen: true`.
@@ -270,8 +289,9 @@ before the new review, and a same-head reuse that resolves to
 `findings-dismissed` closes it too. A removed checkout may leave an open
 session record; Roundfix does not clean up another checkout's session.
 
-A third review in a lineage never calls the reviewer. It closes as
-`ceiling-closed`, with exit `0`, only when every standing round-2 finding has
+Except for the one Correction Review above, a third review in a lineage never
+calls the reviewer. It closes as `ceiling-closed`, with exit `0`, only when
+every standing round-2 finding has
 exactly one operator disposition: dismissed with evidence, or fixed by a
 commit the current head contains. Otherwise it prints a blocked result with
 exit `2` naming the findings to dispose. That blocked result is not persisted,
@@ -303,11 +323,15 @@ to author a corrective Spec with its own authorization and QA gate. Delivery
 parks that review as `corrective-spec-required`; a no-findings verdict prints
 no corrective-Spec line. The queue resumes without a corrective Spec when the
 correction answers only the review in the Reviewed Head Record of the parked
-candidate: each changed path must be under an archived Spec named by the
-blocker or among the paths its Tasks declared (`creates:`, `interface:` and
-recorded paths read at the recorded revision). Review round 2 and the
-repository checks still follow. Any other path requires a corrective Spec, and
-the refusal names that path.
+candidate, with descent and exactly one valid disposition for every standing
+finding. When that record is round 2, is not a Correction Review, and every
+disposition is `fixed`, the retry accepts the fix whatever paths it changed:
+the Correction Review reads its delta. Every other retry requires each changed
+path to be under an archived Spec named by the blocker or among the paths its
+Tasks declared (`creates:`, `interface:` and recorded paths read at the
+recorded revision). Review and repository checks still follow. Outside that
+exemption, any other path requires a corrective Spec, and the refusal names
+that path.
 
 Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
 truncated, the prompt includes `[Spec context truncated]` and the record sets

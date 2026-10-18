@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.17
+  version: 0.0.18
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.17
+version: 0.0.18
 ---
 
 # Write Tasks
@@ -300,6 +300,21 @@ When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
 outcome remains ambiguous, split the Task so each slice has one dominant outcome;
 do not encode multiple values and do not defer the classification.
+
+## Verification paths
+
+A Task declares every repository path its Verification names unless the path
+exists in the checked tree or a Task it needs creates it. Declare paths in
+`## Context` with `creates:`, `interface:`, `deletes:` or `instruction:`;
+Daemon-recorded paths also count. A directory prefix of a declared path or of
+one created by a Task in the dependency closure counts as provided.
+
+`SC-VERIFY-PATH-UNDECLARED` reports an error for a pending non-QA Task at the
+Tasks stage, with no horizon. It reads literal paths under existing top-level
+repository directories, excluding grep/rg patterns, printf/echo operands,
+negated test operands, variables, globs, ellipses and paths under the Spec
+Root. The check executes no command. Correct the command or declare how the
+plan provides a missing path before starting a Run.
 
 ## Owned skill versions
 

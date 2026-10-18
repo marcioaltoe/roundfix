@@ -80,6 +80,16 @@ oldest commit that added it; an uncommitted PRD is held.
   horizon from the Tasks stage; skips repositories without the version record
   and Specs without a Task Graph.
 
+- `SC-VERIFY-PATH-UNDECLARED` — a pending non-QA Task's Verification
+  names a literal repository path the Task does not declare, no Task in its
+  dependency closure creates, and the checked tree does not hold. Declarations
+  include `creates:`, `interface:`, `deletes:`, `instruction:` and
+  `## Recorded paths`; directory prefixes count too. Excludes grep/rg patterns,
+  printf/echo operands, negated test operands, variables, globs, ellipses and
+  paths under the Spec Root. An error with no horizon from the Tasks stage;
+  Specs without a Task Graph skip with the manifest path. Reads files only
+  and executes no command.
+
 - `SC-DECISIONS-UNRECORDED` — a PRD's `## Decisions` section lacks both a
   dated answer and the autonomous-route line naming its decision source. A gap
   from the PRD stage that reads shape only. Its horizon is the oldest commit

@@ -45,6 +45,7 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 		return delivery.ReviewCorrection{}, err
 	}
 	dispositions := reviewDispositionsAtHead(ledger, workDir, candidate)
+	allFixed := true
 	for _, finding := range record.FindingItems {
 		if reviewFindingDismissedByValidation(finding) {
 			continue
@@ -60,11 +61,15 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 			}
 			if valid {
 				matches++
+				allFixed = allFixed && d.Disposition == "fixed"
 			}
 		}
 		if matches != 1 {
 			return refuse(fmt.Sprintf("finding %s requires exactly one valid disposition with evidence or a fixing commit between the candidate and item head", finding.ID))
 		}
+	}
+	if record.Lineage != nil && record.Lineage.Round == 2 && !record.Lineage.Correction && allFixed {
+		return delivery.ReviewCorrection{Accepted: true}, nil
 	}
 	root, err := resolveHistoricalSpecsRoot(workflow.loaded, workDir)
 	if err != nil {

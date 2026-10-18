@@ -12,6 +12,7 @@ import (
 
 type reviewLineage struct {
 	Round                int                        `json:"round"`
+	Correction           bool                       `json:"correction,omitempty"`
 	PreviousHead         string                     `json:"previousHead,omitempty"`
 	PreviousFindings     []reviewFinding            `json:"previousFindings,omitempty"`
 	PreviousDispositions []reviewFindingDisposition `json:"previousDispositions,omitempty"`
@@ -67,6 +68,66 @@ func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate rev
 		plan.Lineage.ACPSessionIDs = append([]string(nil), prior.Lineage.ACPSessionIDs...)
 	}
 	return plan, nil
+}
+
+// planCorrectionReview is called only after lineage descent reached the ceiling.
+func planCorrectionReview(plan reviewLineagePlan, ledger []reviewFindingDisposition, git preflight.GitRunner) reviewLineagePlan {
+	prior := plan.prior
+	if prior.Outcome != reviewOutcomeFindings || prior.Lineage == nil || prior.Lineage.Round != 2 || prior.Lineage.Correction || prior.HeadCommit == plan.candidate.HeadCommit {
+		return plan
+	}
+	dispositions := reviewDispositionsAtHead(ledger, prior.Repository, prior.HeadCommit)
+	var fixed []reviewFindingDisposition
+	for _, finding := range prior.FindingItems {
+		if reviewFindingDismissedByValidation(finding) {
+			continue
+		}
+		var matched []reviewFindingDisposition
+		for _, d := range dispositions {
+			if d.Finding != finding.ID || d.Text != finding.Text {
+				continue
+			}
+			valid, err := reviewDispositionValidAtHead(plan.ctx, git, prior.Repository, prior.HeadCommit, plan.candidate.HeadCommit, d)
+			if err != nil {
+				// Match the ceiling: an unprovable disposition does not count
+				// toward the one valid disposition required for this finding.
+				valid = false
+			}
+			if valid {
+				matched = append(matched, d)
+			}
+		}
+		if len(matched) != 1 || matched[0].Disposition != "fixed" {
+			return plan
+		}
+		fixed = append(fixed, matched[0])
+	}
+	plan.Ceiling = false
+	plan.Lineage = reviewLineage{Round: 2, Correction: true, PreviousHead: prior.HeadCommit, PreviousFindings: prior.FindingItems, PreviousDispositions: fixed}
+	return plan
+}
+
+func buildCorrectionReviewPrompt(plan reviewLineagePlan, delta string) string {
+	header := buildReviewPrompt(plan.candidate.BaseCommit, plan.candidate.HeadCommit, "")
+	header, _, _ = strings.Cut(header, "\n\n--- BEGIN CANDIDATE DIFF ---")
+	var prompt strings.Builder
+	prompt.WriteString(header)
+	fmt.Fprintf(&prompt, "\n\nPrevious head: %s\nThis is round 2 of 2 of this review.\nThis is the Correction Review of this candidate: round 2 reviewed %s and raised the findings below, each fixed by the commit named. The diff below is the change since %s; it is reviewed once and no further review of this candidate follows.\n", plan.Lineage.PreviousHead, plan.Lineage.PreviousHead, plan.Lineage.PreviousHead)
+	for _, finding := range plan.Lineage.PreviousFindings {
+		for _, d := range plan.Lineage.PreviousDispositions {
+			if d.Finding == finding.ID && d.Text == finding.Text {
+				fmt.Fprintf(&prompt, "- %s | fixed by %s | %s\n", finding.ID, d.FixedBy, strings.Join(strings.Fields(finding.Text), " "))
+				break
+			}
+		}
+	}
+	prompt.WriteString("\n--- BEGIN CORRECTION DELTA DIFF ---\n")
+	prompt.WriteString(delta)
+	if !strings.HasSuffix(delta, "\n") {
+		prompt.WriteByte('\n')
+	}
+	prompt.WriteString("--- END CORRECTION DELTA DIFF ---\n")
+	return prompt.String()
 }
 
 func buildRoundTwoPrompt(plan reviewLineagePlan, delta string, previous []reviewFinding, dispositions []reviewFindingDisposition) string {

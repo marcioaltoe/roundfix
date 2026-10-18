@@ -170,3 +170,66 @@ func TestReviewCorrectionRequiresTheParkedReviewRecord(t *testing.T) {
 		})
 	}
 }
+
+func TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths(t *testing.T) {
+	t.Parallel()
+	f := newReviewCorrectionFixture(t)
+	f.record.Lineage = &reviewLineage{Round: 2}
+	f.head = commitReviewCorrectionFile(t, f.review, "outside.txt", "structural fix outside declared paths\n")
+	for i := range f.dispositions {
+		f.dispositions[i].Disposition = "fixed"
+		f.dispositions[i].FixedBy = f.head
+		f.dispositions[i].Evidence = ""
+	}
+	f.persist(t)
+	runner := newSessionReviewRunner("No findings.")
+	writeReviewCommandConfig(t, f.review.repository, "codex", f.review.artifactDir)
+	setCommandEnvironmentForTest(t, f.review.homeDir, f.review.repository)
+	withAgentRunner(t, runner)
+	if result := f.prove(t); !result.Accepted || result.Reason != "" {
+		t.Fatalf("proof=%+v", result)
+	}
+	f.review.baseCommit = f.record.BaseCommit
+	code, record, stderr := runLineageReview(t, f.review)
+	if code != exitOK || !record.Lineage.Correction || len(runner.runs) != 1 || !strings.Contains(runner.runs[0].Prompt, "structural fix outside declared paths") {
+		t.Fatalf("review code=%d record=%+v calls=%d stderr=%q", code, record, len(runner.runs), stderr)
+	}
+}
+
+func TestRetryKeepsTheBoundForADismissedRoundTwoFinding(t *testing.T) {
+	t.Parallel()
+	for _, lineage := range []reviewLineage{{Round: 2}, {Round: 2, Correction: true}, {Round: 1}} {
+		name := "dismissed round two"
+		if lineage.Correction {
+			name = "fixed Correction Review"
+		} else if lineage.Round == 1 {
+			name = "fixed round one"
+		}
+		t.Run(name, func(t *testing.T) {
+			f := newReviewCorrectionFixture(t)
+			f.record.Lineage = &lineage
+			// Declare a different path to prove that the refusal still uses the
+			// archived Tasks' exact bound, including when declarations are readable.
+			commitReviewCorrectionFile(t, f.review, "docs/history/specs/0225-example/task_01.md", "---\ntask: task_01\nspec: 0225-example\nstatus: completed\ntype: backend\n---\n\n# Task\n\n## Context\n\n- interface: declared.txt\n")
+			f.record.HeadCommit = commitReviewCorrectionFile(t, f.review, correctionArchivePath, "parked round two\n")
+			f.candidate = f.record.HeadCommit
+			f.head = commitReviewCorrectionFile(t, f.review, "outside.txt", "outside fix\n")
+			for i := range f.dispositions {
+				f.dispositions[i].HeadCommit = f.candidate
+				if i == 0 || lineage.Correction || lineage.Round == 1 {
+					f.dispositions[i].Disposition = "fixed"
+					f.dispositions[i].FixedBy = f.head
+					f.dispositions[i].Evidence = ""
+				}
+			}
+			f.persist(t)
+			runner := newSessionReviewRunner("No findings.")
+			withAgentRunner(t, runner)
+			result := f.prove(t)
+			want := "changed path outside.txt is outside the named archived Specs and the paths their Tasks declared"
+			if result.Accepted || result.Reason != want || len(runner.runs) != 0 {
+				t.Fatalf("proof=%+v calls=%d want=%q", result, len(runner.runs), want)
+			}
+		})
+	}
+}
