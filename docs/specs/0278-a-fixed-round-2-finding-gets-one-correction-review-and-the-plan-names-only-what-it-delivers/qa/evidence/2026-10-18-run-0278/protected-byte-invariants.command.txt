@@ -1,4 +1,0 @@
-command: ['git', 'diff', '--name-only', 'a012815ba66b657e01f9e6ba9b90d982c268e3d4', '2b6751421e4f6de4c425f3f34ae386f4fd0c6a9a', '--', 'Makefile', '.github/workflows', 'go.mod', 'go.sum', '.roundfixrc.yml', 'internal/baseline/assets/modules', 'docs/agents/setup-context.json', 'internal/cli/spec_judge.go', 'internal/judge', 'internal/delivery/engine.go']
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers-e40485f733487c29-d70b41f1-f7e028ae/run_20261018T141753Z_41e3e38ba6bfd5d4
-exit: 0
-elapsed_seconds: 0.017

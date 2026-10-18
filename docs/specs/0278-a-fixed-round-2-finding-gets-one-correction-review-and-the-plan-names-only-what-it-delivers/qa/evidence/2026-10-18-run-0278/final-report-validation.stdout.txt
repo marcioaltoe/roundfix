@@ -1,2 +1,0 @@
-report verdict=partial; environment=3; finding=0; declared=0; skipped=0; hollow=false
-eligibility=accepted; secret matches=0; files scanned=125

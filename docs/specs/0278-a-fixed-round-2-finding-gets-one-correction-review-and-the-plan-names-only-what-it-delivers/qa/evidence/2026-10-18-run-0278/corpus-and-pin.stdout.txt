@@ -1,2 +1,0 @@
-ok  	roundfix/internal/docscontract	1.261s
-ok  	roundfix/internal/spec	0.416s

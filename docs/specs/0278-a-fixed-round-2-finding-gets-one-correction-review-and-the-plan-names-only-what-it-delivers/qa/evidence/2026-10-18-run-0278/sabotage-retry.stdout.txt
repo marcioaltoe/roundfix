@@ -1,9 +1,0 @@
-=== RUN   TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths
-=== PAUSE TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths
-=== CONT  TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths
-    deliver_review_correction_test.go:190: proof={Accepted:false Reason:changed path outside.txt is outside the named archived Specs and the paths their Tasks declared}
---- FAIL: TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths (0.15s)
-FAIL
-suiteguard: guard cost: measured 2556 paths; fingerprint took 76.384375ms before and 66.746375ms after
-FAIL	roundfix/internal/cli	0.723s
-FAIL

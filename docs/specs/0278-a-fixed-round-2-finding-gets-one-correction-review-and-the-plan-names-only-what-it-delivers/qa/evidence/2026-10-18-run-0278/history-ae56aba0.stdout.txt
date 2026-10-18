@@ -1,9 +1,0 @@
-commit ae56aba03d1d5c2219e5ee3ff84bcafbc65b5c27
-Author:     Marcio Altoé <marcio.altoe@gmail.com>
-AuthorDate: Wed Oct 7 19:07:02 2026 -0300
-Commit:     GitHub <noreply@github.com>
-CommitDate: Wed Oct 7 19:07:02 2026 -0300
-
-    feat: deliver 0247-a-run-gate-that-runs-the-repository-contracts (#464)
-
-14	1	Makefile

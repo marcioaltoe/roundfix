@@ -1,9 +1,0 @@
-diff --git a/Makefile b/Makefile
-index a067bfdb..5c0c4930 100644
---- a/Makefile
-+++ b/Makefile
-@@ -293,3 +293,4 @@ skills-link: ## Recreate .claude/skills symlinks from .agents/skills
- 		ln -s "../../.agents/skills/$$name" ".claude/skills/$$name"; \
- 	done
- 	@echo "Linked $$(ls .claude/skills | wc -l | tr -d ' ') skills from .agents/skills to .claude/skills"
-+

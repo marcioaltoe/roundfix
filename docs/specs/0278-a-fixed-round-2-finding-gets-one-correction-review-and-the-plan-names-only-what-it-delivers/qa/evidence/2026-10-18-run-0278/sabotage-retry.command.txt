@@ -1,4 +1,0 @@
-command: ['go', 'test', '-count=1', '-v', '-run', '^TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths$', './internal/cli']
-cwd: /private/tmp/roundfix-0278-qa-llgx30k7/sabotage-retry
-exit: 1
-elapsed_seconds: 5.511

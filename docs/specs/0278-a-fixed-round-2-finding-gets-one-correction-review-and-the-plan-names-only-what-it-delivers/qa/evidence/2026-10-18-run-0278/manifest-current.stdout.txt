@@ -1,6 +1,0 @@
-=== RUN   TestTheSetupManifestIsCurrent
-=== PAUSE TestTheSetupManifestIsCurrent
-=== CONT  TestTheSetupManifestIsCurrent
---- PASS: TestTheSetupManifestIsCurrent (0.08s)
-PASS
-ok  	roundfix/internal/docscontract	0.333s

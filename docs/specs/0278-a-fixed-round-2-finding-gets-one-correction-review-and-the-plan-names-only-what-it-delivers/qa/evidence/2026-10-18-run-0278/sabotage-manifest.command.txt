@@ -1,4 +1,0 @@
-command: ['go', 'test', '-count=1', '-v', '-tags', 'docscontract', '-run', '^TestTheSetupManifestIsCurrent$', './internal/docscontract']
-cwd: /private/tmp/roundfix-0278-qa-llgx30k7/sabotage-manifest
-exit: 1
-elapsed_seconds: 3.322
