@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.89.0] - 2026-10-18
+
+### A fixed round-2 finding gets one Correction Review
+
+- **Correction Review.** When the pre-PR review's round 2 parks with findings and every one of them is disposed with `--fixed-by`, `roundfix deliver retry` reviews only the delta from the reviewed head to the fix, once. If the delta is clean, the item proceeds as after a clean round 2; if not, today's ceiling applies, with no further Correction Review. The retry of such a park also accepts fix commits outside the Tasks' declared paths, because the Correction Review sees them (ADR-0286, amending ADR-0197).
+- **Verification paths.** `roundfix spec check` reports `SC-VERIFY-PATH-UNDECLARED` for a pending Task whose Verification names a repository path that:
+  - the Task does not declare;
+  - no Task it depends on creates;
+  - the checked tree does not hold.
+
+  Grep patterns, printed text, negated existence tests and Spec Root paths are not read as paths. The `write-tasks` skill gains a "Verification paths" rule (ADR-0287).
+- **Setup Manifest.** A repository contract, `TestTheSetupManifestIsCurrent`, reports a stale `docs/agents/setup-context.json` at the Task that changes the Makefile, instead of at the next release.
+- **Measured and not adopted.** An advisory Jev question asking whether some implementation Task delivers each QA requirement missed both real cases and flagged 14 of 72 gate-only requirements in a 74-call validation on `typesafe/jev-1.13-20260917`, so it was not shipped.
+
 ## [0.88.0] - 2026-10-18
 
 ### A Run never reaches the judge, and an amended plan keeps its settled Tasks
