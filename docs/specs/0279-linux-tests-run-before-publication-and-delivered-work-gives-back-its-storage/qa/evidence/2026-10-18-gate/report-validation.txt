@@ -1,8 +1,0 @@
-$ go run ./cmd/qavalidate /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage-58d40f0f6e5caead-25bd032c-7a82de3e/run_20261018T180046Z_3ecd94bdc46eeb32/docs/specs/0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage
-stdout:
-QAReportEligibility: accepted partial; environment=4; prePR=1; prohibitedNetwork=3
-Secret Scan: no matches in 28 QA files
-
-stderr:
-
-exit: 0

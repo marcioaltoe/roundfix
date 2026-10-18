@@ -1,3 +1,0 @@
-roundfix 0.89.0 (6e66d8fb-dirty, built 2026-10-18 15:57:10 -0300)
-
-exit: 0
