@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.90.0] - 2026-10-18
+
+### Linux tests run before publication, and delivered work gives back its storage
+
+- **Linux Lane.** With `delivery.linux_lane: true` in the Project Config, the Delivery Queue gate runs `go test` for the changed Go packages in a `golang:<go.mod version>` container after the repository Verification passes and before the push. The container runs with:
+  - `--pull never`, `--network none` and user 65534;
+  - a read-only module cache;
+  - the tree streamed in with `git archive`.
+
+  It skips with a named notice, written to the console and to `linux-lane.log`, when there is no Docker, no image or no changed package. It also skips when the fetched default branch cannot be read. A cancelled gate or an unreadable Project Config is an error. This repository opts in (ADR-0288).
+- **Dirty Runs of a delivered Spec.** In `roundfix reconcile`, a dirty path at or beneath a declared or recorded directory of the archived Spec is now in scope, so the Run is released as `superseded`. A Run kept `dirty` names the commit-proof reason or the path outside the Spec's paths (ADR-0289).
+- **Item Binary retention.** A merged item gives back its item-binary copies. The GC reclaims the copies of items that are merged or gone from the queue, and `--dry-run` lists them. `gc.md` gains a Retention policy, and Run Worktrees still leave only by proof (ADR-0290).
+- **Correction Review in use.** This delivery was the first to pass through the Correction Review of v0.89.0.
+
 ## [0.89.0] - 2026-10-18
 
 ### A fixed round-2 finding gets one Correction Review
