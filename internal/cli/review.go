@@ -749,21 +749,28 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 				printReviewCommandFailure(ledgerErr, stderr)
 				return exitPreflight
 			}
-			closed, code := closeAtCeiling(plan, ledger, gitRunner)
-			if code == exitOK {
-				return finishReviewCommand(stdout, stderr, artifactDir, closed, code)
+			plan = planCorrectionReview(plan, ledger, gitRunner)
+			if plan.Ceiling {
+				closed, code := closeAtCeiling(plan, ledger, gitRunner)
+				if code == exitOK {
+					return finishReviewCommand(stdout, stderr, artifactDir, closed, code)
+				}
+				if err := writeReviewRecord(stdout, closed); err != nil {
+					printReviewCommandFailure(err, stderr)
+					return exitRunFailed
+				}
+				printReviewCommandFailure(errors.New(closed.Reason), stderr)
+				return code
 			}
-			if err := writeReviewRecord(stdout, closed); err != nil {
-				printReviewCommandFailure(err, stderr)
-				return exitRunFailed
-			}
-			printReviewCommandFailure(errors.New(closed.Reason), stderr)
-			return code
+		}
+		if plan.Reuse && plan.Lineage.Correction && prior.Outcome == reviewOutcomeReviewed {
+			prior.Reused = true
+			return finishReviewCommand(stdout, stderr, artifactDir, *prior, exitOK)
 		}
 		if plan.Reuse && prior.Outcome == reviewOutcomeCeilingClosed {
 			return finishReviewCommand(stdout, stderr, artifactDir, *prior, exitOK)
 		}
-		if plan.Lineage.Round == 2 && plan.prior != nil && plan.prior.Outcome != reviewOutcomeBlocked {
+		if plan.Lineage.Round == 2 && !plan.Lineage.Correction && plan.prior != nil && plan.prior.Outcome != reviewOutcomeBlocked {
 			ledger, ledgerErr := readReviewFindingDispositions(filepath.Join(artifactDir, reviewDispositionLedgerFileName))
 			if ledgerErr != nil {
 				printReviewCommandFailure(ledgerErr, stderr)
@@ -1355,10 +1362,15 @@ func runConfiguredReviewSession(
 			return agent.ExecuteResult{}, scope, false, deltaErr
 		}
 		scope.diffBytes, scope.omittedPaths = len(delta), deltaOmitted
-		prompt = appendReviewOmissions(buildRoundTwoPrompt(plan, delta, plan.Lineage.PreviousFindings, plan.Lineage.PreviousDispositions), deltaOmitted)
+		if plan.Lineage.Correction {
+			prompt = buildCorrectionReviewPrompt(plan, delta)
+		} else {
+			prompt = buildRoundTwoPrompt(plan, delta, plan.Lineage.PreviousFindings, plan.Lineage.PreviousDispositions)
+		}
+		prompt = appendReviewOmissions(prompt, deltaOmitted)
 	}
 	var segmentPrompts []string
-	if config.PrePRReview.Provider == "codex" {
+	if config.PrePRReview.Provider == "codex" || plan.Lineage.Correction {
 		if plan.Lineage.Round == 1 && scope.diffBytes > reviewDiffBound {
 			segments, segmentDiffs, prompts, err := planReviewSegments(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner, scope)
 			if err != nil {
@@ -1481,7 +1493,7 @@ func runConfiguredReviewSession(
 		return true
 	}
 	firstSelection := 0
-	if plan.Lineage.Round == 2 && plan.prior != nil && plan.prior.Lineage != nil && plan.prior.Lineage.SessionOpen {
+	if plan.Lineage.Round == 2 && !plan.Lineage.Correction && plan.prior != nil && plan.prior.Lineage != nil && plan.prior.Lineage.SessionOpen {
 		prior := plan.prior.Lineage
 		selection := 0
 		if prior.Selection != nil {

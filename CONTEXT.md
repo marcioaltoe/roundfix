@@ -781,8 +781,12 @@ _Avoid_: Review exemption, ignore list
 One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound, each within the bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md)).
 _Avoid_: Review round, independent review
 
+**Correction Review**:
+The one review of the fix after round 2 when every standing round-2 finding has exactly one valid fixed disposition, covering only the delta from the round-2 head. It belongs to round 2 and cannot open another Correction Review ([ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md)).
+_Avoid_: Third round, new review lineage
+
 **Reviewer Lineage**:
-The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md)).
+The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it. It may include one Correction Review when every standing round-2 finding was fixed ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md), [ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md)).
 _Avoid_: Review cache, third round
 
 **Turn Usage**:

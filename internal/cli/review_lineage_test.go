@@ -235,7 +235,12 @@ func TestReviewCeilingClosesOnDispositions(t *testing.T) {
 		fixture, runner, second := roundTwoLineageFixture(t)
 		fix := commitLineageFile(t, fixture, "fix.txt", "fix\n")
 		disposeLineageFinding(t, "--fixed-by", fix)
-		assertLineageCeilingClosed(t, fixture, runner, second)
+		runner.results = append(runner.results, reviewCommandRunResult{result: agent.ExecuteResult{Message: "No findings.", StopReason: "end_turn"}})
+		calls := runner.preparedCalls
+		code, corrected, stderr := runLineageReview(t, fixture)
+		if code != exitOK || stderr != "" || corrected.Outcome != reviewOutcomeReviewed || !corrected.Lineage.Correction || corrected.Lineage.PreviousHead != second.HeadCommit || runner.preparedCalls != calls+1 {
+			t.Fatalf("Correction Review code=%d record=%+v calls=%d stderr=%q", code, corrected, runner.preparedCalls-calls, stderr)
+		}
 	})
 	t.Run("dismissed with evidence", func(t *testing.T) {
 		fixture, runner, second := roundTwoLineageFixture(t)

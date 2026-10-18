@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -153,3 +153,115 @@ fake reviewer.
 - `_prd.md` → Sources; Goals; User Story 1; Core Feature 1; Core Feature 2; Core Feature 5; Success Metric 1; Success Metric 2; Glossary
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 7; Invariants 1 and 2; Current behavior; Testing Approach; Build Order 1
 - ADR-0286; ADR-0197; ADR-0272; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+
+## Result
+
+### Implementation
+
+- Added the optional `lineage.correction` field and the ceiling applicability
+  check. Only a descended, moved round-2 findings candidate with exactly one
+  valid fixed disposition per standing finding opens a Correction Review.
+  Invalid or missing dispositions retain the existing ceiling behavior and
+  refusal output.
+- The Correction Review sends the scoped round-2-head delta, the prescribed
+  prompt and fixing commits through the configured reviewer in a fresh session.
+  It stays round 2, never segments, and blocks before readiness or reviewer
+  execution when its delta exceeds the bound, for either provider.
+- Clean and validation-dismissed results advance through the existing delivery
+  result mapping; findings retain the existing park behavior. Blocked attempts
+  retain the correction lineage and previous data. A further verdict never
+  opens another Correction Review, including reuse at the same head.
+- The retry exempts only an all-fixed round-2 park that is not a Correction
+  Review from the declared-path proof. Record identity, descent, disposition
+  matching and fixing-commit ancestry remain required. Round-1 parks,
+  Correction Review parks and mixed fixed/dismissed round-2 parks retain the
+  exact existing path refusal.
+- Updated both command guides and canonical Roundfix references, qualified the
+  ceiling and retry-bound statements, and added Correction Review and revised
+  Reviewer Lineage in `CONTEXT.md`, linking ADR-0286. The Reviewer Lineage
+  Avoid list retains "third round". No QA settlement text changed.
+- Generated the mirrors, Roundfix skill version `0.1.94`, version record and
+  Behavior Surface Record through their owning commands. Baseline digest
+  regeneration reported no changes.
+- Added the five required tests and focused checks for blocked retries,
+  disposition failures and the oversized delta. Existing test names remain.
+  `internal/cli/review_lineage_test.go` is an additional implementation path:
+  its existing `TestReviewCeilingClosesOnDispositions` now expects the all-fixed
+  subcase to call the Correction Review, as ADR-0286 requires; the other
+  ceiling assertions retain their previous behavior.
+
+### Acceptance evidence
+
+| Criterion | Focused evidence |
+| --- | --- |
+| One review of the all-fixed round-2 delta with `correction: true` | `TestCorrectionReviewReviewsTheFixOnce` checks exactly one reviewer call, both findings and their individual fixing commits, the prescribed prompt and delimiters, exclusion of the earlier diff, a fresh closed session, JSON, Reviewed Head Record and clean/dismissed delivery mapping. |
+| No second Correction Review; dismissal keeps the ceiling | `TestCorrectionReviewFindingsReachTheCeiling` checks that findings remain blocking until disposed and then close without another reviewer call. `TestADismissedRoundTwoFindingKeepsTheCeiling` checks dismissal closure. `TestBlockedCorrectionReviewRepeatsItsDelta` checks the allowed blocked-attempt retry. The clean/dismissed test also checks same-head reuse and the later ceiling. |
+| Retry accepts the all-fixed round-2 fix outside declared paths and preserves the dismissed refusal | `TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths` checks acceptance and the ensuing single Correction Review of the outside fix. `TestRetryKeepsTheBoundForADismissedRoundTwoFinding` checks the exact existing refusal for mixed fixed/dismissed round 2, fixed round 1 and fixed Correction Review parks. |
+
+### Focused checks
+
+- Pre-change signal: after adding the regression tests,
+  `go test ./internal/cli -run '^TestCorrectionReviewReviewsTheFixOnce$' -count=1`
+  failed to compile because `reviewLineage.Correction` did not exist.
+- `go test ./internal/cli -run '^(TestReview(Lineage|RoundTwo|Ceiling|BlockedRoundTwo|Correction)|Test.*Correction|TestADismissedRoundTwo|TestRetry(AdmitsAFixedRoundTwo|KeepsTheBound)|TestDeliveryReviewResult)' -count=1`
+  — exit 0; existing lineage, round-2/session, ceiling and correction checks,
+  the five required tests and the added edge cases passed.
+- After the final disposition-error handling refinement,
+  `go test ./internal/cli -run '^(TestCorrectionReview|TestBlockedCorrectionReview|TestADismissedRoundTwo|TestRetryAdmitsAFixedRoundTwo|TestRetryKeepsTheBound|TestReviewCeiling)' -count=1`
+  — exit 0. The added cases cover missing/duplicate dispositions, wrong finding
+  text, an older fixing commit, an unavailable fixing commit and oversized
+  correction deltas for Codex and Claude before a readiness or reviewer call.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|ClosedListsEqualTheirConstants|AvoidLinesArePlainLists|StatesEachRuleOnce)|TestUserGuideLinksResolve)$' -count=1`
+  — exit 0.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/cli -o /tmp/roundfix-0278-task01-cli-windows.test.exe`
+  — exit 0; compilation only, not Windows execution.
+- `make skills-sync` — exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; versions and record generated.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0; guide fingerprints generated.
+- `make baseline-digests` — exit 0 with `changed: false`.
+- `git diff --check` — exit 0. Direct comparisons confirmed canonical/mirror
+  equality, unchanged QA settlement sections, and retention of every original
+  test name in the two modified existing test files. A search across guides
+  and skill references found and qualified the absolute ceiling/path-bound
+  statements.
+
+### Verification feedback repair
+
+- Inspected the Daemon's attempt-1 diagnostic at
+  `verification/batch-001-attempt-1.log`. It identified the existing
+  `TestACeilingRecordNamesNoSelection/ceiling-closed` fixture: disposing every
+  round-2 finding as fixed now legitimately opens a Correction Review, but
+  that fixture supplied answers for only the first two reviews.
+- Updated the additional implementation path
+  `internal/cli/review_lineage_selection_test.go` to close the ceiling with an
+  evidence-backed dismissal, which ADR-0286 explicitly keeps at the ceiling.
+  The test still checks both blocked and closed ceiling records, the exact
+  lineage JSON without a selection, the exit codes and diagnostics, and that
+  only the original two reviewer calls occurred. Its name and every assertion
+  remain intact.
+- Focused repair check:
+  `go test ./internal/cli -run '^(TestACeilingRecordNamesNoSelection|TestARoundRecordNamesItsSelectionEvenWhenItIsThePreferred|TestCorrectionReviewReviewsTheFixOnce|TestCorrectionReviewFindingsReachTheCeiling|TestADismissedRoundTwoFindingKeepsTheCeiling)$' -count=1`
+  — exit 0. This exercises the repaired ceiling-selection fixture, actual
+  review selection records, one Correction Review, the subsequent ceiling and
+  dismissal closure.
+- `git diff --check` — exit 0. This repair changes only the existing selection
+  test and this Result section. The full Verification rerun remains with the
+  Daemon.
+
+### Handoff boundary
+
+Task status and all authored Task sections are unchanged. The Task Graph and
+other Task files were not edited. The Agent has not run declared Verification
+or repository Verification; their execution and settlement remain Daemon-owned. No commit, push or pull
+request was created. No implementation follow-up or blocker remains in this
+slice.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/review_lineage_selection_test.go`
+- `internal/cli/review_lineage_test.go`
