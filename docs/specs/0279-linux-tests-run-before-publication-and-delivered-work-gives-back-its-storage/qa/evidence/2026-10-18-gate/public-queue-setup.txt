@@ -1,0 +1,6 @@
+$ go run ./cmd/qafixture /private/tmp/rf0279-qa-0tiptl7h/public-home /private/tmp/rf0279-qa-0tiptl7h/public-fixture
+stdout:
+
+stderr:
+
+exit: 0

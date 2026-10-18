@@ -1,0 +1,12 @@
+$ sh -c out="$(go test -count=1 -v -run '^(TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded|TestMergedSpecRunNamesTheLeftoverOutsideItsScope|TestMergedSpecRunNamesTheUnrepresentedCommit|TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty|TestMergedHeadKeepsADirtyRunWorktree)$' ./internal/worktree 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded TestMergedSpecRunNamesTheLeftoverOutsideItsScope TestMergedSpecRunNamesTheUnrepresentedCommit TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty TestMergedHeadKeepsADirtyRunWorktree; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; grep -qF -- 'is outside the archived Spec' internal/worktree/merged_spec_leftovers_test.go || { printf 'the declared break was not made\n' >&2; exit 1; }; for f in docs/user-guide/commands/reconcile.md .agents/skills/roundfix/references/reconcile.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'beneath a declared' || { printf 'missing directory scope in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'names the failing proof' || { printf 'missing revised Run Worktree Reconciliation\n' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Run Worktree Reconciliation**:' || { printf 'missing glossary term Run Worktree Reconciliation\n' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 ./internal/worktree || exit 1; go test -count=1 -run 'Reconcile|Release|Merged' ./internal/cli || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.161s
+ok  	roundfix/skills	0.875s
+ok  	roundfix/internal/worktree	26.823s
+ok  	roundfix/internal/cli	25.577s
+ok  	roundfix/internal/docscontract	2.920s
+
+stderr:
+
+exit: 0

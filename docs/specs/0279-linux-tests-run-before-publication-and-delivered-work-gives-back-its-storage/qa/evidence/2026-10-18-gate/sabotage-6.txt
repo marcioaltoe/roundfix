@@ -1,0 +1,39 @@
+Mutation: internal/worktree/merged_head.go
+removed: file == declared || strings.HasPrefix(file, declared+"/")
+replacement: file == declared
+$ go test -count=1 -v -run ^TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded$ ./internal/worktree
+stdout:
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== PAUSE TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== CONT  TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped
+    merged_spec_leftover_scope_test.go:90: expected reconciliation state "superseded", got worktree.RunWorktreeReconciliation{RunID:"archived-directory-leftovers", Outcome:"IntegrationPending", Path:"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperse3690356014/001/.roundfix/worktrees/002-6a52828b/archived-directory-leftovers", Branch:"roundfix/run-archived-directory-leftovers", TargetBranch:"main", RunHead:"6eecbe9262a0db007df9a1f6cd2c5dd535faf330", TargetHead:"52de64da599457fd0e46249a00381e4049a26bb5", SupersedingReport:"", Reason:"Run Worktree has tracked or untracked changes; created/leftover.txt is outside the archived Spec's declared and recorded paths", State:"dirty", evidence:(*worktree.terminalRunReconciliationEvidence)(nil)}
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/docs/history/findings-other/keep.md
+    merged_spec_leftover_scope_test.go:85: reason = "Run Worktree has tracked or untracked changes; created/leftover.txt is outside the archived Spec's declared and recorded paths", want "Run Worktree has tracked or untracked changes; docs/history/findings-other/keep.md is outside the archived Spec's declared and recorded paths"
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/recorded-other.txt
+    merged_spec_leftover_scope_test.go:85: reason = "Run Worktree has tracked or untracked changes; created/leftover.txt is outside the archived Spec's declared and recorded paths", want "Run Worktree has tracked or untracked changes; recorded-other.txt is outside the archived Spec's declared and recorded paths"
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/all_paths_scoped
+    merged_spec_leftover_scope_test.go:90: expected reconciliation state "superseded", got worktree.RunWorktreeReconciliation{RunID:"archived-directory-leftovers", Outcome:"IntegrationPending", Path:"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperse4142093982/001/.roundfix/worktrees/002-c317c90b/archived-directory-leftovers", Branch:"roundfix/run-archived-directory-leftovers", TargetBranch:"main", RunHead:"8e4efbcda0b4b34e47742485fd1ee4c4d43d6fd6", TargetHead:"8b49fd8fca6d257b70ffa882144dca9849669842", SupersedingReport:"", Reason:"Run Worktree has tracked or untracked changes; created/leftover.txt is outside the archived Spec's declared and recorded paths", State:"dirty", evidence:(*worktree.terminalRunReconciliationEvidence)(nil)}
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/docs/history/findings-other/keep.md
+    merged_spec_leftover_scope_test.go:85: reason = "Run Worktree has tracked or untracked changes; created/leftover.txt is outside the archived Spec's declared and recorded paths", want "Run Worktree has tracked or untracked changes; docs/history/findings-other/keep.md is outside the archived Spec's declared and recorded paths"
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/recorded-other.txt
+    merged_spec_leftover_scope_test.go:85: reason = "Run Worktree has tracked or untracked changes; created/leftover.txt is outside the archived Spec's declared and recorded paths", want "Run Worktree has tracked or untracked changes; recorded-other.txt is outside the archived Spec's declared and recorded paths"
+--- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded (3.33s)
+    --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder (1.48s)
+        --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped (0.50s)
+        --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/docs/history/findings-other/keep.md (0.49s)
+        --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/recorded-other.txt (0.49s)
+    --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record (1.86s)
+        --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/all_paths_scoped (0.62s)
+        --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/docs/history/findings-other/keep.md (0.62s)
+        --- FAIL: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/recorded-other.txt (0.62s)
+FAIL
+suiteguard: guard cost: measured 2567 paths; fingerprint took 88.465833ms before and 63.382334ms after
+FAIL	roundfix/internal/worktree	3.771s
+FAIL
+
+stderr:
+
+exit: 1

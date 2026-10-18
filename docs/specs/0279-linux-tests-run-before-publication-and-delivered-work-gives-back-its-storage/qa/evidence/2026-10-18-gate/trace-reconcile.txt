@@ -1,0 +1,58 @@
+$ go test -count=1 -v -run ^(TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded|TestMergedSpecRunNamesTheLeftoverOutsideItsScope|TestMergedSpecRunNamesTheUnrepresentedCommit)$ ./internal/worktree
+stdout:
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== PAUSE TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== RUN   TestMergedSpecRunNamesTheLeftoverOutsideItsScope
+=== PAUSE TestMergedSpecRunNamesTheLeftoverOutsideItsScope
+=== RUN   TestMergedSpecRunNamesTheUnrepresentedCommit
+=== PAUSE TestMergedSpecRunNamesTheUnrepresentedCommit
+=== CONT  TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== CONT  TestMergedSpecRunNamesTheUnrepresentedCommit
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder
+=== CONT  TestMergedSpecRunNamesTheLeftoverOutsideItsScope
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped
+=== RUN   TestMergedSpecRunNamesTheLeftoverOutsideItsScope/unrelated.txt
+    merged_spec_leftover_scope_test.go:114: observed state=dirty reason=Run Worktree has tracked or untracked changes; unrelated.txt is outside the archived Spec's declared and recorded paths
+=== NAME  TestMergedSpecRunNamesTheUnrepresentedCommit
+    merged_spec_leftover_scope_test.go:140: observed state=dirty reason=Run Worktree has tracked or untracked changes; Run commit 711fc63d0ae5 is not represented at default branch "main": Task task_02 is not completed
+=== NAME  TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped
+    merged_spec_leftover_scope_test.go:81: observed state=superseded reason=Run work is superseded by the delivery of Spec 0175-cleanup-after-a-squash-merge: delivery commit 1e2d...; 4 uncommitted path(s) superseded by the archived Spec
+=== NAME  TestMergedSpecRunNamesTheLeftoverOutsideItsScope/unrelated.txt
+    merged_spec_leftover_scope_test.go:114: observed state=dirty reason=Run Worktree has tracked or untracked changes; unrelated.txt is outside the archived Spec's declared and recorded paths
+=== RUN   TestMergedSpecRunNamesTheLeftoverOutsideItsScope/ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé.txt
+=== NAME  TestMergedSpecRunNamesTheUnrepresentedCommit
+    merged_spec_leftover_scope_test.go:140: observed state=dirty reason=Run Worktree has tracked or untracked changes; Run commit 711fc63d0ae5 is not represented at default branch "main": Task task_02 is not completed
+--- PASS: TestMergedSpecRunNamesTheUnrepresentedCommit (0.79s)
+=== NAME  TestMergedSpecRunNamesTheLeftoverOutsideItsScope/ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé.txt
+    merged_spec_leftover_scope_test.go:114: observed state=dirty reason=Run Worktree has tracked or untracked changes; ééééééééééééééééééééééééééé...outside the archived Spec's declared and recorded paths
+    merged_spec_leftover_scope_test.go:114: observed state=dirty reason=Run Worktree has tracked or untracked changes; ééééééééééééééééééééééééééé...outside the archived Spec's declared and recorded paths
+--- PASS: TestMergedSpecRunNamesTheLeftoverOutsideItsScope (1.06s)
+    --- PASS: TestMergedSpecRunNamesTheLeftoverOutsideItsScope/unrelated.txt (0.54s)
+    --- PASS: TestMergedSpecRunNamesTheLeftoverOutsideItsScope/ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé.txt (0.52s)
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/docs/history/findings-other/keep.md
+    merged_spec_leftover_scope_test.go:81: observed state=dirty reason=Run Worktree has tracked or untracked changes; docs/history/findings-other/keep.md is outside the archived Spec's declared and recorded paths
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/recorded-other.txt
+    merged_spec_leftover_scope_test.go:81: observed state=dirty reason=Run Worktree has tracked or untracked changes; recorded-other.txt is outside the archived Spec's declared and recorded paths
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/all_paths_scoped
+    merged_spec_leftover_scope_test.go:81: observed state=superseded reason=Run work is superseded by the delivery of Spec 0175-cleanup-after-a-squash-merge: delivery commit 6f33...; 4 uncommitted path(s) superseded by the archived Spec
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/docs/history/findings-other/keep.md
+    merged_spec_leftover_scope_test.go:81: observed state=dirty reason=Run Worktree has tracked or untracked changes; docs/history/findings-other/keep.md is outside the archived Spec's declared and recorded paths
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/recorded-other.txt
+    merged_spec_leftover_scope_test.go:81: observed state=dirty reason=Run Worktree has tracked or untracked changes; recorded-other.txt is outside the archived Spec's declared and recorded paths
+--- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded (4.75s)
+    --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder (2.18s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped (1.20s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/docs/history/findings-other/keep.md (0.48s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/recorded-other.txt (0.49s)
+    --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record (2.57s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/all_paths_scoped (1.36s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/docs/history/findings-other/keep.md (0.61s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/recorded-other.txt (0.60s)
+PASS
+suiteguard: guard cost: measured 2567 paths; fingerprint took 90.282625ms before and 62.421667ms after
+ok  	roundfix/internal/worktree	5.174s
+
+stderr:
+
+exit: 0

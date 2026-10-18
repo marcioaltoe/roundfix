@@ -1,0 +1,18 @@
+Mutation: internal/cli/gc_item_binary.go
+removed: item.SpecSlug == slug && item.Stage != store.DeliveryStageMerged
+replacement: false && item.SpecSlug == slug && item.Stage != store.DeliveryStageMerged
+$ go test -count=1 -v -run ^TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems$ ./internal/cli
+stdout:
+=== RUN   TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+=== PAUSE TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+=== CONT  TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+    gc_item_binary_test.go:101: Item Binary report = "GC complete\n  Journal Retention: 336h\n  Cutoff: 2026-10-04T19:01:54.012329Z\n  Runs pruned: 0\n  Journal rows removed: 0\n  Artifact bytes reclaimed: 0\n  Orphan artifact dirs removed: 0\n  Run Retention: 30 days\n  Run Retention cutoff: 2026-09-18T19:01:54.014779Z\n  Runs removed: 0\n  Runs kept past the cutoff: 0 (queue-referenced 0, worktree present 0, artifact root unproven 0)\n  Rows removed: runs=0 run_events=0 run_agent_selections=0 run_token_usage=0 active_run_locks=0\n  Run artifact bytes reclaimed: 0\n  Compaction: not needed\n  Database bytes before: 135168\n  Database bytes after: 135168\n  Item Binaries removed: 3\n  Item Binary bytes reclaimed: 30\n  Item Binaries kept: 0\n  Removed Item Binaries:\n    /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems528535250/001/artifacts/delivery/merged/item-binary\n    /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems528535250/001/artifacts/delivery/parked/item-binary\n    /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems528535250/001/artifacts/delivery/unqueued/item-binary\n", want suffix "  Item Binaries removed: 2\n  Item Binary bytes reclaimed: 20\n  Item Binaries kept: 1\n  Removed Item Binaries:\n    /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems528535250/001/artifacts/delivery/merged/item-binary\n    /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems528535250/001/artifacts/delivery/unqueued/item-binary\n"
+--- FAIL: TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems (0.01s)
+FAIL
+suiteguard: guard cost: measured 2567 paths; fingerprint took 83.4285ms before and 61.97625ms after
+FAIL	roundfix/internal/cli	0.570s
+FAIL
+
+stderr:
+
+exit: 1

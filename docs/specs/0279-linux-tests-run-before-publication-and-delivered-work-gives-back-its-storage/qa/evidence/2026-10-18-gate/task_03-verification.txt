@@ -1,0 +1,11 @@
+$ sh -c out="$(go test -count=1 -v -run '^(TestMergedReleaseReclaimsTheItemBinaries|TestGCDryRunListsReclaimableItemBinaries|TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestMergedReleaseReclaimsTheItemBinaries TestGCDryRunListsReclaimableItemBinaries TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; for f in docs/user-guide/commands/gc.md .agents/skills/roundfix/references/storage.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'Item Binaries reclaimable' || { printf 'missing Item Binary sweep in %s\n' "$f" >&2; exit 1; }; done; grep -q '^## Retention policy$' docs/user-guide/commands/gc.md || { printf 'missing retention policy section\n' >&2; exit 1; }; for f in docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md; do ! tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'does not reclaim them' || { printf 'stale reclamation text in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Item Binary**:' || { printf 'missing glossary term Item Binary\n' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**GC Command**:' || { printf 'missing glossary term GC Command\n' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -run 'GC|ItemBinary|Release|Merged|Storage' ./internal/cli || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.178s
+ok  	roundfix/skills	0.919s
+ok  	roundfix/internal/cli	15.940s
+ok  	roundfix/internal/docscontract	3.111s
+
+stderr:
+
+exit: 0

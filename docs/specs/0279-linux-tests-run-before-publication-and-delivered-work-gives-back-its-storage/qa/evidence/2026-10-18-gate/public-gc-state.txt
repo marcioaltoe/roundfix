@@ -1,0 +1,6 @@
+Dry-run: exact two-candidate, 20-byte, one-kept report; home file paths and hashes unchanged.
+Live: merged and unqueued directories absent; parked copy retains exact bytes; both log files retain exact bytes for every slug.
+Fresh process dry-run: zero reclaimable, one kept.
+Symlink probe: outside sentinel unchanged, symlink retained, parked retained.
+Invalid flag: exit 2, home bytes unchanged.
+All public commands used ./bin/roundfix pointing to the make-built audited binary.

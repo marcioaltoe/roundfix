@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

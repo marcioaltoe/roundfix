@@ -1,0 +1,7 @@
+$ docker run --rm --pull never --network none --name roundfix-0279-qa-linux --user 65534:65534 -e HOME=<redacted> -e GOCACHE=<redacted> -e GOMODCACHE=<redacted> -e GOFLAGS=<redacted> -e GOPROXY=<redacted> -e GOTOOLCHAIN=<redacted> -e GOSUMDB=<redacted> -v /private/tmp/rf0279-qa-0tiptl7h/real-linux:/src:ro -v /Users/marcio/go/pkg/mod:/go/pkg/mod:ro golang:1.26 sh -ceu mkdir -p /tmp/work && cp -R /src/. /tmp/work/ && cd /tmp/work && git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "QA Linux snapshot" && go test -count=1 -run '^TestDeliveryItemBinaryCopyStartsWhileTheOwnerForks$' ./internal/cli
+stdout:
+ok  	roundfix/internal/cli	1.103s
+
+stderr:
+
+exit: 0

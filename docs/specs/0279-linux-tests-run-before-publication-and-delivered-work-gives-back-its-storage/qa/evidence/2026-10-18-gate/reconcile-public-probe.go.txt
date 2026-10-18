@@ -1,0 +1,41 @@
+//go:build integration
+package cli
+import (
+ "bytes"
+ "encoding/json"
+ "os"
+ "os/exec"
+ "path/filepath"
+ "strings"
+ "testing"
+)
+func TestQA0279PublicReconcileDirectoryScope(t *testing.T) {
+ t.Parallel()
+ for _, sibling := range []bool{false,true} {
+  name:="scoped";if sibling{name="sibling"}
+  t.Run(name,func(t *testing.T){
+   f:=newReconcileMergedFixture(t,reconcileMergedFixtureOptions{archivedSlug:reconcileMergedSpecSlug,taskStatus:"completed",includeQA:true})
+   task:=filepath.Join(f.repoDir,"docs/history/specs",reconcileMergedSpecSlug,reconcileMergedTaskID+".md")
+   data,err:=os.ReadFile(task);if err!=nil{t.Fatal(err)}
+   mustWrite(t,task,string(data)+"\n## Context\n\n- deletes: `probe`\n")
+   mustWrite(t,filepath.Join(filepath.Dir(task),"_prd.md"),"archived fixture planning\n")
+   gitImplement(t,f.repoDir,"add",".");gitImplement(t,f.repoDir,"commit","-m","docs: declare fixture scope")
+   mustMkdir(t,filepath.Join(f.ref.Path,"probe"));mustWrite(t,filepath.Join(f.ref.Path,"probe/leftover"),"scoped")
+   if sibling {mustMkdir(t,filepath.Join(f.ref.Path,"probe-other"));mustWrite(t,filepath.Join(f.ref.Path,"probe-other/keep"),"keep")}
+   mustMkdir(t,filepath.Join(f.repoDir,"bin"));if err:=os.Symlink("AUDITED_BINARY",filepath.Join(f.repoDir,"bin/roundfix"));err!=nil{t.Fatal(err)}
+   call:=func(args ...string) reconcileReport {
+    t.Helper();cmd:=exec.CommandContext(t.Context(),"./bin/roundfix",args...);cmd.Dir=f.repoDir
+    for _,entry:=range os.Environ(){key,_,_:=strings.Cut(entry,"=");if key=="HOME"||key=="ROUNDFIX_OPENROUTER_JUDGE_API_KEY"||key=="ROUNDFIX_OPENROUTER_API_KEY"||key=="ROUNDFIX_TYPESAFE_API_KEY"||key=="TYPESAFE_API_KEY"{continue};cmd.Env=append(cmd.Env,entry)}
+    cmd.Env=append(cmd.Env,"HOME="+f.homeDir);var stdout,stderr bytes.Buffer;cmd.Stdout=&stdout;cmd.Stderr=&stderr
+    err:=cmd.Run();t.Logf("$ ./bin/roundfix %s\nstdout: %s\nstderr: %s\nexit error: %v",strings.Join(args," "),stdout.String(),stderr.String(),err);if err!=nil{t.Fatal(err)}
+    var report reconcileReport;if err:=json.Unmarshal(stdout.Bytes(),&report);err!=nil{t.Fatal(err)};return report
+   }
+   report:=call("reconcile",f.run.ID,"--format","json");r:=reconcileMergedResult(t,report,f.run.ID)
+   if sibling {if r.Classification!="dirty"||r.RefusalReason!="Run Worktree has tracked or untracked changes; probe-other/keep is outside the archived Spec's declared and recorded paths"{t.Fatalf("unexpected: %+v",r)}}else{if r.Classification!="superseded"{t.Fatalf("unexpected: %+v",r)}}
+   assertReconcilePathState(t,f.ref.Path,true)
+   report=call("reconcile",f.run.ID,"--apply","--format","json");r=reconcileMergedResult(t,report,f.run.ID)
+   if sibling {assertReconcilePathState(t,f.ref.Path,true);assertFileContent(t,filepath.Join(f.ref.Path,"probe-other/keep"),"keep")}else{if r.Action!="released"{t.Fatalf("unexpected: %+v",r)};assertReconcilePathState(t,f.ref.Path,false);assertReconcileBranchState(t,f.repoDir,f.ref.Branch,false)}
+   report=call("reconcile",f.run.ID,"--format","json");r=reconcileMergedResult(t,report,f.run.ID);if !sibling&&r.Classification!="released"{t.Fatalf("unexpected fresh read: %+v",r)}
+  })
+ }
+}

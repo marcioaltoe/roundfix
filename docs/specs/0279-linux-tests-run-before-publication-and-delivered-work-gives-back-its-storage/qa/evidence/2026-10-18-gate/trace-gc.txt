@@ -1,0 +1,38 @@
+$ go test -count=1 -v -run ^(TestMergedReleaseReclaimsTheItemBinaries|TestGCDryRunListsReclaimableItemBinaries|TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems)$ ./internal/cli
+stdout:
+=== RUN   TestMergedReleaseReclaimsTheItemBinaries
+=== PAUSE TestMergedReleaseReclaimsTheItemBinaries
+=== RUN   TestGCDryRunListsReclaimableItemBinaries
+=== PAUSE TestGCDryRunListsReclaimableItemBinaries
+=== RUN   TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+=== PAUSE TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+=== CONT  TestMergedReleaseReclaimsTheItemBinaries
+=== CONT  TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+=== CONT  TestGCDryRunListsReclaimableItemBinaries
+    gc_item_binary_test.go:86: observed GC output:
+          Item Binaries reclaimable: 2
+          Item Binary bytes reclaimable: 20
+          Item Binaries kept: 1
+          Reclaimable Item Binaries:
+            /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCDryRunListsReclaimableItemBinaries53492412/001/artifacts/delivery/merged/item-binary
+            /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCDryRunListsReclaimableItemBinaries53492412/001/artifacts/delivery/unqueued/item-binary
+=== NAME  TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems
+    gc_item_binary_test.go:102: observed GC output:
+          Item Binaries removed: 2
+          Item Binary bytes reclaimed: 20
+          Item Binaries kept: 1
+          Removed Item Binaries:
+            /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems1767782789/001/artifacts/delivery/merged/item-binary
+            /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems1767782789/001/artifacts/delivery/unqueued/item-binary
+--- PASS: TestGCDryRunListsReclaimableItemBinaries (0.01s)
+--- PASS: TestGCRemovesOnlyItemBinariesOfMergedOrUnqueuedItems (0.01s)
+=== NAME  TestMergedReleaseReclaimsTheItemBinaries
+    deliver_item_binary_reclaim_test.go:38: observed: item-binary removed; item-binary-build.log and repository-gate.log retained exact bytes; Run Worktree removed
+--- PASS: TestMergedReleaseReclaimsTheItemBinaries (0.63s)
+PASS
+suiteguard: guard cost: measured 2567 paths; fingerprint took 82.943708ms before and 64.732042ms after
+ok  	roundfix/internal/cli	1.072s
+
+stderr:
+
+exit: 0

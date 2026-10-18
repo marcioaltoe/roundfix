@@ -1,0 +1,12 @@
+$ sh -c out="$(go test -count=1 -v -run '^(TestLinuxLaneRunsTheChangedPackagesInAContainer|TestLinuxLaneSkipsWithANamedReason|TestLinuxLaneFailureFailsTheGate|TestLinuxLaneCancellationRemovesTheContainer|TestGateWithoutTheLaneStartsNoDocker)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestLinuxLaneRunsTheChangedPackagesInAContainer TestLinuxLaneSkipsWithANamedReason TestLinuxLaneFailureFailsTheGate TestLinuxLaneCancellationRemovesTheContainer TestGateWithoutTheLaneStartsNoDocker; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; out="$(go test -count=1 -v -run '^TestDeliveryLinuxLaneDefaultsOffAndProjectConfigEnablesIt$' ./internal/config 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestDeliveryLinuxLaneDefaultsOffAndProjectConfigEnablesIt ' || { printf 'missing pass: TestDeliveryLinuxLaneDefaultsOffAndProjectConfigEnablesIt\n' >&2; exit 1; }; grep -Eq '^  linux_lane: true$' .roundfixrc.yml || { printf 'missing delivery.linux_lane opt-in\n' >&2; exit 1; }; for f in docs/user-guide/configuration.md docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'Linux Lane' || { printf 'missing Linux Lane in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Linux Lane**:' || { printf 'missing glossary term Linux Lane\n' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 ./internal/config || exit 1; go test -count=1 -run 'Deliver|Gate|Lane|ItemBinary' ./internal/cli || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.304s
+ok  	roundfix/skills	1.043s
+ok  	roundfix/internal/config	0.934s
+ok  	roundfix/internal/cli	12.835s
+ok  	roundfix/internal/docscontract	3.105s
+
+stderr:
+
+exit: 0

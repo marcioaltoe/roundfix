@@ -1,0 +1,11 @@
+$ ./bin/roundfix archive 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage --plan --offline
+stdout:
+archive plan for 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage: removes 21 file(s) (157749 bytes) and writes docs/history/specs/0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-18.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 12 file(s) (10987 bytes) under qa/evidence/
+judge: skipped (offline)
+promote with: roundfix archive 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage --promote <path>
+
+stderr:
+
+exit: 0
