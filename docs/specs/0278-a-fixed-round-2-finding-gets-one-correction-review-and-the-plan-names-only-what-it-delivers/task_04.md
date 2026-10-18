@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -75,3 +75,49 @@ package reads it.
 - `_prd.md` → Sources; Goals; User Story 3; Core Feature 4; Success Metric 4
 - `_techspec.md` → API Contract 6; API Contract 7; Invariant 4; Current behavior; Testing Approach; Build Order 3
 - ADR-0287; ADR-0103; ADR-0252; ADR-0253; ADR-0259
+
+
+## Result
+
+Appended `TestTheSetupManifestIsCurrent` to the existing always-relevant
+`internal/docscontract/publicdocs_test.go`. Its first statement is
+`t.Parallel()`. It loads the embedded catalog, resolves the repository's
+manifest input, and builds the Managed Refresh plan with the directories of
+`PATH`. Catalog, input and planning errors, new decisions, and a missing plan
+all fail with the regeneration command; a missing plan also reports its
+state and message. Every file change and both paths of every history move
+appear in the stale-manifest diagnostic. The test adds no writes, network
+calls or process-starting code.
+
+### Focused evidence
+
+- Before the edit, `rg -n 'TestTheSetupManifestIsCurrent|baseline.BuildPlan'
+  internal/docscontract/publicdocs_test.go` returned no matches (exit 1).
+- `go test -c -tags docscontract -o
+  /private/tmp/roundfix-task04-docscontract.test ./internal/docscontract`:
+  exit 0; compiled the package with the appended test.
+- From `internal/docscontract`,
+  `/private/tmp/roundfix-task04-docscontract.test -test.run
+  '^TestTheSetupManifestIsCurrent$' -test.v -test.count=1`: exit 0;
+  `TestTheSetupManifestIsCurrent` passed in 0.10 s on this tree. This supports
+  the current-tree portion of acceptance criterion 1.
+- A Python inspection counted exactly nine `docscontract`-tagged Go files
+  and asserted that every one, including `publicdocs_test.go`, still carries
+  `//verify:always`: exit 0. No file was added and no relevance directive was
+  changed. The existing pin test remains for Daemon Verification.
+- A disposable local clone containing this working tree ran the same focused
+  binary after appending one newline byte to its Makefile. The test exited 1
+  in 0.10 s with `Setup Manifest is stale`,
+  `docs/agents/setup-context.json`, and
+  `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes`.
+  The probe asserted those diagnostics and exited 0, supporting acceptance
+  criterion 2. The real Makefile and manifest were untouched. Initial scratch
+  probes exposed missing Git metadata and then missing HEAD; copying the
+  repository's existing history supplied those planning preconditions without
+  creating a commit.
+
+The source diff appends only this test; existing tests are unchanged. The
+Task's pre-existing bytes, status, checkboxes and Verification commands are
+preserved. Declared Verification, the nine-file pin test and the full
+package gate remain Daemon-owned and were not run. No follow-up scope was
+identified.

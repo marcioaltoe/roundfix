@@ -1248,3 +1248,43 @@ func readContractDocument(t *testing.T, file string) string {
 	}
 	return text
 }
+
+func TestTheSetupManifestIsCurrent(t *testing.T) {
+	t.Parallel()
+	const regenerate = "go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes"
+	root := baselineDocumentationRepoRoot()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v; regenerate with %s", err, regenerate)
+	}
+	input, err := baseline.ResolveManifestInput(root, catalog)
+	if err != nil {
+		t.Fatalf("resolve Setup Manifest input: %v; regenerate with %s", err, regenerate)
+	}
+	if len(input.NewDecisions) != 0 {
+		t.Fatalf("Setup Manifest needs new decisions: %v; regenerate with %s", input.NewDecisions, regenerate)
+	}
+	outcome, err := baseline.BuildPlan(t.Context(), baseline.PlanRequest{
+		Repository:            root,
+		ProfileID:             input.ProfileID,
+		Decisions:             input.Decisions,
+		Preservation:          baseline.RootPreservationRequest{Mode: baseline.PreservationModeManagedRefresh},
+		ExecutableDirectories: filepath.SplitList(os.Getenv("PATH")),
+	})
+	if err != nil {
+		t.Fatalf("build Managed Refresh plan: %v; regenerate with %s", err, regenerate)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("Managed Refresh returned no plan: %s: %s; regenerate with %s", outcome.Result.State, outcome.Result.Message, regenerate)
+	}
+	var changes []string
+	for _, change := range outcome.Plan.FileChanges {
+		changes = append(changes, change.Path)
+	}
+	for _, move := range outcome.Plan.HistoryMoves {
+		changes = append(changes, fmt.Sprintf("%s -> %s", move.From, move.To))
+	}
+	if len(changes) != 0 {
+		t.Fatalf("Setup Manifest is stale; Managed Refresh proposes changes:\n%s\nregenerate with %s", strings.Join(changes, "\n"), regenerate)
+	}
+}
