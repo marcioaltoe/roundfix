@@ -449,3 +449,22 @@ func TestGateWithoutTheLaneStartsNoDocker(t *testing.T) {
 		})
 	}
 }
+
+func TestGateSkipsTheLaneWhenTheFetchedDefaultCannotBeRead(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	f := newLinuxLaneFixture(t, docker, goBinary, nil)
+	f.workflow.loaded.Config.Delivery.LinuxLane = true // Only the fetched default could enable it.
+	gittest.Run(t, f.repo, "update-ref", "-d", "refs/remotes/origin/main")
+	f.workflow.loaded.Config.Defaults.Verification = "printf 'repository passed'"
+	result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
+	if err != nil || !result.Passed {
+		t.Fatalf("gate=%+v err=%v", result, err)
+	}
+	if starts := f.starts(t); len(starts) != 0 {
+		t.Fatalf("started tools=%+v", starts)
+	}
+	if want := "roundfix: notice: Delivery Queue item widget: Linux Lane skipped: the fetched default refs/remotes/origin/main cannot be resolved\n"; f.log.String() != want {
+		t.Fatalf("console=%q want=%q", f.log.String(), want)
+	}
+}

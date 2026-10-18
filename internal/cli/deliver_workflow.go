@@ -1476,27 +1476,20 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 	}
 	// The item and the owner's checkout may both carry an unmerged opt-in.
 	// Read the same immutable, fetched default used for delivery declarations.
-	runner := workflow.git
-	if runner == nil {
-		runner = preflight.ExecGitRunner{}
+	// The lane only adds a check: when that default cannot be read, it is
+	// skipped with its reason and the repository gate's result stands.
+	enabled, unreadable := workflow.linuxLaneOptIn(ctx, gitRoot)
+	if unreadable != "" {
+		console := workflow.log
+		if console == nil {
+			console = os.Stderr
+		}
+		if _, err := fmt.Fprintf(console, "roundfix: notice: Delivery Queue item %s: Linux Lane skipped: %s\n", specSlug, unreadable); err != nil {
+			return delivery.GateResult{}, fmt.Errorf("write Linux Lane notice: %w", err)
+		}
+		return delivery.GateResult{Passed: true}, nil
 	}
-	branch := preflight.DetectDefaultBranch(ctx, gitRoot, "", runner)
-	if branch.Source == preflight.DefaultBranchUndetermined {
-		return delivery.GateResult{}, errors.New("read Linux Lane configuration: repository default branch is unknown")
-	}
-	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
-	if remote == "" {
-		remote = "origin"
-	}
-	defaultHead, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", "refs/remotes/"+remote+"/"+branch.Name+"^{commit}")
-	if err != nil {
-		return delivery.GateResult{}, fmt.Errorf("resolve Linux Lane default commit: %w", err)
-	}
-	config, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, workflow.loaded.UserConfigPath, strings.TrimSpace(defaultHead))
-	if err != nil {
-		return delivery.GateResult{}, fmt.Errorf("read Linux Lane configuration: %w", err)
-	}
-	if config.Delivery.LinuxLane {
+	if enabled {
 		lane, err := workflow.runLinuxLane(ctx, gitRoot, specSlug, head)
 		if err != nil {
 			return delivery.GateResult{}, err

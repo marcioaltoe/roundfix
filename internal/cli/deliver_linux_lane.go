@@ -280,3 +280,30 @@ func linuxLaneExecutable(name string, environment []string, workDir string) stri
 	}
 	return ""
 }
+
+// linuxLaneOptIn reads delivery.linux_lane from the fetched default branch.
+// A non-empty reason means the opt-in could not be read.
+func (workflow *commandDeliveryWorkflow) linuxLaneOptIn(ctx context.Context, gitRoot string) (bool, string) {
+	runner := workflow.git
+	if runner == nil {
+		runner = preflight.ExecGitRunner{}
+	}
+	branch := preflight.DetectDefaultBranch(ctx, gitRoot, "", runner)
+	if branch.Source == preflight.DefaultBranchUndetermined {
+		return false, "the repository default branch is unknown"
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	ref := "refs/remotes/" + remote + "/" + branch.Name
+	defaultHead, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", ref+"^{commit}")
+	if err != nil {
+		return false, "the fetched default " + ref + " cannot be resolved"
+	}
+	config, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, workflow.loaded.UserConfigPath, strings.TrimSpace(defaultHead))
+	if err != nil {
+		return false, "the default branch's Project Config cannot be read: " + linuxLaneFirstLine([]byte(err.Error()))
+	}
+	return config.Delivery.LinuxLane, ""
+}
