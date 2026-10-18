@@ -30,6 +30,7 @@ regeneration:
     outputs:
       - docs/references/coverage-record.json
 promoted: []
+pull_request: "572"
 ---
 
 # A Run never reaches the judge, and an amended plan keeps its settled Tasks
