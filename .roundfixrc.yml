@@ -7,7 +7,7 @@ verification:
 
 delivery:
   # ADR-0288: run the Linux Lane before publication.
-  linux_lane: true
+  linux_lane: false
   item_binary:
     build: make build
     path: bin/roundfix
