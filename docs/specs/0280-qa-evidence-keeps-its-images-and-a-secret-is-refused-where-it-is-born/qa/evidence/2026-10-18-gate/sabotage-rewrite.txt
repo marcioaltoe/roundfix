@@ -1,0 +1,73 @@
+COMMAND: go test -count=1 -v -run '^TestSecretRewriteRefusesAnyOtherChange$' ./internal/cli
+EXIT: 1
+STDOUT:
+=== RUN   TestSecretRewriteRefusesAnyOtherChange
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange
+=== CONT  TestSecretRewriteRefusesAnyOtherChange
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/Run_start
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/Run_start
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/added_path
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/added_path
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/removed_path
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/removed_path
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/mode_change
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/mode_change
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/line_count
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/line_count
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/retained_match
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/retained_match
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/Run_start
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/line_count
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/added_path
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/retained_match
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/removed_path
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/mode_change
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/Run_start
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="item head does not descend from the Run start aa18422cbbb3b2a08235625c06eac36a5bb8de88"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/added_path
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite adds, removes or changes the mode of added.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite changes the line count of named.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/line_count
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite changes the line count of named.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite changes keep.txt, which the blocker does not name"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/mode_change
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite adds, removes or changes the mode of named.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/removed_path
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite adds, removes or changes the mode of named.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/retained_match
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite keeps a Secret Match at line 2 of named.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite keeps a Secret Match at line 2 of named.txt"
+=== NAME  TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+    deliver_secret_rewrite_test.go:124: proof={Accepted:true Reason:} want="the rewrite changes line 1 of named.txt, which holds no Secret Match at the parked candidate"
+--- FAIL: TestSecretRewriteRefusesAnyOtherChange (0.00s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/Run_start (0.24s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/added_path (0.26s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/trailing_newline (0.27s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/line_count (0.28s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/unnamed_path (0.28s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/mode_change (0.28s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/retained_match (0.29s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/removed_path (0.29s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file (0.29s)
+    --- FAIL: TestSecretRewriteRefusesAnyOtherChange/nonmatched_line (0.29s)
+FAIL
+suiteguard: guard cost: measured 2851 paths; fingerprint took 92.688458ms before and 70.101875ms after
+FAIL	roundfix/internal/cli	0.902s
+FAIL
+
+STDERR:

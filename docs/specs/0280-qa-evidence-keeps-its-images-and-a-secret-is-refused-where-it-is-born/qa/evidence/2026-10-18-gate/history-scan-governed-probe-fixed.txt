@@ -1,0 +1,41 @@
+COMMAND: go test -count=1 -v -run '^TestQA(HistoryEvidence|TrackedHeadHasNoSecretMatch|GovernedPathsBounded)$' ./internal/speccheck
+EXIT: 0
+STDOUT:
+=== RUN   TestQAHistoryEvidence
+=== PAUSE TestQAHistoryEvidence
+=== RUN   TestQATrackedHeadHasNoSecretMatch
+=== PAUSE TestQATrackedHeadHasNoSecretMatch
+=== RUN   TestQAGovernedPathsBounded
+=== PAUSE TestQAGovernedPathsBounded
+=== CONT  TestQAHistoryEvidence
+=== CONT  TestQAGovernedPathsBounded
+=== CONT  TestQATrackedHeadHasNoSecretMatch
+=== NAME  TestQAGovernedPathsBounded
+    qa_gate_probe_test.go:5: GovernedPath .agents/skills/implement-task/SKILL.md bounded=true
+    qa_gate_probe_test.go:5: GovernedPath .agents/skills/qa-gate/SKILL.md bounded=true
+    qa_gate_probe_test.go:5: GovernedPath .agents/skills/roundfix/SKILL.md bounded=true
+=== NAME  TestQAHistoryEvidence
+    qa_gate_probe_test.go:3: docs/history/specs/0005-tui-cockpit/design/roundfix-01.png ReadableEvidence=true
+=== NAME  TestQAGovernedPathsBounded
+    qa_gate_probe_test.go:5: GovernedPath .agents/skills/roundfix/references/deliver.md bounded=true
+    qa_gate_probe_test.go:5: GovernedPath .agents/skills/roundfix/references/implement.md bounded=true
+=== NAME  TestQAHistoryEvidence
+    qa_gate_probe_test.go:3: docs/history/specs/0035-agent-selection-profiles/references/artificial-analysis-coding-agent.jpeg ReadableEvidence=true
+    qa_gate_probe_test.go:3: docs/history/specs/0090-a-gate-that-could-have-failed/qa/evidence/2026-08-09-spec-0090/positive-home/.roundfix/roundfix.db ReadableEvidence=false
+=== NAME  TestQAGovernedPathsBounded
+    qa_gate_probe_test.go:5: GovernedPath skills/implement-task/SKILL.md bounded=true
+    qa_gate_probe_test.go:5: GovernedPath skills/qa-gate/SKILL.md bounded=true
+    qa_gate_probe_test.go:5: GovernedPath skills/roundfix/SKILL.md bounded=true
+    qa_gate_probe_test.go:5: Governed changed paths: 8
+--- PASS: TestQAGovernedPathsBounded (0.00s)
+=== NAME  TestQAHistoryEvidence
+    qa_gate_probe_test.go:3: docs/history/specs/0209-sources-that-share-a-context-share-a-spec/qa/evidence/2026-10-01-gate/zhang-author.pdf ReadableEvidence=false
+--- PASS: TestQAHistoryEvidence (0.00s)
+=== NAME  TestQATrackedHeadHasNoSecretMatch
+    qa_gate_probe_test.go:4: Audited tracked files outside docs/history/: 2026; Secret Matches: 0
+--- PASS: TestQATrackedHeadHasNoSecretMatch (3.41s)
+PASS
+suiteguard: guard cost: measured 2853 paths; fingerprint took 96.924833ms before and 68.75925ms after
+ok  	roundfix/internal/speccheck	3.921s
+
+STDERR:

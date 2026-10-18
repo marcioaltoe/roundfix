@@ -1,0 +1,1174 @@
+COMMAND: go test -count=1 -v -run 'Task|Secret|QA' ./internal/daemon
+EXIT: 0
+STDOUT:
+=== RUN   TestTaskCycleHookRefusalKeepsTaskCompletedAndNamesRecovery
+=== PAUSE TestTaskCycleHookRefusalKeepsTaskCompletedAndNamesRecovery
+=== RUN   TestTaskCommitStagesAStagedRename
+=== PAUSE TestTaskCommitStagesAStagedRename
+=== RUN   TestTaskCommitStagesAnUnstagedRename
+=== PAUSE TestTaskCommitStagesAnUnstagedRename
+=== RUN   TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+=== PAUSE TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+=== RUN   TestQALostRolloutExhaustionSettlesInsteadOfHalting
+=== PAUSE TestQALostRolloutExhaustionSettlesInsteadOfHalting
+=== RUN   TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization
+=== PAUSE TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization
+=== RUN   TestTaskOutsideTheAuthorizationFailsOnProjectConfig
+=== PAUSE TestTaskOutsideTheAuthorizationFailsOnProjectConfig
+=== RUN   TestQAReportCommitReportsProjectConfigAsDropped
+=== PAUSE TestQAReportCommitReportsProjectConfigAsDropped
+=== RUN   TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit
+=== PAUSE TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit
+=== RUN   TestQAProviderSystemErrorBeforeTheReportFallsBackAndRecordsIt
+=== PAUSE TestQAProviderSystemErrorBeforeTheReportFallsBackAndRecordsIt
+=== RUN   TestQAProviderSystemErrorExhaustionSettlesInsteadOfHalting
+=== PAUSE TestQAProviderSystemErrorExhaustionSettlesInsteadOfHalting
+=== RUN   TestFinalPushRefusesAHistoryThatAddsASecret
+=== PAUSE TestFinalPushRefusesAHistoryThatAddsASecret
+=== RUN   TestQASettlementRenewsTheBudgetBeforeTheReportCommit
+=== PAUSE TestQASettlementRenewsTheBudgetBeforeTheReportCommit
+=== RUN   TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== PAUSE TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== RUN   TestQADeliveryBasePrefersTheRemoteTrackingBranch
+=== PAUSE TestQADeliveryBasePrefersTheRemoteTrackingBranch
+=== RUN   TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch
+=== PAUSE TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch
+=== RUN   TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun
+=== PAUSE TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun
+=== RUN   TestQAMechanicalRequestAuditsEveryCommitOfATask
+=== PAUSE TestQAMechanicalRequestAuditsEveryCommitOfATask
+=== RUN   TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited
+=== PAUSE TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited
+=== RUN   TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch
+=== PAUSE TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch
+=== RUN   TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch
+=== PAUSE TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch
+=== RUN   TestQAMechanicalRequestFallsBackToTheRunStartHeadWithASkip
+=== PAUSE TestQAMechanicalRequestFallsBackToTheRunStartHeadWithASkip
+=== RUN   TestQAReportCommitsImageEvidence
+=== PAUSE TestQAReportCommitsImageEvidence
+=== RUN   TestQAReportWithANonImageBinarySettlesFailedWithoutACommit
+=== PAUSE TestQAReportWithANonImageBinarySettlesFailedWithoutACommit
+=== RUN   TestQAReportBinaryCheckReadsOnlyPreparedEvidence
+=== PAUSE TestQAReportBinaryCheckReadsOnlyPreparedEvidence
+=== RUN   TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead
+=== PAUSE TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead
+=== RUN   TestQAGateStripsAnAgentWrittenSnapshotWhenNoRowQualifies
+=== PAUSE TestQAGateStripsAnAgentWrittenSnapshotWhenNoRowQualifies
+=== RUN   TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement
+=== PAUSE TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement
+=== RUN   TestQAEvidenceSnapshotSkipsAnExternalReport
+=== PAUSE TestQAEvidenceSnapshotSkipsAnExternalReport
+=== RUN   TestQAEvidenceSnapshotFileErrorIsInfrastructure
+=== PAUSE TestQAEvidenceSnapshotFileErrorIsInfrastructure
+=== RUN   TestQAEvidenceSnapshotCancellationPublishesStop
+=== PAUSE TestQAEvidenceSnapshotCancellationPublishesStop
+=== RUN   TestQAFormatCommitsTheFormattedReport
+=== PAUSE TestQAFormatCommitsTheFormattedReport
+=== RUN   TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+=== PAUSE TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+=== RUN   TestQAFormatRevertsAFailingFormatter
+=== PAUSE TestQAFormatRevertsAFailingFormatter
+=== RUN   TestQAFormatRevertsAVerdictChange
+=== PAUSE TestQAFormatRevertsAVerdictChange
+=== RUN   TestQAFormatLeavesFilesOutsideTheQADirectory
+=== PAUSE TestQAFormatLeavesFilesOutsideTheQADirectory
+=== RUN   TestQAFormatEmptyCommandRunsNothing
+=== PAUSE TestQAFormatEmptyCommandRunsNothing
+=== RUN   TestQAFormatCancellationRestoresFiles
+=== PAUSE TestQAFormatCancellationRestoresFiles
+=== RUN   TestQAFormatStartFailureRestoresFiles
+--- PASS: TestQAFormatStartFailureRestoresFiles (0.13s)
+=== RUN   TestQAFormatBoundsDiagnostics
+=== PAUSE TestQAFormatBoundsDiagnostics
+=== RUN   TestQASettlementRefusesAnEmptyFrontMatter
+=== PAUSE TestQASettlementRefusesAnEmptyFrontMatter
+=== RUN   TestQASettlementAcceptsAFilledSeededFrontMatter
+=== PAUSE TestQASettlementAcceptsAFilledSeededFrontMatter
+=== RUN   TestMechanicalQAReportSeedStartsPending
+=== PAUSE TestMechanicalQAReportSeedStartsPending
+=== RUN   TestQASettlementRefusesAnUntouchedSeed
+=== PAUSE TestQASettlementRefusesAnUntouchedSeed
+=== RUN   TestQASettlementRefusesAHollowPass
+=== PAUSE TestQASettlementRefusesAHollowPass
+=== RUN   TestQASettlementAcceptsAPassWithAResultsRow
+=== PAUSE TestQASettlementAcceptsAPassWithAResultsRow
+=== RUN   TestPriorQAPassSkipsCompiledSourceEvidence
+=== PAUSE TestPriorQAPassSkipsCompiledSourceEvidence
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension
+=== PAUSE TestPriorQAPassSkipsEveryCompiledExtension
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers
+=== PAUSE TestPriorQAPassSkipNeverReportsPathDiffers
+=== RUN   TestPriorQAPassWithoutRecordedPassPreservesNullFiles
+=== PAUSE TestPriorQAPassWithoutRecordedPassPreservesNullFiles
+=== RUN   TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte
+--- PASS: TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte (0.25s)
+=== RUN   TestPriorQAPassIgnoresReportsAlreadyInHistory
+=== PAUSE TestPriorQAPassIgnoresReportsAlreadyInHistory
+=== RUN   TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs
+=== PAUSE TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs
+=== RUN   TestPriorQAPassRefusesADifferingPath
+=== PAUSE TestPriorQAPassRefusesADifferingPath
+=== RUN   TestPriorQAPassRefusesAReportOlderThanTheTreesNewest
+=== PAUSE TestPriorQAPassRefusesAReportOlderThanTheTreesNewest
+=== RUN   TestPriorQAPassRefusesAReportTheShapeDetectorRefuses
+=== PAUSE TestPriorQAPassRefusesAReportTheShapeDetectorRefuses
+=== RUN   TestPriorQAPassRefusesAReportDatedAfterToday
+=== PAUSE TestPriorQAPassRefusesAReportDatedAfterToday
+=== RUN   TestQAPromptNamesTheImportedPassHead
+=== PAUSE TestQAPromptNamesTheImportedPassHead
+=== RUN   TestQAGateCarriesARowFromAnUnintegratedFailedPass
+=== PAUSE TestQAGateCarriesARowFromAnUnintegratedFailedPass
+=== RUN   TestPriorQAPassKeepsIdenticalExistingEvidence
+=== PAUSE TestPriorQAPassKeepsIdenticalExistingEvidence
+=== RUN   TestPriorQAPassSkipsAPrunedRunBranch
+=== PAUSE TestPriorQAPassSkipsAPrunedRunBranch
+=== RUN   TestPriorQAPassCancellationPublishesStop
+=== PAUSE TestPriorQAPassCancellationPublishesStop
+=== RUN   TestPriorQAPassGitErrorIsInfrastructure
+=== PAUSE TestPriorQAPassGitErrorIsInfrastructure
+=== RUN   TestMechanicalQAReportAllocatesAboveTheHighestSequence
+=== PAUSE TestMechanicalQAReportAllocatesAboveTheHighestSequence
+=== RUN   TestMechanicalQAReportStartsUnsuffixedOnAFreshDate
+=== PAUSE TestMechanicalQAReportStartsUnsuffixedOnAFreshDate
+=== RUN   TestMechanicalQAReportFollowsTheUnsuffixedReportWithSequenceOne
+=== PAUSE TestMechanicalQAReportFollowsTheUnsuffixedReportWithSequenceOne
+=== RUN   TestMechanicalQAReportRefusesBehindALaterDatedReport
+=== PAUSE TestMechanicalQAReportRefusesBehindALaterDatedReport
+=== RUN   TestQAMechanicalEventCountsCarriedAndRerunRows
+=== PAUSE TestQAMechanicalEventCountsCarriedAndRerunRows
+=== RUN   TestQAReportWithASecretMatchSettlesFailedWithoutACommit
+=== PAUSE TestQAReportWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestQAReportWithoutASecretMatchKeepsItsCommit
+=== PAUSE TestQAReportWithoutASecretMatchKeepsItsCommit
+=== RUN   TestQASecretScanUsesTheReportCommitPathSet
+=== PAUSE TestQASecretScanUsesTheReportCommitPathSet
+=== RUN   TestQAFormatterOutputIsScannedBeforeTheQACommit
+=== PAUSE TestQAFormatterOutputIsScannedBeforeTheQACommit
+=== RUN   TestQAFormatterNeverSeesEvidenceWithASecretMatch
+=== PAUSE TestQAFormatterNeverSeesEvidenceWithASecretMatch
+=== RUN   TestQASettlementAcceptsTheSeededAuditorFields
+=== PAUSE TestQASettlementAcceptsTheSeededAuditorFields
+=== RUN   TestQASettlementRefusesARewrittenAuditingBinary
+=== PAUSE TestQASettlementRefusesARewrittenAuditingBinary
+=== RUN   TestQASettlementRefusesARewrittenAuditorStaleness
+=== PAUSE TestQASettlementRefusesARewrittenAuditorStaleness
+=== RUN   TestSelfAuditQAPromptNamesTheUserFlowBinary
+=== PAUSE TestSelfAuditQAPromptNamesTheUserFlowBinary
+=== RUN   TestQAPromptOutsideASelfAuditOmitsTheUserFlowBinary
+=== PAUSE TestQAPromptOutsideASelfAuditOmitsTheUserFlowBinary
+=== RUN   TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks
+=== PAUSE TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks
+=== RUN   TestTaskCommitRecordsAnUndeclaredTestFile
+=== PAUSE TestTaskCommitRecordsAnUndeclaredTestFile
+=== RUN   TestTaskCommitRecordsTheFilesOfANewUntrackedPackage
+=== PAUSE TestTaskCommitRecordsTheFilesOfANewUntrackedPackage
+=== RUN   TestTaskCommitRecordsNothingWhenEveryPathIsDeclared
+=== PAUSE TestTaskCommitRecordsNothingWhenEveryPathIsDeclared
+=== RUN   TestTaskCommitNeverRecordsAGovernedPath
+=== PAUSE TestTaskCommitNeverRecordsAGovernedPath
+=== RUN   TestAFailedTaskRecordsNoPaths
+=== PAUSE TestAFailedTaskRecordsNoPaths
+=== RUN   TestAQATaskRecordsNoPaths
+=== PAUSE TestAQATaskRecordsNoPaths
+=== RUN   TestRunDispositionCharacterizationStoppedRunLeavesTasksPending
+=== PAUSE TestRunDispositionCharacterizationStoppedRunLeavesTasksPending
+=== RUN   TestSettlementRefusesATaskThatPinsItsSpecPath
+=== PAUSE TestSettlementRefusesATaskThatPinsItsSpecPath
+=== RUN   TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+=== PAUSE TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+=== RUN   TestTaskDeclaringRepositoryVerificationRunsItOnce
+=== PAUSE TestTaskDeclaringRepositoryVerificationRunsItOnce
+=== RUN   TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== PAUSE TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== RUN   TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== PAUSE TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== RUN   TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== PAUSE TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== RUN   TestTaskBudgetRenewsAtEachTaskSettlement
+=== PAUSE TestTaskBudgetRenewsAtEachTaskSettlement
+=== RUN   TestTaskBudgetStartsTheQAGateWithARenewedAllowance
+=== PAUSE TestTaskBudgetStartsTheQAGateWithARenewedAllowance
+=== RUN   TestTaskBudgetSettlementAfterTheDeadlineDoesNotRenew
+=== PAUSE TestTaskBudgetSettlementAfterTheDeadlineDoesNotRenew
+=== RUN   TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement
+=== PAUSE TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement
+=== RUN   TestTaskBudgetAFailedSettlementRenewsTheAllowance
+=== PAUSE TestTaskBudgetAFailedSettlementRenewsTheAllowance
+=== RUN   TestTaskCycleReportsTheRenewedBudgetDeadline
+=== PAUSE TestTaskCycleReportsTheRenewedBudgetDeadline
+=== RUN   TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled
+=== PAUSE TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled
+=== RUN   TestTaskBudgetReasonNamesTheSettlementThatRenewedIt
+=== PAUSE TestTaskBudgetReasonNamesTheSettlementThatRenewedIt
+=== RUN   TestTaskBudgetWatchdogStopsWhenTheCycleReturns
+=== PAUSE TestTaskBudgetWatchdogStopsWhenTheCycleReturns
+=== RUN   TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory
+=== PAUSE TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory
+=== RUN   TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles
+=== PAUSE TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles
+=== RUN   TestAssembleTaskContextBundleSupportsExternalSpecRoot
+=== PAUSE TestAssembleTaskContextBundleSupportsExternalSpecRoot
+=== RUN   TestTaskCyclePromptContainsBundleWithoutReferencedBodies
+=== PAUSE TestTaskCyclePromptContainsBundleWithoutReferencedBodies
+=== RUN   TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity
+=== PAUSE TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity
+=== RUN   TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase
+=== PAUSE TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase
+=== RUN   TestAssembleTaskContextBundleIsDeterministic
+=== PAUSE TestAssembleTaskContextBundleIsDeterministic
+=== RUN   TestATaskThatLeavesItsDeletesPathDoesNotSettle
+=== PAUSE TestATaskThatLeavesItsDeletesPathDoesNotSettle
+=== RUN   TestATaskThatRemovesItsDeletesPathSettles
+=== PAUSE TestATaskThatRemovesItsDeletesPathSettles
+=== RUN   TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories
+=== PAUSE TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers
+=== PAUSE TestTaskCommitMessageDerivesSubjectAndTrailers
+=== RUN   TestQACommitMessageDerivesUnscopedSubjectAndTrailer
+=== PAUSE TestQACommitMessageDerivesUnscopedSubjectAndTrailer
+=== RUN   TestTaskCycleFixtureSeedIsCreatedOnce
+=== PAUSE TestTaskCycleFixtureSeedIsCreatedOnce
+=== RUN   TestTaskCycleFixtureSeedCarriesACommitterIdentity
+=== PAUSE TestTaskCycleFixtureSeedCarriesACommitterIdentity
+=== RUN   TestQAGateRunsRepositoryVerificationBeforeAgentSession
+=== PAUSE TestQAGateRunsRepositoryVerificationBeforeAgentSession
+=== RUN   TestQAReportCommitExcludesVerificationWrites
+=== PAUSE TestQAReportCommitExcludesVerificationWrites
+=== RUN   TestQAReportCommitKeepsAgentEvidenceInANewDirectory
+=== PAUSE TestQAReportCommitKeepsAgentEvidenceInANewDirectory
+=== RUN   TestQAGateRefusesOnFailedRepositoryVerification
+=== PAUSE TestQAGateRefusesOnFailedRepositoryVerification
+=== RUN   TestQAGateRefusesOnUnobservedRepositoryVerification
+=== PAUSE TestQAGateRefusesOnUnobservedRepositoryVerification
+=== RUN   TestQAGateSkipsRepositoryVerificationWhenMechanicalStageWithholds
+=== PAUSE TestQAGateSkipsRepositoryVerificationWhenMechanicalStageWithholds
+=== RUN   TestQAGateWithoutConfiguredRepositoryVerificationLeavesItToTheGate
+=== PAUSE TestQAGateWithoutConfiguredRepositoryVerificationLeavesItToTheGate
+=== RUN   TestQAGateRepositoryVerificationInfrastructureErrorEndsRun
+=== PAUSE TestQAGateRepositoryVerificationInfrastructureErrorEndsRun
+=== RUN   TestQAGateRepositoryVerificationCancellationUsesStopPath
+=== PAUSE TestQAGateRepositoryVerificationCancellationUsesStopPath
+=== RUN   TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit
+=== PAUSE TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit
+=== RUN   TestQAMechanicalRequestCarriesTheGatePrecondition
+=== PAUSE TestQAMechanicalRequestCarriesTheGatePrecondition
+=== RUN   TestWriteMechanicalQAReportWritesThePreconditionRefusal
+=== PAUSE TestWriteMechanicalQAReportWritesThePreconditionRefusal
+=== RUN   TestQAMechanicalRequestCarriesAssignedRepairs
+=== PAUSE TestQAMechanicalRequestCarriesAssignedRepairs
+=== RUN   TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport
+=== PAUSE TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal
+=== PAUSE TestWriteMechanicalQAReportRecordsTheRefusal
+=== RUN   TestPerWorkAgentSessionMixedTaskTypesAndQA
+=== PAUSE TestPerWorkAgentSessionMixedTaskTypesAndQA
+=== RUN   TestPublishNoOpTaskCommitWarningReturnsProgressWriteError
+=== PAUSE TestPublishNoOpTaskCommitWarningReturnsProgressWriteError
+=== RUN   TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared
+=== PAUSE TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared
+=== RUN   TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity
+=== PAUSE TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity
+=== RUN   TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts
+=== PAUSE TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts
+=== RUN   TestTaskCycleValidatesPlan
+=== PAUSE TestTaskCycleValidatesPlan
+=== RUN   TestTaskCyclePublishesCapacities
+=== PAUSE TestTaskCyclePublishesCapacities
+=== RUN   TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects
+=== PAUSE TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects
+=== RUN   TestTaskCycleRefusesAWaveCollision
+=== PAUSE TestTaskCycleRefusesAWaveCollision
+=== RUN   TestTaskCycleDispatchesSerializedCollisionGraph
+=== PAUSE TestTaskCycleDispatchesSerializedCollisionGraph
+=== RUN   TestTaskCycleDispatchesCollidingGraphAtTaskCapacityOne
+=== PAUSE TestTaskCycleDispatchesCollidingGraphAtTaskCapacityOne
+=== RUN   TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees
+=== PAUSE TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees
+=== RUN   TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss
+=== PAUSE TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss
+=== RUN   TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable
+=== PAUSE TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable
+=== RUN   TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback
+=== PAUSE TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback
+=== RUN   TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement
+--- PASS: TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement (0.11s)
+=== RUN   TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable
+=== PAUSE TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable
+=== RUN   TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap
+=== PAUSE TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap
+=== RUN   TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork
+=== PAUSE TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork
+=== RUN   TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks
+=== PAUSE TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks
+=== RUN   TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency
+=== PAUSE TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency
+=== RUN   TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree
+=== PAUSE TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree
+=== RUN   TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew
+=== PAUSE TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew
+=== RUN   TestTaskCycleExecutesAgentVerifySettleCommitContract
+=== PAUSE TestTaskCycleExecutesAgentVerifySettleCommitContract
+=== RUN   TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses
+=== PAUSE TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses
+=== RUN   TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask
+=== PAUSE TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask
+=== RUN   TestPreWorkProbePublishesNothingForAClearedTask
+=== PAUSE TestPreWorkProbePublishesNothingForAClearedTask
+=== RUN   TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession
+=== PAUSE TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession
+=== RUN   TestUnnamedTaskStaysBlockedByRedPrecondition
+=== PAUSE TestUnnamedTaskStaysBlockedByRedPrecondition
+=== RUN   TestNamedTaskRepairsKnownRedPrecondition
+=== PAUSE TestNamedTaskRepairsKnownRedPrecondition
+=== RUN   TestRepairTaskCannotDropTheRepositoryCommand
+=== PAUSE TestRepairTaskCannotDropTheRepositoryCommand
+=== RUN   TestCompletedRepairTaskDoesNotBlockPlanning
+=== PAUSE TestCompletedRepairTaskDoesNotBlockPlanning
+=== RUN   TestPendingRepairTaskStillNeedsTheVerbatimCommand
+=== PAUSE TestPendingRepairTaskStillNeedsTheVerbatimCommand
+=== RUN   TestTaskCycleRepositoryGatePreconditionPassesThenProbeRefusesVacuousGate
+=== PAUSE TestTaskCycleRepositoryGatePreconditionPassesThenProbeRefusesVacuousGate
+=== RUN   TestTaskCycleWithoutRepositoryGateSkipsPrecondition
+=== PAUSE TestTaskCycleWithoutRepositoryGateSkipsPrecondition
+=== RUN   TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair
+=== PAUSE TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair
+=== RUN   TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun
+=== PAUSE TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun
+=== RUN   TestTaskCycleRewritesNormalizedStatusAfterAgentReload
+=== PAUSE TestTaskCycleRewritesNormalizedStatusAfterAgentReload
+=== RUN   TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent
+=== PAUSE TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent
+=== RUN   TestTaskCycleAgentStatusVariantsReachDaemonVerification
+=== PAUSE TestTaskCycleAgentStatusVariantsReachDaemonVerification
+=== RUN   TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification
+=== PAUSE TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification
+=== RUN   TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification
+=== PAUSE TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification
+=== RUN   TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification
+=== PAUSE TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification
+=== RUN   TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure
+=== PAUSE TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure
+=== RUN   TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence
+=== PAUSE TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence
+=== RUN   TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification
+=== PAUSE TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification
+=== RUN   TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent
+=== PAUSE TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent
+=== RUN   TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents
+=== PAUSE TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents
+=== RUN   TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair
+=== PAUSE TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair
+=== RUN   TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo
+=== PAUSE TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo
+=== RUN   TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification
+=== PAUSE TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification
+=== RUN   TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain
+=== PAUSE TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain
+=== RUN   TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt
+=== PAUSE TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt
+=== RUN   TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError
+=== PAUSE TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError
+=== RUN   TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerification
+=== PAUSE TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerification
+=== RUN   TestTaskCycleSettlesForgottenAgentStatus
+=== PAUSE TestTaskCycleSettlesForgottenAgentStatus
+=== RUN   TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed
+=== PAUSE TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed
+=== RUN   TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason
+=== PAUSE TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason
+=== RUN   TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits
+=== PAUSE TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits
+=== RUN   TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile
+=== PAUSE TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile
+=== RUN   TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing
+=== PAUSE TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing
+=== RUN   TestTaskCycleRefusesToStartWorkPastItsBudget
+=== PAUSE TestTaskCycleRefusesToStartWorkPastItsBudget
+=== RUN   TestTaskBudgetWatchdogUsesTheRealTimerByDefault
+=== PAUSE TestTaskBudgetWatchdogUsesTheRealTimerByDefault
+=== RUN   TestTaskCycleEndsRunAtBudgetDeadline
+=== PAUSE TestTaskCycleEndsRunAtBudgetDeadline
+=== RUN   TestTaskCycleDisabledBudgetDerivesNoDeadline
+=== PAUSE TestTaskCycleDisabledBudgetDerivesNoDeadline
+=== RUN   TestTaskCycleFinishesBeforeBudgetDeadline
+=== PAUSE TestTaskCycleFinishesBeforeBudgetDeadline
+=== RUN   TestTaskCycleSettlesBudgetOutcomeWithoutError
+=== PAUSE TestTaskCycleSettlesBudgetOutcomeWithoutError
+=== RUN   TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask
+=== PAUSE TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask
+=== RUN   TestTaskCycleStopRequestBeforeQAStepSkipsQA
+=== PAUSE TestTaskCycleStopRequestBeforeQAStepSkipsQA
+=== RUN   TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts
+=== PAUSE TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts
+=== RUN   TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress
+=== PAUSE TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress
+=== RUN   TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks
+=== PAUSE TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks
+=== RUN   TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt
+=== PAUSE TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt
+=== RUN   TestTaskCycleLostOutputRefusesCompletion
+=== PAUSE TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== PAUSE TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== RUN   TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths
+=== PAUSE TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths
+=== RUN   TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged
+=== PAUSE TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged
+=== RUN   TestQACommitDropsExecutableFileAndCommitsRemainingPaths
+=== PAUSE TestQACommitDropsExecutableFileAndCommitsRemainingPaths
+=== RUN   TestTaskCycleQAReportExternalProceedsWithoutStaging
+=== PAUSE TestTaskCycleQAReportExternalProceedsWithoutStaging
+=== RUN   TestTaskCycleSettlesAQualifyingPartial
+--- PASS: TestTaskCycleSettlesAQualifyingPartial (0.19s)
+=== RUN   TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport
+=== PAUSE TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport
+=== RUN   TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted
+=== PAUSE TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted
+=== RUN   TestTaskCycleReturnsWithheldQATaskProgressWriteError
+=== PAUSE TestTaskCycleReturnsWithheldQATaskProgressWriteError
+=== RUN   TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState
+=== PAUSE TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState
+=== RUN   TestTaskSchedulerRefusesQATaskAsAgentWork
+=== PAUSE TestTaskSchedulerRefusesQATaskAsAgentWork
+=== RUN   TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted
+=== PAUSE TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted
+=== RUN   TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch
+=== PAUSE TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch
+=== RUN   TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure
+=== PAUSE TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure
+=== RUN   TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch
+=== PAUSE TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch
+=== RUN   TestTaskCycleQAStepRequiresEveryGraphTaskCompleted
+=== PAUSE TestTaskCycleQAStepRequiresEveryGraphTaskCompleted
+=== RUN   TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady
+=== PAUSE TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady
+=== RUN   TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted
+=== PAUSE TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency
+=== PAUSE TestTaskNeedsCompletedCoversEveryGateDependency
+=== RUN   TestInitialTaskRunStatusesSeedsEarlierRunCompletions
+=== PAUSE TestInitialTaskRunStatusesSeedsEarlierRunCompletions
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestTaskCommitScansOnlyTheLinesItAdds
+=== PAUSE TestTaskCommitScansOnlyTheLinesItAdds
+=== RUN   TestTaskCommitAcceptsALettersOnlyFixture
+=== PAUSE TestTaskCommitAcceptsALettersOnlyFixture
+=== RUN   TestTaskSecretScanUsesHeadAndPreparedPaths
+=== PAUSE TestTaskSecretScanUsesHeadAndPreparedPaths
+=== RUN   TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== PAUSE TestQATurnThatLeavesABackgroundTaskIsUnfinished
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== RUN   TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== PAUSE TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+=== CONT  TestTaskCycleHookRefusalKeepsTaskCompletedAndNamesRecovery
+=== CONT  TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerification
+=== CONT  TestTaskBudgetStartsTheQAGateWithARenewedAllowance
+=== CONT  TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== CONT  TestTaskCycleRefusesAWaveCollision
+=== CONT  TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError
+=== CONT  TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree
+=== CONT  TestPendingRepairTaskStillNeedsTheVerbatimCommand
+=== CONT  TestTaskBudgetRenewsAtEachTaskSettlement
+=== CONT  TestPriorQAPassSkipsEveryCompiledExtension
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.go
+--- PASS: TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerification (0.23s)
+=== CONT  TestCompletedRepairTaskDoesNotBlockPlanning
+--- PASS: TestTaskCycleRefusesAWaveCollision (0.24s)
+=== CONT  TestRepairTaskCannotDropTheRepositoryCommand
+--- PASS: TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError (0.25s)
+=== CONT  TestNamedTaskRepairsKnownRedPrecondition
+--- PASS: TestPendingRepairTaskStillNeedsTheVerbatimCommand (0.26s)
+=== CONT  TestUnnamedTaskStaysBlockedByRedPrecondition
+--- PASS: TestTaskCycleHookRefusalKeepsTaskCompletedAndNamesRecovery (0.30s)
+=== CONT  TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession
+--- PASS: TestTaskBudgetRenewsAtEachTaskSettlement (0.32s)
+=== CONT  TestPreWorkProbePublishesNothingForAClearedTask
+--- PASS: TestSpecConsistencyRepairKeepsTheTaskStartBaseline (0.38s)
+=== CONT  TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask
+--- PASS: TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree (0.46s)
+=== CONT  TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses
+--- PASS: TestUnnamedTaskStaysBlockedByRedPrecondition (0.21s)
+=== CONT  TestTaskCycleExecutesAgentVerifySettleCommitContract
+--- PASS: TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession (0.20s)
+=== CONT  TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew
+--- PASS: TestCompletedRepairTaskDoesNotBlockPlanning (0.27s)
+=== CONT  TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure
+--- PASS: TestRepairTaskCannotDropTheRepositoryCommand (0.30s)
+=== CONT  TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt
+--- PASS: TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask (0.21s)
+=== CONT  TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain
+--- PASS: TestNamedTaskRepairsKnownRedPrecondition (0.36s)
+=== CONT  TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification
+--- PASS: TestPreWorkProbePublishesNothingForAClearedTask (0.30s)
+=== CONT  TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.rs
+--- PASS: TestTaskBudgetStartsTheQAGateWithARenewedAllowance (0.71s)
+=== CONT  TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair
+--- PASS: TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses (0.26s)
+=== CONT  TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents
+=== CONT  TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent
+--- PASS: TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure (0.24s)
+--- PASS: TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt (0.25s)
+=== CONT  TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification
+--- PASS: TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain (0.21s)
+=== CONT  TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence
+--- PASS: TestTaskCycleExecutesAgentVerifySettleCommitContract (0.33s)
+=== CONT  TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent
+--- PASS: TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification (0.22s)
+=== CONT  TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification
+--- PASS: TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo (0.27s)
+=== CONT  TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification
+--- PASS: TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew (0.42s)
+=== CONT  TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification
+--- PASS: TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair (0.25s)
+=== CONT  TestQAReportCommitExcludesVerificationWrites
+=== RUN   TestQAReportCommitExcludesVerificationWrites/tracked_file
+=== PAUSE TestQAReportCommitExcludesVerificationWrites/tracked_file
+=== RUN   TestQAReportCommitExcludesVerificationWrites/no_writes
+=== PAUSE TestQAReportCommitExcludesVerificationWrites/no_writes
+=== CONT  TestTaskCycleAgentStatusVariantsReachDaemonVerification
+=== RUN   TestTaskCycleAgentStatusVariantsReachDaemonVerification/pending
+--- PASS: TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents (0.28s)
+=== CONT  TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects
+=== RUN   TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/missing_Task_Capacity
+--- PASS: TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification (0.25s)
+=== CONT  TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity
+--- PASS: TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent (0.26s)
+=== CONT  TestTaskCyclePublishesCapacities
+--- PASS: TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence (0.27s)
+=== CONT  TestTaskCycleValidatesPlan
+--- PASS: TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification (0.28s)
+=== CONT  TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts
+--- PASS: TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts (0.00s)
+=== CONT  TestQAGateRunsRepositoryVerificationBeforeAgentSession
+--- PASS: TestTaskCycleValidatesPlan (0.04s)
+=== CONT  TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity
+--- PASS: TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity (0.00s)
+=== CONT  TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared
+--- PASS: TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared (0.00s)
+=== CONT  TestPublishNoOpTaskCommitWarningReturnsProgressWriteError
+--- PASS: TestPublishNoOpTaskCommitWarningReturnsProgressWriteError (0.00s)
+=== CONT  TestTaskCycleFixtureSeedCarriesACommitterIdentity
+--- PASS: TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent (0.38s)
+=== CONT  TestPerWorkAgentSessionMixedTaskTypesAndQA
+=== RUN   TestTaskCycleFixtureSeedCarriesACommitterIdentity/user.name
+=== RUN   TestTaskCycleFixtureSeedCarriesACommitterIdentity/user.email
+--- PASS: TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification (0.27s)
+=== CONT  TestTaskCycleFixtureSeedIsCreatedOnce
+--- PASS: TestTaskCycleFixtureSeedCarriesACommitterIdentity (0.05s)
+    --- PASS: TestTaskCycleFixtureSeedCarriesACommitterIdentity/user.name (0.01s)
+    --- PASS: TestTaskCycleFixtureSeedCarriesACommitterIdentity/user.email (0.01s)
+=== CONT  TestWriteMechanicalQAReportRecordsTheRefusal
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/empty_result_records_its_blocking_cause
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/unperformed_assigned_repair_records_its_blocking_cause
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/populated_blocking_result_preserves_its_bytes
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/scoped_finding_keeps_a_failing_verdict_while_the_matrix_continues
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/non-blocking_result_carries_a_verdict
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/NonBlocking_zero-row_result_records_no_refusal
+=== RUN   TestWriteMechanicalQAReportRecordsTheRefusal/optional_skips_are_not_refusal_causes
+--- PASS: TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification (0.27s)
+=== CONT  TestQACommitMessageDerivesUnscopedSubjectAndTrailer
+--- PASS: TestQACommitMessageDerivesUnscopedSubjectAndTrailer (0.00s)
+=== CONT  TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport
+--- PASS: TestWriteMechanicalQAReportRecordsTheRefusal (0.04s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/empty_result_records_its_blocking_cause (0.01s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/unperformed_assigned_repair_records_its_blocking_cause (0.01s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/populated_blocking_result_preserves_its_bytes (0.00s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/scoped_finding_keeps_a_failing_verdict_while_the_matrix_continues (0.01s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/non-blocking_result_carries_a_verdict (0.00s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/NonBlocking_zero-row_result_records_no_refusal (0.01s)
+    --- PASS: TestWriteMechanicalQAReportRecordsTheRefusal/optional_skips_are_not_refusal_causes (0.00s)
+=== CONT  TestTaskCommitMessageDerivesSubjectAndTrailers
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers/default_type_lowercases_ascii_letter
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers/docs_type_passes_through
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers/test_type_passes_through
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers/chore_type_passes_through
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers/digit_first_title_passes_through
+=== RUN   TestTaskCommitMessageDerivesSubjectAndTrailers/unicode_first_title_lowercases
+--- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers (0.00s)
+    --- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers/default_type_lowercases_ascii_letter (0.00s)
+    --- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers/docs_type_passes_through (0.00s)
+    --- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers/test_type_passes_through (0.00s)
+    --- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers/chore_type_passes_through (0.00s)
+    --- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers/digit_first_title_passes_through (0.00s)
+    --- PASS: TestTaskCommitMessageDerivesSubjectAndTrailers/unicode_first_title_lowercases (0.00s)
+=== CONT  TestQAMechanicalRequestCarriesAssignedRepairs
+=== RUN   TestQAMechanicalRequestCarriesAssignedRepairs/declared_repair_reaches_both_request_fields
+=== PAUSE TestQAMechanicalRequestCarriesAssignedRepairs/declared_repair_reaches_both_request_fields
+=== RUN   TestQAMechanicalRequestCarriesAssignedRepairs/undeclared_repair_keeps_request_fields_nil
+=== PAUSE TestQAMechanicalRequestCarriesAssignedRepairs/undeclared_repair_keeps_request_fields_nil
+=== CONT  TestWriteMechanicalQAReportWritesThePreconditionRefusal
+=== RUN   TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_is_recorded_as_one_terminal_row_and_its_frontmatter
+=== PAUSE TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_is_recorded_as_one_terminal_row_and_its_frontmatter
+=== RUN   TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_costs_the_report_none_of_the_stage's_own_observations
+=== PAUSE TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_costs_the_report_none_of_the_stage's_own_observations
+=== RUN   TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_mechanical_stage_accepts_the_shape_the_refusal_wrote
+=== PAUSE TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_mechanical_stage_accepts_the_shape_the_refusal_wrote
+=== RUN   TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_reads_back_as_the_refusal_that_was_recorded
+=== PAUSE TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_reads_back_as_the_refusal_that_was_recorded
+=== RUN   TestWriteMechanicalQAReportWritesThePreconditionRefusal/a_gate_that_refused_nothing_writes_the_report_it_wrote_before
+=== PAUSE TestWriteMechanicalQAReportWritesThePreconditionRefusal/a_gate_that_refused_nothing_writes_the_report_it_wrote_before
+=== CONT  TestQAMechanicalRequestCarriesTheGatePrecondition
+=== RUN   TestQAMechanicalRequestCarriesTheGatePrecondition/a_contradicted_Spec_reaches_the_stage_as_a_refusing_precondition
+=== PAUSE TestQAMechanicalRequestCarriesTheGatePrecondition/a_contradicted_Spec_reaches_the_stage_as_a_refusing_precondition
+=== RUN   TestQAMechanicalRequestCarriesTheGatePrecondition/a_clean_Spec_reaches_the_stage_refusing_nothing
+=== PAUSE TestQAMechanicalRequestCarriesTheGatePrecondition/a_clean_Spec_reaches_the_stage_refusing_nothing
+=== CONT  TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories
+--- PASS: TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport (0.00s)
+=== CONT  TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit
+=== RUN   TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit/ungranted_governed_path_blocks
+--- PASS: TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories (0.00s)
+=== CONT  TestATaskThatRemovesItsDeletesPathSettles
+=== RUN   TestTaskCycleAgentStatusVariantsReachDaemonVerification/in_progress
+=== RUN   TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/negative_Task_Capacity
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.ts
+--- PASS: TestTaskCyclePublishesCapacities (0.25s)
+=== CONT  TestQAGateRepositoryVerificationCancellationUsesStopPath
+=== RUN   TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/missing_Verification_Capacity
+=== RUN   TestTaskCycleAgentStatusVariantsReachDaemonVerification/completed
+--- PASS: TestATaskThatRemovesItsDeletesPathSettles (0.29s)
+=== CONT  TestATaskThatLeavesItsDeletesPathDoesNotSettle
+--- PASS: TestTaskCycleFixtureSeedIsCreatedOnce (0.39s)
+=== CONT  TestQAGateRepositoryVerificationInfrastructureErrorEndsRun
+=== RUN   TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/negative_Verification_Capacity
+--- PASS: TestQAGateRepositoryVerificationCancellationUsesStopPath (0.32s)
+=== CONT  TestAssembleTaskContextBundleIsDeterministic
+--- PASS: TestAssembleTaskContextBundleIsDeterministic (0.00s)
+=== CONT  TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase
+--- PASS: TestQAGateRunsRepositoryVerificationBeforeAgentSession (0.55s)
+=== CONT  TestQAGateRefusesOnUnobservedRepositoryVerification
+=== RUN   TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_retained
+=== PAUSE TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_retained
+=== RUN   TestQAGateRefusesOnUnobservedRepositoryVerification/reported_diagnostics_path_was_not_retained
+=== PAUSE TestQAGateRefusesOnUnobservedRepositoryVerification/reported_diagnostics_path_was_not_retained
+=== RUN   TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_absent
+=== PAUSE TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_absent
+=== CONT  TestQAGateSkipsRepositoryVerificationWhenMechanicalStageWithholds
+=== RUN   TestTaskCycleAgentStatusVariantsReachDaemonVerification/failed
+--- PASS: TestATaskThatLeavesItsDeletesPathDoesNotSettle (0.28s)
+=== CONT  TestQAGateWithoutConfiguredRepositoryVerificationLeavesItToTheGate
+--- PASS: TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity (0.77s)
+=== CONT  TestQAGateRefusesOnFailedRepositoryVerification
+=== RUN   TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure
+=== PAUSE TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure
+=== RUN   TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry
+=== PAUSE TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry
+=== CONT  TestTaskBudgetReasonNamesTheSettlementThatRenewedIt
+=== RUN   TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit/ordinary_path_does_not_block
+--- PASS: TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects (0.84s)
+    --- PASS: TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/missing_Task_Capacity (0.23s)
+    --- PASS: TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/negative_Task_Capacity (0.19s)
+    --- PASS: TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/missing_Verification_Capacity (0.20s)
+    --- PASS: TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects/negative_Verification_Capacity (0.21s)
+=== CONT  TestQAReportCommitKeepsAgentEvidenceInANewDirectory
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.tsx
+--- PASS: TestQAGateRepositoryVerificationInfrastructureErrorEndsRun (0.35s)
+=== CONT  TestTaskBudgetAFailedSettlementRenewsTheAllowance
+--- PASS: TestTaskCycleAgentStatusVariantsReachDaemonVerification (1.00s)
+    --- PASS: TestTaskCycleAgentStatusVariantsReachDaemonVerification/pending (0.26s)
+    --- PASS: TestTaskCycleAgentStatusVariantsReachDaemonVerification/in_progress (0.24s)
+    --- PASS: TestTaskCycleAgentStatusVariantsReachDaemonVerification/completed (0.25s)
+    --- PASS: TestTaskCycleAgentStatusVariantsReachDaemonVerification/failed (0.25s)
+=== CONT  TestTaskCyclePromptContainsBundleWithoutReferencedBodies
+--- PASS: TestPerWorkAgentSessionMixedTaskTypesAndQA (0.88s)
+=== CONT  TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled
+--- PASS: TestTaskBudgetAFailedSettlementRenewsTheAllowance (0.23s)
+=== CONT  TestTaskCycleReportsTheRenewedBudgetDeadline
+=== CONT  TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory
+--- PASS: TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase (0.49s)
+--- PASS: TestQAGateSkipsRepositoryVerificationWhenMechanicalStageWithholds (0.51s)
+=== CONT  TestAssembleTaskContextBundleSupportsExternalSpecRoot
+--- PASS: TestAssembleTaskContextBundleSupportsExternalSpecRoot (0.00s)
+=== CONT  TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles
+--- PASS: TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles (0.01s)
+=== CONT  TestTaskBudgetWatchdogStopsWhenTheCycleReturns
+--- PASS: TestTaskBudgetReasonNamesTheSettlementThatRenewedIt (0.39s)
+=== CONT  TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement
+--- PASS: TestTaskCyclePromptContainsBundleWithoutReferencedBodies (0.25s)
+=== CONT  TestQACommitDropsExecutableFileAndCommitsRemainingPaths
+--- PASS: TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled (0.22s)
+=== CONT  TestQATurnWithoutBackgroundTaskKeepsAPendingReport
+--- PASS: TestQAGateWithoutConfiguredRepositoryVerificationLeavesItToTheGate (0.52s)
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== RUN   TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== PAUSE TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== CONT  TestQATurnThatLeavesABackgroundTaskIsUnfinished
+--- PASS: TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit (1.19s)
+    --- PASS: TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit/ungranted_governed_path_blocks (0.64s)
+    --- PASS: TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit/ordinary_path_does_not_block (0.55s)
+=== CONT  TestTaskSecretScanUsesHeadAndPreparedPaths
+--- PASS: TestTaskCycleReportsTheRenewedBudgetDeadline (0.28s)
+=== CONT  TestTaskCommitAcceptsALettersOnlyFixture
+--- PASS: TestTaskBudgetWatchdogStopsWhenTheCycleReturns (0.25s)
+=== CONT  TestTaskCommitScansOnlyTheLinesItAdds
+--- PASS: TestQACommitDropsExecutableFileAndCommitsRemainingPaths (0.24s)
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== CONT  TestInitialTaskRunStatusesSeedsEarlierRunCompletions
+--- PASS: TestInitialTaskRunStatusesSeedsEarlierRunCompletions (0.00s)
+=== CONT  TestTaskNeedsCompletedCoversEveryGateDependency
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/every_gate_dependency_completed
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_still_pending
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_still_running
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_failed
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_skipped
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/one_gate_dependency_missing_from_the_status_map
+=== RUN   TestTaskNeedsCompletedCoversEveryGateDependency/unrelated_status_does_not_block_completed_dependencies
+--- PASS: TestTaskNeedsCompletedCoversEveryGateDependency (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/every_gate_dependency_completed (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_still_pending (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_still_running (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_failed (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/one_Task_skipped (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/one_gate_dependency_missing_from_the_status_map (0.00s)
+    --- PASS: TestTaskNeedsCompletedCoversEveryGateDependency/unrelated_status_does_not_block_completed_dependencies (0.00s)
+=== CONT  TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.mts
+--- PASS: TestQAReportCommitKeepsAgentEvidenceInANewDirectory (0.66s)
+=== CONT  TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady
+--- PASS: TestTaskSecretScanUsesHeadAndPreparedPaths (0.20s)
+=== CONT  TestTaskCycleQAStepRequiresEveryGraphTaskCompleted
+--- PASS: TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory (0.45s)
+=== CONT  TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch
+=== RUN   TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/failed_Task
+--- PASS: TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement (0.40s)
+=== CONT  TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure
+=== RUN   TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure/gh_failure
+--- PASS: TestQATurnWithoutBackgroundTaskKeepsAPendingReport (0.55s)
+=== CONT  TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch
+--- PASS: TestQATurnThatLeavesABackgroundTaskIsUnfinished (0.50s)
+=== CONT  TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted
+--- PASS: TestTaskCommitScansOnlyTheLinesItAdds (0.43s)
+=== CONT  TestTaskSchedulerRefusesQATaskAsAgentWork
+--- PASS: TestTaskCommitAcceptsALettersOnlyFixture (0.48s)
+=== CONT  TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState
+=== RUN   TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState/legacy_graph
+--- PASS: TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady (0.45s)
+=== CONT  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit
+=== RUN   TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+=== PAUSE TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+=== RUN   TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+=== PAUSE TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+=== CONT  TestTaskCycleReturnsWithheldQATaskProgressWriteError
+=== RUN   TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/skipped_Task_behind_an_unmet_dependency
+--- PASS: TestTaskSchedulerRefusesQATaskAsAgentWork (0.21s)
+=== CONT  TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted
+--- PASS: TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted (0.61s)
+=== CONT  TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport
+=== RUN   TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/pass_with_environment-blocked_row
+=== RUN   TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState/declined_graph
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.cts
+--- PASS: TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch (0.56s)
+=== CONT  TestTaskCycleQAReportExternalProceedsWithoutStaging
+--- PASS: TestTaskCycleReturnsWithheldQATaskProgressWriteError (0.20s)
+=== CONT  TestPriorQAPassSkipsCompiledSourceEvidence
+=== RUN   TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure/gh_timeout
+--- PASS: TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState (0.38s)
+    --- PASS: TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState/legacy_graph (0.19s)
+    --- PASS: TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState/declined_graph (0.19s)
+=== CONT  TestQASettlementAcceptsAPassWithAResultsRow
+--- PASS: TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted (0.53s)
+=== CONT  TestQASettlementRefusesAHollowPass
+--- PASS: TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch (0.55s)
+=== CONT  TestQASettlementRefusesAnUntouchedSeed
+--- PASS: TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted (0.40s)
+=== CONT  TestPriorQAPassKeepsIdenticalExistingEvidence
+=== RUN   TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/earlier_Run_completed_one_Task_while_another_chain_does_not_finish
+--- PASS: TestTaskCycleQAReportExternalProceedsWithoutStaging (0.44s)
+=== CONT  TestQAReportWithASecretMatchSettlesFailedWithoutACommit
+--- PASS: TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure (1.06s)
+    --- PASS: TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure/gh_failure (0.56s)
+    --- PASS: TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure/gh_timeout (0.50s)
+=== CONT  TestMechanicalQAReportSeedStartsPending
+--- PASS: TestMechanicalQAReportSeedStartsPending (0.00s)
+=== CONT  TestQAReportWithoutASecretMatchKeepsItsCommit
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.js
+=== RUN   TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/non-qualifying_partial
+--- PASS: TestPriorQAPassSkipsCompiledSourceEvidence (0.67s)
+=== CONT  TestQASecretScanUsesTheReportCommitPathSet
+=== RUN   TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/earlier_Run_completed_every_Task_but_one_still_has_to_run_and_fails
+--- PASS: TestPriorQAPassKeepsIdenticalExistingEvidence (0.48s)
+=== CONT  TestQAMechanicalEventCountsCarriedAndRerunRows
+--- PASS: TestQASettlementAcceptsAPassWithAResultsRow (0.76s)
+=== CONT  TestQASettlementAcceptsAFilledSeededFrontMatter
+--- PASS: TestQASettlementRefusesAHollowPass (0.75s)
+=== CONT  TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+--- PASS: TestQASettlementRefusesAnUntouchedSeed (0.75s)
+=== CONT  TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+--- PASS: TestQAReportWithASecretMatchSettlesFailedWithoutACommit (0.53s)
+=== CONT  TestTaskDeclaringRepositoryVerificationRunsItOnce
+--- PASS: TestQASecretScanUsesTheReportCommitPathSet (0.39s)
+=== CONT  TestMechanicalQAReportRefusesBehindALaterDatedReport
+--- PASS: TestMechanicalQAReportRefusesBehindALaterDatedReport (0.01s)
+=== CONT  TestQASettlementRefusesAnEmptyFrontMatter
+--- PASS: TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork (0.20s)
+=== CONT  TestQAFormatBoundsDiagnostics
+--- PASS: TestQAReportWithoutASecretMatchKeepsItsCommit (0.63s)
+=== CONT  TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+--- PASS: TestTaskCycleQAStepRequiresEveryGraphTaskCompleted (1.74s)
+    --- PASS: TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/failed_Task (0.45s)
+    --- PASS: TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/skipped_Task_behind_an_unmet_dependency (0.43s)
+    --- PASS: TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/earlier_Run_completed_one_Task_while_another_chain_does_not_finish (0.43s)
+    --- PASS: TestTaskCycleQAStepRequiresEveryGraphTaskCompleted/earlier_Run_completed_every_Task_but_one_still_has_to_run_and_fails (0.43s)
+=== CONT  TestMechanicalQAReportFollowsTheUnsuffixedReportWithSequenceOne
+--- PASS: TestMechanicalQAReportFollowsTheUnsuffixedReportWithSequenceOne (0.00s)
+=== CONT  TestMechanicalQAReportStartsUnsuffixedOnAFreshDate
+--- PASS: TestMechanicalQAReportStartsUnsuffixedOnAFreshDate (0.01s)
+=== CONT  TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.jsx
+--- PASS: TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced (0.30s)
+=== CONT  TestMechanicalQAReportAllocatesAboveTheHighestSequence
+--- PASS: TestMechanicalQAReportAllocatesAboveTheHighestSequence (0.02s)
+=== CONT  TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency
+--- PASS: TestQAMechanicalEventCountsCarriedAndRerunRows (0.52s)
+=== CONT  TestPriorQAPassGitErrorIsInfrastructure
+=== RUN   TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/fail
+--- PASS: TestTaskDeclaringRepositoryVerificationRunsItOnce (0.54s)
+=== CONT  TestQAFormatCancellationRestoresFiles
+=== RUN   TestQAFormatCancellationRestoresFiles/context
+--- PASS: TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback (0.37s)
+=== CONT  TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks
+--- PASS: TestQAFormatBoundsDiagnostics (0.45s)
+=== CONT  TestSettlementRefusesATaskThatPinsItsSpecPath
+--- PASS: TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask (0.51s)
+=== CONT  TestRunDispositionCharacterizationStoppedRunLeavesTasksPending
+--- PASS: TestQASettlementAcceptsAFilledSeededFrontMatter (0.78s)
+=== CONT  TestPriorQAPassCancellationPublishesStop
+--- PASS: TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency (0.44s)
+=== CONT  TestPriorQAPassSkipsAPrunedRunBranch
+--- PASS: TestPriorQAPassGitErrorIsInfrastructure (0.42s)
+=== CONT  TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork
+=== RUN   TestQAFormatCancellationRestoresFiles/stop_request
+--- PASS: TestQASettlementRefusesAnEmptyFrontMatter (0.75s)
+=== CONT  TestAQATaskRecordsNoPaths
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.mjs
+--- PASS: TestSettlementRefusesATaskThatPinsItsSpecPath (0.34s)
+=== CONT  TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair
+--- PASS: TestPriorQAPassCancellationPublishesStop (0.30s)
+=== CONT  TestTaskCycleRewritesNormalizedStatusAfterAgentReload
+--- PASS: TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks (0.44s)
+=== CONT  TestQAFormatEmptyCommandRunsNothing
+=== CONT  TestAFailedTaskRecordsNoPaths
+--- PASS: TestRunDispositionCharacterizationStoppedRunLeavesTasksPending (0.47s)
+--- PASS: TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork (0.40s)
+=== CONT  TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun
+=== RUN   TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/missing_report
+--- PASS: TestPriorQAPassSkipsAPrunedRunBranch (0.49s)
+=== CONT  TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap
+--- PASS: TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair (0.29s)
+=== CONT  TestTaskCommitNeverRecordsAGovernedPath
+--- PASS: TestQAFormatCancellationRestoresFiles (0.70s)
+    --- PASS: TestQAFormatCancellationRestoresFiles/context (0.30s)
+    --- PASS: TestQAFormatCancellationRestoresFiles/stop_request (0.39s)
+=== CONT  TestQAFormatLeavesFilesOutsideTheQADirectory
+--- PASS: TestTaskCycleRewritesNormalizedStatusAfterAgentReload (0.26s)
+=== CONT  TestTaskCommitRecordsNothingWhenEveryPathIsDeclared
+--- PASS: TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun (0.20s)
+=== CONT  TestQAEvidenceSnapshotFileErrorIsInfrastructure
+--- PASS: TestAFailedTaskRecordsNoPaths (0.23s)
+=== CONT  TestTaskCommitRecordsTheFilesOfANewUntrackedPackage
+=== CONT  TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable
+--- PASS: TestAQATaskRecordsNoPaths (0.56s)
+--- PASS: TestQAFormatEmptyCommandRunsNothing (0.40s)
+=== CONT  TestQAFormatRevertsAVerdictChange
+--- PASS: TestQAEvidenceSnapshotFileErrorIsInfrastructure (0.20s)
+=== CONT  TestTaskCommitRecordsAnUndeclaredTestFile
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.cjs
+--- PASS: TestQAFormatLeavesFilesOutsideTheQADirectory (0.40s)
+=== CONT  TestQAFormatRevertsAFailingFormatter
+--- PASS: TestTaskCommitRecordsTheFilesOfANewUntrackedPackage (0.33s)
+=== CONT  TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks
+--- PASS: TestTaskCommitNeverRecordsAGovernedPath (0.47s)
+=== CONT  TestQAPromptOutsideASelfAuditOmitsTheUserFlowBinary
+--- PASS: TestTaskCommitRecordsNothingWhenEveryPathIsDeclared (0.45s)
+=== CONT  TestSelfAuditQAPromptNamesTheUserFlowBinary
+--- PASS: TestQAFormatRevertsAVerdictChange (0.42s)
+=== CONT  TestQASettlementRefusesARewrittenAuditorStaleness
+--- PASS: TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap (0.64s)
+=== CONT  TestQAEvidenceSnapshotSkipsAnExternalReport
+=== RUN   TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/unreadable_verdict
+--- PASS: TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable (0.48s)
+=== CONT  TestQASettlementRefusesARewrittenAuditingBinary
+--- PASS: TestTaskCommitRecordsAnUndeclaredTestFile (0.42s)
+=== CONT  TestQASettlementAcceptsTheSeededAuditorFields
+--- PASS: TestQAEvidenceSnapshotSkipsAnExternalReport (0.21s)
+=== CONT  TestQAFormatterNeverSeesEvidenceWithASecretMatch
+--- PASS: TestQAFormatRevertsAFailingFormatter (0.45s)
+=== CONT  TestQAFormatterOutputIsScannedBeforeTheQACommit
+--- PASS: TestPriorQAPassSkipsEveryCompiledExtension (6.26s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.go (0.62s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.rs (0.64s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.ts (0.59s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.tsx (0.61s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.mts (0.64s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.cts (0.60s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.js (0.67s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.jsx (0.67s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.mjs (0.63s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.cjs (0.59s)
+=== CONT  TestQASettlementRenewsTheBudgetBeforeTheReportCommit
+--- PASS: TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks (0.52s)
+=== CONT  TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+--- PASS: TestQAPromptOutsideASelfAuditOmitsTheUserFlowBinary (0.82s)
+=== CONT  TestQAFormatCommitsTheFormattedReport
+--- PASS: TestSelfAuditQAPromptNamesTheUserFlowBinary (0.82s)
+=== CONT  TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement
+--- PASS: TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport (3.61s)
+    --- PASS: TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/pass_with_environment-blocked_row (0.71s)
+    --- PASS: TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/non-qualifying_partial (0.74s)
+    --- PASS: TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/fail (0.76s)
+    --- PASS: TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/missing_report (0.72s)
+    --- PASS: TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/unreadable_verdict (0.68s)
+=== CONT  TestQAGateStripsAnAgentWrittenSnapshotWhenNoRowQualifies
+--- PASS: TestQAFormatterNeverSeesEvidenceWithASecretMatch (0.53s)
+=== CONT  TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead
+--- PASS: TestQAFormatterOutputIsScannedBeforeTheQACommit (0.53s)
+=== CONT  TestQAReportBinaryCheckReadsOnlyPreparedEvidence
+--- PASS: TestQAReportBinaryCheckReadsOnlyPreparedEvidence (0.01s)
+=== CONT  TestTaskCycleSettlesBudgetOutcomeWithoutError
+--- PASS: TestQASettlementRefusesARewrittenAuditorStaleness (0.82s)
+=== CONT  TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited
+--- PASS: TestQASettlementRefusesARewrittenAuditingBinary (0.81s)
+=== CONT  TestQAReportCommitsImageEvidence
+--- PASS: TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement (0.21s)
+=== CONT  TestQAMechanicalRequestFallsBackToTheRunStartHeadWithASkip
+--- PASS: TestQASettlementAcceptsTheSeededAuditorFields (0.79s)
+=== CONT  TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch
+--- PASS: TestQASettlementRenewsTheBudgetBeforeTheReportCommit (0.64s)
+=== CONT  TestQAMechanicalRequestAuditsEveryCommitOfATask
+--- PASS: TestTaskCycleSettlesBudgetOutcomeWithoutError (0.20s)
+=== CONT  TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged
+--- PASS: TestQAFormatCommitsTheFormattedReport (0.43s)
+=== CONT  TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch
+=== CONT  TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun
+--- PASS: TestQAFormatFormatsAnImportedPassBeforeThePrecondition (0.83s)
+--- PASS: TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged (0.26s)
+=== CONT  TestQAEvidenceSnapshotCancellationPublishesStop
+--- PASS: TestQAGateStripsAnAgentWrittenSnapshotWhenNoRowQualifies (0.61s)
+=== CONT  TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch
+--- PASS: TestQAMechanicalRequestFallsBackToTheRunStartHeadWithASkip (0.45s)
+=== CONT  TestQADeliveryBasePrefersTheRemoteTrackingBranch
+--- PASS: TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead (0.61s)
+=== CONT  TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths
+--- PASS: TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited (0.58s)
+=== CONT  TestQAPromptNamesTheImportedPassHead
+--- PASS: TestQAEvidenceSnapshotCancellationPublishesStop (0.19s)
+=== CONT  TestPriorQAPassRefusesAReportOlderThanTheTreesNewest
+--- PASS: TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch (0.14s)
+=== CONT  TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+--- PASS: TestQAReportCommitsImageEvidence (0.69s)
+=== CONT  TestQAGateCarriesARowFromAnUnintegratedFailedPass
+--- PASS: TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch (0.67s)
+=== CONT  TestPriorQAPassRefusesAReportDatedAfterToday
+--- PASS: TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths (0.26s)
+=== CONT  TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason
+--- PASS: TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch (0.52s)
+=== CONT  TestTaskBudgetSettlementAfterTheDeadlineDoesNotRenew
+--- PASS: TestQAMechanicalRequestAuditsEveryCommitOfATask (0.75s)
+=== CONT  TestPriorQAPassRefusesAReportTheShapeDetectorRefuses
+--- PASS: TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths (0.23s)
+=== CONT  TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt
+--- PASS: TestQADeliveryBasePrefersTheRemoteTrackingBranch (0.36s)
+=== CONT  TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts
+--- PASS: TestTaskBudgetSettlementAfterTheDeadlineDoesNotRenew (0.23s)
+=== CONT  TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed
+--- PASS: TestPriorQAPassRefusesAReportOlderThanTheTreesNewest (0.43s)
+=== CONT  TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks
+--- PASS: TestQAPromptNamesTheImportedPassHead (0.52s)
+=== CONT  TestQAProviderSystemErrorBeforeTheReportFallsBackAndRecordsIt
+=== CONT  TestTaskCycleStopRequestBeforeQAStepSkipsQA
+--- PASS: TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts (0.24s)
+--- PASS: TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun (0.77s)
+=== CONT  TestFinalPushRefusesAHistoryThatAddsASecret
+=== CONT  TestQAProviderSystemErrorExhaustionSettlesInsteadOfHalting
+--- PASS: TestPriorQAPassRefusesAReportDatedAfterToday (0.50s)
+--- PASS: TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch (0.28s)
+=== CONT  TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit
+=== RUN   TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit/Task_commit
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before
+--- PASS: TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks (0.30s)
+=== CONT  TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress
+--- PASS: TestPriorQAPassRefusesAReportTheShapeDetectorRefuses (0.53s)
+=== CONT  TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees
+=== CONT  TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask
+--- PASS: TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt (0.59s)
+--- PASS: TestTaskCycleStopRequestBeforeQAStepSkipsQA (0.43s)
+=== CONT  TestTaskOutsideTheAuthorizationFailsOnProjectConfig
+=== RUN   TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit/Batch_commit
+--- PASS: TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress (0.25s)
+=== CONT  TestQAReportCommitReportsProjectConfigAsDropped
+--- PASS: TestQAProviderSystemErrorBeforeTheReportFallsBackAndRecordsIt (0.51s)
+=== CONT  TestTaskCycleWithoutRepositoryGateSkipsPrecondition
+=== RUN   TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit/QA_Report_commit
+--- PASS: TestTaskCycleLostOutputRefusesCompletion (0.84s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason (0.25s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed (0.29s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before (0.29s)
+=== CONT  TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable
+--- PASS: TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask (0.27s)
+=== CONT  TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization
+--- PASS: TestQAProviderSystemErrorExhaustionSettlesInsteadOfHalting (0.48s)
+=== CONT  TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss
+--- PASS: TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees (0.40s)
+=== CONT  TestPriorQAPassWithoutRecordedPassPreservesNullFiles
+--- PASS: TestTaskOutsideTheAuthorizationFailsOnProjectConfig (0.26s)
+=== CONT  TestPriorQAPassSkipNeverReportsPathDiffers
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.go
+--- PASS: TestQAReportCommitReportsProjectConfigAsDropped (0.26s)
+=== CONT  TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+--- PASS: TestFinalPushRefusesAHistoryThatAddsASecret (0.73s)
+=== CONT  TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing
+--- PASS: TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit (0.58s)
+    --- PASS: TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit/Task_commit (0.25s)
+    --- PASS: TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit/Batch_commit (0.03s)
+    --- PASS: TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit/QA_Report_commit (0.29s)
+=== CONT  TestTaskCommitStagesAnUnstagedRename
+--- PASS: TestTaskCycleWithoutRepositoryGateSkipsPrecondition (0.31s)
+=== CONT  TestPriorQAPassIgnoresReportsAlreadyInHistory
+--- PASS: TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable (0.30s)
+=== CONT  TestTaskCycleFinishesBeforeBudgetDeadline
+=== CONT  TestPriorQAPassRefusesADifferingPath
+--- PASS: TestQAGateCarriesARowFromAnUnintegratedFailedPass (1.27s)
+--- PASS: TestTaskCommitStagesAnUnstagedRename (0.13s)
+=== CONT  TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs
+=== RUN   TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/feat:_task
+--- PASS: TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization (0.32s)
+=== CONT  TestQALostRolloutExhaustionSettlesInsteadOfHalting
+=== CONT  TestTaskCycleRepositoryGatePreconditionPassesThenProbeRefusesVacuousGate
+--- PASS: TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing (0.20s)
+--- PASS: TestPriorQAPassWithoutRecordedPassPreservesNullFiles (0.31s)
+=== CONT  TestTaskCycleEndsRunAtBudgetDeadline
+=== RUN   TestTaskCycleEndsRunAtBudgetDeadline/termination_proved
+=== PAUSE TestTaskCycleEndsRunAtBudgetDeadline/termination_proved
+=== RUN   TestTaskCycleEndsRunAtBudgetDeadline/termination_unprovable
+=== PAUSE TestTaskCycleEndsRunAtBudgetDeadline/termination_unprovable
+=== CONT  TestTaskCycleDisabledBudgetDerivesNoDeadline
+--- PASS: TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss (0.40s)
+=== CONT  TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed
+--- PASS: TestTaskCycleFinishesBeforeBudgetDeadline (0.27s)
+=== CONT  TestTaskCycleRefusesToStartWorkPastItsBudget
+--- PASS: TestTaskCycleRepositoryGatePreconditionPassesThenProbeRefusesVacuousGate (0.20s)
+=== CONT  TestTaskBudgetWatchdogUsesTheRealTimerByDefault
+--- PASS: TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt (0.50s)
+=== CONT  TestTaskCycleSettlesForgottenAgentStatus
+=== RUN   TestTaskCycleSettlesForgottenAgentStatus/completed_on_passing_verification
+--- PASS: TestTaskCycleDisabledBudgetDerivesNoDeadline (0.26s)
+=== CONT  TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile
+=== CONT  TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits
+--- PASS: TestPriorQAPassIgnoresReportsAlreadyInHistory (0.45s)
+--- PASS: TestTaskCycleRefusesToStartWorkPastItsBudget (0.19s)
+=== CONT  TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason
+--- PASS: TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed (0.26s)
+=== CONT  TestTaskCommitStagesAStagedRename
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.rs
+=== RUN   TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/docs:_qa_report_for_another-spec_(fail)
+--- PASS: TestPriorQAPassRefusesADifferingPath (0.49s)
+=== CONT  TestTaskCycleDispatchesSerializedCollisionGraph
+--- PASS: TestQALostRolloutExhaustionSettlesInsteadOfHalting (0.47s)
+=== CONT  TestTaskCycleDispatchesCollidingGraphAtTaskCapacityOne
+--- PASS: TestTaskCommitStagesAStagedRename (0.18s)
+=== CONT  TestQAReportCommitExcludesVerificationWrites/tracked_file
+--- PASS: TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason (0.23s)
+=== CONT  TestQAReportCommitExcludesVerificationWrites/no_writes
+--- PASS: TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits (0.26s)
+=== CONT  TestQAMechanicalRequestCarriesAssignedRepairs/declared_repair_reaches_both_request_fields
+=== RUN   TestTaskCycleSettlesForgottenAgentStatus/failed_on_failing_verification
+--- PASS: TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile (0.29s)
+=== CONT  TestQAMechanicalRequestCarriesAssignedRepairs/undeclared_repair_keeps_request_fields_nil
+--- PASS: TestTaskBudgetWatchdogUsesTheRealTimerByDefault (0.39s)
+=== CONT  TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_is_recorded_as_one_terminal_row_and_its_frontmatter
+=== CONT  TestQAMechanicalRequestCarriesTheGatePrecondition/a_contradicted_Spec_reaches_the_stage_as_a_refusing_precondition
+--- PASS: TestQAMechanicalRequestCarriesAssignedRepairs (0.00s)
+    --- PASS: TestQAMechanicalRequestCarriesAssignedRepairs/declared_repair_reaches_both_request_fields (0.11s)
+    --- PASS: TestQAMechanicalRequestCarriesAssignedRepairs/undeclared_repair_keeps_request_fields_nil (0.12s)
+=== CONT  TestWriteMechanicalQAReportWritesThePreconditionRefusal/a_gate_that_refused_nothing_writes_the_report_it_wrote_before
+--- PASS: TestTaskCycleDispatchesSerializedCollisionGraph (0.32s)
+=== CONT  TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_reads_back_as_the_refusal_that_was_recorded
+--- PASS: TestTaskCycleDispatchesCollidingGraphAtTaskCapacityOne (0.33s)
+=== CONT  TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_mechanical_stage_accepts_the_shape_the_refusal_wrote
+--- PASS: TestTaskCycleSettlesForgottenAgentStatus (0.55s)
+    --- PASS: TestTaskCycleSettlesForgottenAgentStatus/completed_on_passing_verification (0.29s)
+    --- PASS: TestTaskCycleSettlesForgottenAgentStatus/failed_on_failing_verification (0.26s)
+=== CONT  TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_costs_the_report_none_of_the_stage's_own_observations
+--- PASS: TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs (0.87s)
+    --- PASS: TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/feat:_task (0.44s)
+    --- PASS: TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/docs:_qa_report_for_another-spec_(fail) (0.43s)
+=== CONT  TestQAMechanicalRequestCarriesTheGatePrecondition/a_clean_Spec_reaches_the_stage_refusing_nothing
+=== CONT  TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_retained
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.ts
+=== CONT  TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_absent
+=== CONT  TestQAGateRefusesOnUnobservedRepositoryVerification/reported_diagnostics_path_was_not_retained
+=== CONT  TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure
+=== CONT  TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry
+--- PASS: TestWriteMechanicalQAReportWritesThePreconditionRefusal (0.00s)
+    --- PASS: TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_is_recorded_as_one_terminal_row_and_its_frontmatter (0.29s)
+    --- PASS: TestWriteMechanicalQAReportWritesThePreconditionRefusal/a_gate_that_refused_nothing_writes_the_report_it_wrote_before (0.25s)
+    --- PASS: TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_reads_back_as_the_refusal_that_was_recorded (0.26s)
+    --- PASS: TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_mechanical_stage_accepts_the_shape_the_refusal_wrote (0.28s)
+    --- PASS: TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_costs_the_report_none_of_the_stage's_own_observations (0.25s)
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass
+=== CONT  TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+--- PASS: TestQAReportCommitExcludesVerificationWrites (0.00s)
+    --- PASS: TestQAReportCommitExcludesVerificationWrites/tracked_file (0.59s)
+    --- PASS: TestQAReportCommitExcludesVerificationWrites/no_writes (0.58s)
+--- PASS: TestQAMechanicalRequestCarriesTheGatePrecondition (0.00s)
+    --- PASS: TestQAMechanicalRequestCarriesTheGatePrecondition/a_contradicted_Spec_reaches_the_stage_as_a_refusing_precondition (0.29s)
+    --- PASS: TestQAMechanicalRequestCarriesTheGatePrecondition/a_clean_Spec_reaches_the_stage_refusing_nothing (0.32s)
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== CONT  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+=== CONT  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+--- PASS: TestQAGateRefusesOnUnobservedRepositoryVerification (0.00s)
+    --- PASS: TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_retained (0.50s)
+    --- PASS: TestQAGateRefusesOnUnobservedRepositoryVerification/reported_diagnostics_path_was_not_retained (0.47s)
+    --- PASS: TestQAGateRefusesOnUnobservedRepositoryVerification/diagnostics_path_absent (0.49s)
+=== CONT  TestTaskCycleEndsRunAtBudgetDeadline/termination_proved
+=== CONT  TestTaskCycleEndsRunAtBudgetDeadline/termination_unprovable
+--- PASS: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit (0.00s)
+    --- PASS: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file (0.34s)
+    --- PASS: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file (0.35s)
+--- PASS: TestQAGateRefusesOnFailedRepositoryVerification (0.00s)
+    --- PASS: TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure (0.47s)
+    --- PASS: TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry (0.48s)
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.tsx
+--- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally (0.00s)
+    --- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/pass (0.46s)
+    --- PASS: TestQATurnWithBackgroundTaskAndFinishedReportSettlesNormally/fail (0.46s)
+--- PASS: TestTaskCycleEndsRunAtBudgetDeadline (0.00s)
+    --- PASS: TestTaskCycleEndsRunAtBudgetDeadline/termination_proved (0.17s)
+    --- PASS: TestTaskCycleEndsRunAtBudgetDeadline/termination_unprovable (0.15s)
+--- PASS: TestQAReportWithANonImageBinarySettlesFailedWithoutACommit (0.00s)
+    --- PASS: TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png (0.33s)
+    --- PASS: TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png (0.32s)
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.mts
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.cts
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.js
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.jsx
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.mjs
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.cjs
+--- PASS: TestPriorQAPassSkipNeverReportsPathDiffers (3.56s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.go (0.62s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.rs (0.59s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.ts (0.61s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.tsx (0.27s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.mts (0.23s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.cts (0.24s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.js (0.23s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.jsx (0.24s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.mjs (0.26s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.cjs (0.26s)
+PASS
+suiteguard: guard cost: measured 2582 paths; fingerprint took 80.919292ms before and 66.335083ms after
+ok  	roundfix/internal/daemon	13.173s
+
+STDERR:

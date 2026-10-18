@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

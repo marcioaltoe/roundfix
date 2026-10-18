@@ -1,0 +1,95 @@
+Delivery Base: 1fac6b025f57797cf3356d54071b99d89c18585b
+Audited head: 4d5dbf4963ca586a01e62b25e4c695a0ad42fb65
+
+COMMAND: git diff-tree --no-commit-id --name-only -r 6efafa5545c342454c5d4c8ab3bbe8b8abf97164
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born/task_01.md
+docs/user-guide/commands/implement.md
+internal/daemon/qa_evidence_binary_test.go
+internal/daemon/qa_prior_pass_test.go
+internal/daemon/task_engine.go
+internal/speccheck/evidence_image.go
+internal/speccheck/evidence_image_test.go
+internal/speccheck/mechanical.go
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/implement.md
+skills/testdata/owned-skill-versions.json
+Outside Context/Recorded paths: []
+Grant is byte-identical at Delivery Base, Task parent and HEAD, and precedes the consuming Task; no authorization folded into Task.
+Recorded ordinary path: internal/daemon/qa_prior_pass_test.go (Task 01 Recorded paths).
+
+COMMAND: git diff-tree --no-commit-id --name-only -r daa7419300fe65c9a046df5c2b671cc41d348660
+.agents/skills/implement-task/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born/task_02.md
+docs/user-guide/commands/implement.md
+internal/daemon/task_engine.go
+internal/daemon/task_secret_scan_test.go
+internal/secretscan/added_lines_test.go
+internal/secretscan/scan.go
+skills/implement-task/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/implement.md
+skills/testdata/owned-skill-versions.json
+Outside Context/Recorded paths: []
+Grant is byte-identical at Delivery Base, Task parent and HEAD, and precedes the consuming Task; no authorization folded into Task.
+
+COMMAND: git diff-tree --no-commit-id --name-only -r 4d5dbf4963ca586a01e62b25e4c695a0ad42fb65
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born/task_03.md
+docs/user-guide/commands/deliver.md
+internal/cli/deliver_secret_rewrite.go
+internal/cli/deliver_secret_rewrite_test.go
+internal/cli/deliver_workflow.go
+internal/delivery/engine.go
+internal/delivery/park_class.go
+internal/delivery/park_class_test.go
+internal/delivery/push_secret_scan_test.go
+internal/delivery/secret_rewrite_retry_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+Outside Context/Recorded paths: []
+Grant is byte-identical at Delivery Base, Task parent and HEAD, and precedes the consuming Task; no authorization folded into Task.
+Byte invariant Makefile: UNCHANGED
+Byte invariant .github/workflows: UNCHANGED
+Byte invariant go.mod: UNCHANGED
+Byte invariant go.sum: UNCHANGED
+Byte invariant .roundfixrc.yml: UNCHANGED
+Byte invariant internal/baseline/assets/modules: UNCHANGED
+Byte invariant docs/agents/setup-context.json: UNCHANGED
+Byte invariant internal/secretscan/patterns.go: UNCHANGED
+Byte invariant internal/cli/spec_judge.go: UNCHANGED
+Byte invariant internal/judge: UNCHANGED
+QA settlement section unchanged: .agents/skills/implement-task/SKILL.md
+Mirror byte equality: skills/implement-task/SKILL.md
+Skill version raised: .agents/skills/implement-task/SKILL.md 0.0.4 -> 0.0.5
+QA settlement section unchanged: .agents/skills/qa-gate/SKILL.md
+Mirror byte equality: skills/qa-gate/SKILL.md
+Skill version raised: .agents/skills/qa-gate/SKILL.md 0.0.16 -> 0.0.17
+QA settlement section unchanged: .agents/skills/roundfix/SKILL.md
+Mirror byte equality: skills/roundfix/SKILL.md
+Skill version raised: .agents/skills/roundfix/SKILL.md 0.1.98 -> 0.1.102
+QA settlement section unchanged: skills/implement-task/SKILL.md
+QA settlement section unchanged: skills/qa-gate/SKILL.md
+QA settlement section unchanged: skills/roundfix/SKILL.md
+Existing test names preserved: internal/daemon/qa_prior_pass_test.go
+Existing test names preserved: internal/delivery/park_class_test.go
+Existing test names preserved: internal/delivery/push_secret_scan_test.go
+
+Issues: []
+COMMAND: git symbolic-ref refs/remotes/origin/HEAD
+refs/remotes/origin/main
+COMMAND: git merge-base HEAD refs/remotes/origin/main
+1fac6b025f57797cf3356d54071b99d89c18585b

@@ -1,0 +1,1115 @@
+COMMAND: go test -count=1 -v -run 'Retry|Deliver|Secret|Archived' ./internal/cli
+EXIT: 0
+STDOUT:
+=== RUN   TestDeliveryAcceptsAnArchiveWithRewrittenPromotedCopies
+=== PAUSE TestDeliveryAcceptsAnArchiveWithRewrittenPromotedCopies
+=== RUN   TestRunCausesReadAnArchivedTaskGraphFromGit
+=== PAUSE TestRunCausesReadAnArchivedTaskGraphFromGit
+=== RUN   TestSupersedeRefusesACancelledDeliverer
+=== PAUSE TestSupersedeRefusesACancelledDeliverer
+=== RUN   TestDeliverStartRefusesARequiredCancelledSpec
+=== PAUSE TestDeliverStartRefusesARequiredCancelledSpec
+=== RUN   TestDeliverRetryRefusesACancelledSpec
+=== PAUSE TestDeliverRetryRefusesACancelledSpec
+=== RUN   TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState
+=== PAUSE TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState
+=== RUN   TestDeliveryAcceptsAnExactRetirement
+=== PAUSE TestDeliveryAcceptsAnExactRetirement
+=== RUN   TestDeliveryRefusesAnInexactRetirement
+=== PAUSE TestDeliveryRefusesAnInexactRetirement
+=== RUN   TestDeliveryKeepsTheLegacyExactMove
+=== PAUSE TestDeliveryKeepsTheLegacyExactMove
+=== RUN   TestDeliveryArchiveStageCommitsTheArchiveRecord
+=== PAUSE TestDeliveryArchiveStageCommitsTheArchiveRecord
+=== RUN   TestDeliveryArchiveStageCommitsRelinkedFiles
+=== PAUSE TestDeliveryArchiveStageCommitsRelinkedFiles
+=== RUN   TestDeliveryAcceptsARelinkedRetirement
+=== PAUSE TestDeliveryAcceptsARelinkedRetirement
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile
+=== PAUSE TestDeliveryRefusesATamperedRelinkedFile
+=== RUN   TestDeliveryRefusesAnAmbiguousPromotionPairing
+=== PAUSE TestDeliveryRefusesAnAmbiguousPromotionPairing
+=== RUN   TestArchivedRetryOfAQueueStartedRunReturnsToReview
+=== PAUSE TestArchivedRetryOfAQueueStartedRunReturnsToReview
+=== RUN   TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+=== PAUSE TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+=== RUN   TestDeliveryRunResultMapsABudgetExceededRun
+=== PAUSE TestDeliveryRunResultMapsABudgetExceededRun
+=== RUN   TestDeliveryRunResultMapsAnUnresolvedRun
+=== PAUSE TestDeliveryRunResultMapsAnUnresolvedRun
+=== RUN   TestDeliveryRunResultMapsACleanExit
+=== PAUSE TestDeliveryRunResultMapsACleanExit
+=== RUN   TestDeliveryRunResultRefusesAFailedRun
+=== PAUSE TestDeliveryRunResultRefusesAFailedRun
+=== RUN   TestDeliveryRunResultRefusesAnExitWithoutANewRun
+=== PAUSE TestDeliveryRunResultRefusesAnExitWithoutANewRun
+=== RUN   TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation
+=== PAUSE TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation
+=== RUN   TestDeliveryStepRunsACopyOfTheItemBinary
+=== PAUSE TestDeliveryStepRunsACopyOfTheItemBinary
+=== RUN   TestDeliveryRebuildInPlaceNeverRewritesARunningCopy
+=== PAUSE TestDeliveryRebuildInPlaceNeverRewritesARunningCopy
+=== RUN   TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput
+=== PAUSE TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput
+=== RUN   TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe
+=== PAUSE TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe
+=== RUN   TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary
+=== PAUSE TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary
+=== RUN   TestDeliveryStepRunsTheItemBinary
+=== PAUSE TestDeliveryStepRunsTheItemBinary
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments
+=== PAUSE TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments
+=== RUN   TestDeliveryStepParksWhenTheItemBuildFails
+=== PAUSE TestDeliveryStepParksWhenTheItemBuildFails
+=== RUN   TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored
+=== PAUSE TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored
+=== RUN   TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable
+=== PAUSE TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable
+=== RUN   TestDeliveryItemBinaryThatCannotStartReturnsAParkError
+=== PAUSE TestDeliveryItemBinaryThatCannotStartReturnsAParkError
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== PAUSE TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== RUN   TestDeliverStartRefusesTwoItemBranchesWithWork
+=== PAUSE TestDeliverStartRefusesTwoItemBranchesWithWork
+=== RUN   TestDeliverStartIgnoresAnItemBranchWithoutWork
+=== PAUSE TestDeliverStartIgnoresAnItemBranchWithoutWork
+=== RUN   TestDeliveryProbeReportFormsEachEnd
+=== PAUSE TestDeliveryProbeReportFormsEachEnd
+=== RUN   TestDeliveryProbeReportRecordsTheProbeStart
+=== PAUSE TestDeliveryProbeReportRecordsTheProbeStart
+=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate
+=== PAUSE TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate
+=== RUN   TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns
+=== PAUSE TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns
+=== RUN   TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript
+=== PAUSE TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript
+=== RUN   TestDeliverStatusInAnItemWorktreeReproducesSurfaceTranscript
+=== PAUSE TestDeliverStatusInAnItemWorktreeReproducesSurfaceTranscript
+=== RUN   TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout
+=== PAUSE TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout
+=== RUN   TestDeliverItemWorktreeRefusalComparesResolvedPaths
+=== PAUSE TestDeliverItemWorktreeRefusalComparesResolvedPaths
+=== RUN   TestDeliverMissingQueueRefusalKeepsItsTextElsewhere
+=== PAUSE TestDeliverMissingQueueRefusalKeepsItsTextElsewhere
+=== RUN   TestDeliverItemWorktreeRefusalUsesFirstRecordedMatch
+=== PAUSE TestDeliverItemWorktreeRefusalUsesFirstRecordedMatch
+=== RUN   TestDeliverStartRecordsAndPrintsItsLimits
+=== PAUSE TestDeliverStartRecordsAndPrintsItsLimits
+=== RUN   TestDeliverStartRecordsNoneForOmittedLimits
+=== PAUSE TestDeliverStartRecordsNoneForOmittedLimits
+=== RUN   TestDeliverStartRefusesANonPositiveMaxDuration
+=== PAUSE TestDeliverStartRefusesANonPositiveMaxDuration
+=== RUN   TestDeliverStartRefusesAMalformedMaxDuration
+=== PAUSE TestDeliverStartRefusesAMalformedMaxDuration
+=== RUN   TestDeliverStartRefusesAMaxRetriesBelowOne
+=== PAUSE TestDeliverStartRefusesAMaxRetriesBelowOne
+=== RUN   TestDeliverStatusPrintsOnePendingQuestion
+=== PAUSE TestDeliverStatusPrintsOnePendingQuestion
+=== RUN   TestDeliverStatusPrintsNoQuestionWithoutAParkedItem
+=== PAUSE TestDeliverStatusPrintsNoQuestionWithoutAParkedItem
+=== RUN   TestDeliverHelpNamesTheLimitFlags
+=== PAUSE TestDeliverHelpNamesTheLimitFlags
+=== RUN   TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+=== PAUSE TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+=== RUN   TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+=== PAUSE TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+=== RUN   TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+=== PAUSE TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+=== RUN   TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+=== PAUSE TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+=== RUN   TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec
+=== PAUSE TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec
+=== RUN   TestDeliverReleaseKeepsAnUnrepresentedRun
+=== PAUSE TestDeliverReleaseKeepsAnUnrepresentedRun
+=== RUN   TestDeliverReleaseLeavesAnActiveRunAlone
+=== PAUSE TestDeliverReleaseLeavesAnActiveRunAlone
+=== RUN   TestDeliverReleaseNeverTouchesAnotherSpecsRun
+=== PAUSE TestDeliverReleaseNeverTouchesAnotherSpecsRun
+=== RUN   TestDeliverReleaseRefusesAnItemWithoutAMergeCommit
+=== PAUSE TestDeliverReleaseRefusesAnItemWithoutAMergeCommit
+=== RUN   TestDeliverReleaseRefusesAnItemWithoutACandidateHead
+=== PAUSE TestDeliverReleaseRefusesAnItemWithoutACandidateHead
+=== RUN   TestInspectItemReadsTheQAOverrideOfTheArchivedSpec
+=== PAUSE TestInspectItemReadsTheQAOverrideOfTheArchivedSpec
+=== RUN   TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit
+=== PAUSE TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit
+=== RUN   TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead
+=== PAUSE TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead
+=== RUN   TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry
+=== PAUSE TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== RUN   TestDeliverStatusNamesAnOwnerWithADifferentIdentity
+=== PAUSE TestDeliverStatusNamesAnOwnerWithADifferentIdentity
+=== RUN   TestDeliverStatusPrintsNoOwnerLineForAProvenOwner
+=== PAUSE TestDeliverStatusPrintsNoOwnerLineForAProvenOwner
+=== RUN   TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner
+=== PAUSE TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner
+=== RUN   TestDeliverStatusPrintsNoOwnerLineWhenNoItemCanAdvance
+=== PAUSE TestDeliverStatusPrintsNoOwnerLineWhenNoItemCanAdvance
+=== RUN   TestDeliverStatusReportsAnUncheckableOwnerOnStderr
+=== PAUSE TestDeliverStatusReportsAnUncheckableOwnerOnStderr
+=== RUN   TestDeliverStatusLeavesTheOwnerRecord
+=== PAUSE TestDeliverStatusLeavesTheOwnerRecord
+=== RUN   TestDeliverStatusPrintsOwnerAfterWarningsAndBeforeParks
+=== PAUSE TestDeliverStatusPrintsOwnerAfterWarningsAndBeforeParks
+=== RUN   TestDeliverStatusPrintsAParkLinePerParkedItem
+=== PAUSE TestDeliverStatusPrintsAParkLinePerParkedItem
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptOne
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptOne
+=== RUN   TestDeliverPlanApprovesAnExplicitEmptyPathsGrant
+=== PAUSE TestDeliverPlanApprovesAnExplicitEmptyPathsGrant
+=== RUN   TestDeliverPlanRefusesANullPathsGrant
+=== PAUSE TestDeliverPlanRefusesANullPathsGrant
+=== RUN   TestDeliverStartAcceptsAnExplicitEmptyPathsGrant
+=== PAUSE TestDeliverStartAcceptsAnExplicitEmptyPathsGrant
+=== RUN   TestDeliverPlanReportsAnApprovedAndABlockedSpec
+=== PAUSE TestDeliverPlanReportsAnApprovedAndABlockedSpec
+=== RUN   TestDeliverPlanExitsZeroWhenEverySpecIsApproved
+=== PAUSE TestDeliverPlanExitsZeroWhenEverySpecIsApproved
+=== RUN   TestDeliverPlanJSONCarriesTheSameFacts
+=== PAUSE TestDeliverPlanJSONCarriesTheSameFacts
+=== RUN   TestDeliverPlanNamesSharedProductionPremises
+=== PAUSE TestDeliverPlanNamesSharedProductionPremises
+=== RUN   TestDeliverPlanIgnoresSharedTestsAndGuides
+=== PAUSE TestDeliverPlanIgnoresSharedTestsAndGuides
+=== RUN   TestDeliverPlanListsIntentThatIsNotApprovedToRun
+=== PAUSE TestDeliverPlanListsIntentThatIsNotApprovedToRun
+=== RUN   TestDeliverPlanWritesNothing
+=== PAUSE TestDeliverPlanWritesNothing
+=== RUN   TestDeliverPlanDefaultsToEveryActiveSpec
+=== PAUSE TestDeliverPlanDefaultsToEveryActiveSpec
+=== RUN   TestDeliverPlanRefusesAnUnknownSlug
+=== PAUSE TestDeliverPlanRefusesAnUnknownSlug
+=== RUN   TestDeliverPlanRefusesAnUnknownFlag
+=== PAUSE TestDeliverPlanRefusesAnUnknownFlag
+=== RUN   TestDeliverStartRefusesASpecWithoutDeliveryAuthority
+=== PAUSE TestDeliverStartRefusesASpecWithoutDeliveryAuthority
+=== RUN   TestDeliverStartAcceptsASpecWithEveryDeliveryOperation
+=== PAUSE TestDeliverStartAcceptsASpecWithEveryDeliveryOperation
+=== RUN   TestDeliverHelpNamesThePlanCommand
+=== PAUSE TestDeliverHelpNamesThePlanCommand
+=== RUN   TestDeliverStartRefusesAPrerequisiteCycle
+=== PAUSE TestDeliverStartRefusesAPrerequisiteCycle
+=== RUN   TestDeliverStartRefusesAnUnknownPrerequisite
+=== PAUSE TestDeliverStartRefusesAnUnknownPrerequisite
+=== RUN   TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs
+=== PAUSE TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs
+=== RUN   TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically
+=== PAUSE TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically
+=== RUN   TestDeliveryRunResultReadsAnExhaustedProviderSystemError
+=== PAUSE TestDeliveryRunResultReadsAnExhaustedProviderSystemError
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== PAUSE TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== RUN   TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord
+=== PAUSE TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath
+=== PAUSE TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath
+=== RUN   TestDeliveryWorkflowAdoptsAnUncommittedRecord
+=== PAUSE TestDeliveryWorkflowAdoptsAnUncommittedRecord
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord
+=== PAUSE TestDeliveryWorkflowRefusesAnUncommittedInexactRecord
+=== RUN   TestDeliveryWorkflowSkipsALegacyArchiveFolder
+=== PAUSE TestDeliveryWorkflowSkipsALegacyArchiveFolder
+=== RUN   TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening
+=== PAUSE TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening
+=== RUN   TestCommandDeliveryEngineRecordsThePullRequest
+=== PAUSE TestCommandDeliveryEngineRecordsThePullRequest
+=== RUN   TestInspectItemReportsAnArchivedSpec
+=== PAUSE TestInspectItemReportsAnArchivedSpec
+=== RUN   TestReleaseMergedRunsUsesConfiguredDeliveryRemote
+=== PAUSE TestReleaseMergedRunsUsesConfiguredDeliveryRemote
+=== RUN   TestRetryRefusalNamesTheAmendingCommitAndTheRecovery
+=== PAUSE TestRetryRefusalNamesTheAmendingCommitAndTheRecovery
+=== RUN   TestRetryRefusalByATaskCommitKeepsTodaysText
+=== PAUSE TestRetryRefusalByATaskCommitKeepsTodaysText
+=== RUN   TestRetryRefusalWithoutMovedInputsKeepsTodaysText
+=== PAUSE TestRetryRefusalWithoutMovedInputsKeepsTodaysText
+=== RUN   TestDeliverRetryPrintsOneLinePerCarriedRun
+=== PAUSE TestDeliverRetryPrintsOneLinePerCarriedRun
+=== RUN   TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+=== PAUSE TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+=== RUN   TestDeliverRetryHandsTheItemToALiveOwner
+=== PAUSE TestDeliverRetryHandsTheItemToALiveOwner
+=== RUN   TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+=== PAUSE TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+=== RUN   TestDeliverRetryRequiresOneSlug
+=== PAUSE TestDeliverRetryRequiresOneSlug
+=== RUN   TestDeliverRetryRefusesAnEmptySlug
+=== PAUSE TestDeliverRetryRefusesAnEmptySlug
+=== RUN   TestDeliverRetryRefusesAnExtraArgument
+=== PAUSE TestDeliverRetryRefusesAnExtraArgument
+=== RUN   TestDeliverRetryRefusesUnknownFlag
+=== PAUSE TestDeliverRetryRefusesUnknownFlag
+=== RUN   TestDeliverRetryRefusalStartsNoOwner
+=== PAUSE TestDeliverRetryRefusalStartsNoOwner
+=== RUN   TestDeliveryOwnerRunsAgainForAnItemRetriedDuringItsPass
+--- PASS: TestDeliveryOwnerRunsAgainForAnItemRetriedDuringItsPass (0.05s)
+=== RUN   TestDeliveryOwnerReleasesAnIdleQueueAfterOnePass
+--- PASS: TestDeliveryOwnerReleasesAnIdleQueueAfterOnePass (0.04s)
+=== RUN   TestDeliveryOwnerFailsWhenIdleReleaseFails
+--- PASS: TestDeliveryOwnerFailsWhenIdleReleaseFails (0.04s)
+=== RUN   TestDeliveryOwnerReleasesItsClaimAfterEngineFailure
+--- PASS: TestDeliveryOwnerReleasesItsClaimAfterEngineFailure (0.06s)
+=== RUN   TestTopLevelUsageNamesDeliverRetry
+=== PAUSE TestTopLevelUsageNamesDeliverRetry
+=== RUN   TestDeliverRetryPrintsARefusalWithoutUsage
+=== PAUSE TestDeliverRetryPrintsARefusalWithoutUsage
+=== RUN   TestDeliverRetryKeepsUsageForAnArgumentError
+=== PAUSE TestDeliverRetryKeepsUsageForAnArgumentError
+=== RUN   TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== PAUSE TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== RUN   TestDeliverStatusPrintsAnItemWarning
+=== PAUSE TestDeliverStatusPrintsAnItemWarning
+=== RUN   TestDeliverStatusPrintsNoWarningLineWithoutAWarning
+=== PAUSE TestDeliverStatusPrintsNoWarningLineWithoutAWarning
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused
+=== PAUSE TestACorrectionOutsideTheArchivedSpecIsRefused
+=== RUN   TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths
+=== PAUSE TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths
+=== RUN   TestRetryKeepsTheBoundForADismissedRoundTwoFinding
+=== PAUSE TestRetryKeepsTheBoundForADismissedRoundTwoFinding
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout
+=== PAUSE TestDeliveryRunResultReadsAnExhaustedLostRollout
+=== RUN   TestSecretRewriteAcceptsReplacedMatchedLines
+=== PAUSE TestSecretRewriteAcceptsReplacedMatchedLines
+=== RUN   TestSecretRewriteRefusesAnyOtherChange
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange
+=== RUN   TestDeliverStartRefusesWhenThisMachineCannotPublish
+=== PAUSE TestDeliverStartRefusesWhenThisMachineCannotPublish
+=== RUN   TestDeliverStartProceedsOnAForgeWarning
+=== PAUSE TestDeliverStartProceedsOnAForgeWarning
+=== RUN   TestDeliverStatusPrintsTheItemWorktree
+=== PAUSE TestDeliverStatusPrintsTheItemWorktree
+=== RUN   TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue
+=== PAUSE TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue
+=== RUN   TestDeliverCommandStopsAndResumesPersistedQueue
+=== PAUSE TestDeliverCommandStopsAndResumesPersistedQueue
+=== RUN   TestEachDeliveryGetsItsOwnBranch
+=== PAUSE TestEachDeliveryGetsItsOwnBranch
+=== RUN   TestDeliverNeverTouchesTheUserCheckout
+=== PAUSE TestDeliverNeverTouchesTheUserCheckout
+=== RUN   TestDeliverCommandRefusesUnknownFlags
+=== PAUSE TestDeliverCommandRefusesUnknownFlags
+=== RUN   TestDeliverStartRecordsAndPrintsTheTokenCeiling
+=== PAUSE TestDeliverStartRecordsAndPrintsTheTokenCeiling
+=== RUN   TestDeliverStartRefusesAMaxTokensBelowOne
+=== PAUSE TestDeliverStartRefusesAMaxTokensBelowOne
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens
+=== PAUSE TestDeliverStartRefusesANonIntegerMaxTokens
+=== RUN   TestDeliverStatusPrintsTheTokenCeilingQuestion
+=== PAUSE TestDeliverStatusPrintsTheTokenCeilingQuestion
+=== RUN   TestDeliverRetryIsRefusedAtTheTokenCeiling
+=== PAUSE TestDeliverRetryIsRefusedAtTheTokenCeiling
+=== RUN   TestDeliverHelpNamesTheTokenCeiling
+=== PAUSE TestDeliverHelpNamesTheTokenCeiling
+=== RUN   TestDeliverStartPrintsTokensNone
+=== PAUSE TestDeliverStartPrintsTokensNone
+=== RUN   TestDeliverStatusPrintsTheUsageLine
+=== PAUSE TestDeliverStatusPrintsTheUsageLine
+=== RUN   TestDeliverStatusPrintsNoRunsRecorded
+=== PAUSE TestDeliverStatusPrintsNoRunsRecorded
+=== RUN   TestHistorySanitizeAdviceWithoutAKnownDelivery
+=== PAUSE TestHistorySanitizeAdviceWithoutAKnownDelivery
+=== RUN   TestProfileProofDoesNotRetryARejectedSelection
+=== PAUSE TestProfileProofDoesNotRetryARejectedSelection
+=== RUN   TestProfileProofDoesNotRetryACancelledCommand
+=== PAUSE TestProfileProofDoesNotRetryACancelledCommand
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection
+=== PAUSE TestReadinessRemoteFormsAndDeliverySelection
+=== RUN   TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec
+=== PAUSE TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec
+=== RUN   TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+=== PAUSE TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+=== RUN   TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== PAUSE TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== RUN   TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+=== PAUSE TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+=== RUN   TestReviewRecordsNoArchivedSpecForAnActiveSpec
+=== PAUSE TestReviewRecordsNoArchivedSpecForAnActiveSpec
+=== RUN   TestDeliveryReviewResultCarriesArchivedSpecs
+=== PAUSE TestDeliveryReviewResultCarriesArchivedSpecs
+=== RUN   TestDeliveryConventionC2ExemptsTheQATask
+=== PAUSE TestDeliveryConventionC2ExemptsTheQATask
+=== RUN   TestDeliveryReviewResultAdvancesDismissedFindings
+=== PAUSE TestDeliveryReviewResultAdvancesDismissedFindings
+=== RUN   TestDeliveryReviewResultParksStandingFindings
+=== PAUSE TestDeliveryReviewResultParksStandingFindings
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord
+=== PAUSE TestDeliveryReviewResultAdvancesACeilingClosedRecord
+=== RUN   TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged
+=== PAUSE TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged
+=== RUN   TestReviewActivatesTheFallbackAfterTheRetryFails
+=== PAUSE TestReviewActivatesTheFallbackAfterTheRetryFails
+=== RUN   TestReviewBlocksAfterTheRetryFailsWithoutFallback
+=== PAUSE TestReviewBlocksAfterTheRetryFailsWithoutFallback
+=== RUN   TestReviewDoesNotRetryAGenericPreparationError
+=== PAUSE TestReviewDoesNotRetryAGenericPreparationError
+=== RUN   TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure
+=== PAUSE TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure
+=== RUN   TestReviewSelectionRetryBudgetSpansPreparationAndPrompt
+=== PAUSE TestReviewSelectionRetryBudgetSpansPreparationAndPrompt
+=== RUN   TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt
+=== PAUSE TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt
+=== RUN   TestReviewPreviousSelectionRetryDoesNotSuffixUnretriedFallbackFailure
+=== PAUSE TestReviewPreviousSelectionRetryDoesNotSuffixUnretriedFallbackFailure
+=== RUN   TestReviewReadsAnArchivedSpecFromTheCandidate
+=== PAUSE TestReviewReadsAnArchivedSpecFromTheCandidate
+=== RUN   TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+=== PAUSE TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+=== RUN   TestDeliverStartRunsRunRetention
+=== PAUSE TestDeliverStartRunsRunRetention
+=== RUN   TestDeliverStatusIsUnchangedByRunRetention
+=== PAUSE TestDeliverStatusIsUnchangedByRunRetention
+=== RUN   TestSupersedeRejectsANonActiveDeliverer
+=== PAUSE TestSupersedeRejectsANonActiveDeliverer
+=== RUN   TestSupersedeAcceptsAnActiveDeliverer
+=== PAUSE TestSupersedeAcceptsAnActiveDeliverer
+=== RUN   TestSupersedeAcceptsASupersessionArchivedDeliverer
+=== PAUSE TestSupersedeAcceptsASupersessionArchivedDeliverer
+=== RUN   TestSupersedeRejectsAnUnmarkedArchivedDeliverer
+=== PAUSE TestSupersedeRejectsAnUnmarkedArchivedDeliverer
+=== CONT  TestReviewDoesNotRetryAGenericPreparationError
+=== CONT  TestDeliveryAcceptsAnArchiveWithRewrittenPromotedCopies
+=== CONT  TestDeliverPlanNamesSharedProductionPremises
+=== CONT  TestDeliverStartRunsRunRetention
+=== CONT  TestDeliverStatusPrintsNoWarningLineWithoutAWarning
+=== CONT  TestSupersedeAcceptsAnActiveDeliverer
+=== CONT  TestReviewPreviousSelectionRetryDoesNotSuffixUnretriedFallbackFailure
+=== CONT  TestDeliverPlanJSONCarriesTheSameFacts
+=== CONT  TestDeliverReleaseRefusesAnItemWithoutACandidateHead
+=== CONT  TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout
+--- PASS: TestSupersedeAcceptsAnActiveDeliverer (0.10s)
+=== CONT  TestDeliverReleaseRefusesAnItemWithoutAMergeCommit
+--- PASS: TestDeliverStatusPrintsNoWarningLineWithoutAWarning (0.11s)
+=== CONT  TestDeliverReleaseNeverTouchesAnotherSpecsRun
+=== RUN   TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/resume
+=== RUN   TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/stop
+--- PASS: TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout (0.19s)
+    --- PASS: TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/resume (0.00s)
+    --- PASS: TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/stop (0.01s)
+=== CONT  TestDeliverReleaseLeavesAnActiveRunAlone
+--- PASS: TestReviewDoesNotRetryAGenericPreparationError (0.31s)
+=== CONT  TestDeliverReleaseKeepsAnUnrepresentedRun
+--- PASS: TestReviewPreviousSelectionRetryDoesNotSuffixUnretriedFallbackFailure (0.33s)
+=== CONT  TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec
+--- PASS: TestDeliverStartRunsRunRetention (0.33s)
+=== CONT  TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+--- PASS: TestDeliverReleaseRefusesAnItemWithoutACandidateHead (0.34s)
+=== CONT  TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+--- PASS: TestDeliverReleaseLeavesAnActiveRunAlone (0.21s)
+=== CONT  TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+--- PASS: TestDeliverReleaseRefusesAnItemWithoutAMergeCommit (0.36s)
+=== CONT  TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+--- PASS: TestDeliverPlanNamesSharedProductionPremises (0.53s)
+=== CONT  TestDeliverHelpNamesTheLimitFlags
+--- PASS: TestDeliverHelpNamesTheLimitFlags (0.00s)
+=== CONT  TestDeliverStatusPrintsNoQuestionWithoutAParkedItem
+--- PASS: TestDeliverReleaseNeverTouchesAnotherSpecsRun (0.44s)
+=== CONT  TestDeliverStatusPrintsOnePendingQuestion
+=== CONT  TestDeliverStartRefusesAMaxRetriesBelowOne
+=== RUN   TestDeliverStartRefusesAMaxRetriesBelowOne/zero
+--- PASS: TestDeliverPlanJSONCarriesTheSameFacts (0.57s)
+--- PASS: TestDeliverStatusPrintsNoQuestionWithoutAParkedItem (0.13s)
+=== CONT  TestDeliverStartRefusesAMalformedMaxDuration
+--- PASS: TestDeliverStatusPrintsOnePendingQuestion (0.10s)
+=== CONT  TestDeliverStartRefusesANonPositiveMaxDuration
+=== RUN   TestDeliverStartRefusesANonPositiveMaxDuration/zero
+=== RUN   TestDeliverStartRefusesAMaxRetriesBelowOne/negative
+--- PASS: TestDeliverStartRefusesAMalformedMaxDuration (0.10s)
+=== CONT  TestDeliverStartRecordsNoneForOmittedLimits
+=== RUN   TestDeliverStartRefusesANonPositiveMaxDuration/negative
+--- PASS: TestDeliverStartRefusesAMaxRetriesBelowOne (0.20s)
+    --- PASS: TestDeliverStartRefusesAMaxRetriesBelowOne/zero (0.10s)
+    --- PASS: TestDeliverStartRefusesAMaxRetriesBelowOne/negative (0.11s)
+=== CONT  TestDeliverStartRecordsAndPrintsItsLimits
+--- PASS: TestDeliverStartRefusesANonPositiveMaxDuration (0.19s)
+    --- PASS: TestDeliverStartRefusesANonPositiveMaxDuration/zero (0.10s)
+    --- PASS: TestDeliverStartRefusesANonPositiveMaxDuration/negative (0.09s)
+=== CONT  TestDeliverItemWorktreeRefusalUsesFirstRecordedMatch
+--- PASS: TestDeliverRetryRefusesAPullRequestClosedWithoutMerging (0.58s)
+=== CONT  TestDeliverMissingQueueRefusalKeepsItsTextElsewhere
+--- PASS: TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore (0.61s)
+=== CONT  TestDeliverItemWorktreeRefusalComparesResolvedPaths
+--- PASS: TestDeliverItemWorktreeRefusalUsesFirstRecordedMatch (0.15s)
+=== CONT  TestDeliverPlanApprovesAnExplicitEmptyPathsGrant
+--- PASS: TestDeliverStartRecordsNoneForOmittedLimits (0.31s)
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptOne
+=== RUN   TestDeliverItemWorktreeRefusalComparesResolvedPaths/retry
+=== RUN   TestDeliverItemWorktreeRefusalComparesResolvedPaths/status
+=== RUN   TestDeliverItemWorktreeRefusalComparesResolvedPaths/resume
+=== RUN   TestDeliverItemWorktreeRefusalComparesResolvedPaths/stop
+--- PASS: TestDeliverStartRecordsAndPrintsItsLimits (0.31s)
+=== CONT  TestDeliverStatusPrintsAParkLinePerParkedItem
+--- PASS: TestDeliverItemWorktreeRefusalComparesResolvedPaths (0.17s)
+    --- PASS: TestDeliverItemWorktreeRefusalComparesResolvedPaths/retry (0.01s)
+    --- PASS: TestDeliverItemWorktreeRefusalComparesResolvedPaths/status (0.00s)
+    --- PASS: TestDeliverItemWorktreeRefusalComparesResolvedPaths/resume (0.00s)
+    --- PASS: TestDeliverItemWorktreeRefusalComparesResolvedPaths/stop (0.01s)
+=== CONT  TestDeliverStartAcceptsAnExplicitEmptyPathsGrant
+=== RUN   TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/retry
+=== RUN   TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/status
+=== RUN   TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/resume
+=== RUN   TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/stop
+=== RUN   TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/lookup_unavailable
+--- PASS: TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest (0.75s)
+=== CONT  TestDeliverPlanRefusesANullPathsGrant
+--- PASS: TestDeliverMissingQueueRefusalKeepsItsTextElsewhere (0.26s)
+    --- PASS: TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/retry (0.01s)
+    --- PASS: TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/status (0.00s)
+    --- PASS: TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/resume (0.00s)
+    --- PASS: TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/stop (0.00s)
+    --- PASS: TestDeliverMissingQueueRefusalKeepsItsTextElsewhere/lookup_unavailable (0.00s)
+=== CONT  TestDeliverStatusLeavesTheOwnerRecord
+=== RUN   TestDeliverStatusLeavesTheOwnerRecord/absent
+=== PAUSE TestDeliverStatusLeavesTheOwnerRecord/absent
+=== RUN   TestDeliverStatusLeavesTheOwnerRecord/different_identity
+=== PAUSE TestDeliverStatusLeavesTheOwnerRecord/different_identity
+=== RUN   TestDeliverStatusLeavesTheOwnerRecord/proven
+=== PAUSE TestDeliverStatusLeavesTheOwnerRecord/proven
+=== RUN   TestDeliverStatusLeavesTheOwnerRecord/unreadable
+=== PAUSE TestDeliverStatusLeavesTheOwnerRecord/unreadable
+=== CONT  TestDeliverStatusReportsAnUncheckableOwnerOnStderr
+=== RUN   TestDeliverStatusReportsAnUncheckableOwnerOnStderr/unreadable_identity
+=== PAUSE TestDeliverStatusReportsAnUncheckableOwnerOnStderr/unreadable_identity
+=== RUN   TestDeliverStatusReportsAnUncheckableOwnerOnStderr/other_error
+=== PAUSE TestDeliverStatusReportsAnUncheckableOwnerOnStderr/other_error
+=== RUN   TestDeliverStatusReportsAnUncheckableOwnerOnStderr/missing_controller
+=== PAUSE TestDeliverStatusReportsAnUncheckableOwnerOnStderr/missing_controller
+=== CONT  TestDeliverStatusPrintsNoOwnerLineWhenNoItemCanAdvance
+--- PASS: TestDeliverReleaseKeepsAnUnrepresentedRun (0.88s)
+=== CONT  TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptOne (0.14s)
+=== CONT  TestDeliverStatusPrintsNoOwnerLineForAProvenOwner
+--- PASS: TestDeliverStatusPrintsAParkLinePerParkedItem (0.13s)
+=== CONT  TestDeliverStatusNamesAnOwnerWithADifferentIdentity
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+--- PASS: TestDeliverStatusPrintsNoOwnerLineWhenNoItemCanAdvance (0.09s)
+--- PASS: TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner (0.10s)
+=== CONT  TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry
+--- PASS: TestDeliverStatusNamesAnOwnerWithADifferentIdentity (0.11s)
+=== CONT  TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead
+--- PASS: TestDeliverStatusPrintsNoOwnerLineForAProvenOwner (0.13s)
+=== CONT  TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit
+=== RUN   TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/archive_head
+=== CONT  TestInspectItemReadsTheQAOverrideOfTheArchivedSpec
+=== RUN   TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/override
+--- PASS: TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone (0.88s)
+--- PASS: TestDeliverPlanApprovesAnExplicitEmptyPathsGrant (0.36s)
+=== CONT  TestDeliverStatusInAnItemWorktreeReproducesSurfaceTranscript
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning (0.13s)
+=== CONT  TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript
+--- PASS: TestDeliverStartAcceptsAnExplicitEmptyPathsGrant (0.35s)
+=== CONT  TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns
+--- PASS: TestDeliverPlanRefusesANullPathsGrant (0.37s)
+=== CONT  TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate
+--- PASS: TestDeliverStatusInAnItemWorktreeReproducesSurfaceTranscript (0.20s)
+=== CONT  TestDeliveryProbeReportRecordsTheProbeStart
+--- PASS: TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript (0.16s)
+=== CONT  TestDeliveryProbeReportFormsEachEnd
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent/recorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent/recorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent/recorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent/unrecorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent/unrecorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/absent/unrecorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created/recorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created/recorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created/recorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created/unrecorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created/unrecorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/created/unrecorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/recorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/recorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/recorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/unrecorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/unrecorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/unrecorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced/recorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced/recorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced/recorded/canceled
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced/unrecorded
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced/unrecorded/live
+=== RUN   TestDeliveryProbeReportFormsEachEnd/replaced/unrecorded/canceled
+--- PASS: TestDeliveryProbeReportFormsEachEnd (0.00s)
+    --- PASS: TestDeliveryProbeReportFormsEachEnd/absent (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/absent/recorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/absent/recorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/absent/recorded/canceled (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/absent/unrecorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/absent/unrecorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/absent/unrecorded/canceled (0.00s)
+    --- PASS: TestDeliveryProbeReportFormsEachEnd/created (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/created/recorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/created/recorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/created/recorded/canceled (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/created/unrecorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/created/unrecorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/created/unrecorded/canceled (0.00s)
+    --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/recorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/recorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/recorded/canceled (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/unrecorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/unrecorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/rewritten_in_place/unrecorded/canceled (0.00s)
+    --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced/recorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced/recorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced/recorded/canceled (0.00s)
+        --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced/unrecorded (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced/unrecorded/live (0.00s)
+            --- PASS: TestDeliveryProbeReportFormsEachEnd/replaced/unrecorded/canceled (0.00s)
+=== CONT  TestDeliverStartIgnoresAnItemBranchWithoutWork
+=== RUN   TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/normal_archive
+--- PASS: TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead (0.38s)
+=== CONT  TestDeliverStartRefusesTwoItemBranchesWithWork
+=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stderr
+=== RUN   TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/operator_commit_after_archive
+--- PASS: TestInspectItemReadsTheQAOverrideOfTheArchivedSpec (0.52s)
+    --- PASS: TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/override (0.27s)
+    --- PASS: TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/normal_archive (0.25s)
+=== CONT  TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_false
+=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout
+--- PASS: TestDeliveryProbeReportRecordsTheProbeStart (0.56s)
+=== CONT  TestDeliveryItemBinaryThatCannotStartReturnsAParkError
+--- PASS: TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry (0.90s)
+=== CONT  TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable
+--- PASS: TestDeliveryStepProbesARebuiltItemBinaryWhileThePreviousBuildStillRuns (0.78s)
+=== CONT  TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored
+--- PASS: TestDeliverStartRefusesTwoItemBranchesWithWork (0.55s)
+=== CONT  TestDeliveryStepParksWhenTheItemBuildFails
+--- PASS: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate (0.75s)
+    --- PASS: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stderr (0.28s)
+    --- PASS: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout (0.14s)
+=== CONT  TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments
+=== CONT  TestDeliveryStepRunsTheItemBinary
+--- PASS: TestDeliverStartIgnoresAnItemBranchWithoutWork (0.71s)
+--- PASS: TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit (1.03s)
+    --- PASS: TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/archive_head (0.52s)
+    --- PASS: TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/operator_commit_after_archive (0.52s)
+=== CONT  TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary
+--- PASS: TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec (2.21s)
+=== CONT  TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe
+--- PASS: TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored (0.37s)
+=== CONT  TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput
+--- PASS: TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable (0.42s)
+=== CONT  TestDeliveryRebuildInPlaceNeverRewritesARunningCopy
+=== RUN   TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput/directory
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/implement
+--- PASS: TestDeliveryStepParksWhenTheItemBuildFails (0.39s)
+=== CONT  TestDeliveryStepRunsACopyOfTheItemBinary
+--- PASS: TestDeliveryItemBinaryThatCannotStartReturnsAParkError (0.55s)
+=== CONT  TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation
+--- PASS: TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation (0.00s)
+=== CONT  TestDeliveryRunResultRefusesAnExitWithoutANewRun
+--- PASS: TestDeliveryRunResultRefusesAnExitWithoutANewRun (0.00s)
+=== CONT  TestDeliveryRunResultRefusesAFailedRun
+--- PASS: TestDeliveryRunResultRefusesAFailedRun (0.00s)
+=== CONT  TestDeliveryRunResultMapsACleanExit
+--- PASS: TestDeliveryRunResultMapsACleanExit (0.00s)
+=== CONT  TestDeliveryRunResultMapsAnUnresolvedRun
+--- PASS: TestDeliveryRunResultMapsAnUnresolvedRun (0.00s)
+=== CONT  TestDeliveryRunResultMapsABudgetExceededRun
+--- PASS: TestDeliveryRunResultMapsABudgetExceededRun (0.00s)
+=== CONT  TestReviewBlocksAfterTheRetryFailsWithoutFallback
+=== RUN   TestReviewBlocksAfterTheRetryFailsWithoutFallback/preparation
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_true
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/archive
+=== RUN   TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary/empty
+--- PASS: TestDeliveryStepRunsTheItemBinary (0.66s)
+=== CONT  TestReviewActivatesTheFallbackAfterTheRetryFails
+=== RUN   TestReviewActivatesTheFallbackAfterTheRetryFails/preparation
+=== RUN   TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput/blocked_destination
+=== RUN   TestReviewBlocksAfterTheRetryFailsWithoutFallback/prompt
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/review
+=== RUN   TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary/stderr
+=== RUN   TestReviewActivatesTheFallbackAfterTheRetryFails/prompt
+--- PASS: TestDeliveryStepRunsACopyOfTheItemBinary (0.56s)
+=== CONT  TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged
+--- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments (0.94s)
+    --- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/implement (0.26s)
+    --- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/archive (0.21s)
+    --- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/review (0.10s)
+=== CONT  TestDeliveryReviewResultAdvancesACeilingClosedRecord
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord/ceiling-closed
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord/blocked
+--- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord (0.00s)
+    --- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord/ceiling-closed (0.00s)
+    --- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord/blocked (0.00s)
+=== CONT  TestDeliveryReviewResultParksStandingFindings
+--- PASS: TestDeliveryReviewResultParksStandingFindings (0.00s)
+=== CONT  TestDeliveryReviewResultAdvancesDismissedFindings
+--- PASS: TestDeliveryReviewResultAdvancesDismissedFindings (0.00s)
+=== CONT  TestDeliveryConventionC2ExemptsTheQATask
+--- PASS: TestReviewBlocksAfterTheRetryFailsWithoutFallback (0.57s)
+    --- PASS: TestReviewBlocksAfterTheRetryFailsWithoutFallback/preparation (0.32s)
+    --- PASS: TestReviewBlocksAfterTheRetryFailsWithoutFallback/prompt (0.25s)
+=== CONT  TestDeliveryReviewResultCarriesArchivedSpecs
+--- PASS: TestDeliveryReviewResultCarriesArchivedSpecs (0.00s)
+=== CONT  TestReviewRecordsNoArchivedSpecForAnActiveSpec
+=== RUN   TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary/stdout
+--- PASS: TestDeliveryStepNamesTheSignalThatKilledTheItemBinaryProbe (0.79s)
+=== CONT  TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+--- PASS: TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary (1.04s)
+    --- PASS: TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary/empty (0.25s)
+    --- PASS: TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary/stderr (0.11s)
+    --- PASS: TestDeliveryStepErrorNamesTheSignalThatKilledTheItemBinary/stdout (0.09s)
+=== CONT  TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+--- PASS: TestDeliveryConventionC2ExemptsTheQATask (0.23s)
+=== CONT  TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+--- PASS: TestReviewActivatesTheFallbackAfterTheRetryFails (0.54s)
+    --- PASS: TestReviewActivatesTheFallbackAfterTheRetryFails/preparation (0.25s)
+    --- PASS: TestReviewActivatesTheFallbackAfterTheRetryFails/prompt (0.29s)
+=== CONT  TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec
+--- PASS: TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput (0.88s)
+    --- PASS: TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput/directory (0.33s)
+    --- PASS: TestDeliveryItemBinaryCopyFailureNeverRunsTheBuildOutput/blocked_destination (0.54s)
+=== CONT  TestReadinessRemoteFormsAndDeliverySelection
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/https://github.com/owner/repository.git
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/ssh://git@github.com/owner/repository.git
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/git@github.com:owner/repository.git
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/enterprise
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/unknown_host
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/outside_Git
+--- PASS: TestReadinessRemoteFormsAndDeliverySelection (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/https://github.com/owner/repository.git (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/ssh://git@github.com/owner/repository.git (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/git@github.com:owner/repository.git (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/enterprise (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/unknown_host (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/outside_Git (0.00s)
+=== CONT  TestProfileProofDoesNotRetryACancelledCommand
+--- PASS: TestProfileProofDoesNotRetryACancelledCommand (0.00s)
+=== CONT  TestProfileProofDoesNotRetryARejectedSelection
+--- PASS: TestProfileProofDoesNotRetryARejectedSelection (0.00s)
+=== CONT  TestHistorySanitizeAdviceWithoutAKnownDelivery
+--- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork (1.70s)
+    --- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_false (0.90s)
+    --- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_true (0.80s)
+=== CONT  TestDeliverStatusPrintsNoRunsRecorded
+--- PASS: TestReviewRecordsNoArchivedSpecForAnActiveSpec (0.35s)
+=== CONT  TestDeliverStatusPrintsTheUsageLine
+--- PASS: TestDeliverStatusPrintsTheUsageLine (0.02s)
+=== CONT  TestDeliverStartPrintsTokensNone
+--- PASS: TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged (0.45s)
+=== CONT  TestDeliverHelpNamesTheTokenCeiling
+--- PASS: TestDeliverHelpNamesTheTokenCeiling (0.00s)
+=== CONT  TestDeliverRetryIsRefusedAtTheTokenCeiling
+--- PASS: TestDeliverStatusPrintsNoRunsRecorded (0.10s)
+=== CONT  TestDeliverStatusPrintsTheTokenCeilingQuestion
+--- PASS: TestDeliverRetryIsRefusedAtTheTokenCeiling (0.02s)
+=== CONT  TestDeliverStartRefusesANonIntegerMaxTokens
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens/1.5
+--- PASS: TestDeliverStatusPrintsTheTokenCeilingQuestion (0.02s)
+=== CONT  TestDeliverStartRefusesAMaxTokensBelowOne
+=== RUN   TestDeliverStartRefusesAMaxTokensBelowOne/0
+--- PASS: TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead (0.38s)
+=== CONT  TestDeliverStartRecordsAndPrintsTheTokenCeiling
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens/not-a-number
+--- PASS: TestDeliveryRebuildInPlaceNeverRewritesARunningCopy (1.17s)
+=== CONT  TestDeliverCommandRefusesUnknownFlags
+=== RUN   TestDeliverCommandRefusesUnknownFlags/start
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/start
+=== RUN   TestDeliverCommandRefusesUnknownFlags/status
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/status
+=== RUN   TestDeliverCommandRefusesUnknownFlags/resume
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/resume
+=== RUN   TestDeliverCommandRefusesUnknownFlags/stop
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/stop
+=== CONT  TestDeliverNeverTouchesTheUserCheckout
+=== RUN   TestDeliverStartRefusesAMaxTokensBelowOne/-1
+--- PASS: TestHistorySanitizeAdviceWithoutAKnownDelivery (0.37s)
+=== CONT  TestEachDeliveryGetsItsOwnBranch
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens/9223372036854775808
+--- PASS: TestDeliverStartRefusesAMaxTokensBelowOne (0.20s)
+    --- PASS: TestDeliverStartRefusesAMaxTokensBelowOne/0 (0.10s)
+    --- PASS: TestDeliverStartRefusesAMaxTokensBelowOne/-1 (0.10s)
+=== CONT  TestDeliverCommandStopsAndResumesPersistedQueue
+--- PASS: TestDeliverStartPrintsTokensNone (0.31s)
+=== CONT  TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue
+--- PASS: TestDeliverStartRefusesANonIntegerMaxTokens (0.29s)
+    --- PASS: TestDeliverStartRefusesANonIntegerMaxTokens/1.5 (0.10s)
+    --- PASS: TestDeliverStartRefusesANonIntegerMaxTokens/not-a-number (0.09s)
+    --- PASS: TestDeliverStartRefusesANonIntegerMaxTokens/9223372036854775808 (0.11s)
+=== CONT  TestDeliverStatusPrintsTheItemWorktree
+--- PASS: TestDeliverCommandStopsAndResumesPersistedQueue (0.12s)
+=== CONT  TestDeliverStartProceedsOnAForgeWarning
+--- PASS: TestDeliverStartRecordsAndPrintsTheTokenCeiling (0.33s)
+=== CONT  TestDeliverStartRefusesWhenThisMachineCannotPublish
+=== RUN   TestDeliverStartRefusesWhenThisMachineCannotPublish/transcript
+--- PASS: TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue (0.11s)
+=== CONT  TestSecretRewriteRefusesAnyOtherChange
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/Run_start
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/Run_start
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/added_path
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/added_path
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/removed_path
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/removed_path
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/mode_change
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/mode_change
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/line_count
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/line_count
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/retained_match
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/retained_match
+=== RUN   TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+=== PAUSE TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+=== CONT  TestSecretRewriteAcceptsReplacedMatchedLines
+--- PASS: TestDeliverStatusPrintsTheItemWorktree (0.30s)
+=== CONT  TestDeliveryRunResultReadsAnExhaustedLostRollout
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout/fallback
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout/new_session
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout/exhausted
+--- PASS: TestDeliverStartProceedsOnAForgeWarning (0.28s)
+=== CONT  TestRetryKeepsTheBoundForADismissedRoundTwoFinding
+=== RUN   TestRetryKeepsTheBoundForADismissedRoundTwoFinding/dismissed_round_two
+--- PASS: TestEachDeliveryGetsItsOwnBranch (0.43s)
+=== CONT  TestDeliverStatusPrintsOwnerAfterWarningsAndBeforeParks
+--- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout (0.04s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout/fallback (0.01s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout/new_session (0.01s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout/exhausted (0.01s)
+=== CONT  TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths
+=== RUN   TestDeliverStartRefusesWhenThisMachineCannotPublish/multiple_failures
+--- PASS: TestDeliverStatusPrintsOwnerAfterWarningsAndBeforeParks (0.11s)
+=== CONT  TestACorrectionOutsideTheArchivedSpecIsRefused
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/outside.txt
+--- PASS: TestSecretRewriteAcceptsReplacedMatchedLines (0.37s)
+=== CONT  TestDeliverStatusPrintsAnItemWarning
+--- PASS: TestDeliverStatusPrintsAnItemWarning (0.09s)
+=== CONT  TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== CONT  TestDeliverRetryKeepsUsageForAnArgumentError
+--- PASS: TestDeliverRetryRefusalOmitsAnUnreadableItem (0.02s)
+=== CONT  TestDeliverRetryPrintsARefusalWithoutUsage
+--- PASS: TestDeliverNeverTouchesTheUserCheckout (0.76s)
+--- PASS: TestDeliverRetryKeepsUsageForAnArgumentError (0.08s)
+=== CONT  TestTopLevelUsageNamesDeliverRetry
+--- PASS: TestTopLevelUsageNamesDeliverRetry (0.00s)
+=== CONT  TestDeliverRetryRefusalStartsNoOwner
+=== CONT  TestDeliverRetryRefusesUnknownFlag
+--- PASS: TestDeliverStartRefusesWhenThisMachineCannotPublish (0.60s)
+    --- PASS: TestDeliverStartRefusesWhenThisMachineCannotPublish/transcript (0.29s)
+    --- PASS: TestDeliverStartRefusesWhenThisMachineCannotPublish/multiple_failures (0.31s)
+--- PASS: TestDeliverRetryPrintsARefusalWithoutUsage (0.12s)
+=== CONT  TestDeliverRetryRefusesAnExtraArgument
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/0225-example-sibling/_prd.md
+--- PASS: TestDeliverRetryRefusalStartsNoOwner (0.11s)
+=== CONT  TestDeliverRetryRefusesAnEmptySlug
+--- PASS: TestDeliverRetryRefusesUnknownFlag (0.09s)
+=== CONT  TestDeliverRetryRequiresOneSlug
+=== RUN   TestRetryKeepsTheBoundForADismissedRoundTwoFinding/fixed_Correction_Review
+--- PASS: TestDeliverRetryRefusesAnExtraArgument (0.10s)
+=== CONT  TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt
+--- PASS: TestDeliverRetryRefusesAnEmptySlug (0.09s)
+=== CONT  TestReviewSelectionRetryBudgetSpansPreparationAndPrompt
+--- PASS: TestDeliverRetryRequiresOneSlug (0.10s)
+=== CONT  TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure
+=== RUN   TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/canceled/preparation
+--- PASS: TestRetryAdmitsAFixedRoundTwoParkOutsideDeclaredPaths (0.59s)
+=== CONT  TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+--- PASS: TestDeliverRetryReclaimsAStaleOwnerAndStartsOne (0.12s)
+=== CONT  TestDeliverRetryHandsTheItemToALiveOwner
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/another/_prd.md
+--- PASS: TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt (0.31s)
+=== CONT  TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+--- PASS: TestReviewSelectionRetryBudgetSpansPreparationAndPrompt (0.30s)
+=== CONT  TestDeliverRetryPrintsOneLinePerCarriedRun
+--- PASS: TestDeliverRetryPrintsOneLinePerCarriedRun (0.00s)
+=== CONT  TestRetryRefusalWithoutMovedInputsKeepsTodaysText
+--- PASS: TestDeliverRetryHandsTheItemToALiveOwner (0.10s)
+=== CONT  TestRetryRefusalByATaskCommitKeepsTodaysText
+=== RUN   TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/canceled/prompt
+--- PASS: TestDeliverRetryStartsAnOwnerWhenNoneIsRunning (0.10s)
+=== CONT  TestRetryRefusalNamesTheAmendingCommitAndTheRecovery
+=== RUN   TestRetryKeepsTheBoundForADismissedRoundTwoFinding/fixed_round_one
+--- PASS: TestRetryRefusalWithoutMovedInputsKeepsTodaysText (0.25s)
+=== CONT  TestReleaseMergedRunsUsesConfiguredDeliveryRemote
+--- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused (0.98s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/outside.txt (0.32s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/0225-example-sibling/_prd.md (0.33s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/another/_prd.md (0.33s)
+=== CONT  TestInspectItemReportsAnArchivedSpec
+=== RUN   TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/deadline/preparation
+--- PASS: TestInspectItemReportsAnArchivedSpec (0.12s)
+=== CONT  TestCommandDeliveryEngineRecordsThePullRequest
+=== CONT  TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening
+--- PASS: TestRetryKeepsTheBoundForADismissedRoundTwoFinding (1.32s)
+    --- PASS: TestRetryKeepsTheBoundForADismissedRoundTwoFinding/dismissed_round_two (0.45s)
+    --- PASS: TestRetryKeepsTheBoundForADismissedRoundTwoFinding/fixed_Correction_Review (0.46s)
+    --- PASS: TestRetryKeepsTheBoundForADismissedRoundTwoFinding/fixed_round_one (0.41s)
+--- PASS: TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec (2.25s)
+=== CONT  TestDeliveryWorkflowSkipsALegacyArchiveFolder
+--- PASS: TestRetryRefusalByATaskCommitKeepsTodaysText (0.62s)
+=== CONT  TestDeliveryWorkflowRefusesAnUncommittedInexactRecord
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path
+=== RUN   TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/deadline/prompt
+--- PASS: TestRetryRefusalNamesTheAmendingCommitAndTheRecovery (0.71s)
+=== CONT  TestDeliveryWorkflowAdoptsAnUncommittedRecord
+=== RUN   TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false
+--- PASS: TestDeliveryWorkflowSkipsALegacyArchiveFolder (0.23s)
+=== CONT  TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path
+=== RUN   TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/unplaced/prompt
+--- PASS: TestDeliveryAcceptsAnArchiveWithRewrittenPromotedCopies (6.14s)
+=== CONT  TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord
+--- PASS: TestReconcileReleasesARunProvenByTheDeliveryMergeRecord (2.75s)
+=== CONT  TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/codex
+--- PASS: TestReconcileReleasesAnArchivedSpecRunWithoutARecord (2.92s)
+=== CONT  TestDeliveryRunResultReadsAnExhaustedProviderSystemError
+=== RUN   TestDeliveryRunResultReadsAnExhaustedProviderSystemError/provider_exhausted
+=== RUN   TestDeliveryRunResultReadsAnExhaustedProviderSystemError/provider_fallback
+=== RUN   TestDeliveryRunResultReadsAnExhaustedProviderSystemError/lost_rollout_exhausted
+--- PASS: TestDeliveryRunResultReadsAnExhaustedProviderSystemError (0.04s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedProviderSystemError/provider_exhausted (0.01s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedProviderSystemError/provider_fallback (0.01s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedProviderSystemError/lost_rollout_exhausted (0.01s)
+=== CONT  TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically
+--- PASS: TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically (0.01s)
+=== CONT  TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path
+=== CONT  TestDeliverStartRefusesAnUnknownPrerequisite
+--- PASS: TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs (0.01s)
+--- PASS: TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure (1.55s)
+    --- PASS: TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/canceled/preparation (0.31s)
+    --- PASS: TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/canceled/prompt (0.31s)
+    --- PASS: TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/deadline/preparation (0.30s)
+    --- PASS: TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/deadline/prompt (0.32s)
+    --- PASS: TestReviewSelectionRetryStopsOnCancellationOrUnplacedPromptFailure/unplaced/prompt (0.31s)
+=== CONT  TestDeliverStartRefusesAPrerequisiteCycle
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/claude
+=== CONT  TestDeliverHelpNamesThePlanCommand
+--- PASS: TestDeliverStartRefusesAPrerequisiteCycle (0.10s)
+--- PASS: TestDeliverStartRefusesAnUnknownPrerequisite (0.11s)
+=== CONT  TestDeliverStartAcceptsASpecWithEveryDeliveryOperation
+=== CONT  TestDeliverStartRefusesASpecWithoutDeliveryAuthority
+--- PASS: TestDeliverHelpNamesThePlanCommand (0.00s)
+--- PASS: TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening (0.97s)
+=== CONT  TestDeliverPlanRefusesAnUnknownFlag
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/coderabbit
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title
+=== RUN   TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true
+--- PASS: TestDeliverPlanRefusesAnUnknownFlag (0.15s)
+=== CONT  TestDeliverPlanRefusesAnUnknownSlug
+--- PASS: TestDeliverStartRefusesASpecWithoutDeliveryAuthority (0.32s)
+=== CONT  TestDeliverPlanDefaultsToEveryActiveSpec
+--- PASS: TestDeliverStartAcceptsASpecWithEveryDeliveryOperation (0.33s)
+=== CONT  TestDeliverPlanWritesNothing
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/none
+--- PASS: TestDeliverPlanRefusesAnUnknownSlug (0.14s)
+=== CONT  TestDeliverPlanListsIntentThatIsNotApprovedToRun
+--- PASS: TestReleaseMergedRunsUsesConfiguredDeliveryRemote (1.52s)
+=== CONT  TestDeliverPlanIgnoresSharedTestsAndGuides
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number
+--- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview (0.84s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/codex (0.21s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/claude (0.20s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/coderabbit (0.22s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/none (0.21s)
+=== CONT  TestSupersedeRejectsANonActiveDeliverer
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/draft
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/archived_in_active_root
+--- PASS: TestDeliverPlanWritesNothing (0.38s)
+=== CONT  TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+--- PASS: TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar (0.00s)
+=== CONT  TestDeliveryKeepsTheLegacyExactMove
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/malformed_frontmatter
+--- PASS: TestDeliverPlanListsIntentThatIsNotApprovedToRun (0.37s)
+=== CONT  TestDeliverStatusIsUnchangedByRunRetention
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/missing_status
+--- PASS: TestDeliverStatusIsUnchangedByRunRetention (0.07s)
+=== CONT  TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision
+--- PASS: TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord (1.18s)
+=== CONT  TestReviewReadsAnArchivedSpecFromTheCandidate
+--- PASS: TestDeliverPlanDefaultsToEveryActiveSpec (0.55s)
+=== CONT  TestSupersedeRejectsAnUnmarkedArchivedDeliverer
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/absent
+--- PASS: TestDeliverPlanIgnoresSharedTestsAndGuides (0.54s)
+=== CONT  TestArchivedRetryOfAQueueStartedRunReturnsToReview
+--- PASS: TestSupersedeRejectsAnUnmarkedArchivedDeliverer (0.11s)
+=== CONT  TestDeliveryRefusesAnAmbiguousPromotionPairing
+--- PASS: TestDeliveryWorkflowAdoptsAnUncommittedRecord (1.60s)
+    --- PASS: TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=false (0.80s)
+    --- PASS: TestDeliveryWorkflowAdoptsAnUncommittedRecord/staged=true (0.79s)
+=== CONT  TestDeliverPlanExitsZeroWhenEverySpecIsApproved
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/missing_PRD
+--- PASS: TestDeliveryKeepsTheLegacyExactMove (0.39s)
+=== CONT  TestDeliveryRefusesATamperedRelinkedFile
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/extra_byte
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number
+--- PASS: TestSupersedeRejectsANonActiveDeliverer (0.57s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/draft (0.09s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/archived_in_active_root (0.09s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/malformed_frontmatter (0.08s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/missing_status (0.12s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/absent (0.11s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/missing_PRD (0.09s)
+=== CONT  TestSupersedeAcceptsASupersessionArchivedDeliverer
+--- PASS: TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview (0.40s)
+=== CONT  TestDeliveryAcceptsARelinkedRetirement
+--- PASS: TestReviewReadsAnArchivedSpecFromTheCandidate (0.42s)
+=== CONT  TestDeliveryArchiveStageCommitsRelinkedFiles
+--- PASS: TestArchivedRetryOfAQueueStartedRunReturnsToReview (0.39s)
+=== CONT  TestDeliveryArchiveStageCommitsTheArchiveRecord
+--- PASS: TestSupersedeAcceptsASupersessionArchivedDeliverer (0.37s)
+=== CONT  TestDeliverRetryRefusesACancelledSpec
+=== RUN   TestDeliverRetryRefusesACancelledSpec/parked_queue
+--- PASS: TestDeliverPlanExitsZeroWhenEverySpecIsApproved (0.54s)
+=== CONT  TestDeliveryRefusesAnInexactRetirement
+=== RUN   TestDeliveryRefusesAnInexactRetirement/keeps_file
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome
+--- PASS: TestDeliveryRefusesAnAmbiguousPromotionPairing (0.62s)
+=== CONT  TestDeliveryAcceptsAnExactRetirement
+=== RUN   TestDeliveryAcceptsAnExactRetirement/record
+=== RUN   TestDeliverRetryRefusesACancelledSpec/absent
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field
+=== RUN   TestDeliverRetryRefusesACancelledSpec/malformed
+--- PASS: TestDeliverRetryRefusesACancelledSpec (0.45s)
+    --- PASS: TestDeliverRetryRefusesACancelledSpec/parked_queue (0.16s)
+    --- PASS: TestDeliverRetryRefusesACancelledSpec/absent (0.13s)
+    --- PASS: TestDeliverRetryRefusesACancelledSpec/malformed (0.15s)
+=== CONT  TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState
+--- PASS: TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState (0.00s)
+=== CONT  TestSupersedeRefusesACancelledDeliverer
+--- PASS: TestDeliveryArchiveStageCommitsTheArchiveRecord (0.64s)
+=== CONT  TestDeliverStartRefusesARequiredCancelledSpec
+--- PASS: TestSupersedeRefusesACancelledDeliverer (0.14s)
+=== CONT  TestDeliverPlanReportsAnApprovedAndABlockedSpec
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/extra_newline
+=== RUN   TestDeliveryRefusesAnInexactRetirement/extra_path
+--- PASS: TestDeliverStartRefusesARequiredCancelledSpec (0.15s)
+=== CONT  TestRunCausesReadAnArchivedTaskGraphFromGit
+=== RUN   TestDeliveryAcceptsAnExactRetirement/promotion
+=== NAME  TestCommandDeliveryEngineRecordsThePullRequest
+    deliver_record_pull_request_test.go:284: isolated forge scenario: === RUN   TestCommandDeliveryEngineRecordsThePullRequest
+        === PAUSE TestCommandDeliveryEngineRecordsThePullRequest
+        === CONT  TestCommandDeliveryEngineRecordsThePullRequest
+        roundfix: Delivery Queue item 0001-widget-flow: recorded pull request 7 in its Archive Record
+        roundfix: checks: Delivery Queue item 0001-widget-flow: merge state CLEAN
+        --- PASS: TestCommandDeliveryEngineRecordsThePullRequest (2.79s)
+        PASS
+        suiteguard: guard cost: measured 2582 paths; fingerprint took 182.218667ms before and 179.159542ms after
+--- PASS: TestCommandDeliveryEngineRecordsThePullRequest (3.18s)
+=== CONT  TestDeliverStatusLeavesTheOwnerRecord/absent
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number
+=== CONT  TestDeliverStatusReportsAnUncheckableOwnerOnStderr/unreadable_identity
+=== RUN   TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode
+=== CONT  TestDeliverStatusLeavesTheOwnerRecord/unreadable
+--- PASS: TestDeliveryArchiveStageCommitsRelinkedFiles (1.14s)
+=== CONT  TestDeliverStatusLeavesTheOwnerRecord/proven
+--- PASS: TestDeliveryAcceptsARelinkedRetirement (1.22s)
+=== CONT  TestDeliverStatusLeavesTheOwnerRecord/different_identity
+--- PASS: TestRunCausesReadAnArchivedTaskGraphFromGit (0.36s)
+=== CONT  TestDeliverStatusReportsAnUncheckableOwnerOnStderr/missing_controller
+=== CONT  TestDeliverStatusReportsAnUncheckableOwnerOnStderr/other_error
+=== CONT  TestDeliverCommandRefusesUnknownFlags/start
+=== CONT  TestDeliverCommandRefusesUnknownFlags/resume
+--- PASS: TestDeliverStatusLeavesTheOwnerRecord (0.00s)
+    --- PASS: TestDeliverStatusLeavesTheOwnerRecord/absent (0.11s)
+    --- PASS: TestDeliverStatusLeavesTheOwnerRecord/unreadable (0.11s)
+    --- PASS: TestDeliverStatusLeavesTheOwnerRecord/proven (0.13s)
+    --- PASS: TestDeliverStatusLeavesTheOwnerRecord/different_identity (0.14s)
+=== CONT  TestDeliverCommandRefusesUnknownFlags/stop
+--- PASS: TestDeliverStatusReportsAnUncheckableOwnerOnStderr (0.00s)
+    --- PASS: TestDeliverStatusReportsAnUncheckableOwnerOnStderr/unreadable_identity (0.11s)
+    --- PASS: TestDeliverStatusReportsAnUncheckableOwnerOnStderr/missing_controller (0.13s)
+    --- PASS: TestDeliverStatusReportsAnUncheckableOwnerOnStderr/other_error (0.12s)
+=== CONT  TestDeliverCommandRefusesUnknownFlags/status
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/Run_start
+--- PASS: TestDeliverPlanReportsAnApprovedAndABlockedSpec (0.58s)
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/line_count
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file
+=== RUN   TestDeliveryRefusesAnInexactRetirement/other_revision
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/retained_match
+--- PASS: TestDeliverCommandRefusesUnknownFlags (0.00s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/start (0.09s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/resume (0.11s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/stop (0.12s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/status (0.12s)
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/nonmatched_line
+--- PASS: TestDeliveryAcceptsAnExactRetirement (1.29s)
+    --- PASS: TestDeliveryAcceptsAnExactRetirement/record (0.57s)
+    --- PASS: TestDeliveryAcceptsAnExactRetirement/promotion (0.72s)
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/trailing_newline
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/removed_path
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/mode_change
+=== RUN   TestDeliveryRefusesAnInexactRetirement/different_promotion
+--- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord (3.78s)
+    --- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/extra_path (0.62s)
+    --- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/staged_extra_path (0.61s)
+    --- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/unchanged_number (0.62s)
+    --- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_number (0.60s)
+    --- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/other_field (0.64s)
+    --- PASS: TestDeliveryWorkflowRefusesAnUncommittedInexactRecord/mode (0.69s)
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/added_path
+=== CONT  TestSecretRewriteRefusesAnyOtherChange/unnamed_path
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/unlisted_change
+--- PASS: TestSecretRewriteRefusesAnyOtherChange (0.00s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/Run_start (0.28s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/unchanged_named_file (0.32s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/line_count (0.38s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/retained_match (0.38s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/nonmatched_line (0.37s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/removed_path (0.30s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/trailing_newline (0.35s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/unnamed_path (0.25s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/added_path (0.26s)
+    --- PASS: TestSecretRewriteRefusesAnyOtherChange/mode_change (0.29s)
+=== RUN   TestDeliveryRefusesAnInexactRetirement/other_title
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild
+=== RUN   TestDeliveryRefusesAnInexactRetirement/other_created
+--- PASS: TestDeliveryRefusesAnInexactRetirement (2.13s)
+    --- PASS: TestDeliveryRefusesAnInexactRetirement/keeps_file (0.57s)
+    --- PASS: TestDeliveryRefusesAnInexactRetirement/extra_path (0.60s)
+    --- PASS: TestDeliveryRefusesAnInexactRetirement/other_revision (0.33s)
+    --- PASS: TestDeliveryRefusesAnInexactRetirement/different_promotion (0.30s)
+    --- PASS: TestDeliveryRefusesAnInexactRetirement/other_title (0.16s)
+    --- PASS: TestDeliveryRefusesAnInexactRetirement/other_created (0.17s)
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/unlisted_relink
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/missing_promotion_pairing
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/history_path
+=== RUN   TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title
+--- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath (5.46s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_path (0.68s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/title (0.68s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/source_revision (0.73s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/outcome (0.74s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/number (0.75s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/mode (0.41s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/grandchild (0.29s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/merge (0.29s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/unknown_field (0.29s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/extra_prose (0.29s)
+    --- PASS: TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath/body_title (0.29s)
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/new_relinked_path
+=== RUN   TestDeliveryRefusesATamperedRelinkedFile/duplicate_relink
+--- PASS: TestDeliveryRefusesATamperedRelinkedFile (4.83s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/extra_byte (1.00s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/extra_newline (1.07s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/unlisted_change (0.61s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/unlisted_relink (0.48s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/missing_promotion_pairing (0.27s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/history_path (0.50s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/new_relinked_path (0.46s)
+    --- PASS: TestDeliveryRefusesATamperedRelinkedFile/duplicate_relink (0.44s)
+PASS
+suiteguard: guard cost: measured 2582 paths; fingerprint took 80.981667ms before and 64.155083ms after
+ok  	roundfix/internal/cli	13.177s
+
+STDERR:

@@ -1,0 +1,3 @@
+package delivery_test
+import("testing";"strings";"roundfix/internal/delivery";"roundfix/internal/store")
+func TestQAParkAction(t *testing.T){t.Parallel();got:=delivery.ClassifyPark(store.DeliveryQueue{},store.DeliveryQueueItem{Blocker:delivery.BlockerSecretFound,Worktree:"/scratch/item",SpecSlug:"fixture"});t.Log(got.Next);if !strings.Contains(got.Next,"rewrite the item branch from the earliest commit the blocker names"){t.Fatal("missing rewrite next action")}}

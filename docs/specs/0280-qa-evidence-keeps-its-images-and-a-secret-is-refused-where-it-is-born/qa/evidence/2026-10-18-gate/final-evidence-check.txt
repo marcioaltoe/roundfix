@@ -1,0 +1,6 @@
+COMMAND: go run ./cmd/qa-final-check /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born-940738fd416135a0-c603e90c-3e911eb7/run_20261018T203733Z_26a9aa2dcaf8e01d docs/specs/0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born/qa/qa-report-2026-10-18.md
+EXIT: 0
+STDOUT:
+QA files scanned: 36; Secret Matches and non-image binaries: false; report-shape findings: 0
+
+STDERR:

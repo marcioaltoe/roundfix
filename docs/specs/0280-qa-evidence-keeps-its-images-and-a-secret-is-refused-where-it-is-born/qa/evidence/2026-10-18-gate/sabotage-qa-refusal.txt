@@ -1,0 +1,25 @@
+COMMAND: go test -count=1 -v -run '^TestQAReportWithANonImageBinarySettlesFailedWithoutACommit$' ./internal/daemon
+EXIT: 1
+STDOUT:
+=== RUN   TestQAReportWithANonImageBinarySettlesFailedWithoutACommit
+=== PAUSE TestQAReportWithANonImageBinarySettlesFailedWithoutACommit
+=== CONT  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit
+=== RUN   TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+=== PAUSE TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+=== RUN   TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+=== PAUSE TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+=== CONT  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+=== CONT  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+=== NAME  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png
+    qa_evidence_binary_test.go:82: QA with a non-image binary must settle failed
+=== NAME  TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png
+    qa_evidence_binary_test.go:82: QA with a non-image binary must settle failed
+--- FAIL: TestQAReportWithANonImageBinarySettlesFailedWithoutACommit (0.00s)
+    --- FAIL: TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/program.png (0.27s)
+    --- FAIL: TestQAReportWithANonImageBinarySettlesFailedWithoutACommit/z-state.db+a-program.png (0.28s)
+FAIL
+suiteguard: guard cost: measured 2851 paths; fingerprint took 94.371875ms before and 69.870334ms after
+FAIL	roundfix/internal/daemon	0.765s
+FAIL
+
+STDERR:

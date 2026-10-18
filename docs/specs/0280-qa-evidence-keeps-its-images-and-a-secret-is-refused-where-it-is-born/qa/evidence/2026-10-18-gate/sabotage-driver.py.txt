@@ -1,0 +1,23 @@
+import sys,shutil,re
+sys.path.insert(0,'/tmp')
+from roundfix_0280_qa import *
+def sabotage(label,path,before,after,test,pkg):
+ target=base/label
+ shutil.copytree(snap,target)
+ p=target/path;body=p.read_text();assert body.count(before)==1,(label,body.count(before));p.write_text(body.replace(before,after,1))
+ out=run(label,['go','test','-count=1','-v','-run','^'+test+'$',pkg],cwd=target,expected=1)
+ assert '--- FAIL: '+test in out and 'build failed' not in out
+ publish(label)
+ return out
+sabotage('sabotage-png','internal/speccheck/evidence_image.go','func ReadableEvidence(probe []byte) bool {','func ReadableEvidence(probe []byte) bool {\n if bytes.HasPrefix(probe, []byte("\\x89PNG\\r\\n\\x1a\\n")) { return false }'.replace('\\n if','\n if'),'TestEvidenceAcceptsTrackedImages','./internal/speccheck')
+row('R02','pass','The classifier/mechanical tests pass for PNG, JPEG, SVG and extensionless PNG; ELF, SQLite, PDF, disguised ELF and probe-boundary binaries each produce the asserted QA-EVIDENCE-PATH. Disabling PNG acceptance makes TestEvidenceAcceptsTrackedImages fail (exit 1, assertion failure). Evidence: [positive](evidence/2026-10-18-gate/image-tests.txt), [sabotage](evidence/2026-10-18-gate/sabotage-png.txt).')
+run('daemon-qa-tests',['go','test','-count=1','-v','-run','QA|Evidence|Secret','./internal/daemon']);publish('daemon-qa-tests')
+sabotage('sabotage-qa-refusal','internal/daemon/task_engine.go','if len(matches) == 0 {\n\t\tbinaryPaths, err = nonImageQAReportEvidence','if false {\n\t\tbinaryPaths, err = nonImageQAReportEvidence','TestQAReportWithANonImageBinarySettlesFailedWithoutACommit','./internal/daemon')
+row('R03','pass','Daemon QA tests passed, including byte-for-byte committed PNG/JPEG/SVG/extensionless image reads, exact QA evidence carries a non-image binary path reason, failed QA status, one event and no commit, preserved report/files, redacted diagnostics, prepared-path scope, probe boundary and cancellation. Removing the refusal makes the named test fail because QA accepts the non-image binary. Evidence: [tests](evidence/2026-10-18-gate/daemon-qa-tests.txt), [sabotage](evidence/2026-10-18-gate/sabotage-qa-refusal.txt).')
+run('daemon-task-tests',['go','test','-count=1','-v','-run','Task|Secret|QA','./internal/daemon']);publish('daemon-task-tests')
+sabotage('sabotage-task-scan','internal/daemon/task_engine.go','if failure == "" {\n\t\tmatches, scanErr := scanTaskCommitPaths','if false {\n\t\tmatches, scanErr := scanTaskCommitPaths','TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit','./internal/daemon')
+run('scanner-tests',['go','test','-count=1','-v','./internal/secretscan']);publish('scanner-tests')
+run('rewrite-prover-tests',['go','test','-count=1','-v','-run','Retry|Deliver|Secret|Archived','./internal/cli']);publish('rewrite-prover-tests')
+run('delivery-tests',['go','test','-count=1','-v','./internal/delivery']);publish('delivery-tests')
+sabotage('sabotage-rewrite','internal/cli/deliver_secret_rewrite.go','named []string) (delivery.SecretRewrite, error) {','named []string) (delivery.SecretRewrite, error) {\n if true { return delivery.SecretRewrite{Accepted:true},nil }','TestSecretRewriteRefusesAnyOtherChange','./internal/cli')
+print('All authored behavioral suites and three sabotage checks executed.',flush=True)

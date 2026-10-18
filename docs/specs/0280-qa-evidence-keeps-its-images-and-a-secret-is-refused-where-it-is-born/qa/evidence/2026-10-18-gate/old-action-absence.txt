@@ -1,0 +1,5 @@
+COMMAND: grep -rF 'remove the secret from every commit the blocker names' docs/user-guide docs/agents .agents/skills skills internal
+EXIT: 1
+STDOUT:
+
+STDERR:

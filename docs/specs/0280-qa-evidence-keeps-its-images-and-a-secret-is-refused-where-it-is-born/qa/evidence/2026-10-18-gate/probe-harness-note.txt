@@ -1,0 +1,1 @@
+The first tracked scan followed a Git symlink (.claude/skills) into a directory. Corrected the throwaway harness to scan symlink target text, the bytes Git stores, without following it. Historical classification and GovernedPath tests already passed. No product source or assertion was changed.

@@ -1,0 +1,14 @@
+COMMAND: go test -count=1 -v -run '^TestEvidenceAcceptsTrackedImages$' ./internal/speccheck
+EXIT: 1
+STDOUT:
+=== RUN   TestEvidenceAcceptsTrackedImages
+=== PAUSE TestEvidenceAcceptsTrackedImages
+=== CONT  TestEvidenceAcceptsTrackedImages
+    evidence_image_test.go:32: QA-EVIDENCE-PATH findings = []speccheck.MechanicalFinding{speccheck.MechanicalFinding{Code:"QA-EVIDENCE-PATH", File:"docs/specs/mechanical/qa/evidence/capture", Line:1, Detail:"tracked evidence path docs/specs/mechanical/qa/evidence/capture is a non-image binary", Fix:"Remove the gate's scratch state from the Spec evidence directory and keep only text, PNG, JPEG or SVG artifacts.", RowHint:""}, speccheck.MechanicalFinding{Code:"QA-EVIDENCE-PATH", File:"docs/specs/mechanical/qa/evidence/screen.png", Line:1, Detail:"tracked evidence path docs/specs/mechanical/qa/evidence/screen.png is a non-image binary", Fix:"Remove the gate's scratch state from the Spec evidence directory and keep only text, PNG, JPEG or SVG artifacts.", RowHint:""}}, want none
+--- FAIL: TestEvidenceAcceptsTrackedImages (0.08s)
+FAIL
+suiteguard: guard cost: measured 2851 paths; fingerprint took 93.757709ms before and 68.088541ms after
+FAIL	roundfix/internal/speccheck	0.583s
+FAIL
+
+STDERR:
