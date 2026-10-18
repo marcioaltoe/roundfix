@@ -120,3 +120,13 @@ hand-edited.
   - reads another repository.
 - No release, tag or deployment. Verification stays Daemon-owned, and Task
   status stays Daemon-written.
+
+## Maintainer approval of 2026-10-18
+
+The `.roundfixrc.yml` line is expressly authorized: on 2026-10-18 the
+maintainer answered through AskUserQuestion "Sim aos dois (Recomendado)"
+(option text: "Autorizo a linha `delivery.linux_lane: true` no .roundfixrc.yml,
+com emenda datada na autorização, e um `docker pull golang:1.26` único para o
+lane rodar de verdade. O lane nunca faz pull sozinho."). The image pull is an
+operator step outside every Task; no Task, Verification or QA row pulls an
+image.

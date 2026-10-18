@@ -289,6 +289,9 @@ The decisions were checked on 2026-10-18 against these sources.
 
 ## Decisions
 
+- 2026-10-18: whether this repository turns the Linux Lane on — "Sim aos dois
+  (Recomendado)": the `delivery.linux_lane: true` line in `.roundfixrc.yml`
+  is authorized, and the operator pulls `golang:1.26` once outside the Tasks.
 - 2026-10-16: which failure rules govern cycle AH — "Regras de AE–AG
   (Recomendado)".
 - 2026-10-16: which authority covers the Governed Paths — "Governed Paths
