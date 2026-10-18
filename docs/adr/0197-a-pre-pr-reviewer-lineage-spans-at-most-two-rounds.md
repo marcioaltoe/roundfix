@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-10-14T23:44:53Z
+updated_at: 2026-10-18T13:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -54,3 +54,5 @@ This decision refines
 [ADR-0153](0153-pre-pr-review-is-an-explicit-provider-policy.md) and
 [ADR-0051](0051-tasks-and-qa-own-agent-sessions.md), which consolidated
 ADR-0018. It supersedes none of them.
+
+**Amended by [ADR-0286](0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md) (2026-10-18).** When round 2 ends with findings and every standing round-2 finding is disposed as fixed by a commit the current head contains, the next review is one Correction Review of the delta from the round-2 head instead of the ceiling; it never repeats, and the ceiling's purpose, no unbounded review loop, stays.
