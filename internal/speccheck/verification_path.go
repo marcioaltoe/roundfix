@@ -138,8 +138,10 @@ func verificationPathOperands(words []shellWord) []string {
 		return nil
 	}
 	index := 0
+	negated := false
 	// These wrappers occur in repository-authored Verification.
 	for index < len(words) && (words[index].text == "!" || words[index].text == "rtk" || words[index].text == "proxy" || words[index].text == "{" || words[index].text == "}") {
+		negated = negated || words[index].text == "!"
 		index++
 	}
 	if index == len(words) {
@@ -150,7 +152,9 @@ func verificationPathOperands(words []shellWord) []string {
 	case "printf", "echo":
 		return nil
 	case "test", "[":
-		if index+1 < len(words) && words[index+1].text == "!" {
+		// A negated existence check, inside the test or around it, names a
+		// path the command expects to be absent.
+		if negated || (index+1 < len(words) && words[index+1].text == "!") {
 			return nil
 		}
 	}

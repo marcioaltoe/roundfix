@@ -77,7 +77,7 @@ func TestVerificationPathUndeclaredRaisesTheMissingFile(t *testing.T) {
 func TestVerificationPathUndeclaredIgnoresWhatThePlanProvides(t *testing.T) {
 	t.Parallel()
 	const missing = "internal/new.go"
-	for _, shape := range []string{"creates", "interface", "deletes", "instruction", "recorded", "dependency", "transitive dependency", "dependency directory", "directory prefix", "existing", "existing directory", "grep pattern", "rg pattern", "grep explicit pattern", "rg pattern file", "printf", "echo", "negated test", "negated bracket", "spec root", "custom spec root", "completed", "in progress", "failed", "QA Task", "no graph", "variable", "glob", "ellipsis", "unknown root", "single segment"} {
+	for _, shape := range []string{"creates", "interface", "deletes", "instruction", "recorded", "dependency", "transitive dependency", "dependency directory", "directory prefix", "existing", "existing directory", "grep pattern", "rg pattern", "grep explicit pattern", "rg pattern file", "printf", "echo", "negated test", "negated bracket", "shell-negated test", "shell-negated bracket", "spec root", "custom spec root", "completed", "in progress", "failed", "QA Task", "no graph", "variable", "glob", "ellipsis", "unknown root", "single segment"} {
 		t.Run(shape, func(t *testing.T) {
 			t.Parallel()
 			task := consumerFixtureTask{id: "task_03", commands: []string{"cat " + missing}}
@@ -113,6 +113,10 @@ func TestVerificationPathUndeclaredIgnoresWhatThePlanProvides(t *testing.T) {
 				task.commands = []string{"test ! -f " + missing}
 			case "negated bracket":
 				task.commands = []string{"[ ! -e " + missing + " ]"}
+			case "shell-negated test":
+				task.commands = []string{"! test -f " + missing}
+			case "shell-negated bracket":
+				task.commands = []string{"! [ -e " + missing + " ]"}
 			case "spec root":
 				task.commands = []string{"cat docs/specs/other/missing.md"}
 			case "custom spec root":
