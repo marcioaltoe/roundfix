@@ -282,15 +282,23 @@ func linuxLaneExecutable(name string, environment []string, workDir string) stri
 }
 
 // linuxLaneOptIn reads delivery.linux_lane from the fetched default branch.
-// A non-empty reason means the opt-in could not be read.
-func (workflow *commandDeliveryWorkflow) linuxLaneOptIn(ctx context.Context, gitRoot string) (bool, string) {
+// A non-empty reason means no fetched default exists to read it from; a
+// cancelled context or an unreadable Project Config at that default is an
+// error, never a skip.
+func (workflow *commandDeliveryWorkflow) linuxLaneOptIn(ctx context.Context, gitRoot string) (bool, string, error) {
+	if err := ctx.Err(); err != nil {
+		return false, "", err
+	}
 	runner := workflow.git
 	if runner == nil {
 		runner = preflight.ExecGitRunner{}
 	}
 	branch := preflight.DetectDefaultBranch(ctx, gitRoot, "", runner)
+	if err := ctx.Err(); err != nil {
+		return false, "", err
+	}
 	if branch.Source == preflight.DefaultBranchUndetermined {
-		return false, "the repository default branch is unknown"
+		return false, "the repository default branch is unknown", nil
 	}
 	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
 	if remote == "" {
@@ -299,11 +307,39 @@ func (workflow *commandDeliveryWorkflow) linuxLaneOptIn(ctx context.Context, git
 	ref := "refs/remotes/" + remote + "/" + branch.Name
 	defaultHead, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", ref+"^{commit}")
 	if err != nil {
-		return false, "the fetched default " + ref + " cannot be resolved"
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return false, "", ctxErr
+		}
+		return false, "the fetched default " + ref + " cannot be resolved", nil
 	}
 	config, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, workflow.loaded.UserConfigPath, strings.TrimSpace(defaultHead))
 	if err != nil {
-		return false, "the default branch's Project Config cannot be read: " + linuxLaneFirstLine([]byte(err.Error()))
+		return false, "", fmt.Errorf("read Linux Lane configuration: %w", err)
 	}
-	return config.Delivery.LinuxLane, ""
+	return config.Delivery.LinuxLane, "", nil
+}
+
+// recordLinuxLaneSkip writes a skip that happens before the lane starts to
+// the console and to the lane log, like every other Linux Lane skip.
+func (workflow *commandDeliveryWorkflow) recordLinuxLaneSkip(specSlug, reason string) (resultErr error) {
+	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
+	if err != nil {
+		return err
+	}
+	logPath := filepath.Join(artifactDir, "delivery", specSlug, "linux-lane.log")
+	if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {
+		return fmt.Errorf("prepare Linux Lane log: %w", err)
+	}
+	log, err := os.Create(logPath)
+	if err != nil {
+		return fmt.Errorf("create Linux Lane log: %w", err)
+	}
+	defer func() { resultErr = errors.Join(resultErr, log.Close()) }()
+	console := workflow.log
+	if console == nil {
+		console = os.Stderr
+	}
+	line := fmt.Sprintf("roundfix: notice: Delivery Queue item %s: Linux Lane skipped: %s\n", specSlug, reason)
+	_, err = io.WriteString(io.MultiWriter(console, log), line)
+	return err
 }

@@ -464,7 +464,35 @@ func TestGateSkipsTheLaneWhenTheFetchedDefaultCannotBeRead(t *testing.T) {
 	if starts := f.starts(t); len(starts) != 0 {
 		t.Fatalf("started tools=%+v", starts)
 	}
-	if want := "roundfix: notice: Delivery Queue item widget: Linux Lane skipped: the fetched default refs/remotes/origin/main cannot be resolved\n"; f.log.String() != want {
+	want := "roundfix: notice: Delivery Queue item widget: Linux Lane skipped: the fetched default refs/remotes/origin/main cannot be resolved\n"
+	if f.log.String() != want {
 		t.Fatalf("console=%q want=%q", f.log.String(), want)
 	}
+	logged, err := os.ReadFile(f.logPath())
+	if err != nil || string(logged) != want {
+		t.Fatalf("lane log=%q err=%v want=%q", logged, err, want)
+	}
+}
+
+func TestLinuxLaneOptInPropagatesCancellationAndAnUnreadableConfig(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	t.Run("cancelled", func(t *testing.T) {
+		f := newLinuxLaneFixture(t, docker, goBinary, nil)
+		ctx, cancel := context.WithCancel(f.context(t.Context()))
+		cancel()
+		enabled, reason, err := f.workflow.linuxLaneOptIn(ctx, f.repo)
+		if !errors.Is(err, context.Canceled) || enabled || reason != "" {
+			t.Fatalf("enabled=%t reason=%q err=%v, want context.Canceled", enabled, reason, err)
+		}
+	})
+	t.Run("unreadable config", func(t *testing.T) {
+		f := newLinuxLaneFixture(t, docker, goBinary, nil)
+		f.commit(t, ".roundfixrc.yml", "delivery: [not a mapping\n")
+		gittest.Run(t, f.repo, "update-ref", "refs/remotes/origin/main", f.head)
+		enabled, reason, err := f.workflow.linuxLaneOptIn(f.context(t.Context()), f.repo)
+		if err == nil || enabled || reason != "" {
+			t.Fatalf("enabled=%t reason=%q err=%v, want a configuration error", enabled, reason, err)
+		}
+	})
 }
