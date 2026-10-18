@@ -29,7 +29,7 @@ either proof fails, the reason is the same constant
 which path kept the Run.
 
 The three kept Runs settled no Task the delivery did not also settle: the first
-two failed task_02, and the third settled task_02 and task_03 and failed
+settled task_01 and failed task_02, the second failed task_02, and the third settled task_02 and task_03 and failed
 task_04. They ran under plan revisions `123f6524`, `adc564d0` and `6ee8d456`,
 before pull request #551 added task_06. The three released Runs ran after it.
 Their worktrees were removed by hand, and their journals record Task phases,

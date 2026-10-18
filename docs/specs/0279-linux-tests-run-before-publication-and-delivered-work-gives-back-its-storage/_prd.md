@@ -268,7 +268,8 @@ The decisions were checked on 2026-10-18 against these sources.
   156.9 s (3,750 tests), so the lane runs once per candidate (ADR-0288).
 - Measurement, source 2. `roundfix runs list --all` shows the seven Runs of
   0272 and `roundfix events` their Task phases: the three kept Runs failed
-  task_02, task_02 again, and task_04 after settling task_02 and task_03; the
+  task_02 after settling task_01, task_02 again, and task_04 after settling
+  task_02 and task_03; the
   three released Runs failed task_06, task_04, and task_05 after settling
   task_04. The kept Runs' worktrees were gone, so their exact dirty paths were
   not observed (ADR-0289).

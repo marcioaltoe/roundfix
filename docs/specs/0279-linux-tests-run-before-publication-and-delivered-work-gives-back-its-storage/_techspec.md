@@ -126,7 +126,7 @@ Characterized on 2026-10-18 at `2ef4f080` (v0.89.0).
 - The 0272 Runs. `roundfix runs list --all` and `roundfix events` show seven
   Runs between 02:27Z and 08:12Z on 2026-10-17, each started after a plan
   revision. The three kept Runs started from `123f6524`, `adc564d0` and
-  `6ee8d456` and left failed task_02, task_02 and task_04 work uncommitted. The
+  `6ee8d456` and ended with task_02, task_02 and task_04 failed. The
   three released Runs started after `24aeeb4a`. Every path any revision
   declared is declared at the source revision `10a9c759`, where task_04 also
   declares `deletes: docs/history/findings` and `deletes: docs/history/backlog`
