@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -162,6 +163,16 @@ type ReviewCorrectionProver interface {
 	ProveReviewCorrection(ctx context.Context, workDir string, archivedSpecs []string, candidate, head string) (ReviewCorrection, error)
 }
 
+// SecretRewrite proves that a rewritten candidate changes only Secret Match lines.
+type SecretRewrite struct {
+	Accepted bool
+	Reason   string
+}
+
+type SecretRewriteProver interface {
+	ProveSecretRewrite(ctx context.Context, workDir, base, candidate, head string, named []string) (SecretRewrite, error)
+}
+
 // MergeObservation records evidence that a parked item has already merged.
 type MergeObservation struct {
 	Merged         bool
@@ -249,56 +260,58 @@ type ConflictResolution struct {
 }
 
 type EngineDependencies struct {
-	Merges        MergeObserver
-	Corrections   ReviewCorrectionProver
-	Conflicts     ConflictResolver
-	Prerequisites PrerequisiteReader
-	Workspace     ItemWorkspace
-	Runner        CandidateRunner
-	Reviewer      PrePRReviewer
-	Recorder      PullRequestRecorder
-	Archiver      CandidateArchiver
-	Gate          RepositoryGate
-	Authorizer    AuthorizationReader
-	Publication   PublicationPlanner
-	PullRequests  PullRequestBoundary
-	Recovery      ItemRecovery
-	History       ItemHistory
-	Revalidator   ItemRevalidator
-	Checks        CheckRecovery
-	Log           io.Writer
-	Clock         Clock
-	Sleeper       Sleeper
-	CheckTimeout  time.Duration
-	CheckInterval time.Duration
+	Merges         MergeObserver
+	Corrections    ReviewCorrectionProver
+	SecretRewrites SecretRewriteProver
+	Conflicts      ConflictResolver
+	Prerequisites  PrerequisiteReader
+	Workspace      ItemWorkspace
+	Runner         CandidateRunner
+	Reviewer       PrePRReviewer
+	Recorder       PullRequestRecorder
+	Archiver       CandidateArchiver
+	Gate           RepositoryGate
+	Authorizer     AuthorizationReader
+	Publication    PublicationPlanner
+	PullRequests   PullRequestBoundary
+	Recovery       ItemRecovery
+	History        ItemHistory
+	Revalidator    ItemRevalidator
+	Checks         CheckRecovery
+	Log            io.Writer
+	Clock          Clock
+	Sleeper        Sleeper
+	CheckTimeout   time.Duration
+	CheckInterval  time.Duration
 }
 
 type Engine struct {
 	merges         MergeObserver
 	policyRefusals map[string]bool
 
-	corrections   ReviewCorrectionProver
-	conflicts     ConflictResolver
-	prerequisites PrerequisiteReader
-	store         *store.Store
-	workspace     ItemWorkspace
-	runner        CandidateRunner
-	reviewer      PrePRReviewer
-	recorder      PullRequestRecorder
-	archiver      CandidateArchiver
-	gate          RepositoryGate
-	authorizer    AuthorizationReader
-	publication   PublicationPlanner
-	pullRequests  PullRequestBoundary
-	recovery      ItemRecovery
-	history       ItemHistory
-	revalidator   ItemRevalidator
-	checks        CheckRecovery
-	log           io.Writer
-	clock         Clock
-	sleeper       Sleeper
-	checkTimeout  time.Duration
-	checkInterval time.Duration
+	corrections    ReviewCorrectionProver
+	secretRewrites SecretRewriteProver
+	conflicts      ConflictResolver
+	prerequisites  PrerequisiteReader
+	store          *store.Store
+	workspace      ItemWorkspace
+	runner         CandidateRunner
+	reviewer       PrePRReviewer
+	recorder       PullRequestRecorder
+	archiver       CandidateArchiver
+	gate           RepositoryGate
+	authorizer     AuthorizationReader
+	publication    PublicationPlanner
+	pullRequests   PullRequestBoundary
+	recovery       ItemRecovery
+	history        ItemHistory
+	revalidator    ItemRevalidator
+	checks         CheckRecovery
+	log            io.Writer
+	clock          Clock
+	sleeper        Sleeper
+	checkTimeout   time.Duration
+	checkInterval  time.Duration
 }
 
 type EngineResult struct {
@@ -327,29 +340,30 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		checkInterval = defaultCheckInterval
 	}
 	return &Engine{
-		merges:        dependencies.Merges,
-		corrections:   dependencies.Corrections,
-		conflicts:     dependencies.Conflicts,
-		store:         runStore,
-		prerequisites: dependencies.Prerequisites,
-		workspace:     dependencies.Workspace,
-		runner:        dependencies.Runner,
-		reviewer:      dependencies.Reviewer,
-		recorder:      dependencies.Recorder,
-		archiver:      dependencies.Archiver,
-		gate:          dependencies.Gate,
-		authorizer:    dependencies.Authorizer,
-		publication:   dependencies.Publication,
-		pullRequests:  dependencies.PullRequests,
-		recovery:      dependencies.Recovery,
-		history:       dependencies.History,
-		revalidator:   dependencies.Revalidator,
-		checks:        dependencies.Checks,
-		log:           log,
-		clock:         clock,
-		sleeper:       sleeper,
-		checkTimeout:  checkTimeout,
-		checkInterval: checkInterval,
+		merges:         dependencies.Merges,
+		corrections:    dependencies.Corrections,
+		secretRewrites: dependencies.SecretRewrites,
+		conflicts:      dependencies.Conflicts,
+		store:          runStore,
+		prerequisites:  dependencies.Prerequisites,
+		workspace:      dependencies.Workspace,
+		runner:         dependencies.Runner,
+		reviewer:       dependencies.Reviewer,
+		recorder:       dependencies.Recorder,
+		archiver:       dependencies.Archiver,
+		gate:           dependencies.Gate,
+		authorizer:     dependencies.Authorizer,
+		publication:    dependencies.Publication,
+		pullRequests:   dependencies.PullRequests,
+		recovery:       dependencies.Recovery,
+		history:        dependencies.History,
+		revalidator:    dependencies.Revalidator,
+		checks:         dependencies.Checks,
+		log:            log,
+		clock:          clock,
+		sleeper:        sleeper,
+		checkTimeout:   checkTimeout,
+		checkInterval:  checkInterval,
 	}
 }
 
@@ -566,11 +580,28 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 				fmt.Fprintf(engine.log, "roundfix: archived retry proof: Delivery Queue item %s: %v\n", specSlug, err)
 			}
 		}
+		rewriteReason := ""
+		if head != candidate && !accepted && candidateErr == nil && head != "" &&
+			blockerMatches(item.Blocker, BlockerSecretFound) && engine.secretRewrites != nil {
+			rewriteReason = "the item has no Run start to bound the rewrite"
+			if engine.history != nil {
+				base, baseErr := engine.history.RunStart(ctx, gitRoot, item.RunID)
+				base = strings.TrimSpace(base)
+				if baseErr == nil && base != "" {
+					proof, proofErr := engine.secretRewrites.ProveSecretRewrite(ctx, workDir, base, candidate, head, secretRewritePaths(item.Blocker))
+					accepted, rewriteReason = proof.Accepted, proof.Reason
+					if proofErr != nil {
+						accepted, rewriteReason = false, proofErr.Error()
+					}
+				}
+			}
+		}
 		if (head != candidate || candidateErr != nil) && !accepted {
-			return RetryResult{}, fmt.Errorf(
-				"retry Delivery Queue item %q: archived item head %q differs from candidate head %q",
-				specSlug, head, candidate,
-			)
+			reason := fmt.Sprintf("retry Delivery Queue item %q: archived item head %q differs from candidate head %q", specSlug, head, candidate)
+			if rewriteReason != "" {
+				reason += " (" + rewriteReason + ")"
+			}
+			return RetryResult{}, errors.New(reason)
 		}
 		if accepted {
 			item.CandidateCommits = append(item.CandidateCommits, head)
@@ -1617,4 +1648,30 @@ func (engine *Engine) releasePrerequisites(ctx context.Context, gitRoot string, 
 
 func blockerMatches(blocker, name string) bool {
 	return blocker == name || strings.HasPrefix(blocker, name+":")
+}
+
+// secretRewritePaths extracts paths from the blocker's Secret Match entries.
+// Line numbers belong to earlier commits, so only paths bound the proof.
+func secretRewritePaths(blocker string) []string {
+	var paths []string
+	for _, entry := range strings.Split(strings.TrimPrefix(blocker, BlockerSecretFound+": "), ", ") {
+		locationEnd := strings.LastIndex(entry, ": ")
+		if locationEnd < 0 {
+			continue
+		}
+		location := entry[:locationEnd]
+		lineStart := strings.LastIndexByte(location, ':')
+		if lineStart <= 0 {
+			continue
+		}
+		line, err := strconv.Atoi(location[lineStart+1:])
+		if err != nil || line < 1 {
+			continue
+		}
+		path := location[:lineStart]
+		if !slices.Contains(paths, path) {
+			paths = append(paths, path)
+		}
+	}
+	return paths
 }

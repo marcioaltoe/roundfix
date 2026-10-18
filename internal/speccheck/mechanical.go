@@ -2526,12 +2526,12 @@ func detectMechanicalEvidenceScratchState(ctx context.Context, result *Mechanica
 		case "160000":
 			addMechanicalEvidenceScratchFinding(result, entry.path, "gitlink")
 		case "100644", "100755":
-			binary, err := mechanicalBlobIsBinary(ctx, repoRoot, entry.object)
+			readable, err := mechanicalBlobIsReadableEvidence(ctx, repoRoot, entry.object)
 			if err != nil {
 				return fmt.Errorf("inspect mechanical evidence %q: %w", entry.path, err)
 			}
-			if binary {
-				addMechanicalEvidenceScratchFinding(result, entry.path, "built binary")
+			if !readable {
+				addMechanicalEvidenceScratchFinding(result, entry.path, "non-image binary")
 			}
 		}
 	}
@@ -2571,8 +2571,7 @@ func mechanicalTrackedEvidence(ctx context.Context, repoRoot, evidenceRoot strin
 	return entries, nil
 }
 
-func mechanicalBlobIsBinary(ctx context.Context, repoRoot, object string) (bool, error) {
-	const probeSize = 8000
+func mechanicalBlobIsReadableEvidence(ctx context.Context, repoRoot, object string) (bool, error) {
 	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "cat-file", "blob", object)
 	var stderr bytes.Buffer
 	command.Stderr = &stderr
@@ -2583,7 +2582,7 @@ func mechanicalBlobIsBinary(ctx context.Context, repoRoot, object string) (bool,
 	if err := command.Start(); err != nil {
 		return false, fmt.Errorf("start git blob %s: %w", object, err)
 	}
-	probe := make([]byte, probeSize)
+	probe := make([]byte, EvidenceProbeBytes)
 	n, readErr := io.ReadFull(stdout, probe)
 	if readErr != nil && !errors.Is(readErr, io.EOF) && !errors.Is(readErr, io.ErrUnexpectedEOF) {
 		_ = command.Wait()
@@ -2596,7 +2595,7 @@ func mechanicalBlobIsBinary(ctx context.Context, repoRoot, object string) (bool,
 	if err := command.Wait(); err != nil {
 		return false, fmt.Errorf("git cat-file blob %s: %w: %s", object, err, strings.TrimSpace(stderr.String()))
 	}
-	return bytes.IndexByte(probe[:n], 0) >= 0, nil
+	return ReadableEvidence(probe[:n]), nil
 }
 
 func addMechanicalEvidenceScratchFinding(result *MechanicalResult, path, kind string) {
@@ -2605,7 +2604,7 @@ func addMechanicalEvidenceScratchFinding(result *MechanicalResult, path, kind st
 		File:   path,
 		Line:   1,
 		Detail: "tracked evidence path " + path + " is a " + kind,
-		Fix:    "Remove the gate's scratch state from the Spec evidence directory and keep only reader-openable artifacts.",
+		Fix:    "Remove the gate's scratch state from the Spec evidence directory and keep only text, PNG, JPEG or SVG artifacts.",
 	})
 }
 

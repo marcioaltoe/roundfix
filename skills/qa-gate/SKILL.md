@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.16
+  version: 0.0.17
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.16
+version: 0.0.17
 ---
 
 # QA Gate
@@ -40,6 +40,15 @@ Validate the assembled feature against the promises in its spec by exercising th
 Store runnable evidence under a non-compiled extension such as `.go.txt`,
 never as a source file the repository gate compiles or formats. A later
 pass's import skips compiled source and records each skipped path.
+
+### Evidence files are text or images
+
+Keep files under `qa/evidence/` as text or images. Screenshots use PNG, JPEG
+or SVG. The Daemon accepts text (including SVG), PNG and JPEG by content,
+regardless of the file name, and refuses to commit a non-image binary there.
+Record a video, a trace archive, a PDF, a database or a build output as text
+or keep it outside `qa/evidence/`; a refusal settles the QA Task `failed`
+and leaves its report and evidence uncommitted in the Run Worktree.
 
 ### Evidence carries no secret
 
@@ -465,7 +474,7 @@ For each matrix row, repeat this loop:
 1. Enter as the named actor through a real entry point.
 2. Act through the public surface and observe the product's user-facing response.
 3. Confirm the result through a fresh load, restart, deep link, second public endpoint/command, or another user-visible read path.
-4. Capture evidence at the goal state and every divergence. Store screenshots and focused artifacts under `qa/evidence/<YYYY-MM-DD>-<run-slug>/`; keep exact commands and concise outputs in the report.
+4. Capture evidence at the goal state and every divergence. Store screenshots and focused text or image artifacts under `qa/evidence/<YYYY-MM-DD>-<run-slug>/`; keep exact commands and concise outputs in the report.
 5. Update the row immediately. A stall, dead control, infinite spinner, or vanished state is a finding, not a reason to work around the product.
 
 When a row cannot reach its expected observable, compare the row and the

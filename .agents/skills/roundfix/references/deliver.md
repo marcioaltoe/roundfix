@@ -325,7 +325,7 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry |
 | `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`; the QA partial prints carry-forward, repair, authorized override and retry |
 | `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
-| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: remove the secret from every commit the blocker names on the item branch in `<worktree>`, then run `roundfix deliver retry <slug>` |
+| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: in `<worktree>`, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run `roundfix deliver retry <slug>` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
 | `review` | `review-blocked`, `review-stale` |
 | `authorization` | `unauthorized` |
@@ -446,11 +446,21 @@ Roundfix prints the recovery and never runs it. A Task commit that changed a
 moved input, or a refusal with another cause, keeps the existing single
 `roundfix reconcile <run-id> --carry-forward` next action.
 
+A Secret Rewrite is a head that does not descend from the parked candidate
+but does descend from the item's Run start. Only paths named by the
+`secret-found` blocker may differ from the candidate, with the same modes
+and line counts; every changed line must hold a Secret Match at the candidate,
+and no named file may hold a Secret Match at the rewritten head. The retry
+records the head as the newest candidate and returns the item to `reviewing`.
+A refusal keeps the archived-head reason and appends the first failing rule
+in parentheses, naming paths and line numbers without values.
+
 | Recorded evidence | Re-entry stage |
 | --- | --- |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
+| Archived Spec parked `secret-found` with a Secret Rewrite of its parked candidate | `reviewing` |
 | Operator-archived item with override and proven ancestry | `reviewing` |
 | Resolved `pull-request-conflict` with proven candidate ancestry | `reviewing` |
 | Archived Spec with unchanged candidate and no recorded pull request | `gating` |

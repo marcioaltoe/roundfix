@@ -379,7 +379,7 @@ The outcome (`hook_refused`) of a Task commit a repository commit hook rejected 
 _Avoid_: Commit failure, pre-commit error, verification failure
 
 **Mechanical Refusal Code**:
-The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not. The `QA-PRECONDITION` row a refused mechanical stage writes as its terminal row is a row label beside these codes, not a fifth code ([ADR-0132](docs/adr/0132-a-refused-gate-records-the-refusal-as-its-terminal-row.md)).
+The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry, or a tracked evidence file that is a gitlink or a non-image binary, as defined by [ADR-0291](docs/adr/0291-qa-evidence-holds-text-and-images-and-the-qa-report-commit-refuses-any-other-binary.md)). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not. The `QA-PRECONDITION` row a refused mechanical stage writes as its terminal row is a row label beside these codes, not a fifth code ([ADR-0132](docs/adr/0132-a-refused-gate-records-the-refusal-as-its-terminal-row.md)).
 _Avoid_: lint code, error code, check name
 
 **Grant Refusal Code**:
@@ -917,8 +917,12 @@ _Avoid_: Secret Match, credential value, ad hoc pattern
 One line that matches a Secret Pattern, reported by path, line and kind and never by value ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Secret Pattern, secret value, evidence sample
 
+**Secret Rewrite**:
+A rewritten head of an archived item parked `secret-found`, bounded by its Run start, whose tree differs from the parked candidate's only at Secret Match lines in paths the blocker names, with the same modes and line counts and no Secret Match left in those files ([ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)). A Delivery Retry records it as the newest candidate and returns the item to `reviewing`.
+_Avoid_: Post-archive correction, reset, arbitrary history rewrite
+
 **Secret Scan**:
-A check of the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
+A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)).
 _Avoid_: Redaction, post-push scan, advisory check
 
 **Archive Command**:

@@ -64,7 +64,7 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 			" did not change; fix or re-run it, then run roundfix deliver retry " + item.SpecSlug
 	case BlockerSecretFound:
 		classification.Class = ParkClassFinding
-		classification.Next = "remove the secret from every commit the blocker names on the item branch in " + item.Worktree + ", then run roundfix deliver retry " + item.SpecSlug
+		classification.Next = "in " + item.Worktree + ", rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry " + item.SpecSlug
 	case BlockerRunUnresolved, BlockerReviewFindings, BlockerCorrectiveSpecRequired, BlockerGateFailed, BlockerChecksFailed, BlockerRevalidationFailed:
 		classification.Class = ParkClassFinding
 		if blocker == BlockerRevalidationFailed {

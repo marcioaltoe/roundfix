@@ -1206,6 +1206,27 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
 		}
 	}
+	if failure == "" {
+		matches, scanErr := scanTaskCommitPaths(ctx, plan.WorkDir, commit.stageable)
+		if scanErr != nil {
+			return "", "", scanErr
+		}
+		if len(matches) > 0 {
+			details := make([]string, len(matches))
+			locations := make([]map[string]any, len(matches))
+			for index, match := range matches {
+				details[index] = match.String()
+				locations[index] = map[string]any{"path": match.Path, "line": match.Line, "kind": match.Kind}
+			}
+			failure = "Task commit carries a secret: " + strings.Join(details, "; ")
+			message := fmt.Sprintf("Task %s commit refused: %d Secret Match(es)", task.ID, len(matches))
+			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
+				message, map[string]any{"phase": "secret_scan", "matches": locations}); err != nil {
+				return "", "", err
+			}
+			fmt.Fprintln(engine.deps.Progress, message)
+		}
+	}
 	settled := spec.StatusCompleted
 	if failure != "" {
 		settled = spec.StatusFailed
@@ -1224,6 +1245,61 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	}
 	fmt.Fprintf(engine.deps.Progress, "Task %s completed.\n", task.ID)
 	return settled, "", nil
+}
+
+// scanTaskCommitPaths reads exactly the prepared paths relative to HEAD.
+// Missing paths contribute nothing; Git and read errors halt the Run.
+func scanTaskCommitPaths(ctx context.Context, workDir string, paths []string) ([]secretscan.Match, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("scan Task commit paths: %w", err)
+	}
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	// Do not attach Git's output to errors: a partial diff can hold a secret.
+	gitOutput := func(args ...string) ([]byte, error) {
+		cmdArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
+		return exec.CommandContext(ctx, "git", cmdArgs...).Output()
+	}
+	tree, err := gitOutput(append([]string{"ls-tree", "-r", "--name-only", "-z", "HEAD", "--"}, paths...)...)
+	if err != nil {
+		return nil, fmt.Errorf("read HEAD paths for Task Secret Scan: %w", err)
+	}
+	tracked := make(map[string]bool)
+	for _, path := range strings.Split(string(tree), "\x00") {
+		tracked[path] = true
+	}
+	var matches []secretscan.Match
+	var diffPaths []string
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("scan Task commit paths: %w", err)
+		}
+		_, err := os.Stat(filepath.Join(workDir, path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("inspect Task commit path %q: %w", path, err)
+		}
+		if tracked[path] {
+			diffPaths = append(diffPaths, path)
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(workDir, path))
+		if err != nil {
+			return nil, fmt.Errorf("scan Task commit path %q: %w", path, err)
+		}
+		matches = append(matches, secretscan.ScanContent(path, content)...)
+	}
+	if len(diffPaths) > 0 {
+		patch, err := gitOutput(append([]string{"diff", "--no-color", "--no-ext-diff", "--no-renames", "-U0", "HEAD", "--"}, diffPaths...)...)
+		if err != nil {
+			return nil, fmt.Errorf("read Task commit diff for Secret Scan: %w", err)
+		}
+		matches = append(matches, secretscan.ScanAddedLines(patch)...)
+	}
+	return matches, nil
 }
 
 func taskWithRequiredRepositoryVerification(task spec.Task, required string) spec.Task {
@@ -3022,6 +3098,17 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, err
 		}
 	}
+	var binaryPaths []string
+	if len(matches) == 0 {
+		binaryPaths, err = nonImageQAReportEvidence(ctx, plan.WorkDir, reportPath, prepared.paths)
+		if err != nil {
+			return "", "", false, err
+		}
+		if len(binaryPaths) > 0 {
+			qaStatus, accepted = spec.StatusFailed, false
+			qaReason = "QA evidence carries a non-image binary: " + strings.Join(binaryPaths, "; ")
+		}
+	}
 	if len(matches) > 0 {
 		qaStatus, accepted = spec.StatusFailed, false
 		details := make([]string, len(matches))
@@ -3042,6 +3129,15 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		message := fmt.Sprintf("QA Report refused: %d Secret Match(es)", len(matches))
 		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 			message, map[string]any{"phase": "secret_scan", "matches": locations}); err != nil {
+			return "", "", false, err
+		}
+		fmt.Fprintln(engine.deps.Progress, message)
+		return verdict, reportPath, false, nil
+	}
+	if len(binaryPaths) > 0 {
+		message := fmt.Sprintf("QA Report refused: %d non-image binary file(s)", len(binaryPaths))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+			message, map[string]any{"phase": "evidence_binary", "paths": binaryPaths}); err != nil {
 			return "", "", false, err
 		}
 		fmt.Fprintln(engine.deps.Progress, message)
@@ -3071,6 +3167,38 @@ func scanQAReportPaths(ctx context.Context, workDir string, paths []string) ([]s
 		matches = append(matches, secretscan.ScanContent(path, content)...)
 	}
 	return matches, nil
+}
+
+// nonImageQAReportEvidence reads only existing, prepared evidence paths.
+// A read failure is infrastructure failure; diagnostics carry paths, never content.
+func nonImageQAReportEvidence(ctx context.Context, workDir, reportPath string, paths []string) ([]string, error) {
+	evidenceRoot := filepath.ToSlash(filepath.Join(filepath.Dir(reportPath), "evidence")) + "/"
+	var binaryPaths []string
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("inspect QA evidence: %w", err)
+		}
+		if !strings.HasPrefix(filepath.ToSlash(path), evidenceRoot) {
+			continue
+		}
+		file, err := os.Open(filepath.Join(workDir, path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("open QA evidence path %q: %w", path, err)
+		}
+		probe, readErr := io.ReadAll(io.LimitReader(file, speccheck.EvidenceProbeBytes))
+		closeErr := file.Close()
+		if err := errors.Join(readErr, closeErr); err != nil {
+			return nil, fmt.Errorf("read QA evidence path %q: %w", path, err)
+		}
+		if !speccheck.ReadableEvidence(probe) {
+			binaryPaths = append(binaryPaths, path)
+		}
+	}
+	sort.Strings(binaryPaths)
+	return binaryPaths, nil
 }
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {

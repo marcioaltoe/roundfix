@@ -38,6 +38,10 @@ func priorReportContent(status string) string {
 	return "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n## Results\n\n| # | Status | Provenance | Evidence |\n| --- | --- | --- | --- |\n| 1 | " + status + " | criterion | observed |\n"
 }
 
+// Keep binary byte preservation coverage with image content; the .bin name
+// also exercises evidence classification independently of the extension.
+const priorImageEvidenceForTest = "\x89PNG\r\n\x1a\n\x00evidence\r\n\xff"
+
 func recordPriorCommit(t *testing.T, f *taskCycleFixture, p TaskPlan, name, report, message string, recorded bool) priorQAPass {
 	t.Helper()
 	base := strings.TrimSpace(runGitForTest(t, f.gitRoot, "rev-parse", "HEAD"))
@@ -60,7 +64,7 @@ func recordPriorCommit(t *testing.T, f *taskCycleFixture, p TaskPlan, name, repo
 		t.Fatal(err)
 	}
 	mustWriteForTest(t, filepath.Join(f.gitRoot, path), report)
-	mustWriteForTest(t, filepath.Join(f.gitRoot, evidence), "\x00evidence\r\n\xff")
+	mustWriteForTest(t, filepath.Join(f.gitRoot, evidence), priorImageEvidenceForTest)
 	runGitForTest(t, f.gitRoot, "add", path, evidence)
 	runGitForTest(t, f.gitRoot, "commit", "-m", message)
 	commit := strings.TrimSpace(runGitForTest(t, f.gitRoot, "rev-parse", "HEAD"))
@@ -326,7 +330,7 @@ func TestPriorQAPassKeepsIdenticalExistingEvidence(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte("\x00evidence\r\n\xff"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte(priorImageEvidenceForTest), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	before, err := os.Stat(path)

@@ -85,7 +85,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				item := store.DeliveryQueueItem{SpecSlug: "example", Worktree: "/worktrees/example", Stage: store.DeliveryStageParked, Blocker: tt.blocker + suffix}
 				queue := store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}
 				park := ClassifyPark(queue, item)
-				if tt.blocker == BlockerSecretFound && park.Next != "remove the secret from every commit the blocker names on the item branch in /worktrees/example, then run roundfix deliver retry example" {
+				if tt.blocker == BlockerSecretFound && park.Next != "in /worktrees/example, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry example" {
 					t.Fatalf("secret-found next action = %q", park.Next)
 				}
 				question, found := PendingQuestionFor(queue)

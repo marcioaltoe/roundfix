@@ -60,15 +60,25 @@ func PushedHistoryArgs(head, remote string) []string {
 // ScanPushedHistory reads the patch stream selected by PushedHistoryArgs.
 // Only added lines contribute Matches, with their line in that file version.
 func ScanPushedHistory(log []byte) []Match {
+	return scanPatch(log, true)
+}
+
+// ScanAddedLines reads a git diff patch and reports only added lines, using
+// their new line numbers. Matches have no Commit.
+func ScanAddedLines(patch []byte) []Match {
+	return scanPatch(patch, false)
+}
+
+func scanPatch(patch []byte, history bool) []Match {
 	var matches []Match
 	var commit, path string
 	var lineNumber, oldRemaining, newRemaining int
-	for _, raw := range bytes.Split(log, []byte{'\n'}) {
+	for _, raw := range bytes.Split(patch, []byte{'\n'}) {
 		line := string(raw)
 		if oldRemaining > 0 || newRemaining > 0 {
 			switch {
 			case strings.HasPrefix(line, "+"):
-				if path != "" && commit != "" {
+				if path != "" && (!history || commit != "") {
 					if kind := matchesKind(raw[1:]); kind != "" {
 						matches = append(matches, Match{Path: path, Line: lineNumber, Kind: kind, Commit: commit})
 					}
@@ -85,7 +95,7 @@ func ScanPushedHistory(log []byte) []Match {
 			continue
 		}
 		switch {
-		case strings.HasPrefix(line, "commit "):
+		case history && strings.HasPrefix(line, "commit "):
 			commit = strings.TrimPrefix(line, "commit ")
 			path = ""
 		case strings.HasPrefix(line, "diff --git "):

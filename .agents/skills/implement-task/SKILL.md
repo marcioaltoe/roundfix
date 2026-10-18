@@ -4,10 +4,10 @@ description: Execute one task file from docs/specs/<slug>/ end-to-end — ground
 metadata:
   category: implementation
   tags: [workflow, coding, agents, testing]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Implement task
@@ -183,3 +183,11 @@ Never touch `_tasks.md` — it owns graph topology, not progress.
 - Editing other tasks' files or statuses.
 - In a Daemon-assigned turn, running declared Verification, editing Task
   status, claiming a terminal verdict, or committing.
+
+## Fixture values
+
+The `credential-assignment` Secret Pattern matches an uppercase name ending in
+`API_KEY`, `TOKEN`, `SECRET` or `PASSWORD`, an assignment, and a value of 20 or
+more characters containing both a letter and a digit. A fixture value of
+letters only, or of fewer than 20 characters, does not match this pattern.
+Other Secret Patterns still apply; test files have no exemption.
