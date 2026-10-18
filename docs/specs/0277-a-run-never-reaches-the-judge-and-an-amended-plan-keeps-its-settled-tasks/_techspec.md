@@ -460,3 +460,10 @@ No other Spec is a prerequisite.
 - The Windows contract has default relevance and vets with both contract tags. See ADR-0285.
 - Binding Text is section-level, from the References bullets. See ADR-0284.
 - The ADR reference forms are read in `superseded_by` and `supersedes`.
+
+## Amendment of 2026-10-18
+
+`TestEveryTestCompilesForWindows` is also listed in the Makefile's
+`REPO_CONTRACT_TESTS`, which the repository gate audit requires of every
+repocontract test; the maintainer authorized that one line on 2026-10-18, and
+the audit keeps its delivery-base behavior.

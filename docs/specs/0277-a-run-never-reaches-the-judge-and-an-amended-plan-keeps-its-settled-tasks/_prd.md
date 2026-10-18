@@ -112,7 +112,9 @@ same tree; this Spec releases as v0.88.0.
   `.agents/skills/roundfix/references/reconcile.md`,
   `.agents/skills/roundfix/references/spec.md`,
   `docs/references/coverage-record.json`,
-  `internal/baseline/repository_test.go`, `skills/roundfix/SKILL.md`. No
+  `internal/baseline/repository_test.go`, `skills/roundfix/SKILL.md`, and,
+  by the maintainer's answer of 2026-10-18 ("Autorizar 1 linha no Makefile
+  (Recomendado)"), `Makefile` for one `REPO_CONTRACT_TESTS` entry. No other
   Makefile, workflow, Go module, lint, formatter or Baseline module change.
 
 ## Goals

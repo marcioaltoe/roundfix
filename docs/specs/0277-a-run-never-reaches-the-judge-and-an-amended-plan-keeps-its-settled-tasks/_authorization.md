@@ -9,6 +9,7 @@ paths:
   - .agents/skills/roundfix/references/baseline.md
   - .agents/skills/roundfix/references/reconcile.md
   - .agents/skills/roundfix/references/spec.md
+  - Makefile
   - docs/references/coverage-record.json
   - internal/baseline/repository_test.go
   - skills/roundfix/SKILL.md
@@ -105,7 +106,8 @@ baseline-digests` has nothing to rewrite. No record or mirror is hand-edited.
 
 ## Limits
 
-- No change to the Makefile, the CI workflows, `go.mod`, `go.sum`, the lint,
+- No change to the Makefile other than the one `REPO_CONTRACT_TESTS` entry
+  the amendment of 2026-10-18 authorizes, the CI workflows, `go.mod`, `go.sum`, the lint,
   formatter or test-runner configuration, any Baseline module,
   `.roundfixrc.yml`, or the `### QA settlement` section of any skill.
 - No change to the bootstrap permit or any production code of the Worktree
@@ -118,3 +120,19 @@ baseline-digests` has nothing to rewrite. No record or mirror is hand-edited.
   provider or the judge, or reads another repository.
 - No release, tag or deployment. Verification stays Daemon-owned, and Task
   status stays Daemon-written.
+
+## Amendment of 2026-10-18
+
+The delivery's pre-PR review of 2026-10-17 found that task_02 had loosened
+`internal/suiteguardcontract/repository_gate_test.go` so that a textual match
+on the Makefile's Full Contract Run excused a repocontract test missing from
+`REPO_CONTRACT_TESTS`, because the Makefile was outside this grant. On
+2026-10-18 the maintainer answered through AskUserQuestion "Autorizar 1 linha
+no Makefile (Recomendado)" (option text: "Acrescento só
+TestEveryTestCompilesForWindows ao REPO_CONTRACT_TESTS, com emenda datada no
+_authorization.md. O teste roda no gate de contratos (main e release), sem
+custo nas tasks."). This amendment adds `Makefile` to `paths` for exactly that
+change: `TestEveryTestCompilesForWindows` joins the `REPO_CONTRACT_TESTS`
+list, and no other Makefile byte changes. The loosened audit is restored to
+its delivery-base bytes in the same fix. It lands on the default branch
+before the delivery consumes it.
