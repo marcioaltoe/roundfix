@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.91.0] - 2026-10-18
+
+### QA evidence keeps its images, and a secret is refused where it is born
+
+- **Readable QA evidence.** Text, PNG and JPEG under a Spec's `qa/evidence/` are readable evidence; SVG counts as text. The mechanical audit no longer refuses the screenshots the `qa-gate` skill asks for. The QA Report commit refuses any other binary where it is written (`QA evidence carries a non-image binary: <path>`), instead of a later gate refusing it (ADR-0291).
+- **Secret Scan at every Task.** Each Task's settlement commit is scanned for the lines it adds, so a secret-shaped fixture is refused with `Task commit carries a secret: …` when it is written, not at the final push. The `implement` guide, the Roundfix reference and the `implement-task` skill document fixture values that do not match the rule (ADR-0292).
+- **Secret Rewrite.** A `secret-found` retry of an archived item accepts a rewritten head that changes only the reported lines, in place. The `secret-found` next action names that path.
+- **Linux Lane off here.** This repository turned the Linux Lane off until its container carries the CI tools and an init. The fix is recorded in the backlog.
+
 ## [0.90.0] - 2026-10-18
 
 ### Linux tests run before publication, and delivered work gives back its storage
