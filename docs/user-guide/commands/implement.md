@@ -160,6 +160,12 @@ secret: <path>:<line>: <kind>`, recording only its path, line and kind. The
 Final Push scans the commits it would send and refuses the push when it finds a
 Secret Match.
 
+When the Secret Scan finds no match, the Daemon checks the prepared files
+under the report's `evidence/` directory by content. Text (including SVG),
+PNG and JPEG are accepted. A non-image binary settles the QA Task `failed`
+with `QA evidence carries a non-image binary: <path>; <path>` and creates no
+QA Report commit. The reason and the `evidence_binary` event carry paths
+only; the report and evidence stay uncommitted in the Run Worktree.
 
 The `Tokens:` line follows the outcome on every terminal Implement Run,
 before any `pushed` line. It reads the Run's recorded sums after the Run ends,

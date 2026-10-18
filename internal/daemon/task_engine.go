@@ -3022,6 +3022,17 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, err
 		}
 	}
+	var binaryPaths []string
+	if len(matches) == 0 {
+		binaryPaths, err = nonImageQAReportEvidence(ctx, plan.WorkDir, reportPath, prepared.paths)
+		if err != nil {
+			return "", "", false, err
+		}
+		if len(binaryPaths) > 0 {
+			qaStatus, accepted = spec.StatusFailed, false
+			qaReason = "QA evidence carries a non-image binary: " + strings.Join(binaryPaths, "; ")
+		}
+	}
 	if len(matches) > 0 {
 		qaStatus, accepted = spec.StatusFailed, false
 		details := make([]string, len(matches))
@@ -3042,6 +3053,15 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		message := fmt.Sprintf("QA Report refused: %d Secret Match(es)", len(matches))
 		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 			message, map[string]any{"phase": "secret_scan", "matches": locations}); err != nil {
+			return "", "", false, err
+		}
+		fmt.Fprintln(engine.deps.Progress, message)
+		return verdict, reportPath, false, nil
+	}
+	if len(binaryPaths) > 0 {
+		message := fmt.Sprintf("QA Report refused: %d non-image binary file(s)", len(binaryPaths))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+			message, map[string]any{"phase": "evidence_binary", "paths": binaryPaths}); err != nil {
 			return "", "", false, err
 		}
 		fmt.Fprintln(engine.deps.Progress, message)
@@ -3071,6 +3091,38 @@ func scanQAReportPaths(ctx context.Context, workDir string, paths []string) ([]s
 		matches = append(matches, secretscan.ScanContent(path, content)...)
 	}
 	return matches, nil
+}
+
+// nonImageQAReportEvidence reads only existing, prepared evidence paths.
+// A read failure is infrastructure failure; diagnostics carry paths, never content.
+func nonImageQAReportEvidence(ctx context.Context, workDir, reportPath string, paths []string) ([]string, error) {
+	evidenceRoot := filepath.ToSlash(filepath.Join(filepath.Dir(reportPath), "evidence")) + "/"
+	var binaryPaths []string
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("inspect QA evidence: %w", err)
+		}
+		if !strings.HasPrefix(filepath.ToSlash(path), evidenceRoot) {
+			continue
+		}
+		file, err := os.Open(filepath.Join(workDir, path))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("open QA evidence path %q: %w", path, err)
+		}
+		probe, readErr := io.ReadAll(io.LimitReader(file, speccheck.EvidenceProbeBytes))
+		closeErr := file.Close()
+		if err := errors.Join(readErr, closeErr); err != nil {
+			return nil, fmt.Errorf("read QA evidence path %q: %w", path, err)
+		}
+		if !speccheck.ReadableEvidence(probe) {
+			binaryPaths = append(binaryPaths, path)
+		}
+	}
+	sort.Strings(binaryPaths)
+	return binaryPaths, nil
 }
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {

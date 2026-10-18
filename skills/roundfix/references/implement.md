@@ -170,6 +170,13 @@ the largest carriable Task set, breaking ties with the newest Run.
    kind. The Final Push runs the same scan over the commits it would send and
    refuses the push when a Secret Match is found.
 
+   When the Secret Scan finds no match, the Daemon checks the prepared files
+   under the report's `evidence/` directory by content. Text (including SVG),
+   PNG and JPEG are accepted. A non-image binary settles the QA Task `failed`
+   with `QA evidence carries a non-image binary: <path>; <path>` and creates no
+   QA Report commit. The reason and the `evidence_binary` event carry paths
+   only; the report and evidence stay uncommitted in the Run Worktree.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent

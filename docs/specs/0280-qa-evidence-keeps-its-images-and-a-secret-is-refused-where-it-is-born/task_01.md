@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -159,3 +159,130 @@ Daemon tests on temporary repositories.
 - `_prd.md` → Sources; Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Core Feature 5; Success Metric 1; Success Metric 2; Glossary
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 9; Invariant 1; Current behavior; Testing Approach; Build Order 1
 - ADR-0291; ADR-0273; ADR-0117; ADR-0125; ADR-0280; ADR-0189; ADR-0256; ADR-0259; ADR-0285
+
+
+## Result
+
+Implementation handoff for Task 01. Task status and declared Verification remain
+Daemon-owned; no commit, push or pull request was made.
+
+### Acceptance evidence
+
+1. **Tracked text and image evidence.** Added `EvidenceProbeBytes = 8000` and
+   the content-only `ReadableEvidence` classifier. The mechanical check now
+   uses it and emits the exact non-image binary detail and fix from API
+   Contract 2; the gitlink check remains. `TestReadableEvidenceDecidesByContent`,
+   `TestEvidenceAcceptsTrackedImages` and `TestEvidenceRefusesNonImageBinaries`
+   passed in the focused check below. Cases cover PNG, JPEG, SVG, an
+   extensionless PNG, ELF, SQLite, a PDF containing NUL, an ELF named `.png`,
+   malformed/offset image signatures, and NUL at and beyond the probe boundary.
+   The existing `TestEvidenceRefusesScratchStateBinary`, gitlink, ordinary
+   artifact and absent-directory tests also passed without changing
+   `mechanical_test.go`.
+2. **QA Report commit boundary.** After both existing Secret Scans find no
+   match, the Daemon probes the existing prepared paths under the report's
+   `evidence/` directory in the Run Worktree. A non-image binary sets the exact
+   failed reason, publishes one `daemon.qa` event with phase `evidence_binary`
+   and sorted paths, prints its summary, and returns without a report commit.
+   `TestQAReportCommitsImageEvidence` passed with byte-for-byte PNG, JPEG, SVG
+   and extensionless PNG contents in the actual temporary repository commit.
+   `TestQAReportWithANonImageBinarySettlesFailedWithoutACommit` passed for one
+   and two binaries, checking exact reason, event payload, summary, preserved
+   report/evidence, no binary content in output, and no report commit or commit
+   event. `TestQAReportBinaryCheckReadsOnlyPreparedEvidence` passed for nested
+   images, deleted paths, unprepared and outside paths, sorted results, probe
+   limits, read errors and cancellation. Existing QA Secret Scan and formatter
+   tests passed without changing `qa_secret_scan_test.go`.
+3. **Guidance and glossary.** The implement guide and Roundfix reference name
+   the new refusal beside their Secret Scan paragraphs. The qa-gate skill adds
+   `### Evidence files are text or images`, names PNG/JPEG/SVG screenshots and
+   directs video, trace archives, PDFs, databases and build output to text or
+   outside `qa/evidence/`; its focused-artifact instruction now specifies text
+   or images. Through domain-modeling, `Mechanical Refusal Code` now includes
+   tracked gitlinks and non-image binaries with ADR-0291's link. Searched
+   `docs/user-guide`, `docs/agents`, `.agents/skills` and `skills` for old binary
+   refusal and screenshot-only wording; no additional contradictory guidance
+   was found. A read-only Python audit confirmed canonical/mirror equality and
+   byte-identical `### QA settlement` sections for qa-gate, Roundfix and
+   archive-spec against HEAD. The existing single-literal Secret Scan
+   documentation checks passed.
+
+### Focused checks
+
+- Before production edits,
+  `go test ./internal/speccheck -run '^TestEvidence(AcceptsTrackedImages|RefusesNonImageBinaries)$' -count=1`
+  exited 1: tracked PNG/JPEG were refused as built binaries and the refusal
+  wording was still the old text.
+- Before production edits,
+  `go test ./internal/daemon -run '^TestQAReport(CommitsImageEvidence|WithANonImageBinarySettlesFailedWithoutACommit)$' -count=1`
+  exited 1: a QA run with non-image evidence was accepted.
+- After all Go edits,
+  `go test ./internal/speccheck ./internal/daemon -run '^Test(ReadableEvidence|Evidence(Accepts|Refuses)|QA(Report(CommitsImageEvidence|WithANonImageBinarySettlesFailedWithoutACommit|BinaryCheck)|ReportWithASecretMatch|ReportWithoutASecretMatch|SecretScan|Formatter))' -count=1`
+  exited 0 for both packages.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheQASecretRefusal(IsDocumentedAsTheDaemonPrintsIt|ContractRejectsTheParenthesizedForm)$' -count=1`
+  exited 0.
+- `GOOS=windows GOARCH=amd64 go test -c -o /private/tmp/roundfix-0280-26a9aa2dcaf8e01d-speccheck.test.exe ./internal/speccheck`
+  and `GOOS=windows GOARCH=amd64 go test -c -o /private/tmp/roundfix-0280-26a9aa2dcaf8e01d-daemon.test.exe ./internal/daemon`
+  each exited 0. Every new top-level test calls `t.Parallel()` first; binary
+  samples are runtime byte strings written as ordinary files and never run.
+
+### Generated artifacts and scope
+
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and generated qa-gate `0.0.17` and Roundfix `0.1.99` in both copies
+  and the owned-skill version record.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and regenerated the Behavior Surface Record.
+- Repository-required `make baseline-digests` exited 0 with `changed:false`;
+  no derived Baseline artifact remains changed.
+- The initial read-only scope audit found the 16 declared Task 01 paths,
+  including this Result file. The Verification Feedback repair below adds one
+  ordinary fixture path; the Task Graph and other Task files remain unchanged. All
+  mirrors and records were written only by their owning commands.
+- The configured sandbox cannot start because its writable root contains a
+  symlink. Commands ran through the approved escalation path. Checks used
+  temporary repositories and made no network or provider calls.
+
+The Task's declared Verification, selected repository Verification and terminal
+settlement were not run by this Agent. No follow-up implementation was added.
+
+
+### Verification Feedback repair — attempt 1
+
+The Daemon diagnostic artifact for attempt 1 identified regressions in
+`TestQAGateCarriesARowFromAnUnintegratedFailedPass` and
+`TestQAFormatFormatsAnImportedPassBeforeThePrecondition`. Both reused
+`recordPriorCommit`, whose evidence fixture was a non-image binary. The new
+commit refusal correctly left that evidence outside HEAD, so their later
+imported-file commit assertions could not read it.
+
+Repaired the shared fixture in `internal/daemon/qa_prior_pass_test.go` to use
+PNG content, retaining the `.bin` name and NUL, CRLF and high-byte payload.
+Its existing-file preservation check reads the same fixture constant. This
+keeps the original byte-preservation, file-identity, mode, import, carry and
+format assertions, all existing test names, and the new non-image refusal.
+This additional ordinary test path is required by Task 01's rule that existing
+tests continue to pass under the changed evidence contract; no other Task's
+implementation or protected tooling path changed.
+
+Focused evidence:
+
+- Before the fixture repair,
+  `go test ./internal/daemon -run '^Test(QAGateCarriesARowFromAnUnintegratedFailedPass|QAFormatFormatsAnImportedPassBeforeThePrecondition)$' -count=1`
+  exited 1, reproducing both reported regressions.
+- After the repair,
+  `go test ./internal/daemon -run '^Test(QAGateCarriesARowFromAnUnintegratedFailedPass|QAFormat|PriorQAPass|APriorPass|QAPromptNamesTheImportedPassHead|QAReport(CommitsImageEvidence|WithANonImageBinarySettlesFailedWithoutACommit|BinaryCheck))' -count=1`
+  exited 0, covering both reported tests, the shared fixture's other prior-pass
+  consumers, QA formatting and the new evidence acceptance/refusal cases.
+- `GOOS=windows GOARCH=amd64 go test -c -o /private/tmp/roundfix-0280-26a9aa2dcaf8e01d-daemon.test.exe ./internal/daemon`
+  exited 0 after the fixture repair.
+
+Task status remains Daemon-owned and unchanged. The Agent did not rerun the
+Task's declared Verification, commit, push or open a pull request.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/daemon/qa_prior_pass_test.go`
