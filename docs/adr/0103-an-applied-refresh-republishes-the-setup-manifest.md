@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-08T00:00:00Z
-updated_at: 2026-08-08T00:00:00Z
+updated_at: 2026-10-18T13:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -22,3 +22,5 @@ job ends clean only when the system confirms source, desired state, and
 destination are aligned, and reporting `current` on the second run is that
 confirmation. Treating the manifest as an append-only adoption record was
 rejected because it makes the recorded state permanently unfalsifiable.
+
+**Amended by [ADR-0287](0287-a-plan-is-checked-for-undeclared-verification-paths-and-every-settlement-checks-the-setup-manifest.md) (2026-10-18).** A documentation contract that runs at every Task settlement builds the Managed Refresh plan and fails when it proposes a change, so a change that moves a recorded digest, such as a Makefile edit, regenerates the Setup Manifest in the same Task instead of at the next release.

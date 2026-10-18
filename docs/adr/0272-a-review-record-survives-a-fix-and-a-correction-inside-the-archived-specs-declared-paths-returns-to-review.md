@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-13T00:00:00Z
+updated_at: 2026-10-18T13:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -89,3 +89,5 @@ widen its own bound.
 - A checkout directory gains one small file per reviewed head. Nothing reclaims
   them yet; they live in the Artifact Directory with the rest of the review
   artifacts.
+
+**Amended by [ADR-0286](0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md) (2026-10-18).** A retry of an item parked by round-2 findings whose every standing finding is disposed as fixed between the parked candidate and the item head skips the declared-path bound, because the Correction Review reads the whole fix; every other retry keeps it.
