@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-01T00:00:00Z
-updated_at: 2026-10-01T00:00:00Z
+updated_at: 2026-10-18T17:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -32,3 +32,5 @@ declared or recorded scope. Releasing remains an explicit act, through
 and `--discard-superseded` keeps its own Branch Disposition (ADR-0115). An
 uncommitted change outside that scope, such as a hand edit to an unrelated
 file, still keeps the Run.
+
+**Amended by [ADR-0289](0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md) (2026-10-18).** A declared or recorded path also covers the uncommitted paths beneath it, and a Run that stays `dirty` while its Spec is archived at the proof head names the failing proof or the first path outside that scope in its reason.

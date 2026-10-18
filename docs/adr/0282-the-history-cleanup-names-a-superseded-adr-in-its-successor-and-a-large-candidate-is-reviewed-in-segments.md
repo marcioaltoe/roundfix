@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-17T00:00:00Z
-updated_at: 2026-10-17T00:00:00Z
+updated_at: 2026-10-18T17:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -100,3 +100,5 @@ ADR-0281's rule from tests to the Delivery Queue.
   until it declares the version record and its step.
 - Item binary copies accumulate under the artifact directory, one per distinct
   build of an item; this decision adds no reclamation for them.
+
+**Amended by [ADR-0290](0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md) (2026-10-18).** Item Binary copies no longer accumulate past a merge: the Delivery Queue removes a merged item's `item-binary` directory when it releases the item's Runs, and the GC Command reclaims the directory of an item that is merged or no longer queued.
