@@ -69,7 +69,7 @@ func TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty(t *testing.T) {
 			mustWriteWorktreeTest(t, filepath.Join(f.ref.Path, file), "preserve\n")
 			result := inspectMergedHeadTestRun(t, f, nil)
 			assertTerminalRunReconciliation(t, result, f.run, ReconciliationDirty)
-			if result.Reason != reconciliationReasonDirty {
+			if want := reconciliationReasonDirty + "; " + file + " is outside the archived Spec's declared and recorded paths"; result.Reason != want {
 				t.Fatalf("reason = %q", result.Reason)
 			}
 			if err := ApplyTerminalRun(context.Background(), &recordingTerminalRunStore{}, result); err == nil {

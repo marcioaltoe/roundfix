@@ -1042,26 +1042,53 @@ func inspectTerminalRunMerged(
 		}
 		if status != "" {
 			dirtyPaths, parsed := terminalRunDirtyPaths(status)
-			if parsed && runHeadErr == nil && result.RunHead != "" && targetMetadataValid && targetHeadErr == nil {
+			source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged)
+			archived := found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug)
+			detail := reconciliationReasonRunMetadata
+			switch {
+			case !parsed:
+				detail = reconciliationReasonWorktreeInspection
+			case runHeadErr != nil || result.RunHead == "":
+				detail = reconciliationReasonRunBranch
+			case !targetMetadataValid:
+				detail = reconciliationReasonTargetMetadata
+			case targetHeadErr != nil:
+				detail = reconciliationReasonTargetBranch
+			default:
 				proof := result
 				proof.State = ReconciliationUnintegrated
-				if source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged); found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug) {
+				if archived {
 					proof = inspectRunAtMergedHead(ctx, runner, run, gitRoot, proof, worktreePresent, runBranchPresent, merged, source)
 				} else {
 					proof = inspectRunByDelivery(ctx, runner, run, gitRoot, proof, worktreePresent, runBranchPresent, merged)
 				}
-				if (proof.State == ReconciliationSafe || proof.State == ReconciliationSuperseded) && dirtyPathsInArchivedSpec(ctx, runner, gitRoot, proof.evidence.proofHead, run.SpecSlug, dirtyPaths) {
-					proof.State = ReconciliationSuperseded
-					suffix := fmt.Sprintf("; %d uncommitted path(s) superseded by the archived Spec", len(dirtyPaths))
-					proof.Reason = boundedReconciliationReasonWithSuffix(proof.Reason, suffix)
-					proof.evidence.snapshot = terminalRunSnapshot(proof)
-					proof.evidence.dirtyPaths = slices.Clone(dirtyPaths)
-					return proof, nil
+				detail = proof.Reason
+				if proof.State == ReconciliationSafe || proof.State == ReconciliationSuperseded {
+					outside, scoped := dirtyPathsInArchivedSpec(ctx, runner, gitRoot, proof.evidence.proofHead, run.SpecSlug, dirtyPaths)
+					if scoped {
+						proof.State = ReconciliationSuperseded
+						suffix := fmt.Sprintf("; %d uncommitted path(s) superseded by the archived Spec", len(dirtyPaths))
+						proof.Reason = boundedReconciliationReasonWithSuffix(proof.Reason, suffix)
+						proof.evidence.snapshot = terminalRunSnapshot(proof)
+						proof.evidence.dirtyPaths = slices.Clone(dirtyPaths)
+						return proof, nil
+					}
+					detail = "archived Spec's declared and recorded paths could not be inspected"
+					if outside != "" {
+						detail = outside + " is outside the archived Spec's declared and recorded paths"
+					}
 				}
 			}
 			result.State = ReconciliationDirty
 			result.Reason = reconciliationReasonDirty
-			if source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged); found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug) {
+			if !archived {
+				if _, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot); resolved && specArchivedAtMergedHead(ctx, runner, gitRoot, defaultHead, run.SpecSlug) {
+					source.head = defaultHead
+					archived = true
+				}
+			}
+			if archived {
+				result.Reason = dirtyReconciliationReason(detail)
 				if err := archiveSourceUnavailable(ctx, runner, gitRoot, source.head, run.SpecSlug); err != nil {
 					result.Reason = boundedReconciliationReason(err.Error())
 				}
@@ -1291,6 +1318,25 @@ func boundedSpecReconciliationReason(specSlug string, proof string) string {
 	}
 	reason = fmt.Sprintf("Spec %q: %s", abbreviated+ellipsis, proof)
 	return boundedReconciliationReason(reason)
+}
+
+// Keep the dirty prefix and the detail's ends when the middle exceeds the bound.
+func dirtyReconciliationReason(detail string) string {
+	prefix := reconciliationReasonDirty + "; "
+	if len(prefix)+len(detail) <= reconciliationReasonMaxBytes {
+		return prefix + detail
+	}
+	const ellipsis = "..."
+	budget := reconciliationReasonMaxBytes - len(prefix) - len(ellipsis)
+	left := (budget + 1) / 2
+	for !utf8.RuneStart(detail[left]) {
+		left--
+	}
+	right := len(detail) - budget/2
+	for !utf8.RuneStart(detail[right]) {
+		right++
+	}
+	return prefix + detail[:left] + ellipsis + detail[right:]
 }
 
 func boundedReconciliationReason(reason string) string {

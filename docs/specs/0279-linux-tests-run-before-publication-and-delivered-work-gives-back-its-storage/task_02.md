@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -130,3 +130,76 @@ repositories.
 - `_prd.md` → Sources; Goals; User Story 3; User Story 4; Core Feature 3; Core Feature 4; Core Feature 7; Success Metric 2; Glossary
 - `_techspec.md` → API Contract 6; API Contract 7; API Contract 10; Invariants 3 and 4; Current behavior; Testing Approach; Build Order 2
 - ADR-0289; ADR-0212; ADR-0053; ADR-0115; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+## Result
+
+Implemented the Task's reconciliation slice under ADR-0289. Declared and
+recorded paths now cover equality and descendants separated by `/`, while
+prefix-sharing siblings stay outside the scope. The scope reader returns the
+first outside path in byte order and preserves its refusal on unavailable or
+invalid archive data. Task declarations still come from the archive source
+revision; commit representation and apply-time dirty-path re-proof are
+unchanged.
+
+A retained dirty Run whose Spec is archived at the chosen merged head or the
+default branch now names the commit proof's refusal, or the first path outside
+scope after a successful commit proof. Reasons retain the whole dirty prefix
+and shorten the suffix's middle at UTF-8 boundaries to fit 160 bytes. An
+unarchived Spec keeps the bare constant, and an unavailable archive source
+keeps its source diagnostic.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Descendants are superseded and released; a prefix-sharing sibling stays dirty | `TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded` passed for both Legacy Archive Folders and Archive Records. It covers a dirty deletion beneath `deletes: docs/history/findings` when that directory is absent at the source revision, descendants of `interface:`, `creates:` and Recorded paths, successful apply removing the worktree and branch, and preservation of `docs/history/findings-other/keep.md` and `recorded-other.txt`. |
+| A retained archived-Spec Run names its outside path or unrepresented commit | `TestMergedSpecRunNamesTheLeftoverOutsideItsScope` and `TestMergedSpecRunNamesTheUnrepresentedCommit` passed using both default-branch fallback and explicit merged-head records. They check the exact `unrelated.txt` reason, byte-order selection with multiple outside paths, bounded valid UTF-8 for a long filename, the unrepresented commit ID and the incomplete Task cause. Both subtests of `TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty` now assert their named reasons and passed. |
+| An unarchived Spec keeps the bare dirty reason | `TestMergedHeadKeepsADirtyRunWorktree` passed with its existing exact bare-constant assertion unchanged. |
+
+### Focused checks
+
+- Before the production change, the named-reason regressions observed only
+  the bare constant. After correcting directory creation in the new fixture,
+  `go test ./internal/worktree -run '^TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded$' -count=1`
+  failed as expected: scoped descendants remained `dirty` instead of
+  `superseded`, and siblings lacked their named reasons.
+- `go test ./internal/worktree -run 'TestMergedSpecRun|TestArchivedSpec|TestApply.*Leftover|TestMergedHeadKeepsADirty|TestLeftovers' -count=1 -v`
+  exited 0: all 19 selected top-level tests passed, including the three new
+  tests, stale dirty-path-set refusal, missing archived PRD, unavailable
+  source revision, literal filenames, rename-source preservation and
+  absent-target preservation.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/worktree -o /private/tmp/roundfix-task02-worktree.test.exe`
+  exited 0. This is compilation evidence only.
+- `git diff --check` exited 0.
+
+### Documentation and generated records
+
+Revised the dirty-worktree paragraph and `dirty` state row in the reconcile
+user guide and canonical Roundfix reference. Both name `beneath a declared`
+and describe the reason forms. Revised **Run Worktree Reconciliation** in
+`CONTEXT.md` through domain-modeling, linking ADR-0289 and stating that a kept
+Run `names the failing proof`. Searched all user guides and both skill trees
+for dirty-path, leftover, uncommitted-path and equality wording; the scope
+paragraphs in the guide and reference copies are qualified with descendants.
+
+The required source-driven commands each exited 0:
+
+- `make skills-sync`;
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  raised and recorded Roundfix `0.1.97` in both skill manifests and the record;
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  re-recorded the reconcile guide fingerprint;
+- the repository-required `make baseline-digests` reported `changed:false`:
+  derived Baseline artifacts remain byte-identical.
+
+A final path and content audit found all 13 changed or new paths declared by
+this Task, matching canonical and shipped Roundfix copies, and unchanged
+`### QA settlement` sections. No mirror or generated record was hand-edited.
+The only pre-existing diff was the Daemon's `status: in_progress` change in
+this Task file; this turn appended Result without changing status, the Task
+Graph or another Task file.
+
+The configured sandbox could not start because its workspace root contains a
+symlink, so the focused commands used the approved host executor. No declared
+Verification command, selected repository Verification or full test suite was
+run; those remain Daemon-owned. No commit, push or pull request was made.
