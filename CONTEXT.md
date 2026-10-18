@@ -917,6 +917,10 @@ _Avoid_: Secret Match, credential value, ad hoc pattern
 One line that matches a Secret Pattern, reported by path, line and kind and never by value ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md)).
 _Avoid_: Secret Pattern, secret value, evidence sample
 
+**Secret Rewrite**:
+A rewritten head of an archived item parked `secret-found`, bounded by its Run start, whose tree differs from the parked candidate's only at Secret Match lines in paths the blocker names, with the same modes and line counts and no Secret Match left in those files ([ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)). A Delivery Retry records it as the newest candidate and returns the item to `reviewing`.
+_Avoid_: Post-archive correction, reset, arbitrary history rewrite
+
 **Secret Scan**:
 A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)).
 _Avoid_: Redaction, post-push scan, advisory check

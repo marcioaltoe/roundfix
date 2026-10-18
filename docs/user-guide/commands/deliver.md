@@ -410,7 +410,7 @@ The Park Class identifies the reason and the next action:
 | `conflict` | `pull-request-conflict` |
 | `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
-| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: remove the secret from every commit the blocker names on the item branch in `<worktree>`, then run `roundfix deliver retry <slug>` |
+| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: in `<worktree>`, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run `roundfix deliver retry <slug>` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
 | `review` | `review-blocked`, `review-stale` |
 | `authorization` | `unauthorized` |
@@ -523,12 +523,22 @@ finding is dismissed with evidence. Standing findings park it again without
 asking the reviewer; Roundfix asks the reviewer again only after the head
 changes.
 
+A Secret Rewrite is a head that does not descend from the parked candidate
+but does descend from the item's Run start. Only paths named by the
+`secret-found` blocker may differ from the candidate, with the same modes
+and line counts; every changed line must hold a Secret Match at the candidate,
+and no named file may hold a Secret Match at the rewritten head. The retry
+records the head as the newest candidate and returns the item to `reviewing`.
+A refusal keeps the archived-head reason and appends the first failing rule
+in parentheses, naming paths and line numbers without values.
+
 | Recorded evidence | Re-entry stage |
 | --- | --- |
 | Recorded Pull Request merged from the item branch, or Spec archived on the local default branch through a delivery commit outside the item branch | `merged`, without counting a retry; owner runs post-merge cleanup |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
+| Archived Spec parked `secret-found` with a Secret Rewrite of its parked candidate | `reviewing` |
 | Operator-archived item with a QA override and head descended from its candidate or Run start | `reviewing` |
 | Resolved `pull-request-conflict` with a head descended from the candidate | `reviewing` |
 | Archived Spec with unchanged candidate and no recorded pull request | `gating` |

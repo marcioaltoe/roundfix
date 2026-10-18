@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0280-qa-evidence-keeps-its-images-and-a-secret-is-refused-where-it-is-born
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -148,3 +148,77 @@ temporary Git repositories and engine tests with a fake prover.
 - `_prd.md` → Sources; Goals; User Story 4; Core Feature 4; Core Feature 5; Success Metric 4; Glossary
 - `_techspec.md` → API Contract 6; API Contract 7; API Contract 8; API Contract 9; Invariant 3; Current behavior; Testing Approach; Build Order 3
 - ADR-0292; ADR-0273; ADR-0237; ADR-0272; ADR-0197; ADR-0280; ADR-0189; ADR-0256; ADR-0259; ADR-0285
+
+
+## Result
+
+Implemented this Task's slice for the 2026-10-18 Finding,
+`references/2026-10-18-secret-found-asks-for-a-rewrite-the-retry-of-an-archived-item-refuses.md`:
+API Contracts 6–8 now provide the Secret Rewrite proof, archived retry rule
+and operator action. Task status and settlement remain Daemon-owned.
+
+### Acceptance evidence
+
+- A rewrite that replaces only matched lines returns to `reviewing`:
+  `SecretRewriteProver` is wired through `EngineDependencies.SecretRewrites`.
+  The retry resolves the Run start, deduplicates paths from Secret Match
+  entries (including entries with commit suffixes), and submits the newest
+  candidate and moved head. The accepted proof records the head as the newest
+  candidate. `TestSecretRewriteAcceptsReplacedMatchedLines` exercises real Git
+  history rebuilt from the first secret commit; staged local changes do not
+  affect the proof or get modified. `TestRetryAcceptsASecretRewriteOfAnArchivedItem`
+  checks the stored stage, candidate list and proof inputs through the dependency.
+- Every other rewrite is refused with the archived-head reason and failed rule:
+  the prover applies all six rules in order across paths using ancestry,
+  NUL-delimited raw tree diffs, blob content and Secret Scan results. Blob sizes
+  restore trailing newlines trimmed by the Git runner. Ten refusal subtests
+  assert exact reasons, including additions, removals, mode changes, trailing
+  newline changes and an unchanged named file retaining a match.
+  `TestRetryRefusesARejectedSecretRewriteWithItsRule` checks exact suffixes for
+  rejected proofs, prover errors and unavailable Run starts, plus unchanged
+  stored items. `TestSecretRewriteRetryKeepsExistingPaths` checks other and
+  lookalike blockers, an absent prover, an unchanged candidate and descent
+  acceptance without invoking the new proof.
+- `secret-found` prints the rewrite that works: both pinned assertions retain
+  their test names and use API Contract 8's text. The deliver guide and canonical
+  Roundfix reference describe Secret Rewrite and its retry row; `CONTEXT.md`
+  defines the term with ADR-0292. A recursive content audit found no old next
+  action under the user guides, agent guides, canonical skills, embedded skills
+  or delivery sources. Roundfix's skill and reference mirrors are byte-identical;
+  QA settlement sections are unchanged.
+
+### Focused checks
+
+All commands below exited 0 unless explicitly marked as the initial red signal.
+The Task's declared Verification command and the repository Verification were
+not run; those belong to the Daemon.
+
+- Initial red signal:
+  `go test ./internal/cli ./internal/delivery -run '^Test(RetryAcceptsASecretRewriteOfAnArchivedItem|SecretRewriteAcceptsReplacedMatchedLines)$' -count=1`
+  exited 1 with the expected missing `SecretRewrite`, prover method and engine
+  dependency compile errors before implementation.
+- `go test ./internal/cli ./internal/delivery -run 'Test(SecretRewrite|Retry.*SecretRewrite)' -count=1 -v`
+  passed the four requested tests and their rule/refusal subtests.
+- After the final code changes,
+  `go test ./internal/delivery -run '^(TestRetry|TestOperatorArchiveRetry|TestParkClass|TestEveryBlocker|TestExistingGenericPark|TestEnginePushParksSecretFound|TestSecretRewriteRetry)' -count=1`
+  passed the new retry tests, existing retry and archived-head regressions,
+  Park Class assertions and the pinned push refusal assertion.
+- `go test ./internal/cli -run 'Test(SecretRewrite|ReviewCorrection|Retry.*Archived)' -count=1`
+  passed the prover and nearby correction regressions.
+- `GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-task03-cli.test.exe ./internal/cli`
+  and `GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-task03-delivery.test.exe ./internal/delivery`
+  compiled both test packages for Windows; no Windows execution is claimed.
+- Required generators ran successfully: `make skills-sync`;
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`;
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+  The owned version command recorded Roundfix version `0.1.102`; the coverage
+  command updated the deliver guide fingerprint. Records and mirrors were
+  generated, not hand-edited.
+- `make baseline-digests` exited 0 with `changed: false`; derived Baseline
+  artifacts already matched their sources.
+- Focused Python inspections confirmed the old-action absence, current guide
+  text and glossary term, identical mirrors and unchanged QA settlement sections.
+- `git diff --check` exited 0.
+
+No follow-up outside this Task's slice was identified. No commit, push or pull
+request was made; no other Task file or Task Graph manifest was edited.

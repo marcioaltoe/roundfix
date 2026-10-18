@@ -65,7 +65,7 @@
     "guide docs/user-guide/commands/attach.md": "sha256:9439b3d9af405b2891440462b7947c94a41d3e34e31569a0e0d1ff2dcd2ea1a2",
     "guide docs/user-guide/commands/baseline.md": "sha256:b80a5c025cee5bc5d0b9158dc8ee8906d9864007636319274406a0ec1e2affd8",
     "guide docs/user-guide/commands/cancel.md": "sha256:ef1a4f08a8e41e31f9d04f74d18c880a33b30e4bd6076d431082252f5483650a",
-    "guide docs/user-guide/commands/deliver.md": "sha256:ec3eedbd9cd4e16bc27046037becea7e5cfbcb5293e9c53f7ca8529288fc864f",
+    "guide docs/user-guide/commands/deliver.md": "sha256:37e37dc28d50f4ed3f5ce82136af573ca3f6ab775675289d2110d17c75eef2ba",
     "guide docs/user-guide/commands/detached-runs.md": "sha256:6d9cebf3be1297220cace3da26e478f843b8a3ac95a99d5a773cfce8f5c5bae4",
     "guide docs/user-guide/commands/doctor.md": "sha256:d6451629e5df7f2e33e32594ee2704ec198827b55c2d7b1394a9d52207ccde32",
     "guide docs/user-guide/commands/events.md": "sha256:cf3c8060b695c2aadc498e171e7350da36f57a1f5c2997424a4f9c5112eb0959",

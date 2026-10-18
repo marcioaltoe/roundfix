@@ -111,7 +111,7 @@ func TestEnginePushParksSecretFound(t *testing.T) {
 		t.Fatal("item did not park with the safe secret-found match list")
 	}
 	park := ClassifyPark(queue, item)
-	wantNext := "remove the secret from every commit the blocker names on the item branch in " + item.Worktree + ", then run roundfix deliver retry " + slug
+	wantNext := "in " + item.Worktree + ", rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry " + slug
 	if park.Class != ParkClassFinding || park.Next != wantNext {
 		t.Fatal("secret-found has the wrong class or next action")
 	}
