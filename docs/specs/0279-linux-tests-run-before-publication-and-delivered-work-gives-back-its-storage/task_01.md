@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0279-linux-tests-run-before-publication-and-delivered-work-gives-back-its-storage
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -145,3 +145,83 @@ verifiable on its own through gate tests that use a fake `docker`.
 - `_prd.md` → Sources; Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Core Feature 7; Success Metric 1; Glossary
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 10; Invariants 1 and 2; Current behavior; Testing Approach; Build Order 1
 - ADR-0288; ADR-0225; ADR-0281; ADR-0285; ADR-0273; ADR-0271; ADR-0280; ADR-0189; ADR-0256; ADR-0259
+
+
+## Result
+
+Implemented Task 01's Linux Lane slice for Daemon verification. Task status
+and checklist settlement remain Daemon-owned; no declared Verification command,
+repository Verification, commit, push or pull request operation was run.
+
+### Implementation
+
+- Added strict boolean `delivery.linux_lane` parsing, default off, with Project
+  Config overriding User Config and explicit project `false` disabling it.
+  Non-boolean values retain the scoped `parse config` diagnostic shape.
+- After repository Verification succeeds, Gate reads the setting from an
+  immutable commit resolved from the already-fetched delivery default ref.
+  This also covers resumed gates and prevents an item's or owner's unmerged
+  opt-in from deciding the setting.
+- Selected sorted, unique nearest Go package directories from the candidate's
+  Git tree and merge-base diff; root `go.mod` and `go.sum` changes select
+  `./...`. The archive streams directly from the supplied candidate head to
+  Docker, including when the checkout is dirty or has later commits.
+- Added ordered machine skips and exact console notices, a command/output log,
+  the locally inspected image, the required fixed script and container
+  arguments, owner-environment Docker/Go resolution, and a read-only module
+  cache mount. Only the seven prescribed variables are explicitly forwarded
+  to the container.
+- Nonzero test exits fail the gate with the lane log path; exit 125 skips.
+  Cancellation and the 20-minute cap remove the named container through a
+  fresh, bounded cleanup context. The cap is not waited on by tests.
+- Opted this repository in with only the authorized line/comment in
+  `.roundfixrc.yml`; documented Linux Lane in the guides and Roundfix
+  reference; added the glossary term with ADR-0288. Synced skill mirrors and
+  generated Roundfix version 0.1.96 and the Behavior Surface Record. QA
+  settlement text is byte-identical to HEAD.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Enabled gate runs one bounded container for changed packages; failure names its log | `TestLinuxLaneRunsTheChangedPackagesInAContainer` checks every argument, the literal script, process environment/directory, archive contents, candidate-head provenance, package selection for Go/testdata/module/sum changes, sorting and deduplication, and worktree preservation. `TestLinuxLaneFailureFailsTheGate` checks exits 1, 126 and 127 and the exact reason/log path. `TestLinuxLaneCancellationRemovesTheContainer` cancels only after the compiled fake run signals it is blocking, then checks `docker rm -f <name>` and `context.Canceled`. |
+| Every machine condition skips with its named reason and starts no container | `TestLinuxLaneSkipsWithANamedReason` covers all eight conditions, earlier-reason precedence, exact console notices and matching lane-log notices. The first seven start no `docker run`; the exit-125 condition necessarily makes one refused run attempt and starts no real container. All tests use compiled fake tools. |
+| Disabled gate starts no Docker or Go process | `TestGateWithoutTheLaneStartsNoDocker` checks both default-branch disablement despite the owner's opposite loaded value and repository Verification failure before the lane. It asserts no tool starts, no lane log and no console line. The enabled test also proves that the fetched default enables the lane despite the owner's loaded false and a dirty checkout's false. |
+
+### Focused checks run
+
+- `go test ./internal/config -run LinuxLane -count=1`: exit 0.
+- `go test ./internal/cli -run '^(TestLinuxLane|TestGateWithoutTheLane)' -count=1`:
+  exit 0.
+- `go test ./internal/cli ./internal/config -run 'LinuxLane|GateWithoutTheLane' -count=1`:
+  exit 0.
+- `go test -race ./internal/cli -run 'LinuxLane|GateWithoutTheLane' -count=1`:
+  exit 0.
+- `go test -race ./internal/cli ./internal/config -run 'LinuxLane|GateWithoutTheLane' -count=1`:
+  exit 0 after the final implementation edit.
+- `go test ./internal/config ./internal/cli -run '^(TestDeliveryItemBinary|TestDeliveryLinuxLane|TestAPrerequisiteIsMet)' -count=1`:
+  exit 0; existing declaration and prerequisite behavior exercised.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/cli -o /tmp/roundfix-0279-cli.test.exe`
+  and the equivalent `./internal/config` compile: exit 0.
+- Required authoring commands `make skills-sync`, the owned-skill version
+  record command, and the docscontract skill-coverage record command: exit 0.
+  Records and mirrors were generated, not hand-edited.
+- `make baseline-digests`: exit 0, `changed: false`; no derived Baseline file
+  changed.
+- `git diff --check`: exit 0. Canonical/mirror byte comparisons and extraction
+  of QA settlement sections against HEAD: identical. Changed-path audit:
+  only this Task's declared paths plus this Task file.
+
+### Limits and follow-ups
+
+- The new lane tests were absent at HEAD (confirmed with `git cat-file`),
+  providing the pre-change absence evidence.
+- All runtime evidence uses disposable Git repositories, artifact directories,
+  and `testfixture.FixtureBinary` tools. No real container, image pull,
+  provider call, or external network request was made. Loopback is used only
+  as an event signal for cancellation; it has no service dependency.
+- Daemon-declared Verification and repository Verification remain unrun in
+  this turn. The real 20-minute cap is implemented but deliberately not
+  elapsed in a test; cancellation exercises container cleanup without a
+  timing allowance.
+- No work from Task 02 or Task 03 was included.

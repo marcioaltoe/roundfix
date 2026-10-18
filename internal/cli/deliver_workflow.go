@@ -1443,7 +1443,7 @@ func pullRequestRecordChangeIsExact(before, after []byte, number string) bool {
 	return reflect.DeepEqual(oldRecord, newRecord)
 }
 
-func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, _ string) (delivery.GateResult, error) {
+func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, head string) (delivery.GateResult, error) {
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(
 		workflow.loaded.Config.Defaults.ArtifactDir,
 		workflow.loaded.GitRoot,
@@ -1464,6 +1464,37 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 			return delivery.GateResult{Passed: false, Reason: err.Error()}, nil
 		}
 		return delivery.GateResult{}, err
+	}
+	// The item and the owner's checkout may both carry an unmerged opt-in.
+	// Read the same immutable, fetched default used for delivery declarations.
+	runner := workflow.git
+	if runner == nil {
+		runner = preflight.ExecGitRunner{}
+	}
+	branch := preflight.DetectDefaultBranch(ctx, gitRoot, "", runner)
+	if branch.Source == preflight.DefaultBranchUndetermined {
+		return delivery.GateResult{}, errors.New("read Linux Lane configuration: repository default branch is unknown")
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	defaultHead, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", "refs/remotes/"+remote+"/"+branch.Name+"^{commit}")
+	if err != nil {
+		return delivery.GateResult{}, fmt.Errorf("resolve Linux Lane default commit: %w", err)
+	}
+	config, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, workflow.loaded.UserConfigPath, strings.TrimSpace(defaultHead))
+	if err != nil {
+		return delivery.GateResult{}, fmt.Errorf("read Linux Lane configuration: %w", err)
+	}
+	if config.Delivery.LinuxLane {
+		lane, err := workflow.runLinuxLane(ctx, gitRoot, specSlug, head)
+		if err != nil {
+			return delivery.GateResult{}, err
+		}
+		if lane.Ran && !lane.Passed {
+			return delivery.GateResult{Passed: false, Reason: lane.Reason}, nil
+		}
 	}
 	return delivery.GateResult{Passed: true}, nil
 }

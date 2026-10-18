@@ -125,6 +125,7 @@ type PrePRReview struct {
 type Delivery struct {
 	DerivedPaths []DerivedPathDeclaration
 	ItemBinary   ItemBinaryDeclaration
+	LinuxLane    bool
 }
 
 // ItemBinaryDeclaration names the command that builds the repository's own
@@ -375,6 +376,7 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 type deliveryOverlay struct {
 	DerivedPaths *[]DerivedPathDeclaration `yaml:"derived_paths"`
 	ItemBinary   *ItemBinaryDeclaration    `yaml:"item_binary"`
+	LinuxLane    *bool                     `yaml:"linux_lane"`
 }
 
 type watchOverlay struct {
@@ -1622,6 +1624,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	if node, found := yamlValueAtPath(&document, []string{"delivery", "linux_lane"}); found && (node.Kind != yaml.ScalarNode || node.Tag != "!!bool") {
+		return fmt.Errorf("parse config %q: delivery.linux_lane must be boolean: cannot unmarshal non-boolean value", label)
+	}
 	if err := validateDerivedLineNodes(&document); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
@@ -1756,6 +1761,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths
+	}
+	if overlay.Delivery != nil && overlay.Delivery.LinuxLane != nil {
+		config.Delivery.LinuxLane = *overlay.Delivery.LinuxLane
 	}
 	if overlay.Delivery != nil && overlay.Delivery.ItemBinary != nil {
 		config.Delivery.ItemBinary = *overlay.Delivery.ItemBinary

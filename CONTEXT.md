@@ -689,6 +689,10 @@ _Avoid_: replay, resume, automatic carry, QA row carry-forward
 The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
 
+**Linux Lane**:
+The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication ([ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
+_Avoid_: Linux gate, Docker gate, cross-platform Verification
+
 **Queue Owner**:
 The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one. When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
 _Avoid_: Scheduler, daemon, deliver loop

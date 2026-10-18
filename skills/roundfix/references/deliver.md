@@ -576,6 +576,73 @@ when the replacement fragment omits it. A Roundfix older than this release
 refuses a configuration that uses the key.
 
 
+## Linux Lane
+
+With `delivery.linux_lane: true` (default `false`), the Delivery Queue runs the
+Linux Lane once per candidate, after repository Verification passes and before
+publication. The setting comes from the fetched default-branch Project Config,
+with User Config beneath it. An item branch's opt-in takes effect after merge.
+
+The lane tests the packages changed since the candidate's merge base with the
+delivery remote's default branch. Each changed path selects its nearest parent
+directory containing a Go file at the candidate head, including changes under
+`testdata`; the sorted package list has no duplicates. A changed `go.mod` or
+`go.sum` selects `./...`. Uncommitted files and later checkout changes are
+excluded: `git archive` of the candidate supplies standard input, and the lane
+writes nothing into the item worktree.
+
+The container uses the root `go.mod`'s `go` version verbatim as
+`golang:<version>`, with `--pull never`, `--network none`, `--rm`, and user
+`65534:65534`. It mounts the host module cache read-only. Its only explicitly
+supplied environment variables are `HOME`, `GOCACHE`, `GOMODCACHE`, `GOFLAGS`,
+`GOPROXY`, `GOTOOLCHAIN`, and `GOSUMDB`; no Queue Owner key or token is forwarded.
+The Docker CLI keeps the operator's own environment and Docker context. Tests
+use a temporary Git repository inside the container and cannot download modules
+or toolchains; missing cached modules fail the lane. The operator must make the
+image available locally before the lane can run; the lane never pulls it.
+
+The following skip reasons are checked in order. A skip passes the gate and
+writes this exact notice to the Queue Owner's console log and
+`<artifact dir>/delivery/<slug>/linux-lane.log`:
+
+```text
+roundfix: notice: Delivery Queue item <slug>: Linux Lane skipped: <reason>
+```
+
+- `no go.mod at the repository root`
+- `go.mod declares no go version`
+- `no changed Go package`
+- `go is not on PATH`
+- `docker is not on PATH`
+- `docker info failed: <first non-empty output line>`
+- `image golang:<version> is not present locally`
+- `docker could not start the container: <first non-empty output line>` (exit `125`)
+
+The lane log contains the command line and combined output. Exit `0` passes
+with this console line (`<n>` counts selected package arguments):
+
+```text
+roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on golang:<version>
+```
+
+Every other non-zero exit fails the gate and parks the item `gate-failed` with
+this reason:
+
+```text
+Linux Lane failed: docker run exited <n>; see <lane log>
+```
+
+The 20-minute cap cancels the run, removes its named container with
+`docker rm -f <name>`, and fails the gate with:
+
+```text
+Linux Lane exceeded 20m0s; see <lane log>
+```
+
+Cancelling the gate also removes the container and returns the context's error.
+With the setting off, the gate starts no Docker or Go process and emits no lane
+notice.
+
 ## Run Window
 
 ```bash
