@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.92.0] - 2026-10-19
+
+### The Codex full-access mode is the one the adapter offers
+
+- **Full-Access Mode from the session.** A full-access request now selects the mode the Agent Session advertises in its `mode` config option, taking the runtime's first advertised candidate: Codex tries `agent-full-access`, then `full-access`; Claude uses `bypassPermissions`. codex-acp 2.x refused the fixed `full-access` name, so `agent_full_access: true` never reached the agent-browser inside the sandbox (ADR-0293, amending ADR-0011).
+- **Sandbox preset only when advertised.** The `sandbox_mode` preset `danger-full-access` is sent only when the session advertises that option; codex-acp 2.x's `agent-full-access` already carries it.
+- **Degraded, never silent.** When no advertised mode grants full access, no `set-mode` is sent, the policy reads `full-access (degraded: no advertised mode grants full access; advertised modes: …)`, a `full_access_mode_not_advertised` status and a warning are published, and the Run continues.
+- **Browser driver inside a sandbox.** The `qa-gate` skill drives the browser through the chrome-devtools MCP server when a daemon-backed browser tool cannot start inside the Run sandbox, and records which driver ran each row.
+
 ## [0.91.0] - 2026-10-18
 
 ### QA evidence keeps its images, and a secret is refused where it is born
