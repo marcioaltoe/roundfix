@@ -55,6 +55,7 @@ type SelectionCapabilities struct {
 	Models          []ModelCapability
 	Options         []SelectCapability
 	ReasoningOption *SelectCapability
+	Modes           *SelectCapability
 	Adapter         AdapterEvidence
 }
 
@@ -215,6 +216,7 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence, retentio
 	modelOptionIDs := make([]string, 0, 1)
 	reasoningOptionIDs := make([]string, 0, 1)
 	configuredValueMatched := false
+	var modes *SelectCapability
 
 	for _, rawOption := range boundedConfigOptions(*response.ConfigOptions) {
 		option, ok := projectSelectCapability(rawOption, retention, issues)
@@ -229,6 +231,11 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence, retentio
 			continue
 		}
 		selectOptions = append(selectOptions, option)
+		if option.ID == "mode" || (modes == nil && rawOption.Category == "mode") {
+			copyOption := option
+			copyOption.Values = append([]string(nil), option.Values...)
+			modes = &copyOption
+		}
 		if option.ID == response.ConfigID {
 			configuredValueMatched = option.CurrentValue == response.Value
 		}
@@ -303,6 +310,7 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence, retentio
 		Models:          models,
 		Options:         selectOptions,
 		ReasoningOption: reasoning,
+		Modes:           modes,
 		Adapter:         boundedAdapter,
 	}, nil
 }

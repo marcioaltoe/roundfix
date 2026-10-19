@@ -1303,7 +1303,7 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		}
 		return selectionPreflightError(req.Runtime, "apply deferred selection", err)
 	}
-	if _, err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
+	if _, err := runner.applyFullAccess(ctx, req, capabilities, sink, codexEnv); err != nil {
 		return err
 	}
 	if err := runner.publishStatus(ctx, req, sink, AgentSessionStartedStatus); err != nil {
@@ -1361,7 +1361,7 @@ func (runner *ACPXRunner) warmSessionForDeferredEffort(
 	return proof, nil
 }
 
-func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink, codexEnv []string) (AccessPolicy, error) {
+func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, capabilities SelectionCapabilities, sink runevent.Sink, codexEnv []string) (AccessPolicy, error) {
 	policy := req.Runtime.RequestedPolicy()
 	if policy == AccessPolicyRuntimeDefault {
 		return policy, nil
@@ -1369,8 +1369,28 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 	if err := req.Runtime.ValidateRequestedAccessPolicy(); err != nil {
 		return AccessPolicyRuntimeDefault, err
 	}
-	mode, _ := req.Runtime.AccessModeFor(policy)
+	candidates := req.Runtime.FullAccessModes
+	if len(candidates) == 0 {
+		mode, _ := req.Runtime.AccessModeFor(policy)
+		candidates = []string{mode}
+	}
+	var advertised []string
+	if capabilities.Modes != nil {
+		advertised = capabilities.Modes.Values
+	}
 	sessionName := strings.TrimSpace(req.Session.Name)
+	mode, ok := chooseFullAccessMode(candidates, advertised)
+	if !ok {
+		list := strings.Join(advertised, ", ")
+		if len(advertised) == 0 {
+			list = "none"
+		}
+		runner.warningf("full-access mode not advertised for Agent Session %s; advertised modes: %s", sessionName, list)
+		if err := runner.publishStatus(ctx, req, sink, AccessModeNotAdvertisedStatus); err != nil {
+			return AccessPolicyRuntimeDefault, err
+		}
+		return AccessPolicy("full-access (degraded: no advertised mode grants full access; advertised modes: " + list + ")"), nil
+	}
 	args, err := acpxSetModeArgs(req.Runtime, mode, sessionName, req.GitRoot)
 	if err != nil {
 		return AccessPolicyRuntimeDefault, err
@@ -1385,7 +1405,14 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 			Err:       fmt.Errorf("set acpx Agent Session mode %q: %w", mode, err),
 		}
 	}
-	if req.Runtime.ID != "codex" || mode != "full-access" {
+	sandboxAdvertised := false
+	for _, option := range capabilities.Options {
+		if option.ID == acpxCodexSandboxModeKey {
+			sandboxAdvertised = true
+			break
+		}
+	}
+	if req.Runtime.ID != "codex" || !sandboxAdvertised {
 		return policy, nil
 	}
 	args, err = acpxSetConfigArgs(req.Runtime, acpxCodexSandboxModeKey, acpxCodexFullAccessSandbox, sessionName, req.GitRoot)

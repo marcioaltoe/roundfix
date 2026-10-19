@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -173,3 +173,89 @@ the same Task.
 - `_prd.md` → Sources; Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 4; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 6; Invariants; Current behavior; Testing Approach; Build Order 1
 - ADR-0293; ADR-0011; ADR-0017; ADR-0285; ADR-0125; ADR-0189
+
+## Result
+
+Implemented the Task 01 selection contract. `RuntimeFor` now exposes ordered
+full-access candidates (`agent-full-access`, `full-access` for Codex;
+`bypassPermissions` for Claude), while legacy `RuntimeSpec` values still use
+the mode returned by `AccessModeFor`. Capability parsing projects `Modes`
+with identifier precedence over the first category match, preserving the
+existing Options and issue rules. Proof and Run setup pass their already
+observed capabilities into full-access setup; no observation command was added.
+
+Acceptance evidence from focused checks:
+
+- Codex proof: `TestProofSelectsTheAdvertisedCodexFullAccessMode` passes with
+  `agent-full-access` advertised and no sandbox option. It checks one exact
+  mode call, no preset, effective policy `full-access`, and disposable cleanup.
+  `TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate` covers candidate
+  order, trimming, exact comparison, absent values/candidates, and a proof
+  advertising both Codex candidates.
+- Preset and Claude: `TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt`
+  passes for both Codex candidate names and checks mode-before-preset order.
+  `TestRunSelectsBypassPermissionsForClaude` checks `bypassPermissions` and no
+  preset. The five pinned proof/Run tests pass without changes to their
+  invocation expectations, including rejection and unavailable-preset handling.
+- Degradation: `TestFullAccessWithoutAnAdvertisedModeIsDegraded` passes for
+  unmatched modes and no mode option, checking the exact policy, no mode or
+  preset calls even with a sandbox option present, status, warning with session
+  and list, cleanup, and continuation to the Run prompt.
+- Reference: added `## Full access` to the canonical profiles reference,
+  describing candidates, mode discovery, preset conditions, degraded policy,
+  status, and profiles/Doctor reporting. `make skills-sync` and the owned-skill
+  record command succeeded; the generator raised Roundfix from `0.1.102` to
+  `0.1.103` in both copies and recorded its digest. No mirror or record was
+  edited by hand. `make baseline-digests` succeeded with `changed:false`.
+
+Focused commands and outcomes (all exit 0 on the final source):
+
+```sh
+go test ./internal/agent -run 'TestChooseFullAccessMode|TestProofSelectsTheAdvertised|TestRunAppliesTheSandbox|TestRunSelectsBypass|TestFullAccessWithout|TestDisposableProofAppliesRequestedAccessMode|TestProofRecordsADegradedFullAccess|TestACPXRunAppliesFullAccessSessionSetup|TestACPXRunFailsSetupWhenFullAccessModeFails|TestACPXRunWarnsWhenCodexSandboxPresetUnavailable|TestRuntimeFor|TestRuntimeReportsAccessPolicySupport|TestSelectionCapabilities|TestParseSessionCapabilitySnapshot' -count=1 -v
+go test ./internal/cli -run '^(TestRunResolveAgentFullAccessIsExplicitOptIn|TestProfilesValidateTextNamesADegradedPolicy|TestDoctorNamesADegradedPolicy|TestProfilePreflightRefusesUnhonouredAccessPolicy|TestReviewRetriesASelectionFailureBeforeThePromptOnce|TestReviewRetriesAPromptProcessThatFailedBeforeSessionPrompt|TestReviewRoundTwoContinuesTheRecordedSession|TestReviewRoundTwoContinuesTheRecordedFallbackSelection|TestReviewValidatorDismissesADaemonSettlementAsC2)$' -count=1
+GOOS=windows go test -c -o /tmp/roundfix-0281-agent.test.exe ./internal/agent
+make skills-sync
+go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+make baseline-digests
+git diff --check
+```
+
+Additional scope necessary for this API change: adding a slice makes
+`RuntimeSpec` non-comparable. The focused CLI build exposed five direct
+comparisons in `internal/cli/review_convention_validator_test.go`,
+`internal/cli/review_selection_retry_test.go`, and
+`internal/cli/review_session_test.go`. Replaced only those comparisons with
+`reflect.DeepEqual`, preserving their full-runtime equality assertions. These
+ordinary test paths are not governed by the tooling allowlist; the focused
+review tests listed above exercise every adjusted assertion.
+
+Swept the shell and Python `sessions show` producers in
+`internal/cli/implement_test.go`. Its full-access callers use fake proof
+runners rather than either acpx producer, so neither producer needed editing.
+The new tests use the compiled fake harness only; no adapter, acpx installation,
+provider call, or network request was used. Windows test compilation succeeded.
+
+The initial focused compile demonstrated the missing chooser and degraded
+status. Early focused checks also exposed test-helper mistakes (the preset
+call key omits its value, and proof plus Run have distinct observation counts);
+those helpers were corrected and the final focused checks above passed.
+
+Execution used the resolved `/Volumes/Brain-SSD/...` checkout with authorized
+escalation because the executor rejected the configured symlinked writable
+root before command execution. The only pre-existing modification was this
+Task's Daemon-owned status. Task status, checkboxes, Task Graph and other Task
+files remain untouched. Declared Verification and repository Verification were
+not run; they remain Daemon-owned. No terminal Task verdict is claimed.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/review_convention_validator_test.go`
+- `internal/cli/review_selection_retry_test.go`
+- `internal/cli/review_session_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261019T203112Z_ce9489b10bc966cb`
+- Source commit: `7be840588754a314038e781dfd2f28991e2d7496`

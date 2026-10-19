@@ -99,7 +99,7 @@ func validatorQuestions(t *testing.T, runner *conventionValidatorRunner) []valid
 	if !reflect.DeepEqual(input.Conventions, deliveryConventions()) {
 		t.Fatalf("conventions=%+v", input.Conventions)
 	}
-	if runner.sealedRequests[0].Runtime != runner.request.Runtime {
+	if !reflect.DeepEqual(runner.sealedRequests[0].Runtime, runner.request.Runtime) {
 		t.Fatal("validator used a different runtime")
 	}
 	if _, err := os.Stat(runner.sealedRequests[0].WorkDir); !os.IsNotExist(err) {

@@ -152,7 +152,7 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 			Runtime: request.Runtime,
 			Session: session,
 			GitRoot: workDir,
-		}, runevent.Discard, codexEnv)
+		}, capabilities, runevent.Discard, codexEnv)
 		if setupErr == nil {
 			proof.EffectiveAccessPolicy = effectiveAccessPolicy
 		}

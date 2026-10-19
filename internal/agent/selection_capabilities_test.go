@@ -887,3 +887,48 @@ func trailingRequestedModelFixture(t *testing.T, requested string, size int) str
 	}
 	return string(encoded)
 }
+
+func TestSelectionCapabilitiesProjectsTheSessionModeOption(t *testing.T) {
+	t.Parallel()
+	option := func(id, category string) acpSelectOptionPayload {
+		values := []acpSelectValuePayload{{Value: "read-only"}, {Value: "agent-full-access"}}
+		return acpSelectOptionPayload{ID: id, Category: category, Type: "select", CurrentValue: "read-only", Options: &values}
+	}
+	for _, tt := range []struct {
+		name    string
+		options []acpSelectOptionPayload
+		want    string
+	}{
+		{"identifier before category", []acpSelectOptionPayload{option("mode", ""), option("other", "mode")}, "mode"},
+		{"identifier after category", []acpSelectOptionPayload{option("other", "mode"), option("mode", "")}, "mode"},
+		{"first category before sorting", []acpSelectOptionPayload{option("z-mode", "mode"), option("a-mode", "mode")}, "z-mode"},
+		{"no mode option", []acpSelectOptionPayload{option("other", "")}, ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var response acpxCapabilityResponse
+			fixture := selectionStateFixture(t, "model", "gpt-test", "gpt-test", []string{"gpt-test"}, "", "", nil)
+			if err := json.Unmarshal([]byte(fixture), &response); err != nil {
+				t.Fatal(err)
+			}
+			*response.ConfigOptions = append(*response.ConfigOptions, tt.options...)
+			payload, err := json.Marshal(response)
+			if err != nil {
+				t.Fatal(err)
+			}
+			capabilities, err := ParseSessionConfigOptions(payload, AdapterEvidence{Command: "adapter"}, SelectionRetention{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.want == "" {
+				if capabilities.Modes != nil {
+					t.Fatalf("unexpected modes: %#v", capabilities.Modes)
+				}
+			} else if capabilities.Modes == nil || capabilities.Modes.ID != tt.want || !reflect.DeepEqual(capabilities.Modes.Values, []string{"read-only", "agent-full-access"}) {
+				t.Fatalf("modes = %#v, want option %q", capabilities.Modes, tt.want)
+			}
+			if len(capabilities.Options) != len(*response.ConfigOptions) {
+				t.Fatal("mode projection changed Options")
+			}
+		})
+	}
+}

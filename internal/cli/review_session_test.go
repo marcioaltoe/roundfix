@@ -104,7 +104,7 @@ func TestReviewRoundTwoContinuesTheRecordedSession(t *testing.T) {
 	if code != exitOK || second.Outcome != reviewOutcomeReviewed || second.Lineage.Round != 2 || !second.Lineage.Continued || second.Lineage.SessionOpen {
 		t.Fatalf("exit=%d record=%+v stderr=%q", code, second, stderr)
 	}
-	if len(r.prepares) != 2 || r.prepares[1].Session != r.prepares[0].Session || r.prepares[1].Runtime != r.prepares[0].Runtime || len(r.ends) != 1 || r.ends[0] != r.prepares[0].Session {
+	if len(r.prepares) != 2 || r.prepares[1].Session != r.prepares[0].Session || !reflect.DeepEqual(r.prepares[1].Runtime, r.prepares[0].Runtime) || len(r.ends) != 1 || r.ends[0] != r.prepares[0].Session {
 		t.Fatalf("prepares=%+v ends=%+v", r.prepares, r.ends)
 	}
 	if !reflect.DeepEqual(second.Lineage.ACPSessionIDs, []string{"s-1", "s-1"}) || second.Lineage.PreviousHead != first.HeadCommit || len(second.Lineage.PreviousFindings) != 1 || len(second.Lineage.PreviousDispositions) != 1 {
@@ -222,7 +222,7 @@ func TestReviewRoundTwoContinuesTheRecordedFallbackSelection(t *testing.T) {
 	}
 	commitLineageFile(t, fixture, "delta.txt", "fix\n")
 	_, second, _ := runLineageReview(t, fixture)
-	if second.Lineage.Selection == nil || *second.Lineage.Selection != 1 || !second.Lineage.Continued || r.prepares[3].Runtime != r.prepares[2].Runtime || r.prepares[3].Session != r.prepares[2].Session || len(r.ends) != 3 || r.ends[2] != r.prepares[2].Session {
+	if second.Lineage.Selection == nil || *second.Lineage.Selection != 1 || !second.Lineage.Continued || !reflect.DeepEqual(r.prepares[3].Runtime, r.prepares[2].Runtime) || r.prepares[3].Session != r.prepares[2].Session || len(r.ends) != 3 || r.ends[2] != r.prepares[2].Session {
 		t.Fatalf("lineage=%+v prepares=%+v ends=%+v", second.Lineage, r.prepares, r.ends)
 	}
 }
