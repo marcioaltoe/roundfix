@@ -1,4 +1,0 @@
-command: go run ./.qa0281-probe <Spec QA directory>
-exit: 0
-QAReportEligibility: accepted partial; environment=4 finding=0 declared=0
-Secret matches: 0; all evidence readable; 61 QA files checked

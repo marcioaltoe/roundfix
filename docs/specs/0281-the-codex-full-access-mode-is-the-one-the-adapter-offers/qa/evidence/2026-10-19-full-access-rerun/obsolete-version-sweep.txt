@@ -1,2 +1,0 @@
-command: rg -n -F 1.1.9 docs/user-guide docs/agents docs/adr .agents/skills skills .roundfixrc.yml
-exit: 1

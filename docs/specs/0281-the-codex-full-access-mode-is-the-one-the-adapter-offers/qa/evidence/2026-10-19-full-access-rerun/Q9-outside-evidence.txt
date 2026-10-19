@@ -1,7 +1,0 @@
-Published source: https://github.com/agentclientprotocol/codex-acp/blob/main/README.md
-
-PRD-cited passage, checked offline and not independently fetched:
-
-> `INITIAL_AGENT_MODE` - initial mode id: `read-only`, `workspace-write`, `agent`, or `agent-full-access`.
-
-`_authorization.md` → Limits prohibits any QA row that "reaches the network"; task_03 Requirement 6 explicitly requires this status. No lookup attempted; current upstream behavior remains unproven. The local quotation is not substituted for independent outside evidence. Evidence: `Q9-outside-evidence.txt`. Unblocking requires a later authorized external observation; no network request is authorized in this gate.

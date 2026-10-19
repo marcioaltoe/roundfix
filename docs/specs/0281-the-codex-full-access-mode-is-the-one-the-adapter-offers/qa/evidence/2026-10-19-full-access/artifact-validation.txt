@@ -1,8 +1,0 @@
-command: ['go', 'run', '-buildvcs=false', './cmd/qa0281-artifact-check', '/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0281-the-codex-full-access-mode-is-the-one-the-adapter-offers-adc73aaeb2c39589-a8192705-3b589c4f/run_20261019T205953Z_8c49586070d0475f/docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/qa', '/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0281-the-codex-full-access-mode-is-the-one-the-adapter-offers-adc73aaeb2c39589-a8192705-3b589c4f/run_20261019T205953Z_8c49586070d0475f/docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/qa/qa-report-2026-10-19.md']
-exit: 0
-stdout:
-Secret scan: 26 files, zero matches
-Report reader: verdict=fail, non-hollow, environment=4, finding=0, declared=0
-Expected settlement refusal: newest QA Report verdict is "fail"; expected "pass"
-
-stderr:

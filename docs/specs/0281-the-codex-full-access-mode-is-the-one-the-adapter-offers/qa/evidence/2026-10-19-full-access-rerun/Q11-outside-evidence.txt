@@ -1,7 +1,0 @@
-Published source: https://agentclientprotocol.com/protocol/v1/session-config-options
-
-PRD-cited passage, checked offline and not independently fetched:
-
-> If an Agent provides `configOptions`, Clients SHOULD use them instead of the `modes` field. Modes will be removed in a future version of the protocol. Categories "MUST NOT be required for correctness".
-
-`_authorization.md` → Limits prohibits any QA row that "reaches the network"; task_03 Requirement 6 explicitly requires this status. No lookup attempted; current upstream behavior remains unproven. The local quotation is not substituted for independent outside evidence. Evidence: `Q11-outside-evidence.txt`. Unblocking requires a later authorized external observation; no network request is authorized in this gate.

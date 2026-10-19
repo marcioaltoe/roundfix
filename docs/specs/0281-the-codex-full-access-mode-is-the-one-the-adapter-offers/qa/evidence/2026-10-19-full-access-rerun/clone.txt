@@ -1,7 +1,0 @@
-command: ['git', 'clone', '--shared', '--no-checkout', '/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0281-the-codex-full-access-mode-is-the-one-the-adapter-offers-adc73aaeb2c39589-a8192705-3b589c4f/run_20261019T212921Z_48f90fb977c18ee8', '/private/tmp/qa0281-rerun-6a_e43c7/with-git']
-exit: 0
-stdout:
-
-stderr:
-Cloning into '/private/tmp/qa0281-rerun-6a_e43c7/with-git'...
-done.

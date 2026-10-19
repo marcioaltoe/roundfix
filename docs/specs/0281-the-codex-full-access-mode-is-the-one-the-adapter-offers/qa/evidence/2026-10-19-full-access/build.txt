@@ -1,7 +1,0 @@
-command: make build
-exit: 0
-Built in audited Run worktree before all public-CLI observations.
-go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=7fcd40d3-dirty -X roundfix/internal/app.BuildTime=<build time>" -o bin/roundfix ./cmd/roundfix
-Identity: roundfix 0.91.0 (7fcd40d3-dirty, built 2026-10-19 18:14:09 -0300)
-The dirty suffix reflects the pre-existing untracked seeded QA report; production sources were committed and unchanged.
-Static gate supplied by Daemon: make verify-changed; pass, exit 0; diagnostics removed on success; not re-executed.

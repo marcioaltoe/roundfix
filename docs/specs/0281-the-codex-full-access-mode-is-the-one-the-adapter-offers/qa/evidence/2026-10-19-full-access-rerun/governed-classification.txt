@@ -1,9 +1,0 @@
-command: go run ./.qa0281-probe <changed-path JSON>
-exit: 0
-.agents/skills/qa-gate/SKILL.md
-.agents/skills/roundfix/SKILL.md
-.agents/skills/roundfix/references/profiles.md
-.roundfixrc.yml
-internal/cli/cli_test.go
-skills/qa-gate/SKILL.md
-skills/roundfix/SKILL.md

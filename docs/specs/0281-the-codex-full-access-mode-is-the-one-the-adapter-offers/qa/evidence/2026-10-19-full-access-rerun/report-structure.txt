@@ -1,1 +1,0 @@
-Matrix: 12 rows; 8 pass; 4 environment blocks; all executed rows have typed inputs; both history rows have commit_range; no evidence_snapshots written. Seeded auditor identity and mechanical skip preserved.

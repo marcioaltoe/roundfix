@@ -1,7 +1,0 @@
-Published source: https://github.com/agentclientprotocol/codex-acp/blob/main/src/AgentMode.ts
-
-PRD-cited passage (not independently fetched in this gate):
-
-> the mode `agent-full-access`, named "Full access", has the approval policy `"never"` and the sandbox mode `"danger-full-access"`. The adapter advertises its modes as a config option with `id: MODE_CONFIG_ID` (`"mode"`), `category: "mode"` and the description "Approval and sandboxing preset for the session".
-
-The Spec authorization, Limits, says no QA row "reaches the network". Requirement 6 explicitly orders each web source blocked. No lookup attempted; source freshness remains unproven. The available PRD quotation was checked offline, but is not substituted for independent acceptance evidence. These sources originated outside the Spec.
