@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -75,3 +75,28 @@ None. The Task changes one test and no contract another package reads.
 
 - `_techspec.md` → Invariant 1
 - `task_03.md` → Requirement 2
+
+## Result
+
+- Converted only `TestProofSelectsTheAdvertisedCodexFullAccessMode` into
+  `current_adapter` and `legacy_adapter` table subtests. Each independently
+  runs `ProveExactSelection` through the fake acpx harness, asserts exactly
+  one advertised `set-mode` call and no sandbox preset, checks effective
+  policy `full-access`, and retains `assertLastInvocationClosesDisposable`.
+- Acceptance criterion 1: focused check
+  `go test -count=1 -v -run '^TestProofSelectsTheAdvertisedCodexFullAccessMode$/(current_adapter|legacy_adapter)$' ./internal/agent`
+  exited 0; both named subtests passed.
+- Acceptance criterion 2: created a `git archive HEAD` tree under
+  `/private/tmp` using Python's `TemporaryDirectory`, copied the modified
+  proof test into it, and inserted an early return of `candidates[0]` when
+  candidates exist in that copy's `chooseFullAccessMode`. There,
+  `go test -count=1 -run '^TestProofSelectsTheAdvertisedCodexFullAccessMode$' ./internal/agent`
+  exited 1 on `legacy_adapter`: observed `set-mode agent-full-access`,
+  expected `set-mode full-access`. The current adapter did not fail.
+  The temporary tree was removed on context exit, and its absence was
+  confirmed. The mutation and its artifacts were outside the checkout.
+- Reviewed scope: the test diff changes only the named proof function;
+  production code and other tests remain untouched. This Result is the
+  only authored Task-file change; status remains Daemon-owned.
+- Declared Verification (including package-wide tests and Windows vet) and
+  repository Verification were not run; they remain with the Daemon.

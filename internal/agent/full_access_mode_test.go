@@ -44,20 +44,31 @@ func TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate(t *testing.T) {
 
 func TestProofSelectsTheAdvertisedCodexFullAccessMode(t *testing.T) {
 	t.Parallel()
-	harness := newFakeACPXHarness(t)
-	runtime := fullAccessRuntimeForTest(t, "codex")
-	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"sessions show": fullAccessSnapshotForTest(t, runtime, []string{"read-only", "workspace-write", "agent", "agent-full-access"}, false),
-	}))
-	proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
-	if err != nil {
-		t.Fatal(err)
+	for _, tt := range []struct {
+		name  string
+		modes []string
+		want  string
+	}{
+		{"current_adapter", []string{"read-only", "workspace-write", "agent", "agent-full-access"}, "agent-full-access"},
+		{"legacy_adapter", []string{"read-only", "full-access"}, "full-access"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			harness := newFakeACPXHarness(t)
+			runtime := fullAccessRuntimeForTest(t, "codex")
+			harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+				"sessions show": fullAccessSnapshotForTest(t, runtime, tt.modes, false),
+			}))
+			proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if proof.EffectiveAccessPolicy != AccessPolicyFullAccess {
+				t.Fatalf("effective policy = %q", proof.EffectiveAccessPolicy)
+			}
+			assertFullAccessCalls(t, harness, []string{"set-mode " + tt.want})
+			assertLastInvocationClosesDisposable(t, harness)
+		})
 	}
-	if proof.EffectiveAccessPolicy != AccessPolicyFullAccess {
-		t.Fatalf("effective policy = %q", proof.EffectiveAccessPolicy)
-	}
-	assertFullAccessCalls(t, harness, []string{"set-mode agent-full-access"})
-	assertLastInvocationClosesDisposable(t, harness)
 }
 
 func TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt(t *testing.T) {
