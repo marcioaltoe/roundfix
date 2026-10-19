@@ -6868,7 +6868,7 @@ func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
 		{
 			name:       "command flag opts in",
 			args:       []string{"resolve", "--pr", "123", "--agent-full-access", "--round", "all", "--no-input"},
-			wantAccess: "full-access",
+			wantAccess: "agent-full-access",
 		},
 		{
 			name: "config opts in",
@@ -6877,7 +6877,7 @@ defaults:
   agent_full_access: true
 `,
 			args:       []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
-			wantAccess: "full-access",
+			wantAccess: "agent-full-access",
 		},
 	}
 

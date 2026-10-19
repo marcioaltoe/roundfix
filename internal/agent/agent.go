@@ -26,6 +26,7 @@ type RuntimeSpec struct {
 	RequestedAccessPolicy   AccessPolicy
 	SupportedFullAccessMode string
 	FullAccessMode          string
+	FullAccessModes         []string // Full-access candidates in preference order.
 }
 
 type AccessPolicy string
@@ -34,10 +35,11 @@ const (
 	AccessPolicyRuntimeDefault AccessPolicy = ""
 	AccessPolicyFullAccess     AccessPolicy = "full-access"
 
-	AccessPolicyUnsupported      = "access_policy_unsupported"
-	AccessPolicyRejected         = "access_policy_rejected"
-	AccessModeAvailablePredicate = "runtime_has_access_mode"
-	AccessModeAcceptedPredicate  = "adapter_accepts_access_mode"
+	AccessPolicyUnsupported       = "access_policy_unsupported"
+	AccessPolicyRejected          = "access_policy_rejected"
+	AccessModeNotAdvertisedStatus = "full_access_mode_not_advertised"
+	AccessModeAvailablePredicate  = "runtime_has_access_mode"
+	AccessModeAcceptedPredicate   = "adapter_accepts_access_mode"
 )
 
 // AccessModeFor reports the adapter mode a runtime can use to honour policy.
@@ -57,6 +59,19 @@ func (runtime RuntimeSpec) AccessModeFor(policy AccessPolicy) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+// chooseFullAccessMode selects only an advertised identifier, in candidate order.
+func chooseFullAccessMode(candidates, advertised []string) (string, bool) {
+	for _, candidate := range candidates {
+		candidate = strings.TrimSpace(candidate)
+		for _, value := range advertised {
+			if candidate != "" && candidate == strings.TrimSpace(value) {
+				return candidate, true
+			}
+		}
+	}
+	return "", false
 }
 
 // RequestedPolicy preserves RuntimeSpec values constructed before access
@@ -388,10 +403,13 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 	if opts.CommandOverride == "" {
 		switch spec.ID {
 		case "codex":
-			spec.SupportedFullAccessMode = "full-access"
+			spec.FullAccessModes = []string{"agent-full-access", "full-access"}
 		case "claude":
-			spec.SupportedFullAccessMode = "bypassPermissions"
+			spec.FullAccessModes = []string{"bypassPermissions"}
 		}
+	}
+	if len(spec.FullAccessModes) > 0 {
+		spec.SupportedFullAccessMode = spec.FullAccessModes[0]
 	}
 	if opts.EnableFullAccess {
 		spec.RequestedAccessPolicy = AccessPolicyFullAccess

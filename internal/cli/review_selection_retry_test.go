@@ -53,7 +53,7 @@ func TestReviewRetriesASelectionFailureBeforeThePromptOnce(t *testing.T) {
 	if code != exitOK || record.Outcome != reviewOutcomeReviewed || len(r.prepares) != 2 || len(r.runs) != 1 {
 		t.Fatalf("exit=%d record=%+v prepares=%+v runs=%+v", code, record, r.prepares, r.runs)
 	}
-	if r.prepares[0].Runtime != r.prepares[1].Runtime || r.prepares[0].Session != r.prepares[1].Session || len(r.ends) != 2 || r.ends[0] != r.prepares[0].Session || r.events[1] != "end:"+r.prepares[0].Session.Name {
+	if !reflect.DeepEqual(r.prepares[0].Runtime, r.prepares[1].Runtime) || r.prepares[0].Session != r.prepares[1].Session || len(r.ends) != 2 || r.ends[0] != r.prepares[0].Session || r.events[1] != "end:"+r.prepares[0].Session.Name {
 		t.Fatalf("retry did not close and prepare the same selection: prepares=%+v ends=%+v events=%+v", r.prepares, r.ends, r.events)
 	}
 	assertReviewRetry(t, record, stderr, "session setup", "", 0)
@@ -68,7 +68,7 @@ func TestReviewRetriesAPromptProcessThatFailedBeforeSessionPrompt(t *testing.T) 
 	r.results[0].err = retryProtocolFailure(false)
 	fixture := retryReviewFixture(t, r)
 	code, record, stderr := fixture.run(t)
-	if code != exitOK || record.Outcome != reviewOutcomeReviewed || len(r.prepares) != 1 || len(r.runs) != 2 || r.runs[0].Session != r.runs[1].Session || r.runs[0].Runtime != r.runs[1].Runtime {
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed || len(r.prepares) != 1 || len(r.runs) != 2 || r.runs[0].Session != r.runs[1].Session || !reflect.DeepEqual(r.runs[0].Runtime, r.runs[1].Runtime) {
 		t.Fatalf("exit=%d record=%+v prepares=%+v runs=%+v", code, record, r.prepares, r.runs)
 	}
 	assertReviewRetry(t, record, stderr, "session/set_model", "adapter refused the request", 0)

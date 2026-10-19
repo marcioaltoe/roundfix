@@ -231,3 +231,27 @@ Runs and `spec:<slug>` for Spec Runs. Terminal context adds
 `ROUNDFIX_REASON`, `ROUNDFIX_CONSOLE_LOG`, `ROUNDFIX_ATTACH_COMMAND`,
 `ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`. Set
 `notify.enabled: false` to disable outcome notifications entirely.
+
+## Full access
+
+`--agent-full-access` and `defaults.agent_full_access: true` request full
+access. Roundfix selects the first runtime candidate advertised in the Agent
+Session's `mode` select config option: `agent-full-access`, then `full-access`
+for Codex; `bypassPermissions` for Claude. If no option has the identifier
+`mode`, Roundfix uses the first option whose category is `mode`. Matching is
+exact after trimming space. A command override or a runtime without candidates
+refuses the request as unsupported; an adapter that refuses an advertised
+mode still fails setup.
+
+After setting a Codex mode, Roundfix sends `set sandbox_mode
+danger-full-access` only when the session advertises the `sandbox_mode`
+option. Without that option, the selected mode grants full access on its own.
+An unavailable advertised sandbox preset keeps the existing degraded report.
+
+When no candidate is advertised, Roundfix sends no mode or sandbox preset,
+warns with the Agent Session name and advertised mode identifiers, and lets
+the Run continue. The effective policy is `full-access (degraded: no
+advertised mode grants full access; advertised modes: <values joined by ", ">)`,
+with `none` when no mode values are advertised. The Run Event Stream publishes
+`full_access_mode_not_advertised`. Both `profiles validate` and `doctor` print
+the degraded effective policy from the disposable proof.

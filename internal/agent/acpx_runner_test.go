@@ -4928,6 +4928,19 @@ func sessionCapabilitySnapshotFixture(t *testing.T, currentModel string, models 
 	if err := json.Unmarshal([]byte(selectionStateFixture(t, "model", currentModel, currentModel, models, reasoningID, currentReasoning, efforts)), &response); err != nil {
 		t.Fatalf("decode capability response fixture: %v", err)
 	}
+	accessOptions := fakeAccessConfigOptions(reasoningID == "effort")
+	for _, option := range accessOptions {
+		payload, err := json.Marshal(option)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var raw acpSelectOptionPayload
+		if err := json.Unmarshal(payload, &raw); err != nil {
+			t.Fatal(err)
+		}
+		*response.ConfigOptions = append(*response.ConfigOptions, raw)
+	}
+
 	return mustJSONForTest(t, map[string]any{
 		"schema": "acpx.session.v1",
 		"acpx": map[string]any{
@@ -5336,6 +5349,16 @@ func firstFakeACPXString(values ...string) string {
 	return ""
 }
 
+func fakeAccessConfigOptions(claude bool) []any {
+	if claude {
+		return []any{map[string]any{"id": "mode", "category": "mode", "type": "select", "currentValue": "default", "options": []map[string]string{{"value": "default"}, {"value": "bypassPermissions"}}}}
+	}
+	return []any{
+		map[string]any{"id": "mode", "category": "mode", "type": "select", "currentValue": "auto", "options": []map[string]string{{"value": "read-only"}, {"value": "auto"}, {"value": "full-access"}}},
+		map[string]any{"id": "sandbox_mode", "type": "select", "currentValue": "workspace-write", "options": []map[string]string{{"value": "workspace-write"}, {"value": "danger-full-access"}}},
+	}
+}
+
 func fakeSelectionStateOutput(args []string, invocationsPath string) string {
 	command := fakeACPXCommandKey(args)
 	if !containsArg(args, "--json-strict") {
@@ -5362,6 +5385,9 @@ func fakeSelectionStateOutput(args []string, invocationsPath string) string {
 				},
 			},
 		}
+		acpx := response["acpx"].(map[string]any)
+		acpx["config_options"] = append(acpx["config_options"].([]any), fakeAccessConfigOptions(containsArg(args, "claude"))...)
+
 		payload, err := json.Marshal(response)
 		if err != nil {
 			return ""

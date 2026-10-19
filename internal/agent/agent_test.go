@@ -66,7 +66,7 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	if runtime.ReasoningEffort != "xhigh" {
 		t.Fatalf("expected reasoning effort, got %q", runtime.ReasoningEffort)
 	}
-	if runtime.FullAccessMode != "" {
+	if runtime.FullAccessMode != "" || len(runtime.FullAccessModes) != 0 {
 		t.Fatalf("custom command must not receive ACP full-access mode, got %q", runtime.FullAccessMode)
 	}
 	if runtime.DisplayName != "Codex" {
@@ -104,7 +104,10 @@ func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
 		t.Fatalf("runtime for codex: %v", err)
 	}
 
-	if runtime.FullAccessMode != "full-access" {
+	if !reflect.DeepEqual(runtime.FullAccessModes, []string{"agent-full-access", "full-access"}) {
+		t.Fatalf("Codex candidates = %#v", runtime.FullAccessModes)
+	}
+	if runtime.FullAccessMode != "agent-full-access" {
 		t.Fatalf("expected Codex full-access session mode, got %q", runtime.FullAccessMode)
 	}
 }
@@ -120,7 +123,7 @@ func TestRuntimeReportsAccessPolicySupport(t *testing.T) {
 		wantMode    string
 		wantOK      bool
 	}{
-		{name: "Codex reports full-access support before a request", agent: "codex", queryPolicy: AccessPolicyFullAccess, wantMode: "full-access", wantOK: true},
+		{name: "Codex reports full-access support before a request", agent: "codex", queryPolicy: AccessPolicyFullAccess, wantMode: "agent-full-access", wantOK: true},
 		{name: "Claude supports requested full access", agent: "claude", requested: true, queryPolicy: AccessPolicyFullAccess, wantMode: "bypassPermissions", wantOK: true},
 		{name: "OpenCode reports requested full access unavailable", agent: "opencode", requested: true, queryPolicy: AccessPolicyFullAccess, wantOK: false},
 		{name: "default access needs no runtime mode", agent: "opencode", requested: false, queryPolicy: AccessPolicyRuntimeDefault, wantOK: true},
