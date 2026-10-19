@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -117,3 +117,41 @@ its Verification.
 - `_prd.md` → Sources; User Story 3; Core Feature 4; Glossary
 - `_techspec.md` → API Contract 7; API Contract 5; Current behavior; Build Order 2
 - ADR-0293; ADR-0011; ADR-0189
+
+## Result
+
+- Updated ADR-0011 with the ADR-0293 amendment and the edit timestamp; rewrote
+  the configuration guide's access policy readiness text and default row to
+  describe advertised-mode selection, the degraded policy, status, and remedy.
+- Replaced the `.roundfixrc.yml` comment while preserving the byte-exact
+  `agent_full_access: false` setting; added the sandbox browser-driver
+  guidance to both skill copies and added the linked **Full-Access Mode** term
+  to `CONTEXT.md`.
+- Ran `make skills-sync` successfully; the mirror is synchronized. Raised both
+  `qa-gate` version fields to `0.0.18` and ran
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` successfully (`1 passed`), recording the digest.
+  Ran the Behavior Surface Record command successfully:
+  `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  (`1 passed`).
+- Focused checks: `git diff --check` passed; the post-edit diff contains only
+  the assigned documentation, configuration, skill, generated-record, and
+  Daemon-owned task paths; the QA settlement section has no diff; the search
+  for the obsolete `codex-acp 1.1.9` citation is clear in the scoped guides,
+  agent guides, ADRs, skills, `.roundfixrc.yml`, and `CONTEXT.md`.
+
+Acceptance evidence:
+
+- ADR-0011 and `docs/user-guide/configuration.md` contain the advertised
+  candidates and `full_access_mode_not_advertised` degraded report.
+- `.roundfixrc.yml` contains `agent-full-access`, no `1.1.9`, and the exact
+  `  agent_full_access: false` line.
+- `.agents/skills/qa-gate/SKILL.md` and its synchronized mirror name the
+  chrome-devtools MCP server under `### Browser driver inside a sandbox`, and
+  `CONTEXT.md` defines **Full-Access Mode** with the ADR-0293 link.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261019T205953Z_8c49586070d0475f`
+- Source commit: `7fcd40d38d0bfcdfa667e051fd7c5b3b43a829c8`

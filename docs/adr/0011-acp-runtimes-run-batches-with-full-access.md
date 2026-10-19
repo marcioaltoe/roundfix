@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-06-13T00:36:33Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-10-19T21:00:54Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -27,3 +27,5 @@ not depend on per-machine `config.toml` state. If full access is enabled and
 the runtime rejects the mode, session creation fails fast instead of silently
 running a sandboxed Batch that cannot verify. OpenCode sessions keep that
 runtime's defaults until it exposes an equivalent mode.
+
+**Amended by [ADR-0293](0293-a-full-access-request-selects-the-mode-the-agent-session-advertises.md) (2026-10-19).** The runtime's full-access mode is now the first candidate the Agent Session advertises (`agent-full-access`, then `full-access`, for Codex). A session advertising none is reported degraded instead of failing, and the Codex sandbox preset is sent when the session advertises `sandbox_mode`.

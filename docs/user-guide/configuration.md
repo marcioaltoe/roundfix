@@ -394,7 +394,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 
 | Key | Built-in default | Effect |
 | --- | --- | --- |
-| `defaults.agent_full_access` | `false` | Keeps the ACP Runtime's normal sandbox or permission mode. `true` requests its full-access mode before Agent work. |
+| `defaults.agent_full_access` | `false` | Keeps the ACP Runtime's normal sandbox or permission mode. `true` requests the full-access mode the Agent Session advertises before Agent work. |
 | `defaults.verification` | `make verify` | Verification command for review Batches. Spec Tasks use the commands in each task file. |
 | `defaults.artifact_dir` | `""` | Uses `~/.roundfix/artifacts/<repo-id>`. An absolute or repository-relative value overrides it. |
 | `defaults.auto_commit` | `true` | Enables Daemon-owned review commits. `watch.auto_push: true` requires it. |
@@ -471,10 +471,14 @@ OpenRouter models stay selectable through OpenCode.
 
 When `defaults.agent_full_access: true`, profile readiness applies the
 requested full-access mode during the disposable proof for the Preferred
-Selection and every Fallback Selection. The proof records the effective access
-policy. If a runtime has no mode for that policy or its adapter refuses the
-mode, readiness refuses before a Run is created and names the failed predicate
-and the remedy: disable full access or select a runtime that supports it.
+Selection and every Fallback Selection. Roundfix checks the Agent Session's
+`mode` config option and selects the first advertised candidate in this order:
+`agent-full-access`, `full-access` and `bypassPermissions`, according to the
+runtime's candidate list. If no candidate is advertised, the proof records the
+degraded policy `full-access (degraded: no advertised mode grants full access;
+advertised modes: <values>)`, publishes the status
+`full_access_mode_not_advertised`, and lets the Run continue. The remedy is to
+disable full access or select a runtime that advertises a full-access mode.
 
 When full access is not requested, readiness keeps the runtime's normal access
 policy and performs no additional access-mode proof.

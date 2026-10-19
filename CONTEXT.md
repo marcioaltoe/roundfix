@@ -390,6 +390,10 @@ _Avoid_: authorization error, permission code, trust error
 The acpx-backed session owned by one Work Item or action. Each Task in an Implement Run owns a Task Type-selected Agent Session, the authored QA gate owns a separate `qa` Agent Session, and a Review Run uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread
 
+**Full-Access Mode**:
+The adapter mode an Agent Session is switched to when full access is requested: the first of the runtime's full-access candidates that the session advertises in its `mode` config option ([ADR-0293](docs/adr/0293-a-full-access-request-selects-the-mode-the-agent-session-advertises.md)).
+_Avoid_: sandbox mode, YOLO mode
+
 **Lost Rollout**:
 The runtime infrastructure failure (`rollout_lost`) in which the ACP Runtime cannot find the persisted record of the Agent Session it is asked to continue. The Daemon recovers it in a new Agent Session without repair or a counted queue retry ([ADR-0245](docs/adr/0245-a-lost-rollout-is-runtime-infrastructure.md)).
 _Avoid_: Session loss, missing prompt, retryable Task failure

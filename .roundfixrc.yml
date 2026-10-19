@@ -48,10 +48,10 @@ delivery:
       regenerate: go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
 
 defaults:
-  # Keep false. Setting it true is accepted by config validation and then rejected
-  # by the codex adapter at session creation — `session/set_mode "full-access"`
-  # answers ACP -32602 Invalid params — which fails every Task in the Run before
-  # any Agent work starts. Measured on codex-acp 1.1.9, 2026-08-04.
+  # Keep false on purpose: this repository keeps the Agent sandbox. Setting it
+  # true selects the mode the Agent Session advertises (`agent-full-access` on
+  # codex-acp 2.x), and the QA gate drives browsers through the chrome-devtools
+  # MCP server.
   agent_full_access: false
   # Selective repository Verification for review Batches and Run QA gates.
   # Use `make verify` for the complete gate on main and releases.

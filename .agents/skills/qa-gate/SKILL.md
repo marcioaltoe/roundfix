@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.17
+  version: 0.0.18
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.17
+version: 0.0.18
 ---
 
 # QA Gate
@@ -511,6 +511,14 @@ When `frontend` is declared, cover all of these in the matrix:
 - **Runtime health:** exercised flows leave no unexplained console errors/warnings or failed requests. Run a focused accessibility or Lighthouse audit when available; disclose when unavailable.
 
 For a TUI, map the same sweep to small/large/degenerate terminal sizes, keyboard flows, focus/follow behavior, color-independent readability, aligned output, and clean interrupt handling.
+
+### Browser driver inside a sandbox
+
+When a daemon-backed browser tool such as agent-browser cannot start inside the
+Run sandbox, the gate drives the browser through the chrome-devtools MCP server
+when the session exposes it, because that server runs outside the Agent
+sandbox. Record which driver ran each browser row. Without either driver the
+row is `blocked (environment: <error>)`, never retried in a loop.
 
 ## 5. Classify results and findings
 
