@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-18T17:30:00Z
-updated_at: 2026-10-18T17:30:00Z
+updated_at: 2026-10-19T20:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -86,3 +86,5 @@ gate and park the item `gate-failed` with the log path.
   unchanged package that a change breaks indirectly still reaches CI.
 - The Delivery Queue reads `delivery.linux_lane` from the fetched default
   branch, so enabling it takes effect after the change that enables it merges.
+
+**Amended by [ADR-0294](0294-the-linux-lane-runs-like-ci.md) (2026-10-19).** The container runs with `--init`; its image is `delivery.linux_lane_image` when set, read from the same fetched default-branch Project Config, and `golang:<go.mod go version>` otherwise; a test that needs a tool outside the Base Test Tools skips naming it; exit `3` from the lane's own setup, `126`, `127`, an exit of `128` or more and the 20-minute cap are a Lane Container Failure that parks `linux-lane-container` in the `environment` Park Class, while any other non-zero exit is a Lane Change Failure that parks `gate-failed` with its reason; and `roundfix deliver lane` runs the lane on demand.
