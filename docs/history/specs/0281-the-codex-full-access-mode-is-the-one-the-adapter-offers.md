@@ -25,6 +25,7 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "587"
 ---
 
 # The Codex full-access mode is the one the adapter offers
