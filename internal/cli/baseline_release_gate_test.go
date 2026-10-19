@@ -1014,7 +1014,7 @@ func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
 	case "go-cli-tui", "go-cli-typescript-monorepo":
 		runBaselineReleaseExternal(t, repo, "gofmt", "-w", "main.go")
 	case "rust-cli":
-		runBaselineReleaseExternal(t, repo, "rustfmt", "src/main.rs")
+		runBaselineReleaseExternal(t, repo, testfixture.RequireTool(t, "rustfmt"), "src/main.rs")
 	case "standard-typescript-monorepo":
 		formatterBin, formatterVersion := provisionBaselineReleaseFormatter(t, repo)
 		versionOutput := runBaselineReleaseFixtureTool(

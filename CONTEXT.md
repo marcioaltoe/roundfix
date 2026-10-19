@@ -693,6 +693,14 @@ _Avoid_: replay, resume, automatic carry, QA row carry-forward
 The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
 
+**Base Test Tools**:
+The tools the repository's tests require: `go`, `gofmt`, `git`, `make`, `sh`, `cat`, `kill`, `ps`, `id`, `mkfifo` and `cmd` ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+_Avoid_: container tools, optional tools
+
+**External Test Tool**:
+A tool a test runs outside the Base Test Tools. A test that needs one skips naming it when it is absent from PATH ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+_Avoid_: optional dependency, container tool
+
 **Linux Lane**:
 The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication ([ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
 _Avoid_: Linux gate, Docker gate, cross-platform Verification

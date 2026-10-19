@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0282-the-linux-lane-runs-like-ci
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -107,3 +107,94 @@ skips under a `PATH` without `rustfmt`.
 - `_prd.md` → Sources; Goals; User Story 3; Core Feature 2; Core Feature 5; Success Metric 2; Glossary
 - `_techspec.md` → API Contract 5; API Contract 7; Invariant 3; Current behavior; Testing Approach; Build Order 1
 - ADR-0294; ADR-0125; ADR-0259; ADR-0285
+
+## Result
+
+Implemented this Task's External Test Tool slice; Task status and declared
+Verification remain Daemon-owned.
+
+- Added `testfixture.RequireTool`: returns the executable resolved on the test
+  process's PATH, or skips with exactly `requires <tool>, which is not on PATH`.
+- Added the four required tests and an AST rule over all `_test.go` files in
+  `internal/`, `cmd/` and `skills/`. The rule recognizes `os/exec` aliases,
+  `Command`, `CommandContext` and `LookPath`; reports relative file, line and
+  tool; and excludes the specified Base Test Tools, paths (including Windows
+  separators), variable programs and non-test files.
+- The Rust formatter resolves `rustfmt` at its existing formatting step, after
+  preceding journey steps. Other Profile branches and base-tool failure
+  handling are unchanged. The real acpx test resolves `node` only after opt-in.
+- Added the repository rule outside setup markers and defined **External Test
+  Tool** in `CONTEXT.md`, listing all eleven Base Test Tools and linking ADR-0294.
+
+Focused evidence by acceptance criterion:
+
+1. Missing-rustfmt journey: compiled `./internal/cli` with
+   `go test -c -o /tmp/roundfix-task01-cli.test ./internal/cli`, then ran that
+   binary from `internal/cli` with
+   `-test.v -test.run=^TestGuidanceCompositionJourney$/^rust-cli$` and PATH
+   containing only symlinks to `go`, `git` and `sh`. Exit 0; the rust-cli
+   subtest skipped with exactly `requires rustfmt, which is not on PATH`.
+2. Literal lookup enforcement and helper behavior:
+   `go test ./internal/testfixture -run 'Test(RequireTool|EveryExternalTestTool|TheExternalTestToolRule)' -count=1 -v`
+   exited 0; all four named tests passed. The skip test observes a real skipped
+   subtest, exact message and no execution after RequireTool. The seeded rule
+   checks exact reports for lookups, aliases and CommandContext across all
+   three roots, with negative cases. The repository scan reports nothing.
+   Before adding the helper,
+   `go test ./internal/testfixture -run '^TestRequireTool' -count=1`
+   failed at compilation with `undefined: RequireTool`.
+3. Repository rule and glossary: reviewed the scoped diff; the rule names
+   `testfixture.RequireTool`, absence skips and its enforcing package; the
+   glossary defines the term against the exact API Contract 5 base list and
+   links the accepted ADR.
+
+Additional focused checks:
+
+- `go test -c -o /tmp/roundfix-task01-agent.test ./internal/agent`: exit 0.
+  Ran the binary from `internal/agent` with
+  `-test.v -test.run=^TestRealACPXCommandOverrideRoundTripCancelCrashResume$`,
+  `ROUNDFIX_REAL_ACPX=1` and an empty temporary PATH: exit 0 and skipped with
+  `requires node, which is not on PATH`; no real acpx or provider call ran.
+- `GOOS=windows go test -c -o /tmp/roundfix-task01-testfixture.test.exe ./internal/testfixture`:
+  exit 0, proving the new helper and tests compile for Windows.
+- `go test ./internal/testfixture -run 'Test(NoTestWrites|EveryParallelTestPackage|ParallelTest)' -count=1`:
+  exit 0 (executable-write residue check).
+- `go test ./internal/testfixture -run '^TestEveryTestInAParallelTestPackageRunsInParallel$' -count=1`:
+  exit 0.
+- `git diff --check`: exit 0.
+
+Environment: the executor rejects the configured symlinked writable root;
+commands used approved escalated execution in its resolved checkout. No
+repository configuration was changed for this environment limitation.
+
+The Agent did not run the declared Verification command or repository Verification.
+No status, Task Graph, other Task file, commit, push or Pull Request mutation.
+
+### Verification feedback repair — attempt 1
+
+The Daemon's diagnostic identified an undefined capitalized glossary phrase:
+the External Test Tool entry referred to Base Test Tools without defining it.
+Added a Base Test Tools entry containing exactly the eleven tools from API
+Contract 5 and an accepted ADR-0294 link. External Test Tool now refers to that
+entry, so the base list has one owner. No implementation or rule test changed.
+
+Focused evidence:
+
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossaryPhrasesAreDefinedTerms$' -count=1`:
+  reproduced the undefined-term failure before the repair.
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossary' -count=1 -v`:
+  exit 0 after the repair; all six glossary contracts passed, including phrase
+  definitions, accepted ADR links, closed lists, avoid lines, single ownership
+  and the planted-violation detector tests.
+- An initial invocation without `-tags docscontract` reported no test files;
+  it provided no validation evidence.
+- `git diff --check`: exit 0 after updating this Result.
+
+Only `CONTEXT.md` and this Result changed during the repair. Task status and
+authored requirements remain unchanged. Full configured Verification remains
+Daemon-owned and was not rerun by the Agent.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261019T224006Z_3d81ced188078879`
+- Source commit: `f3d4cb7b2f6559bb3dfde0898fde8ffefd8f9e62`

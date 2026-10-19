@@ -11,6 +11,8 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 
 ## Repository rules
 
+- A test that runs an External Test Tool, a tool outside the Base Test Tools, resolves it with `testfixture.RequireTool`, which skips naming the tool when it is absent; the External Test Tool rule in `internal/testfixture` enforces it.
+
 - `make` shares `roundfix-go-build-<uid>` under `$TMPDIR` (or `/tmp`), falls back to `$(CURDIR)/.gocache` when it cannot create and write the shared cache, and exports an explicit `GOCACHE` unchanged; a sandboxed Agent sets nothing.
 
 - A test signals a process only through the `*os.Process` of an unreaped child it started or a Proven Signal, and a helper that waits has a Helper Lifeline; the Signal rule and the suite guard enforce both.
