@@ -1,0 +1,82 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^(TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate|TestProofSelectsTheAdvertisedCodexFullAccessMode|TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt|TestRunSelectsBypassPermissionsForClaude|TestFullAccessWithoutAnAdvertisedModeIsDegraded|TestDisposableProofAppliesRequestedAccessMode|TestProofRecordsADegradedFullAccess|TestACPXRunAppliesFullAccessSessionSetup|TestACPXRunFailsSetupWhenFullAccessModeFails|TestACPXRunWarnsWhenCodexSandboxPresetUnavailable)$', './internal/agent']
+exit: 0
+stdout:
+=== RUN   TestDisposableProofAppliesRequestedAccessMode
+=== PAUSE TestDisposableProofAppliesRequestedAccessMode
+=== RUN   TestProofRecordsADegradedFullAccess
+=== PAUSE TestProofRecordsADegradedFullAccess
+=== RUN   TestACPXRunAppliesFullAccessSessionSetup
+=== PAUSE TestACPXRunAppliesFullAccessSessionSetup
+=== RUN   TestACPXRunFailsSetupWhenFullAccessModeFails
+=== PAUSE TestACPXRunFailsSetupWhenFullAccessModeFails
+=== RUN   TestACPXRunWarnsWhenCodexSandboxPresetUnavailable
+=== PAUSE TestACPXRunWarnsWhenCodexSandboxPresetUnavailable
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate
+=== PAUSE TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate
+=== RUN   TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== PAUSE TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== RUN   TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt
+=== PAUSE TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt
+=== RUN   TestRunSelectsBypassPermissionsForClaude
+=== PAUSE TestRunSelectsBypassPermissionsForClaude
+=== RUN   TestFullAccessWithoutAnAdvertisedModeIsDegraded
+=== PAUSE TestFullAccessWithoutAnAdvertisedModeIsDegraded
+=== CONT  TestDisposableProofAppliesRequestedAccessMode
+=== CONT  TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate
+=== CONT  TestACPXRunFailsSetupWhenFullAccessModeFails
+=== CONT  TestACPXRunWarnsWhenCodexSandboxPresetUnavailable
+=== CONT  TestACPXRunAppliesFullAccessSessionSetup
+=== CONT  TestProofRecordsADegradedFullAccess
+=== CONT  TestRunSelectsBypassPermissionsForClaude
+=== CONT  TestFullAccessWithoutAnAdvertisedModeIsDegraded
+=== RUN   TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched
+=== CONT  TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt
+=== RUN   TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/full-access
+=== CONT  TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/candidate_order
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/legacy_candidate
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/trim_spaces
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/exact_comparison
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_values
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_candidates
+=== RUN   TestACPXRunAppliesFullAccessSessionSetup/codex_mode_and_sandbox_preset
+2026/10/19 18:15:58 codex full-access sandbox preset unavailable for Agent Session "roundfix-run-1": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.
+--- PASS: TestACPXRunFailsSetupWhenFullAccessModeFails (0.08s)
+--- PASS: TestRunSelectsBypassPermissionsForClaude (0.09s)
+--- PASS: TestACPXRunWarnsWhenCodexSandboxPresetUnavailable (0.10s)
+=== RUN   TestACPXRunAppliesFullAccessSessionSetup/claude_mode_only
+2026/10/19 18:15:59 full-access mode not advertised for Agent Session roundfix-preflight-d2bfd43c408d0385; advertised modes: read-only, workspace-write, agent
+--- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate (0.10s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/candidate_order (0.00s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/legacy_candidate (0.00s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/trim_spaces (0.00s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/exact_comparison (0.00s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_values (0.00s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_candidates (0.00s)
+2026/10/19 18:15:59 codex full-access sandbox preset unavailable for Agent Session "roundfix-preflight-3fee40ee1eac87a7": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session does not advertise config option 'sandbox_mode'
+=== RUN   TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/agent-full-access
+--- PASS: TestProofSelectsTheAdvertisedCodexFullAccessMode (0.11s)
+--- PASS: TestProofRecordsADegradedFullAccess (0.12s)
+=== RUN   TestACPXRunAppliesFullAccessSessionSetup/opencode_no_full_access_setup
+=== RUN   TestFullAccessWithoutAnAdvertisedModeIsDegraded/no_mode_option
+--- PASS: TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt (0.16s)
+    --- PASS: TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/full-access (0.11s)
+    --- PASS: TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/agent-full-access (0.05s)
+--- PASS: TestDisposableProofAppliesRequestedAccessMode (0.17s)
+--- PASS: TestACPXRunAppliesFullAccessSessionSetup (0.17s)
+    --- PASS: TestACPXRunAppliesFullAccessSessionSetup/codex_mode_and_sandbox_preset (0.10s)
+    --- PASS: TestACPXRunAppliesFullAccessSessionSetup/claude_mode_only (0.05s)
+    --- PASS: TestACPXRunAppliesFullAccessSessionSetup/opencode_no_full_access_setup (0.02s)
+2026/10/19 18:15:59 full-access mode not advertised for Agent Session roundfix-preflight-74f7c21ff584356f; advertised modes: none
+--- PASS: TestFullAccessWithoutAnAdvertisedModeIsDegraded (0.22s)
+    --- PASS: TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched (0.15s)
+    --- PASS: TestFullAccessWithoutAnAdvertisedModeIsDegraded/no_mode_option (0.07s)
+PASS
+suiteguard: guard cost: measured 2612 paths; fingerprint took 112.659417ms before and 82.763083ms after
+ok  	roundfix/internal/agent	0.794s
+
+stderr:

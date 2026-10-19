@@ -1,0 +1,52 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^(TestProofSelectsTheAdvertisedCodexFullAccessMode|TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt|TestRunSelectsBypassPermissionsForClaude|TestFullAccessWithoutAnAdvertisedModeIsDegraded)$', './internal/agent']
+exit: 0
+stdout:
+=== RUN   TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== PAUSE TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== RUN   TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt
+=== PAUSE TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt
+=== RUN   TestRunSelectsBypassPermissionsForClaude
+=== PAUSE TestRunSelectsBypassPermissionsForClaude
+=== RUN   TestFullAccessWithoutAnAdvertisedModeIsDegraded
+=== PAUSE TestFullAccessWithoutAnAdvertisedModeIsDegraded
+=== CONT  TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== CONT  TestRunSelectsBypassPermissionsForClaude
+=== CONT  TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt
+=== CONT  TestFullAccessWithoutAnAdvertisedModeIsDegraded
+=== RUN   TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/full-access
+=== RUN   TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched
+2026/10/19 18:18:08 full-access mode not advertised for Agent Session roundfix-preflight-d0c6d3ba0739eea6; advertised modes: read-only, workspace-write, agent
+=== NAME  TestRunSelectsBypassPermissionsForClaude
+    full_access_mode_test.go:91: observed access calls: ["set-mode bypassPermissions"]
+--- PASS: TestRunSelectsBypassPermissionsForClaude (0.04s)
+=== NAME  TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/full-access
+    full_access_mode_test.go:76: observed access calls: ["set-mode full-access" "set sandbox_mode value=danger-full-access"]
+=== NAME  TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched
+    full_access_mode_test.go:118: observed access calls: []
+=== RUN   TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/agent-full-access
+=== NAME  TestProofSelectsTheAdvertisedCodexFullAccessMode
+    full_access_mode_test.go:56: observed proof effective policy: full-access
+    full_access_mode_test.go:60: observed access calls: ["set-mode agent-full-access"]
+--- PASS: TestProofSelectsTheAdvertisedCodexFullAccessMode (0.05s)
+=== NAME  TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched
+    full_access_mode_test.go:133: observed policy=full-access (degraded: no advertised mode grants full access; advertised modes: read-only, workspace-write, agent) status=full_access_mode_not_advertised warning=["full-access mode not advertised for Agent Session degraded-run; advertised modes: read-only, workspace-write, agent"] prompt=true
+    full_access_mode_test.go:134: observed access calls: []
+=== RUN   TestFullAccessWithoutAnAdvertisedModeIsDegraded/no_mode_option
+=== NAME  TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/agent-full-access
+    full_access_mode_test.go:76: observed access calls: ["set-mode agent-full-access" "set sandbox_mode value=danger-full-access"]
+--- PASS: TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt (0.08s)
+    --- PASS: TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/full-access (0.05s)
+    --- PASS: TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt/agent-full-access (0.04s)
+2026/10/19 18:18:08 full-access mode not advertised for Agent Session roundfix-preflight-dbd8530bb19fb1af; advertised modes: none
+=== NAME  TestFullAccessWithoutAnAdvertisedModeIsDegraded/no_mode_option
+    full_access_mode_test.go:118: observed access calls: []
+    full_access_mode_test.go:133: observed policy=full-access (degraded: no advertised mode grants full access; advertised modes: none) status=full_access_mode_not_advertised warning=["full-access mode not advertised for Agent Session degraded-run; advertised modes: none"] prompt=true
+    full_access_mode_test.go:134: observed access calls: []
+--- PASS: TestFullAccessWithoutAnAdvertisedModeIsDegraded (0.13s)
+    --- PASS: TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched (0.07s)
+    --- PASS: TestFullAccessWithoutAnAdvertisedModeIsDegraded/no_mode_option (0.06s)
+PASS
+suiteguard: guard cost: measured 2612 paths; fingerprint took 105.168667ms before and 75.335667ms after
+ok  	roundfix/internal/agent	0.607s
+
+stderr:

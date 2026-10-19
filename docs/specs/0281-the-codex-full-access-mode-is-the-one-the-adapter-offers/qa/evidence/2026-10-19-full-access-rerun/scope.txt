@@ -1,0 +1,139 @@
+Audited head: f81a2a09fba14dfb6e64fb5ac399ef779bfbfe5b
+Delivery Base: 90c8ad4e4134b84af8510f185987f7da8682ee03
+command: git diff --name-only 90c8ad4e4134b84af8510f185987f7da8682ee03 f81a2a09fba14dfb6e64fb5ac399ef779bfbfe5b
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/profiles.md
+.roundfixrc.yml
+CONTEXT.md
+docs/adr/0011-acp-runtimes-run-batches-with-full-access.md
+docs/references/behavior-surfaces.json
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/_tasks.md
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_01.md
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_02.md
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_04.md
+docs/user-guide/configuration.md
+internal/agent/acpx_runner.go
+internal/agent/acpx_runner_test.go
+internal/agent/agent.go
+internal/agent/agent_test.go
+internal/agent/full_access_mode_test.go
+internal/agent/selection_assignment.go
+internal/agent/selection_capabilities.go
+internal/agent/selection_capabilities_test.go
+internal/cli/cli_test.go
+internal/cli/review_convention_validator_test.go
+internal/cli/review_selection_retry_test.go
+internal/cli/review_session_test.go
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/profiles.md
+skills/testdata/owned-skill-versions.json
+command: git diff-tree --no-commit-id --name-only -r 3d9ed9f2459e134a5cdfaa09965971a18186b08d
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/profiles.md
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_01.md
+internal/agent/acpx_runner.go
+internal/agent/acpx_runner_test.go
+internal/agent/agent.go
+internal/agent/agent_test.go
+internal/agent/full_access_mode_test.go
+internal/agent/selection_assignment.go
+internal/agent/selection_capabilities.go
+internal/agent/selection_capabilities_test.go
+internal/cli/cli_test.go
+internal/cli/review_convention_validator_test.go
+internal/cli/review_selection_retry_test.go
+internal/cli/review_session_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/profiles.md
+skills/testdata/owned-skill-versions.json
+PASS task_01 changed path declared (including Recorded paths): .agents/skills/roundfix/SKILL.md
+PASS task_01 changed path declared (including Recorded paths): .agents/skills/roundfix/references/profiles.md
+PASS task_01 changed path declared (including Recorded paths): docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_01.md
+PASS task_01 changed path declared (including Recorded paths): internal/agent/acpx_runner.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/acpx_runner_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/agent.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/agent_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/full_access_mode_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/selection_assignment.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/selection_capabilities.go
+PASS task_01 changed path declared (including Recorded paths): internal/agent/selection_capabilities_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/cli/cli_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/cli/review_convention_validator_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/cli/review_selection_retry_test.go
+PASS task_01 changed path declared (including Recorded paths): internal/cli/review_session_test.go
+PASS task_01 changed path declared (including Recorded paths): skills/roundfix/SKILL.md
+PASS task_01 changed path declared (including Recorded paths): skills/roundfix/references/profiles.md
+PASS task_01 changed path declared (including Recorded paths): skills/testdata/owned-skill-versions.json
+PASS authorization predates task_01 commit
+command: git diff-tree --no-commit-id --name-only -r f391354fb0152f6233f66076b65c660befb5132a
+.agents/skills/qa-gate/SKILL.md
+.roundfixrc.yml
+CONTEXT.md
+docs/adr/0011-acp-runtimes-run-batches-with-full-access.md
+docs/references/behavior-surfaces.json
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_02.md
+docs/user-guide/configuration.md
+skills/qa-gate/SKILL.md
+skills/testdata/owned-skill-versions.json
+PASS task_02 changed path declared (including Recorded paths): .agents/skills/qa-gate/SKILL.md
+PASS task_02 changed path declared (including Recorded paths): .roundfixrc.yml
+PASS task_02 changed path declared (including Recorded paths): CONTEXT.md
+PASS task_02 changed path declared (including Recorded paths): docs/adr/0011-acp-runtimes-run-batches-with-full-access.md
+PASS task_02 changed path declared (including Recorded paths): docs/references/behavior-surfaces.json
+PASS task_02 changed path declared (including Recorded paths): docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_02.md
+PASS task_02 changed path declared (including Recorded paths): docs/user-guide/configuration.md
+PASS task_02 changed path declared (including Recorded paths): skills/qa-gate/SKILL.md
+PASS task_02 changed path declared (including Recorded paths): skills/testdata/owned-skill-versions.json
+PASS authorization predates task_02 commit
+command: git diff-tree --no-commit-id --name-only -r f81a2a09fba14dfb6e64fb5ac399ef779bfbfe5b
+docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_04.md
+internal/agent/full_access_mode_test.go
+PASS task_04 changed path declared (including Recorded paths): docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/task_04.md
+PASS task_04 changed path declared (including Recorded paths): internal/agent/full_access_mode_test.go
+PASS authorization predates task_04 commit
+PASS corrective commit touches only proof test and assigned Task file
+PASS real speccheck.GovernedPath classifier exits 0
+PASS governed changed path bounded: .agents/skills/qa-gate/SKILL.md
+PASS governed changed path bounded: .agents/skills/roundfix/SKILL.md
+PASS governed changed path bounded: .agents/skills/roundfix/references/profiles.md
+PASS governed changed path bounded: .roundfixrc.yml
+PASS governed changed path bounded: internal/cli/cli_test.go
+PASS governed changed path bounded: skills/qa-gate/SKILL.md
+PASS governed changed path bounded: skills/roundfix/SKILL.md
+PASS all seven bounded Governed Paths match actual governed changes
+PASS Delivery Base bytes unchanged: Makefile
+PASS Delivery Base bytes unchanged: .github/workflows
+PASS Delivery Base bytes unchanged: go.mod
+PASS Delivery Base bytes unchanged: go.sum
+PASS Delivery Base bytes unchanged: internal/baseline/assets/modules
+PASS Delivery Base bytes unchanged: docs/agents/setup-context.json
+PASS Delivery Base bytes unchanged: internal/judge
+PASS PinnedCodexAdapterVersion unchanged
+PASS PinnedClaudeAdapterVersion unchanged
+PASS .roundfixrc.yml changed only comments
+PASS agent_full_access: false unchanged
+PASS qa-gate skill version raised 0.0.17 -> 0.0.18
+PASS qa-gate version present in owned-skill record
+PASS qa-gate QA settlement byte-identical
+PASS qa-gate mirror byte-identical
+PASS roundfix skill version raised 0.1.102 -> 0.1.103
+PASS roundfix version present in owned-skill record
+PASS roundfix QA settlement byte-identical
+PASS roundfix mirror byte-identical
+PASS TestDisposableProofAppliesRequestedAccessMode body unchanged
+PASS TestProofRecordsADegradedFullAccess body unchanged
+PASS TestACPXRunAppliesFullAccessSessionSetup body unchanged
+PASS TestACPXRunFailsSetupWhenFullAccessModeFails body unchanged
+PASS TestACPXRunWarnsWhenCodexSandboxPresetUnavailable body unchanged
+PASS obsolete version sweep has no matches
+PASS Full-Access Mode definition links ADR-0293
+**Full-Access Mode**:
+The adapter mode an Agent Session is switched to when full access is requested: the first of the runtime's full-access candidates that the session advertises in its `mode` config option ([ADR-0293](docs/adr/0293-a-full-access-request-selects-the-mode-the-agent-session-advertises.md)).
+_Avoid_: sandbox mode, YOLO mode
+
+Current checkout status:
+?? docs/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers/qa/
+PASS current checkout delta bounded to QA report/evidence
+0 failed assertions

@@ -1,0 +1,7 @@
+Published source: https://github.com/agentclientprotocol/codex-acp/blob/main/README.md
+
+PRD-cited passage (not independently fetched in this gate):
+
+> `INITIAL_AGENT_MODE` - initial mode id: `read-only`, `workspace-write`, `agent`, or `agent-full-access`.
+
+The Spec authorization, Limits, says no QA row "reaches the network". Requirement 6 explicitly orders each web source blocked. No lookup attempted; source freshness remains unproven. The available PRD quotation was checked offline, but is not substituted for independent acceptance evidence. These sources originated outside the Spec.

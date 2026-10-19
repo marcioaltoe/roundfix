@@ -1,0 +1,26 @@
+--- /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0281-_h2z42ws/head/internal/agent/full_access_mode_test.go	2026-10-19 18:09:19
++++ /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0281-_h2z42ws/observed/internal/agent/full_access_mode_test.go	2026-10-19 18:18:07
+@@ -53,6 +53,7 @@
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
++	t.Logf("observed proof effective policy: %s", proof.EffectiveAccessPolicy)
+ 	if proof.EffectiveAccessPolicy != AccessPolicyFullAccess {
+ 		t.Fatalf("effective policy = %q", proof.EffectiveAccessPolicy)
+ 	}
+@@ -129,6 +130,7 @@
+ 			if !containsWarning(warnings, warning) {
+ 				t.Fatalf("warnings = %#v, want %q", warnings, warning)
+ 			}
++			t.Logf("observed policy=%s status=%s warning=%q prompt=%t", proof.EffectiveAccessPolicy, AccessModeNotAdvertisedStatus, warnings, containsCommandKey(readJSONInvocations(t, harness.invocationsPath), "prompt"))
+ 			assertFullAccessCalls(t, harness, nil)
+ 			if !containsCommandKey(readJSONInvocations(t, harness.invocationsPath), "prompt") {
+ 				t.Fatal("Run did not reach prompt")
+@@ -207,6 +209,7 @@
+ 			shows[call[len(call)-1]]++
+ 		}
+ 	}
++	t.Logf("observed access calls: %q", got)
+ 	if !reflect.DeepEqual(got, want) {
+ 		t.Fatalf("access calls = %#v, want %#v", got, want)
+ 	}

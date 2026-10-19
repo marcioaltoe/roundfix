@@ -1,0 +1,55 @@
+import pathlib,json,re,shutil,hashlib
+s=json.loads(pathlib.Path('/private/tmp/qa0281-rerun-state.json').read_text()); root=pathlib.Path(s['root']); tmp=pathlib.Path(s['tmp']); qa=root/'docs/specs'/s['spec']/'qa'; report=qa/'qa-report-2026-10-19-01.md'; logs=tmp/'logs'; evidence=qa/'evidence/2026-10-19-full-access-rerun'; evidence.mkdir(parents=True,exist_ok=True)
+def done(row,status,note):
+ text=report.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |'); start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1)
+ if end<0: end=text.find('\n## ',start+1)
+ if end<0: end=len(text)
+ section=text[start:end].replace('Pending.',note); report.write_text(text[:start]+section+text[end:])
+quotes=[('Q9','https://github.com/agentclientprotocol/codex-acp/blob/main/README.md','`INITIAL_AGENT_MODE` - initial mode id: `read-only`, `workspace-write`, `agent`, or `agent-full-access`.'),('Q10','https://github.com/agentclientprotocol/codex-acp/blob/main/src/AgentMode.ts','the mode `agent-full-access`, named "Full access", has the approval policy `"never"` and the sandbox mode `"danger-full-access"`. The adapter advertises its modes as a config option with `id: MODE_CONFIG_ID` (`"mode"`), `category: "mode"` and the description "Approval and sandboxing preset for the session".'),('Q11','https://agentclientprotocol.com/protocol/v1/session-config-options','If an Agent provides `configOptions`, Clients SHOULD use them instead of the `modes` field. Modes will be removed in a future version of the protocol. Categories "MUST NOT be required for correctness".')]
+for row,url,quote in quotes:
+ note='Published source: '+url+'\n\nPRD-cited passage, checked offline and not independently fetched:\n\n> '+quote+'\n\n`_authorization.md` → Limits prohibits any QA row that "reaches the network"; task_03 Requirement 6 explicitly requires this status. No lookup attempted; current upstream behavior remains unproven. The local quotation is not substituted for independent outside evidence. Evidence: `'+row+'-outside-evidence.txt`. Unblocking requires a later authorized external observation; no network request is authorized in this gate.'
+ (logs/(row+'-outside-evidence.txt')).write_text(note+'\n'); done(row,'blocked (environment: network prohibited by Spec authorization)',note)
+done('Q13','pass','`scope.txt`: zero failed assertions. `git diff-tree --no-commit-id --name-only -r` observes each actual Task commit (task_01 3d9ed9f2, task_02 f391354f, task_04 f81a2a09); every changed path is declared or under task_01 Recorded paths. Authorization at the Delivery Base precedes all Task commits. The mechanical authorization table remains authoritative for already-audited tooling commits; no new governed Task commit exists. The real `speccheck.GovernedPath` classifier reports precisely the seven bounded paths (`governed-classification.txt`). Protected files match Delivery Base bytes; adapter pins and default false are unchanged, configuration delta is comment-only, skill versions rise with recorded versions/matching mirrors, both QA settlement sections and all five pinned test bodies remain identical. The obsolete 1.1.9 sweep has no matches (`obsolete-version-sweep.txt`). Corrective task_04 changes only the proof test and its assigned Task file. The glossary audit checks the complete multiline definition; an initial one-line probe was corrected without a product change.')
+head=s['head']; note='The prompt authoritatively records no open Pull Request. Approval: recorded cycle AJ delivery authority in `_authorization.md`, operative at '+s['base']+', grants implementation/delivery; it is not reviewer acceptance. Checks/status: Daemon `make verify-changed` pass (exit 0) for audited head '+head+'; both authored Task Verification commands also pass. Unresolved review threads: none, because no Pull Request exists. Merge-Ready acceptance: none yet. Review-artifact ancestry: no acceptance artifact exists yet; claimed candidate is '+head+'. Evidence: prompt facts, `scope.txt`, `task_01-verification.txt`, `task_02-verification.txt`. The acceptance controls lack equivalent review evidence, so the row stays blocked. A later publication/review stage must observe those controls; this child starts no workflow.'
+done('Q14','blocked (environment: no open Pull Request)',note); (logs/'pre-pr-controls.txt').write_text(note+'\n')
+assert hashlib.sha256((root/'bin/roundfix').read_bytes()).digest()==hashlib.sha256((tmp/'with-git/bin/roundfix').read_bytes()).digest()
+(logs/'binary-identity.txt').write_text('Run-built and disposable-copy binaries are byte-identical (SHA-256 comparison). All public CLI rows invoked ./bin/roundfix, never PATH.\n')
+for file in logs.iterdir(): shutil.copy2(file,evidence/file.name)
+for source in ['qa0281-rerun.py','qa0281-scope.py','qa0281-close.py']: shutil.copy2(pathlib.Path('/private/tmp')/source,evidence/(source+'.txt'))
+shutil.copy2(tmp/'with-git/.qa0281-probe/main.go',evidence/'governed-classifier.go.txt')
+text=report.read_text().replace('status: in-progress','status: closed',1).replace('verdict: pending','verdict: partial',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 4',1)
+text=text.replace('## Supplementary operational checks\n\nPending.','''## Supplementary operational checks
+
+Requirement 5: the exact committed Verification commands of task_01 and task_02 were extracted and executed verbatim in a disposable local clone of the audited head, with temporary HOME and keys removed. Both exit 0 (`task_01-verification.txt`, `task_02-verification.txt`). This includes package-wide agent tests, CLI access-policy tests, Windows vet, skill mirror/version checks, configuration and documentation contracts. The fake-runner OpenCode default-access case passes with no mode or preset. Repository Verification was not repeated.
+
+Requirement 7: all glossary contract tests pass (`glossary.txt`). The complete Full-Access Mode definition links ADR-0293 and describes the first advertised runtime candidate (`scope.txt`). No additional term requires an entry: new policy/status strings describe existing Access Policy and Agent Session concepts; browser/tool names are implementation guidance. No row passes merely because a file was read.
+
+Requirement 10: `./bin/roundfix archive 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers --plan --offline` exits 0 in a disposable clone using the byte-identical Run-built binary (`archive-offline.txt`, `binary-identity.txt`). The plan lists ten committed Spec files, nine core files, zero committed evidence files and one adopted-reference candidate, with `judge: skipped (offline)`. This committed-head plan excludes the uncommitted report/evidence being prepared here and is not an archive-eligibility claim. It made no archive mutation. No workflow, adapter, browser, provider, judge or reviewer ran, and no real ~/.roundfix or ~/.acpx was accessed.
+
+Environment hygiene: ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_TYPESAFE_API_KEY and TYPESAFE_API_KEY were removed, along with inherited variables whose names contain API_KEY, TOKEN, SECRET or PASSWORD; values were never recorded. HOME/XDG_CONFIG_HOME were temporary, existing GOMODCACHE/GOCACHE reused, GOPROXY/GOSUMDB offline. Every foreground suite exited before any report update or other checkout write. Runnable evidence uses .py.txt/.go.txt only.''')
+text=text.replace('Pending retest of prior F1.','''Prior F1 is resolved at this audited head. The unmodified proof passes both current_adapter and legacy_adapter; the mandated first-candidate mutation now fails legacy_adapter with observed `set-mode agent-full-access`, expected `set-mode full-access` (`sabotage-first-candidate.txt`). The current adapter still passes. The adjacent chooser, preset, Claude, degradation and pinned-contract canaries pass. No standing or new finding remains. No implementation repair was made during this QA pass.''')
+text+='''
+## Static gate
+
+Daemon-supplied `make verify-changed`: pass (exit 0), diagnostics removed on success; not rerun. Run-local `make build`: pass; `./bin/roundfix --version` recorded in user_flow_binary and version.txt. Strict Spec check: pass. Daemon-owned auditing_binary and auditor_staleness are preserved exactly.
+
+## Blocked and skipped
+
+Q9-Q11: outside-evidence sources cannot be refreshed because the Spec authorization prohibits network access. The exact PRD-cited passages are retained above; no fresh upstream evidence is claimed. Q14: no open Pull Request and no Merge-Ready acceptance/review artifact yet. These four environment rows are the qualifying-partial exemptions. No finding-blocked, declared-blocked, failed, pending or skipped matrix row remains. The seeded consequent-fix mechanical skip remains unchanged.
+
+## Coverage
+
+Twelve of twelve matrix rows reached terminal status: eight pass, four environment-blocked. Declared verification Requirements 2, 3, 4 and 8 are all covered; each non-waivable source has a row. Requirements 1, 5, 6, 7, 9 and 10 constrain or supplement those observations and were followed. No frontend sweep or Surface Transcript is declared, and no Unreachable Acceptance declaration exists. No source outside the declared coverage set appears in Results provenance.
+
+The fake-runner boundary probes cover preference versus advertised order, legacy mode, whitespace, exact comparison, no candidates/values, both Codex candidates with preset, missing mode despite a sandbox option, rejected mode, unavailable sandbox, Claude, default OpenCode, observation counts, cleanup and prompt continuation. The history audit confirms the default, adapter pins, baseline, build, CI and judge Non-Goals. Real adapters and browser drivers remain intentionally unexercised by the Spec's offline authorization; the driver instructions are tested through the authored docs/skill contracts.
+
+## Outcome
+
+The Archive Record can carry a qualifying partial: eight passed rows, three outside-evidence rows prohibited by the Spec's network authorization, and one pre-PR row without an open Pull Request. Prior F1 is resolved and no standing finding remains. The offline plan confirms one adopted incident-reference candidate; the reusable selection rule already lives in ADR-0293, CONTEXT.md and the configuration/runtime guides, so this QA pass promotes nothing. Daemon settlement, archive and review remain outside this child's actions.
+
+## Final verdict
+
+Qualifying partial: 8 pass, 4 blocked (environment), 0 failed, 0 finding-blocked, 0 declared-blocked, 0 skipped and 0 pending. No standing findings in any impact tier. The only unmet rows are the authorized outside-evidence and pre-PR exemptions.
+'''
+report.write_text(text)
+print('Closed seeded report in place; evidence files',len(list(evidence.iterdir())))

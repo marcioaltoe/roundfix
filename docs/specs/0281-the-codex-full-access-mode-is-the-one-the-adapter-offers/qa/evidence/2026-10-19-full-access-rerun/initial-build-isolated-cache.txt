@@ -1,0 +1,17 @@
+command: ['make', 'build']
+exit: 2
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=f81a2a09-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-19 18:44:03 -0300'" -o bin/roundfix ./cmd/roundfix
+go: downloading golang.org/x/sys v0.47.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading charm.land/bubbletea/v2 v2.0.9
+go: downloading charm.land/lipgloss/v2 v2.0.6
+go: downloading modernc.org/sqlite v1.57.0
+go: downloading golang.org/x/text v0.41.0
+internal/cli/review_dispose_lock_unix.go:12:2: module lookup disabled by GOPROXY=off
+internal/cli/deliver_plan.go:16:2: module lookup disabled by GOPROXY=off
+internal/skillhash/hash.go:9:2: module lookup disabled by GOPROXY=off
+internal/skillhash/hash.go:10:2: module lookup disabled by GOPROXY=off
+internal/store/store.go:20:2: module lookup disabled by GOPROXY=off
+internal/tui/cockpit.go:18:2: module lookup disabled by GOPROXY=off
+internal/tui/cockpit.go:19:2: module lookup disabled by GOPROXY=off
+make: *** [build] Error 1

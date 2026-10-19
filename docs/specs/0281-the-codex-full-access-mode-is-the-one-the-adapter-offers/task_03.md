@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

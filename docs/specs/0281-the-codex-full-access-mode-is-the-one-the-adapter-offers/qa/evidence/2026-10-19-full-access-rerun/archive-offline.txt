@@ -1,0 +1,11 @@
+command: ['./bin/roundfix', 'archive', '0281-the-codex-full-access-mode-is-the-one-the-adapter-offers', '--plan', '--offline']
+exit: 0
+stdout:
+archive plan for 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers: removes 10 file(s) (90049 bytes) and writes docs/history/specs/0281-the-codex-full-access-mode-is-the-one-the-adapter-offers.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 0 file(s) (0 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-18-agent-full-access-pede-um-modo-que-o-codex-acp-recusa.md 2910 bytes: no advice (offline)
+promote with: roundfix archive 0281-the-codex-full-access-mode-is-the-one-the-adapter-offers --promote <path>
+
+stderr:

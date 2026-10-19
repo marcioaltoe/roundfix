@@ -1,0 +1,6 @@
+command: ['git', 'checkout', '--detach', 'f81a2a09fba14dfb6e64fb5ac399ef779bfbfe5b']
+exit: 0
+stdout:
+
+stderr:
+HEAD is now at f81a2a09 test: the proof test tells the advertised mode from the first candidate

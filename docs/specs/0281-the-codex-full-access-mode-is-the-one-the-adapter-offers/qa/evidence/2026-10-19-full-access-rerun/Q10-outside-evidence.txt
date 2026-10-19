@@ -1,0 +1,7 @@
+Published source: https://github.com/agentclientprotocol/codex-acp/blob/main/src/AgentMode.ts
+
+PRD-cited passage, checked offline and not independently fetched:
+
+> the mode `agent-full-access`, named "Full access", has the approval policy `"never"` and the sandbox mode `"danger-full-access"`. The adapter advertises its modes as a config option with `id: MODE_CONFIG_ID` (`"mode"`), `category: "mode"` and the description "Approval and sandboxing preset for the session".
+
+`_authorization.md` → Limits prohibits any QA row that "reaches the network"; task_03 Requirement 6 explicitly requires this status. No lookup attempted; current upstream behavior remains unproven. The local quotation is not substituted for independent outside evidence. Evidence: `Q10-outside-evidence.txt`. Unblocking requires a later authorized external observation; no network request is authorized in this gate.

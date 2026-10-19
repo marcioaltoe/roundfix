@@ -1,0 +1,57 @@
+import os,pathlib,subprocess,json,re,shutil,tarfile,io,difflib
+s=json.loads(pathlib.Path('/private/tmp/qa0281-rerun-state.json').read_text()); tmp=pathlib.Path(s['tmp']); root=pathlib.Path(s['root']); copy=tmp/'head'; logs=tmp/'logs'; report=root/'docs/specs'/s['spec']/'qa/qa-report-2026-10-19-01.md'
+e=os.environ.copy()
+for k in list(e):
+ if any(x in k for x in ['API_KEY','TOKEN','SECRET','PASSWORD']): e.pop(k,None)
+for k in ['GOMODCACHE','GOCACHE']: e[k]=subprocess.check_output(['go','env',k],text=True).strip()
+e.update(HOME=str(tmp/'home'),XDG_CONFIG_HOME=str(tmp/'home/.config'),GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1')
+def run(name,args,cwd=copy):
+ print('START',name,flush=True); p=subprocess.run(args,cwd=cwd,env=e,text=True,capture_output=True); (logs/name).write_text('command: '+repr(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr); print('END',name,'exit',p.returncode,p.stdout[-900:],p.stderr[-400:],flush=True); return p
+
+def done(row,status,note):
+ text=report.read_text(); text=text.replace('| '+row+' | pending |','| '+row+' | '+status+' |'); start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1)
+ if end<0: end=text.find('\n## ',start+1)
+ if end<0: end=len(text)
+ section=text[start:end].replace('Pending.',note); report.write_text(text[:start]+section+text[end:])
+
+def archive(dest):
+ dest.mkdir(); data=subprocess.check_output(['git','archive',s['head']],cwd=root,env=e)
+ with tarfile.open(fileobj=io.BytesIO(data)) as tf: tf.extractall(dest,filter='tar')
+
+archive(copy)
+done('Q1','pass','`make build` exit 0; `version.txt` records the Run-built CLI. Strict precondition exit 0 (`strict.txt`). Daemon supplied `make verify-changed`: pass, exit 0, diagnostics removed on success; not repeated. Initial build-cache isolation error is retained as `initial-build-isolated-cache.txt`; build then succeeded using existing caches without source changes.')
+names='TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate|TestProofSelectsTheAdvertisedCodexFullAccessMode|TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt|TestRunSelectsBypassPermissionsForClaude|TestFullAccessWithoutAnAdvertisedModeIsDegraded|TestDisposableProofAppliesRequestedAccessMode|TestProofRecordsADegradedFullAccess|TestACPXRunAppliesFullAccessSessionSetup|TestACPXRunFailsSetupWhenFullAccessModeFails|TestACPXRunWarnsWhenCodexSandboxPresetUnavailable'
+p=run('named-tests.txt',['go','test','-count=1','-v','-run','^('+names+')$','./internal/agent'])
+for row in ['Q2','Q4']: done(row,'pass' if p.returncode==0 else 'fail','`named-tests.txt` exit '+str(p.returncode)+'. Both current_adapter and legacy_adapter proof subtests assert exactly one advertised mode, no preset, full-access policy and disposable cleanup. Both Codex candidate names assert set-mode before sandbox preset; Claude asserts bypassPermissions. All five pinned tests pass under unchanged names, including default OpenCode with no mode or preset. Output-only instrumentation in a separate copy supplies actual invocation logs below; no assertions are changed.')
+p2=run('cli-degraded.txt',['go','test','-count=1','-v','-run','^(TestProfilesValidateTextNamesADegradedPolicy|TestDoctorNamesADegradedPolicy)$','./internal/cli'])
+done('Q6','pass' if p.returncode==0 and p2.returncode==0 else 'fail','`named-tests.txt` and `cli-degraded.txt` exit 0: proof and Run verify no mode or preset, the exact degraded policy, event status, session warning, prompt continuation and cleanup. CLI reporting tests independently verify visibility. Actual policy/status/warning/invocation observations are in `observed-invocations.txt`.')
+# A local clone supplies Git metadata required by authored docs-contract checks.
+clone=tmp/'with-git'
+p=run('clone.txt',['git','clone','--shared','--no-checkout',str(root),str(clone)],tmp); assert p.returncode==0
+p=run('checkout.txt',['git','checkout','--detach',s['head']],clone); assert p.returncode==0
+for task in ['task_01','task_02']:
+ text=(clone/'docs/specs'/s['spec']/(task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+ command=re.search(r'^- `(.+)` — expected:',text,re.M).group(1)
+ p=run(task+'-verification.txt',['/bin/sh','-c',command],clone)
+ if p.returncode: print('AUTHORED VERIFICATION FAILED:',task,flush=True)
+p=run('glossary.txt',['go','test','-count=1','-v','-tags','docscontract','-run','Glossary','./internal/docscontract'],clone)
+# Negative controls each start from the exact archived head.
+mutations=[('Q3','sabotage-first-candidate','internal/agent/agent.go',r'func chooseFullAccessMode\(candidates, advertised \[\]string\) \(string, bool\) \{.*?\n\}', 'func chooseFullAccessMode(candidates, advertised []string) (string, bool) {\n if len(candidates) == 0 { return "", false }; return candidates[0], true\n}', 'TestProofSelectsTheAdvertisedCodexFullAccessMode'),('Q5','sabotage-sandbox','internal/agent/acpx_runner.go',r'if req.Runtime.ID != "codex" \|\| !sandboxAdvertised \{','if req.Runtime.ID == "codex" || !sandboxAdvertised {','TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt'),('Q7','sabotage-degraded','internal/agent/acpx_runner.go',r'return AccessPolicy\("full-access \(degraded: no advertised mode grants full access; advertised modes: " \+ list \+ "\)"\), nil','return AccessPolicyFullAccess, nil','TestFullAccessWithoutAnAdvertisedModeIsDegraded')]
+for row,name,file,pattern,replacement,test in mutations:
+ work=tmp/name; archive(work); path=work/file; original=path.read_text(); changed,n=re.subn(pattern,lambda m:replacement,original,count=1,flags=re.S); assert n==1; path.write_text(changed)
+ (logs/(name+'.diff.txt')).write_text(''.join(difflib.unified_diff(original.splitlines(True),changed.splitlines(True),fromfile=file,tofile=file)))
+ p=run(name+'.txt',['go','test','-count=1','-v','-run','^'+test+'$','./internal/agent'],work)
+ valid=p.returncode!=0 and '--- FAIL: '+test in p.stdout
+ done(row,'pass' if valid else 'fail','Fresh `git archive` copy; exact mutation in `'+name+'.diff.txt`; `go test -count=1 -v -run ^'+test+'$ ./internal/agent` exit '+str(p.returncode)+'. '+('Expected named test assertion fails; see `'+name+'.txt`.' if valid else 'Required negative control did not detect the mutation.'))
+ shutil.rmtree(work)
+# Output-only instrumentation, after the original tests/commands.
+observed=tmp/'observed'; archive(observed); f=observed/'internal/agent/full_access_mode_test.go'; original=f.read_text(); text=original
+text=text.replace('if proof.EffectiveAccessPolicy != AccessPolicyFullAccess {','t.Logf("observed proof effective policy: %s", proof.EffectiveAccessPolicy)\n\t\t\tif proof.EffectiveAccessPolicy != AccessPolicyFullAccess {')
+text=text.replace('assertFullAccessCalls(t, harness, nil)\n\t\t\tif !containsCommandKey','t.Logf("observed policy=%s status=%s warning=%q prompt=%t", proof.EffectiveAccessPolicy, AccessModeNotAdvertisedStatus, warnings, containsCommandKey(readJSONInvocations(t, harness.invocationsPath), "prompt"))\n\t\t\tassertFullAccessCalls(t, harness, nil)\n\t\t\tif !containsCommandKey')
+text=text.replace('if !reflect.DeepEqual(got, want) {','t.Logf("observed access calls: %q", got)\n\tif !reflect.DeepEqual(got, want) {'); assert text!=original; f.write_text(text)
+(logs/'observation-logging.diff.txt').write_text(''.join(difflib.unified_diff(original.splitlines(True),text.splitlines(True),fromfile=str(f.relative_to(observed)),tofile=str(f.relative_to(observed)))))
+p=run('observed-invocations.txt',['go','test','-count=1','-v','-run','^('+names+')$','./internal/agent'],observed)
+# Same Run binary, used only with explicit offline plan in an isolated checkout.
+(clone/'bin').mkdir(exist_ok=True); shutil.copy2(root/'bin/roundfix',clone/'bin/roundfix')
+p=run('archive-offline.txt',['./bin/roundfix','archive',s['spec'],'--plan','--offline'],clone)
+print('All foreground suites exited. Negative-control trees removed.',flush=True)

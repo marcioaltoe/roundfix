@@ -1,0 +1,41 @@
+exec(open('/tmp/qa0281-run.py').read().split('# Materialize progress')[0])
+def done(row,status,note):
+ text=report.read_text(); text=re.sub(r'\| '+row+r' \| [^|]+ \|', '| '+row+' | '+status+' |',text); start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1); end=len(text) if end<0 else end; section=text[start:end]; section=re.sub(r'(?s)(```\n\n).*',lambda m:m.group(1)+note+'\n',section,count=1); report.write_text(text[:start]+section+text[end:])
+clone=tmp/'repository'; p=run('clone.txt',['git','clone','--local','--no-hardlinks',str(root),str(clone)],tmp); assert p.returncode==0
+command=re.search(r'^- `(.+)` — expected:',(clone/'docs/specs'/s['spec']/'task_02.md').read_text().split('## Verification\n',1)[1].split('\n## ',1)[0],re.M).group(1)
+p=run('task_02-verification-with-git.txt',['/bin/sh','-c',command],clone)
+done('Q8','pass' if p.returncode==0 else 'fail','Task 01 authored Verification: exit 0 (`task_01-verification.txt`). Task 02 first reached docscontract but its Setup Manifest check could not find a Git root in the git-archive fixture (`task_02-verification.txt`). A disposable local clone restores required repository metadata without changing audited content; the exact Task 02 command then exits '+str(p.returncode)+' (`task_02-verification-with-git.txt`). No repository Verification repeated. Named OpenCode default case passed with no mode/preset. All tests completed before report writes.')
+p=run('glossary.txt',['go','test','-count=1','-v','-tags','docscontract','./internal/docscontract','-run','^TestGlossary'],clone)
+term=(clone/'CONTEXT.md').read_text(); m=re.search(r'^\*\*Full-Access Mode\*\*:.*?(?=\n\n|\Z)',term,re.M|re.S); assert m and '0293-a-full-access-request-selects-the-mode-the-agent-session-advertises.md' in m.group(0)
+done('Q12','pass' if p.returncode==0 else 'fail','`glossary.txt`: exit '+str(p.returncode)+'. The declared Full-Access Mode entry links ADR-0293 and defines the first advertised runtime candidate; avoid-list names sandbox mode and YOLO mode. All glossary contract tests pass. No additional domain term introduced: new policy/status strings describe the existing Access Policy and Agent Session concepts; browser driver and tool names are implementation guidance.')
+def git(*args): return subprocess.check_output(['git',*args],cwd=root,text=True)
+notes=[]; failures=[]
+def check(ok,note):
+ notes.append(('PASS: ' if ok else 'FAIL: ')+note)
+ if not ok: failures.append(note)
+base=s['base']; head=s['head']; sd=root/'docs/specs'/s['spec']
+for task,commit in [('task_01','3d9ed9f2459e134a5cdfaa09965971a18186b08d'),('task_02',head)]:
+ changed=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines(); tasktext=(sd/(task+'.md')).read_text(); declared=set(re.findall(r'^- (?:instruction|interface|creates): `([^`]+)`',tasktext,re.M)); declared.update(re.findall(r'^- `([^`]+)`',tasktext.split('## Recorded paths',1)[-1]) if '## Recorded paths' in tasktext else []); declared.add('docs/specs/'+s['spec']+'/'+task+'.md'); check(set(changed)<=declared,task+' actual diff-tree paths declared or Recorded paths: '+repr(sorted(set(changed)-declared))); notes.extend('  '+x for x in changed)
+ protected=['Makefile','.github/workflows','go.mod','go.sum','internal/baseline/assets/modules','docs/agents/setup-context.json','internal/judge']; delta=git('diff','--name-only',base,head,'--',*protected); check(not delta,'protected files byte-identical to Delivery Base; changed='+repr(delta))
+auth=(sd/'_authorization.md').read_text(); allow=set(re.findall(r'^  - (\S+)$',auth.split('operations:',1)[0],re.M)); changed=git('diff','--name-only',base,head).splitlines(); governed=[x for x in changed if x.startswith('.agents/skills/') or x in ['.roundfixrc.yml','internal/cli/cli_test.go'] or (x.startswith('skills/') and x.endswith('/SKILL.md'))]; check(set(governed)<=allow,'all changed Governed Paths bounded in authorization: '+repr(governed)); check(subprocess.run(['git','merge-base','--is-ancestor','90c8ad4e4134b84af8510f185987f7da8682ee03','3d9ed9f2459e134a5cdfaa09965971a18186b08d'],cwd=root).returncode==0,'mechanically audited operative grant precedes both Task commits')
+def content(rev,path): return git('show',rev+':'+path)
+for name in ['PinnedCodexAdapterVersion','PinnedClaudeAdapterVersion']:
+ pattern=name+r'\s*=\s*"([^"]+)"'; old=re.search(pattern,content(base,'internal/agent/acpx_runner.go')).group(1); new=re.search(pattern,content(head,'internal/agent/acpx_runner.go')).group(1); check(old==new,name+' unchanged: '+new)
+old=content(base,'.roundfixrc.yml'); new=content(head,'.roundfixrc.yml'); projection=lambda text:[line for line in text.splitlines() if line.strip() and not line.lstrip().startswith('#')]; check(projection(old)==projection(new),'only configuration comments changed'); check('  agent_full_access: false' in old.splitlines() and '  agent_full_access: false' in new.splitlines(),'agent_full_access: false byte-identical')
+for skill in ['roundfix','qa-gate']:
+ path='.agents/skills/'+skill+'/SKILL.md'; old=content(base,path); new=content(head,path); versions=lambda text:re.findall(r'^\s*version: ([\d.]+)',text,re.M); ov=versions(old); nv=versions(new); check(len(nv)==2 and all(tuple(map(int,n.split('.')))>tuple(map(int,o.split('.'))) for o,n in zip(ov,nv)),skill+' version raised '+repr(ov)+' -> '+repr(nv)); check((root/path).read_bytes()==(root/'skills'/skill/'SKILL.md').read_bytes(),skill+' mirrored bytes match')
+for path in git('ls-tree','-r','--name-only',head,'.agents/skills','skills').splitlines():
+ if not path.endswith('.md'): continue
+ new=content(head,path)
+ if '### QA settlement' not in new: continue
+ old=content(base,path); section=lambda text:re.search(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',text,re.M|re.S).group(0); check(section(old)==section(new),'QA settlement unchanged: '+path)
+p=subprocess.run(['rg','-n','-F','1.1.9','docs/user-guide','docs/agents','docs/adr','.agents/skills','skills','.roundfixrc.yml'],cwd=root,text=True,capture_output=True); check(p.returncode==1,'obsolete 1.1.9 search has zero matches')
+for name in ['TestDisposableProofAppliesRequestedAccessMode','TestProofRecordsADegradedFullAccess','TestACPXRunAppliesFullAccessSessionSetup','TestACPXRunFailsSetupWhenFullAccessModeFails','TestACPXRunWarnsWhenCodexSandboxPresetUnavailable']:
+ extract=lambda rev:re.search(r'^func '+name+r'\(.*?(?=^func |\Z)',content(rev,'internal/agent/acpx_runner_test.go'),re.M|re.S).group(0); check(extract(base)==extract(head),'pinned test body unchanged: '+name)
+(logs/'scope.txt').write_text('Delivery Base: '+base+'\nAudited head: '+head+'\nCommands: git diff-tree --no-commit-id --name-only -r <Task commit>; git diff --name-only <base> <head> -- <protected paths>; git show <revision>:<path>; rg -n -F 1.1.9 <declared roots>\n'+'\n'.join(notes)+'\n')
+print('SCOPE',len(failures),'failures',failures,flush=True); done('Q13','pass' if not failures else 'fail','`scope.txt`: '+str(len(failures))+' failed assertions. Audited actual Task commit paths including Recorded paths; authorization ancestry; protected byte invariants against Delivery Base; adapter pins; comment-only config delta; raised skill versions/mirrors; unchanged settlement sections and pinned test bodies; obsolete version sweep. Skill/version and behavior records are independently validated by Task Verification.')
+# Built binary copied intact; every invocation uses ./bin/roundfix from the Run build.
+(clone/'bin').mkdir(exist_ok=True); shutil.copy2(root/'bin/roundfix',clone/'bin/roundfix')
+p=run('archive-offline.txt',['./bin/roundfix','archive',s['spec'],'--plan','--offline'],clone)
+done('Q15','pass' if p.returncode==0 else 'fail','`archive-offline.txt`: exit '+str(p.returncode)+'. Only --plan --offline was used in a disposable local clone with temporary HOME, all Judge Key Variables and TYPESAFE_API_KEY removed. No archive mutation, provider, judge, reviewer, adapter or workflow ran. Binary copied byte-for-byte from the Run build; invoked as ./bin/roundfix.')
+print('Remaining isolated checks exited.',flush=True)

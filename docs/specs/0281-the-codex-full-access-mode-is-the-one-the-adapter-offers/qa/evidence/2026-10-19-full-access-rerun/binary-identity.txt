@@ -1,0 +1,1 @@
+Run-built and disposable-copy binaries are byte-identical (SHA-256 comparison). All public CLI rows invoked ./bin/roundfix, never PATH.

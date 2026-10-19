@@ -1,0 +1,29 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate$', './internal/agent']
+exit: 1
+stdout:
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate
+=== PAUSE TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate
+=== CONT  TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/candidate_order
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/legacy_candidate
+    full_access_mode_test.go:29: choice = "agent-full-access", true; want "full-access", true
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/trim_spaces
+    full_access_mode_test.go:29: choice = " agent-full-access ", true; want "agent-full-access", true
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/exact_comparison
+    full_access_mode_test.go:29: choice = "full-access", true; want "", false
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_values
+    full_access_mode_test.go:29: choice = "full-access", true; want "", false
+=== RUN   TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_candidates
+--- FAIL: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate (0.04s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/candidate_order (0.00s)
+    --- FAIL: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/legacy_candidate (0.00s)
+    --- FAIL: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/trim_spaces (0.00s)
+    --- FAIL: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/exact_comparison (0.00s)
+    --- FAIL: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_values (0.00s)
+    --- PASS: TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate/no_candidates (0.00s)
+FAIL
+suiteguard: guard cost: measured 2612 paths; fingerprint took 97.48425ms before and 78.35725ms after
+FAIL	roundfix/internal/agent	0.367s
+FAIL
+
+stderr:

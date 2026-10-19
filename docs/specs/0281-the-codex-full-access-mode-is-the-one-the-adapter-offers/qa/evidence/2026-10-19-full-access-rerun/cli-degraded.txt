@@ -1,0 +1,28 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^(TestProfilesValidateTextNamesADegradedPolicy|TestDoctorNamesADegradedPolicy)$', './internal/cli']
+exit: 0
+stdout:
+=== RUN   TestProfilesValidateTextNamesADegradedPolicy
+=== PAUSE TestProfilesValidateTextNamesADegradedPolicy
+=== RUN   TestDoctorNamesADegradedPolicy
+=== PAUSE TestDoctorNamesADegradedPolicy
+=== CONT  TestProfilesValidateTextNamesADegradedPolicy
+=== CONT  TestDoctorNamesADegradedPolicy
+=== RUN   TestProfilesValidateTextNamesADegradedPolicy/degraded_full_access
+=== RUN   TestDoctorNamesADegradedPolicy/degraded_full_access
+=== RUN   TestProfilesValidateTextNamesADegradedPolicy/ordinary_full_access
+=== RUN   TestDoctorNamesADegradedPolicy/ordinary_full_access
+=== RUN   TestDoctorNamesADegradedPolicy/runtime_default_access
+=== RUN   TestProfilesValidateTextNamesADegradedPolicy/runtime_default_access
+--- PASS: TestDoctorNamesADegradedPolicy (0.00s)
+    --- PASS: TestDoctorNamesADegradedPolicy/degraded_full_access (0.00s)
+    --- PASS: TestDoctorNamesADegradedPolicy/ordinary_full_access (0.00s)
+    --- PASS: TestDoctorNamesADegradedPolicy/runtime_default_access (0.00s)
+--- PASS: TestProfilesValidateTextNamesADegradedPolicy (0.00s)
+    --- PASS: TestProfilesValidateTextNamesADegradedPolicy/degraded_full_access (0.00s)
+    --- PASS: TestProfilesValidateTextNamesADegradedPolicy/ordinary_full_access (0.00s)
+    --- PASS: TestProfilesValidateTextNamesADegradedPolicy/runtime_default_access (0.00s)
+PASS
+suiteguard: guard cost: measured 2613 paths; fingerprint took 75.962208ms before and 67.260667ms after
+ok  	roundfix/internal/cli	0.561s
+
+stderr:

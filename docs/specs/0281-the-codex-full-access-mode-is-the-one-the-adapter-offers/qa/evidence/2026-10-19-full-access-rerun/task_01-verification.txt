@@ -1,0 +1,10 @@
+command: ['/bin/sh', '-c', 'out="$(go test -count=1 -v -run \'^(TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate|TestProofSelectsTheAdvertisedCodexFullAccessMode|TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt|TestRunSelectsBypassPermissionsForClaude|TestFullAccessWithoutAnAdvertisedModeIsDegraded)$\' ./internal/agent 2>&1)" || { printf \'%s\\n\' "$out"; exit 1; }; for name in TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate TestProofSelectsTheAdvertisedCodexFullAccessMode TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt TestRunSelectsBypassPermissionsForClaude TestFullAccessWithoutAnAdvertisedModeIsDegraded; do printf \'%s\\n\' "$out" | grep -q -- "--- PASS: $name " || { printf \'missing pass: %s\\n\' "$name" >&2; exit 1; }; done; go test -count=1 ./internal/agent || exit 1; go test -count=1 -run \'FullAccess|AccessPolicy|DegradedPolicy|ProfilesValidate\' ./internal/cli || exit 1; GOOS=windows go vet ./internal/agent || exit 1; for phrase in \'agent-full-access\' \'full_access_mode_not_advertised\' \'no advertised mode grants full access\'; do tr -s \'[:space:]\' \' \' < .agents/skills/roundfix/references/profiles.md | grep -qF -- "$phrase" || { printf \'missing phrase in the profiles reference: %s\\n\' "$phrase" >&2; exit 1; }; done; grep -qxF -- \'## Full access\' .agents/skills/roundfix/references/profiles.md || { printf \'missing profiles reference heading\\n\' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills']
+exit: 0
+stdout:
+ok  	roundfix/internal/agent	2.307s
+ok  	roundfix/internal/cli	0.900s
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.282s
+ok  	roundfix/skills	0.875s
+
+stderr:

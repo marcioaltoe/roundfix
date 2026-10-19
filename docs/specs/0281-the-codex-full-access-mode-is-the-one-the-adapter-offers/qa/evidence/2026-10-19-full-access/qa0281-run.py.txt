@@ -1,0 +1,33 @@
+import os,pathlib,subprocess,json,re,shutil
+s=json.loads(pathlib.Path('/tmp/qa0281-state.json').read_text()); tmp=pathlib.Path(s['tmp']); root=pathlib.Path(s['root']); copy=tmp/'head'; logs=tmp/'logs'; report=root/'docs/specs'/s['spec']/'qa/qa-report-2026-10-19.md'
+env=os.environ.copy()
+for key in list(env):
+ if any(x in key for x in ['API_KEY','TOKEN','SECRET','PASSWORD']): env.pop(key,None)
+for k in ['GOMODCACHE','GOCACHE']: env[k]=subprocess.check_output(['go','env',k],text=True).strip()
+env.update(HOME=str(tmp/'home'),XDG_CONFIG_HOME=str(tmp/'home/.config'),GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1')
+def run(name,args,cwd=copy):
+ print('START',name,flush=True); p=subprocess.run(args,cwd=cwd,env=env,text=True,capture_output=True); (logs/name).write_text('command: '+repr(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr); print('END',name,'exit',p.returncode,p.stdout[-1400:],p.stderr[-500:],flush=True); return p
+# Materialize progress only between completed foreground suites.
+def done(row,status,note):
+ text=report.read_text(); text=text.replace('| '+row+' | pending |','| '+row+' | '+status+' |'); start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1); end=len(text) if end<0 else end; section=text[start:end].replace('Pending.',note); report.write_text(text[:start]+section+text[end:])
+done('Q1','pass','`make build`: exit 0; `version.txt` records the Run-built binary. `make verify-changed`: supplied Daemon pass (exit 0), not repeated. Strict check exited 0 (`strict.txt`).')
+names='TestChooseFullAccessModeTakesTheFirstAdvertisedCandidate|TestProofSelectsTheAdvertisedCodexFullAccessMode|TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt|TestRunSelectsBypassPermissionsForClaude|TestFullAccessWithoutAnAdvertisedModeIsDegraded|TestDisposableProofAppliesRequestedAccessMode|TestProofRecordsADegradedFullAccess|TestACPXRunAppliesFullAccessSessionSetup|TestACPXRunFailsSetupWhenFullAccessModeFails|TestACPXRunWarnsWhenCodexSandboxPresetUnavailable'
+p=run('named-tests.txt',['go','test','-count=1','-v','-run','^('+names+')$','./internal/agent'])
+for row in ['Q2','Q4']: done(row,'pass' if p.returncode==0 else 'fail','`named-tests.txt`: exit '+str(p.returncode)+'. Exact fake invocation assertions cover Codex `set-mode agent-full-access` with no preset, candidate preference/trim/exact match; preset ordering for both Codex candidates; Claude `set-mode bypassPermissions`; all five pinned tests under unchanged names, and OpenCode default access with no mode or preset. Assertion failures print actual call lists.')
+p=run('cli-degraded.txt',['go','test','-count=1','-v','-run','^(TestProfilesValidateTextNamesADegradedPolicy|TestDoctorNamesADegradedPolicy)$','./internal/cli'])
+done('Q6','pass' if p.returncode==0 else 'fail','`named-tests.txt` and `cli-degraded.txt`: degraded proof and Run assertions and both reporting tests pass. Exact policy: `full-access (degraded: no advertised mode grants full access; advertised modes: read-only, workspace-write, agent)`; absent mode ends `advertised modes: none)`. Status `full_access_mode_not_advertised`; warning `full-access mode not advertised for Agent Session degraded-run; advertised modes: read-only, workspace-write, agent` (also `none`). No mode or preset is sent, even with sandbox advertised; prompt is reached. Independent CLI tests confirm degraded text remains visible.')
+# Execute authored task Verification verbatim on the immutable archived head.
+for task in ['task_01','task_02']:
+ text=(copy/'docs/specs'/s['spec']/(task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+ command=re.search(r'^- `(.+)` — expected:',text,re.M).group(1)
+ p=run(task+'-verification.txt',['/bin/sh','-c',command])
+ if p.returncode: done('Q8','fail','`'+task+'-verification.txt`: exit '+str(p.returncode)+'.'); break
+else: done('Q8','pass','Both authored Verification commands executed verbatim on the archived head: `task_01-verification.txt`, `task_02-verification.txt`, exit 0. Includes full agent suite, CLI access policies, Windows vet, skill mirror/version, configuration and docs contracts. `named-tests.txt` independently passes OpenCode default access with no set-mode/preset.')
+# Each negative control starts from a fresh archived-head copy. No audited source is edited.
+mutations=[('Q3','sabotage-first-candidate','internal/agent/agent.go',r'func chooseFullAccessMode\(candidates, advertised \[\]string\) \(string, bool\) \{.*?\n\}', 'func chooseFullAccessMode(candidates, advertised []string) (string, bool) {\n if len(candidates) == 0 { return "", false }; return candidates[0], true\n}', 'TestProofSelectsTheAdvertisedCodexFullAccessMode'),('Q5','sabotage-sandbox','internal/agent/acpx_runner.go',r'if req.Runtime.ID != "codex" \|\| !sandboxAdvertised \{','if req.Runtime.ID == "codex" || !sandboxAdvertised {','TestRunAppliesTheSandboxPresetWhenTheSessionAdvertisesIt'),('Q7','sabotage-degraded','internal/agent/acpx_runner.go',r'return AccessPolicy\("full-access \(degraded: no advertised mode grants full access; advertised modes: " \+ list \+ "\)"\), nil','return AccessPolicyFullAccess, nil','TestFullAccessWithoutAnAdvertisedModeIsDegraded')]
+for row,name,file,pattern,replacement,test in mutations:
+ work=tmp/name; shutil.copytree(copy,work,symlinks=True); path=work/file; original=path.read_text(); changed,n=re.subn(pattern,lambda m:replacement,original,count=1,flags=re.S); assert n==1; path.write_text(changed)
+ p=run(name+'.txt',['go','test','-count=1','-v','-run','^'+test+'$','./internal/agent'],work)
+ note='Mutation: `'+file+'`: '+replacement.replace('\n',' ')+'; command `go test -count=1 -v -run ^'+test+'$ ./internal/agent` on a fresh git-archive copy; observed exit '+str(p.returncode)+'. Evidence: `'+name+'.txt`.'
+ done(row,'pass' if p.returncode!=0 and '--- FAIL: '+test in p.stdout else 'fail',note+(' Expected named assertion failed.' if p.returncode else ' FINDING F1: the required negative control remained green; the test does not distinguish the removed advertised-mode guard.'))
+print('All suites and negative controls exited.',flush=True)

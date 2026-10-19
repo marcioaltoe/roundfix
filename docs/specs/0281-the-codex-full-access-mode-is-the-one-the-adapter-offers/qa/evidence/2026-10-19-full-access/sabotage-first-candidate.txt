@@ -1,0 +1,12 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^TestProofSelectsTheAdvertisedCodexFullAccessMode$', './internal/agent']
+exit: 0
+stdout:
+=== RUN   TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== PAUSE TestProofSelectsTheAdvertisedCodexFullAccessMode
+=== CONT  TestProofSelectsTheAdvertisedCodexFullAccessMode
+--- PASS: TestProofSelectsTheAdvertisedCodexFullAccessMode (0.11s)
+PASS
+suiteguard: guard cost: measured 2612 paths; fingerprint took 108.671042ms before and 76.070167ms after
+ok  	roundfix/internal/agent	0.573s
+
+stderr:
