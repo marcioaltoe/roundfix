@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-18
-spec: null
+spec: 0282-the-linux-lane-runs-like-ci
 reason: null
 ---
 

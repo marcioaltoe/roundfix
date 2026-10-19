@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-18
-spec: null
+spec: 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page
 reason: null
 ---
 
