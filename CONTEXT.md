@@ -702,7 +702,7 @@ A tool a test runs outside the Base Test Tools. A test that needs one skips nami
 _Avoid_: optional dependency, container tool
 
 **Linux Lane**:
-The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
+The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It also runs on demand with `roundfix deliver lane`, independently of the queue opt-in, against a checkout revision's changed Go packages or every package with `--all`. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
 _Avoid_: Linux gate, Docker gate, cross-platform Verification
 
 **Lane Container Failure**:

@@ -235,7 +235,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 		f.commit(t, "a/new.go", "package a")
 		f.commit(t, "a/testdata/other", "other")
 		f.commit(t, "docs/change.md", "docs")
-		result, err := f.workflow.runLinuxLane(f.context(t.Context()), "widget", linuxLaneRequest{WorkDir: f.repo, Head: f.head})
+		result, err := f.workflow.runLinuxLane(f.context(t.Context()), linuxLaneRequest{WorkDir: f.repo, Head: f.head, Label: "Delivery Queue item widget: ", LogPath: f.logPath(), Name: fmt.Sprintf("roundfix-linux-lane-widget-%d", os.Getpid())})
 		if err != nil || !reflect.DeepEqual(result.Packages, []string{"./a", "./z"}) {
 			t.Fatalf("result=%+v err=%v", result, err)
 		}

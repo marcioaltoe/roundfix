@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0282-the-linux-lane-runs-like-ci
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -142,3 +142,79 @@ Docker and Go stand-ins.
 - `_prd.md` → Sources; Goals; User Story 5; Core Feature 4; Core Feature 5; Success Metric 4; Glossary
 - `_techspec.md` → API Contract 6; API Contract 7; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Interfaces; Current behavior; Testing Approach; Build Order 4
 - ADR-0294; ADR-0288; ADR-0125; ADR-0259; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+## Result
+
+Implemented the task_04 slice; Task status and declared Verification remain
+Daemon-owned. The checkout arrived with only this Task's status changed to
+`in_progress`; that pre-existing change is preserved.
+
+### Implementation and acceptance evidence
+
+- **On-demand outcomes:** added `roundfix deliver lane [--all] [<revision>]`
+  through the normal command dispatcher. It loads checkout Project Config
+  over User Config, resolves the requested commit (default `HEAD`), and
+  invokes the shared lane without resolving a Spec or opening a queue or
+  Run Database. The four named transcript tests assert exact stdout, empty
+  stderr and exits `0`, `1`, `3`, `3`, with the project opt-in disabled.
+- **Arguments, selection and interruption:** the argument test exercises
+  `./...` without any default-branch ref, a requested revision's archive,
+  changed-package selection, checkout image precedence over User Config,
+  `--init`, the PID-based container name, and the default artifact-directory
+  lane log. Extra arguments, a tree object, an unknown revision, an unknown
+  flag, invalid configuration and an unknown default branch are refused
+  before Docker or the log starts. The cancellation test waits for the
+  compiled Docker stand-in to start, cancels the command, then asserts
+  `docker rm -f roundfix-linux-lane-<pid>` and exit `130` with empty streams.
+- **Gate compatibility:** `linuxLaneRequest` now carries explicit label,
+  log path, container name and `All`. The gate supplies its original values;
+  all existing Linux Lane tests passed, including exact console/log checks,
+  package sorting and container removal. The direct package-selection
+  subtest follows the new request signature and retains its assertion.
+- **Command discovery and documentation:** deliver help includes the exact
+  synopsis, command and flag lines; the existing root-help test keeps its
+  name and asserts the new usage line. The guide and canonical Roundfix
+  reference describe configuration, selection, output, exits and the pass
+  required before enabling the gate. The Linux Lane glossary entry now
+  includes on-demand execution. Added the `command deliver lane` coverage
+  entry and generated its Behavior Surface Record. QA settlement sections
+  were compared with HEAD and are unchanged.
+
+### Focused checks and regeneration
+
+- `go test -race ./internal/cli -run '^TestDeliverLane' -count=1` — passed
+  all final on-demand command tests, including cancellation and help.
+
+- `go test ./internal/cli -run '^TestDeliverLane' -count=1` — passed the four
+  transcripts and argument/configuration cases.
+- `go test ./internal/cli -run 'TestLinuxLane|TestTopLevelUsageNamesDeliverRetry' -count=1`
+  — passed the existing lane behavior and revised root-help assertion.
+- `go test ./internal/cli -run '^TestDeliverLaneCancellationRemovesContainer$' -count=1`
+  — passed cancellation/removal/exit evidence.
+- `go test ./internal/cli -run '^TestDeliverLaneSelectsPackagesAndImage/help$' -count=1`
+  — passed the exact deliver-help line checks.
+- `GOOS=windows GOARCH=amd64 go test -c ./internal/cli -o /tmp/roundfix-0282-task04-cli.test.exe`
+  — compiled the final CLI test sources for Windows.
+- Raised both canonical Roundfix skill version fields from `0.1.105` to
+  `0.1.106` before regeneration. `make skills-sync`,
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  and `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  all exited `0`; mirrors and generated records were produced by their
+  owning commands.
+- `make baseline-digests` — exited `0`, reporting `changed: false`.
+- `git diff --check` — exited `0`. Changed and untracked paths were reviewed
+  against this Task's declared slice; no other Task or graph was edited.
+
+The initial transcript check exposed missing dependency injection in the
+new test harness; the helper now forwards its command dependencies through
+the normal dispatcher, and the focused checks above passed afterward.
+The shell sandbox could not launch under the symlinked writable root;
+commands ran with authorized escalation against the same resolved checkout.
+No real Docker daemon or external service was used. Declared Task
+Verification and repository Verification were not run; the Daemon owns them.
+No follow-up outside this slice was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261019T224006Z_3d81ced188078879`
+- Source commit: `a957a40c30ae1802efa36983ad035381b4cf9b0e`

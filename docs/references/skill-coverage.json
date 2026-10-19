@@ -207,6 +207,23 @@
       ]
     },
     {
+      "id": "command deliver lane",
+      "skills": [
+        ".agents/skills/roundfix/references/deliver.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_lane.go",
+        "internal/cli/deliver_linux_lane.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_review_correction.go",
+        "internal/cli/deliver_workflow.go"
+      ]
+    },
+    {
       "id": "command deliver plan",
       "skills": [
         ".agents/skills/roundfix/references/deliver.md"

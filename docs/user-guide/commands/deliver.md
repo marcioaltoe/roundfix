@@ -703,6 +703,46 @@ Cancelling the gate also removes the container and returns the context's error.
 With the setting off, the gate starts no Docker or Go process and emits no lane
 notice.
 
+
+### Run the Linux Lane on demand
+
+```bash
+roundfix deliver lane [--all] [<revision>]
+```
+
+Run `roundfix deliver lane --all` and obtain a pass before turning
+`delivery.linux_lane` on. The command runs independently of that setting,
+the Delivery Queue, the Run Database and any Spec. It reads the checkout's
+Project Config over User Config, including `delivery.linux_lane_image` and
+`defaults.artifact_dir`; it does not read configuration from the fetched
+default branch. An empty image uses `golang:<go.mod go version>` from the
+selected commit.
+
+The revision defaults to `HEAD` and must resolve to a commit. The command
+archives that commit, without including uncommitted changes. By default it
+selects the changed Go packages as the queue gate does. `--all` selects
+`./...` without reading a default branch or merge base. It uses the same
+network-free, never-pull container with `--init`, named
+`roundfix-linux-lane-<pid>`, and writes only
+`<artifact dir>/delivery/linux-lane.log`.
+
+Exactly one outcome line goes to standard output, with empty standard error:
+
+```text
+roundfix: notice: Linux Lane skipped: <reason>
+roundfix: Linux Lane passed <n> package(s) on <image>
+roundfix: Linux Lane change failure: go test exited <n>; see <lane log>
+roundfix: Linux Lane container failure: <cause>; see <lane log>
+```
+
+Exit codes are `0` for a pass, `1` for a Lane Change Failure, and `3` for a
+skip or Lane Container Failure. An interrupt removes the container before
+exiting `130`. An extra argument, unknown flag, revision that is not a
+commit, invalid configuration, or unknown default branch without `--all`
+exits `2` with the `deliver lane` **Preflight failed** layout on standard
+error and no outcome on standard output.
+
+
 ### Token usage
 
 `deliver start --max-tokens 5000000 <slug>...` records an optional queue token

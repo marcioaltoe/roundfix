@@ -31,15 +31,13 @@ type linuxLaneResult struct {
 
 type linuxLaneRequest struct {
 	WorkDir, Head, Image string
+	Label, LogPath, Name string
+	All                  bool
 }
 
-func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specSlug string, request linuxLaneRequest) (result linuxLaneResult, resultErr error) {
+func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, request linuxLaneRequest) (result linuxLaneResult, resultErr error) {
 	workDir, head := request.WorkDir, request.Head
-	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
-	if err != nil {
-		return result, err
-	}
-	result.LogPath = filepath.Join(artifactDir, "delivery", specSlug, "linux-lane.log")
+	result.LogPath = request.LogPath
 	if err := os.MkdirAll(filepath.Dir(result.LogPath), 0755); err != nil {
 		return result, fmt.Errorf("prepare Linux Lane log: %w", err)
 	}
@@ -55,7 +53,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 	skip := func(reason string) (linuxLaneResult, error) {
 		result.Skip = reason
 		result.Passed = true
-		line := fmt.Sprintf("roundfix: notice: Delivery Queue item %s: Linux Lane skipped: %s\n", specSlug, reason)
+		line := fmt.Sprintf("roundfix: notice: %sLinux Lane skipped: %s\n", request.Label, reason)
 		_, err := io.WriteString(io.MultiWriter(console, log), line)
 		return result, err
 	}
@@ -89,27 +87,31 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 		}
 		image = "golang:" + version
 	}
-	branch := preflight.DetectDefaultBranch(ctx, workDir, "", runner)
-	if branch.Source == preflight.DefaultBranchUndetermined {
-		return result, errors.New("Linux Lane: repository default branch is unknown")
+	if request.All {
+		result.Packages = []string{"./..."}
+	} else {
+		branch := preflight.DetectDefaultBranch(ctx, workDir, "", runner)
+		if branch.Source == preflight.DefaultBranchUndetermined {
+			return result, errors.New("Linux Lane: repository default branch is unknown")
+		}
+		remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+		if remote == "" {
+			remote = "origin"
+		}
+		base, err := runner.RunGit(ctx, workDir, "merge-base", remote+"/"+branch.Name, head)
+		if err != nil {
+			return result, fmt.Errorf("read Linux Lane merge base: %w", err)
+		}
+		changed, err := runner.RunGit(ctx, workDir, "diff", "--name-only", "-z", "--no-renames", strings.TrimSpace(base), head)
+		if err != nil {
+			return result, fmt.Errorf("read Linux Lane changed paths: %w", err)
+		}
+		tree, err := runner.RunGit(ctx, workDir, "ls-tree", "-r", "--name-only", "-z", head)
+		if err != nil {
+			return result, fmt.Errorf("read Linux Lane tree: %w", err)
+		}
+		result.Packages = linuxLanePackages(changed, tree)
 	}
-	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
-	if remote == "" {
-		remote = "origin"
-	}
-	base, err := runner.RunGit(ctx, workDir, "merge-base", remote+"/"+branch.Name, head)
-	if err != nil {
-		return result, fmt.Errorf("read Linux Lane merge base: %w", err)
-	}
-	changed, err := runner.RunGit(ctx, workDir, "diff", "--name-only", "-z", "--no-renames", strings.TrimSpace(base), head)
-	if err != nil {
-		return result, fmt.Errorf("read Linux Lane changed paths: %w", err)
-	}
-	tree, err := runner.RunGit(ctx, workDir, "ls-tree", "-r", "--name-only", "-z", head)
-	if err != nil {
-		return result, fmt.Errorf("read Linux Lane tree: %w", err)
-	}
-	result.Packages = linuxLanePackages(changed, tree)
 	if len(result.Packages) == 0 {
 		return skip("no changed Go package")
 	}
@@ -144,7 +146,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 	if err != nil {
 		return result, fmt.Errorf("read Linux Lane host module cache: %w", err)
 	}
-	name := fmt.Sprintf("roundfix-linux-lane-%.40s-%d", specSlug, os.Getpid())
+	name := request.Name
 	args := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534",
 		"-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off",
 		"-v", strings.TrimSpace(string(cache)) + ":/go/pkg/mod:ro", image, "sh", "-ceu", linuxLaneScript, "linux-lane"}
@@ -224,7 +226,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 		return result, err
 	}
 	result.Passed = true
-	_, err = fmt.Fprintf(console, "roundfix: Delivery Queue item %s: Linux Lane passed %d package(s) on %s\n", specSlug, len(result.Packages), image)
+	_, err = fmt.Fprintf(console, "roundfix: %sLinux Lane passed %d package(s) on %s\n", request.Label, len(result.Packages), image)
 	return result, err
 }
 
