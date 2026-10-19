@@ -62,11 +62,16 @@ checks, the skill version record and the Behavior Surface Record.
 7. MUST search the guides, the agent guides, the ADRs outside
    `docs/history/` and the skill copies for text that names `full-access` as
    the only Codex mode or cites codex-acp 1.1.9, and qualify each.
-8. MUST run these commands, because this Task edits a user guide page and
-   the `qa-gate` skill. No record or mirror is hand-edited.
+8. MUST raise both version fields of `.agents/skills/qa-gate/SKILL.md`
+   (`metadata.version` and the top-level `version`, today `0.0.17`) to
+   `0.0.18` by hand, because the record command refuses changed content
+   under an unchanged version. Then the Agent itself MUST run these
+   commands, in this order, before handing back: the Daemon only runs the
+   Verification, it never regenerates a mirror or a record. No record or
+   mirror is hand-edited.
    - `make skills-sync`;
    - `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
-     to raise and record the `qa-gate` skill version;
+     to record the raised `qa-gate` skill version;
    - `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`,
      to re-record the Behavior Surface Record.
 
