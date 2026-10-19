@@ -1479,7 +1479,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 	// Read the same immutable, fetched default used for delivery declarations.
 	// The lane only adds a check: when that default cannot be read, it is
 	// skipped with its reason and the repository gate's result stands.
-	enabled, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
+	enabled, image, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
 	if err != nil {
 		return delivery.GateResult{}, err
 	}
@@ -1490,7 +1490,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		return delivery.GateResult{Passed: true}, nil
 	}
 	if enabled {
-		lane, err := workflow.runLinuxLane(ctx, gitRoot, specSlug, head)
+		lane, err := workflow.runLinuxLane(ctx, specSlug, linuxLaneRequest{WorkDir: gitRoot, Head: head, Image: image})
 		if err != nil {
 			return delivery.GateResult{}, err
 		}

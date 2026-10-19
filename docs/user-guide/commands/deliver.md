@@ -616,8 +616,11 @@ directory containing a Go file at the candidate head, including changes under
 excluded: `git archive` of the candidate supplies standard input, and the lane
 writes nothing into the item worktree.
 
-The container uses the root `go.mod`'s `go` version verbatim as
-`golang:<version>`, with `--pull never`, `--network none`, `--rm`, and user
+The container uses `delivery.linux_lane_image` from the same fetched default
+configuration as the opt-in. An item branch or the owner's checkout cannot
+choose its image. Empty by default, the key selects `golang:<version>` using
+the root `go.mod`'s `go` version verbatim. The container runs under an init
+with `--init`, `--pull never`, `--network none`, `--rm`, and user
 `65534:65534`. It mounts the host module cache read-only. Its only explicitly
 supplied environment variables are `HOME`, `GOCACHE`, `GOMODCACHE`, `GOFLAGS`,
 `GOPROXY`, `GOTOOLCHAIN`, and `GOSUMDB`; no Queue Owner key or token is forwarded.
@@ -635,19 +638,19 @@ roundfix: notice: Delivery Queue item <slug>: Linux Lane skipped: <reason>
 ```
 
 - `no go.mod at the repository root`
-- `go.mod declares no go version`
+- `go.mod declares no go version` (only when no image is configured)
 - `no changed Go package`
 - `go is not on PATH`
 - `docker is not on PATH`
 - `docker info failed: <first non-empty output line>`
-- `image golang:<version> is not present locally`
+- `image <image> is not present locally`
 - `docker could not start the container: <first non-empty output line>` (exit `125`)
 
 The lane log contains the command line and combined output. Exit `0` passes
 with this console line (`<n>` counts selected package arguments):
 
 ```text
-roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on golang:<version>
+roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on <image>
 ```
 
 Every other non-zero exit fails the gate and parks the item `gate-failed` with

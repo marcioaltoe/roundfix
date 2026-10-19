@@ -20,6 +20,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Distribution image reference grammar without IPv6 hosts. Validate before
+// decoding so non-string YAML values cannot become Docker arguments.
+var linuxLaneImageReference = regexp.MustCompile(`^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*(?::[0-9]+)?/)?[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*)*(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?(?:@[A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*:[0-9a-fA-F]{32,})?$`)
+
 const (
 	userConfigRelPath               = ".roundfix/config.yml"
 	projectConfigName               = ".roundfixrc.yml"
@@ -123,9 +127,10 @@ type PrePRReview struct {
 }
 
 type Delivery struct {
-	DerivedPaths []DerivedPathDeclaration
-	ItemBinary   ItemBinaryDeclaration
-	LinuxLane    bool
+	DerivedPaths   []DerivedPathDeclaration
+	ItemBinary     ItemBinaryDeclaration
+	LinuxLane      bool
+	LinuxLaneImage string
 }
 
 // ItemBinaryDeclaration names the command that builds the repository's own
@@ -374,9 +379,10 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type deliveryOverlay struct {
-	DerivedPaths *[]DerivedPathDeclaration `yaml:"derived_paths"`
-	ItemBinary   *ItemBinaryDeclaration    `yaml:"item_binary"`
-	LinuxLane    *bool                     `yaml:"linux_lane"`
+	DerivedPaths   *[]DerivedPathDeclaration `yaml:"derived_paths"`
+	ItemBinary     *ItemBinaryDeclaration    `yaml:"item_binary"`
+	LinuxLane      *bool                     `yaml:"linux_lane"`
+	LinuxLaneImage *string                   `yaml:"linux_lane_image"`
 }
 
 type watchOverlay struct {
@@ -1627,6 +1633,10 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if node, found := yamlValueAtPath(&document, []string{"delivery", "linux_lane"}); found && (node.Kind != yaml.ScalarNode || node.Tag != "!!bool") {
 		return fmt.Errorf("parse config %q: delivery.linux_lane must be boolean: cannot unmarshal non-boolean value", label)
 	}
+	if node, found := yamlValueAtPath(&document, []string{"delivery", "linux_lane_image"}); found && (node.Kind != yaml.ScalarNode || node.Tag != "!!str" || (node.Value != "" && !linuxLaneImageReference.MatchString(node.Value))) {
+		return fmt.Errorf("parse config %q: delivery.linux_lane_image must be a container image reference, such as golang:1.26", label)
+	}
+
 	if err := validateDerivedLineNodes(&document); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
@@ -1765,6 +1775,10 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	if overlay.Delivery != nil && overlay.Delivery.LinuxLane != nil {
 		config.Delivery.LinuxLane = *overlay.Delivery.LinuxLane
 	}
+	if overlay.Delivery != nil && overlay.Delivery.LinuxLaneImage != nil {
+		config.Delivery.LinuxLaneImage = *overlay.Delivery.LinuxLaneImage
+	}
+
 	if overlay.Delivery != nil && overlay.Delivery.ItemBinary != nil {
 		config.Delivery.ItemBinary = *overlay.Delivery.ItemBinary
 	}

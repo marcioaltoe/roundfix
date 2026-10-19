@@ -165,7 +165,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 			name := fmt.Sprintf("roundfix-linux-lane-widget-%d", os.Getpid())
 			// Deliberately independent of the production script constant.
 			script := `mkdir -p /tmp/work && cd /tmp/work && tar -xf - && git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane" && pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
-			want := []string{"run", "--rm", "-i", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
+			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
 			want = append(want, tc.packages...)
 			if run.Tool != "docker" || !reflect.DeepEqual(run.Args, want) {
 				t.Fatalf("run args=%q\nwant=%q", run.Args, want)
@@ -234,7 +234,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 		f.commit(t, "a/new.go", "package a")
 		f.commit(t, "a/testdata/other", "other")
 		f.commit(t, "docs/change.md", "docs")
-		result, err := f.workflow.runLinuxLane(f.context(t.Context()), f.repo, "widget", f.head)
+		result, err := f.workflow.runLinuxLane(f.context(t.Context()), "widget", linuxLaneRequest{WorkDir: f.repo, Head: f.head})
 		if err != nil || !reflect.DeepEqual(result.Packages, []string{"./a", "./z"}) {
 			t.Fatalf("result=%+v err=%v", result, err)
 		}
@@ -481,8 +481,8 @@ func TestLinuxLaneOptInPropagatesCancellationAndAnUnreadableConfig(t *testing.T)
 		f := newLinuxLaneFixture(t, docker, goBinary, nil)
 		ctx, cancel := context.WithCancel(f.context(t.Context()))
 		cancel()
-		enabled, reason, err := f.workflow.linuxLaneOptIn(ctx, f.repo)
-		if !errors.Is(err, context.Canceled) || enabled || reason != "" {
+		enabled, image, reason, err := f.workflow.linuxLaneOptIn(ctx, f.repo)
+		if !errors.Is(err, context.Canceled) || enabled || image != "" || reason != "" {
 			t.Fatalf("enabled=%t reason=%q err=%v, want context.Canceled", enabled, reason, err)
 		}
 	})
@@ -490,9 +490,51 @@ func TestLinuxLaneOptInPropagatesCancellationAndAnUnreadableConfig(t *testing.T)
 		f := newLinuxLaneFixture(t, docker, goBinary, nil)
 		f.commit(t, ".roundfixrc.yml", "delivery: [not a mapping\n")
 		gittest.Run(t, f.repo, "update-ref", "refs/remotes/origin/main", f.head)
-		enabled, reason, err := f.workflow.linuxLaneOptIn(f.context(t.Context()), f.repo)
-		if err == nil || enabled || reason != "" {
+		enabled, image, reason, err := f.workflow.linuxLaneOptIn(f.context(t.Context()), f.repo)
+		if err == nil || enabled || image != "" || reason != "" {
 			t.Fatalf("enabled=%t reason=%q err=%v, want a configuration error", enabled, reason, err)
 		}
 	})
+}
+
+func TestLinuxLaneRunsTheConfiguredImage(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	const image = "registry.example.com/team/go-ci:1.26"
+	for _, absent := range []bool{false, true} {
+		t.Run(fmt.Sprintf("absent=%t", absent), func(t *testing.T) {
+			f := newLinuxLaneFixture(t, docker, goBinary, map[string]string{
+				".roundfixrc.yml": "delivery:\n  linux_lane: true\n  linux_lane_image: " + image + "\n",
+				"go.mod":          "module fixture\n", // Configured images do not need a go version.
+				"a/a.go":          "package a\n",
+			})
+			f.workflow.loaded.Config.Delivery.LinuxLaneImage = "owner/image:wrong"
+			f.commit(t, ".roundfixrc.yml", "delivery:\n  linux_lane: false\n  linux_lane_image: item/image:wrong\n")
+			f.commit(t, "a/new.go", "package a\n")
+			if absent {
+				f.environment = append(f.environment, "LANE_IMAGE_FAIL=1")
+			}
+			result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
+			if err != nil || !result.Passed {
+				t.Fatalf("gate=%+v err=%v", result, err)
+			}
+			starts := f.starts(t)
+			if len(starts) < 2 || !reflect.DeepEqual(starts[1].Args, []string{"image", "inspect", image}) {
+				t.Fatalf("starts=%+v", starts)
+			}
+			if absent {
+				if len(starts) != 2 || !strings.Contains(f.log.String(), "image "+image+" is not present locally") {
+					t.Fatalf("starts=%+v log=%s", starts, f.log.String())
+				}
+				return
+			}
+			if len(starts) != 4 {
+				t.Fatalf("starts=%+v", starts)
+			}
+			args := starts[3].Args
+			if len(args) < 4 || !reflect.DeepEqual(args[:4], []string{"run", "--rm", "-i", "--init"}) || !containsExact(args, image) || containsExact(args, "item/image:wrong") || !strings.Contains(f.log.String(), "Linux Lane passed 1 package(s) on "+image) {
+				t.Fatalf("args=%q log=%s", args, f.log.String())
+			}
+		})
+	}
 }

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0282-the-linux-lane-runs-like-ci
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -143,3 +143,83 @@ stand-in, which records the arguments.
 - `_prd.md` → Sources; Goals; User Stories 1-2; Core Feature 1; Core Feature 5; Success Metric 1; Glossary
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 7; Invariants 1-2; Interfaces; Current behavior; Testing Approach; Build Order 2
 - ADR-0294; ADR-0288; ADR-0125; ADR-0259; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+## Result
+
+Implemented this Task's init and image slice; Task status and declared
+Verification remain Daemon-owned.
+
+- Every lane container now receives `--init` immediately after `-i`.
+  `TestLinuxLaneRunsTheChangedPackagesInAContainer` retains its name and
+  independent script copy, and pins the new arguments. The production script
+  is byte-identical to HEAD; task_03 owns its replacement.
+- Added `Delivery.LinuxLaneImage` and its pointer overlay, validating YAML
+  strings against API Contract 1's reference grammar before decoding. Project
+  Config overrides User Config, an absent key inherits, and explicit empty
+  chooses the existing default. The new config tests cover all six loading
+  cases including `DeliveryConfigAtCommit`, exact refusals for the required
+  invalid inputs plus null and boolean nodes, and the named accepted images.
+- The opt-in returns the image from its existing fetched-default
+  `DeliveryConfigAtCommit` read; the gate passes it through `linuxLaneRequest`.
+  The configured-image test proves both inspect and run use that image despite
+  different item-branch and owner-config images, works without a go version,
+  prints the configured image on pass, and skips a missing image before run.
+  The fallback, named skips, cancellation and unreadable-config cases remain
+  covered by the focused checks.
+- Updated the configuration guide, deliver guide, canonical Roundfix reference
+  and Linux Lane glossary entry. The guide/agent-guide/skill-copy search leaves
+  `golang:<version>` and `golang:<go.mod go version>` only as defaults. Raised
+  both canonical Roundfix version fields from `0.1.103` to `0.1.104`, synced
+  the mirror, and generated the version and Behavior Surface records. A direct
+  comparison confirms the mirrors match and QA settlement sections did not
+  change.
+
+Focused implementation evidence (all final checks exited 0):
+
+- `go test ./internal/config -run '^TestDeliveryLinuxLane' -count=1`
+- `go test ./internal/cli -run '^TestLinuxLane' -count=1`
+- `go test ./internal/cli -run '^TestGate(WithoutTheLane|SkipsTheLane)' -count=1`
+- `GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-task02-config.test.exe ./internal/config`
+- `GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-task02-cli.test.exe ./internal/cli`
+- Required generation: `make skills-sync`;
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`;
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+- `make baseline-digests` exited 0 and left no derived Baseline changes.
+- `git diff --check` and direct script/settlement/mirror comparisons passed.
+
+The initial new config test build failed because `LinuxLaneImage` did not
+exist. After implementation, one test expectation used the wrong existing
+proposal label; it was corrected to `Project Config proposal`, and the focused
+config checks passed.
+
+Environment: the sandbox rejected process startup because the assigned
+writable root contains a symlink. Commands ran with approved escalation in
+the same resolved SSD worktree. Tests used compiled stand-ins, not Docker;
+no image was pulled and no network service was reached.
+
+Declared Verification and full repository Verification were not run. No
+other Task or Task Graph manifest was edited; no commit, push or PR was made.
+
+### Verification feedback repair, attempt 1
+
+Inspected the Daemon diagnostic artifact and the guide link check. The
+configuration guide's inline domain regex contained bracket/parenthesis
+syntax that the link scanner treated as a local Markdown link. Replaced that
+one domain-component expression with equivalent prose: ASCII letters or
+digits, internal hyphens, dot-separated components and a numeric port. The
+image grammar and production implementation are unchanged.
+
+Fresh focused evidence:
+
+- `go test -tags docscontract ./internal/docscontract -run '^TestUserGuideLinksResolve$' -count=1` exited 0.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` exited 0 and regenerated the Behavior Surface Record for the changed guide.
+- `git diff --check` exited 0.
+
+Only the configuration guide, its generated record and this Result were
+changed during the repair. Task status and declared Verification remain
+Daemon-owned; the full declared sequence was not rerun.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261019T224006Z_3d81ced188078879`
+- Source commit: `4a9490da81ecd664cceb961fd9ec5749f414f77b`
