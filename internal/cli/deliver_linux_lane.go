@@ -16,16 +16,17 @@ import (
 	"time"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/delivery"
 	"roundfix/internal/preflight"
 )
 
 const linuxLaneCap = 20 * time.Minute
-const linuxLaneScript = `mkdir -p /tmp/work && cd /tmp/work && tar -xf - && git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane" && pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
+const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
 
 type linuxLaneResult struct {
-	Ran, Passed           bool
-	Skip, Reason, LogPath string
-	Packages              []string
+	Ran, Passed                    bool
+	Skip, Reason, LogPath, Blocker string
+	Packages                       []string
 }
 
 type linuxLaneRequest struct {
@@ -178,6 +179,17 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 	// Closing the pipe also releases git when Docker refuses the input early.
 	closeErr := input.Close()
 	archiveErr := archive.Wait()
+	failure := func(code int, capped bool) (linuxLaneResult, error) {
+		summary, blocker := classifyLinuxLaneOutcome(code, capped, runOutput.Bytes())
+		result.Reason = summary + "; see " + result.LogPath
+		detail := summary
+		if blocker == delivery.BlockerLinuxLaneContainer {
+			detail = strings.TrimPrefix(summary, "Linux Lane container failure: ")
+		}
+		result.Blocker = blocker + ": " + detail + "; see " + result.LogPath
+		_, err := fmt.Fprintln(log, "\n"+summary)
+		return result, err
+	}
 	if laneCtx.Err() != nil {
 		cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), time.Minute)
 		defer cleanupCancel()
@@ -190,8 +202,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 		if ctx.Err() != nil {
 			return result, errors.Join(ctx.Err(), cleanupErr)
 		}
-		result.Reason = fmt.Sprintf("Linux Lane exceeded %s; see %s", linuxLaneCap, result.LogPath)
-		return result, nil
+		return failure(-1, true)
 	}
 	if runErr != nil {
 		var exit *exec.ExitError
@@ -201,8 +212,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 		if exit.ExitCode() == 125 {
 			return skip("docker could not start the container: " + linuxLaneFirstLine(runOutput.Bytes()))
 		}
-		result.Reason = fmt.Sprintf("Linux Lane failed: docker run exited %d; see %s", exit.ExitCode(), result.LogPath)
-		return result, nil
+		return failure(exit.ExitCode(), false)
 	}
 	if archiveErr != nil {
 		return result, fmt.Errorf("archive Linux Lane candidate: %w: %s", archiveErr, strings.TrimSpace(archiveErrors.String()))
@@ -210,9 +220,40 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, specS
 	if closeErr != nil {
 		return result, fmt.Errorf("close Linux Lane archive: %w", closeErr)
 	}
+	if _, err := fmt.Fprintf(log, "\nLinux Lane passed %d package(s) on %s\n", len(result.Packages), image); err != nil {
+		return result, err
+	}
 	result.Passed = true
 	_, err = fmt.Fprintf(console, "roundfix: Delivery Queue item %s: Linux Lane passed %d package(s) on %s\n", specSlug, len(result.Packages), image)
 	return result, err
+}
+
+// classifyLinuxLaneOutcome handles runs that started; exit 125 is a skip at the caller.
+// Only the lane script's own marker contributes output to the operator's cause.
+func classifyLinuxLaneOutcome(code int, capped bool, output []byte) (summary, blocker string) {
+	cause := ""
+	switch {
+	case capped:
+		cause = "the container exceeded " + linuxLaneCap.String()
+	case code == 0:
+		return "", ""
+	case code == 3:
+		cause = "the lane script exited 3 before go test"
+		for _, line := range strings.Split(string(output), "\n") {
+			if text, ok := strings.CutPrefix(strings.TrimSuffix(line, "\r"), "roundfix-linux-lane: container: "); ok {
+				cause = text
+			}
+		}
+	case code == 126:
+		cause = "docker run exited 126: the image could not invoke the lane command"
+	case code == 127:
+		cause = "docker run exited 127: the image lacks the lane command"
+	case code >= 128:
+		cause = fmt.Sprintf("docker run exited %d: the container process ended by signal %d", code, code-128)
+	default:
+		return fmt.Sprintf("Linux Lane change failure: go test exited %d", code), delivery.BlockerGateFailed
+	}
+	return "Linux Lane container failure: " + cause, delivery.BlockerLinuxLaneContainer
 }
 
 func linuxLanePackages(changed, tree string) []string {

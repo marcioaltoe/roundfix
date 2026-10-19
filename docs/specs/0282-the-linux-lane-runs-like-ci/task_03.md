@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0282-the-linux-lane-runs-like-ci
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -150,3 +150,75 @@ and engine tests with a fake gate.
 - `_prd.md` → Sources; Goals; User Story 4; Core Feature 3; Core Feature 5; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 2; API Contract 3; API Contract 4; API Contract 7; Invariants 4-5; Interfaces; Current behavior; Testing Approach; Build Order 3
 - ADR-0294; ADR-0288; ADR-0125; ADR-0259; ADR-0271; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+## Result
+
+Implemented Task 03's slice; status and declared Verification remain Daemon-owned.
+The only pre-existing worktree change was this Task file's `in_progress` status;
+that field was preserved. No other Task file or Task Graph manifest was edited.
+
+- Acceptance criterion 1: the production script and its independent pinned test
+  copy now match API Contract 2 byte for byte. `classifyLinuxLaneOutcome` handles
+  the cap, setup exit 3 (last marker or the named fallback), exits 126/127 and
+  signal exits, including 130. The lane supplies the exact container reason and
+  `linux-lane-container` blocker; the engine persists that blocker, and Park
+  Class is `environment` with API Contract 4's exact next action. Compiled
+  stand-in tests cover marker selection, no marker, output without a trailing
+  newline, 126, 127 and 137; the cap is covered without a real-time wait.
+- Acceptance criterion 2: exits 1 and 2 retain the existing test name and now
+  assert the exact Lane Change Failure reason, detailed `gate-failed` blocker
+  and final log line. The fake-gate engine test proves the detailed blocker
+  survives parking in `finding`, while an empty blocker falls back to bare
+  `gate-failed`. The repository-failure test explicitly asserts its blocker
+  stays empty. Existing generic Park Class answers are exercised unchanged.
+- Acceptance criterion 3: both user/reference guides describe the causes,
+  reasons, blockers, setup exit 3 and terminal log lines; their `environment`
+  rows include `linux-lane-container`. `CONTEXT.md` defines both failure terms
+  with ADR-0294 links. Both Roundfix skill version fields rose from 0.1.104
+  to 0.1.105 before generation. Mirrors and records were generated, not
+  hand-edited. A source-tree scan found neither old failure text in the
+  required guides, agent guides, skill trees or `internal/`. Inspection also
+  confirmed the successful lane log ends in its exact pass line and all
+  `### QA settlement` sections remain byte-identical.
+
+Focused-check evidence:
+
+- Red signal: `go test ./internal/cli ./internal/delivery -run
+  'Test(LinuxLaneOutcomeClassification|GateParksWithTheBlockerItNames)$'
+  -count=1` failed to compile the newly added tests before implementation,
+  naming the absent blocker constant, `GateResult.Blocker` and classifier.
+- `go test ./internal/cli ./internal/delivery -run
+  'Test(LinuxLane|GateWithoutTheLane|GateSkipsTheLane|GateParksWithTheBlockerItNames|ParkClassesAndNextActions|EveryBlockerHasAParkClass|ExistingGenericParkAnswersAreUnchanged)'
+  -count=1`: exit 0 after the final test edits; CLI 2.735s, delivery 0.465s.
+  This includes the existing skip, configured-image and cancellation/removal
+  tests as well as the new classification and blocker tests.
+- `GOOS=windows go test -c -o /tmp/task03-cli-windows.test.exe
+  ./internal/cli` and `GOOS=windows go test -c -o
+  /tmp/task03-delivery-windows.test.exe ./internal/delivery`: both exit 0
+  after the final edits; compile-only evidence, not Windows execution.
+- `make skills-sync`: exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`: exit 0; recorded Roundfix 0.1.105.
+- `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  exit 0; regenerated the deliver guide's Behavior Surface Record.
+- `make baseline-digests`: exit 0, `changed:false`; derived Baseline
+  artifacts already matched their canonical sources.
+- A local Python inspection compared both scripts to API Contract 2,
+  scanned the five required trees for old failure texts, compared canonical
+  and mirrored Roundfix files and compared QA settlement sections to HEAD:
+  all assertions passed. `git diff --check`: exit 0.
+
+Environment: ordinary shell execution could not start because the configured
+writable root contains a symlink. Focused work used authorized escalation in
+this same checkout's resolved `/Volumes/Brain-SSD/cache/.roundfix/worktrees/`
+location. No Docker daemon, network, provider or real user state was used.
+
+The Task's declared Verification and repository Verification were not run;
+they remain pending for the Daemon. No commit, push or pull request was made.
+No follow-up outside this Task's slice was introduced.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261019T224006Z_3d81ced188078879`
+- Source commit: `ef08a2ca4ea862f9e2944a98c593583ed2f1bcb4`

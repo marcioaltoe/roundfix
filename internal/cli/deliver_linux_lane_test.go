@@ -41,6 +41,7 @@ func main() {
   data, err := io.ReadAll(os.Stdin); if err != nil { panic(err) }; if err := os.WriteFile(os.Getenv("LANE_ARCHIVE"), data, 0600); err != nil { panic(err) }
   if addr := os.Getenv("LANE_READY"); addr != "" { conn, err := net.Dial("tcp", addr); if err != nil { panic(err) }; defer conn.Close(); if _, err := io.Copy(io.Discard, conn); err != nil { panic(err) }; return }
   fmt.Fprint(os.Stdout, "\n fixture output\nsecond line\n")
+  fmt.Fprint(os.Stderr, os.Getenv("LANE_OUTPUT"))
   code, err := strconv.Atoi(os.Getenv("LANE_EXIT")); if err != nil { panic(err) }; os.Exit(code)
  }
 }`
@@ -164,7 +165,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 			run := starts[3]
 			name := fmt.Sprintf("roundfix-linux-lane-widget-%d", os.Getpid())
 			// Deliberately independent of the production script constant.
-			script := `mkdir -p /tmp/work && cd /tmp/work && tar -xf - && git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane" && pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
+			script := `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
 			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
 			want = append(want, tc.packages...)
 			if run.Tool != "docker" || !reflect.DeepEqual(run.Args, want) {
@@ -223,7 +224,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 				t.Fatalf("console=%q", f.log.String())
 			}
 			log := mustRead(t, f.logPath())
-			if !strings.Contains(log, "docker 'run'") || !strings.Contains(log, "fixture output") {
+			if !strings.Contains(log, "docker 'run'") || !strings.Contains(log, "fixture output") || !strings.HasSuffix(log, strings.TrimPrefix(line, "roundfix: Delivery Queue item widget: ")) {
 				t.Fatalf("lane log=%q", log)
 			}
 		})
@@ -327,17 +328,17 @@ func TestLinuxLaneSkipsWithANamedReason(t *testing.T) {
 func TestLinuxLaneFailureFailsTheGate(t *testing.T) {
 	t.Parallel()
 	docker, goBinary := linuxLaneTools(t)
-	for _, code := range []string{"1", "126", "127"} {
+	for _, code := range []string{"1", "2"} {
 		t.Run(code, func(t *testing.T) {
 			f := newLinuxLaneFixture(t, docker, goBinary, map[string]string{"go.mod": "module fixture\n\ngo 1.26\n", "pkg/code.go": "package pkg"})
 			f.commit(t, "pkg/testdata/input", "data")
 			f.environment = withEnvValue(f.environment, "LANE_EXIT", code)
 			result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
-			want := "Linux Lane failed: docker run exited " + code + "; see " + f.logPath()
-			if err != nil || result.Passed || result.Reason != want {
+			want := "Linux Lane change failure: go test exited " + code + "; see " + f.logPath()
+			if err != nil || result.Passed || result.Reason != want || result.Blocker != delivery.BlockerGateFailed+": "+want {
 				t.Fatalf("gate=%+v err=%v want=%q", result, err, want)
 			}
-			if !strings.Contains(mustRead(t, f.logPath()), "fixture output") {
+			if log := mustRead(t, f.logPath()); !strings.Contains(log, "fixture output") || !strings.HasSuffix(log, "Linux Lane change failure: go test exited "+code+"\n") {
 				t.Fatal("missing failure output")
 			}
 		})
@@ -434,7 +435,7 @@ func TestGateWithoutTheLaneStartsNoDocker(t *testing.T) {
 			}
 			f.workflow.loaded.Config.Defaults.Verification = tc.verification
 			result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
-			if err != nil || result.Passed != tc.passed {
+			if err != nil || result.Passed != tc.passed || result.Blocker != "" {
 				t.Fatalf("gate=%+v err=%v", result, err)
 			}
 			if starts := f.starts(t); len(starts) != 0 {
@@ -534,6 +535,69 @@ func TestLinuxLaneRunsTheConfiguredImage(t *testing.T) {
 			args := starts[3].Args
 			if len(args) < 4 || !reflect.DeepEqual(args[:4], []string{"run", "--rm", "-i", "--init"}) || !containsExact(args, image) || containsExact(args, "item/image:wrong") || !strings.Contains(f.log.String(), "Linux Lane passed 1 package(s) on "+image) {
 				t.Fatalf("args=%q log=%s", args, f.log.String())
+			}
+		})
+	}
+}
+
+func TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	for _, tc := range []struct{ name, code, output, cause string }{
+		{"setup marker", "3", "roundfix-linux-lane: container: missing tool tar\nroundfix-linux-lane: container: missing tool git\nother output\n", "missing tool git"},
+		{"setup without trailing newline", "3", "roundfix-linux-lane: container: cannot record the candidate", "cannot record the candidate"},
+		{"setup without marker", "3", "other output\n", "the lane script exited 3 before go test"},
+		{"cannot invoke", "126", "", "docker run exited 126: the image could not invoke the lane command"},
+		{"command absent", "127", "", "docker run exited 127: the image lacks the lane command"},
+		{"signal", "137", "", "docker run exited 137: the container process ended by signal 9"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newLinuxLaneFixture(t, docker, goBinary, map[string]string{"go.mod": "module fixture\n\ngo 1.26\n", "pkg/code.go": "package pkg"})
+			f.commit(t, "pkg/testdata/input", "data")
+			f.environment = withEnvValue(f.environment, "LANE_EXIT", tc.code)
+			f.environment = withEnvValue(f.environment, "LANE_OUTPUT", tc.output)
+			result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
+			summary := "Linux Lane container failure: " + tc.cause
+			want := summary + "; see " + f.logPath()
+			blocker := delivery.BlockerLinuxLaneContainer + ": " + tc.cause + "; see " + f.logPath()
+			if err != nil || result.Passed || result.Reason != want || result.Blocker != blocker {
+				t.Fatalf("gate=%+v err=%v want reason=%q blocker=%q", result, err, want, blocker)
+			}
+			if log := mustRead(t, f.logPath()); !strings.HasSuffix(log, summary+"\n") {
+				t.Fatalf("lane log=%q want last line=%q", log, summary)
+			}
+		})
+	}
+}
+
+func TestLinuxLaneOutcomeClassification(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name                     string
+		code                     int
+		capped                   bool
+		output, summary, blocker string
+	}{
+		{"pass", 0, false, "", "", ""},
+		{"test failure", 1, false, "roundfix-linux-lane: container: ignored\n", "Linux Lane change failure: go test exited 1", delivery.BlockerGateFailed},
+		{"usage", 2, false, "", "Linux Lane change failure: go test exited 2", delivery.BlockerGateFailed},
+		{"other change exit", 4, false, "", "Linux Lane change failure: go test exited 4", delivery.BlockerGateFailed},
+		{"setup", 3, false, "roundfix-linux-lane: container: missing tool go\n", "Linux Lane container failure: missing tool go", delivery.BlockerLinuxLaneContainer},
+		{"last marker", 3, false, "roundfix-linux-lane: container: missing tool tar\nroundfix-linux-lane: container: cannot unpack the candidate\nother output\n", "Linux Lane container failure: cannot unpack the candidate", delivery.BlockerLinuxLaneContainer},
+		{"no marker", 3, false, "unrelated output", "Linux Lane container failure: the lane script exited 3 before go test", delivery.BlockerLinuxLaneContainer},
+		{"embedded marker ignored", 3, false, "unrelated roundfix-linux-lane: container: ignored\n", "Linux Lane container failure: the lane script exited 3 before go test", delivery.BlockerLinuxLaneContainer},
+		{"invoke", 126, false, "", "Linux Lane container failure: docker run exited 126: the image could not invoke the lane command", delivery.BlockerLinuxLaneContainer},
+		{"missing command", 127, false, "", "Linux Lane container failure: docker run exited 127: the image lacks the lane command", delivery.BlockerLinuxLaneContainer},
+		{"signal zero", 128, false, "", "Linux Lane container failure: docker run exited 128: the container process ended by signal 0", delivery.BlockerLinuxLaneContainer},
+		{"interrupt", 130, false, "", "Linux Lane container failure: docker run exited 130: the container process ended by signal 2", delivery.BlockerLinuxLaneContainer},
+		{"killed", 137, false, "", "Linux Lane container failure: docker run exited 137: the container process ended by signal 9", delivery.BlockerLinuxLaneContainer},
+		{"cap takes precedence", 3, true, "roundfix-linux-lane: container: missing tool go\n", "Linux Lane container failure: the container exceeded 20m0s", delivery.BlockerLinuxLaneContainer},
+		{"cap after kill", -1, true, "", "Linux Lane container failure: the container exceeded 20m0s", delivery.BlockerLinuxLaneContainer},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			summary, blocker := classifyLinuxLaneOutcome(tc.code, tc.capped, []byte(tc.output))
+			if summary != tc.summary || blocker != tc.blocker {
+				t.Fatalf("summary=%q blocker=%q want %q %q", summary, blocker, tc.summary, tc.blocker)
 			}
 		})
 	}

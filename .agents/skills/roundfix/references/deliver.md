@@ -323,7 +323,7 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | --- | --- |
 | `dependency` | `prerequisite-unmerged`; retry a parked prerequisite, or deliver/merge an external prerequisite and retry the dependent item |
 | `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry |
-| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`; the QA partial prints carry-forward, repair, authorized override and retry |
+| `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`; the QA partial prints carry-forward, repair, authorized override and retry |
 | `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: in `<worktree>`, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run `roundfix deliver retry <slug>` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -643,19 +643,51 @@ with this console line (`<n>` counts selected package arguments):
 roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on <image>
 ```
 
-Every other non-zero exit fails the gate and parks the item `gate-failed` with
-this reason:
+A **Lane Container Failure** fails the gate and parks the item in the
+`environment` Park Class. The lane script checks for `tar`, `git` and `go`,
+prepares `/tmp/work`, unpacks the candidate and records it before testing.
+Setup failures print `roundfix-linux-lane: container: <cause>` and exit `3`.
+The cause is selected in this order:
+
+- The 20-minute cap: `the container exceeded 20m0s`. The cap cancels the run
+  and removes its named container with `docker rm -f <name>`.
+- Exit `3`: the text after the last `roundfix-linux-lane: container: ` output
+  line, or `the lane script exited 3 before go test` when none exists. Setup
+  causes name `missing tool <tool>`, `cannot prepare /tmp/work`,
+  `cannot unpack the candidate` or `cannot record the candidate`.
+- Exit `126`: `docker run exited 126: the image could not invoke the lane command`.
+- Exit `127`: `docker run exited 127: the image lacks the lane command`.
+- Exit `128` or more: `docker run exited <n>: the container process ended by signal <n-128>`.
+
+The gate reason and parked blocker are respectively:
 
 ```text
-Linux Lane failed: docker run exited <n>; see <lane log>
+Linux Lane container failure: <cause>; see <lane log>
+linux-lane-container: <cause>; see <lane log>
 ```
 
-The 20-minute cap cancels the run, removes its named container with
-`docker rm -f <name>`, and fails the gate with:
+A **Lane Change Failure** is any other non-zero exit of a run that started;
+exit `125` stays a skip. It parks in `finding`, with cause `go test exited <n>`.
+The gate reason and parked blocker are respectively:
 
 ```text
-Linux Lane exceeded 20m0s; see <lane log>
+Linux Lane change failure: go test exited <n>; see <lane log>
+gate-failed: Linux Lane change failure: go test exited <n>; see <lane log>
 ```
+
+The lane log ends with exactly one outcome line:
+
+```text
+Linux Lane container failure: <cause>
+Linux Lane change failure: go test exited <n>
+Linux Lane passed <n> package(s) on <image>
+```
+
+For `linux-lane-container`, the next action is `repair the Linux Lane container
+cause in the blocker (Docker, the image, or delivery.linux_lane_image on the
+default branch), then run roundfix deliver retry <slug>`. A repository
+Verification failure still parks the bare `gate-failed` with its generic next
+action.
 
 Cancelling the gate also removes the container and returns the context's error.
 With the setting off, the gate starts no Docker or Go process and emits no lane

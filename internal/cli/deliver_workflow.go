@@ -1495,7 +1495,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 			return delivery.GateResult{}, err
 		}
 		if lane.Ran && !lane.Passed {
-			return delivery.GateResult{Passed: false, Reason: lane.Reason}, nil
+			return delivery.GateResult{Passed: false, Reason: lane.Reason, Blocker: lane.Blocker}, nil
 		}
 	}
 	return delivery.GateResult{Passed: true}, nil
