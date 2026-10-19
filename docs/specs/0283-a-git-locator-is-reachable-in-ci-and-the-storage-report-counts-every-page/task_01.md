@@ -104,9 +104,16 @@ cases.
    Branch Head or a tag reaches".
 8. MUST run these commands, because this Task edits a user guide page and the
    Roundfix reference. No record or mirror is hand-edited.
+   Before them, raise both version fields of each edited owned skill's
+   canonical `SKILL.md` (`metadata.version` and the top-level `version`)
+   by one patch over the value the tree holds when this Task starts,
+   because the record command refuses changed content under an unchanged
+   version. The Agent runs these commands itself before handing back: the
+   Daemon only runs the Verification and never regenerates a mirror or a
+   record.
    - `make skills-sync`;
    - `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
-     to raise and record the Roundfix skill version;
+     to record the raised Roundfix skill version;
    - `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`,
      to re-record the Behavior Surface Record.
 
