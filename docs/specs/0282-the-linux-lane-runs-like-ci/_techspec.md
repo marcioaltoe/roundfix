@@ -436,6 +436,7 @@ Deviations from the PRD: None.
 - ADR-0282: no rejected alternative is taken; this Spec changes none of its rules.
 - ADR-0286: no rejected alternative is taken; this Spec changes none of its rules.
 - ADR-0290: no rejected alternative is taken; this Spec changes none of its rules.
+- ADR-0295: no rejected alternative is taken; this Spec changes none of its rules.
 
 ## Integration Points
 
