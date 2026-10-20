@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.96.0] - 2026-10-20
+
+### A transient profile-proof timeout does not park the Delivery Queue
+
+- **Third attempt with backoff.** When the disposable Agent Session setup of a profile proof times out, the proof is retried after 5 seconds and again after 10 seconds. Only a third timeout is classified `temporary`, so one slow session no longer parks a Delivery Queue item. Every configured tuple, preferred and fallback, is still proven (ADR-0298).
+- **Configurable Proof Setup Deadline.** `defaults.profile_proof_setup_timeout` bounds each attempt's setup. It defaults to `30s` and accepts a Go duration greater than zero and at most 10m in User Config or Project Config, with Project Config winning. `profiles validate`, operational Preflight, pre-PR review, Doctor, Setup and `profiles configure` all pass it. The cleanup deadline, the Fallback Chain probe after Run creation and Run sessions keep their existing deadlines.
+- **Silent cleanup of a Session that never opened.** When a timed-out setup leaves no named Session, the disposable Session cleanup no longer logs a misleading warning.
+
 ## [0.95.0] - 2026-10-20
 
 ### The Linux Lane reads the repository history
