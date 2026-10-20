@@ -1,0 +1,7 @@
+Sanctioned command on disposable git archive of audited HEAD:
+go test ./internal/spec -run ^TestCoverageEquivalence$ -update-coverage-record -count=1
+ok  	roundfix/internal/spec	1.074s
+
+exit: 0
+
+Regeneration adds only TestTimedOutProofSetupClosesAnAbsentSessionSilently from the parallel cleanup Task. No tests are removed. The coverage equivalence contract permits additions (TestCompareCoverageRecordsReportsAddedTestWithoutRegression); task_02 recorded its rename and new retry tests. The committed coverage record is not claimed byte-identical to a regeneration after parallel task_03 integration. No generated file was changed in the Run.

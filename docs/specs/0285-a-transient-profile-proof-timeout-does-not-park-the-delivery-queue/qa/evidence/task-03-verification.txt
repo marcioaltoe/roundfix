@@ -1,0 +1,5 @@
+$ sh task-03-verification.sh
+out="$(go test -count=1 -v -run '^(TestTimedOutProofSetupClosesAnAbsentSessionSilently|TestMissingSessionIsRecognisedFromBothExitShapes|TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose|TestProveExactSelectionTimeoutCleanup|TestUnrelatedExitOneKeepsItsClassification)$' ./internal/agent 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTimedOutProofSetupClosesAnAbsentSessionSilently TestMissingSessionIsRecognisedFromBothExitShapes TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose TestProveExactSelectionTimeoutCleanup TestUnrelatedExitOneKeepsItsClassification; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; if grep -rq 'found no Session to close' internal docs/user-guide .agents/skills skills; then printf 'the misleading cleanup warning remains\n' >&2; exit 1; fi; GOOS=windows go build -buildvcs=false ./internal/agent || exit 1; GOOS=windows go vet ./internal/agent
+
+
+exit: 0

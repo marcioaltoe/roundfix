@@ -1,0 +1,45 @@
+Disposable git archive of audited HEAD.
+Mutation: internal/agent/selection_assignment.go
+BEFORE: setupTimeout := request.SetupTimeout
+AFTER: setupTimeout := acpxPreflightSetupTimeout
+Harness correction: the first mutation referenced an unimported time package and was rejected as invalid evidence; this mutation compiles and reaches the named deadline assertion.
+$ go test -count=1 -v -run ^TestExactSelectionProofSetupUsesTheRequestedDeadline$ ./internal/agent
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s
+=== NAME  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+    proof_setup_deadline_test.go:52: context 0 remaining = 29.987983959s, want more than 1h and at most 2h0m0s
+=== NAME  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+    proof_setup_deadline_test.go:52: context 0 remaining = 29.983726833s, want more than 1h and at most 2h0m0s
+--- FAIL: TestExactSelectionProofSetupUsesTheRequestedDeadline (0.00s)
+    --- FAIL: TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s (0.10s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s (0.11s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s (0.11s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s (0.12s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s (0.12s)
+    --- FAIL: TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s (0.12s)
+FAIL
+suiteguard: guard cost: measured 2633 paths; fingerprint took 108.133916ms before and 101.866875ms after
+FAIL	roundfix/internal/agent	0.567s
+FAIL
+
+exit: 1
+Expected named assertion failure: True

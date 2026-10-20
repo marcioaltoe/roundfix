@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0285-a-transient-profile-proof-timeout-does-not-park-the-delivery-queue
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

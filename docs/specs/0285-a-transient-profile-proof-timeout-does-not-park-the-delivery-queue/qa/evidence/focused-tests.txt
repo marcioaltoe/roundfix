@@ -1,0 +1,172 @@
+$ go test -count=1 -v -run ^(TestProfileProof.*|TestOperationalPreflightPassesAfterAFallbackProofTimesOutOnce|TestExactSelectionProofSetupUsesTheRequestedDeadline|TestACPXProbeSelectionSetupUsesBoundedContext|TestTimedOutProofSetupClosesAnAbsentSessionSilently|TestMissingSessionIsRecognisedFromBothExitShapes|TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose|TestProveExactSelectionTimeoutCleanup|TestUnrelatedExitOneKeepsItsClassification|TestProfilesShowRefusesAnInvalidSetupDeadlineTranscript)$ ./internal/config ./internal/agent ./internal/cli
+=== RUN   TestProfileProofSetupTimeoutConfig
+=== PAUSE TestProfileProofSetupTimeoutConfig
+=== CONT  TestProfileProofSetupTimeoutConfig
+=== RUN   TestProfileProofSetupTimeoutConfig/built-in
+=== PAUSE TestProfileProofSetupTimeoutConfig/built-in
+=== RUN   TestProfileProofSetupTimeoutConfig/user
+=== PAUSE TestProfileProofSetupTimeoutConfig/user
+=== RUN   TestProfileProofSetupTimeoutConfig/project_overrides_user
+=== PAUSE TestProfileProofSetupTimeoutConfig/project_overrides_user
+=== RUN   TestProfileProofSetupTimeoutConfig/maximum
+=== PAUSE TestProfileProofSetupTimeoutConfig/maximum
+=== RUN   TestProfileProofSetupTimeoutConfig/zero
+=== PAUSE TestProfileProofSetupTimeoutConfig/zero
+=== RUN   TestProfileProofSetupTimeoutConfig/negative
+=== PAUSE TestProfileProofSetupTimeoutConfig/negative
+=== RUN   TestProfileProofSetupTimeoutConfig/too_long
+=== PAUSE TestProfileProofSetupTimeoutConfig/too_long
+=== RUN   TestProfileProofSetupTimeoutConfig/invalid_duration
+=== PAUSE TestProfileProofSetupTimeoutConfig/invalid_duration
+=== CONT  TestProfileProofSetupTimeoutConfig/built-in
+=== CONT  TestProfileProofSetupTimeoutConfig/zero
+=== CONT  TestProfileProofSetupTimeoutConfig/too_long
+=== CONT  TestProfileProofSetupTimeoutConfig/invalid_duration
+=== CONT  TestProfileProofSetupTimeoutConfig/negative
+=== CONT  TestProfileProofSetupTimeoutConfig/project_overrides_user
+=== CONT  TestProfileProofSetupTimeoutConfig/user
+=== CONT  TestProfileProofSetupTimeoutConfig/maximum
+--- PASS: TestProfileProofSetupTimeoutConfig (0.00s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/too_long (0.00s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/user (0.00s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/built-in (0.01s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/maximum (0.01s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/zero (0.01s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/negative (0.01s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/project_overrides_user (0.01s)
+    --- PASS: TestProfileProofSetupTimeoutConfig/invalid_duration (0.01s)
+PASS
+suiteguard: guard cost: measured 2640 paths; fingerprint took 369.814208ms before and 202.902083ms after
+ok  	roundfix/internal/config	0.699s
+=== RUN   TestProfileProofAppliesExactReasoningAndClosesDisposableSession
+=== PAUSE TestProfileProofAppliesExactReasoningAndClosesDisposableSession
+=== RUN   TestProfileProofUsesSessionSnapshotWhenACPXModelProjectionOmitsOptions
+=== PAUSE TestProfileProofUsesSessionSnapshotWhenACPXModelProjectionOmitsOptions
+=== RUN   TestProfileProofClosesDisposableSessionOnSelectionFailure
+=== PAUSE TestProfileProofClosesDisposableSessionOnSelectionFailure
+=== RUN   TestMissingSessionIsRecognisedFromBothExitShapes
+=== PAUSE TestMissingSessionIsRecognisedFromBothExitShapes
+=== RUN   TestTimedOutProofSetupClosesAnAbsentSessionSilently
+=== PAUSE TestTimedOutProofSetupClosesAnAbsentSessionSilently
+=== RUN   TestUnrelatedExitOneKeepsItsClassification
+=== PAUSE TestUnrelatedExitOneKeepsItsClassification
+=== RUN   TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose
+=== PAUSE TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose
+=== RUN   TestProveExactSelectionTimeoutCleanup
+=== PAUSE TestProveExactSelectionTimeoutCleanup
+=== RUN   TestACPXProbeSelectionSetupUsesBoundedContext
+=== PAUSE TestACPXProbeSelectionSetupUsesBoundedContext
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline
+=== CONT  TestProfileProofAppliesExactReasoningAndClosesDisposableSession
+=== CONT  TestUnrelatedExitOneKeepsItsClassification
+=== CONT  TestACPXProbeSelectionSetupUsesBoundedContext
+=== CONT  TestProveExactSelectionTimeoutCleanup
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s
+=== RUN   TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s
+=== PAUSE TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s
+=== CONT  TestMissingSessionIsRecognisedFromBothExitShapes
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s
+=== RUN   TestMissingSessionIsRecognisedFromBothExitShapes/missing_session_exit_four
+=== CONT  TestProfileProofClosesDisposableSessionOnSelectionFailure
+--- PASS: TestUnrelatedExitOneKeepsItsClassification (0.03s)
+=== CONT  TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose
+--- PASS: TestProveExactSelectionTimeoutCleanup (0.09s)
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s
+=== RUN   TestMissingSessionIsRecognisedFromBothExitShapes/installed_missing_session_exit_one
+=== CONT  TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s
+=== CONT  TestProfileProofUsesSessionSnapshotWhenACPXModelProjectionOmitsOptions
+--- PASS: TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose (0.14s)
+=== CONT  TestTimedOutProofSetupClosesAnAbsentSessionSilently
+--- PASS: TestMissingSessionIsRecognisedFromBothExitShapes (0.17s)
+    --- PASS: TestMissingSessionIsRecognisedFromBothExitShapes/missing_session_exit_four (0.11s)
+    --- PASS: TestMissingSessionIsRecognisedFromBothExitShapes/installed_missing_session_exit_one (0.06s)
+--- PASS: TestACPXProbeSelectionSetupUsesBoundedContext (0.17s)
+--- PASS: TestProfileProofAppliesExactReasoningAndClosesDisposableSession (0.18s)
+--- PASS: TestProfileProofClosesDisposableSessionOnSelectionFailure (0.18s)
+--- PASS: TestTimedOutProofSetupClosesAnAbsentSessionSilently (0.04s)
+--- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline (0.00s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/2h0m0s (0.14s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/-1s (0.15s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/ProveExactSelection/0s (0.17s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/2h0m0s (0.18s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/-1s (0.13s)
+    --- PASS: TestExactSelectionProofSetupUsesTheRequestedDeadline/Probe/0s (0.09s)
+--- PASS: TestProfileProofUsesSessionSnapshotWhenACPXModelProjectionOmitsOptions (0.09s)
+PASS
+suiteguard: guard cost: measured 2640 paths; fingerprint took 363.754417ms before and 91.972791ms after
+ok  	roundfix/internal/agent	0.818s
+=== RUN   TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields
+=== PAUSE TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields
+=== RUN   TestProfileProofRetriesATimedOutSetupOnce
+=== PAUSE TestProfileProofRetriesATimedOutSetupOnce
+=== RUN   TestProfileProofReportsAThirdTimeoutAsTemporary
+=== PAUSE TestProfileProofReportsAThirdTimeoutAsTemporary
+=== RUN   TestProfileProofDoesNotRetryARejectedSelection
+=== PAUSE TestProfileProofDoesNotRetryARejectedSelection
+=== RUN   TestProfileProofDoesNotRetryACancelledCommand
+=== PAUSE TestProfileProofDoesNotRetryACancelledCommand
+=== RUN   TestOperationalPreflightPassesAfterAFallbackProofTimesOutOnce
+=== PAUSE TestOperationalPreflightPassesAfterAFallbackProofTimesOutOnce
+=== RUN   TestProfileProofPassesOnTheThirdAttempt
+=== PAUSE TestProfileProofPassesOnTheThirdAttempt
+=== RUN   TestProfileProofStopsWhenCancelledDuringTheBackoff
+=== PAUSE TestProfileProofStopsWhenCancelledDuringTheBackoff
+=== RUN   TestProfileProofPassesTheConfiguredSetupDeadline
+=== PAUSE TestProfileProofPassesTheConfiguredSetupDeadline
+=== RUN   TestProfilesShowRefusesAnInvalidSetupDeadlineTranscript
+=== PAUSE TestProfilesShowRefusesAnInvalidSetupDeadlineTranscript
+=== CONT  TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields
+=== CONT  TestOperationalPreflightPassesAfterAFallbackProofTimesOutOnce
+=== CONT  TestProfileProofPassesTheConfiguredSetupDeadline
+=== CONT  TestProfilesShowRefusesAnInvalidSetupDeadlineTranscript
+=== CONT  TestProfileProofStopsWhenCancelledDuringTheBackoff
+--- PASS: TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields (0.00s)
+=== CONT  TestProfileProofReportsAThirdTimeoutAsTemporary
+=== CONT  TestProfileProofRetriesATimedOutSetupOnce
+=== RUN   TestProfileProofReportsAThirdTimeoutAsTemporary/json=true
+=== CONT  TestProfileProofDoesNotRetryACancelledCommand
+=== CONT  TestProfileProofPassesOnTheThirdAttempt
+=== CONT  TestProfileProofDoesNotRetryARejectedSelection
+=== RUN   TestProfileProofPassesTheConfiguredSetupDeadline/built-in
+=== PAUSE TestProfileProofPassesTheConfiguredSetupDeadline/built-in
+--- PASS: TestOperationalPreflightPassesAfterAFallbackProofTimesOutOnce (0.00s)
+=== RUN   TestProfileProofPassesTheConfiguredSetupDeadline/project
+=== PAUSE TestProfileProofPassesTheConfiguredSetupDeadline/project
+=== CONT  TestProfileProofPassesTheConfiguredSetupDeadline/built-in
+=== CONT  TestProfileProofPassesTheConfiguredSetupDeadline/project
+=== RUN   TestProfileProofDoesNotRetryACancelledCommand/default_sleeper_honors_cancellation
+=== RUN   TestProfileProofDoesNotRetryACancelledCommand/default_sleeper_timer_expires
+--- PASS: TestProfileProofRetriesATimedOutSetupOnce (0.00s)
+--- PASS: TestProfileProofStopsWhenCancelledDuringTheBackoff (0.00s)
+=== RUN   TestProfileProofReportsAThirdTimeoutAsTemporary/json=false
+--- PASS: TestProfileProofPassesOnTheThirdAttempt (0.00s)
+--- PASS: TestProfileProofDoesNotRetryARejectedSelection (0.00s)
+--- PASS: TestProfileProofDoesNotRetryACancelledCommand (0.00s)
+    --- PASS: TestProfileProofDoesNotRetryACancelledCommand/default_sleeper_honors_cancellation (0.00s)
+    --- PASS: TestProfileProofDoesNotRetryACancelledCommand/default_sleeper_timer_expires (0.00s)
+--- PASS: TestProfilesShowRefusesAnInvalidSetupDeadlineTranscript (0.01s)
+--- PASS: TestProfileProofPassesTheConfiguredSetupDeadline (0.00s)
+    --- PASS: TestProfileProofPassesTheConfiguredSetupDeadline/built-in (0.00s)
+    --- PASS: TestProfileProofPassesTheConfiguredSetupDeadline/project (0.00s)
+--- PASS: TestProfileProofReportsAThirdTimeoutAsTemporary (0.01s)
+    --- PASS: TestProfileProofReportsAThirdTimeoutAsTemporary/json=true (0.00s)
+    --- PASS: TestProfileProofReportsAThirdTimeoutAsTemporary/json=false (0.00s)
+PASS
+suiteguard: guard cost: measured 2640 paths; fingerprint took 111.932625ms before and 86.336375ms after
+ok  	roundfix/internal/cli	0.486s
+
+exit: 0
