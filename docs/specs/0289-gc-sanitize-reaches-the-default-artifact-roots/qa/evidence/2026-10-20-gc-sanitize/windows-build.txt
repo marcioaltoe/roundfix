@@ -1,6 +1,0 @@
-COMMAND: go build -buildvcs=false ./internal/store ./internal/cli
-stdout:
-
-stderr:
-
-exit: 0
