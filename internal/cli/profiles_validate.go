@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
@@ -71,15 +72,20 @@ type profileProofError struct {
 	Err            error
 }
 
+var profileProofRetryWaits = []time.Duration{5 * time.Second, 10 * time.Second}
+
 type profileProofTimeoutError struct {
-	Err error
+	Attempts int
+	Timeout  time.Duration
+	Err      error
 }
 
 func (err *profileProofTimeoutError) Error() string {
-	if err == nil || err.Err == nil {
-		return "profile proof setup timed out twice"
+	message := fmt.Sprintf("profile proof setup timed out on %d attempts of %s each", err.Attempts, err.Timeout)
+	if err.Err == nil {
+		return message
 	}
-	return fmt.Sprintf("profile proof setup timed out twice: %v", err.Err)
+	return fmt.Sprintf("%s: %v", message, err.Err)
 }
 
 func (err *profileProofTimeoutError) Unwrap() error {
@@ -245,15 +251,33 @@ func proveProfileSelection(ctx context.Context, runner agent.Runner, request age
 }
 
 func proveProfileSelectionWithRetry(ctx context.Context, runner agent.Runner, request agent.ProbeRequest) (agent.SelectionProof, error) {
-	proof, err := proveProfileSelection(ctx, runner, request)
-	if err == nil || !profileProofSetupTimedOut(ctx, err) {
-		return proof, err
+	for attempt := 0; ; attempt++ {
+		proof, err := proveProfileSelection(ctx, runner, request)
+		if err == nil || !profileProofSetupTimedOut(ctx, err) {
+			return proof, err
+		}
+		if attempt == len(profileProofRetryWaits) {
+			timeout := request.SetupTimeout
+			if timeout <= 0 {
+				timeout = roundconfig.DefaultProfileProofSetupTimeout
+			}
+			return proof, &profileProofTimeoutError{Attempts: attempt + 1, Timeout: timeout, Err: err}
+		}
+		if err := commandDependenciesForContext(ctx).profileProofSleep(ctx, profileProofRetryWaits[attempt]); err != nil {
+			return proof, err
+		}
 	}
-	proof, err = proveProfileSelection(ctx, runner, request)
-	if err == nil || !profileProofSetupTimedOut(ctx, err) {
-		return proof, err
+}
+
+func profileProofSleep(ctx context.Context, wait time.Duration) error {
+	timer := time.NewTimer(wait)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return ctx.Err()
 	}
-	return proof, &profileProofTimeoutError{Err: err}
 }
 
 func profileProofSetupTimedOut(ctx context.Context, err error) bool {
@@ -315,7 +339,7 @@ func profileProofNextAction(err error) string {
 	const configureAction = "update the profile with `roundfix profiles configure --scope user|project`"
 	var timeout *profileProofTimeoutError
 	if errors.As(err, &timeout) {
-		return "rerun the command when load drops; the configured profile was not shown to be wrong"
+		return "rerun the command when load drops, or raise defaults.profile_proof_setup_timeout; the configured profile was not shown to be wrong"
 	}
 	var installer interface{ InstallCommand() string }
 	if errors.As(err, &installer) {

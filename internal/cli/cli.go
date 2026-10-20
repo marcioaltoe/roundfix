@@ -300,6 +300,7 @@ type commandDependencies struct {
 	newDeliveryEngine               func(*store.Store, roundconfig.Loaded) deliveryEngine
 	detachTimeouts                  detachPhaseTimeouts
 	attachInteractiveInputAvailable func() bool
+	profileProofSleep               func(context.Context, time.Duration) error
 	attachSleep                     func(context.Context) error
 	upgrade                         upgradeDependencies
 	versionFreshness                versionFreshnessDependencies
@@ -374,6 +375,7 @@ func defaultCommandDependencies() commandDependencies {
 		newDeliveryEngine:               newCommandDeliveryEngine,
 		detachTimeouts:                  detachTimeouts,
 		attachInteractiveInputAvailable: attachInteractiveInputAvailable,
+		profileProofSleep:               profileProofSleep,
 		attachSleep:                     attachSleep,
 		upgrade:                         upgradeDeps,
 		versionFreshness:                versionFreshnessDeps,
