@@ -657,11 +657,16 @@ roundfix: notice: Delivery Queue item <slug>: Linux Lane skipped: <reason>
 - `docker could not start the container: <first non-empty output line>` (exit `125`)
 
 The lane log contains the command line and combined output. Exit `0` passes
-with this console line (`<n>` counts selected package arguments):
+with this console line. `<n>` is the number of packages `go list` selected in
+the container, which the lane script reports with
+`roundfix-linux-lane: packages: <n>` before `go test`:
 
 ```text
 roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on <image>
+roundfix: Delivery Queue item <slug>: Linux Lane passed on <image>; the lane script reported no package count
 ```
+
+Without a count line, exit `0` stays a pass and uses the no-count line above.
 
 A **Lane Container Failure** fails the gate and parks the item in the
 `environment` Park Class. The lane script checks for `tar`, `git` and `go`,
@@ -702,6 +707,7 @@ The lane log ends with exactly one outcome line:
 Linux Lane container failure: <cause>
 Linux Lane change failure: go test exited <n>
 Linux Lane passed <n> package(s) on <image>
+Linux Lane passed on <image>; the lane script reported no package count
 ```
 
 For `linux-lane-container`, the next action is `repair the Linux Lane container
@@ -747,6 +753,7 @@ Exactly one outcome line goes to standard output, with empty standard error:
 ```text
 roundfix: notice: Linux Lane skipped: <reason>
 roundfix: Linux Lane passed <n> package(s) on <image>
+roundfix: Linux Lane passed on <image>; the lane script reported no package count
 roundfix: Linux Lane change failure: go test exited <n>; see <lane log>
 roundfix: Linux Lane container failure: <cause>; see <lane log>
 ```

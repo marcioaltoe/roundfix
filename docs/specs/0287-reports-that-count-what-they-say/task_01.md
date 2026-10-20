@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0287-reports-that-count-what-they-say
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -139,3 +139,71 @@ verifiable on its own through the lane's compiled Docker stand-in.
 - `_prd.md` → Sources; Goals; Core Feature 1; Core Feature 4; Success Metric 1
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 5; Surface Transcript 1; Surface Transcript 2; Invariants 1-2; Interfaces; Current behavior; Testing Approach; Build Order 1
 - ADR-0294; ADR-0297; ADR-0288; ADR-0125; ADR-0259; ADR-0271; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+
+## Result
+
+Implemented this Task's Linux Lane reporting slice; status and declared
+Verification remain Daemon-owned.
+
+### Implementation and acceptance evidence
+
+- Container-selected count: the lane script matches TechSpec API Contract 1
+  exactly, reporting zero on the empty selection and `$#` before `exec go
+  test`. `runLinuxLane` builds both pass lines from `linuxLanePackageCount`;
+  `result.Packages` still holds the host patterns. The gate regression changes
+  `go.mod`, confirms the container receives only `./...`, and observes 43 in
+  the exact console line and final lane-log line. The on-demand transcript
+  regression observes 43 through `--all`, empty stderr and exit 0.
+- First count wins: the gate regression observes 43 even when later candidate
+  output reports 7. Additional cases cover zero, signed values, trailing
+  spaces, an embedded marker, the first valid decimal line after malformed
+  output, and an overflowing first decimal count. The code names the combined
+  output's candidate-test hazard and limits the count's destination to the
+  console and lane log.
+- Missing count stays a pass: both gate lines use the specified no-count
+  wording, and the on-demand test asserts the complete stdout line, empty
+  stderr and exit 0. Existing lane failure, skip, selection, image, history
+  mount and cancellation tests also pass in the focused run.
+- Guide and reference: both explain the container's `go list` count and marker
+  and include the no-count alternative beside all three pass-line lists.
+  Searching `docs/user-guide`, `docs/agents`, `.agents/skills` and `skills`
+  found no remaining wording that says the pass line counts package arguments
+  or patterns. Both canonical Roundfix skill version fields rose from
+  `0.1.113` to `0.1.114`; mirror and records were generated, not hand-edited.
+  Inspection confirmed both `### QA settlement` sections are byte-identical
+  to HEAD, as are `deliver_lane.go`, `deliver_workflow.go` and `_tasks.md`.
+
+### Focused checks and generation
+
+- Red signal before production edits:
+  `go test ./internal/cli -run '^(TestLinuxLaneReportsThePackagesTheContainerSelected|TestDeliverLanePackageCountTranscript|TestDeliverLaneNoPackageCountTranscript)$' -count=1`
+  exited 1: the old implementation printed 1 for the 43, zero and missing-count
+  fixtures, and the script lacked its marker.
+- Final focused run:
+  `go test ./internal/cli -run '^(TestLinuxLane.*|TestDeliverLane.*)$' -count=1`
+  exited 0 (`ok roundfix/internal/cli`, 8.595s). An earlier attempt overlapped
+  skill generation and suiteguard refused those concurrent file writes after
+  the assertions passed; the final run occurred after generation ended.
+- `GOOS=windows go test -c -o <temporary-directory>/cli.test.exe ./internal/cli`
+  exited 0; the temporary binary was removed.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and recorded `0.1.114`.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and regenerated the Behavior Surface Record.
+- `make baseline-digests`, required by the repository after an owned-skill
+  edit, exited 0 with `changed:false`; no Baseline artifact remains changed.
+- Exact-script, mirror/version, QA-settlement and unchanged-caller inspections
+  passed; `git diff --check` exited 0.
+
+The Docker-refusal subtest retains its name and expected message; its fixture
+now clears `LANE_PACKAGES`, since a container that never started cannot report
+a script count. No production failure behavior changed. No other Task slice
+was implemented; no declared Verification, repository Verification, commit,
+push or Pull Request was run. Full settlement evidence is pending the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261020T144117Z_258265979932c5f1`
+- Source commit: `ea87340bd96c307d7edf9f009d434361e476c053`

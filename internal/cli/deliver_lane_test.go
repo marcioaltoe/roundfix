@@ -274,3 +274,17 @@ func TestDeliverLaneObjectStoreSkipTranscript(t *testing.T) {
 		t.Fatalf("skip started tools: %+v", starts)
 	}
 }
+
+func TestDeliverLanePackageCountTranscript(t *testing.T) {
+	t.Parallel()
+	f := newDeliverLaneFixture(t)
+	f.environment = withEnvValue(f.environment, "LANE_PACKAGES", "43")
+	assertDeliverLaneTranscript(t, f, "roundfix: Linux Lane passed 43 package(s) on golang:1.26.1", 0)
+}
+
+func TestDeliverLaneNoPackageCountTranscript(t *testing.T) {
+	t.Parallel()
+	f := newDeliverLaneFixture(t)
+	f.environment = withEnvValue(f.environment, "LANE_PACKAGES", "")
+	assertDeliverLaneTranscript(t, f, "roundfix: Linux Lane passed on golang:1.26.1; the lane script reported no package count", 0)
+}
