@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0285-a-transient-profile-proof-timeout-does-not-park-the-delivery-queue
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,49 @@ silent. It is verifiable on its own through the compiled fake acpx.
 - `_prd.md` → Sources; Goals; Core Feature 3; Success Metric 4
 - `_techspec.md` → API Contract 3; Invariant 5; Current behavior; Testing Approach; Build Order 3
 - ADR-0298; ADR-0114; ADR-0259; ADR-0271; ADR-0285
+
+
+## Result
+
+Implemented the Task 03 slice; Task status and declared Verification remain
+Daemon-owned.
+
+- Acceptance criterion 1: `closeDisposableSession` now returns silently for
+  an absent Session. `TestMissingSessionIsRecognisedFromBothExitShapes`
+  retains its diagnosis and error-chain assertions and requires zero warnings
+  for both exit 4 and the recognized exit-1 shape.
+  `TestTimedOutProofSetupClosesAnAbsentSessionSilently` starts with
+  `t.Parallel()`, blocks the compiled fake's `sessions ensure`, waits for its
+  start marker, and explicitly expires the existing test-deadline context.
+  It asserts `context.DeadlineExceeded`, no `AgentSessionCleanupError`, an
+  exact final close of the same disposable Session with exit 4, and zero
+  warnings. No elapsed duration triggers expiration.
+- Acceptance criterion 2: all other close errors retain their existing
+  `AgentSessionCleanupError` wrapping and joining behavior. The existing
+  open-Session proof failure and Fallback Chain probe tests passed, including
+  assertions that both selection and cleanup errors remain in the chain.
+  The shared helper applies the change to proofs, probes and sealed prompts;
+  `EndSession` is unchanged.
+
+Focused evidence:
+
+- Before the production edit,
+  `go test ./internal/agent -run '^(TestTimedOutProofSetupClosesAnAbsentSessionSilently|TestMissingSessionIsRecognisedFromBothExitShapes)$' -count=1`
+  exited 1: the new timeout test and both exit-shape subtests exposed the
+  unwanted warning.
+- After the edit and formatting,
+  `go test ./internal/agent -run '^(TestTimedOutProofSetupClosesAnAbsentSessionSilently|TestMissingSessionIsRecognisedFromBothExitShapes|TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose|TestACPXProbeCleanupFailureJoinsSelectionError|TestProveExactSelectionCancelCleanup)$' -count=1`
+  exited 0 (`ok roundfix/internal/agent`).
+- Searched `internal`, `docs/user-guide`, `docs/agents`, `.agents/skills` and
+  `skills` for the obsolete warning text: no matches. Historical Spec and
+  ADR quotations remain unchanged.
+- `gofmt` applied to the two changed Go files; `git diff --check` exited 0.
+
+Environment: the configured writable root contains a symlink, so the sandbox
+could not launch commands. Approved execution used the resolved checkout.
+The only pre-existing worktree change was the Daemon's `status: in_progress`
+line in this Task file, preserved without modification.
+
+Not run: declared Task Verification (including Windows build/vet), repository
+Verification and incremental Verification; these are reserved for the Daemon.
+No follow-up implementation was required.

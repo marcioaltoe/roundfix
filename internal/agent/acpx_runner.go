@@ -1140,7 +1140,6 @@ func (runner *ACPXRunner) closeDisposableSession(ctx context.Context, runtime Ru
 	if err := runner.CloseSession(ctx, runtime, SessionRef{Name: sessionName, WorkDir: workDir}); err != nil {
 		cleanupErr := &AgentSessionCleanupError{Session: sessionName, Err: err}
 		if IsAgentSessionAbsent(cleanupErr) {
-			runner.warningf("disposable Agent Session cleanup found no Session to close: %v", cleanupErr)
 			return nil
 		}
 		return cleanupErr
