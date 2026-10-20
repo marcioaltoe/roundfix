@@ -244,6 +244,8 @@ func (result ExecuteResult) Answer() string {
 type ProbeRequest struct {
 	Runtime RuntimeSpec
 	WorkDir string
+	// SetupTimeout bounds disposable proof setup; non-positive uses the built-in deadline.
+	SetupTimeout time.Duration
 }
 
 type Runner interface {

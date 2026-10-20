@@ -232,6 +232,19 @@ Runs and `spec:<slug>` for Spec Runs. Terminal context adds
 `ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`. Set
 `notify.enabled: false` to disable outcome notifications entirely.
 
+## Profile proof setup deadline
+
+`defaults.profile_proof_setup_timeout` bounds each proof attempt's disposable
+Agent Session setup. The default is `30s`; a configured Go duration must be
+greater than zero and at most 10m. User Config and Project Config accept the
+key, with Project Config winning.
+
+`profiles validate`, operational Preflight, pre-PR review, Doctor, Setup and
+`profiles configure` pass the value to each attempt's setup context. Every
+configured tuple is still proven. An expired setup deadline stops the acpx
+command and closes the disposable Session. The cleanup deadline, the Fallback
+Chain probe after Run creation and Run sessions keep their existing deadlines.
+
 ## Full access
 
 `--agent-full-access` and `defaults.agent_full_access: true` request full

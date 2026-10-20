@@ -210,7 +210,11 @@ func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.C
 				Err:            err,
 			}}
 		}
-		proof, err := proveProfileSelectionWithRetry(ctx, runner, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir})
+		proof, err := proveProfileSelectionWithRetry(ctx, runner, agent.ProbeRequest{
+			Runtime:      runtime,
+			WorkDir:      workDir,
+			SetupTimeout: config.Defaults.ProfileProofSetupTimeout,
+		})
 		if err != nil {
 			applyProfileProofFailure(&proofs[index], err)
 			return profileProofResult{Proofs: proofs, Err: profileProofError{

@@ -639,6 +639,10 @@
       {
         "version": "0.1.110",
         "digest": "39aab96d6ef22582a34945281f9245aac5b701748a54517a4c165b7c04f9c98e"
+      },
+      {
+        "version": "0.1.111",
+        "digest": "d6db1ed53d797044daee886886bcd5c1d5dffece9f40fb434708ef7f6ab370a8"
       }
     ],
     "setup-context-driven": [

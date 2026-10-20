@@ -53,7 +53,7 @@ const (
 	acpxGenericReasoningEffortKey  = "effort"
 	acpxDeferredEffortWarmupPrompt = "Session setup."
 	acpxPreflightSessionPrefix     = "roundfix-preflight-"
-	acpxPreflightSetupTimeout      = 30 * time.Second
+	acpxPreflightSetupTimeout      = config.DefaultProfileProofSetupTimeout
 	acpxPreflightCleanupTimeout    = 5 * time.Second
 	infrastructureStderrTailLines  = 10
 	infrastructureStderrTailBytes  = 1024
@@ -579,7 +579,7 @@ func (runner *ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
 	if workDir == "" {
 		return nil
 	}
-	_, err := runner.ProveExactSelection(ctx, ProbeRequest{Runtime: req.Runtime, WorkDir: workDir})
+	_, err := runner.ProveExactSelection(ctx, ProbeRequest{Runtime: req.Runtime, WorkDir: workDir, SetupTimeout: req.SetupTimeout})
 	return err
 }
 

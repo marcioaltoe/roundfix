@@ -48,6 +48,12 @@ const (
 	defaultSpecsRoot                = "docs/specs"
 )
 
+// DefaultProfileProofSetupTimeout bounds each disposable profile proof setup.
+const DefaultProfileProofSetupTimeout = 30 * time.Second
+
+// MaxProfileProofSetupTimeout is the largest configurable proof setup deadline.
+const MaxProfileProofSetupTimeout = 10 * time.Minute
+
 const (
 	InitScopeUser    = "user"
 	InitScopeProject = "project"
@@ -82,12 +88,13 @@ type Config struct {
 }
 
 type Defaults struct {
-	Agent           string
-	Model           string
-	AgentFullAccess bool
-	AutoCommit      bool
-	Verification    string
-	ArtifactDir     string
+	ProfileProofSetupTimeout time.Duration
+	Agent                    string
+	Model                    string
+	AgentFullAccess          bool
+	AutoCommit               bool
+	Verification             string
+	ArtifactDir              string
 }
 
 type RuntimeDefaults struct {
@@ -314,11 +321,12 @@ type configOverlay struct {
 }
 
 type defaultsOverlay struct {
-	Agent           *string `yaml:"agent"`
-	AgentFullAccess *bool   `yaml:"agent_full_access"`
-	AutoCommit      *bool   `yaml:"auto_commit"`
-	Verification    *string `yaml:"verification"`
-	ArtifactDir     *string `yaml:"artifact_dir"`
+	ProfileProofSetupTimeout *durationValue `yaml:"profile_proof_setup_timeout"`
+	Agent                    *string        `yaml:"agent"`
+	AgentFullAccess          *bool          `yaml:"agent_full_access"`
+	AutoCommit               *bool          `yaml:"auto_commit"`
+	Verification             *string        `yaml:"verification"`
+	ArtifactDir              *string        `yaml:"artifact_dir"`
 }
 
 type runtimeDefaultsOverlay struct {
@@ -733,9 +741,10 @@ func Builtin() Config {
 			ImplementMonthlyCeilingUSD: DefaultImplementMonthlyCeilingUSD,
 		},
 		Defaults: Defaults{
-			Agent:        defaultAgent,
-			AutoCommit:   true,
-			Verification: defaultVerification,
+			ProfileProofSetupTimeout: DefaultProfileProofSetupTimeout,
+			Agent:                    defaultAgent,
+			AutoCommit:               true,
+			Verification:             defaultVerification,
 		},
 		Runtimes: Runtimes{
 			Codex: RuntimeDefaults{
@@ -1065,6 +1074,9 @@ resolve:
 }
 
 func Validate(config Config) error {
+	if config.Defaults.ProfileProofSetupTimeout <= 0 || config.Defaults.ProfileProofSetupTimeout > MaxProfileProofSetupTimeout {
+		return errors.New("defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m")
+	}
 	if err := validateDerivedPaths(config.Delivery.DerivedPaths); err != nil {
 		return err
 	}
@@ -1783,6 +1795,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		config.Delivery.ItemBinary = *overlay.Delivery.ItemBinary
 	}
 	if overlay.Defaults != nil {
+		if overlay.Defaults.ProfileProofSetupTimeout != nil {
+			config.Defaults.ProfileProofSetupTimeout = overlay.Defaults.ProfileProofSetupTimeout.value
+		}
 		if overlay.Defaults.Agent != nil {
 			config.Defaults.Agent = *overlay.Defaults.Agent
 		}

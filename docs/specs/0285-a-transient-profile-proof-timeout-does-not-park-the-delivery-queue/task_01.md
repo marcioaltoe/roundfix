@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0285-a-transient-profile-proof-timeout-does-not-park-the-delivery-queue
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -152,3 +152,87 @@ show` refuses a value outside the range.
 - `_prd.md` → Sources; Goals; Core Feature 1; Core Feature 4; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 4; Surface Transcript 1; Invariants 1-2; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 1
 - ADR-0298; ADR-0050; ADR-0140; ADR-0107; ADR-0184; ADR-0259; ADR-0271; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+## Result
+
+Implemented the task_01 slice; Task status and declared Verification remain
+Daemon-owned. The initial worktree change was this Task's Daemon-written
+`pending` → `in_progress` status; it was preserved. No other Task or graph
+manifest was edited, and no commit, push or Pull Request was made.
+
+### Implementation and acceptance evidence
+
+- Configured setup deadline, or 30s by default: added
+  `Defaults.ProfileProofSetupTimeout`, `DefaultProfileProofSetupTimeout` and
+  `MaxProfileProofSetupTimeout`. `ProbeRequest.SetupTimeout` reaches
+  `ProveExactSelection` directly and through `ACPXRunner.Probe`; non-positive
+  request values retain the built-in deadline. The agent test records every
+  codex hygiene context's remaining budget: a two-hour request leaves more
+  than one hour; omitted and negative values leave a positive budget no larger
+  than `acpxPreflightSetupTimeout`. No timer is awaited.
+- Config precedence and refusal: config tests cover the built-in value, User
+  Config `45s`, Project Config `90s` overriding User Config `45s`, accepted
+  maximum `10m`, exact range errors for `0s`, `-1s` and `11m`, and an
+  `invalid duration` error for `soon`.
+- Surface Transcript 1: the CLI test asserts the complete empty stdout, both
+  ordered stderr lines including their trailing newlines, and exit
+  `exitPreflight` (2) for `profiles show` with `0s` in isolated Project Config.
+- Every configured tuple: the CLI test exercises `profiles validate --json`
+  for all categories, compares every distinct preferred/fallback tuple with
+  the injected runner's requests, and asserts `90s` or the built-in deadline
+  on each request. All consumers converge on
+  `proveProfileSelectionsWithOptions`: validate, operational Preflight,
+  pre-PR review, Doctor, Setup and configure.
+- Existing deadline boundaries: inspection of the diff confirms that only
+  the exact proof's setup context reads the request field. Cleanup still uses
+  `runner.disposableCleanupTimeout()` with its independent uncancelled
+  context; `fallback.go` still uses `acpxPreflightSetupTimeout`, now aliased
+  to the unchanged 30s config constant; Run session code is unchanged.
+- Documentation: added the General settings row and profile setup deadline
+  subsection to the configuration guide, plus a dedicated section in the
+  canonical Roundfix profiles reference. Both name the key, `30s`, greater
+  than zero and at most 10m, config precedence, every tuple, and the setup-only
+  destination. They explain that an expired deadline stops acpx and closes
+  the disposable Session. Retry/backoff documentation remains task_04's slice.
+- Raised both canonical Roundfix skill version fields from `0.1.110` to
+  `0.1.111`, generated its mirror, recorded the owned skill version, and
+  regenerated the config-key and configuration-guide Behavior Surface
+  fingerprints. No mirror or record was hand-edited; no QA settlement text,
+  init template or repository Project Config changed.
+
+### Focused checks and regeneration
+
+- Red starting signal: `go test ./internal/config -run
+  'TestProfileProofSetupTimeoutConfig/built-in' -count=1` failed to compile
+  before production changes because both constants and the Defaults field
+  were absent.
+- `go test ./internal/config ./internal/agent ./internal/cli -run
+  'Test(ProfileProofSetupTimeoutConfig|ExactSelectionProofSetupUsesTheRequestedDeadline|ProfileProofPassesTheConfiguredSetupDeadline|ProfilesShowRefusesAnInvalidSetupDeadlineTranscript)$'
+  -count=1`: exit 0 for all three packages.
+- `go test -race ./internal/config ./internal/agent ./internal/cli -run
+  'Test(ProfileProof|ProfilesShowRefusesAnInvalidSetupDeadlineTranscript|ExactSelectionProofSetupUsesTheRequestedDeadline|ACPXProbeSelectionSetupUsesBoundedContext|OperationalPreflightPassesAfterAFallbackProofTimesOutOnce)'
+  -count=1`: config and CLI passed. Agent assertions passed, but its suite
+  guard refused temporary catalog rewrites from overlapping digest
+  regeneration. The generator left no lasting Baseline changes. After it
+  stopped, `go test -race ./internal/agent -run
+  'Test(ExactSelectionProofSetupUsesTheRequestedDeadline|ACPXProbeSelectionSetupUsesBoundedContext)$'
+  -count=1` exited 0. No code or guard was weakened.
+- `GOOS=windows go test -c -o <temporary-directory>/<package>.test.exe
+  ./internal/<package>` for `config`, `agent` and `cli`: all exit 0, compiling
+  package code and tests without executing Windows binaries.
+- `make skills-sync`: exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`: exit 0.
+- `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`: exit 0.
+- `make baseline-digests`: exit 0; required by repository guidance after an
+  owned skill edit, reported `changed: false` and left no Baseline diff.
+- `git diff --check`: exit 0. Final path review includes only task_01's
+  declared implementation, tests, documentation, generated records/mirrors
+  and this Result.
+
+Declared Task Verification, repository Verification and terminal settlement
+were not run or claimed; the Daemon owns them. The sandbox could not start
+under the symlinked writable root, so commands used approved elevated access
+to the same resolved checkout. No product behavior was changed for that
+execution limitation.
