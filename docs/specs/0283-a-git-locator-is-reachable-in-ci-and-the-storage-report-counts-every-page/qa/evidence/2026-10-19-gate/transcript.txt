@@ -1,0 +1,32 @@
+command: ./bin/roundfix storage report
+HOME points at an empty disposable home.
+exit: 0
+stderr: empty
+stdout:
+Storage report
+Database
+  Path: /tmp/rf0283-qa-f5b1fjnq/reobserve/transcript-home/.roundfix/roundfix.db
+  File bytes: 0
+  WAL bytes: 0
+  Shared-memory bytes: 0
+  Snapshot bytes: 0
+  Table bytes: 0
+  Free bytes: 0
+  Pointer-map bytes: 0
+  Lock-byte page bytes: 0
+  Grouped bytes: 0
+  Reconciliation difference: 0
+  Reconciliation tolerance: 0 bytes (no Run Database exists)
+Tables
+  TABLE	ROWS	BYTES
+Repositories
+  REPOSITORY	STATUS	RUN_ROWS	RUN_ARTIFACT_BYTES
+States
+  STATE	RUN_ROWS	RUN_ARTIFACT_BYTES
+Artifact Roots
+  ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+  Measured bytes: 0
+  Grouped bytes: 0
+  Reconciliation difference: 0
+
+Full transcript exact-match passed; second invocation identical. No .roundfix directory created.

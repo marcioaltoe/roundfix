@@ -1,0 +1,58 @@
+--- a/internal/store/journal_test.go
++++ b/internal/store/journal_test.go
+@@ -8,6 +8,7 @@
+ 	"errors"
+ 	"fmt"
+ 	"os"
++"os/exec"
+ 	"path/filepath"
+ 	"reflect"
+ 	"roundfix/internal/runevent"
+@@ -780,7 +781,9 @@
+ 	if report.DatabaseSnapshotBytes <= 1700*4096 || report.DatabasePointerMapBytes < 2*4096 {
+ 		t.Fatalf("expected >1700 pages and several pointer-map pages: %#v", report)
+ 	}
++	qaCLIStorage(t, homeDir)
+ 	assertStorageSnapshotGroups(t, report)
++	t.Logf("measured: main=%d snapshot=%d grouped=%d ptrmap=%d lock=%d WAL=%d shm=%d",report.DatabaseBytes,report.DatabaseSnapshotBytes,report.DatabaseAllocatedBytes+report.DatabaseFreeBytes+report.DatabasePointerMapBytes+report.DatabaseLockBytePageBytes,report.DatabasePointerMapBytes,report.DatabaseLockBytePageBytes,report.DatabaseWALBytes,report.DatabaseSharedMemoryBytes)
+ 	if after := storageTreeSnapshot(t, filepath.Dir(DatabasePath(homeDir))); !reflect.DeepEqual(before, after) {
+ 		t.Fatal("storage report changed the database directory")
+ 	}
+@@ -809,7 +812,9 @@
+ 	if report.DatabaseSnapshotBytes <= report.DatabaseBytes || report.DatabaseWALBytes <= 32 || report.DatabaseSharedMemoryBytes == 0 {
+ 		t.Fatalf("expected snapshot to include uncheckpointed WAL frames: %#v", report)
+ 	}
++	qaCLIStorage(t, homeDir)
+ 	assertStorageSnapshotGroups(t, report)
++	t.Logf("measured: main=%d snapshot=%d grouped=%d ptrmap=%d lock=%d WAL=%d shm=%d",report.DatabaseBytes,report.DatabaseSnapshotBytes,report.DatabaseAllocatedBytes+report.DatabaseFreeBytes+report.DatabasePointerMapBytes+report.DatabaseLockBytePageBytes,report.DatabasePointerMapBytes,report.DatabaseLockBytePageBytes,report.DatabaseWALBytes,report.DatabaseSharedMemoryBytes)
+ 	// WAL readers update shared-memory coordination, but never the database or WAL.
+ 	after := storageTreeSnapshot(t, filepath.Dir(DatabasePath(homeDir)))
+ 	if len(after) != len(before) {
+@@ -1788,3 +1793,27 @@
+ 		t.Fatalf("second Artifact Root lost durable Run evidence: %#v", got)
+ 	}
+ }
++
++func qaCLIStorage(t *testing.T, home string) {
++ t.Helper()
++ for attempt:=0; attempt<2; attempt++ {
++ c:=exec.Command("./bin/roundfix","storage","report")
++ c.Dir="/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page-cafd6d1633168bee-a2e38471-6e9a8e89/run_20261020T010830Z_5c431c99d2dabc5a"
++ for _,v:= range os.Environ() { if !strings.HasPrefix(v,"HOME=") && !strings.Contains(strings.SplitN(v,"=",2)[0],"API_KEY") { c.Env=append(c.Env,v) } }
++ c.Env=append(c.Env,"HOME="+home)
++ var stdout,stderr bytes.Buffer;c.Stdout=&stdout;c.Stderr=&stderr
++ if err:=c.Run();err!=nil { t.Fatalf("public CLI: %v stderr=%s",err,stderr.String()) }
++ if stderr.Len()!=0 || !strings.Contains(stdout.String(),"Reconciliation difference: 0") {t.Fatalf("unexpected report: %s %s",stdout.String(),stderr.String())}
++ t.Logf("public CLI read %d, exit 0, empty stderr:\n%s",attempt+1,stdout.String())
++ }
++}
++func TestQAHistoricalMeasurement(t *testing.T) {
++ t.Parallel()
++ const fileBytes int64=1113714688
++ const groupedBytes int64=1112350720
++ pages:=fileBytes/4096
++ ptr,lock:=storagePageStructure(4096,4096,pages,2)
++ omitted:=(ptr+lock)*4096
++ if omitted!=fileBytes-groupedBytes {t.Fatalf("omitted=%d difference=%d",omitted,fileBytes-groupedBytes)}
++ t.Logf("file=%d grouped=%d pages=%d pointer-map=%d lock=%d omitted=%d",fileBytes,groupedBytes,pages,ptr,lock,omitted)
++}

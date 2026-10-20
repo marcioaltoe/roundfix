@@ -1,0 +1,10 @@
+command: ./bin/roundfix spec check 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page --strict
+exit: 0
+Spec 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page/_techspec.md Vocabulary Contract

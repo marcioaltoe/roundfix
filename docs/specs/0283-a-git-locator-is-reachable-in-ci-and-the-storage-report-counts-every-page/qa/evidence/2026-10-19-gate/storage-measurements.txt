@@ -1,0 +1,197 @@
+command: go test -count=1 -v ./internal/store -run ^(TestStorageReportGroupsPointerMapPages|TestStorageReportReadsALiveWALSnapshot|TestQAHistoricalMeasurement)$
+exit: 0
+=== RUN   TestStorageReportGroupsPointerMapPages
+=== PAUSE TestStorageReportGroupsPointerMapPages
+=== RUN   TestStorageReportReadsALiveWALSnapshot
+=== PAUSE TestStorageReportReadsALiveWALSnapshot
+=== RUN   TestQAHistoricalMeasurement
+=== PAUSE TestQAHistoricalMeasurement
+=== CONT  TestStorageReportGroupsPointerMapPages
+=== CONT  TestQAHistoricalMeasurement
+    journal_test.go:1818: file=1113714688 grouped=1112350720 pages=271903 pointer-map=332 lock=1 omitted=1363968
+--- PASS: TestQAHistoricalMeasurement (0.00s)
+=== CONT  TestStorageReportReadsALiveWALSnapshot
+    journal_test.go:815: public CLI read 1, exit 0, empty stderr:
+        Storage report
+        Database
+          Path: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportReadsALiveWALSnapshot3752778431/001/.roundfix/roundfix.db
+          File bytes: 4096
+          WAL bytes: 440872
+          Shared-memory bytes: 32768
+          Snapshot bytes: 397312
+          Table bytes: 393216
+          Free bytes: 0
+          Pointer-map bytes: 4096
+          Lock-byte page bytes: 0
+          Grouped bytes: 397312
+          Reconciliation difference: 0
+          Reconciliation tolerance: 0 bytes (one read transaction measures every page group, pointer-map and lock-byte pages included)
+        Tables
+          TABLE	ROWS	BYTES
+          active_run_locks	1	12288
+          delivery_action_intents	0	8192
+          delivery_action_receipts	0	4096
+          delivery_queue_items	0	12288
+          delivery_queue_runs	0	8192
+          delivery_queues	0	8192
+          interactive_defaults	0	8192
+          run_agent_selections	0	12288
+          run_events	1	270336
+          run_retention_sweeps	0	4096
+          run_token_usage	0	8192
+          run_windows	0	8192
+          runs	1	12288
+          sqlite_schema	29	12288
+          sqlite_sequence	0	4096
+        Repositories
+          REPOSITORY	STATUS	RUN_ROWS	RUN_ARTIFACT_BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportReadsALiveWALSnapshot3752778431/002	present	1	0
+        States
+          STATE	RUN_ROWS	RUN_ARTIFACT_BYTES
+          Active	1	0
+        Artifact Roots
+          ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportReadsALiveWALSnapshot3752778431/003	present	1	0
+          Measured bytes: 0
+          Grouped bytes: 0
+          Reconciliation difference: 0
+    journal_test.go:815: public CLI read 2, exit 0, empty stderr:
+        Storage report
+        Database
+          Path: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportReadsALiveWALSnapshot3752778431/001/.roundfix/roundfix.db
+          File bytes: 4096
+          WAL bytes: 440872
+          Shared-memory bytes: 32768
+          Snapshot bytes: 397312
+          Table bytes: 393216
+          Free bytes: 0
+          Pointer-map bytes: 4096
+          Lock-byte page bytes: 0
+          Grouped bytes: 397312
+          Reconciliation difference: 0
+          Reconciliation tolerance: 0 bytes (one read transaction measures every page group, pointer-map and lock-byte pages included)
+        Tables
+          TABLE	ROWS	BYTES
+          active_run_locks	1	12288
+          delivery_action_intents	0	8192
+          delivery_action_receipts	0	4096
+          delivery_queue_items	0	12288
+          delivery_queue_runs	0	8192
+          delivery_queues	0	8192
+          interactive_defaults	0	8192
+          run_agent_selections	0	12288
+          run_events	1	270336
+          run_retention_sweeps	0	4096
+          run_token_usage	0	8192
+          run_windows	0	8192
+          runs	1	12288
+          sqlite_schema	29	12288
+          sqlite_sequence	0	4096
+        Repositories
+          REPOSITORY	STATUS	RUN_ROWS	RUN_ARTIFACT_BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportReadsALiveWALSnapshot3752778431/002	present	1	0
+        States
+          STATE	RUN_ROWS	RUN_ARTIFACT_BYTES
+          Active	1	0
+        Artifact Roots
+          ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportReadsALiveWALSnapshot3752778431/003	present	1	0
+          Measured bytes: 0
+          Grouped bytes: 0
+          Reconciliation difference: 0
+    journal_test.go:817: measured: main=4096 snapshot=397312 grouped=397312 ptrmap=4096 lock=0 WAL=440872 shm=32768
+--- PASS: TestStorageReportReadsALiveWALSnapshot (0.05s)
+=== NAME  TestStorageReportGroupsPointerMapPages
+    journal_test.go:784: public CLI read 1, exit 0, empty stderr:
+        Storage report
+        Database
+          Path: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportGroupsPointerMapPages954759560/001/.roundfix/roundfix.db
+          File bytes: 8540160
+          WAL bytes: 0
+          Shared-memory bytes: 0
+          Snapshot bytes: 8540160
+          Table bytes: 8527872
+          Free bytes: 0
+          Pointer-map bytes: 12288
+          Lock-byte page bytes: 0
+          Grouped bytes: 8540160
+          Reconciliation difference: 0
+          Reconciliation tolerance: 0 bytes (one read transaction measures every page group, pointer-map and lock-byte pages included)
+        Tables
+          TABLE	ROWS	BYTES
+          active_run_locks	1	12288
+          delivery_action_intents	0	8192
+          delivery_action_receipts	0	4096
+          delivery_queue_items	0	12288
+          delivery_queue_runs	0	8192
+          delivery_queues	0	8192
+          interactive_defaults	0	8192
+          run_agent_selections	0	12288
+          run_events	1	8404992
+          run_retention_sweeps	0	4096
+          run_token_usage	0	8192
+          run_windows	0	8192
+          runs	1	12288
+          sqlite_schema	29	12288
+          sqlite_sequence	0	4096
+        Repositories
+          REPOSITORY	STATUS	RUN_ROWS	RUN_ARTIFACT_BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportGroupsPointerMapPages954759560/002	present	1	0
+        States
+          STATE	RUN_ROWS	RUN_ARTIFACT_BYTES
+          Active	1	0
+        Artifact Roots
+          ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportGroupsPointerMapPages954759560/003	present	1	0
+          Measured bytes: 0
+          Grouped bytes: 0
+          Reconciliation difference: 0
+    journal_test.go:784: public CLI read 2, exit 0, empty stderr:
+        Storage report
+        Database
+          Path: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportGroupsPointerMapPages954759560/001/.roundfix/roundfix.db
+          File bytes: 8540160
+          WAL bytes: 0
+          Shared-memory bytes: 0
+          Snapshot bytes: 8540160
+          Table bytes: 8527872
+          Free bytes: 0
+          Pointer-map bytes: 12288
+          Lock-byte page bytes: 0
+          Grouped bytes: 8540160
+          Reconciliation difference: 0
+          Reconciliation tolerance: 0 bytes (one read transaction measures every page group, pointer-map and lock-byte pages included)
+        Tables
+          TABLE	ROWS	BYTES
+          active_run_locks	1	12288
+          delivery_action_intents	0	8192
+          delivery_action_receipts	0	4096
+          delivery_queue_items	0	12288
+          delivery_queue_runs	0	8192
+          delivery_queues	0	8192
+          interactive_defaults	0	8192
+          run_agent_selections	0	12288
+          run_events	1	8404992
+          run_retention_sweeps	0	4096
+          run_token_usage	0	8192
+          run_windows	0	8192
+          runs	1	12288
+          sqlite_schema	29	12288
+          sqlite_sequence	0	4096
+        Repositories
+          REPOSITORY	STATUS	RUN_ROWS	RUN_ARTIFACT_BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportGroupsPointerMapPages954759560/002	present	1	0
+        States
+          STATE	RUN_ROWS	RUN_ARTIFACT_BYTES
+          Active	1	0
+        Artifact Roots
+          ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportGroupsPointerMapPages954759560/003	present	1	0
+          Measured bytes: 0
+          Grouped bytes: 0
+          Reconciliation difference: 0
+    journal_test.go:786: measured: main=8540160 snapshot=8540160 grouped=8540160 ptrmap=12288 lock=0 WAL=0 shm=0
+--- PASS: TestStorageReportGroupsPointerMapPages (0.10s)
+PASS
+suiteguard: guard cost: measured 2597 paths; fingerprint took 80.487625ms before and 192.846541ms after
+ok  	roundfix/internal/store	0.635s

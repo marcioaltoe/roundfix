@@ -1,0 +1,39 @@
+import pathlib,subprocess,json,re,difflib
+x=json.load(open('/tmp/rf0283-final-state.json'));r=pathlib.Path(x['repo']);s=pathlib.Path(x['spec']); t=pathlib.Path(x['tmp']);out=[]
+def git(*a):return subprocess.check_output(['git',*a],cwd=r,text=True)
+commits=git('rev-list','--reverse',x['base']+'..'+x['head']).splitlines();auth=(s/'_authorization.md').read_text(); problems=[]
+for i,c in enumerate(commits,1):
+ task=s/f'task_0{i}.md';text=task.read_text();declared=text.split('## Result',1)[0];files=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines();out+=['Task '+str(i)+' commit '+c,'git diff-tree --no-commit-id --name-only -r '+c,*files]
+ for f in files:
+  if f!=str(task.relative_to(r)) and f not in declared:problems.append('undeclared '+f)
+  if f.startswith('.agents/skills/') or f=='skills/roundfix/SKILL.md':
+   if not re.search(r'^  - '+re.escape(f)+r'$',auth,re.M):problems.append('unbounded '+f)
+ old=git('show',c+'^:.agents/skills/roundfix/SKILL.md');new=git('show',c+':.agents/skills/roundfix/SKILL.md');ov=re.findall(r'^version: (.+)$',old,re.M);nv=re.findall(r'^version: (.+)$',new,re.M)
+ assert ov!=nv
+ record=git('show',c+':skills/testdata/owned-skill-versions.json');assert nv[0] in record
+ out+=['skill version: '+str(ov)+' -> '+str(nv)+'; present in version record']
+# Compare section bytes for every tracked skill carrying the settlement section.
+for f in git('ls-files','.agents/skills/*/SKILL.md','skills/*/SKILL.md').splitlines():
+ old=git('show',x['base']+':'+f);new=(r/f).read_text()
+ def section(z):
+  a=z.find('### QA settlement');return '' if a<0 else z[a:].split('\n### ',1)[0].split('\n## ',1)[0]
+ assert section(old)==section(new),f
+out+=['All tracked QA settlement sections byte-identical to Delivery Base.']
+changed=git('diff','--name-only',x['base'],x['head']).splitlines()
+for f in changed:
+ if f.startswith(('docs/user-guide/','.agents/skills/roundfix/','skills/roundfix/')):
+  normalized=' '.join((r/f).read_text().split())
+  if 'the local default branch' in normalized:problems.append('obsolete wording '+f)
+for f in ['CONTEXT.md']:
+ text=(r/f).read_text()
+ for term in ['Default Branch Head','Storage Snapshot','Git Locator','Delivery Base']:
+  assert '**'+term+'**:' in text
+out+=['No changed guide/skill copy says the local default branch. Four declared glossary terms exist; no additional domain term introduced.','Problems: '+str(problems)];assert not problems
+(t/'scope-audit.txt').write_text('\n'.join(out)+'\n')
+paths=['Makefile','go.mod','go.sum','.roundfixrc.yml','docs/agents/setup-context.json','internal/cli/implement.go','internal/worktree/worktree.go','internal/cli/deliver.go','internal/cli/deliver_workflow.go','internal/cli/deliver_linux_lane.go']
+paths+=git('ls-tree','-r','--name-only',x['base'],'--','.github/workflows','internal/baseline/assets/modules').splitlines()
+assert not git('diff','--name-only',x['base'],'--',*paths).strip()
+(t/'byte-invariants.txt').write_text('git diff --name-only '+x['base']+' -- <bounded paths>\nexit: 0; output: empty\nByte-identical paths ('+str(len(paths))+'):\n'+'\n'.join(paths)+'\n')
+# Persist runnable probes as noncompiled text; the scratch test retains original assertions.
+original=git('show',x['head']+':internal/store/journal_test.go');modified=(t/'probe/internal/store/journal_test.go').read_text();(t/'storage-probe.patch.txt').write_text(''.join(difflib.unified_diff(original.splitlines(True),modified.splitlines(True),fromfile='a/internal/store/journal_test.go',tofile='b/internal/store/journal_test.go')))
+print('Scope and byte invariants passed;',len(paths),'unchanged paths')

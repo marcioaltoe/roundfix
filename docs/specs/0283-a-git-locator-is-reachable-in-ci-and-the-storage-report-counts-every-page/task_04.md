@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

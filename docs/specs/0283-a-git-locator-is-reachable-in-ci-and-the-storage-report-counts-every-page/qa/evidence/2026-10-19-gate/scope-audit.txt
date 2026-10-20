@@ -1,0 +1,58 @@
+Task 1 commit ae6e217cfae5d7c1e4ce470ddfba53a753b2b5dd
+git diff-tree --no-commit-id --name-only -r ae6e217cfae5d7c1e4ce470ddfba53a753b2b5dd
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page/task_01.md
+docs/user-guide/commands/archive.md
+internal/preflight/default_branch.go
+internal/preflight/default_branch_head.go
+internal/preflight/default_branch_test.go
+internal/spec/git_locator.go
+internal/spec/git_locator_test.go
+internal/speccheck/history_retained_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/testdata/owned-skill-versions.json
+skill version: ['0.1.106'] -> ['0.1.107']; present in version record
+Task 2 commit e53302dec57877abfd45e8c8e4a5c98301234dcc
+git diff-tree --no-commit-id --name-only -r e53302dec57877abfd45e8c8e4a5c98301234dcc
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/review.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page/task_02.md
+docs/user-guide/commands/archive.md
+docs/user-guide/commands/review.md
+internal/cli/archive.go
+internal/cli/archive_pull_request_test.go
+internal/cli/review.go
+internal/cli/review_merge_base_test.go
+internal/daemon/qa_delivery_base.go
+internal/daemon/qa_every_run_audit_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json
+skill version: ['0.1.107'] -> ['0.1.108']; present in version record
+Task 3 commit d66ca9c908b3e4f4c57cea6542491a1fc3036bcb
+git diff-tree --no-commit-id --name-only -r d66ca9c908b3e4f4c57cea6542491a1fc3036bcb
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/storage.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page/task_03.md
+docs/user-guide/commands/storage-report.md
+internal/cli/gc.go
+internal/cli/gc_test.go
+internal/store/journal.go
+internal/store/journal_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/storage.md
+skills/testdata/owned-skill-versions.json
+skill version: ['0.1.108'] -> ['0.1.109']; present in version record
+All tracked QA settlement sections byte-identical to Delivery Base.
+No changed guide/skill copy says the local default branch. Four declared glossary terms exist; no additional domain term introduced.
+Problems: []

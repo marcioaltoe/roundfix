@@ -1,0 +1,11 @@
+Initialized scratch Git repository; fetched only audited repository heads and tags.
+Deleted tags containing b29c54309d36daf812c1cacbd33c114f3cb1d985:
+v0.90.0
+v0.91.0
+v0.92.0
+v0.93.0
+Detached head: d66ca9c908b3e4f4c57cea6542491a1fc3036bcb
+Ref layout:
+refs/remotes/origin/main 50d4a27c87b972db877f340bbce123167a808235
+
+Remaining containing tags:

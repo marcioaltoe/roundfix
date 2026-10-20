@@ -1,0 +1,17 @@
+command: ./bin/roundfix archive 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page --plan --offline
+ROUNDFIX_OPENROUTER_JUDGE_API_KEY unset
+ROUNDFIX_OPENROUTER_API_KEY unset
+ROUNDFIX_TYPESAFE_API_KEY unset
+TYPESAFE_API_KEY unset
+HOME points at a disposable home.
+exit: 0
+stdout:
+archive plan for 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page: removes 30 file(s) (178489 bytes) and writes docs/history/specs/0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-19.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 18 file(s) (44299 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-18-a-git-locator-in-a-fresh-record-fails-the-check-in-ci.md 1386 bytes: no advice (offline)
+candidate references/2026-10-18-storage-report-fails-while-the-run-database-wal-is-live.md 747 bytes: no advice (offline)
+promote with: roundfix archive 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page --promote <path>
+
+stderr:

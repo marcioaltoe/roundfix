@@ -1,0 +1,192 @@
+command: go test -count=1 -v ./internal/preflight ./internal/spec ./internal/speccheck ./internal/daemon ./internal/cli ./internal/store -run ^(TestDetectDefaultBranch|TestResolveDefaultBranchHeadPrefersTheFetchedBranch|TestResolveGitLocatorReachesTheFetchedDefaultInACIClone|TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch|TestResolveGitLocatorReadsTheRemoteDefaultBranch|TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone|TestQADeliveryBaseReadsTheFetchedDefaultWithoutOriginHead|TestQADeliveryBasePrefersTheRemoteTrackingBranch|TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch|TestArchiveChecksTheRevisionAgainstOriginWithoutOriginHead|TestReviewDefaultBaseIsTheFetchedDefaultBranch|TestReviewCommandDefaultsBaseToMain|TestStoragePageStructureMatchesTheFileFormat|TestStorageReportGroupsPointerMapPages|TestStorageReportReadsALiveWALSnapshot|TestStorageReportReconcilesMeasuredTotalsWithoutMutation|TestRunStorageReportWithoutDatabaseTranscript|TestRunStorageReportWhileAWriterHoldsTheWAL|TestRunStorageReportOutsideGitRepository)$
+exit: 0
+=== RUN   TestDetectDefaultBranch
+=== PAUSE TestDetectDefaultBranch
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch
+=== CONT  TestDetectDefaultBranch
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch
+=== RUN   TestDetectDefaultBranch/origin/HEAD_names_the_default_regardless_of_branch_name
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch/remote_wins_over_local
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch/remote_wins_over_local
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch/local_alone
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch/local_alone
+=== RUN   TestDetectDefaultBranch/origin/HEAD_wins_over_a_main_current_branch
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch/undetermined
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch/undetermined
+=== RUN   TestDetectDefaultBranch/origin/HEAD_keeps_slashes_in_the_default_branch_name
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch/absent_refs
+=== RUN   TestDetectDefaultBranch/unset_origin/HEAD_matches_main_by_name
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch/absent_refs
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch/exact_refs_only
+=== RUN   TestDetectDefaultBranch/unset_origin/HEAD_matches_master_by_name
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch/exact_refs_only
+=== RUN   TestDetectDefaultBranch/unset_origin/HEAD_leaves_a_feature_branch_undetermined
+=== RUN   TestDetectDefaultBranch/malformed_origin/HEAD_target_falls_back_to_the_name_match
+=== RUN   TestDetectDefaultBranch/malformed_origin/HEAD_target_on_a_feature_branch_is_undetermined
+=== RUN   TestResolveDefaultBranchHeadPrefersTheFetchedBranch/git_error
+=== PAUSE TestResolveDefaultBranchHeadPrefersTheFetchedBranch/git_error
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch/remote_wins_over_local
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch/exact_refs_only
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch/absent_refs
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch/local_alone
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch/git_error
+=== CONT  TestResolveDefaultBranchHeadPrefersTheFetchedBranch/undetermined
+--- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch (0.00s)
+    --- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch/remote_wins_over_local (0.00s)
+    --- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch/absent_refs (0.00s)
+    --- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch/exact_refs_only (0.00s)
+    --- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch/local_alone (0.00s)
+    --- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch/git_error (0.00s)
+    --- PASS: TestResolveDefaultBranchHeadPrefersTheFetchedBranch/undetermined (0.00s)
+=== RUN   TestDetectDefaultBranch/one_fetched_main
+=== RUN   TestDetectDefaultBranch/one_fetched_master
+=== RUN   TestDetectDefaultBranch/both_fetched_defaults
+=== RUN   TestDetectDefaultBranch/no_fetched_default
+=== RUN   TestDetectDefaultBranch/fetched_refs_fail
+=== RUN   TestDetectDefaultBranch/only_exact_refs_count
+=== RUN   TestDetectDefaultBranch/origin_HEAD_wins_over_fetched_defaults
+=== RUN   TestDetectDefaultBranch/name_match_wins_over_fetched_defaults
+--- PASS: TestDetectDefaultBranch (0.00s)
+    --- PASS: TestDetectDefaultBranch/origin/HEAD_names_the_default_regardless_of_branch_name (0.00s)
+    --- PASS: TestDetectDefaultBranch/origin/HEAD_wins_over_a_main_current_branch (0.00s)
+    --- PASS: TestDetectDefaultBranch/origin/HEAD_keeps_slashes_in_the_default_branch_name (0.00s)
+    --- PASS: TestDetectDefaultBranch/unset_origin/HEAD_matches_main_by_name (0.00s)
+    --- PASS: TestDetectDefaultBranch/unset_origin/HEAD_matches_master_by_name (0.00s)
+    --- PASS: TestDetectDefaultBranch/unset_origin/HEAD_leaves_a_feature_branch_undetermined (0.00s)
+    --- PASS: TestDetectDefaultBranch/malformed_origin/HEAD_target_falls_back_to_the_name_match (0.00s)
+    --- PASS: TestDetectDefaultBranch/malformed_origin/HEAD_target_on_a_feature_branch_is_undetermined (0.00s)
+    --- PASS: TestDetectDefaultBranch/one_fetched_main (0.00s)
+    --- PASS: TestDetectDefaultBranch/one_fetched_master (0.00s)
+    --- PASS: TestDetectDefaultBranch/both_fetched_defaults (0.00s)
+    --- PASS: TestDetectDefaultBranch/no_fetched_default (0.00s)
+    --- PASS: TestDetectDefaultBranch/fetched_refs_fail (0.00s)
+    --- PASS: TestDetectDefaultBranch/only_exact_refs_count (0.00s)
+    --- PASS: TestDetectDefaultBranch/origin_HEAD_wins_over_fetched_defaults (0.00s)
+    --- PASS: TestDetectDefaultBranch/name_match_wins_over_fetched_defaults (0.00s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 99.254709ms before and 160.044875ms after
+ok  	roundfix/internal/preflight	0.491s
+=== RUN   TestResolveGitLocatorReadsTheRemoteDefaultBranch
+=== PAUSE TestResolveGitLocatorReadsTheRemoteDefaultBranch
+=== RUN   TestResolveGitLocatorReachesTheFetchedDefaultInACIClone
+=== PAUSE TestResolveGitLocatorReachesTheFetchedDefaultInACIClone
+=== RUN   TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch
+=== PAUSE TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch
+=== CONT  TestResolveGitLocatorReadsTheRemoteDefaultBranch
+=== CONT  TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch
+=== CONT  TestResolveGitLocatorReachesTheFetchedDefaultInACIClone
+--- PASS: TestResolveGitLocatorReachesTheFetchedDefaultInACIClone (0.69s)
+--- PASS: TestResolveGitLocatorReadsTheRemoteDefaultBranch (0.70s)
+--- PASS: TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch (0.75s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 89.102166ms before and 70.495125ms after
+ok  	roundfix/internal/spec	1.134s
+=== RUN   TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone
+=== PAUSE TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone
+=== CONT  TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone
+--- PASS: TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone (0.81s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 155.352958ms before and 70.422458ms after
+ok  	roundfix/internal/speccheck	1.292s
+=== RUN   TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== PAUSE TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== RUN   TestQADeliveryBasePrefersTheRemoteTrackingBranch
+=== PAUSE TestQADeliveryBasePrefersTheRemoteTrackingBranch
+=== RUN   TestQADeliveryBaseReadsTheFetchedDefaultWithoutOriginHead
+=== PAUSE TestQADeliveryBaseReadsTheFetchedDefaultWithoutOriginHead
+=== CONT  TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== CONT  TestQADeliveryBaseReadsTheFetchedDefaultWithoutOriginHead
+=== CONT  TestQADeliveryBasePrefersTheRemoteTrackingBranch
+--- PASS: TestQADeliveryBaseReadsTheFetchedDefaultWithoutOriginHead (0.25s)
+--- PASS: TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch (0.26s)
+--- PASS: TestQADeliveryBasePrefersTheRemoteTrackingBranch (0.32s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 164.744834ms before and 142.325375ms after
+ok  	roundfix/internal/daemon	0.917s
+=== RUN   TestArchiveChecksTheRevisionAgainstOriginWithoutOriginHead
+=== PAUSE TestArchiveChecksTheRevisionAgainstOriginWithoutOriginHead
+=== RUN   TestRunStorageReportOutsideGitRepository
+=== PAUSE TestRunStorageReportOutsideGitRepository
+=== RUN   TestRunStorageReportWithoutDatabaseTranscript
+=== PAUSE TestRunStorageReportWithoutDatabaseTranscript
+=== RUN   TestRunStorageReportWhileAWriterHoldsTheWAL
+=== PAUSE TestRunStorageReportWhileAWriterHoldsTheWAL
+=== RUN   TestReviewDefaultBaseIsTheFetchedDefaultBranch
+=== PAUSE TestReviewDefaultBaseIsTheFetchedDefaultBranch
+=== RUN   TestReviewCommandDefaultsBaseToMain
+=== PAUSE TestReviewCommandDefaultsBaseToMain
+=== CONT  TestArchiveChecksTheRevisionAgainstOriginWithoutOriginHead
+=== CONT  TestRunStorageReportWhileAWriterHoldsTheWAL
+=== CONT  TestRunStorageReportWithoutDatabaseTranscript
+=== CONT  TestReviewCommandDefaultsBaseToMain
+=== CONT  TestRunStorageReportOutsideGitRepository
+=== CONT  TestReviewDefaultBaseIsTheFetchedDefaultBranch
+--- PASS: TestRunStorageReportWithoutDatabaseTranscript (0.00s)
+--- PASS: TestRunStorageReportOutsideGitRepository (0.03s)
+--- PASS: TestRunStorageReportWhileAWriterHoldsTheWAL (0.03s)
+--- PASS: TestReviewCommandDefaultsBaseToMain (0.30s)
+--- PASS: TestReviewDefaultBaseIsTheFetchedDefaultBranch (0.37s)
+--- PASS: TestArchiveChecksTheRevisionAgainstOriginWithoutOriginHead (0.38s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 168.305666ms before and 79.010833ms after
+ok  	roundfix/internal/cli	0.889s
+=== RUN   TestStoragePageStructureMatchesTheFileFormat
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat
+=== RUN   TestStorageReportGroupsPointerMapPages
+=== PAUSE TestStorageReportGroupsPointerMapPages
+=== RUN   TestStorageReportReadsALiveWALSnapshot
+=== PAUSE TestStorageReportReadsALiveWALSnapshot
+=== RUN   TestStorageReportReconcilesMeasuredTotalsWithoutMutation
+=== PAUSE TestStorageReportReconcilesMeasuredTotalsWithoutMutation
+=== CONT  TestStoragePageStructureMatchesTheFileFormat
+=== CONT  TestStorageReportReadsALiveWALSnapshot
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/observed_October_18
+=== CONT  TestStorageReportGroupsPointerMapPages
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/observed_October_18
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/observed_October_19
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/observed_October_19
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/main_file
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/main_file
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/WAL_snapshot
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/WAL_snapshot
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/no_auto_vacuum
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/no_auto_vacuum
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/full_auto_vacuum
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/full_auto_vacuum
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/reserved_bytes
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/reserved_bytes
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/before_lock_collision
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/before_lock_collision
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/lock_collision_deferred
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/lock_collision_deferred
+=== RUN   TestStoragePageStructureMatchesTheFileFormat/after_lock_collision
+=== PAUSE TestStoragePageStructureMatchesTheFileFormat/after_lock_collision
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/observed_October_18
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/after_lock_collision
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/lock_collision_deferred
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/before_lock_collision
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/reserved_bytes
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/full_auto_vacuum
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/no_auto_vacuum
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/WAL_snapshot
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/main_file
+=== CONT  TestStoragePageStructureMatchesTheFileFormat/observed_October_19
+--- PASS: TestStoragePageStructureMatchesTheFileFormat (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/observed_October_18 (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/after_lock_collision (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/lock_collision_deferred (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/before_lock_collision (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/reserved_bytes (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/full_auto_vacuum (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/no_auto_vacuum (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/WAL_snapshot (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/main_file (0.00s)
+    --- PASS: TestStoragePageStructureMatchesTheFileFormat/observed_October_19 (0.00s)
+=== CONT  TestStorageReportReconcilesMeasuredTotalsWithoutMutation
+--- PASS: TestStorageReportReadsALiveWALSnapshot (0.02s)
+--- PASS: TestStorageReportReconcilesMeasuredTotalsWithoutMutation (0.03s)
+--- PASS: TestStorageReportGroupsPointerMapPages (0.09s)
+PASS
+suiteguard: guard cost: measured 2619 paths; fingerprint took 157.45775ms before and 250.031583ms after
+ok  	roundfix/internal/store	0.622s

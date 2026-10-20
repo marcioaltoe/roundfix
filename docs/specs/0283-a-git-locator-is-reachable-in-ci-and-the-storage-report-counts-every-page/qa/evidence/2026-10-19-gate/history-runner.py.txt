@@ -1,0 +1,28 @@
+import pathlib,subprocess,json,os,tarfile
+x=json.load(open('/tmp/rf0283-final-state.json')); r=pathlib.Path(x['repo']); e=pathlib.Path(x['evidence']); t=pathlib.Path(x['tmp']); en=os.environ.copy(); en['HOME']=str(t/'home')
+for k in list(en):
+ if k.endswith('API_KEY') or k.endswith('_TOKEN'): en.pop(k)
+def run(a,cwd=r,check=True):
+ p=subprocess.run(a,cwd=cwd,env=en,capture_output=True,text=True)
+ if check and p.returncode: raise Exception(str(a)+'\n'+p.stdout+p.stderr)
+ return p
+ci=t/'ci'; ci.mkdir(); run(['git','init',str(ci)]); run(['git','fetch',str(r),'+refs/heads/*:refs/remotes/origin/*','+refs/tags/*:refs/tags/*'],ci)
+loc='b29c54309d36daf812c1cacbd33c114f3cb1d985'; tags=run(['git','tag','--contains',loc],ci).stdout.splitlines()
+for tag in tags: run(['git','tag','-d',tag],ci)
+run(['git','checkout','--detach',x['head']],ci)
+layout=run(['git','for-each-ref','--format=%(refname) %(objectname)','refs/heads','refs/remotes/origin/HEAD','refs/remotes/origin/main'],ci).stdout
+(e/'history-layout.txt').write_text('Initialized scratch Git repository; fetched only audited repository heads and tags.\nDeleted tags containing '+loc+':\n'+'\n'.join(tags)+'\nDetached head: '+x['head']+'\nRef layout:\n'+layout+'\nRemaining containing tags:\n'+run(['git','tag','--contains',loc],ci).stdout)
+cur=run([str(r/'bin/roundfix'),'spec','check','--format','json'],ci,False); (e/'history-current.json').write_text(cur.stdout); (e/'history-current-stderr.txt').write_text(cur.stderr)
+base=t/'base'; base.mkdir(); archive=t/'base.tar'
+with archive.open('wb') as out: subprocess.run(['git','archive',x['base']],cwd=r,stdout=out,check=True)
+with tarfile.open(archive) as f: f.extractall(base,filter='data')
+# Toolchain HOME remains host for cached compiler/module lookup; product commands use scratch HOME.
+b=subprocess.run(['go','build','-buildvcs=false','-o',str(base/'bin/roundfix'),'./cmd/roundfix'],cwd=base,capture_output=True,text=True); (e/'base-build.txt').write_text('command: go build -buildvcs=false -o <scratch>/base/bin/roundfix ./cmd/roundfix\nexit: '+str(b.returncode)+'\n'+b.stdout+b.stderr); assert b.returncode==0
+old=run([str(base/'bin/roundfix'),'spec','check','--format','json'],ci,False); (e/'history-base.json').write_text(old.stdout); (e/'history-base-stderr.txt').write_text(old.stderr)
+def retained(p):
+ data=json.loads(p.stdout)
+ findings=data.get('findings',[]) if isinstance(data,dict) else data
+ return [f for f in findings if 'SC-HISTORY-RETAINED' in str(f) and '0279-linux' in str(f)]
+a,b=retained(cur),retained(old)
+(e/'history-comparison.txt').write_text('Current command: <audited>./bin/roundfix spec check --format json\nCurrent exit: '+str(cur.returncode)+'\n0279 SC-HISTORY-RETAINED findings: '+str(len(a))+'\nDelivery Base command: <scratch-base>./bin/roundfix spec check --format json\nDelivery Base exit: '+str(old.returncode)+'\n0279 SC-HISTORY-RETAINED findings: '+str(len(b))+'\n'+json.dumps(b,indent=2)+'\n')
+print('history current/base findings',len(a),len(b),flush=True); assert not a and b

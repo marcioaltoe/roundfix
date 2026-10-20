@@ -1,0 +1,46 @@
+import pathlib,subprocess,json,os,tarfile
+x=json.load(open('/tmp/rf0283-final-state.json')); r=pathlib.Path(x['repo']); e=pathlib.Path(x['evidence']); t=pathlib.Path(x['tmp']); scratch=t/'probe'; scratch.mkdir(); ar=t/'head.tar'
+with ar.open('wb') as out: subprocess.run(['git','archive',x['head']],cwd=r,stdout=out,check=True)
+with tarfile.open(ar) as f:f.extractall(scratch,filter='data')
+en=os.environ.copy()
+for k in list(en):
+ if k.endswith('API_KEY') or k.endswith('_TOKEN'):en.pop(k)
+def test(name,package,pattern):
+ cmd=['go','test','-count=1','-v',package,'-run',pattern]; p=subprocess.run(cmd,cwd=scratch,env=en,capture_output=True,text=True); (e/name).write_text('command: '+' '.join(cmd)+'\nexit: '+str(p.returncode)+'\n'+p.stdout+p.stderr); print(name,p.returncode,flush=True); return p
+f=scratch/'internal/preflight/default_branch_head.go'; original=f.read_text(); f.write_text(original.replace('if ref == remote {','if ref == local {').replace('if ref == local {\n\t\t\tfallback', 'if ref == remote {\n\t\t\tfallback'))
+p=test('sabotage-local-first.txt','./internal/spec','^TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch$'); assert p.returncode!=0 and '--- FAIL: TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch' in p.stdout; f.write_text(original)
+f=scratch/'internal/store/journal.go'; original=f.read_text(); assert '(freePages+pointerMapPages+lockBytePages)' in original; f.write_text(original.replace('(freePages+pointerMapPages+lockBytePages)','(freePages+lockBytePages)'))
+p=test('sabotage-pointer-map.txt','./internal/store','^TestStorageReportGroupsPointerMapPages$'); assert p.returncode!=0 and 'reconcile Run Database storage groups' in p.stdout; f.write_text(original)
+# Log measured values and exercise the actual audited CLI against these temporary homes.
+f=scratch/'internal/store/journal_test.go'; original=f.read_text(); text=original.replace('"os"','"os"\n"os/exec"')
+text=text.replace('assertStorageSnapshotGroups(t, report)','assertStorageSnapshotGroups(t, report)\n\tt.Logf("measured: main=%d snapshot=%d grouped=%d ptrmap=%d lock=%d WAL=%d shm=%d",report.DatabaseBytes,report.DatabaseSnapshotBytes,report.DatabaseAllocatedBytes+report.DatabaseFreeBytes+report.DatabasePointerMapBytes+report.DatabaseLockBytePageBytes,report.DatabasePointerMapBytes,report.DatabaseLockBytePageBytes,report.DatabaseWALBytes,report.DatabaseSharedMemoryBytes)',2)
+# Insert CLI after opening report, before existing independent file snapshots.
+text=text.replace('assertStorageSnapshotGroups(t, report)\n\tt.Logf(', 'qaCLIStorage(t, homeDir)\n\tassertStorageSnapshotGroups(t, report)\n\tt.Logf(',2)
+text+='''
+func qaCLIStorage(t *testing.T, home string) {
+ t.Helper()
+ for attempt:=0; attempt<2; attempt++ {
+ c:=exec.Command("./bin/roundfix","storage","report")
+ c.Dir=QA_REPO
+ for _,v:= range os.Environ() { if !strings.HasPrefix(v,"HOME=") && !strings.Contains(strings.SplitN(v,"=",2)[0],"API_KEY") { c.Env=append(c.Env,v) } }
+ c.Env=append(c.Env,"HOME="+home)
+ var stdout,stderr bytes.Buffer;c.Stdout=&stdout;c.Stderr=&stderr
+ if err:=c.Run();err!=nil { t.Fatalf("public CLI: %v stderr=%s",err,stderr.String()) }
+ if stderr.Len()!=0 || !strings.Contains(stdout.String(),"Reconciliation difference: 0") {t.Fatalf("unexpected report: %s %s",stdout.String(),stderr.String())}
+ t.Logf("public CLI read %d, exit 0, empty stderr:\\n%s",attempt+1,stdout.String())
+ }
+}
+func TestQAHistoricalMeasurement(t *testing.T) {
+ t.Parallel()
+ const fileBytes int64=1113714688
+ const groupedBytes int64=1112350720
+ pages:=fileBytes/4096
+ ptr,lock:=storagePageStructure(4096,4096,pages,2)
+ omitted:=(ptr+lock)*4096
+ if omitted!=fileBytes-groupedBytes {t.Fatalf("omitted=%d difference=%d",omitted,fileBytes-groupedBytes)}
+ t.Logf("file=%d grouped=%d pages=%d pointer-map=%d lock=%d omitted=%d",fileBytes,groupedBytes,pages,ptr,lock,omitted)
+}
+'''.replace('QA_REPO',json.dumps(str(r)))
+f.write_text(text)
+p=test('storage-measurements.txt','./internal/store','^(TestStorageReportGroupsPointerMapPages|TestStorageReportReadsALiveWALSnapshot|TestQAHistoricalMeasurement)$'); assert p.returncode==0
+(e/'probe-changes.go.txt').write_text(text[len(original):]); (e/'probe-method.txt').write_text('Scratch created with git archive '+x['head']+'. Local-first sabotage swaps the remote/local comparisons in default_branch_head.go, then restores the file. Pointer-map sabotage removes pointerMapPages from groupedBytes, then restores the file. The two existing storage tests log measured page groups and run audited ./bin/roundfix storage report twice against their disposable homes before the original byte/directory comparisons. Tests retain all assertions. The appended throwaway test recomputes the adopted historical measurement. No repository source changed.\n')
