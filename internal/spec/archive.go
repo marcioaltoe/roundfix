@@ -201,25 +201,21 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, err
 	}
 	if inside {
-		rel := func(path string) (string, error) {
-			value, err := filepath.Rel(req.RepositoryRoot, path)
-			return filepath.ToSlash(value), err
-		}
-		specRootRel, err := rel(req.SpecsRoot)
+		specRootRel, err := RepositoryPath(req.RepositoryRoot, req.SpecsRoot)
 		if err != nil {
-			return ArchiveResult{}, err
+			return ArchiveResult{}, fmt.Errorf("resolve Spec Root for archive relink: %w", err)
 		}
-		archiveRootRel, err := rel(archiveRoot)
+		archiveRootRel, err := RepositoryPath(req.RepositoryRoot, archiveRoot)
 		if err != nil {
-			return ArchiveResult{}, err
+			return ArchiveResult{}, fmt.Errorf("resolve Archive Root for archive relink: %w", err)
 		}
-		folderRel, err := rel(sourceDir)
+		folderRel, err := RepositoryPath(req.RepositoryRoot, sourceDir)
 		if err != nil {
-			return ArchiveResult{}, err
+			return ArchiveResult{}, fmt.Errorf("resolve Spec folder for archive relink: %w", err)
 		}
-		recordRel, err := rel(recordPath)
+		recordRel, err := RepositoryPath(req.RepositoryRoot, recordPath)
 		if err != nil {
-			return ArchiveResult{}, err
+			return ArchiveResult{}, fmt.Errorf("resolve archive record for archive relink: %w", err)
 		}
 		relinkPlan, err = PlanArchiveRelink(ctx, req.RepositoryRoot, specRootRel, archiveRootRel, folderRel, recordRel, req.Promote)
 		if err != nil {
@@ -347,7 +343,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	if err != nil {
 		return ArchiveResult{}, err
 	}
-	recordRel, err := filepath.Rel(repositoryRoot, recordPath)
+	recordRel, err := RepositoryPath(repositoryRoot, recordPath)
 	if err != nil {
 		return ArchiveResult{}, fmt.Errorf("resolve archive record: %w", err)
 	}

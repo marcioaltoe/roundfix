@@ -146,6 +146,10 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", fmt.Errorf("Spec %q cannot archive with a Glossary Gap: %s", req.slug, strings.Join(reasons, "; ")), stderr)
 		return exitPreflight
 	}
+	// Use Git's top level of this command's checkout (or its external Spec
+	// repository), found from the command work directory. Never substitute the
+	// main worktree or the process's inherited directory: these paths reach Git,
+	// diagnostics and the archive's written files.
 	repositoryRoot, err := gitOutput(ctx, revisionRoot, "rev-parse", "--show-toplevel")
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
@@ -162,17 +166,7 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	statusFolder := specDir
-	if len(status.Changes) == 0 && len(status.Ignored) > 0 {
-		// Git reports the physical repository root; the configured root may
-		// contain a symlink. Keep the existing uncommitted refusal unchanged.
-		statusFolder, err = filepath.EvalSymlinks(specDir)
-		if err != nil {
-			printPreflightFailure("archive", fmt.Errorf("resolve ignored Spec folder: %w", err), stderr)
-			return exitPreflight
-		}
-	}
-	folderRel, err := filepathRelSlash(repositoryRoot, statusFolder)
+	folderRel, err := spec.RepositoryPath(repositoryRoot, specDir)
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
@@ -282,7 +276,7 @@ func recordArchiveCommandPullRequest(ctx context.Context, req archiveCommandRequ
 	if err != nil {
 		return true, err
 	}
-	recordRel, err := filepathRelSlash(repositoryRoot, recordPath)
+	recordRel, err := spec.RepositoryPath(repositoryRoot, recordPath)
 	if err != nil {
 		return true, err
 	}
@@ -490,30 +484,31 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 	}
 	relRecord := filepath.ToSlash(filepath.Join(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug+".md"))
 	relRecord, _ = filepathRelSlash(loaded.GitRoot, relRecord)
-	repositoryRoot := loaded.GitRoot
+	revisionRoot := loaded.GitRoot
 	if root.External {
-		repositoryRoot, err = gitOutput(ctx, root.Path, "rev-parse", "--show-toplevel")
-		if err != nil {
-			printPreflightFailure("archive", err, stderr)
-			return exitPreflight
-		}
+		revisionRoot = root.Path
 	}
-	specRootRel, err := filepathRelSlash(repositoryRoot, root.Path)
+	repositoryRoot, err := gitOutput(ctx, revisionRoot, "rev-parse", "--show-toplevel")
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	archiveRootRel, err := filepathRelSlash(repositoryRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	specRootRel, err := spec.RepositoryPath(repositoryRoot, root.Path)
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	folderRel, err := filepathRelSlash(repositoryRoot, specDir)
+	archiveRootRel, err := spec.RepositoryPath(repositoryRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	recordRel, err := filepathRelSlash(repositoryRoot, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug))
+	folderRel, err := spec.RepositoryPath(repositoryRoot, specDir)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	recordRel, err := spec.RepositoryPath(repositoryRoot, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), req.slug))
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight

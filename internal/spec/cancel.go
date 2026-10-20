@@ -94,11 +94,8 @@ func Cancel(req CancelRequest) (CancelResult, error) {
 		return CancelResult{}, errors.New("cancellation requires RepositoryRoot")
 	}
 	relative := func(path string) (string, error) {
-		rel, err := filepath.Rel(req.RepositoryRoot, path)
-		if err != nil {
-			return "", err
-		}
-		if !cancelRelativePath(rel) {
+		rel, err := RepositoryPath(req.RepositoryRoot, path)
+		if err != nil || !cancelRelativePath(rel) {
 			return "", fmt.Errorf("cancellation path %q is outside the repository", path)
 		}
 		return filepath.ToSlash(rel), nil
@@ -423,9 +420,9 @@ func planSourceReturn(root, specDir, date, slug, reason string) ([]cancelCopy, [
 		if err != nil {
 			return nil, nil, fmt.Errorf("return source %q: %w", from, err)
 		}
-		rel, err := filepath.Rel(root, from)
-		if err != nil {
-			return nil, nil, fmt.Errorf("locate returned source %q: %w", from, err)
+		rel, err := RepositoryPath(root, from)
+		if err != nil || !cancelRelativePath(rel) {
+			return nil, nil, fmt.Errorf("cancellation path %q is outside the repository", from)
 		}
 		copies = append(copies, cancelCopy{destination, next})
 		returned = append(returned, ReturnedSource{filepath.ToSlash(rel), to, status})

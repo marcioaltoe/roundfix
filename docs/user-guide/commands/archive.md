@@ -30,6 +30,10 @@ without one, with `origin/main` or `origin/master` naming the default when
 origin/HEAD is unset and exactly one exists.
 A removed folder destination never becomes a link from the record to itself.
 Outward relative destinations are rebased to keep naming the same file.
+The archive reads every path relative to the checkout it runs in, so it
+writes the same record and relinks the same files from the main checkout,
+a linked worktree such as a Delivery Queue item worktree, a subdirectory
+of either, or a path that crosses a symbolic link.
 
 The original folder's bytes stay in Git at the record's `source_revision`. The
 Archive Record is the small `<slug>.md` file under the archive root; it names

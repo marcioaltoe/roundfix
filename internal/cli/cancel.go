@@ -93,6 +93,9 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if root.External {
 		revisionRoot = root.Path
 	}
+	// Git resolves the checkout reached from the command work directory (or
+	// its external Spec repository), never the main worktree or an inherited
+	// process directory. Repository paths feed Git, stderr and written files.
 	repositoryRoot, err := gitOutput(ctx, revisionRoot, "rev-parse", "--show-toplevel")
 	if err != nil {
 		return refuse(err)
@@ -101,15 +104,7 @@ func runCancelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return refuse(err)
 	}
-	statusFolder := folder
-	if len(status.Changes) == 0 && len(status.Ignored) > 0 {
-		// Match Git's physical root without changing the uncommitted refusal.
-		statusFolder, err = filepath.EvalSymlinks(folder)
-		if err != nil {
-			return refuse(fmt.Errorf("resolve ignored Spec folder: %w", err))
-		}
-	}
-	folderRel, err := filepathRelSlash(repositoryRoot, statusFolder)
+	folderRel, err := spec.RepositoryPath(repositoryRoot, folder)
 	if err != nil {
 		return refuse(err)
 	}
@@ -279,7 +274,7 @@ func checkCancelRequires(root, slug string) error {
 }
 
 func cancelCitations(ctx context.Context, repo string, root roundconfig.SpecsRoot, folder string) ([]spec.HistoryCitation, error) {
-	folderRel, err := filepathRelSlash(repo, folder)
+	folderRel, err := spec.RepositoryPath(repo, folder)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +286,7 @@ func cancelCitations(ctx context.Context, repo string, root roundconfig.SpecsRoo
 		if entry.IsDir() {
 			return nil
 		}
-		rel, err := filepathRelSlash(repo, path)
+		rel, err := spec.RepositoryPath(repo, path)
 		if err != nil {
 			return err
 		}
@@ -305,15 +300,15 @@ func cancelCitations(ctx context.Context, repo string, root roundconfig.SpecsRoo
 	if err != nil {
 		return nil, err
 	}
-	specRootRel, err := filepathRelSlash(repo, root.Path)
+	specRootRel, err := spec.RepositoryPath(repo, root.Path)
 	if err != nil {
 		return nil, err
 	}
-	archiveRootRel, err := filepathRelSlash(repo, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	archiveRootRel, err := spec.RepositoryPath(repo, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
 	if err != nil {
 		return nil, err
 	}
-	recordRel, err := filepathRelSlash(repo, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), filepath.Base(folder)))
+	recordRel, err := spec.RepositoryPath(repo, spec.ArchiveRecordPath(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), filepath.Base(folder)))
 	if err != nil {
 		return nil, err
 	}

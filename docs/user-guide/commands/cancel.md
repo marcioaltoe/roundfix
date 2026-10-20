@@ -10,6 +10,9 @@ Tasks completed and pending. It returns each adopted Backlog Entry to
 `docs/backlog/` with `status: open` and each adopted Finding to
 `docs/findings/` with `status: pending`, then removes the committed Spec
 folder. The removed bytes stay in Git at the record's `source_revision`.
+The cancel reads every path relative to the checkout it runs in, so it
+writes the same record from the main checkout, a linked worktree, a
+subdirectory of either, or a path that crosses a symbolic link.
 
 `cancel` creates no Run, never changes a Task status, and never commits or
 pushes. A cancelled Spec never meets a prerequisite or supersedes another
