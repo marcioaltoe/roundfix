@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.93.0] - 2026-10-19
+
+### The Linux Lane runs like CI
+
+- **Runs under an init.** The Linux Lane container starts with `--init`, so a test that waits on a reaped child no longer times out in the container (ADR-0294, amending ADR-0288).
+- **Configurable image.** `delivery.linux_lane_image` names the container image; empty keeps `golang:<go.mod go version>`. The queue reads it from the fetched default branch together with `delivery.linux_lane`, so an item branch cannot choose its image. An invalid reference is refused when the configuration loads.
+- **Tests skip naming the missing tool.** A test that needs an External Test Tool (for example `rustfmt`, `cargo`, `node` or `docker`) skips naming it when the tool is absent from PATH; the Base Test Tools are listed in the glossary.
+- **Container failure told apart from change failure.** A Lane Container Failure (setup, invocation, signal or the 20-minute cap) parks the item `linux-lane-container` in the `environment` Park Class with the cause in the blocker. A Lane Change Failure (the candidate's `go test` failed) parks `gate-failed` in the `finding` Park Class. The lane log ends with exactly one outcome line.
+- **`roundfix deliver lane [--all] [<revision>]`.** Runs the Linux Lane on demand, outside the Delivery Queue and regardless of `delivery.linux_lane`, against a commit's changed Go packages or every package with `--all`. Exits `0` on a pass, `1` on a Lane Change Failure and `3` on a skip or Lane Container Failure. Run it with `--all` and get a pass before turning the lane on.
+
+### Fixed
+
+- A process-control test no longer races a 100 ms stop window against its grace period on a loaded runner.
+
 ## [0.92.0] - 2026-10-19
 
 ### The Codex full-access mode is the one the adapter offers
