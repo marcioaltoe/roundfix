@@ -113,7 +113,7 @@ A repository path the tooling-authority rules bind — the configuration, script
 _Avoid_: Protected file, restricted path, tooling file
 
 **Delivery Base**:
-The merge base of the audited head and the repository default branch. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit.
+The merge base of the audited head and the Default Branch Head. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit ([ADR-0295](docs/adr/0295-reachability-reads-the-fetched-default-branch-and-origin-names-it-when-origin-head-is-unset.md)).
 _Avoid_: Run start head, audited head, delivery target
 
 **Undeclared Governed Path**:
@@ -617,6 +617,10 @@ _Avoid_: Matching by pull request number only, latest artifacts
 The central Roundfix database that stores Run state and review progress across repositories.
 _Avoid_: Artifact directory, state file
 
+**Storage Snapshot**:
+A consistent read of the Run Database that measures every page group, including committed write-ahead log frames, so grouped bytes equal snapshot bytes exactly ([ADR-0296](docs/adr/0296-the-storage-report-reconciles-every-page-of-one-storage-snapshot.md)).
+_Avoid_: Main file size, immutable storage-report measurements
+
 **Round**:
 One review-resolution cycle within a Run, tied to the pull request state being reviewed.
 _Avoid_: Review Round, iteration, pass, cycle
@@ -905,8 +909,12 @@ _Avoid_: Archive rewrite, source duplication, link cleanup
 The rewrite of relative destinations in an Archive Record outcome and each promoted copy: a folder destination points at its promoted copy, or becomes a Git Locator when no copy survives, never the record itself; every other destination keeps the same repository path ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive Relink, broken-link report, arbitrary link rewrite
 
+**Default Branch Head**:
+The fetched `origin/<default>` commit, or the local default branch commit only when no remote-tracking branch exists. When origin/HEAD is unset and the current branch does not name the default, exactly one of `origin/main` and `origin/master` names it ([ADR-0295](docs/adr/0295-reachability-reads-the-fetched-default-branch-and-origin-names-it-when-origin-head-is-unset.md)).
+_Avoid_: Local-first default, work branch head
+
 **Git Locator**:
-The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the default branch or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the Default Branch Head or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Broken link, branch-only revision, Archive Record
 
 **History Citation**:

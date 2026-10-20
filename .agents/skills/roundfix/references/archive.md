@@ -102,7 +102,7 @@ keeps every write, exits `1`, and prints the command that finishes the removal:
 `chmod -R u+w '<folder>' && rm -rf '<folder>'`.
 
 After a successful archive, the command warns when `source_revision` is not an
-ancestor of the default branch. When the delivery Pull Request opens,
+ancestor of the Default Branch Head. When the delivery Pull Request opens,
 `roundfix archive <slug>` with `--pull-request <n>` stores the delivery pull
 request in the Archive Record, including a record the current branch already
 added.
@@ -173,7 +173,7 @@ The Archive Command deletes the Spec folder after writing its Archive Record.
 In the copied outcome and each promoted copy, a destination inside the removed
 folder names its promoted copy or becomes a Git Locator, `` `<path>@<commit>` ``,
 never the record itself. The commit must hold the path and be reachable from
-the default branch or a tag. Without one, the path and record's pull request
+the Default Branch Head or a tag. Without one, the path and record's pull request
 name the source instead. Other destinations keep naming the same repository path.
 
 The archive refuses before writing when a promotion destination already exists,

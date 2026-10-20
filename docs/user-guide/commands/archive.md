@@ -21,10 +21,13 @@ Live Document citations are rewritten to promoted copies or the Archive Record.
 
 In the outcome and each promoted copy, a citation of a removed folder file
 points at its promoted copy or becomes a Git Locator: `path@commit`, written as
-code. The locator prefers `source_revision` when the local default branch or a
-tag reaches it; otherwise it names the newest commit the default branch
+code. The locator prefers `source_revision` when the Default Branch Head or a
+tag reaches it; otherwise it names the newest commit the Default Branch Head
 reaches that holds the file. If no such commit exists, it names the path and
 the record's pull request, or says `not reachable from any branch or tag`.
+The Default Branch Head is the fetched `origin/<default>`, the local branch only
+without one, with `origin/main` or `origin/master` naming the default when
+origin/HEAD is unset and exactly one exists.
 A removed folder destination never becomes a link from the record to itself.
 Outward relative destinations are rebased to keep naming the same file.
 
@@ -32,7 +35,7 @@ The original folder's bytes stay in Git at the record's `source_revision`. The
 Archive Record is the small `<slug>.md` file under the archive root; it names
 the disposition, QA Report and verdict, source revision, and promoted files.
 After a successful archive, the command warns when `source_revision` is not an
-ancestor of the default branch. `roundfix archive <slug>` with
+ancestor of the Default Branch Head. `roundfix archive <slug>` with
 `--pull-request <n>` stores the delivery pull request in the Archive Record,
 including a record the current branch already added.
 

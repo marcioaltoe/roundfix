@@ -289,7 +289,7 @@ func measureStorageReport(ctx context.Context, homeDir string) (store.StorageRep
 		return store.StorageReport{}, fmt.Errorf("stat Run Database %q: %w", databasePath, err)
 	}
 
-	runStore, err := commandDependenciesForContext(ctx).gc.openStorageReader(ctx, homeDir)
+	runStore, err := openStorageSnapshotReader(ctx, homeDir)
 	if err != nil {
 		return store.StorageReport{}, err
 	}
@@ -312,11 +312,16 @@ func printStorageReport(stdout io.Writer, report store.StorageReport) {
 	fmt.Fprintln(stdout, "Database")
 	fmt.Fprintf(stdout, "  Path: %s\n", report.DatabasePath)
 	fmt.Fprintf(stdout, "  File bytes: %d\n", report.DatabaseBytes)
+	fmt.Fprintf(stdout, "  WAL bytes: %d\n", report.DatabaseWALBytes)
+	fmt.Fprintf(stdout, "  Shared-memory bytes: %d\n", report.DatabaseSharedMemoryBytes)
+	fmt.Fprintf(stdout, "  Snapshot bytes: %d\n", report.DatabaseSnapshotBytes)
 	fmt.Fprintf(stdout, "  Table bytes: %d\n", report.DatabaseAllocatedBytes)
 	fmt.Fprintf(stdout, "  Free bytes: %d\n", report.DatabaseFreeBytes)
-	databaseGroupedBytes := report.DatabaseAllocatedBytes + report.DatabaseFreeBytes
+	fmt.Fprintf(stdout, "  Pointer-map bytes: %d\n", report.DatabasePointerMapBytes)
+	fmt.Fprintf(stdout, "  Lock-byte page bytes: %d\n", report.DatabaseLockBytePageBytes)
+	databaseGroupedBytes := report.DatabaseAllocatedBytes + report.DatabaseFreeBytes + report.DatabasePointerMapBytes + report.DatabaseLockBytePageBytes
 	fmt.Fprintf(stdout, "  Grouped bytes: %d\n", databaseGroupedBytes)
-	fmt.Fprintf(stdout, "  Reconciliation difference: %d\n", storageByteDifference(report.DatabaseBytes, databaseGroupedBytes))
+	fmt.Fprintf(stdout, "  Reconciliation difference: %d\n", storageByteDifference(report.DatabaseSnapshotBytes, databaseGroupedBytes))
 	if report.ReconciliationToleranceReason == "" {
 		fmt.Fprintln(stdout, "  Reconciliation tolerance: 0 bytes (no Run Database exists)")
 	} else {
@@ -877,21 +882,25 @@ func gcDatabaseExists(homeDir string) (bool, error) {
 	return true, nil
 }
 
-func openGCStore(ctx context.Context, dryRun bool, homeDir string) (*store.Store, error) {
+// openStorageSnapshotReader keeps idle stores byte-identical and includes
+// committed frames when a writer holds a live WAL.
+func openStorageSnapshotReader(ctx context.Context, homeDir string) (*store.Store, error) {
 	dependencies := commandDependenciesForContext(ctx).gc
-	if dryRun {
-		// An immutable reader preserves an idle database's directory. A live
-		// WAL needs the event reader so its committed frames remain visible.
-		info, err := os.Stat(store.DatabasePath(homeDir) + "-wal")
-		if errors.Is(err, os.ErrNotExist) || (err == nil && info.Size() <= 32) {
-			return dependencies.openStorageReader(ctx, homeDir)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("inspect Run Database WAL: %w", err)
-		}
-		return dependencies.openStoreReader(ctx, homeDir)
+	info, err := os.Stat(store.DatabasePath(homeDir) + "-wal")
+	if errors.Is(err, os.ErrNotExist) || (err == nil && info.Size() <= 32) {
+		return dependencies.openStorageReader(ctx, homeDir)
 	}
-	return dependencies.openStore(ctx, homeDir)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Run Database WAL: %w", err)
+	}
+	return dependencies.openStoreReader(ctx, homeDir)
+}
+
+func openGCStore(ctx context.Context, dryRun bool, homeDir string) (*store.Store, error) {
+	if dryRun {
+		return openStorageSnapshotReader(ctx, homeDir)
+	}
+	return commandDependenciesForContext(ctx).gc.openStore(ctx, homeDir)
 }
 
 func gcStoreState(ctx context.Context, runStore *store.Store, cutoff time.Time) ([]store.PruneCandidate, map[string]struct{}, error) {

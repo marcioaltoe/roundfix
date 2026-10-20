@@ -47,6 +47,36 @@ func TestReviewDiffsTheCandidateFromItsMergeBase(t *testing.T) {
 	}
 }
 
+func TestReviewDefaultBaseIsTheFetchedDefaultBranch(t *testing.T) {
+	t.Parallel()
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	baseTip := advanceReviewBase(t, fixture, func() {
+		mustWrite(t, filepath.Join(fixture.repository, "base-only.txt"), "the fetched base moved\n")
+		gittest.Run(t, fixture.repository, "add", "base-only.txt")
+	})
+	gittest.Run(t, fixture.repository, "update-ref", "refs/remotes/origin/main", baseTip)
+	gittest.Run(t, fixture.repository, "update-ref", "refs/heads/main", fixture.baseCommit)
+
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"review"}, &stdout, &stderr)
+	var record reviewRecord
+	if err := json.Unmarshal(stdout.Bytes(), &record); err != nil {
+		t.Fatalf("decode review record %q: %v", stdout.String(), err)
+	}
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("review exit=%d record=%+v stderr=%q", code, record, stderr.String())
+	}
+	if record.BaseTipCommit != baseTip || record.BaseCommit != fixture.baseCommit {
+		t.Fatalf("review base commits = merge base %q tip %q, want %q and fetched tip %q", record.BaseCommit, record.BaseTipCommit, fixture.baseCommit, baseTip)
+	}
+}
+
 func TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged(t *testing.T) {
 	t.Parallel()
 	const (

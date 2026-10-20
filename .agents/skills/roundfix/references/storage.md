@@ -32,8 +32,7 @@ roundfix storage report
 projected after without changing the database. Review those measurements, then
 use `--apply` to run guarded compaction and print the measured bytes before,
 reclaimed, and after. If a live writer advances the database while its exact
-snapshot is measured, the bare preview falls back to immutable storage-report
-measurements and remains read-only; `--apply` never uses that fallback.
+snapshot is measured, the bare preview falls back to the storage report's Storage Snapshot and remains read-only; `--apply` never uses that fallback.
 Compaction with `--apply` refuses before mutation when an Active Run exists,
 another Run Database connection can be writing, or temporary capacity is
 insufficient; each refusal names the Active Run, writer condition, or measured
@@ -54,6 +53,14 @@ surface.
 repository. It reports measured bytes and row counts by database table,
 repository, Run state, and Artifact Root without migrating, opening a writer,
 or creating a missing Run Database.
+
+The report measures one Storage Snapshot, which reads the write-ahead log
+when it holds frames. `Snapshot bytes` is the snapshot's total page size;
+`Table bytes`, `Free bytes`, `Pointer-map bytes` and `Lock-byte page bytes`
+group every page, so the grouped bytes equal the snapshot bytes exactly.
+`File bytes` measures the main file separately; `WAL bytes` and
+`Shared-memory bytes` measure its sidecar files. The reconciliation tolerance
+is 0 bytes. No database or WAL byte changes, and no sidecar file is created.
 
 Operational `implement`, `resolve`, and `watch` startup runs the same Journal
 Retention prune best-effort when retention is non-zero. It prints the

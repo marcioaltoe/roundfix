@@ -81,8 +81,7 @@ budget below and is never segmented. On a runtime failure carrying
 capped at the last 1,024 bytes. The reason text is unchanged; the tail field
 is omitted when empty.
 
-`--base <ref>` selects the base Git ref. When omitted, Roundfix uses the
-repository's default branch.
+`--base <ref>` selects the base Git ref. When omitted, Roundfix uses the Default Branch Head.
 
 The configured policy accepts `codex`, `claude`, `coderabbit`, and `none`.
 Explicit `none` performs no reviewer call and no readiness probe, records a

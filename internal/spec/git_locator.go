@@ -86,7 +86,7 @@ func (r *gitLocatorBranchRunner) RunGit(ctx context.Context, root string, args .
 	return strings.TrimSpace(string(out)), err
 }
 
-// ResolveGitLocator uses local default-branch and tag reachability only. It
+// ResolveGitLocator uses Default Branch Head and tag reachability only. It
 // never fetches a branch or relies on another work branch keeping a commit alive.
 func ResolveGitLocator(ctx context.Context, repositoryRoot, path, preferred, pullRequest string) (GitLocator, error) {
 	locator := GitLocator{Path: path, PullRequest: pullRequest}
@@ -95,22 +95,16 @@ func ResolveGitLocator(ctx context.Context, repositoryRoot, path, preferred, pul
 	if runner.err != nil {
 		return locator, fmt.Errorf("read Git Locator branch: %w", runner.err)
 	}
-	branch := preflight.DetectDefaultBranch(ctx, repositoryRoot, current, runner)
+	defaultHead, found, err := preflight.ResolveDefaultBranchHead(ctx, repositoryRoot, current, runner)
+	if err != nil {
+		return locator, fmt.Errorf("resolve Git Locator default branch: %w", err)
+	}
 	if runner.err != nil {
 		return locator, fmt.Errorf("detect Git Locator default branch: %w", runner.err)
 	}
 	head := ""
-	if branch.Name != "" {
-		for _, ref := range []string{"refs/heads/" + branch.Name, "refs/remotes/origin/" + branch.Name} {
-			var err error
-			head, err = gitLocatorCommit(ctx, repositoryRoot, ref)
-			if err != nil {
-				return locator, fmt.Errorf("resolve Git Locator default branch: %w", err)
-			}
-			if head != "" {
-				break
-			}
-		}
+	if found {
+		head = defaultHead.Commit
 	}
 	if preferred != "" {
 		commit, err := gitLocatorCommit(ctx, repositoryRoot, preferred)

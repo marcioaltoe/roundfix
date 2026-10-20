@@ -242,3 +242,45 @@ func TestTerminalBacklogEntryFixSaysDelete(t *testing.T) {
 	}
 	t.Fatal("missing backlog finding")
 }
+
+func TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone(t *testing.T) {
+	t.Parallel()
+	if !retainedTestHome(t) {
+		return
+	}
+	origin := retainedFixture(t, true)
+	older := retainedCommit(t, origin)
+	gittest.Run(t, origin, "tag", "older", older)
+	path := "docs/specs/0001-old/file.md"
+	writeReceiptFixture(t, origin, path, "# Between releases\n")
+	source := retainedCommit(t, origin)
+	gittest.Run(t, origin, "rm", "--", path)
+	removed := retainedCommit(t, origin)
+	// A later release tag on a sibling must not prove source reachability.
+	gittest.Run(t, origin, "checkout", "--detach", older)
+	writeReceiptFixture(t, origin, "release.txt", "Later tagged release\n")
+	retainedCommit(t, origin)
+	gittest.Run(t, origin, "tag", "later")
+	gittest.Run(t, origin, "checkout", "main")
+	root := t.TempDir()
+	gittest.InitRepo(t, root)
+	gittest.Run(t, root, "remote", "add", "origin", origin)
+	gittest.Run(t, root, "fetch", "origin", "+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*")
+	gittest.Run(t, root, "checkout", "--detach", removed)
+	retainedRecord(t, root, source, "`"+path+"@"+source+"`")
+	if got := retainedFindings(retainedCheck(t, root)); len(got) != 0 {
+		t.Fatalf("fetched locator rejected: %+v", got)
+	}
+	gittest.Run(t, root, "branch", "main", older)
+	gittest.Run(t, root, "checkout", "main")
+	if got := retainedFindings(retainedCheck(t, root)); len(got) != 0 {
+		t.Fatalf("stale local default hid fetched locator: %+v", got)
+	}
+	gittest.Run(t, root, "checkout", "--detach", removed)
+	gittest.Run(t, root, "branch", "-D", "main")
+	gittest.Run(t, root, "update-ref", "-d", "refs/remotes/origin/main")
+	got := retainedFindings(retainedCheck(t, root))
+	if len(got) != 1 || !strings.Contains(got[0].Summary, "invalid Git Locator "+path+"@"+source) {
+		t.Fatalf("missing unreachable locator finding: %+v", got)
+	}
+}

@@ -154,11 +154,8 @@ type compactionFingerprint struct {
 	totalChanges int64
 }
 
-// StorageReportReconciliationToleranceReason explains the page-sized
-// reconciliation tolerance. SQLite page accounting and the independent file
-// stat are both page-granular but can be observed on adjacent page boundaries
-// because the report deliberately takes no writer lock.
-const StorageReportReconciliationToleranceReason = "one SQLite page allows page accounting and file stat to land on adjacent boundaries without a writer lock"
+// StorageReportReconciliationToleranceReason explains the exact snapshot reconciliation.
+const StorageReportReconciliationToleranceReason = "one read transaction measures every page group, pointer-map and lock-byte pages included"
 
 // StorageReport is a read-only measurement of the Run Database and every
 // recorded Artifact Root. Table bytes are SQLite page allocations. Repository
@@ -168,6 +165,11 @@ const StorageReportReconciliationToleranceReason = "one SQLite page allows page 
 type StorageReport struct {
 	DatabasePath                  string
 	DatabaseBytes                 int64
+	DatabaseWALBytes              int64
+	DatabaseSharedMemoryBytes     int64
+	DatabaseSnapshotBytes         int64
+	DatabasePointerMapBytes       int64
+	DatabaseLockBytePageBytes     int64
 	DatabaseAllocatedBytes        int64
 	DatabaseFreeBytes             int64
 	ArtifactBytes                 int64
@@ -221,68 +223,148 @@ type storageRunRecord struct {
 	artifactRoot string
 }
 
-// StorageReport measures Run storage without starting a transaction, writing
-// a pragma, migrating the schema, or changing any database or Artifact Root
-// byte. Call it through OpenStorageReader for the byte-identical connection
-// contract.
+// StorageReport measures every page group in one read transaction. Use an
+// OpenStorageReader for an idle file or OpenReader when the WAL holds frames;
+// neither connection migrates, checkpoints, or writes database bytes.
 func (store *Store) StorageReport(ctx context.Context) (StorageReport, error) {
-	databasePath, err := storageDatabasePath(ctx, store.db)
+	conn, err := store.db.Conn(ctx)
+	if err != nil {
+		return StorageReport{}, fmt.Errorf("open Storage Snapshot connection: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	// Pin one connection and explicitly defer the transaction: writer BeginTx
+	// belongs to withWriteTx and uses the writer DSN's immediate lock mode.
+	if _, err := conn.ExecContext(ctx, `BEGIN DEFERRED`); err != nil {
+		return StorageReport{}, fmt.Errorf("begin Storage Snapshot: %w", err)
+	}
+	snapshotOpen := true
+	defer func() {
+		if snapshotOpen {
+			_, _ = conn.ExecContext(context.WithoutCancel(ctx), `ROLLBACK`)
+		}
+	}()
+	databasePath, err := storageDatabasePath(ctx, conn)
 	if err != nil {
 		return StorageReport{}, err
 	}
-	pageSize, err := storagePragmaInt64(ctx, store.db, "page_size")
+	pageSize, err := storagePragmaInt64(ctx, conn, "page_size")
 	if err != nil {
 		return StorageReport{}, err
 	}
-	freePages, err := storagePragmaInt64(ctx, store.db, "freelist_count")
+	pageCount, err := storagePragmaInt64(ctx, conn, "page_count")
 	if err != nil {
 		return StorageReport{}, err
 	}
-	tables, allocatedBytes, err := storageTableGroups(ctx, store.db)
+	freePages, err := storagePragmaInt64(ctx, conn, "freelist_count")
 	if err != nil {
 		return StorageReport{}, err
 	}
-	runs, err := storageRunRecords(ctx, store.db)
+	autoVacuum, err := storagePragmaInt64(ctx, conn, "auto_vacuum")
+	if err != nil {
+		return StorageReport{}, err
+	}
+	tables, allocatedBytes, err := storageTableGroups(ctx, conn)
+	if err != nil {
+		return StorageReport{}, err
+	}
+	runs, err := storageRunRecords(ctx, conn)
 	if err != nil {
 		return StorageReport{}, err
 	}
 
-	repositories, states, artifactRoots, artifactBytes, err := storageFilesystemGroups(runs)
+	databaseFile, err := os.Open(databasePath)
 	if err != nil {
-		return StorageReport{}, err
+		return StorageReport{}, fmt.Errorf("open Run Database header: %w", err)
 	}
+	var reserved [1]byte
+	_, readErr := databaseFile.ReadAt(reserved[:], 20)
+	closeErr := databaseFile.Close()
+	if err := errors.Join(readErr, closeErr); err != nil {
+		return StorageReport{}, fmt.Errorf("read Run Database reserved bytes: %w", err)
+	}
+	pointerMapPages, lockBytePages := storagePageStructure(pageSize, pageSize-int64(reserved[0]), pageCount, autoVacuum)
+	snapshotBytes := pageCount * pageSize
+	groupedBytes := allocatedBytes + (freePages+pointerMapPages+lockBytePages)*pageSize
+	difference := snapshotBytes - groupedBytes
+	if difference < 0 {
+		difference = -difference
+	}
+	if difference != 0 {
+		return StorageReport{}, fmt.Errorf(
+			"reconcile Run Database storage groups: snapshot bytes=%d grouped bytes=%d difference=%d",
+			snapshotBytes, groupedBytes, difference,
+		)
+	}
+	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {
+		return StorageReport{}, fmt.Errorf("finish Storage Snapshot: %w", err)
+	}
+	snapshotOpen = false
 	databaseInfo, err := os.Stat(databasePath)
 	if err != nil {
 		return StorageReport{}, fmt.Errorf("stat Run Database %q: %w", databasePath, err)
 	}
-	databaseGroupedBytes := allocatedBytes + freePages*pageSize
-	databaseDifference := databaseInfo.Size() - databaseGroupedBytes
-	if databaseDifference < 0 {
-		databaseDifference = -databaseDifference
+	walBytes, err := storageSidecarBytes(databasePath + "-wal")
+	if err != nil {
+		return StorageReport{}, err
 	}
-	if databaseDifference > pageSize {
-		return StorageReport{}, fmt.Errorf(
-			"reconcile Run Database storage groups: file bytes=%d grouped bytes=%d difference=%d tolerance=%d",
-			databaseInfo.Size(),
-			databaseGroupedBytes,
-			databaseDifference,
-			pageSize,
-		)
+	sharedMemoryBytes, err := storageSidecarBytes(databasePath + "-shm")
+	if err != nil {
+		return StorageReport{}, err
 	}
-
+	repositories, states, artifactRoots, artifactBytes, err := storageFilesystemGroups(runs)
+	if err != nil {
+		return StorageReport{}, err
+	}
 	return StorageReport{
 		DatabasePath:                  databasePath,
 		DatabaseBytes:                 databaseInfo.Size(),
+		DatabaseWALBytes:              walBytes,
+		DatabaseSharedMemoryBytes:     sharedMemoryBytes,
+		DatabaseSnapshotBytes:         snapshotBytes,
+		DatabasePointerMapBytes:       pointerMapPages * pageSize,
+		DatabaseLockBytePageBytes:     lockBytePages * pageSize,
 		DatabaseAllocatedBytes:        allocatedBytes,
 		DatabaseFreeBytes:             freePages * pageSize,
 		ArtifactBytes:                 artifactBytes,
-		ReconciliationToleranceBytes:  pageSize,
+		ReconciliationToleranceBytes:  0,
 		ReconciliationToleranceReason: StorageReportReconciliationToleranceReason,
 		Repositories:                  repositories,
 		States:                        states,
 		Tables:                        tables,
 		ArtifactRoots:                 artifactRoots,
 	}, nil
+}
+
+// storagePageStructure counts pages omitted by dbstat using their file-format
+// positions, independently of the table and freelist measurements.
+func storagePageStructure(pageSize, usableSize, pageCount, autoVacuum int64) (pointerMapPages, lockBytePages int64) {
+	lockBytePage := int64(1073741824)/pageSize + 1
+	if pageCount >= lockBytePage {
+		lockBytePages = 1
+	}
+	if autoVacuum != 0 {
+		for position := int64(2); position <= pageCount; position += usableSize/5 + 1 {
+			page := position
+			if page == lockBytePage {
+				page++
+			}
+			if page <= pageCount {
+				pointerMapPages++
+			}
+		}
+	}
+	return pointerMapPages, lockBytePages
+}
+
+func storageSidecarBytes(path string) (int64, error) {
+	info, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("stat Run Database sidecar %q: %w", path, err)
+	}
+	return info.Size(), nil
 }
 
 func storageDatabasePath(ctx context.Context, db queryContextRunner) (string, error) {
@@ -321,7 +403,7 @@ func storagePragmaInt64(ctx context.Context, db runQuerier, name string) (int64,
 	return value, nil
 }
 
-func storageTableGroups(ctx context.Context, db *sql.DB) ([]StorageTableGroup, int64, error) {
+func storageTableGroups(ctx context.Context, db runQuerier) ([]StorageTableGroup, int64, error) {
 	allocated := map[string]int64{}
 	rows, err := db.QueryContext(ctx, `
 SELECT COALESCE(NULLIF(schema_entry.tbl_name, ''), page.name) AS table_name,
@@ -369,7 +451,7 @@ ORDER BY table_name`)
 	return groups, allocatedBytes, nil
 }
 
-func storageTableNames(ctx context.Context, db *sql.DB) ([]string, error) {
+func storageTableNames(ctx context.Context, db queryContextRunner) ([]string, error) {
 	rows, err := db.QueryContext(ctx, `
 SELECT name
 FROM sqlite_schema
@@ -396,7 +478,7 @@ ORDER BY name`)
 	return names, nil
 }
 
-func storageRunRecords(ctx context.Context, db *sql.DB) ([]storageRunRecord, error) {
+func storageRunRecords(ctx context.Context, db queryContextRunner) ([]storageRunRecord, error) {
 	rows, err := db.QueryContext(ctx, `
 SELECT id, git_root, state, artifact_dir
 FROM runs
