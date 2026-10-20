@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-20
-spec: null
+spec: 0289-gc-sanitize-reaches-the-default-artifact-roots
 reason: null
 ---
 
