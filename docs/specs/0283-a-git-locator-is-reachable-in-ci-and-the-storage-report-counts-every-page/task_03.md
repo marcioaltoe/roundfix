@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0283-a-git-locator-is-reachable-in-ci-and-the-storage-report-counts-every-page
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -174,3 +174,98 @@ its own through store and command tests on temporary stores.
 - `_prd.md` → Sources; Goals; User Story 3; Core Feature 4; Core Feature 5; Success Metric 4; Success Metric 5; Acceptance evidence; Glossary
 - `_techspec.md` → API Contract 7; API Contract 8; API Contract 9; API Contract 10; Surface Transcript 1; Invariants 3-4; Current behavior; Testing Approach; Build Order 3
 - ADR-0296; ADR-0255; ADR-0172; ADR-0280; ADR-0189; ADR-0256; ADR-0259; ADR-0285; ADR-0271
+
+## Result
+
+Implemented the task_03 Storage Snapshot slice; Task status and declared
+Verification remain Daemon-owned.
+
+- `openStorageSnapshotReader` shares the existing WAL-size choice between
+  GC dry runs and storage report: immutable at absent/0–32 bytes, WAL-aware
+  above 32, with other stat errors returned. Compact's live-writer fallback
+  continues to consume main-file bytes and free bytes.
+- Storage report queries run through one read transaction on one connection.
+  The main header's reserved byte determines usable page size; independent
+  file-format positions count pointer-map and lock-byte pages. Snapshot bytes
+  reconcile exactly against table, free, pointer-map and lock-byte bytes with
+  zero tolerance and the ADR-0296 refusal/reason text.
+- The Database section adds WAL, shared-memory, snapshot, pointer-map and
+  lock-byte lines in the authored order. Other sections retain their output.
+- The user guide and canonical Roundfix reference describe the snapshot and
+  compact fallback; CONTEXT.md defines Storage Snapshot with ADR-0296.
+  Roundfix's two canonical version fields rose from 0.1.108 to 0.1.109;
+  the mirror, version record and Behavior Surface Record were generated.
+  No QA settlement text, Task Graph or other Task file was edited.
+
+Focused implementation evidence:
+
+- Initial focused regression compilation exposed the absent page helper and
+  StorageReport fields before the implementation.
+- `go test ./internal/store ./internal/cli -run 'TestStorage(PageStructure|Report)|TestRunStorageReport' -count=1 -v`
+  exited 0. All four required store tests and all three required command tests
+  passed, along with existing storage-report flag and absent-database checks.
+- Acceptance: exact reconciliation on several pointer-map pages is covered by
+  TestStorageReportGroupsPointerMapPages (>1,700 pages and at least two
+  pointer-map pages); live WAL reconciliation and exit 0 are covered by
+  TestStorageReportReadsALiveWALSnapshot and
+  TestRunStorageReportWhileAWriterHoldsTheWAL. The command reports positive
+  WAL bytes and zero reconciliation difference while the writer stays open.
+- Acceptance: TestStoragePageStructureMatchesTheFileFormat passed 271,903 →
+  332 pointer-map pages plus one lock-byte page and 275,136 → 336 plus one;
+  it also passed 3,013/5,020 pages, disabled/full auto-vacuum, reserved bytes
+  and the 1024-byte lock collision before/at/after its deferred position.
+- Acceptance: idle-store tests compare the complete database directory before
+  and after; the live-WAL test compares database/WAL bytes and sidecar presence
+  while allowing SQLite's existing shared-memory coordination. The command
+  test also compares database/WAL bytes. The absent-store transcript matches
+  every stdout line, empty stderr and exit 0 using temporary homes only.
+- `go test ./internal/cli -run '^(TestRunGCDryRunListsEligibleRunsAndChangesNothing|TestRunGCCompactPreviewsAndAppliesMeasuredBytes|TestRunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances|TestRunGCCompactRefusalsNameCause)$' -count=1`
+  exited 0; `go test ./internal/cli -run '^TestDoctorStorage' -count=1`
+  exited 0.
+- `GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-0283-store.test.exe ./internal/store`
+  and the equivalent CLI compile to `/tmp/roundfix-0283-cli.test.exe` exited 0.
+- Required authoring commands `make skills-sync`,
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  and `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  each exited 0. The coverage record command was repeated after final guide
+  whitespace cleanup.
+- Required `make baseline-digests` exited 0 with `changed: false`.
+
+Environment: the configured writable root contains a symlink, preventing
+sandbox process startup. Commands used authorized escalation in the resolved
+assigned checkout; tests used temporary homes/stores and no real Run Database.
+
+The Task's declared Verification and repository Verification were not run;
+these remain for the Daemon. No commit, push or pull request was made.
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact. The reported failure was the store's
+existing transaction-ownership guard, TestWriteTxIsTheOnlyWriterTransaction:
+it rejects any BeginTx call outside withWriteTx, including the initial
+Storage Snapshot read transaction. The guard and writer helper remain unchanged.
+
+StorageReport now pins one sql.Conn and explicitly opens BEGIN DEFERRED for
+all snapshot queries, then commits the read transaction. Its error cleanup
+rolls back with a cancellation-independent context before returning the
+connection. This keeps the read snapshot separate from the writer DSN's
+immediate lock mode and the machine-wide writer lock.
+
+Added TestStorageReportReleasesReadTransactionOnError: a temporary fixture
+forces a Run-query failure inside the snapshot, restores the table, and
+successfully reuses the same reader connection for an exactly reconciled
+report. The previously recorded page-count, WAL, transcript and non-mutation
+acceptance evidence was rechecked after this repair.
+
+Focused checks after the repair:
+
+- `go test ./internal/store ./internal/cli -run 'TestWriteTxIsTheOnlyWriterTransaction|TestStorage(PageStructure|Report)|TestRunStorageReport|TestRunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances' -count=1`
+  exited 0, including the existing transaction guard and new cleanup test.
+- `GOOS=windows GOARCH=amd64 go test -c -o /tmp/roundfix-0283-store.test.exe ./internal/store`
+  exited 0 after the final source and test edits.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 after the repair.
+
+No declared Verification command was rerun, no Task status was changed,
+and no other Task, writer helper or ownership test was edited. The full
+configured Verification rerun remains Daemon-owned.

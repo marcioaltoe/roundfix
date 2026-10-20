@@ -733,6 +733,150 @@ func countAgentSelections(t *testing.T, ctx context.Context, store *Store) int {
 	return count
 }
 
+func TestStoragePageStructureMatchesTheFileFormat(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name                                                        string
+		pageSize, usable, pages, autoVacuum, pointerMaps, lockPages int64
+	}{
+		{"observed October 18", 4096, 4096, 271903, 2, 332, 1},
+		{"observed October 19", 4096, 4096, 275136, 2, 336, 1},
+		{"main file", 4096, 4096, 3013, 2, 4, 0},
+		{"WAL snapshot", 4096, 4096, 5020, 2, 7, 0},
+		{"no auto vacuum", 4096, 4096, 271903, 0, 0, 1},
+		{"full auto vacuum", 4096, 4096, 5020, 1, 7, 0},
+		{"reserved bytes", 4096, 4000, 820, 2, 2, 0},
+		{"before lock collision", 1024, 1024, 1048576, 2, 5115, 0},
+		{"lock collision deferred", 1024, 1024, 1048577, 2, 5115, 1},
+		{"after lock collision", 1024, 1024, 1048578, 2, 5116, 1},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			pointerMaps, lockPages := storagePageStructure(test.pageSize, test.usable, test.pages, test.autoVacuum)
+			if pointerMaps != test.pointerMaps || lockPages != test.lockPages {
+				t.Fatalf("page groups = (%d, %d), want (%d, %d)", pointerMaps, lockPages, test.pointerMaps, test.lockPages)
+			}
+		})
+	}
+}
+
+func TestStorageReportGroupsPointerMapPages(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer := openTestStore(t, ctx, homeDir)
+	createStorageReportPayload(t, ctx, writer, 8*1024*1024)
+	closeStore(t, writer)
+	before := storageTreeSnapshot(t, filepath.Dir(DatabasePath(homeDir)))
+	reader, err := OpenStorageReader(ctx, homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := reader.StorageReport(ctx)
+	closeStore(t, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.DatabaseSnapshotBytes <= 1700*4096 || report.DatabasePointerMapBytes < 2*4096 {
+		t.Fatalf("expected >1700 pages and several pointer-map pages: %#v", report)
+	}
+	assertStorageSnapshotGroups(t, report)
+	if after := storageTreeSnapshot(t, filepath.Dir(DatabasePath(homeDir))); !reflect.DeepEqual(before, after) {
+		t.Fatal("storage report changed the database directory")
+	}
+}
+
+func TestStorageReportReadsALiveWALSnapshot(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, writer)
+	if _, err := writer.db.ExecContext(ctx, "PRAGMA wal_autocheckpoint = 0"); err != nil {
+		t.Fatal(err)
+	}
+	createStorageReportPayload(t, ctx, writer, 256*1024)
+	before := storageTreeSnapshot(t, filepath.Dir(DatabasePath(homeDir)))
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := reader.StorageReport(ctx)
+	closeStore(t, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.DatabaseSnapshotBytes <= report.DatabaseBytes || report.DatabaseWALBytes <= 32 || report.DatabaseSharedMemoryBytes == 0 {
+		t.Fatalf("expected snapshot to include uncheckpointed WAL frames: %#v", report)
+	}
+	assertStorageSnapshotGroups(t, report)
+	// WAL readers update shared-memory coordination, but never the database or WAL.
+	after := storageTreeSnapshot(t, filepath.Dir(DatabasePath(homeDir)))
+	if len(after) != len(before) {
+		t.Fatal("storage report created a sidecar")
+	}
+	for path, contents := range before {
+		if strings.HasSuffix(path, "-shm") {
+			continue
+		}
+		if after[path] != contents {
+			t.Fatalf("storage report changed %s", path)
+		}
+	}
+}
+
+func TestStorageReportReleasesReadTransactionOnError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, writer)
+	if _, err := writer.db.ExecContext(ctx, `ALTER TABLE runs RENAME TO snapshot_runs`); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeStore(t, reader)
+	if _, err := reader.StorageReport(ctx); err == nil || !strings.Contains(err.Error(), "list Runs for storage report") {
+		t.Fatalf("expected a Run query error inside the snapshot, got %v", err)
+	}
+	if _, err := writer.db.ExecContext(ctx, `ALTER TABLE snapshot_runs RENAME TO runs`); err != nil {
+		t.Fatal(err)
+	}
+	// Reuse the same connection: a leaked read transaction would reject BEGIN.
+	report, err := reader.StorageReport(ctx)
+	if err != nil {
+		t.Fatalf("measure after the failed read: %v", err)
+	}
+	assertStorageSnapshotGroups(t, report)
+}
+
+func createStorageReportPayload(t *testing.T, ctx context.Context, writer *Store, size int) {
+	t.Helper()
+	request := sampleCreateRunRequest()
+	request.GitRoot = t.TempDir()
+	request.ArtifactDir = t.TempDir()
+	run, err := writer.CreateRun(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	event := sampleRunEvent(run.ID, "storage snapshot payload")
+	event.Payload = bytes.Repeat([]byte("x"), size)
+	if _, err := writer.AppendRunEvent(ctx, event); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertStorageSnapshotGroups(t *testing.T, report StorageReport) {
+	t.Helper()
+	grouped := report.DatabaseAllocatedBytes + report.DatabaseFreeBytes + report.DatabasePointerMapBytes + report.DatabaseLockBytePageBytes
+	if grouped != report.DatabaseSnapshotBytes || report.ReconciliationToleranceBytes != 0 {
+		t.Fatalf("snapshot=%d grouped=%d tolerance=%d", report.DatabaseSnapshotBytes, grouped, report.ReconciliationToleranceBytes)
+	}
+}
+
 func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -795,19 +939,15 @@ func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("measure storage report: %v", err)
 	}
-	pageSize, err := storagePragmaInt64(ctx, reader.db, "page_size")
-	if err != nil {
-		t.Fatalf("measure SQLite page size: %v", err)
-	}
 	closeStore(t, reader)
-	if report.ReconciliationToleranceBytes != pageSize {
-		t.Fatalf("expected tolerance to equal measured SQLite page size %d, got %d", pageSize, report.ReconciliationToleranceBytes)
+	if report.ReconciliationToleranceBytes != 0 {
+		t.Fatalf("expected zero tolerance, got %d", report.ReconciliationToleranceBytes)
 	}
 	if report.DatabaseFreeBytes == 0 {
 		t.Fatal("expected the reconciliation fixture to contain measured free pages")
 	}
-	if !strings.Contains(report.ReconciliationToleranceReason, "one SQLite page") {
-		t.Fatalf("expected page-sized tolerance reason, got %q", report.ReconciliationToleranceReason)
+	if report.ReconciliationToleranceReason != StorageReportReconciliationToleranceReason {
+		t.Fatalf("expected snapshot reconciliation reason, got %q", report.ReconciliationToleranceReason)
 	}
 
 	var tableBytes int64
@@ -818,9 +958,9 @@ func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
 			runRows = group.Rows
 		}
 	}
-	databaseDifference := absInt64(report.DatabaseBytes - (tableBytes + report.DatabaseFreeBytes))
+	databaseDifference := absInt64(report.DatabaseSnapshotBytes - (tableBytes + report.DatabaseFreeBytes + report.DatabasePointerMapBytes + report.DatabaseLockBytePageBytes))
 	if databaseDifference > report.ReconciliationToleranceBytes {
-		t.Fatalf("database groups differ from measured file by %d bytes, tolerance %d: %#v", databaseDifference, report.ReconciliationToleranceBytes, report)
+		t.Fatalf("database groups differ from measured snapshot by %d bytes, tolerance %d: %#v", databaseDifference, report.ReconciliationToleranceBytes, report)
 	}
 	var artifactBytes int64
 	for _, group := range report.ArtifactRoots {

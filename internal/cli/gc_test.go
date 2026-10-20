@@ -578,7 +578,7 @@ func TestRunStorageReportOutsideGitRepository(t *testing.T) {
 		"missing",
 		missingRepository,
 		missingArtifactRoot,
-		"one SQLite page",
+		"one read transaction measures every page group",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("expected storage report output to contain %q, got %q", want, stdout.String())
@@ -608,6 +608,105 @@ func TestRunStorageReportRejectsFlags(t *testing.T) {
 	}
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout for invalid storage report input, got %q", stdout.String())
+	}
+}
+
+func TestRunStorageReportWithoutDatabaseTranscript(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	setCommandEnvironmentForTest(t, homeDir, t.TempDir())
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"storage", "report"}, &stdout, &stderr)
+	want := "Storage report\nDatabase\n  Path: " + store.DatabasePath(homeDir) + `
+  File bytes: 0
+  WAL bytes: 0
+  Shared-memory bytes: 0
+  Snapshot bytes: 0
+  Table bytes: 0
+  Free bytes: 0
+  Pointer-map bytes: 0
+  Lock-byte page bytes: 0
+  Grouped bytes: 0
+  Reconciliation difference: 0
+  Reconciliation tolerance: 0 bytes (no Run Database exists)
+Tables
+  TABLE	ROWS	BYTES
+Repositories
+  REPOSITORY	STATUS	RUN_ROWS	RUN_ARTIFACT_BYTES
+States
+  STATE	RUN_ROWS	RUN_ARTIFACT_BYTES
+Artifact Roots
+  ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+  Measured bytes: 0
+  Grouped bytes: 0
+  Reconciliation difference: 0
+`
+	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
+		t.Fatalf("storage transcript: exit=%d stderr=%q\nstdout=%q\nwant=%q", code, stderr.String(), stdout.String(), want)
+	}
+}
+
+func TestRunStorageReportWhileAWriterHoldsTheWAL(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	setCommandEnvironmentForTest(t, homeDir, t.TempDir())
+	writer, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := writer.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	run, err := writer.CreateRun(ctx, store.CreateRunRequest{
+		Kind: store.KindResolve, HeadRepository: "owner/project", HeadBranch: "fix/storage",
+		BaseRepository: "owner/project", PRNumber: "123", GitRoot: t.TempDir(),
+		LocalBranch: "fix/storage", HeadSHA: "abc123", ArtifactDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writer.AppendRunEvent(ctx, runevent.RunEvent{
+		RunID: run.ID, Source: runevent.SourceDaemon, Kind: runevent.KindAgentMessage,
+		Time: time.Now().UTC(), Payload: bytes.Repeat([]byte("x"), 256*1024),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	databasePath := store.DatabasePath(homeDir)
+	before := make(map[string][]byte)
+	for _, suffix := range []string{"", "-wal"} {
+		before[suffix], err = os.ReadFile(databasePath + suffix)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	var stdout, stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"storage", "report"}, &stdout, &stderr)
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("exit=%d stderr=%q", code, stderr.String())
+	}
+	var walBytes int64
+	for _, line := range strings.Split(stdout.String(), "\n") {
+		if strings.HasPrefix(line, "  WAL bytes: ") {
+			walBytes, err = strconv.ParseInt(strings.TrimPrefix(line, "  WAL bytes: "), 10, 64)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if walBytes <= 32 || !strings.Contains(stdout.String(), "  Reconciliation difference: 0\n") {
+		t.Fatalf("expected live WAL and exact reconciliation: %s", stdout.String())
+	}
+	for suffix, contents := range before {
+		after, err := os.ReadFile(databasePath + suffix)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(contents, after) {
+			t.Fatalf("storage report changed %s", databasePath+suffix)
+		}
 	}
 }
 

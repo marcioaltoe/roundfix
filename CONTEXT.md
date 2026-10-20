@@ -617,6 +617,10 @@ _Avoid_: Matching by pull request number only, latest artifacts
 The central Roundfix database that stores Run state and review progress across repositories.
 _Avoid_: Artifact directory, state file
 
+**Storage Snapshot**:
+A consistent read of the Run Database that measures every page group, including committed write-ahead log frames, so grouped bytes equal snapshot bytes exactly ([ADR-0296](docs/adr/0296-the-storage-report-reconciles-every-page-of-one-storage-snapshot.md)).
+_Avoid_: Main file size, immutable storage-report measurements
+
 **Round**:
 One review-resolution cycle within a Run, tied to the pull request state being reviewed.
 _Avoid_: Review Round, iteration, pass, cycle
