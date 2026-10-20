@@ -105,10 +105,14 @@ provider, and never runs an archive plan without `--offline`.
      `roundfix-linux-lane: packages:` line and the number of `ok` and `?`
      result lines in the log. Record environment variable names only, never
      their values. Write that evidence only after the lane ends.
-   - Otherwise record `blocked (environment: Docker unreachable from the Run
-     sandbox)`. The storage report half never runs against the real
-     `~/.roundfix`; record it as declared unreachable. Count both in
-     `rows_blocked_declared` against the PRD's Unreachable Acceptance.
+   - Otherwise record that the lane half is blocked (environment: Docker
+     unreachable from the Run sandbox).
+   - The storage report half never runs against the real `~/.roundfix`.
+   - Record Success Metric 4 as ONE row, declared unreachable, holding both
+     halves: the lane evidence or its block, and the storage report block.
+     It counts once in `rows_blocked_declared`, because the PRD's
+     Unreachable Acceptance declares one criterion; two declared rows exceed
+     that declaration and the Daemon refuses the `partial`.
 8. MUST perform the glossary check of `docs/agents/domain.md`:
    - record that `CONTEXT.md` carries the revised **Archive Record** with the
      summary rule;
