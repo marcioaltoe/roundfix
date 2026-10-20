@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0288-the-archive-rewrites-relative-citations-from-any-worktree
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -163,3 +163,82 @@ spelling of a linked worktree.
 - `_prd.md` → Sources; Goals; Core Features 2-4; Success Metric 1; Success Metric 2; Success Metric 3; Skills
 - `_techspec.md` → Current behavior; API Contracts 4-6; Surface Transcript 1; Surface Transcript 2; Invariants 2-4; Testing Approach; Build Order 2
 - ADR-0247; ADR-0260; ADR-0262; ADR-0154; ADR-0269; ADR-0184; ADR-0280; ADR-0256; ADR-0259; ADR-0271; ADR-0285
+
+## Result
+
+Implemented the task_02 command-path slice for Daemon Verification. Task status
+remains Daemon-owned; Subtasks and Acceptance Criteria checkboxes are unchanged.
+
+- Archive now uses `spec.RepositoryPath` for its Spec-folder refusal/recovery
+  path, record-only pull-request lookup/refusal path and four plan relink paths.
+  Plan resolves Git's checkout top level for the built-in root as well as an
+  external root. Cancel uses the resolver for its folder refusal/recovery path
+  and every path built by `cancelCitations`. Both ignored-file spelling special
+  cases are removed. Resolver errors propagate as Preflight failures.
+- Code comments identify the root's provenance: the checkout reached from the
+  command's work directory, or the external Spec repository, rather than the
+  main worktree or inherited process directory. They identify Git, diagnostics
+  and written archive files as path consumers. Loaded-root display formatting,
+  output lines/order, Delivery Queue archive code and history conversion are
+  unchanged.
+- Added only `internal/cli/archive_symlinked_checkout_test.go`. Its four
+  top-level tests begin with `t.Parallel()`, resolve temporary directories before
+  creating links, use disposable repositories/homes/Git configuration and add
+  linked worktrees outside the main checkout. Controls use the same committed
+  revision, allowing literal transcript, record and Backlog Entry comparisons.
+  Comparison controls are created outside subtests so filtered subtest runs do
+  not depend on another subtest executing.
+
+Acceptance evidence:
+
+| Criterion | Focused evidence |
+| --- | --- |
+| Archive from resolved/linked worktree roots, linked subdirectory and linked main checkout | `TestArchiveFromEverySpellingOfTheCheckoutTranscript` passes; every spelling asserts the whole successful transcript and exact control record/relinked bytes, including the outward PRD link. |
+| Cancel from linked worktree root | `TestCancelFromALinkedSpellingTranscript` passes; control and linked spelling assert the whole transcript, exact record/relinked bytes and removal. |
+| Repository-relative refusals | `TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling` passes for dirty Spec and default-branch record-only refusals, with byte-identical control transcripts and unchanged checkout contents. |
+| Existing archive/cancel/folder-status behavior | Focused `Test(Archive\|Cancel\|SpecFolderStatus)` selection passes without changing any existing test, fixture, golden or assertion. The new external-root offline-plan test also passes and observes the committed Backlog Entry's relink line without modifying files. |
+| Guide coverage | Added both prescribed sentences in their required positions. The Coverage Review changes exactly the four requested surfaces; sanctioned regeneration changes only the two guide fingerprints. |
+
+Focused checks (all executed through `rtk proxy`):
+
+- Before the command fix, the linked cancel and external-root plan tests
+  reproduced the invalid concatenated absolute citation-target path; the dirty
+  linked archive refusal reproduced its absolute Spec-folder path. Initial new
+  fixture errors (missing QA dependency, invalid dirty PRD and absent empty
+  Spec Root after archival) were corrected within the new test file.
+- `go test ./internal/cli -run 'Test(ArchiveFromEverySpelling|CancelFromALinkedSpelling|ArchiveRefusalsNameRepositoryPaths|ArchivePlanWithALinkedExternal)' -count=1`
+  — exit 0 after the final test edit; all four new tests pass.
+- `go test ./internal/cli -run 'Test(Archive|Cancel|SpecFolderStatus)' -count=1`
+  — exit 0. An earlier run reported PASS but exited 1 because concurrent
+  sanctioned record generation changed `behavior-surfaces.json` during the
+  suite guard. The successful run occurred after regeneration finished.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0; ran the required generator, with only the archive/cancel guide
+  fingerprints changing in the generated record.
+- `env GOOS=windows go test -c -o /private/tmp/roundfix-0288-task02-cli.test.exe ./internal/cli`
+  — exit 0 after the final test edit; cross-compiles the package and tests.
+- `git diff --check` — exit 0. Changed-file audit finds only this Task's
+  declared files; the Task file already had a Daemon-owned status change on
+  entry. No other Task, Task Graph, skill or existing test changed.
+
+Wording review: searched `docs/user-guide`, `docs/agents`, `.agents/skills` and
+`skills` for `main checkout`, `repository root` and `repo root`, and for either
+command near those phrases. No wording requires the archive or cancel command
+itself to run from the main checkout or repository root. Both copies of
+`archive-spec/SKILL.md:155` say to run their reference-index audit shell snippet
+from the repository root. Both copies of
+`roundfix/references/spec-delivery.md:51` and the usage guide's
+`IntegrationPending` row require the printed integration-recovery command from
+that root. Other matches describe configuration resolution, Bun scripts or
+repository conditions, including both archive references' "When the repository
+root is inside a Git work tree". These statements govern different operations
+or describe roots; no skill text changed.
+
+Environment: the executor rejected the symlinked writable-root spelling before
+starting a process. Authorized commands ran in the resolved Run checkout under
+`/Volumes/Brain-SSD/cache/.roundfix/worktrees/`; no configuration workaround was
+written.
+
+The declared Verification, Windows vet and repository Verification remain for
+the Daemon. No commit, push or pull request was made; no follow-up scope was
+implemented.
