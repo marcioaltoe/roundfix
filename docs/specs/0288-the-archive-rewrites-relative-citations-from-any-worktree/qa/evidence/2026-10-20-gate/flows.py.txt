@@ -1,0 +1,24 @@
+from pathlib import Path
+exec(Path('/tmp/rf0288-common.py').read_text())
+log=[]
+for action,places,row in [('archive',['real/item','link/item','link/item/docs','link/main'],'Q2'),('cancel',['real/item','link/item'],'Q3')]:
+ control=None
+ for n,where in enumerate(places):
+  root,env,rev=fixture(action+str(n));repo=root/('real/main' if where=='link/main' else 'real/item')
+  files=list((repo/'docs/specs/0001-demo').rglob('*'));files=[p for p in files if p.is_file()];count=len(files);size=sum(p.stat().st_size for p in files)
+  args=[action,'0001-demo']+(['--qa-override','--approval','probe','--reason','probe'] if action=='archive' else ['--reason','probe'])
+  p=command(root,env,where,args);log.append(f'{where}: ./bin/roundfix '+ ' '.join(args)+f'\nexit: {p.returncode}\nstdout:\n{p.stdout}stderr:\n{p.stderr}')
+  assert p.returncode==0 and p.stderr=='',log[-1]
+  want=(f'archived 0001-demo with QA override -> docs/history/specs/0001-demo.md; removed {count} file(s) ({size} bytes) kept in Git at {rev[:12]}; relinked 1 file(s)\n' if action=='archive' else f'cancelled 0001-demo -> docs/history/specs/0001-demo.md; 1 completed Task(s), 1 pending; removed {count} file(s) ({size} bytes) kept in Git at {rev[:12]}\n')
+  assert p.stdout==want,(p.stdout,want)
+  rec=repo/'docs/history/specs/0001-demo.md';back=repo/'docs/backlog/2026-10-20-follow-up.md'
+  assert not (repo/'docs/specs/0001-demo').exists()
+  assert '../history/specs/0001-demo.md' in back.read_text()
+  got=(p.stdout,p.stderr,rec.read_bytes(),back.read_bytes())
+  if control is None:control=got; controlpaths=(rec,back)
+  else:
+   assert got==control
+   for a,b in zip(controlpaths,(rec,back)):run(['cmp',str(a),str(b)],env=env)
+  run(['git','show',rev+':docs/specs/0001-demo/_prd.md'],repo,env)
+  log.append('Independent read: record + relinked backlog reloaded, original PRD retrievable by Git, Spec absent; cmp record/backlog equal to resolved control.\nRecord SHA256 '+hashlib.sha256(got[2]).hexdigest()+'; backlog SHA256 '+hashlib.sha256(got[3]).hexdigest()+'\n')
+ evidence(action+'-flows.txt','\n'.join(log));settle(row,'pass',f'[{action}-flows.txt](evidence/2026-10-20-gate/{action}-flows.txt). Exact stdout/stderr/exit match Surface Transcript '+('1' if action=='archive' else '2')+'; fresh fixtures, cmp equality, persisted record/backlog reload and Git source read passed.'); print(action,'PASS',flush=True);log=[]

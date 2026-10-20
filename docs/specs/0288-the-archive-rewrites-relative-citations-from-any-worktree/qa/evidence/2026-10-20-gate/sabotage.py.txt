@@ -1,0 +1,41 @@
+from pathlib import Path
+exec(Path('/tmp/rf0288-common.py').read_text())
+env=isolated(T/'sabotage-home')
+for key in ['GOPATH','GOCACHE']:env[key]=run(['go','env',key]).stdout.strip()
+def extract(revision,name):
+ dest=T/name;dest.mkdir();p=subprocess.run(['git','archive',revision],cwd=W,capture_output=True,check=True)
+ with tarfile.open(fileobj=io.BytesIO(p.stdout)) as tar:tar.extractall(dest,filter='data')
+ return dest
+logs=[]
+copy=extract(HEAD,'mutant-no-resolution');f=copy/'internal/spec/repository_path.go'
+s=f.read_text();start=s.index('func RepositoryPath(');s=s[:start]+'''func RepositoryPath(repositoryRoot, path string) (string, error) {
+ _ = config.CanonicalizeResolvedPath
+ _ = fmt.Errorf
+ _ = strings.HasPrefix
+ rel, err := filepath.Rel(repositoryRoot, path)
+ return filepath.ToSlash(rel), err
+}
+''';f.write_text(s)
+for package,test in [('./internal/spec','TestArchiveFromALinkedSpellingRewritesAndRelinks'),('./internal/cli','TestArchiveFromEverySpellingOfTheCheckoutTranscript')]:
+ args=['go','test','-count=1','-v','-run','^'+test+'$',package];p=run(args,copy,env,ok=False)
+ logs.append('Mutant: RepositoryPath returns raw lexical relative path, no resolved comparison\n'+' '.join(args)+'\nexit: '+str(p.returncode)+'\n'+p.stdout+p.stderr)
+ assert p.returncode!=0 and 'rebase archive outcome' in p.stdout+p.stderr,logs[-1]
+ print('sabotage no-resolution:',test,'caught',flush=True)
+copy=extract(HEAD,'mutant-no-containment');f=copy/'internal/spec/repository_path.go';s=f.read_text();s=s.replace('err != nil || filepath.IsAbs(rel) || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator))','err != nil');s=s.replace('relative := func','_ = strings.HasPrefix\n\trelative := func');f.write_text(s)
+args=['go','test','-count=1','-v','-run','^TestRepositoryPathComparesResolvedSpellings$','./internal/spec'];p=run(args,copy,env,ok=False)
+logs.append('Mutant: lexical containment check removed, including ../ refusal\n'+' '.join(args)+'\nexit: '+str(p.returncode)+'\n'+p.stdout+p.stderr)
+assert p.returncode!=0 and '--- FAIL: TestRepositoryPathComparesResolvedSpellings' in p.stdout+p.stderr
+print('sabotage containment: caught',flush=True)
+evidence('sabotage.txt','\n\n'.join(logs));settle('Q5','pass','[sabotage.txt](evidence/2026-10-20-gate/sabotage.txt). Two git-archive copies only: raw lexical resolver made both archive tests fail with `rebase archive outcome`; removing containment made the resolver test fail, including outside and shared-prefix sibling cases. All failures were assertions, not compilation errors.')
+copy=extract(BASE,'delivery-base');args=['go','build','-buildvcs=false','-o',str(T/'delivery-base-roundfix'),'./cmd/roundfix'];p=run(args,copy,env);print('Delivery Base binary built',flush=True)
+root,flowenv,rev=fixture('delivery-base-repro');link=root/'real/item/bin/roundfix';link.unlink();link.symlink_to(T/'delivery-base-roundfix')
+p=command(root,flowenv,'link/item',['archive','0001-demo','--qa-override','--approval','probe','--reason','probe']);assert p.returncode==2 and 'rebase archive outcome: rebase citation' in p.stderr,(p.returncode,p.stdout,p.stderr)
+entry=next((S/'references').glob('2026-10-20-*.md')).read_text();quoted=entry.split('```text\n',1)[1].split('```',1)[0]
+text='Delivery Base '+BASE+' built from git archive; go build exit 0.\n./bin/roundfix archive 0001-demo --qa-override --approval probe --reason probe\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'\nAdopted independent vortex Inbox Entry refusal:\n'+quoted+'\nRecorded item path: ~/.roundfix/worktrees/vortex-25dcc288/roundfix-deliver-0146-…-88a2767f\n'
+for name,quotes in [('os.Getwd',['If the current directory can be reached via multiple paths (due to symbolic links), Getwd may return any one of them.','On Unix platforms, if the environment variable PWD provides an absolute name, and it is a name of the current directory, it is returned.']),('path/filepath.Rel',['Rel returns a relative path that is lexically equivalent to targpath when joined to basepath'])]:
+ p=run(['go','doc',name],env=env);norm=' '.join(p.stdout.split()).lower()
+ for quote in quotes:assert quote.lower() in norm,(name,quote,p.stdout)
+ text+='\ngo doc '+name+'\nexit: 0\n'+p.stdout
+text+='\nObserved class independently reproduced at Delivery Base: same refusal; current head passes identical fixture and transcript. No real item worktree read.\n'
+evidence('outside-offline.txt',text);settle('Q6','pass','[outside-offline.txt](evidence/2026-10-20-gate/outside-offline.txt). Independent vortex refusal and item path quoted; Delivery Base binary reproduced exit 2 / `rebase archive outcome: rebase citation` on a fresh linked fixture. Offline Go documentation passages matched normalized output for Getwd and Rel.')
+print('Q6 PASS',flush=True)

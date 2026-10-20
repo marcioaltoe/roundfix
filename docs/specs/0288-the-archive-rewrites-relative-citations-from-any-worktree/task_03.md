@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0288-the-archive-rewrites-relative-citations-from-any-worktree
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

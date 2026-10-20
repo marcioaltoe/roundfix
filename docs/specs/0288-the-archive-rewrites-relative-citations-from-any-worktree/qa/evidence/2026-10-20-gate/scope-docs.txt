@@ -1,0 +1,168 @@
+task_01 dac3e85f541e96b3db433ac5e6b44b129e093a34 changed files (git diff-tree), each declared or assigned Task file:
+docs/specs/0288-the-archive-rewrites-relative-citations-from-any-worktree/task_01.md
+internal/spec/archive.go
+internal/spec/cancel.go
+internal/spec/repository_path.go
+internal/spec/repository_path_test.go
+
+
+task_02 a78fedbc2964ccd8360cafc29ca82b43a528bd55 changed files (git diff-tree), each declared or assigned Task file:
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0288-the-archive-rewrites-relative-citations-from-any-worktree/task_02.md
+docs/user-guide/commands/archive.md
+docs/user-guide/commands/cancel.md
+internal/cli/archive.go
+internal/cli/archive_symlinked_checkout_test.go
+internal/cli/cancel.go
+
+
+Approved authorization predates both Task commits at Delivery Base 510ed75e107f78a38dc7de8f5739b2e4dbc317f5. Mechanical audit already lists task_01; no tooling commit outside that audit requires re-execution.
+
+
+git diff --name-only 510ed75e107f78a38dc7de8f5739b2e4dbc317f5 a78fedbc2964ccd8360cafc29ca82b43a528bd55 -- Makefile .github/workflows go.mod go.sum .roundfixrc.yml internal/baseline/assets docs/agents/setup-context.json docs/history skills .agents/skills internal/spec/git_locator.go internal/spec/legacy_link_rebase.go internal/spec/live_citations.go internal/cli/deliver_workflow.go
+empty: all protected trees/files byte-identical.
+
+
+Only guide changes:
+docs/user-guide/commands/archive.md
+docs/user-guide/commands/cancel.md
+
+
+276 pre-existing _test.go files under internal/spec and internal/cli: byte-identical to Delivery Base; all skill trees unchanged, therefore no QA settlement section changed.
+
+
+Measured GovernedPath classification via temporary go test overlay; exit 0
+=== RUN   TestQA0288GovernedPaths
+    zz_qa0288_governed_test.go:4: docs/references/behavior-surfaces.json governed=false
+    zz_qa0288_governed_test.go:6: docs/references/skill-coverage.json governed=false
+    zz_qa0288_governed_test.go:8: docs/specs/0288-the-archive-rewrites-relative-citations-from-any-worktree/task_01.md governed=false
+    zz_qa0288_governed_test.go:10: docs/specs/0288-the-archive-rewrites-relative-citations-from-any-worktree/task_02.md governed=false
+    zz_qa0288_governed_test.go:12: docs/user-guide/commands/archive.md governed=false
+    zz_qa0288_governed_test.go:14: docs/user-guide/commands/cancel.md governed=false
+    zz_qa0288_governed_test.go:16: internal/cli/archive.go governed=false
+    zz_qa0288_governed_test.go:18: internal/cli/archive_symlinked_checkout_test.go governed=false
+    zz_qa0288_governed_test.go:20: internal/cli/cancel.go governed=false
+    zz_qa0288_governed_test.go:22: internal/spec/archive.go governed=true
+    zz_qa0288_governed_test.go:24: internal/spec/cancel.go governed=false
+    zz_qa0288_governed_test.go:26: internal/spec/repository_path.go governed=false
+    zz_qa0288_governed_test.go:28: internal/spec/repository_path_test.go governed=false
+--- PASS: TestQA0288GovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 2638 paths; fingerprint took 445.180333ms before and 117.637375ms after
+ok  	roundfix/internal/speccheck	0.847s
+
+
+Glossary contracts exit 0
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== PAUSE TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/links
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries
+--- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule (0.01s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/links (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.02s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.06s)
+PASS
+ok  	roundfix/internal/docscontract	0.287s
+
+
+The archive reads every path relative to the checkout it runs in, so it writes the same record and relinks the same files from the main checkout, a linked worktree such as a Delivery Queue item worktree, a subdirectory of either, or a path that crosses a symbolic link.
+
+The cancel reads every path relative to the checkout it runs in, so it writes the same record from the main checkout, a linked worktree, a subdirectory of either, or a path that crosses a symbolic link.
+
+Exactly four dated Coverage Reviews found: command archive, command cancel, guide docs/user-guide/commands/archive.md, guide docs/user-guide/commands/cancel.md. Q4 coverage-map contract exit 0.
+
+
+Wording search: rg -n -i (archive|cancel).*(must|only|require[sd]?).*(main checkout|repository root)|(must|only|require[sd]?).*(main checkout|repository root).*(archive|cancel) docs/user-guide docs/agents skills .agents/skills
+exit 1
+
+
+Review: no wording requires archive/cancel to run from main checkout or repository root. PRD and TechSpec Glossary sections both declare None; source changes add only RepositoryPath helper, no domain term requiring a glossary entry.

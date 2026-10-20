@@ -1,0 +1,53 @@
+import os,re,json,subprocess,tempfile,tarfile,io,hashlib
+from pathlib import Path
+D=json.loads(Path('/tmp/rf0288-state.json').read_text()); W=Path(D['w']); S=Path(D['s']); R=Path(D['r']); E=Path(D['e']); T=Path(D['tmp']); BASE=D['base']; HEAD=D['head']
+def isolated(home):
+ home=Path(home); home.mkdir(parents=True,exist_ok=True); e=os.environ.copy()
+ for k in list(e):
+  if k.endswith('API_KEY') or k.startswith('GIT_') or k.startswith('ROUNDFIX_') or k in ['AI_MEMORY_PREVIOUS_SESSION_HISTORY']: e.pop(k,None)
+ e.update(HOME=str(home),GIT_CONFIG_GLOBAL=str(home/'gitconfig'),GIT_CONFIG_NOSYSTEM='1',GIT_AUTHOR_NAME='QA Fixture',GIT_AUTHOR_EMAIL='qa@example.invalid',GIT_COMMITTER_NAME='QA Fixture',GIT_COMMITTER_EMAIL='qa@example.invalid',GIT_AUTHOR_DATE='2026-10-20T12:00:00Z',GIT_COMMITTER_DATE='2026-10-20T12:00:00Z',GOPROXY='off',GOSUMDB='off')
+ # Cached modules only; never fetch a dependency or toolchain.
+ e['GOTOOLCHAIN']='local'
+ return e
+def run(args,cwd=W,env=None,ok=True):
+ p=subprocess.run(args,cwd=cwd,env=env,text=True,capture_output=True)
+ if ok and p.returncode: raise RuntimeError(' '.join(args)+'\n'+p.stdout+p.stderr)
+ return p
+def evidence(name,text): (E/name).write_text(text)
+def settle(row,status,body):
+ text=R.read_text(); text=re.sub(r'(\| '+row+r' \| )pending( \|)',lambda m:m[1]+status+m[2],text)
+ start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1)
+ if end<0: end=len(text)
+ chunk=text[start:end].replace('Evidence: pending.','Evidence: '+body)
+ text=text[:start]+chunk+text[end:]; R.write_text(text)
+
+def fixture(name):
+ root=T/name; main=root/'real/main'; main.mkdir(parents=True); home=root/'home'; env=isolated(home)
+ def git(*a,cwd=main): return run(['git',*a],cwd,env)
+ git('init','--initial-branch=main');git('config','user.name','QA Fixture');git('config','user.email','qa@example.invalid')
+ spec=main/'docs/specs/0001-demo';spec.mkdir(parents=True)
+ def put(path,text): p=main/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+ put('docs/agents/agent-instructions.md','# Agent instructions\n');put('docs/agents/domain.md','# Domain instructions\n');put('docs/specs/.keep','')
+ constraints='## Project Constraints\n\n'+''.join('- '+x+': not applicable — fixture only. Source: `docs/agents/'+('domain.md' if x in ['Identifier strategy','Active ADR obligations'] else 'agent-instructions.md')+'`.\n' for x in ['Identifier strategy','Authentication and HTTP','Active ADR obligations','Tooling authority'])
+ put('docs/specs/0001-demo/_prd.md','---\nstatus: active\n---\n\n# PRD\n\nSee [follow-up](../../backlog/2026-10-20-follow-up.md).\n\n'+constraints+'\n## Success Metrics\n\nNone. Operational fixture.\n')
+ put('docs/specs/0001-demo/_authorization.md','---\nstatus: approved\ngranted: 2026-10-20\naction: run the fixture\nconsuming: 0001-demo\npaths: []\noperations: [implement, commit, push]\n---\n\n# Approved fixture authority\n')
+ put('docs/specs/0001-demo/_tasks.md','---\nschema: spec-tasks/v1\nqa: task_02\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_02\n      file: task_02.md\n      needs: [task_01]\n---\n\n# Tasks\n')
+ for task,status,typ in [('task_01','completed','backend'),('task_02','pending','qa')]:
+  put('docs/specs/0001-demo/'+task+'.md',f'---\ntask: {task}\nspec: 0001-demo\nstatus: {status}\ntype: {typ}\n---\n\n# Fixture task\n\n## Verification\n\n- `true` — expected: exit 0.\n')
+ put('docs/backlog/2026-10-20-follow-up.md','---\ntype: fix\nstatus: open\n---\n\n# Follow-up\n\n[Spec](../specs/0001-demo/_prd.md)\n')
+ git('add','-A');git('commit','-m','seed QA fixture');rev=git('rev-parse','HEAD').stdout.strip()
+ git('init','--bare','--initial-branch=main',str(root/'origin.git'));git('remote','add','origin',str(root/'origin.git'));git('push','origin','main');git('symbolic-ref','refs/remotes/origin/HEAD','refs/remotes/origin/main')
+ git('worktree','add','-b','item',str(root/'real/item'),'main');(root/'link').symlink_to(root/'real',target_is_directory=True)
+ # Every public command is executed as ./bin/roundfix, with a disposable untracked binary symlink.
+ for repo in [main,root/'real/item']:
+  (repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(W/'bin/roundfix')
+ return root,env,rev
+
+def command(root,env,where,args,binary=None):
+ cwd=root/where; e=env.copy();e['PWD']=str(cwd)
+ # Subdirectory invocation still uses ./bin/roundfix.
+ (cwd/'bin').mkdir(exist_ok=True)
+ link=cwd/'bin/roundfix'
+ if not link.exists():link.symlink_to(W/'bin/roundfix')
+ p=run([str(binary) if binary else './bin/roundfix',*args],cwd,e,ok=False)
+ return p

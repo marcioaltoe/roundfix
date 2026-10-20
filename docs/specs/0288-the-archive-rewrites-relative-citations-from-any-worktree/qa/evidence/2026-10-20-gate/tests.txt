@@ -1,0 +1,63 @@
+task_01 declared Verification
+out="$(go test -count=1 -v -run '^(TestRepositoryPathComparesResolvedSpellings|TestArchiveFromALinkedSpellingRewritesAndRelinks|TestCancelFromALinkedSpellingRelinksAndReturnsSources|TestArchiveQAOverrideRecordsARelativeOutcome|TestArchiveRewritesRelativeLinksThatLeaveTheSpec|TestCancelRelinksLiveCitations|TestCancelRefusalsWriteNothing|TestCancelReturnsAnAdoptedBacklogEntryAsOpen|TestLegacyLinkRebaseNeverLinksTheRecordToItself|TestCitationRewriteKeepsRelinkContentBytes)$' ./internal/spec 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestRepositoryPathComparesResolvedSpellings TestArchiveFromALinkedSpellingRewritesAndRelinks TestCancelFromALinkedSpellingRelinksAndReturnsSources TestArchiveQAOverrideRecordsARelativeOutcome TestCancelRelinksLiveCitations; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/spec
+exit: 0
+
+
+task_02 declared Verification
+out="$(go test -count=1 -v -run '^(TestArchiveFromEverySpellingOfTheCheckoutTranscript|TestCancelFromALinkedSpellingTranscript|TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling|TestArchivePlanWithALinkedExternalSpecRootListsTheRelink|TestArchiveRelinksLiveCitationsTranscript|TestSpecFolderStatusRefusesUncommittedChangesFirst|TestSpecFolderStatusReadsTheExternalSpecsRootRepository|TestArchiveRefusesIgnoredSpecFiles|TestCancelRefusesIgnoredSpecFiles|TestCancelTranscriptCancelsASpecWithSources|TestCancelWarnsOnlyOncePerRemainingTrackedCitationLine|TestArchiveRefusesAPullRequestForARecordOnTheDefaultBranch|TestArchivePlanOfflineTranscript)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestArchiveFromEverySpellingOfTheCheckoutTranscript TestCancelFromALinkedSpellingTranscript TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling TestArchivePlanWithALinkedExternalSpecRootListsTheRelink TestArchiveRelinksLiveCitationsTranscript TestSpecFolderStatusReadsTheExternalSpecsRootRepository; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < docs/references/skill-coverage.json | grep -qF -- 'Spec 0288 task_02 builds archive and cancel repository paths from one root spelling' || { printf 'missing Coverage Review\n' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/archive.md | grep -qF -- 'The archive reads every path relative to the checkout it runs in' || { printf 'missing archive guide sentence\n' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/cancel.md | grep -qF -- 'The cancel reads every path relative to the checkout it runs in' || { printf 'missing cancel guide sentence\n' >&2; exit 1; }; go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' || exit 1; GOOS=windows go vet ./internal/cli
+exit: 0
+ok  	roundfix/internal/docscontract	0.457s
+
+
+Named tests, direct verbose capture
+exit: 0
+=== RUN   TestArchiveFromALinkedSpellingRewritesAndRelinks
+=== PAUSE TestArchiveFromALinkedSpellingRewritesAndRelinks
+=== RUN   TestCancelFromALinkedSpellingRelinksAndReturnsSources
+=== PAUSE TestCancelFromALinkedSpellingRelinksAndReturnsSources
+=== RUN   TestRepositoryPathComparesResolvedSpellings
+=== PAUSE TestRepositoryPathComparesResolvedSpellings
+=== CONT  TestArchiveFromALinkedSpellingRewritesAndRelinks
+=== CONT  TestRepositoryPathComparesResolvedSpellings
+=== CONT  TestCancelFromALinkedSpellingRelinksAndReturnsSources
+--- PASS: TestRepositoryPathComparesResolvedSpellings (0.45s)
+--- PASS: TestCancelFromALinkedSpellingRelinksAndReturnsSources (0.69s)
+--- PASS: TestArchiveFromALinkedSpellingRewritesAndRelinks (0.72s)
+PASS
+suiteguard: guard cost: measured 2635 paths; fingerprint took 147.023125ms before and 124.076791ms after
+ok  	roundfix/internal/spec	1.100s
+=== RUN   TestArchiveFromEverySpellingOfTheCheckoutTranscript
+=== PAUSE TestArchiveFromEverySpellingOfTheCheckoutTranscript
+=== RUN   TestCancelFromALinkedSpellingTranscript
+=== PAUSE TestCancelFromALinkedSpellingTranscript
+=== RUN   TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling
+=== PAUSE TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling
+=== RUN   TestArchivePlanWithALinkedExternalSpecRootListsTheRelink
+=== PAUSE TestArchivePlanWithALinkedExternalSpecRootListsTheRelink
+=== CONT  TestArchiveFromEverySpellingOfTheCheckoutTranscript
+=== CONT  TestCancelFromALinkedSpellingTranscript
+=== CONT  TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling
+=== RUN   TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling/record-only-false
+=== CONT  TestArchivePlanWithALinkedExternalSpecRootListsTheRelink
+=== RUN   TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling/record-only-true
+--- PASS: TestArchivePlanWithALinkedExternalSpecRootListsTheRelink (0.28s)
+=== RUN   TestArchiveFromEverySpellingOfTheCheckoutTranscript/worktree_root_resolved
+=== RUN   TestCancelFromALinkedSpellingTranscript/linked-false
+=== RUN   TestArchiveFromEverySpellingOfTheCheckoutTranscript/worktree_root_through_link
+=== RUN   TestCancelFromALinkedSpellingTranscript/linked-true
+=== RUN   TestArchiveFromEverySpellingOfTheCheckoutTranscript/worktree_subdirectory_through_link
+--- PASS: TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling (0.77s)
+    --- PASS: TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling/record-only-false (0.23s)
+    --- PASS: TestArchiveRefusalsNameRepositoryPathsFromALinkedSpelling/record-only-true (0.53s)
+--- PASS: TestCancelFromALinkedSpellingTranscript (0.83s)
+    --- PASS: TestCancelFromALinkedSpellingTranscript/linked-false (0.24s)
+    --- PASS: TestCancelFromALinkedSpellingTranscript/linked-true (0.25s)
+=== RUN   TestArchiveFromEverySpellingOfTheCheckoutTranscript/main_checkout_through_link
+--- PASS: TestArchiveFromEverySpellingOfTheCheckoutTranscript (1.20s)
+    --- PASS: TestArchiveFromEverySpellingOfTheCheckoutTranscript/worktree_root_resolved (0.23s)
+    --- PASS: TestArchiveFromEverySpellingOfTheCheckoutTranscript/worktree_root_through_link (0.21s)
+    --- PASS: TestArchiveFromEverySpellingOfTheCheckoutTranscript/worktree_subdirectory_through_link (0.25s)
+    --- PASS: TestArchiveFromEverySpellingOfTheCheckoutTranscript/main_checkout_through_link (0.18s)
+PASS
+suiteguard: guard cost: measured 2635 paths; fingerprint took 161.532458ms before and 123.885042ms after
+ok  	roundfix/internal/cli	1.760s
