@@ -128,8 +128,7 @@ a refused unit or an occupied destination exits 2 with category `invalid`
 and writes nothing. The update's conversions read Legacy Archive Folders with
 the same summary, field, source and creation-date fallbacks, and Legacy Link
 Rebase rewrites each promoted copy, using a Git Locator for an unpromoted
-folder destination. After removals the update rewrites citations in surviving
-Archive Records, Live Documents and the user guide to Git Locators. A Reduced
+folder destination. After removals the update rewrites every History Citation it lists, in every Citation Source: each tracked text file outside the skill trees and testdata directories. A prose path that starts with ./ or ../ is resolved against the directory of the citing file. Outside Markdown the Git Locator is written without backticks. A Reduced
 History Entry uses its original provenance path and commit when reachable;
 no new reduced entry is written.
 
@@ -151,9 +150,9 @@ The Plan Digest binds removals, record repairs and replacement text.
 
 
 A superseded ADR's accepted successor receives a missing lineage line exactly
-as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.` The date
-is HEAD's committer date in UTC (`YYYY-MM-DD`); the locator is the removed
-path's Git Locator. Apply appends the line after a blank line, preserves the
+as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.`
+A retired ADR whose file name is not a number followed by a slug is named by its file name without the extension. The date is the day the retired ADR was superseded: its updated_at in UTC, else the committer date of the newest commit that changed it, else the committer date of HEAD.
+The locator is the removed path's Git Locator. Apply appends the line after a blank line, preserves the
 successor's existing bytes and never adds the same line twice. Several lines
 for one successor follow removal-path order. Each line is a History Citation:
 `cites <successor>:<n> names <removed>; rewrites to <line>` in history text,
@@ -186,6 +185,7 @@ It writes the Git Locator printed by `SC-HISTORY-RETAINED`, changes only link
 spans and skips Archive Records, removed pages, self-links, code spans,
 fences, URLs and existing Git Locators. A second plan after apply has no
 `live-links` unit.
+The repair leaves a link to a file that a Task of an active Spec declares in creates: and has not completed. It resolves a missing link by its file name when exactly one removed history file has that name.
 
 The repair line is `- live-links: rewrites <l> link(s) in <n> file(s)`.
 JSON lists unit `live-links`, action `rewrite`, sorted page `paths`, `files`
@@ -203,6 +203,8 @@ push it with `git push origin history-full`.
 
 Pass `--no-history` to leave the history section out and keep the reviewed
 batch procedure under `roundfix history sanitize`.
+
+While Pending History remains, an update with --no-history still writes the retirement rule into the guide, so SC-HISTORY-RETAINED reports every retained history file on each active Spec, and the path to green is the history conversion: rerun roundfix baseline update without --no-history, or apply roundfix history sanitize batches until nothing is pending.
 
 Automation and Agents use the non-interactive plan/apply pair for first
 adoption or a Profile change:

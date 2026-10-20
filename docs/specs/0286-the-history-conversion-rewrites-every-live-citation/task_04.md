@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0286-the-history-conversion-rewrites-every-live-citation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -174,3 +174,78 @@ references, and the glossary.
 - `_prd.md` → Sources; Goals; Core Feature 4; Core Feature 5; Success Metric 4; Glossary
 - `_techspec.md` → API Contract 6; API Contract 7; Invariant 6; Current behavior; Testing Approach; Build Order 4; Glossary
 - ADR-0299; ADR-0278; ADR-0282; ADR-0260; ADR-0189; ADR-0256; ADR-0280; ADR-0259; ADR-0285; ADR-0265
+
+
+## Result
+
+Implemented the Task 04 slice; status and declared Verification remain
+Daemon-owned.
+
+- Acceptance criterion 1: `SC-HISTORY-RETAINED` now scans tracked and
+  untracked, unignored Citation Sources for Removed History Paths and reports
+  an error with the exact source, line, target and replacement locator.
+  `HistoryCitationsInSource` extracts the existing detector from
+  `SourceHistoryCitations` in `internal/spec/citation_sources.go`, so the
+  conversion and check share Markdown and bounded-prose detection rather
+  than maintaining competing scanners. The regression initially reported
+  only the existing missing-link finding; after implementation it asserts
+  every citation from Surface Transcript 1's five citing files, including
+  distinct targets on the same line, and an untracked text citation. Markdown
+  fixes use backticks; Makefile and plain-text fixes do not.
+- Acceptance criterion 2: the regression asserts exemption of Archive Records
+  under `docs/history/`, existing Git Locators, unreachable/pull-request
+  annotations, skill trees, testdata, ignored and binary files, and pending
+  `creates:` targets. It also asserts the existing missing-link finding's
+  exact wording and fix, with no duplicate removed-citation error, and no
+  history findings when the recorded retirement rule is absent. Existing
+  outside-Git behavior and skip reason remain in place. The new pass reads
+  only local files and Git history and sends nothing anywhere.
+- Acceptance criterion 3: the baseline, history and spec guides, canonical
+  Roundfix skill and references, generated mirrors, and `CONTEXT.md` now
+  describe the full citation rewrite, explicit relative prose paths,
+  plain-text locators outside Markdown, ADR identity and supersession date,
+  pending targets, unique-basename resolution, the new diagnostic and the
+  `--no-history` path to green. All four glossary terms link ADR-0299.
+  Both canonical skill version fields rose from 0.1.112 to 0.1.113.
+
+Focused implementation checks:
+
+- `go test ./internal/speccheck -run 'TestHistoryRetainedReportsARemovedHistoryCitationWithoutALocator' -count=1`:
+  reproduced the missing diagnostic before implementation (only one existing
+  missing-link finding, rather than the required citation findings).
+- `go test ./internal/speccheck -run 'TestHistoryRetained' -count=1`:
+  passed after implementation and again after aligning the regression with
+  Surface Transcript 1's exact paths and lines.
+- `go test ./internal/spec -run 'Test(HistoryRewrite|CitationSources|RemovedHistoryPaths|LiveLinks)' -count=1`:
+  passed; the extracted detector preserves conversion and link behavior.
+- `go test -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$' -count=1`:
+  passed; the characterized corpus keeps `SC-HISTORY-RETAINED` at 0 and the
+  corpus golden was not changed.
+- `GOOS=windows go test -c -o /tmp/roundfix-task04-speccheck-windows.test.exe ./internal/speccheck`:
+  passed for the final test source.
+- `make skills-sync`: passed; generated mirrors match canonical files.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  passed; generated the Roundfix 0.1.113 version record.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  passed; generated the changed guide fingerprints in the Behavior Surface
+  Record.
+- `make baseline-digests`: passed, `changed: false`; no derived Baseline
+  artifact changed.
+- Local inspection confirmed exact skill mirror bytes, both version fields,
+  unchanged `### QA settlement` bytes, unchanged corpus golden bytes and
+  ADR-0299 links on all four glossary terms. A multiline, case-insensitive
+  search across `docs/user-guide`, `docs/agents`, `.agents/skills` and
+  `skills` found none of the retired citation-scope, lineage-date or
+  never-rewrites wording. `git diff --check` reported no whitespace errors.
+
+No record or mirror was hand-edited. No other Task or Task Graph file was
+edited, and no commit, push or pull request was made. Declared Verification,
+repository gates and terminal settlement were not run. The environment's
+symlinked writable-root sandbox could not launch commands, so implementation
+and focused checks used the resolved Run checkout with authorized escalation.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/spec/citation_sources.go`

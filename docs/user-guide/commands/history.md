@@ -61,14 +61,9 @@ Each folder line reports removed file count and bytes, record path and size,
 disposition and delivery (`delivery <12-hex> #<pr>`, `delivery <12-hex>` or
 `delivery unknown`). Candidate lines list files outside core artifacts and
 `qa/evidence/`, using the archive plan's grouping. Removal units print `<unit>: removes <n> file(s) (<b> bytes)`.
-`cites <path>:<line> names <target>` reports tracked Markdown, including Archive
-Records. A citation in an Archive Record, a Live Document or `docs/user-guide/`
-appends `; rewrites to <replacement>`; apply rewrites it with the Citation
-Rewrite. A removed link becomes its label followed by the Git Locator
-`` `<path>@<commit>` ``; a prose path becomes the locator. Other citations are
-listed and left unchanged. A Reduced History Entry uses its original provenance
-path and commit when that commit qualifies. The rewrite changes only the
-planned citing files and skips files removed by the same plan.
+`cites <path>:<line> names <target>` reports each citation and appends
+`; rewrites to <replacement>`; apply rewrites it with the Citation Rewrite.
+After removals the plan rewrites every History Citation it lists, in every Citation Source: each tracked text file outside the skill trees and testdata directories. A prose path that starts with ./ or ../ is resolved against the directory of the citing file. Outside Markdown the Git Locator is written without backticks. A removed link becomes its label followed by the Git Locator; a prose path becomes the locator. A Reduced History Entry uses its original provenance path and commit when that commit qualifies. The rewrite changes only the planned citing files and skips files removed by the same plan.
 
 The family units include `docs/history/<kind>/`, the legacy trees
 `docs/findings/_archived/` and `_archived/{findings,backlog,adr}/`, terminal
@@ -95,9 +90,9 @@ not relative links. A record removed by the same plan is skipped.
 
 
 A superseded ADR's accepted successor receives a missing lineage line exactly
-as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.` The date
-is HEAD's committer date in UTC (`YYYY-MM-DD`); the locator is the removed
-path's Git Locator. Apply appends the line after a blank line, preserves the
+as `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.`
+A retired ADR whose file name is not a number followed by a slug is named by its file name without the extension. The date is the day the retired ADR was superseded: its updated_at in UTC, else the committer date of the newest commit that changed it, else the committer date of HEAD.
+The locator is the removed path's Git Locator. Apply appends the line after a blank line, preserves the
 successor's existing bytes and never adds the same line twice. Several lines
 for one successor follow removal-path order. Each line is a History Citation:
 `cites <successor>:<n> names <removed>; rewrites to <line>` in history text,
@@ -130,6 +125,7 @@ It writes the Git Locator printed by `SC-HISTORY-RETAINED`, changes only link
 spans and skips Archive Records, removed pages, self-links, code spans,
 fences, URLs and existing Git Locators. A second plan after apply has no
 `live-links` unit.
+The repair leaves a link to a file that a Task of an active Spec declares in creates: and has not completed. It resolves a missing link by its file name when exactly one removed history file has that name.
 
 The repair line is `live-links: rewrites <l> link(s) in <n> file(s)`.
 JSON lists unit `live-links`, action `rewrite`, sorted page `paths`, `files`

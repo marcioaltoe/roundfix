@@ -127,46 +127,57 @@ func SourceHistoryCitations(ctx context.Context, root string, removed []string) 
 		if err != nil {
 			return nil, fmt.Errorf("read history citation source %q: %w", path, err)
 		}
-		found := map[HistoryCitation]bool{}
-		if citationMarkdown(path) {
-			for _, citation := range archiveContentCitations(content, path, targets, "") {
-				found[citation] = true
-			}
+		sorted, err := HistoryCitationsInSource(content, path, targets)
+		if err != nil {
+			return nil, err
 		}
-		// Probe with the writer's bounded path pass, discarding its output.
-		// Consuming matched tokens also avoids counting their internal dots
-		// as the start of a second, unrelated relative path.
-		rw := CitationRewrite{}
-		for i, line := range strings.Split(string(content), "\n") {
-			rw.Locate = func(candidate string) (GitLocator, bool, error) {
-				candidate = citationProseTarget(candidate, path)
-				matched := false
-				for _, target := range targets {
-					if candidate == target || strings.HasPrefix(candidate, target+"/") {
-						found[HistoryCitation{Path: path, Line: i + 1, Target: target}] = true
-						matched = true
-					}
-				}
-				return GitLocator{Path: candidate}, matched, nil
-			}
-			if _, _, err := rw.ApplyText([]byte(line), path); err != nil {
-				return nil, err
-			}
-		}
-		var sorted []HistoryCitation
-		for citation := range found {
-			sorted = append(sorted, citation)
-		}
-		sort.Slice(sorted, func(i, j int) bool {
-			if sorted[i].Line != sorted[j].Line {
-				return sorted[i].Line < sorted[j].Line
-			}
-			return sorted[i].Target < sorted[j].Target
-		})
 		for _, citation := range sorted {
 			citation.Target = original[citation.Target]
 			citations = append(citations, citation)
 		}
 	}
 	return citations, nil
+}
+
+// HistoryCitationsInSource shares the conversion's Markdown and bounded prose
+// detector with the check. The caller selects local Citation Sources and targets;
+// this function reads no files and sends no content outside the process.
+func HistoryCitationsInSource(content []byte, path string, targets []string) ([]HistoryCitation, error) {
+	found := map[HistoryCitation]bool{}
+	if citationMarkdown(path) {
+		for _, citation := range archiveContentCitations(content, path, targets, "") {
+			found[citation] = true
+		}
+	}
+	// Probe with the writer's bounded path pass, discarding its output.
+	// Consuming matched tokens also avoids counting their internal dots
+	// as the start of a second, unrelated relative path.
+	rw := CitationRewrite{}
+	for i, line := range strings.Split(string(content), "\n") {
+		rw.Locate = func(candidate string) (GitLocator, bool, error) {
+			candidate = citationProseTarget(candidate, path)
+			matched := false
+			for _, target := range targets {
+				if candidate == target || strings.HasPrefix(candidate, target+"/") {
+					found[HistoryCitation{Path: path, Line: i + 1, Target: target}] = true
+					matched = true
+				}
+			}
+			return GitLocator{Path: candidate}, matched, nil
+		}
+		if _, _, err := rw.ApplyText([]byte(line), path); err != nil {
+			return nil, err
+		}
+	}
+	var sorted []HistoryCitation
+	for citation := range found {
+		sorted = append(sorted, citation)
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].Line != sorted[j].Line {
+			return sorted[i].Line < sorted[j].Line
+		}
+		return sorted[i].Target < sorted[j].Target
+	})
+	return sorted, nil
 }

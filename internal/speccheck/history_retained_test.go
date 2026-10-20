@@ -365,3 +365,86 @@ func TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames(t *testing.T) 
 		t.Fatalf("findings=%+v want fix=%s", findings, want)
 	}
 }
+
+func TestHistoryRetainedReportsARemovedHistoryCitationWithoutALocator(t *testing.T) {
+	t.Parallel()
+	if !pendingRetainedTestHome(t) {
+		return
+	}
+	root := retainedFixture(t, true)
+	history := "docs/history/findings/2026-01-01-x.md"
+	backlog := "docs/history/backlog/2026-01-02-b.md"
+	adr := "docs/history/adr/0001-old.md"
+	future := "docs/history/backlog/future.md"
+	for _, path := range []string{history, backlog, adr, future} {
+		writeReceiptFixture(t, root, path, "# Retired\n")
+	}
+	revision := retainedCommit(t, root)
+	gittest.Run(t, root, "rm", history, backlog, adr, future)
+	retainedCommit(t, root)
+	// The five citing files retain Surface Transcript 1's paths and lines.
+	for path, content := range map[string]string{
+		"Makefile":                     "all:\n# see " + history + "\n",
+		"docs/adr/0002-live.md":        "---\nstatus: accepted\n---\n# Live\n\n`" + history + "` [old](../history/adr/0001-old.md)\n",
+		"docs/agents/deploy.md":        "`../history/findings/2026-01-01-x.md`\n",
+		"docs/reference/notes.md":      "[b](../history/backlog/2026-01-02-b.md)\n",
+		"infra/README.md":              "[b](../docs/history/backlog/2026-01-02-b.md) `../docs/history/findings/2026-01-01-x.md`\n",
+		"docs/references/link.md":      "[old](../history/findings/2026-01-01-x.md)\n",
+		"safe.md":                      "`" + history + "@" + revision + "`\n" + history + "@" + revision + "\n`" + history + "` (not reachable from any branch or tag)\n`" + history + "` (pull request #42)\n" + future + "\n",
+		".agents/skills/demo/SKILL.md": history,
+		"skills/demo/SKILL.md":         history,
+		"internal/testdata/case.md":    history,
+		"docs/specs/demo/_prd.md":      "---\nstatus: active\n---\n# Demo\n[m](references/medicao.md)\n",
+		"docs/specs/demo/task_01.md":   "---\nstatus: pending\ntype: docs\n---\n## Context\n- creates: " + future + "\n- creates: docs/specs/demo/references/medicao.md\n",
+	} {
+		writeReceiptFixture(t, root, path, content)
+	}
+	retainedRecord(t, root, revision, history)
+	retainedCommit(t, root)
+	// Untracked, unignored text participates; ignored and binary files do not.
+	writeReceiptFixture(t, root, "untracked.txt", history+"\n")
+	writeReceiptFixture(t, root, ".gitignore", "ignored.txt\n")
+	writeReceiptFixture(t, root, "ignored.txt", history+"\n")
+	writeReceiptFixture(t, root, "binary.dat", "\x00"+history)
+	findings := retainedFindings(retainedCheck(t, root))
+	want := map[spec.HistoryCitation]bool{
+		{Path: "Makefile", Line: 2, Target: history}:                true,
+		{Path: "docs/adr/0002-live.md", Line: 6, Target: adr}:       true,
+		{Path: "docs/adr/0002-live.md", Line: 6, Target: history}:   true,
+		{Path: "docs/agents/deploy.md", Line: 1, Target: history}:   true,
+		{Path: "docs/reference/notes.md", Line: 1, Target: backlog}: true,
+		{Path: "infra/README.md", Line: 1, Target: backlog}:         true,
+		{Path: "infra/README.md", Line: 1, Target: history}:         true,
+		{Path: "untracked.txt", Line: 1, Target: history}:           true,
+	}
+	if len(findings) != len(want)+1 {
+		t.Fatalf("findings=%+v", findings)
+	}
+	for _, f := range findings {
+		if len(f.Where) != 1 || f.Severity != SeverityError {
+			t.Fatalf("finding=%+v", f)
+		}
+		path := f.Where[0].Path
+		if path == "docs/references/link.md" {
+			if f.Summary != path+" links to a missing file or itself: "+history || f.Where[0].Line != 1 || f.Fix != "Replace the link with `"+history+"@"+revision+"`." {
+				t.Fatalf("existing missing-link finding=%+v", f)
+			}
+			continue
+		}
+		target := strings.TrimPrefix(f.Summary, path+" cites a removed history file without a Git Locator: ")
+		citation := spec.HistoryCitation{Path: path, Line: f.Where[0].Line, Target: target}
+		plain := path == "Makefile" || path == "untracked.txt"
+		locator := (spec.GitLocator{Path: target, Commit: revision}).Text(plain)
+		if !want[citation] || f.Fix != "Replace the citation with "+locator+"." {
+			t.Fatalf("removed-citation finding=%+v", f)
+		}
+		delete(want, citation)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing citations=%v", want)
+	}
+	retainedGuide(t, root, "Old contract.")
+	if got := retainedFindings(retainedCheck(t, root)); len(got) != 0 {
+		t.Fatalf("without retirement rule: %+v", got)
+	}
+}
