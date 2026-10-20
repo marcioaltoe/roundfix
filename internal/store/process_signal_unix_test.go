@@ -185,7 +185,9 @@ func TestOwnerProcessControllerReprovesBeforeForceKill(t *testing.T) {
 	for _, name := range []string{"changed", "absent", "unreadable", "matching", "legacy"} {
 		t.Run(name, func(t *testing.T) {
 			helper := startProvenSignalHelper(t, 0)
-			controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
+			// The stop window only bounds the wait: a short one races the grace
+			// timer on a loaded runner and fails before re-proof is reached.
+			controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 			recorded := helper.identity
 			signalled, forced := false, false
 			hostErr := errors.New("identity reader unavailable")
