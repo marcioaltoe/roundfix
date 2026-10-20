@@ -14,6 +14,56 @@ or an artifact directory. `--dry-run` lists that reclaimable set without
 deleting. Journal Retention keeps Run rows and active-run locks. Review artifacts
 under the Spec Root stay intact.
 
+## Sanitation
+
+```bash
+roundfix gc sanitize
+roundfix gc sanitize --apply
+```
+
+`roundfix gc sanitize` resolves each Run's recorded Artifact Directory to the
+Artifact Root the Run wrote to and classifies that root with the proofs below.
+It discovers roots across repositories through the Run Database. A blank recorded
+value uses the default root; a relative value resolves under the Run's Git root.
+The command previews by default; `--apply` removes only proven `runs/<run-id>`
+directories. It never removes Run Database rows, `reviews/` or `delivery/` files.
+
+The proofs run in order: unresolved metadata, a clean absolute path, safe Run
+IDs, containment inside Roundfix Home without equaling it, existence, a physical
+root and physical `runs/`, and the default root of every Run in the group. A
+root must match each Run's repository-key or recorded-checkout default.
+
+| Classification | What it keeps |
+| --- | --- |
+| `active` | Active Runs and terminal Runs inside Journal Retention; eligible terminal directories and absent Run directories may be reclaimed. |
+| `orphaned` | Terminal Runs inside Journal Retention; eligible terminal directories and absent Run directories may be reclaimed. |
+| `missing` | Everything; the root does not exist. |
+| `overridden` | The entire root, because it is not every Run's default. |
+| `outside Roundfix Home` | The entire root outside Roundfix Home. |
+| `unsafe` | The entire root when resolution or a physical-path or ownership proof fails. |
+
+A directory proven only because its Run is absent from the Run Database is
+checked again immediately before removal. If the Run has appeared, its directory
+stays and the report gives the reason `Run <id> appeared in durable Run metadata
+before removal`. A read error stops the command before that removal.
+
+Each resolved root lists distinct recorded values that differ from it, sorted,
+and its own directory and byte counts after candidate and preserved paths:
+
+```text
+  Artifact Root: <home>/.roundfix/artifacts/<repository id>
+    Recorded as: "" by 1 Run(s)
+    Classification: orphaned
+    Evidence: <ownership proof>
+    would remove: <path> (<eligibility proof>)
+    Directories reclaimable here: 1
+    Artifact bytes reclaimable here: <bytes>
+```
+
+With `--apply`, the per-root labels are `Directories removed here` and
+`Artifact bytes reclaimed here`. Totals follow all roots; a repeated apply
+reports `Directories removed: 0` when nothing else became eligible.
+
 ## Run Retention
 
 After the Journal Retention report, GC applies `store.run_retention_days` from
@@ -22,6 +72,16 @@ Config value is ignored with a warning. Terminal Runs whose completion time is
 before the cutoff leave the database whole, including their journal, Agent
 Selections, token usage and locks. GC removes each Run's artifact directory
 under its proven Artifact Root before removing the database rows.
+
+Run Retention finds each Run's artifact directory under the Artifact Root the
+Run wrote to, resolved the way `roundfix storage report` resolves it.
+
+- A blank recorded root uses the repository key's default root. The checkout's
+  default is used when the key's default cannot be resolved, or only the
+  checkout's default contains an entry for that Run.
+- A relative recorded root resolves under the Run's Git root; `~/` expands
+  under the home directory.
+- An absolute recorded root stays absolute and is cleaned.
 
 Active Runs stay. The report counts terminal Runs kept past the cutoff by
 reason: queue-referenced, worktree present, and artifact root unproven. GC keeps

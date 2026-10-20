@@ -42,12 +42,16 @@ automatically returns freed pages in slices; the live `roundfix gc` can also
 run guarded full compaction and convert a default-mode database. The budgeted
 startup sweep never runs a full compaction.
 
-`roundfix gc sanitize` discovers every recorded Artifact Root from the
-machine-wide Run Database, classifies each root from durable and filesystem
-evidence, and preserves ambiguous paths. It is a dry-run by default;
-`--apply` removes only proven retention-eligible or absent Run artifact
-directories. It does not replace or change the per-repository `roundfix gc`
-surface.
+`roundfix storage report`, `roundfix gc sanitize` and Run Retention resolve a
+recorded Artifact Directory with one resolver. `roundfix gc sanitize` groups
+Runs by the Artifact Root each wrote to and classifies each root with its
+existing proofs. A Run whose Artifact Root cannot be resolved makes its group
+`unsafe`, so the group is preserved. It is a dry-run by default; `--apply`
+removes only proven retention-eligible or absent Run artifact directories and
+rechecks the Run Database immediately before removing a directory proved
+absent. Each root reports the recorded values that resolved to it with
+`Recorded as:`, followed by its per-root candidate, preserved and reclaimable
+lines. It does not replace or change the per-repository `roundfix gc` surface.
 
 `roundfix storage report` is read-only, accepts no flags, and needs no Git
 repository. It reports measured bytes and row counts by database table,

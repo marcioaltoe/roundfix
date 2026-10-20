@@ -88,6 +88,7 @@ const (
 type gcSanitationCandidate struct {
 	dir      gcArtifactDir
 	evidence string
+	absent   bool
 }
 
 type gcSanitationPreservation struct {
@@ -97,6 +98,7 @@ type gcSanitationPreservation struct {
 
 type gcSanitationRootReport struct {
 	path           string
+	recordedValues map[string]int
 	classification gcSanitationClassification
 	evidence       string
 	candidates     []gcSanitationCandidate
@@ -507,7 +509,7 @@ func runGCSanitation(ctx context.Context, opts gcOptions, loaded roundconfig.Loa
 	if err != nil {
 		return gcSanitationReport{}, err
 	}
-	roots, discoverErr := store.DiscoverArtifactRoots(ctx, runStore)
+	roots, discoverErr := store.DiscoverArtifactRoots(ctx, runStore, loaded.HomeDir)
 	closeErr := runStore.Close()
 	if discoverErr != nil {
 		if closeErr != nil {
@@ -548,18 +550,57 @@ func runGCSanitation(ctx context.Context, opts gcOptions, loaded roundconfig.Loa
 	if !opts.apply {
 		return report, nil
 	}
-	for _, root := range report.roots {
+	// Discovery reads the Run Database and directories under resolved roots.
+	// Apply removes only runs/<run-id> directories. A new Run's row precedes
+	// its directory, so re-read absence immediately before deleting that path.
+	reader, err := commandDependenciesForContext(ctx).gc.openStoreReader(ctx, loaded.HomeDir)
+	if err != nil {
+		return gcSanitationReport{}, err
+	}
+	for i := range report.roots {
+		root := &report.roots[i]
+		removed := make([]gcSanitationCandidate, 0, len(root.candidates))
 		for _, candidate := range root.candidates {
-			if err := gcRemoveArtifactDirs([]gcArtifactDir{candidate.dir}); err != nil {
-				return gcSanitationReport{}, err
+			if candidate.absent {
+				_, found, err := reader.Run(ctx, candidate.dir.runID)
+				if err != nil {
+					return gcSanitationReport{}, errors.Join(fmt.Errorf("recheck Run %q before artifact removal: %w", candidate.dir.runID, err), reader.Close())
+				}
+				if found {
+					root.preserved = append(root.preserved, gcSanitationPreservation{
+						path:   candidate.dir.path,
+						reason: fmt.Sprintf("Run %s appeared in durable Run metadata before removal", candidate.dir.runID),
+					})
+					report.directories--
+					report.artifactBytes -= candidate.dir.bytes
+					continue
+				}
 			}
+			if err := gcRemoveArtifactDirs([]gcArtifactDir{candidate.dir}); err != nil {
+				return gcSanitationReport{}, errors.Join(err, reader.Close())
+			}
+			removed = append(removed, candidate)
 		}
+		root.candidates = removed
+	}
+	if err := reader.Close(); err != nil {
+		return gcSanitationReport{}, fmt.Errorf("close Run Database removal reader: %w", err)
 	}
 	return report, nil
 }
 
 func classifyGCSanitationRoot(root store.ArtifactRoot, homeDir string) gcSanitationRootReport {
-	report := gcSanitationRootReport{path: root.Path}
+	report := gcSanitationRootReport{path: root.Path, recordedValues: map[string]int{}}
+	for _, run := range root.Runs {
+		if run.ArtifactDir != root.Path {
+			report.recordedValues[run.ArtifactDir]++
+		}
+	}
+	if root.Unresolved != "" {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because the Artifact Root of %s cannot be resolved", root.Unresolved)
+		return report
+	}
 	path := strings.TrimSpace(root.Path)
 	if path == "" || !filepath.IsAbs(path) || filepath.Clean(path) != path {
 		report.classification = gcSanitationUnsafe
@@ -734,7 +775,7 @@ func gcSanitationArtifactDirs(root store.ArtifactRoot, allRunIDs map[string]stri
 		if err != nil {
 			return nil, nil, err
 		}
-		candidates = append(candidates, gcSanitationCandidate{dir: dir, evidence: fmt.Sprintf("Run %s is absent from durable Run metadata", entry.Name())})
+		candidates = append(candidates, gcSanitationCandidate{dir: dir, absent: true, evidence: fmt.Sprintf("Run %s is absent from durable Run metadata", entry.Name())})
 	}
 	return candidates, preserved, nil
 }
@@ -1162,6 +1203,14 @@ func printGCSanitationReport(stdout io.Writer, report gcSanitationReport) {
 	}
 	for _, root := range report.roots {
 		fmt.Fprintf(stdout, "  Artifact Root: %s\n", root.path)
+		values := make([]string, 0, len(root.recordedValues))
+		for value := range root.recordedValues {
+			values = append(values, value)
+		}
+		sort.Strings(values)
+		for _, value := range values {
+			fmt.Fprintf(stdout, "    Recorded as: %q by %d Run(s)\n", value, root.recordedValues[value])
+		}
 		fmt.Fprintf(stdout, "    Classification: %s\n", root.classification)
 		fmt.Fprintf(stdout, "    Evidence: %s\n", root.evidence)
 		for _, candidate := range root.candidates {
@@ -1173,6 +1222,17 @@ func printGCSanitationReport(stdout io.Writer, report gcSanitationReport) {
 		}
 		for _, preserved := range root.preserved {
 			fmt.Fprintf(stdout, "    preserved: %s (%s)\n", preserved.path, preserved.reason)
+		}
+		var bytes int64
+		for _, candidate := range root.candidates {
+			bytes += candidate.dir.bytes
+		}
+		if report.apply {
+			fmt.Fprintf(stdout, "    Directories removed here: %d\n", len(root.candidates))
+			fmt.Fprintf(stdout, "    Artifact bytes reclaimed here: %d\n", bytes)
+		} else {
+			fmt.Fprintf(stdout, "    Directories reclaimable here: %d\n", len(root.candidates))
+			fmt.Fprintf(stdout, "    Artifact bytes reclaimable here: %d\n", bytes)
 		}
 	}
 	if report.apply {

@@ -15,6 +15,7 @@ import (
 	"roundfix/internal/runevent"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -1864,7 +1865,8 @@ func databaseFileSize(t *testing.T, homeDir string) int64 {
 func TestDiscoverArtifactRootsReturnsEveryRecordedRepository(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	runStore := openTestStore(t, ctx, t.TempDir())
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
 	defer closeStore(t, runStore)
 
 	firstRequest := sampleCreateRunRequest()
@@ -1888,7 +1890,7 @@ func TestDiscoverArtifactRootsReturnsEveryRecordedRepository(t *testing.T) {
 		t.Fatalf("create second Artifact Root Run: %v", err)
 	}
 
-	roots, err := DiscoverArtifactRoots(ctx, runStore)
+	roots, err := DiscoverArtifactRoots(ctx, runStore, homeDir)
 	if err != nil {
 		t.Fatalf("discover Artifact Roots: %v", err)
 	}
@@ -1907,5 +1909,242 @@ func TestDiscoverArtifactRootsReturnsEveryRecordedRepository(t *testing.T) {
 	}
 	if got := runsByRoot[secondRequest.ArtifactDir]; got.ID != second.ID || got.Repository != secondRequest.GitRoot || got.State != StateActive || got.CompletedAt != nil {
 		t.Fatalf("second Artifact Root lost durable Run evidence: %#v", got)
+	}
+}
+
+func TestResolveRunArtifactRootIsTheRootTheRunWroteTo(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"blank root", "removed linked worktree", "relative root", "home root", "absolute root", "checkout default", "dangling key link", "empty ID", "dot ID", "parent ID", "nested ID", "unresolved root", "unresolved relative root"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			home, repo := t.TempDir(), t.TempDir()
+			gitRoot := repo
+			if name == "removed linked worktree" || name == "checkout default" || name == "dangling key link" {
+				repo, gitRoot = linkedWorktreeFixture(t, t.TempDir())
+			} else {
+				gittest.InitRepo(t, repo)
+			}
+			run := ArtifactRootRun{ID: "resolver-run", GitRoot: gitRoot, Repository: repo}
+			want, err := roundconfig.ResolveArtifactDirectory("", repo, home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wantErr error
+			switch name {
+			case "removed linked worktree":
+				gittest.Run(t, repo, "worktree", "remove", gitRoot)
+			case "relative root":
+				run.ArtifactDir = "relative-artifacts"
+				want = filepath.Join(gitRoot, run.ArtifactDir)
+			case "home root":
+				run.ArtifactDir = "~/home-artifacts"
+				want = filepath.Join(home, "home-artifacts")
+			case "absolute root":
+				want = filepath.Join(home, "absolute-artifacts")
+				run.ArtifactDir = want
+			case "checkout default", "dangling key link":
+				checkout, err := roundconfig.DefaultArtifactDirectoryForPath(gitRoot, home)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(checkout, "runs", run.ID), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if name == "checkout default" {
+					want = checkout
+				} else {
+					if err := os.MkdirAll(filepath.Join(want, "runs"), 0o755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Symlink(filepath.Join(home, "missing-target"), filepath.Join(want, "runs", run.ID)); err != nil {
+						if runtime.GOOS == "windows" {
+							t.Skipf("symbolic link unavailable: %v", err)
+						}
+						t.Fatal(err)
+					}
+				}
+			case "empty ID":
+				run.ID, wantErr = "", ErrUnsafeRunID
+			case "dot ID":
+				run.ID, wantErr = ".", ErrUnsafeRunID
+			case "parent ID":
+				run.ID, wantErr = "..", ErrUnsafeRunID
+			case "nested ID":
+				run.ID, wantErr = "nested/run", ErrUnsafeRunID
+			case "unresolved root", "unresolved relative root":
+				run.GitRoot, run.Repository = "", ""
+				wantErr = ErrArtifactRootUnresolved
+				if name == "unresolved relative root" {
+					run.ArtifactDir = "relative-artifacts"
+				}
+			}
+			beforeHome, beforeRepo := storageTreeSnapshot(t, home), storageTreeSnapshot(t, repo)
+			got, err := ResolveRunArtifactRoot(run, home)
+			if wantErr != nil {
+				if !errors.Is(err, wantErr) {
+					t.Fatalf("root=%q error=%v, want %v", got, err, wantErr)
+				}
+			} else if err != nil || got != want {
+				t.Fatalf("root=%q error=%v, want %q", got, err, want)
+			}
+			if !reflect.DeepEqual(beforeHome, storageTreeSnapshot(t, home)) || !reflect.DeepEqual(beforeRepo, storageTreeSnapshot(t, repo)) {
+				t.Fatal("resolver changed home or repository tree")
+			}
+		})
+	}
+}
+
+func TestStorageReportKeepsTheKeyRootOfADanglingRunLink(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	home := t.TempDir()
+	repo, checkout := linkedWorktreeFixture(t, t.TempDir())
+	writer := openTestStore(t, ctx, home)
+	request := sampleCreateRunRequest()
+	request.Kind, request.SpecSlug = KindImplement, "dangling-root"
+	request.GitRoot, request.ArtifactDir = checkout, ""
+	run, err := writer.CreateRun(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeStore(t, writer)
+	keyRoot, err := roundconfig.ResolveArtifactDirectory("", repo, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkoutRoot, err := roundconfig.DefaultArtifactDirectoryForPath(checkout, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(checkoutRoot, "runs", run.ID), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(checkoutRoot, "runs", run.ID, "old.log"), []byte("checkout bytes"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(keyRoot, "runs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(home, "missing-target"), filepath.Join(keyRoot, "runs", run.ID)); err != nil {
+		if runtime.GOOS == "windows" {
+			t.Skipf("symbolic link unavailable: %v", err)
+		}
+		t.Fatal(err)
+	}
+	beforeHome, beforeRepo := storageTreeSnapshot(t, home), storageTreeSnapshot(t, repo)
+	reader, err := OpenStorageReader(ctx, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := reader.StorageReport(ctx, home)
+	closeStore(t, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.ArtifactRoots) != 1 || report.ArtifactRoots[0].ArtifactRoot != keyRoot || report.ArtifactRoots[0].Bytes != 0 || report.ArtifactBytes != 0 {
+		t.Fatalf("report followed dangling key link to checkout root: %#v", report.ArtifactRoots)
+	}
+	if !reflect.DeepEqual(beforeHome, storageTreeSnapshot(t, home)) || !reflect.DeepEqual(beforeRepo, storageTreeSnapshot(t, repo)) {
+		t.Fatal("report changed home or repository tree")
+	}
+}
+
+func TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"blank and absolute", "two repositories", "relative", "unresolved", "unsafe ID", "first unresolved in ID order"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			home, repo := t.TempDir(), t.TempDir()
+			gittest.InitRepo(t, repo)
+			s := openTestStore(t, ctx, home)
+			defer closeStore(t, s)
+			root, err := roundconfig.ResolveArtifactDirectory("", repo, home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected := map[string][]ArtifactRootRun{}
+			add := func(repository, recorded string) Run {
+				t.Helper()
+				req := sampleCreateRunRequest()
+				req.Kind, req.SpecSlug = KindImplement, "discovery"
+				req.GitRoot, req.ArtifactDir = repository, recorded
+				run, err := s.CreateRun(ctx, req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.CompleteRun(ctx, run.ID, StateClean); err != nil {
+					t.Fatal(err)
+				}
+				return run
+			}
+			first := add(repo, "")
+			expected[root] = []ArtifactRootRun{{ID: first.ID, ArtifactDir: ""}}
+			switch name {
+			case "blank and absolute":
+				second := add(repo, root)
+				expected[root] = append(expected[root], ArtifactRootRun{ID: second.ID, ArtifactDir: root})
+			case "two repositories":
+				other := t.TempDir()
+				gittest.InitRepo(t, other)
+				otherRoot, err := roundconfig.ResolveArtifactDirectory("", other, home)
+				if err != nil {
+					t.Fatal(err)
+				}
+				second := add(other, "")
+				expected[otherRoot] = []ArtifactRootRun{{ID: second.ID}}
+			case "relative":
+				second := add(repo, "relative-artifacts")
+				expected[filepath.Join(repo, "relative-artifacts")] = []ArtifactRootRun{{ID: second.ID, ArtifactDir: "relative-artifacts"}}
+			case "unresolved", "first unresolved in ID order":
+				count := 1
+				if name == "first unresolved in ID order" {
+					count = 2
+				}
+				for i := 0; i < count; i++ {
+					run := add(repo, "")
+					if _, err := s.db.ExecContext(ctx, `UPDATE runs SET git_root = '', repository_root = '' WHERE id = ?`, run.ID); err != nil {
+						t.Fatal(err)
+					}
+					expected[""] = append(expected[""], ArtifactRootRun{ID: run.ID})
+				}
+			case "unsafe ID":
+				run := add(repo, root)
+				if _, err := s.db.ExecContext(ctx, `UPDATE runs SET id = '..' WHERE id = ?`, run.ID); err != nil {
+					t.Fatal(err)
+				}
+				expected[root] = append(expected[root], ArtifactRootRun{ID: "..", ArtifactDir: root})
+			}
+			roots, err := DiscoverArtifactRoots(ctx, s, home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(roots) != len(expected) {
+				t.Fatalf("roots=%+v want=%+v", roots, expected)
+			}
+			for i, group := range roots {
+				if i > 0 && roots[i-1].Path >= group.Path {
+					t.Fatalf("unordered roots: %+v", roots)
+				}
+				want, ok := expected[group.Path]
+				if !ok || len(group.Runs) != len(want) {
+					t.Fatalf("group=%+v want=%+v", group, expected)
+				}
+				sort.Slice(want, func(i, j int) bool { return want[i].ID < want[j].ID })
+				for j, run := range group.Runs {
+					if run.ID != want[j].ID || run.ArtifactDir != want[j].ArtifactDir {
+						t.Fatalf("run=%+v want=%+v", run, want[j])
+					}
+				}
+				if group.Path == "" {
+					prefix := fmt.Sprintf("Run %q recorded as %q: ", want[0].ID, "")
+					if !strings.HasPrefix(group.Unresolved, prefix) || !strings.Contains(group.Unresolved, ErrArtifactRootUnresolved.Error()) {
+						t.Fatalf("unresolved=%q want prefix=%q", group.Unresolved, prefix)
+					}
+				} else if group.Unresolved != "" {
+					t.Fatalf("unexpected unresolved: %+v", group)
+				}
+			}
+		})
 	}
 }

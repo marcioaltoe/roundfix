@@ -608,6 +608,16 @@ Artifact Directory-backed Run files such as Detached Run console logs and
 opt-in Agent logs. When unset, review artifacts use the Spec tree resolver.
 _Avoid_: Workspace, cache, output folder
 
+**Artifact Root**:
+The directory under which a Run writes `runs/<run-id>`. The recorded Artifact
+Directory resolves to this root the way the Run resolved it: a blank value uses
+the repository's default root, or, for an older Run, the checkout's default
+when only it holds the Run's directory; a relative value resolves under the
+Run's Git root; and an absolute value is used as recorded. One resolver serves
+the storage report, GC sanitation and Run Retention ([ADR-0301](docs/adr/0301-gc-sanitation-classifies-the-artifact-root-each-run-wrote-to.md),
+[ADR-0255](docs/adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)).
+_Avoid_: Artifact Directory, artifact folder, storage root
+
 **Console Log**:
 The compact caller-visible text record of a Detached Run's progress. It summarizes Agent file reads and edits while the Run Event Journal retains their lossless payloads.
 _Avoid_: Agent log, Run Event Journal, audit log
