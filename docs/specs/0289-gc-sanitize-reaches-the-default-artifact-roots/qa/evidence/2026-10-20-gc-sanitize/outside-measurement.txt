@@ -1,0 +1,11 @@
+Historical measurement supplied by the maintainer, roundfix 0.97.0; adopted source predates this implementation. Observed at 13:01 BRT (16:01 UTC). No real-home command executed by this QA.
+  GC sanitation dry-run
+    Journal Retention: 336h
+    Cutoff: 2026-10-06T16:01:59.862282Z
+    Artifact Root:
+      Classification: unsafe
+      Evidence: preserved because recorded Artifact Root "" is not a clean absolute path
+    Directories reclaimable: 0
+    Artifact bytes reclaimable: 0
+    No directories removed; rerun with --apply to mutate.
+  

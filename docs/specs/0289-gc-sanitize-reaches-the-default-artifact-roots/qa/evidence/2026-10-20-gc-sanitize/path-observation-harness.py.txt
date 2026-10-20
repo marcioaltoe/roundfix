@@ -1,0 +1,9 @@
+from rf0289_flows import *
+c=archive('observed-paths')
+f=c/'internal/cli/gc_sanitize_resolved_root_test.go';s=f.read_text().replace('for _, path := range removed {','for _, path := range removed {\n t.Logf("REMOVED %s", path)').replace('for _, path := range kept {','for _, path := range kept {\n t.Logf("KEPT %s", path)');f.write_text(s)
+f=c/'internal/store/journal_test.go';s=f.read_text();start=s.index('func TestResolveRunArtifactRootIsTheRootTheRunWroteTo(');end=s.index('\nfunc ',start+1);part=s[start:end];part=part.replace('got, err := ResolveRunArtifactRoot(run, home)','got, err := ResolveRunArtifactRoot(run, home)\n t.Logf("ROOT case=%s recorded=%q got=%q want=%q error=%v",name,run.ArtifactDir,got,want,err)');s=s[:start]+part+s[end:];f.write_text(s)
+f=c/'internal/cli/gc_run_retention_test.go';s=f.read_text();start=s.index('func TestRunRetentionReadsTheRootTheSharedResolverReturns(');s=s[:start]+s[start:].replace('output := runGCRetentionCLI(t, false)','t.Logf("ROOT case=%s recorded=%q root=%q",name,recorded,root)\n output := runGCRetentionCLI(t, false)',1);f.write_text(s)
+cmd=['go','test','-v','-count=1','-run','^(TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof|TestResolveRunArtifactRootIsTheRootTheRunWroteTo|TestRunRetentionReadsTheRootTheSharedResolverReturns)$','./internal/store','./internal/cli'];r=run(cmd,c);log('observed-paths.txt',cmd,r);assert r.returncode==0,r.stderr+r.stdout
+print('Logged every removed and kept path and resolver/retention subtest root',flush=True)
+cmd=['go','build','-buildvcs=false','./internal/store','./internal/cli'];e=dict(os.environ,GOOS='windows',GOPROXY='off',GOSUMDB='off');r=run(cmd,REPO,e);log('windows-build.txt',cmd,r);assert r.returncode==0,r.stderr
+print('Task-declared Windows build passed',flush=True)

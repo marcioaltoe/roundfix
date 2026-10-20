@@ -1,0 +1,13 @@
+COMMAND: go test ./internal/store -run ^TestQASeed$ -count=1 -v
+stdout:
+=== RUN   TestQASeed
+=== PAUSE TestQASeed
+=== CONT  TestQASeed
+--- PASS: TestQASeed (0.01s)
+PASS
+suiteguard: guard cost: measured 2621 paths; fingerprint took 268.593583ms before and 54.621334ms after
+ok  	roundfix/internal/store	0.465s
+
+stderr:
+
+exit: 0

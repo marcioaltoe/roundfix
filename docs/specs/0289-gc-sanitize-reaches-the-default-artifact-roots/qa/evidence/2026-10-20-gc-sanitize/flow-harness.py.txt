@@ -1,0 +1,119 @@
+from pathlib import Path
+import os, subprocess, tarfile, io, json, re, shutil, hashlib
+P=Path(Path('/private/tmp/rf0289-qa-path').read_text()); REPO=Path((P/'repo-path').read_text()); E=Path((P/'evidence-path').read_text())
+BASE='77af4ee24b51929667088c3e905b6b8c5856b37d'; HEAD='d0342fe9aa60eb6e1655e2f57667c84453864dc0'
+def run(cmd,cwd=REPO,env=None):
+ r=subprocess.run(cmd,cwd=cwd,env=env,capture_output=True,text=True);return r
+
+def log(name,cmd,r):
+ (E/name).write_text('COMMAND: '+' '.join(map(str,cmd))+'\nstdout:\n'+r.stdout+'\nstderr:\n'+r.stderr+'\nexit: '+str(r.returncode)+'\n')
+
+def archive(name,rev=HEAD):
+ p=P/name;p.mkdir()
+ b=subprocess.run(['git','archive',rev],cwd=REPO,capture_output=True,check=True).stdout
+ with tarfile.open(fileobj=io.BytesIO(b)) as t:t.extractall(p,filter='fully_trusted')
+ return p
+
+def safeenv(home):
+ e=os.environ.copy()
+ for k in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']:e.pop(k,None)
+ e['GOMODCACHE']=subprocess.run(['go','env','GOMODCACHE'],cwd=REPO,capture_output=True,text=True,check=True).stdout.strip()
+ e['HOME']=str(home);e['GOPROXY']='off';e['GOSUMDB']='off'
+ return e
+
+def update(row,status,detail):
+ q=REPO/'docs/specs/0289-gc-sanitize-reaches-the-default-artifact-roots/qa/qa-report-2026-10-20.md'
+ t=q.read_text();t=re.sub(r'\| '+row+r' \| [^|]+ \|','| '+row+' | '+status+' |',t)
+ start=t.index('### '+row+'\n'); end=t.find('\n### ',start+1)
+ if end<0:end=len(t)
+ part=t[start:end]; pos=part.index('```\n',part.index('```yaml')+7)+4
+ t=t[:start]+part[:pos]+'\n'+detail+'\n'+t[end:];q.write_text(t)
+
+SEED=r'''package store
+import("context";"os";"path/filepath";"testing";"time";"encoding/json")
+func TestQASeed(t *testing.T) {
+ t.Parallel()
+ home,repo:=os.Getenv("QA_FIXTURE_HOME"),os.Getenv("QA_FIXTURE_REPO")
+ s,err:=Open(context.Background(),home);if err!=nil{t.Fatal(err)}
+ values:=[]string{""};if os.Getenv("QA_FIXTURE_MODE")=="parity"{values=append(values,"relative-artifacts")}
+ meta:=[]map[string]string{}
+ for i:=0;i<len(values);i++ {
+  value:=values[i]
+  r,err:=s.CreateRun(context.Background(),CreateRunRequest{Kind:KindImplement,GitRoot:repo,ArtifactDir:value,LocalBranch:"fix/qa-seed",HeadSHA:"abc123",SpecSlug:"qa-seed"});if err!=nil{t.Fatal(err)}
+  if _,err=s.CompleteRun(context.Background(),r.ID,StateClean);err!=nil{t.Fatal(err)}
+  stamp:=time.Now().Add(-400*time.Hour).UTC().Format(time.RFC3339Nano)
+  if _,err=s.db.Exec("UPDATE runs SET created_at=?,updated_at=?,completed_at=? WHERE id=?",stamp,stamp,stamp,r.ID);err!=nil{t.Fatal(err)}
+  root,err:=ResolveRunArtifactRoot(ArtifactRootRun{ID:r.ID,GitRoot:repo,Repository:r.RepositoryRoot,ArtifactDir:value},home);if err!=nil{t.Fatal(err)}
+  path:=filepath.Join(root,"runs",r.ID,"agent","batch-001.log");if err=os.MkdirAll(filepath.Dir(path),0755);err!=nil{t.Fatal(err)}
+  if err=os.WriteFile(path,[]byte("batch log"),0644);err!=nil{t.Fatal(err)}
+  meta=append(meta,map[string]string{"id":r.ID,"root":root,"path":path,"recorded":value})
+  if i==0&&os.Getenv("QA_FIXTURE_MODE")=="parity"{values=append(values,root)}
+ }
+ if err=s.Close();err!=nil{t.Fatal(err)}
+ b,err:=json.MarshalIndent(meta,"","  ");if err!=nil{t.Fatal(err)}
+ if err=os.WriteFile(os.Getenv("QA_FIXTURE_META"),b,0644);err!=nil{t.Fatal(err)}
+}'''
+
+def fixture(copy,name,mode):
+ home=P/(name+'-home');home.mkdir();repo=P/(name+'-repo');repo.mkdir();en=safeenv(home)
+ for cmd in [['git','init','-q'],['git','-c','user.name=QA','-c','user.email=qa@localhost','commit','--allow-empty','-qm','seed']]:
+  r=run(cmd,repo,en);assert r.returncode==0,(r.stdout,r.stderr)
+ (copy/'internal/store/qa_seed_test.go').write_text(SEED)
+ meta=P/(name+'-meta.json');en.update(QA_FIXTURE_HOME=str(home),QA_FIXTURE_REPO=str(repo),QA_FIXTURE_MODE=mode,QA_FIXTURE_META=str(meta))
+ cmd=['go','test','./internal/store','-run','^TestQASeed$','-count=1','-v'];r=run(cmd,copy,en);log(name+'-seed.txt',cmd,r);assert r.returncode==0,r.stderr+r.stdout
+ (copy/'internal/store/qa_seed_test.go').unlink()
+ return home,repo,en,json.loads(meta.read_text())
+
+def tree(p):
+ out={}
+ if p.exists():
+  for f in sorted(p.rglob('*')):
+   if f.is_file():out[str(f.relative_to(p))]=hashlib.sha256(f.read_bytes()).hexdigest()
+ return out
+
+def flows():
+ copy=archive('flows-final'); (E/'seed.go.txt').write_text(SEED)
+ # Required Run-built binary, byte-identical copy into the disposable audited archive.
+ (copy/'bin').mkdir(exist_ok=True);shutil.copy2(REPO/'bin/roundfix',copy/'bin/roundfix')
+ home,repo,en,meta=fixture(copy,'transcript-final','transcript');m=meta[0]
+ binary=copy/'bin/roundfix'
+ assert hashlib.sha256(binary.read_bytes()).digest()==hashlib.sha256((REPO/'bin/roundfix').read_bytes()).digest()
+ (repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(binary)
+ before=tree(home/'.roundfix/artifacts');repo_before=tree(repo)
+ snapshots={'before':before,'repository_before':repo_before}
+ cmd=['./bin/roundfix','gc','sanitize'];r=run(cmd,repo,en);log('transcript-dry-run.txt',cmd,r)
+ assert r.returncode==0 and not r.stderr
+ tech=(REPO/'docs/specs/0289-gc-sanitize-reaches-the-default-artifact-roots/_techspec.md').read_text()
+ expected=tech.split('```transcript\n',1)[1].split('```',1)[0].split('stdout:\n',1)[1].split('   stderr:',1)[0]
+ expected='\n'.join(line[3:] if line.startswith('   ') else line for line in expected.splitlines())+'\n'
+ pattern=re.escape(expected);pattern=re.sub(r'<[^>]+>',r'[^\\n]+',pattern)
+ assert re.fullmatch(pattern,r.stdout),(pattern,r.stdout)
+ snapshots['after_dry_run']=tree(home/'.roundfix/artifacts');assert snapshots['after_dry_run']==before and tree(repo)==repo_before
+ for n in [1,2]:
+  cmd=['./bin/roundfix','gc','sanitize','--apply'];r=run(cmd,repo,en);log('transcript-apply-'+str(n)+'.txt',cmd,r)
+  assert r.returncode==0 and not r.stderr
+  assert '  Directories removed: '+('1' if n==1 else '0')+'\n' in r.stdout
+  after=tree(home/'.roundfix/artifacts');snapshots['after_apply_'+str(n)]=after
+  assert not Path(m['path']).exists() and tree(repo)==repo_before
+  assert set(before)-set(after)=={str(Path(m['path']).relative_to(home/'.roundfix/artifacts'))}
+  assert not set(after)-set(before)
+ (E/'file-snapshots.json').write_text(json.dumps(snapshots,indent=2))
+ (E/'fixture-metadata.json').write_text(json.dumps(meta,indent=2))
+ update('R07','pass','Surface Transcript 1 matched stdout line-for-line with only the TechSpec placeholders variable; stderr empty, exit 0. First apply removed exactly the one named Run directory (9 bytes); second apply removed zero. SHA-256 file lists confirm the dry run changed no artifacts, both applies preserved the repository, and only the named log disappeared. Evidence: [dry run](evidence/2026-10-20-gc-sanitize/transcript-dry-run.txt), [first apply](evidence/2026-10-20-gc-sanitize/transcript-apply-1.txt), [second apply](evidence/2026-10-20-gc-sanitize/transcript-apply-2.txt), [snapshots](evidence/2026-10-20-gc-sanitize/file-snapshots.json), [seed](evidence/2026-10-20-gc-sanitize/seed.go.txt).')
+ print('Surface transcript and both applies passed',flush=True)
+ base=archive('delivery-base-final',BASE);cmd=['make','build'];r=run(cmd,base);log('delivery-base-build.txt',cmd,r);assert r.returncode==0,r.stderr
+ home,repo,en,meta=fixture(copy,'parity-final','parity');(E/'parity-metadata.json').write_text(json.dumps(meta,indent=2))
+ sections=[]
+ for name,b in [('base',base/'bin/roundfix'),('head',binary)]:
+  (repo/'bin').mkdir(exist_ok=True)
+  target=repo/'bin/roundfix'
+  if target.is_symlink():target.unlink()
+  target.symlink_to(b)
+  cmd=['./bin/roundfix','storage','report'];r=run(cmd,repo,en);log('storage-'+name+'.txt',cmd,r);assert r.returncode==0 and not r.stderr,r.stderr
+  sections.append(r.stdout.split('Artifact Roots\n',1)[1])
+ assert sections[0]==sections[1],sections
+ (E/'storage-parity.txt').write_text('Artifact Roots sections byte-identical for blank, relative and absolute recorded roots.\nArtifact Roots\n'+sections[0])
+ update('R08','pass','Built Delivery Base from `git archive '+BASE+'` with `make build`; current binary is a byte-identical copy of the Run-built `./bin/roundfix`. Three terminal Runs record blank, `relative-artifacts`, and the absolute default. Both public `storage report` commands exited 0 with empty stderr, and their complete Artifact Roots sections are byte-identical. Evidence: [parity](evidence/2026-10-20-gc-sanitize/storage-parity.txt), [base](evidence/2026-10-20-gc-sanitize/storage-base.txt), [head](evidence/2026-10-20-gc-sanitize/storage-head.txt), [metadata](evidence/2026-10-20-gc-sanitize/parity-metadata.json).')
+ print('Storage report parity passed',flush=True)
+
+if __name__=='__main__':flows()

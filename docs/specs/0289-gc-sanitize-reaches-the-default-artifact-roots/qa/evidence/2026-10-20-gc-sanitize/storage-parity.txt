@@ -1,0 +1,8 @@
+Artifact Roots sections byte-identical for blank, relative and absolute recorded roots.
+Artifact Roots
+  ARTIFACT_ROOT	STATUS	RUN_ROWS	BYTES
+  /private/tmp/rf0289-qa-hl9re7lm/parity-final-home/.roundfix/artifacts/91595bdaf6bcfdc2	present	2	18
+  /private/tmp/rf0289-qa-hl9re7lm/parity-final-repo/relative-artifacts	present	1	9
+  Measured bytes: 27
+  Grouped bytes: 27
+  Reconciliation difference: 0

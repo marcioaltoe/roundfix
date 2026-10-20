@@ -1,0 +1,80 @@
+{
+  "delivery_base": "77af4ee24b51929667088c3e905b6b8c5856b37d",
+  "head": "d0342fe9aa60eb6e1655e2f57667c84453864dc0",
+  "task_commits": [
+    {
+      "task": "task_01",
+      "commit": "b974a6e9",
+      "files": [
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0289-gc-sanitize-reaches-the-default-artifact-roots/task_01.md",
+        "docs/user-guide/commands/gc.md",
+        "internal/cli/gc_run_retention_test.go",
+        "internal/cli/run_retention.go",
+        "internal/store/journal.go",
+        "internal/store/journal_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "1d310cb1",
+      "files": [
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0289-gc-sanitize-reaches-the-default-artifact-roots/task_02.md",
+        "docs/user-guide/commands/gc.md",
+        "internal/cli/gc.go",
+        "internal/cli/gc_sanitize_resolved_root_test.go",
+        "internal/store/journal.go",
+        "internal/store/journal_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "d0342fe9",
+      "files": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/storage.md",
+        "CONTEXT.md",
+        "docs/specs/0289-gc-sanitize-reaches-the-default-artifact-roots/task_03.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/storage.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    }
+  ],
+  "protected_paths_byte_identical": [
+    "Makefile",
+    ".github/workflows",
+    "go.mod",
+    "go.sum",
+    ".roundfixrc.yml",
+    "internal/baseline/assets",
+    "docs/agents/setup-context.json",
+    "docs/history",
+    "internal/config",
+    "docs/user-guide/commands/storage-report.md"
+  ],
+  "unchanged_test_files": [
+    "internal/cli/gc_test.go",
+    "internal/cli/gc_sanitize_pre_key_root_test.go"
+  ],
+  "unchanged_test_bodies": [
+    "TestGCRemovesRunsPastRunRetention",
+    "TestGCKeepsARunUnderAnUnprovenArtifactRoot"
+  ],
+  "skill_versions_before": [
+    "0.1.116",
+    "0.1.116"
+  ],
+  "skill_versions_after": [
+    "0.1.117",
+    "0.1.117"
+  ],
+  "skill_mirror_identical": true,
+  "qa_settlement_identical": true,
+  "obsolete_wording_matches": [],
+  "resolver_ownership": "journal.go defines ResolveRunArtifactRoot, no storageArtifactRoot; retention calls only store.ResolveRunArtifactRoot"
+}

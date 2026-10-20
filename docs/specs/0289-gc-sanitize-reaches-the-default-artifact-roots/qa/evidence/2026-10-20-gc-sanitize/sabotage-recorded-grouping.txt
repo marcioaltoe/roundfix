@@ -1,0 +1,211 @@
+COMMAND: go test -count=1 -v -run ^(TestGCSanitizeDryRunReachesTheDefaultRootTranscript|TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo)$ ./internal/...
+stdout:
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 130.00225ms before and 125.796792ms after
+ok  	roundfix/internal/agent	0.503s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/app	0.215s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 148.615042ms before and 155.819708ms after
+ok  	roundfix/internal/authorization	0.523s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 80.807125ms before and 63.219334ms after
+ok  	roundfix/internal/baseline	0.431s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/baselineacp	0.222s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/childexit	0.199s [no tests to run]
+=== RUN   TestGCSanitizeDryRunReachesTheDefaultRootTranscript
+=== PAUSE TestGCSanitizeDryRunReachesTheDefaultRootTranscript
+=== CONT  TestGCSanitizeDryRunReachesTheDefaultRootTranscript
+    gc_sanitize_resolved_root_test.go:34: exit=0 stderr=""
+        stdout:
+        GC sanitation dry-run
+          Journal Retention: 336h
+          Cutoff: 2026-10-06T12:00:00Z
+          Artifact Root: 
+            Classification: unsafe
+            Evidence: preserved because recorded Artifact Root "" is not a clean absolute path
+            Directories reclaimable here: 0
+            Artifact bytes reclaimable here: 0
+          Directories reclaimable: 0
+          Artifact bytes reclaimable: 0
+          No directories removed; rerun with --apply to mutate.
+        
+        want:
+        GC sanitation dry-run
+          Journal Retention: 336h
+          Cutoff: 2026-10-06T12:00:00Z
+          Artifact Root: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeDryRunReachesTheDefaultRootTranscript4273805892/001/.roundfix/artifacts/6686be6ec704e1f6
+            Recorded as: "" by 1 Run(s)
+            Classification: orphaned
+            Evidence: no Active Run records this Artifact Root; terminal Runs recorded: 1; default derived from recorded checkout "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeDryRunReachesTheDefaultRootTranscript4273805892/002" (Run "run_20261020T195351Z_e172477ee699229c")
+            would remove: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeDryRunReachesTheDefaultRootTranscript4273805892/001/.roundfix/artifacts/6686be6ec704e1f6/runs/run_20261020T195351Z_e172477ee699229c (terminal Run run_20261020T195351Z_e172477ee699229c completed before cutoff)
+            Directories reclaimable here: 1
+            Artifact bytes reclaimable here: 9
+          Directories reclaimable: 1
+          Artifact bytes reclaimable: 9
+          No directories removed; rerun with --apply to mutate.
+--- FAIL: TestGCSanitizeDryRunReachesTheDefaultRootTranscript (0.03s)
+FAIL
+suiteguard: guard cost: measured 2620 paths; fingerprint took 107.210083ms before and 121.320125ms after
+FAIL	roundfix/internal/cli	0.672s
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/codex	0.216s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 86.677042ms before and 115.330625ms after
+ok  	roundfix/internal/config	0.677s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 142.289ms before and 65.220291ms after
+ok  	roundfix/internal/daemon	0.742s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 77.342ms before and 66.201167ms after
+ok  	roundfix/internal/delivery	0.409s [no tests to run]
+?   	roundfix/internal/docscontract	[no test files]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 97.953458ms before and 59.72975ms after
+ok  	roundfix/internal/gittest	0.384s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/judge	0.277s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/lighttier	0.258s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/mdtree	0.209s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/notify	0.450s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/openrouterkey	0.194s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 99.199083ms before and 107.931209ms after
+ok  	roundfix/internal/preflight	0.408s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/releaseplan	0.195s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/reviewsource	0.185s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/reviewsource/coderabbit	0.217s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/rounds	0.193s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/runcause	0.228s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/runevent	0.189s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/secretscan	0.191s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/skillcoverage	0.187s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/skillhash	0.197s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 142.09575ms before and 187.144958ms after
+ok  	roundfix/internal/spec	0.552s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 131.185125ms before and 180.5235ms after
+ok  	roundfix/internal/specaudit	0.555s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 135.016ms before and 171.438791ms after
+ok  	roundfix/internal/speccheck	0.569s [no tests to run]
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/blank_and_absolute
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/blank_and_absolute
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/two_repositories
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/two_repositories
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/relative
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/relative
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unresolved
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unresolved
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unsafe_ID
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unsafe_ID
+=== RUN   TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/first_unresolved_in_ID_order
+=== PAUSE TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/first_unresolved_in_ID_order
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/blank_and_absolute
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unresolved
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/first_unresolved_in_ID_order
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unsafe_ID
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/relative
+=== CONT  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/two_repositories
+=== NAME  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/first_unresolved_in_ID_order
+    journal_test.go:2123: roots=[{Path: Runs:[{ArtifactDir: ID:run_20261020T195351Z_27d7b99cd5753df8 GitRoot: Repository: State:Clean CompletedAt:2026-10-20 19:53:51.931162 +0000 UTC} {ArtifactDir: ID:run_20261020T195351Z_6acfbe9c22d9bbf7 GitRoot: Repository: State:Clean CompletedAt:2026-10-20 19:53:51.932748 +0000 UTC} {ArtifactDir: ID:run_20261020T195351Z_c9513fb311b13a85 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTofirst_un573351089/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTofirst_un573351089/002 State:Clean CompletedAt:2026-10-20 19:53:51.929512 +0000 UTC}] Unresolved:}] want=map[:[{ArtifactDir: ID:run_20261020T195351Z_27d7b99cd5753df8 GitRoot: Repository: State: CompletedAt:<nil>} {ArtifactDir: ID:run_20261020T195351Z_6acfbe9c22d9bbf7 GitRoot: Repository: State: CompletedAt:<nil>}] /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTofirst_un573351089/001/.roundfix/artifacts/c59be84b0f0514ac:[{ArtifactDir: ID:run_20261020T195351Z_c9513fb311b13a85 GitRoot: Repository: State: CompletedAt:<nil>}]]
+=== NAME  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/blank_and_absolute
+    journal_test.go:2123: roots=[{Path: Runs:[{ArtifactDir: ID:run_20261020T195351Z_84bf520068eb4af1 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/002 State:Clean CompletedAt:2026-10-20 19:53:51.932165 +0000 UTC}] Unresolved:} {Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/001/.roundfix/artifacts/554838a609b0597d Runs:[{ArtifactDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/001/.roundfix/artifacts/554838a609b0597d ID:run_20261020T195351Z_b64ee2a768f48360 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/002 State:Clean CompletedAt:2026-10-20 19:53:51.933601 +0000 UTC}] Unresolved:}] want=map[/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/001/.roundfix/artifacts/554838a609b0597d:[{ArtifactDir: ID:run_20261020T195351Z_84bf520068eb4af1 GitRoot: Repository: State: CompletedAt:<nil>} {ArtifactDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteToblank_an2864209647/001/.roundfix/artifacts/554838a609b0597d ID:run_20261020T195351Z_b64ee2a768f48360 GitRoot: Repository: State: CompletedAt:<nil>}]]
+=== NAME  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unsafe_ID
+    journal_test.go:2123: roots=[{Path: Runs:[{ArtifactDir: ID:run_20261020T195351Z_0456eca41ce23f99 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/002 State:Clean CompletedAt:2026-10-20 19:53:51.935736 +0000 UTC}] Unresolved:} {Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/001/.roundfix/artifacts/39df4e3827811b43 Runs:[{ArtifactDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/001/.roundfix/artifacts/39df4e3827811b43 ID:.. GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/002 State:Clean CompletedAt:2026-10-20 19:53:51.937126 +0000 UTC}] Unresolved:}] want=map[/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/001/.roundfix/artifacts/39df4e3827811b43:[{ArtifactDir: ID:run_20261020T195351Z_0456eca41ce23f99 GitRoot: Repository: State: CompletedAt:<nil>} {ArtifactDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounsafe_I331896786/001/.roundfix/artifacts/39df4e3827811b43 ID:.. GitRoot: Repository: State: CompletedAt:<nil>}]]
+=== NAME  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unresolved
+    journal_test.go:2123: roots=[{Path: Runs:[{ArtifactDir: ID:run_20261020T195351Z_2d7fb37e8327ea68 GitRoot: Repository: State:Clean CompletedAt:2026-10-20 19:53:51.943165 +0000 UTC} {ArtifactDir: ID:run_20261020T195351Z_38676544c24c3290 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounresolv2942303303/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounresolv2942303303/002 State:Clean CompletedAt:2026-10-20 19:53:51.94017 +0000 UTC}] Unresolved:}] want=map[:[{ArtifactDir: ID:run_20261020T195351Z_2d7fb37e8327ea68 GitRoot: Repository: State: CompletedAt:<nil>}] /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTounresolv2942303303/001/.roundfix/artifacts/074d3d2fae62cd66:[{ArtifactDir: ID:run_20261020T195351Z_38676544c24c3290 GitRoot: Repository: State: CompletedAt:<nil>}]]
+=== NAME  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/relative
+    journal_test.go:2131: group={Path: Runs:[{ArtifactDir: ID:run_20261020T195351Z_24d3724a289b7f24 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTorelative2949966898/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTorelative2949966898/002 State:Clean CompletedAt:2026-10-20 19:53:51.95878 +0000 UTC}] Unresolved:} want=map[/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTorelative2949966898/001/.roundfix/artifacts/9e374ba08f5d1ec1:[{ArtifactDir: ID:run_20261020T195351Z_24d3724a289b7f24 GitRoot: Repository: State: CompletedAt:<nil>}] /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTorelative2949966898/002/relative-artifacts:[{ArtifactDir:relative-artifacts ID:run_20261020T195351Z_2d0dec415b6d8b9e GitRoot: Repository: State: CompletedAt:<nil>}]]
+=== NAME  TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/two_repositories
+    journal_test.go:2123: roots=[{Path: Runs:[{ArtifactDir: ID:run_20261020T195351Z_40039782f8a7fd49 GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTotwo_repo3762519872/002 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTotwo_repo3762519872/002 State:Clean CompletedAt:2026-10-20 19:53:51.939093 +0000 UTC} {ArtifactDir: ID:run_20261020T195351Z_95529cd99ed3df3f GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTotwo_repo3762519872/003 Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTotwo_repo3762519872/003 State:Clean CompletedAt:2026-10-20 19:53:51.963221 +0000 UTC}] Unresolved:}] want=map[/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTotwo_repo3762519872/001/.roundfix/artifacts/ddd47b1f4bc96560:[{ArtifactDir: ID:run_20261020T195351Z_40039782f8a7fd49 GitRoot: Repository: State: CompletedAt:<nil>}] /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTotwo_repo3762519872/001/.roundfix/artifacts/e40c7c4f20a43fcb:[{ArtifactDir: ID:run_20261020T195351Z_95529cd99ed3df3f GitRoot: Repository: State: CompletedAt:<nil>}]]
+--- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo (0.00s)
+    --- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/first_unresolved_in_ID_order (0.04s)
+    --- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/blank_and_absolute (0.04s)
+    --- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unsafe_ID (0.05s)
+    --- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/unresolved (0.05s)
+    --- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/relative (0.07s)
+    --- FAIL: TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo/two_repositories (0.07s)
+FAIL
+suiteguard: guard cost: measured 2620 paths; fingerprint took 128.561333ms before and 147.259334ms after
+FAIL	roundfix/internal/store	0.593s
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 123.807875ms before and 195.77925ms after
+ok  	roundfix/internal/suiteguard	0.528s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/suiteguardcontract	0.204s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/testfixture	0.202s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/testwait	0.188s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/tui	0.239s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 194.601125ms before and 77.25825ms after
+ok  	roundfix/internal/verifyselect	0.473s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/watch	0.223s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 126.144208ms before and 67.623ms after
+ok  	roundfix/internal/worktree	0.444s [no tests to run]
+FAIL
+
+stderr:
+
+exit: 1

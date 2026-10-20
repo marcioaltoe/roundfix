@@ -1,0 +1,52 @@
+COMMAND: go test -count=1 -v -run ^(TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof)$ ./internal/cli
+stdout:
+=== RUN   TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+=== PAUSE TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+=== CONT  TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+    gc_sanitize_resolved_root_test.go:133: missing "Classification: overridden":
+        GC sanitation complete
+          Journal Retention: 336h
+          Cutoff: 2026-10-06T12:00:00Z
+          Artifact Root: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/002/outside-artifacts
+            Recorded as: "outside-artifacts" by 1 Run(s)
+            Classification: outside Roundfix Home
+            Evidence: preserved because recorded Artifact Root is outside Roundfix Home "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix"
+            Directories removed here: 0
+            Artifact bytes reclaimed here: 0
+          Artifact Root: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/6eca838925967b57
+            Recorded as: "" by 1 Run(s)
+            Classification: orphaned
+            Evidence: no Active Run records this Artifact Root; terminal Runs recorded: 2; default derived from recorded checkout "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/005/shared" (Run "run_20261020T195358Z_b9ae1b7825f7acc8")
+            removed: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/6eca838925967b57/runs/run_20261020T195358Z_b9ae1b7825f7acc8 (terminal Run run_20261020T195358Z_b9ae1b7825f7acc8 completed before cutoff)
+            Directories removed here: 1
+            Artifact bytes reclaimed here: 6
+          Artifact Root: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/783e74fd89aecd3e
+            Recorded as: "" by 1 Run(s)
+            Classification: unsafe
+            Evidence: preserved because the recorded Artifact Root is not a physical directory
+            Directories removed here: 0
+            Artifact bytes reclaimed here: 0
+          Artifact Root: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44
+            Recorded as: "" by 3 Run(s)
+            Classification: active
+            Evidence: Active Runs record this Artifact Root: run_20261020T195358Z_4a1bee11ded60596; default derived from recorded checkout "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/002" (Run "run_20261020T195358Z_12e7a526f559f4dc"), "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/002" (Run "run_20261020T195358Z_4a1bee11ded60596"), "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/002" (Run "run_20261020T195358Z_962473abdf267fc0")
+            removed: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_20261020T195358Z_962473abdf267fc0 (terminal Run run_20261020T195358Z_962473abdf267fc0 completed before cutoff)
+            removed: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_absent (Run run_absent is absent from durable Run metadata)
+            preserved: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_20261020T195358Z_12e7a526f559f4dc (Run run_20261020T195358Z_12e7a526f559f4dc is not retention-eligible)
+            preserved: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_20261020T195358Z_4a1bee11ded60596 (Run run_20261020T195358Z_4a1bee11ded60596 is not retention-eligible)
+            preserved: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_20261020T195358Z_ff479d402e9582d6 (Run run_20261020T195358Z_ff479d402e9582d6 is recorded under Artifact Root "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/002/outside-artifacts")
+            preserved: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_file (not a physical Run artifact directory)
+            preserved: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof3999312359/001/.roundfix/artifacts/b99d0c302e7e4c44/runs/run_link (not a physical Run artifact directory)
+            Directories removed here: 2
+            Artifact bytes reclaimed here: 14
+          Directories removed: 3
+          Artifact bytes reclaimed: 20
+--- FAIL: TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof (0.04s)
+FAIL
+suiteguard: guard cost: measured 2620 paths; fingerprint took 82.415542ms before and 64.262041ms after
+FAIL	roundfix/internal/cli	0.618s
+FAIL
+
+stderr:
+
+exit: 1

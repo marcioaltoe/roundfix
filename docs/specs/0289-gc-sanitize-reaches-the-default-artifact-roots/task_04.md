@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0289-gc-sanitize-reaches-the-default-artifact-roots
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

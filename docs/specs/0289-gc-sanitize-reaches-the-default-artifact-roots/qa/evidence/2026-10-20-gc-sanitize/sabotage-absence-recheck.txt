@@ -1,0 +1,26 @@
+COMMAND: go test -count=1 -v -run ^(TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval)$ ./internal/cli
+stdout:
+=== RUN   TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval
+=== PAUSE TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval
+=== CONT  TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval
+    gc_sanitize_resolved_root_test.go:182: opens=2 output=GC sanitation complete
+          Journal Retention: 336h
+          Cutoff: 2026-10-06T12:00:00Z
+          Artifact Root: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval2868709157/001/.roundfix/artifacts/de0c9672cff4879b
+            Recorded as: "" by 1 Run(s)
+            Classification: orphaned
+            Evidence: no Active Run records this Artifact Root; terminal Runs recorded: 1; default derived from recorded checkout "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval2868709157/002" (Run "run_20261020T195403Z_f2ffac3b9f3f66fd")
+            removed: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval2868709157/001/.roundfix/artifacts/de0c9672cff4879b/runs/run_appears (Run run_appears is absent from durable Run metadata)
+            Directories removed here: 1
+            Artifact bytes reclaimed here: 7
+          Directories removed: 1
+          Artifact bytes reclaimed: 7
+--- FAIL: TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval (0.03s)
+FAIL
+suiteguard: guard cost: measured 2620 paths; fingerprint took 83.313125ms before and 64.541291ms after
+FAIL	roundfix/internal/cli	0.589s
+FAIL
+
+stderr:
+
+exit: 1

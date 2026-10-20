@@ -1,0 +1,158 @@
+COMMAND: go test -v -count=1 -run ^(TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof|TestResolveRunArtifactRootIsTheRootTheRunWroteTo|TestRunRetentionReadsTheRootTheSharedResolverReturns)$ ./internal/store ./internal/cli
+stdout:
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/blank_root
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/blank_root
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/removed_linked_worktree
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/removed_linked_worktree
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/relative_root
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/relative_root
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/home_root
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/home_root
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/absolute_root
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/absolute_root
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/checkout_default
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/checkout_default
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dangling_key_link
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dangling_key_link
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/empty_ID
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/empty_ID
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dot_ID
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dot_ID
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/parent_ID
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/parent_ID
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/nested_ID
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/nested_ID
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_root
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_root
+=== RUN   TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_relative_root
+=== PAUSE TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_relative_root
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/blank_root
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/empty_ID
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_relative_root
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/absolute_root
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dangling_key_link
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_root
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/parent_ID
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/checkout_default
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/relative_root
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/nested_ID
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/blank_root
+    journal_test.go:1983: ROOT case=blank root recorded="" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToblank_root3313480392/001/.roundfix/artifacts/7ab70eebb138ae3a" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToblank_root3313480392/001/.roundfix/artifacts/7ab70eebb138ae3a" error=<nil>
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/relative_root
+    journal_test.go:1983: ROOT case=relative root recorded="relative-artifacts" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTorelative_root3044327029/002/relative-artifacts" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTorelative_root3044327029/002/relative-artifacts" error=<nil>
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/empty_ID
+    journal_test.go:1983: ROOT case=empty ID recorded="" got="" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToempty_ID2899161733/001/.roundfix/artifacts/48e8ce25fa42ef90" error=unsafe Run ID ""
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/home_root
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_root
+    journal_test.go:1983: ROOT case=unresolved root recorded="" got="" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTounresolved_root2284775482/001/.roundfix/artifacts/7a00559e40e633b7" error=Artifact Root cannot be resolved: empty artifact_dir requires a Git root
+        default Artifact Directory requires a path
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/removed_linked_worktree
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/parent_ID
+    journal_test.go:1983: ROOT case=parent ID recorded="" got="" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToparent_ID1689662446/001/.roundfix/artifacts/42e2f82c02a4ce2d" error=unsafe Run ID ".."
+=== CONT  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dot_ID
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/nested_ID
+    journal_test.go:1983: ROOT case=nested ID recorded="" got="" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTonested_ID1598897750/001/.roundfix/artifacts/8b3009fcf45606e9" error=unsafe Run ID "nested/run"
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/absolute_root
+    journal_test.go:1983: ROOT case=absolute root recorded="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToabsolute_root3166442616/001/absolute-artifacts" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToabsolute_root3166442616/001/absolute-artifacts" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToabsolute_root3166442616/001/absolute-artifacts" error=<nil>
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_relative_root
+    journal_test.go:1983: ROOT case=unresolved relative root recorded="relative-artifacts" got="" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTounresolved_rela293533378/001/.roundfix/artifacts/60f8a3766c53d97d" error=Artifact Root cannot be resolved: relative artifact_dir "relative-artifacts" requires a Git root
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/home_root
+    journal_test.go:1983: ROOT case=home root recorded="~/home-artifacts" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTohome_root2927854072/001/home-artifacts" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTohome_root2927854072/001/home-artifacts" error=<nil>
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dot_ID
+    journal_test.go:1983: ROOT case=dot ID recorded="" got="" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTodot_ID3702915714/001/.roundfix/artifacts/2fbde9a268763e3e" error=unsafe Run ID "."
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dangling_key_link
+    journal_test.go:1983: ROOT case=dangling key link recorded="" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTodangling_key_li387382784/001/.roundfix/artifacts/431c5cda905ce84f" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTodangling_key_li387382784/001/.roundfix/artifacts/431c5cda905ce84f" error=<nil>
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/checkout_default
+    journal_test.go:1983: ROOT case=checkout default recorded="" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTocheckout_defaul3521986635/001/.roundfix/artifacts/c9964fbb2e96dc99" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteTocheckout_defaul3521986635/001/.roundfix/artifacts/c9964fbb2e96dc99" error=<nil>
+=== NAME  TestResolveRunArtifactRootIsTheRootTheRunWroteTo/removed_linked_worktree
+    journal_test.go:1983: ROOT case=removed linked worktree recorded="" got="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToremoved_linked_1364112639/001/.roundfix/artifacts/a5c7157c4af3137c" want="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestResolveRunArtifactRootIsTheRootTheRunWroteToremoved_linked_1364112639/001/.roundfix/artifacts/a5c7157c4af3137c" error=<nil>
+--- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo (0.00s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/blank_root (0.03s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/relative_root (0.03s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/empty_ID (0.03s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/parent_ID (0.05s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_root (0.05s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/nested_ID (0.05s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/absolute_root (0.05s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/home_root (0.03s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/unresolved_relative_root (0.06s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dot_ID (0.03s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/dangling_key_link (0.09s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/checkout_default (0.09s)
+    --- PASS: TestResolveRunArtifactRootIsTheRootTheRunWroteTo/removed_linked_worktree (0.08s)
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 102.10975ms before and 99.337667ms after
+ok  	roundfix/internal/store	0.581s
+=== RUN   TestRunRetentionReadsTheRootTheSharedResolverReturns
+=== PAUSE TestRunRetentionReadsTheRootTheSharedResolverReturns
+=== RUN   TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+=== PAUSE TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+=== CONT  TestRunRetentionReadsTheRootTheSharedResolverReturns
+=== CONT  TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+=== RUN   TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_present
+=== PAUSE TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_present
+=== RUN   TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_absent
+=== PAUSE TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_absent
+=== RUN   TestRunRetentionReadsTheRootTheSharedResolverReturns/blank_default
+=== PAUSE TestRunRetentionReadsTheRootTheSharedResolverReturns/blank_default
+=== RUN   TestRunRetentionReadsTheRootTheSharedResolverReturns/home_root
+=== PAUSE TestRunRetentionReadsTheRootTheSharedResolverReturns/home_root
+=== RUN   TestRunRetentionReadsTheRootTheSharedResolverReturns/unresolved_root
+=== PAUSE TestRunRetentionReadsTheRootTheSharedResolverReturns/unresolved_root
+=== CONT  TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_present
+=== CONT  TestRunRetentionReadsTheRootTheSharedResolverReturns/home_root
+=== CONT  TestRunRetentionReadsTheRootTheSharedResolverReturns/unresolved_root
+=== CONT  TestRunRetentionReadsTheRootTheSharedResolverReturns/blank_default
+=== CONT  TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_absent
+=== NAME  TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_present
+    gc_run_retention_test.go:532: ROOT case=relative present recorded="relative-artifacts" root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunRetentionReadsTheRootTheSharedResolverReturnsrelative_pr1766210122/002/relative-artifacts"
+=== NAME  TestRunRetentionReadsTheRootTheSharedResolverReturns/home_root
+    gc_run_retention_test.go:532: ROOT case=home root recorded="~/.roundfix/retention-artifacts" root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunRetentionReadsTheRootTheSharedResolverReturnshome_root2818603521/001/.roundfix/retention-artifacts"
+=== NAME  TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_absent
+    gc_run_retention_test.go:532: ROOT case=relative absent recorded="relative-artifacts" root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunRetentionReadsTheRootTheSharedResolverReturnsrelative_ab1691277978/002/relative-artifacts"
+=== NAME  TestRunRetentionReadsTheRootTheSharedResolverReturns/blank_default
+    gc_run_retention_test.go:532: ROOT case=blank default recorded="" root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunRetentionReadsTheRootTheSharedResolverReturnsblank_defau2094134479/001/.roundfix/artifacts/c1c81a68174b937e"
+=== NAME  TestRunRetentionReadsTheRootTheSharedResolverReturns/unresolved_root
+    gc_run_retention_test.go:532: ROOT case=unresolved root recorded="relative-artifacts" root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunRetentionReadsTheRootTheSharedResolverReturnsunresolved_1686232466/002/relative-artifacts"
+--- PASS: TestRunRetentionReadsTheRootTheSharedResolverReturns (0.00s)
+    --- PASS: TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_present (0.03s)
+    --- PASS: TestRunRetentionReadsTheRootTheSharedResolverReturns/unresolved_root (0.03s)
+    --- PASS: TestRunRetentionReadsTheRootTheSharedResolverReturns/home_root (0.03s)
+    --- PASS: TestRunRetentionReadsTheRootTheSharedResolverReturns/relative_absent (0.03s)
+    --- PASS: TestRunRetentionReadsTheRootTheSharedResolverReturns/blank_default (0.03s)
+=== NAME  TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof
+    gc_sanitize_resolved_root_test.go:140: REMOVED /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_a3064e1cc7eabef8
+    gc_sanitize_resolved_root_test.go:140: REMOVED /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_absent
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_25a4d21b1bea3b82
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_b5da666439f0b7a5
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/reviews/keep.log
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/delivery/keep.log
+    gc_sanitize_resolved_root_test.go:144: KEPT /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/002/outside-artifacts/runs/run_20261020T195456Z_0789b2860f6a9388
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_0789b2860f6a9388
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/004/runs/run_20261020T195456Z_bb7125c4f5b86ec9
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/e8c25497c911c5a3
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/f3b50e31ffbb9836/runs/run_20261020T195456Z_e62ba75b2cf03d27
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_link
+    gc_sanitize_resolved_root_test.go:144: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_file
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_25a4d21b1bea3b82
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_b5da666439f0b7a5
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/reviews/keep.log
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/delivery/keep.log
+    gc_sanitize_resolved_root_test.go:152: KEPT /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/002/outside-artifacts/runs/run_20261020T195456Z_0789b2860f6a9388
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_20261020T195456Z_0789b2860f6a9388
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/004/runs/run_20261020T195456Z_bb7125c4f5b86ec9
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/e8c25497c911c5a3
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/f3b50e31ffbb9836/runs/run_20261020T195456Z_e62ba75b2cf03d27
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_link
+    gc_sanitize_resolved_root_test.go:152: KEPT /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof1409995280/001/.roundfix/artifacts/cda1acf3559fa0a2/runs/run_file
+--- PASS: TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof (0.05s)
+PASS
+suiteguard: guard cost: measured 2620 paths; fingerprint took 75.335167ms before and 69.195958ms after
+ok  	roundfix/internal/cli	0.594s
+
+stderr:
+
+exit: 0
