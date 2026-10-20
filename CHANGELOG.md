@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.95.0] - 2026-10-20
+
+### The Linux Lane reads the repository history
+
+- **History read-only in the container.** The Linux Lane mounts the repository's object store read-only at `/repo-objects` and registers it as an alternate in the container repository, so a test that reads a historical commit behaves as in a CI checkout with full history. The candidate is still recorded as one fresh commit; the working tree and refs are never mounted (ADR-0297, amending ADR-0288 and ADR-0294).
+- **Container failure when the history is unreadable.** If `/repo-objects` cannot be read inside the container, the lane ends as a Lane Container Failure: `cannot read the repository history at /repo-objects`.
+- **Skip with a reason when the store cannot be mounted.** An object store that borrows objects from another repository (`objects/info/alternates`), or a path that cannot be written in a Docker volume, skips the lane with the reason named; `git repack -a` and removing `objects/info/alternates` makes such a store self-contained.
+- **Both entry points.** The queue gate and `roundfix deliver lane`, in changed-package and `--all` modes, share the same mount.
+
+### Changed
+
+- This repository runs the Linux Lane again (`delivery.linux_lane: true`) after `roundfix deliver lane --all` passed on main.
+
 ## [0.94.0] - 2026-10-19
 
 ### A Git Locator is reachable in CI, and the storage report counts every page
