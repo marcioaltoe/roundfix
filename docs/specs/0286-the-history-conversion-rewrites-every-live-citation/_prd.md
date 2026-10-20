@@ -89,7 +89,7 @@ so this plan is rebased and checked again before its Run.
   sanitizes pending history in the change it plans". ADR-0295: "Reachability
   reads the fetched default branch, and origin names it when origin/HEAD is
   unset". ADR-0259: "A test runs in parallel unless it names why it cannot".
-  ADR-0271: "A test bounds by real time only what it asserts". ADR-0285:
+  ADR-0271: "A test bounds by real time only what it asserts". ADR-0298: "A timed-out profile proof gets a third attempt, and its setup deadline is configurable". ADR-0285:
   "Every test file compiles for Windows, and a repository contract proves
   it". ADR-0189: "An owned skill's version names its content, and its minimum
   is the bundle". ADR-0256: "A release waits for the skills that describe a

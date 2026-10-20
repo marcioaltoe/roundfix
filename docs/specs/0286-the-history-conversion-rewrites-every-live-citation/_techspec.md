@@ -52,7 +52,7 @@ leaving no citation behind, which is what the adopter's grep demanded.
   the citations it breaks". ADR-0254: "Baseline update sanitizes pending
   history in the change it plans". ADR-0295: "Reachability reads the fetched
   default branch, and origin names it when origin/HEAD is unset". ADR-0259,
-  ADR-0271, ADR-0285, ADR-0189, ADR-0256, ADR-0280, ADR-0104, ADR-0240,
+  ADR-0271, ADR-0298, ADR-0285, ADR-0189, ADR-0256, ADR-0280, ADR-0104, ADR-0240,
   ADR-0276, ADR-0265, ADR-0183 and ADR-0184, each named with its title in
   `_prd.md` → Project Constraints. Set no obligation here, because this Spec
   changes none of their rules: ADR-0092, ADR-0120, ADR-0165, ADR-0167,
@@ -381,6 +381,7 @@ Deviations from the PRD: None.
 - ADR-0295: no rejected alternative is taken; Git Locators still read the Default Branch Head and tags.
 - ADR-0259: no rejected alternative is taken; every new top-level test calls `t.Parallel()` first.
 - ADR-0271: no rejected alternative is taken; no new test waits on real time.
+- ADR-0298: no rejected alternative is taken; this Spec changes none of its rules.
 - ADR-0285: no rejected alternative is taken; the new tests compile for Windows and use no unix-only call.
 - ADR-0189: no rejected alternative is taken; the Roundfix skill edit raises its recorded version.
 - ADR-0256: no rejected alternative is taken; the covering skill changes with the `baseline`, `history` and `spec` surfaces.

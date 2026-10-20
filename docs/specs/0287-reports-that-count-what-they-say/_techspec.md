@@ -54,7 +54,7 @@ The trade-offs accepted:
   in Git"), ADR-0277 ("A Legacy Archive Folder conversion keeps the summary,
   links and dates its folder held") and ADR-0262 ("A cancelled Spec leaves an
   Archive Record and returns its sources"). Every step follows ADR-0125,
-  ADR-0259, ADR-0271, ADR-0285, ADR-0189, ADR-0256, ADR-0280, ADR-0104,
+  ADR-0259, ADR-0271, ADR-0298, ADR-0285, ADR-0189, ADR-0256, ADR-0280, ADR-0104,
   ADR-0240, ADR-0276, ADR-0265 and ADR-0183, each named with its title in
   `_prd.md` → Project Constraints. Set no obligation here, because this Spec
   changes none of their rules: ADR-0092, ADR-0120, ADR-0165, ADR-0167,
@@ -343,6 +343,7 @@ Deviations from the PRD: None.
 - ADR-0125: no rejected alternative is taken; the Docker and Go stand-ins stay compiled binaries.
 - ADR-0259: no rejected alternative is taken; every new top-level test calls `t.Parallel()` first.
 - ADR-0271: no rejected alternative is taken; no new test waits on real time.
+- ADR-0298: no rejected alternative is taken; this Spec changes none of its rules.
 - ADR-0285: no rejected alternative is taken; the new tests compile for Windows.
 - ADR-0189: no rejected alternative is taken; each Roundfix skill edit raises its recorded version.
 - ADR-0256: no rejected alternative is taken; the covering skill changes with the `deliver`, `storage` and `archive` surfaces.
