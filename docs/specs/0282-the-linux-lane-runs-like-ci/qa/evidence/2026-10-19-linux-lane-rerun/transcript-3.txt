@@ -1,0 +1,6 @@
+Command: ./bin/roundfix deliver lane --all
+stdout:
+roundfix: Linux Lane container failure: missing tool git; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0282-m3ifwckd/home/.roundfix/artifacts/7b3c996ffe9a762e/delivery/linux-lane.log
+stderr:
+exit: 3
+Independent confirmation: --init precedes golang:1.26.1; package operand ./...; lane log final line: Linux Lane container failure: missing tool git

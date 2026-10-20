@@ -1,0 +1,61 @@
+Command: go test -count=1 -v -run TestGateParksWithTheBlockerItNames|TestParkClassesAndNextActions|TestEveryBlockerHasAParkClass ./internal/delivery
+Exit: 0
+=== RUN   TestGateParksWithTheBlockerItNames
+=== PAUSE TestGateParksWithTheBlockerItNames
+=== RUN   TestEveryBlockerHasAParkClass
+--- PASS: TestEveryBlockerHasAParkClass (0.01s)
+=== RUN   TestParkClassesAndNextActions
+=== RUN   TestParkClassesAndNextActions/linux-lane-container
+=== RUN   TestParkClassesAndNextActions/checks-timeout
+=== RUN   TestParkClassesAndNextActions/item-worktree-missing
+=== RUN   TestParkClassesAndNextActions/delivery-error
+=== RUN   TestParkClassesAndNextActions/secret-found
+=== RUN   TestParkClassesAndNextActions/run-unresolved
+=== RUN   TestParkClassesAndNextActions/review-findings
+=== RUN   TestParkClassesAndNextActions/corrective-spec-required
+=== RUN   TestParkClassesAndNextActions/gate-failed
+=== RUN   TestParkClassesAndNextActions/checks-failed
+=== RUN   TestParkClassesAndNextActions/revalidation-failed
+=== RUN   TestParkClassesAndNextActions/run-budget-exceeded
+=== RUN   TestParkClassesAndNextActions/queue-deadline
+=== RUN   TestParkClassesAndNextActions/review-blocked
+=== RUN   TestParkClassesAndNextActions/review-stale
+=== RUN   TestParkClassesAndNextActions/unauthorized
+=== RUN   TestParkClassesAndNextActions/flaky-check
+=== RUN   TestParkClassesAndNextActions/unknown
+--- PASS: TestParkClassesAndNextActions (0.00s)
+    --- PASS: TestParkClassesAndNextActions/linux-lane-container (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-timeout (0.00s)
+    --- PASS: TestParkClassesAndNextActions/item-worktree-missing (0.00s)
+    --- PASS: TestParkClassesAndNextActions/delivery-error (0.00s)
+    --- PASS: TestParkClassesAndNextActions/secret-found (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-unresolved (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-findings (0.00s)
+    --- PASS: TestParkClassesAndNextActions/corrective-spec-required (0.00s)
+    --- PASS: TestParkClassesAndNextActions/gate-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/revalidation-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-budget-exceeded (0.00s)
+    --- PASS: TestParkClassesAndNextActions/queue-deadline (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-blocked (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-stale (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unauthorized (0.00s)
+    --- PASS: TestParkClassesAndNextActions/flaky-check (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unknown (0.00s)
+=== CONT  TestGateParksWithTheBlockerItNames
+=== RUN   TestGateParksWithTheBlockerItNames/container
+=== PAUSE TestGateParksWithTheBlockerItNames/container
+=== RUN   TestGateParksWithTheBlockerItNames/change
+=== PAUSE TestGateParksWithTheBlockerItNames/change
+=== RUN   TestGateParksWithTheBlockerItNames/repository
+=== PAUSE TestGateParksWithTheBlockerItNames/repository
+=== CONT  TestGateParksWithTheBlockerItNames/container
+=== CONT  TestGateParksWithTheBlockerItNames/repository
+=== CONT  TestGateParksWithTheBlockerItNames/change
+--- PASS: TestGateParksWithTheBlockerItNames (0.00s)
+    --- PASS: TestGateParksWithTheBlockerItNames/change (0.01s)
+    --- PASS: TestGateParksWithTheBlockerItNames/container (0.01s)
+    --- PASS: TestGateParksWithTheBlockerItNames/repository (0.01s)
+PASS
+suiteguard: guard cost: measured 2625 paths; fingerprint took 87.120125ms before and 67.497917ms after
+ok  	roundfix/internal/delivery	0.332s

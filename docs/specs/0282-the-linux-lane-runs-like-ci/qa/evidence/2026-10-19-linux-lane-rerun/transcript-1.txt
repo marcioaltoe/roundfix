@@ -1,0 +1,6 @@
+Command: ./bin/roundfix deliver lane --all
+stdout:
+roundfix: Linux Lane passed 1 package(s) on golang:1.26.1
+stderr:
+exit: 0
+Independent confirmation: --init precedes golang:1.26.1; package operand ./...; lane log final line: Linux Lane passed 1 package(s) on golang:1.26.1

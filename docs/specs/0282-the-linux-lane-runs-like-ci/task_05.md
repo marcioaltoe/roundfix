@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0282-the-linux-lane-runs-like-ci
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

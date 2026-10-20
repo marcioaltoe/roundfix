@@ -1,0 +1,15 @@
+Independent confirmation: same lane Docker command and audited archive, with verbose targeted tests. --init, --pull never, --network none and original cache mount retained.
+exit: 0
+ok  	roundfix/internal/agent	0.076s [no tests to run]
+=== RUN   TestCLITestHelpersEndWithTheirTestBinary
+=== PAUSE TestCLITestHelpersEndWithTheirTestBinary
+=== CONT  TestCLITestHelpersEndWithTheirTestBinary
+--- PASS: TestCLITestHelpersEndWithTheirTestBinary (0.87s)
+=== RUN   TestGuidanceCompositionJourney/rust-cli
+    baseline_release_gate_test.go:44: requires rustfmt, which is not on PATH
+    --- SKIP: TestGuidanceCompositionJourney/rust-cli (0.19s)
+ok  	roundfix/internal/cli	2.384s
+ok  	roundfix/internal/config	0.075s [no tests to run]
+ok  	roundfix/internal/delivery	0.076s [no tests to run]
+ok  	roundfix/internal/testfixture	0.002s [no tests to run]
+ok  	roundfix/skills	0.003s [no tests to run]

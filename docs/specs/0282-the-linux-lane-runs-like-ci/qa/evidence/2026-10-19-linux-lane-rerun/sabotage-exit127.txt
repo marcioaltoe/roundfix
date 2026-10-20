@@ -1,0 +1,23 @@
+Command: go test -count=1 -v -run ^TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure$ ./internal/cli
+Exit: 1
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure
+=== PAUSE TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure
+=== CONT  TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/setup_marker
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/setup_without_trailing_newline
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/setup_without_marker
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/cannot_invoke
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/command_absent
+    deliver_linux_lane_test.go:564: gate={Passed:false Reason:Linux Lane change failure: go test exited 127; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneContainerFailureIsToldApartFromAChangeFailurecomma3042360015/001/artifacts/delivery/widget/linux-lane.log Blocker:gate-failed: Linux Lane change failure: go test exited 127; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneContainerFailureIsToldApartFromAChangeFailurecomma3042360015/001/artifacts/delivery/widget/linux-lane.log} err=<nil> want reason="Linux Lane container failure: docker run exited 127: the image lacks the lane command; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneContainerFailureIsToldApartFromAChangeFailurecomma3042360015/001/artifacts/delivery/widget/linux-lane.log" blocker="linux-lane-container: docker run exited 127: the image lacks the lane command; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneContainerFailureIsToldApartFromAChangeFailurecomma3042360015/001/artifacts/delivery/widget/linux-lane.log"
+=== RUN   TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/signal
+--- FAIL: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure (1.55s)
+    --- PASS: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/setup_marker (0.55s)
+    --- PASS: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/setup_without_trailing_newline (0.15s)
+    --- PASS: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/setup_without_marker (0.15s)
+    --- PASS: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/cannot_invoke (0.15s)
+    --- FAIL: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/command_absent (0.15s)
+    --- PASS: TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure/signal (0.15s)
+FAIL
+suiteguard: guard cost: measured 2608 paths; fingerprint took 86.709334ms before and 78.37575ms after
+FAIL	roundfix/internal/cli	2.112s
+FAIL

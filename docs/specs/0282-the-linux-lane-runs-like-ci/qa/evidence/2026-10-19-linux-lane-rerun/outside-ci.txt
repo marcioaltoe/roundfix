@@ -1,0 +1,3 @@
+Source: .github/workflows/ci-verify.yml at 57d6b7188e142d764330bc5d58ada6e945cf5240
+Observed: runs-on: ubuntu-latest; actions/setup-go@v7; no step installs a Rust toolchain.
+Independent confirmation: Delivery Base blob comparison found no change.

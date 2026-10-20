@@ -1,0 +1,2 @@
+Command: go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0282-m3ifwckd/tools/docker /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0282-m3ifwckd/standin.go
+Exit: 0

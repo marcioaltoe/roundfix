@@ -1,0 +1,12 @@
+Command: go test -count=1 -v -run ^TestGuidanceCompositionJourney$/^rust-cli$ ./internal/cli
+Exit: 0
+=== RUN   TestGuidanceCompositionJourney
+=== PAUSE TestGuidanceCompositionJourney
+=== CONT  TestGuidanceCompositionJourney
+=== RUN   TestGuidanceCompositionJourney/rust-cli
+    baseline_release_gate_test.go:44: requires rustfmt, which is not on PATH
+--- PASS: TestGuidanceCompositionJourney (1.38s)
+    --- SKIP: TestGuidanceCompositionJourney/rust-cli (0.91s)
+PASS
+suiteguard: guard cost: measured 2626 paths; fingerprint took 91.693208ms before and 67.088292ms after
+ok  	roundfix/internal/cli	1.859s
