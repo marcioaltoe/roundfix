@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-20
-spec: null
+spec: 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it
 reason: null
 ---
 
