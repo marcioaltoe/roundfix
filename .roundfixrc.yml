@@ -7,7 +7,10 @@ verification:
 
 delivery:
   # ADR-0288: run the Linux Lane before publication.
-  linux_lane: false
+  # 2026-10-20: back on after `roundfix deliver lane --all` passed on main
+  # a0d3d843 (Specs 0282 and 0284; ADR-0294, ADR-0297). Off 2026-10-18 to
+  # 2026-10-20 while the container lacked an init, CI tools and history.
+  linux_lane: true
   item_binary:
     build: make build
     path: bin/roundfix
