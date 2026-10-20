@@ -1,0 +1,32 @@
+Command: go test -count=1 -v -run ^(TestLinuxLaneMountsTheRepositoryHistoryReadOnly|TestLinuxLaneRunsTheChangedPackagesInAContainer)$ ./internal/cli
+Exit: 0
+stdout:
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== PAUSE TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== RUN   TestLinuxLaneMountsTheRepositoryHistoryReadOnly
+=== PAUSE TestLinuxLaneMountsTheRepositoryHistoryReadOnly
+=== CONT  TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== CONT  TestLinuxLaneMountsTheRepositoryHistoryReadOnly
+=== RUN   TestLinuxLaneMountsTheRepositoryHistoryReadOnly/linked_item_gate
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/module
+=== RUN   TestLinuxLaneMountsTheRepositoryHistoryReadOnly/on_demand_all
+=== RUN   TestLinuxLaneMountsTheRepositoryHistoryReadOnly/on_demand_changed
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sum
+--- PASS: TestLinuxLaneMountsTheRepositoryHistoryReadOnly (1.38s)
+    --- PASS: TestLinuxLaneMountsTheRepositoryHistoryReadOnly/linked_item_gate (0.86s)
+    --- PASS: TestLinuxLaneMountsTheRepositoryHistoryReadOnly/on_demand_all (0.10s)
+    --- PASS: TestLinuxLaneMountsTheRepositoryHistoryReadOnly/on_demand_changed (0.14s)
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages
+--- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer (1.68s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file (0.65s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata (0.19s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/module (0.19s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sum (0.19s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages (0.18s)
+PASS
+suiteguard: guard cost: measured 2600 paths; fingerprint took 127.755417ms before and 69.608416ms after
+ok  	roundfix/internal/cli	2.297s
+
+stderr:

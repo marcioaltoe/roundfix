@@ -1,0 +1,6 @@
+Command: ./bin/roundfix deliver lane --all
+Exit: 0
+stdout:
+roundfix: Linux Lane passed 1 package(s) on golang:1.26
+
+stderr:

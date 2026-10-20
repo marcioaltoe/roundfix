@@ -1,0 +1,9 @@
+Command: go test -count=1 -v -run ^(TestLinuxLaneMountsTheRepositoryHistoryReadOnly|TestLinuxLaneRunsTheChangedPackagesInAContainer)$ ./internal/cli
+Exit: 1
+stdout:
+FAIL	roundfix/internal/cli [build failed]
+FAIL
+
+stderr:
+# roundfix/internal/cli [roundfix/internal/cli.test]
+internal/cli/deliver_linux_lane.go:124:2: declared and not used: historyMount

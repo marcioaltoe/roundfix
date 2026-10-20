@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0284-the-linux-lane-reads-the-repository-history
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

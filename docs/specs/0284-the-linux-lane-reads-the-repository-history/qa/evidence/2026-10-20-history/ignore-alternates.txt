@@ -1,0 +1,24 @@
+Command: go test -count=1 -v -run ^(TestLinuxLaneSkipsAnObjectStoreItCannotMount)$ ./internal/cli
+Exit: 1
+stdout:
+=== RUN   TestLinuxLaneSkipsAnObjectStoreItCannotMount
+=== PAUSE TestLinuxLaneSkipsAnObjectStoreItCannotMount
+=== CONT  TestLinuxLaneSkipsAnObjectStoreItCannotMount
+=== RUN   TestLinuxLaneSkipsAnObjectStoreItCannotMount/borrowed_store
+    deliver_linux_lane_test.go:733: console="roundfix: Delivery Queue item widget: Linux Lane passed 1 package(s) on golang:1.26.1\n" log="docker 'run' '--rm' '-i' '--init' '--pull' 'never' '--network' 'none' '--name' 'roundfix-linux-lane-widget-29065' '--user' '65534:65534' '-e' 'HOME=<redacted>' '-e' 'GOCACHE=<redacted>' '-e' 'GOMODCACHE=<redacted>' '-e' 'GOFLAGS=<redacted>' '-e' 'GOPROXY=<redacted>' '-e' 'GOTOOLCHAIN=<redacted>' '-e' 'GOSUMDB=<redacted>' '-v' '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneSkipsAnObjectStoreItCannotMountborrowed_store3930019378/001/module cache:/go/pkg/mod:ro' '-v' '/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneSkipsAnObjectStoreItCannotMountborrowed_store3930019378/001/item/.git/objects:/repo-objects:ro' 'golang:1.26.1' 'sh' '-ceu' 'fail() { printf '\"'\"'roundfix-linux-lane: container: %s\\n'\"'\"' \"$1\" >&2; exit 3; }; for tool in tar git go; do command -v \"$tool\" >/dev/null 2>&1 || fail \"missing tool $tool\"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail \"cannot read the repository history at /repo-objects\"; mkdir -p /tmp/work && cd /tmp/work || fail \"cannot prepare /tmp/work\"; tar -xf - || fail \"cannot unpack the candidate\"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m \"Linux Lane\"; } || fail \"cannot record the candidate\"; pkgs=\"$(go list -e -f '\"'\"'{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}'\"'\"' \"$@\")\" && if [ -z \"$pkgs\" ]; then echo \"no package builds on linux\"; exit 0; fi && exec go test -count=1 $pkgs' 'linux-lane' './pkg'\n\n fixture output\nsecond line\n\nLinux Lane passed 1 package(s) on golang:1.26.1\n" want="roundfix: notice: Delivery Queue item widget: Linux Lane skipped: the object store /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLinuxLaneSkipsAnObjectStoreItCannotMountborrowed_store3930019378/001/item/.git/objects borrows objects through info/alternates, which the Linux Lane does not mount\n"
+=== RUN   TestLinuxLaneSkipsAnObjectStoreItCannotMount/comment_and_blank_line
+=== RUN   TestLinuxLaneSkipsAnObjectStoreItCannotMount/colon
+=== RUN   TestLinuxLaneSkipsAnObjectStoreItCannotMount/file
+=== RUN   TestLinuxLaneSkipsAnObjectStoreItCannotMount/missing
+--- FAIL: TestLinuxLaneSkipsAnObjectStoreItCannotMount (1.03s)
+    --- FAIL: TestLinuxLaneSkipsAnObjectStoreItCannotMount/borrowed_store (0.64s)
+    --- PASS: TestLinuxLaneSkipsAnObjectStoreItCannotMount/comment_and_blank_line (0.15s)
+    --- PASS: TestLinuxLaneSkipsAnObjectStoreItCannotMount/colon (0.00s)
+    --- PASS: TestLinuxLaneSkipsAnObjectStoreItCannotMount/file (0.00s)
+    --- PASS: TestLinuxLaneSkipsAnObjectStoreItCannotMount/missing (0.00s)
+FAIL
+suiteguard: guard cost: measured 2596 paths; fingerprint took 94.871334ms before and 72.9395ms after
+FAIL	roundfix/internal/cli	1.626s
+FAIL
+
+stderr:

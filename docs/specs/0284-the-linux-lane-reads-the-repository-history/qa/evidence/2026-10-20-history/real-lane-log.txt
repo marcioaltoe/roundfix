@@ -1,0 +1,46 @@
+docker 'run' '--rm' '-i' '--init' '--pull' 'never' '--network' 'none' '--name' 'roundfix-linux-lane-39111' '--user' '65534:65534' '-e' 'HOME=<redacted>' '-e' 'GOCACHE=<redacted>' '-e' 'GOMODCACHE=<redacted>' '-e' 'GOFLAGS=<redacted>' '-e' 'GOPROXY=<redacted>' '-e' 'GOTOOLCHAIN=<redacted>' '-e' 'GOSUMDB=<redacted>' '-v' '<host module cache>:/go/pkg/mod:ro' '-v' '/Users/marcio/dev/roundfix/.git/objects:/repo-objects:ro' 'golang:1.26' 'sh' '-ceu' 'fail() { printf '"'"'roundfix-linux-lane: container: %s\n'"'"' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '"'"'{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}'"'"' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs' 'linux-lane' './...'
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	1.387s
+ok  	roundfix/internal/app	0.004s
+ok  	roundfix/internal/authorization	0.144s
+ok  	roundfix/internal/baseline	33.914s
+ok  	roundfix/internal/baselineacp	0.016s
+ok  	roundfix/internal/childexit	0.003s
+ok  	roundfix/internal/cli	44.431s
+ok  	roundfix/internal/codex	0.002s
+ok  	roundfix/internal/config	1.005s
+ok  	roundfix/internal/daemon	25.256s
+ok  	roundfix/internal/delivery	24.292s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	0.479s
+ok  	roundfix/internal/judge	1.156s
+ok  	roundfix/internal/lighttier	0.027s
+ok  	roundfix/internal/mdtree	0.005s
+ok  	roundfix/internal/notify	0.013s
+ok  	roundfix/internal/openrouterkey	0.003s
+ok  	roundfix/internal/preflight	0.258s
+ok  	roundfix/internal/releaseplan	0.008s
+ok  	roundfix/internal/reviewsource	0.004s
+ok  	roundfix/internal/reviewsource/coderabbit	0.008s
+ok  	roundfix/internal/rounds	0.023s
+ok  	roundfix/internal/runcause	3.175s
+ok  	roundfix/internal/runevent	0.007s
+ok  	roundfix/internal/secretscan	0.018s
+ok  	roundfix/internal/skillcoverage	0.005s
+ok  	roundfix/internal/skillhash	0.002s
+ok  	roundfix/internal/spec	17.193s
+ok  	roundfix/internal/specaudit	2.238s
+ok  	roundfix/internal/speccheck	9.829s
+ok  	roundfix/internal/store	21.971s
+ok  	roundfix/internal/suiteguard	11.059s
+ok  	roundfix/internal/suiteguardcontract	0.052s
+ok  	roundfix/internal/testfixture	7.198s
+ok  	roundfix/internal/testwait	0.647s
+ok  	roundfix/internal/tui	1.376s
+ok  	roundfix/internal/verifyselect	11.335s
+ok  	roundfix/internal/watch	0.040s
+ok  	roundfix/internal/worktree	11.755s
+ok  	roundfix/skills	0.937s
+
+Linux Lane passed 1 package(s) on golang:1.26

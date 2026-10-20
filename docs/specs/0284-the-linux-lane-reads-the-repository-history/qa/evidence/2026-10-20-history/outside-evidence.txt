@@ -1,0 +1,6 @@
+CI at 28f925214daca49e847f9e8e9cfc5691c802ed76:
+          # Historical authorization contracts read retained main ancestors.
+          fetch-depth: 0
+Contract observation: full checkout history, unlike a fresh single-commit archive repository.
+
+Operator measurement adopted by planning commit c3b786d48ad4345b524fc2fb0759c9299ab7844e: main dc7e5f72; 2026-10-19 21:44 BRT; only TestOutputsForCommand and TestAuthorizationReaderResolvesPreservedHistoricalRecords failed (Git object reads exit 128). Existing operator probe passed both packages after adding read-only store mount and container alternate.
