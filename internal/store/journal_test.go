@@ -1909,3 +1909,140 @@ func TestDiscoverArtifactRootsReturnsEveryRecordedRepository(t *testing.T) {
 		t.Fatalf("second Artifact Root lost durable Run evidence: %#v", got)
 	}
 }
+
+func TestResolveRunArtifactRootIsTheRootTheRunWroteTo(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"blank root", "removed linked worktree", "relative root", "home root", "absolute root", "checkout default", "dangling key link", "empty ID", "dot ID", "parent ID", "nested ID", "unresolved root", "unresolved relative root"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			home, repo := t.TempDir(), t.TempDir()
+			gitRoot := repo
+			if name == "removed linked worktree" || name == "checkout default" || name == "dangling key link" {
+				repo, gitRoot = linkedWorktreeFixture(t, t.TempDir())
+			} else {
+				gittest.InitRepo(t, repo)
+			}
+			run := ArtifactRootRun{ID: "resolver-run", GitRoot: gitRoot, Repository: repo}
+			want, err := roundconfig.ResolveArtifactDirectory("", repo, home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wantErr error
+			switch name {
+			case "removed linked worktree":
+				gittest.Run(t, repo, "worktree", "remove", gitRoot)
+			case "relative root":
+				run.ArtifactDir = "relative-artifacts"
+				want = filepath.Join(gitRoot, run.ArtifactDir)
+			case "home root":
+				run.ArtifactDir = "~/home-artifacts"
+				want = filepath.Join(home, "home-artifacts")
+			case "absolute root":
+				want = filepath.Join(home, "absolute-artifacts")
+				run.ArtifactDir = want
+			case "checkout default", "dangling key link":
+				checkout, err := roundconfig.DefaultArtifactDirectoryForPath(gitRoot, home)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(checkout, "runs", run.ID), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if name == "checkout default" {
+					want = checkout
+				} else {
+					if err := os.MkdirAll(filepath.Join(want, "runs"), 0o755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Symlink(filepath.Join(home, "missing-target"), filepath.Join(want, "runs", run.ID)); err != nil {
+						if runtime.GOOS == "windows" {
+							t.Skipf("symbolic link unavailable: %v", err)
+						}
+						t.Fatal(err)
+					}
+				}
+			case "empty ID":
+				run.ID, wantErr = "", ErrUnsafeRunID
+			case "dot ID":
+				run.ID, wantErr = ".", ErrUnsafeRunID
+			case "parent ID":
+				run.ID, wantErr = "..", ErrUnsafeRunID
+			case "nested ID":
+				run.ID, wantErr = "nested/run", ErrUnsafeRunID
+			case "unresolved root", "unresolved relative root":
+				run.GitRoot, run.Repository = "", ""
+				wantErr = ErrArtifactRootUnresolved
+				if name == "unresolved relative root" {
+					run.ArtifactDir = "relative-artifacts"
+				}
+			}
+			beforeHome, beforeRepo := storageTreeSnapshot(t, home), storageTreeSnapshot(t, repo)
+			got, err := ResolveRunArtifactRoot(run, home)
+			if wantErr != nil {
+				if !errors.Is(err, wantErr) {
+					t.Fatalf("root=%q error=%v, want %v", got, err, wantErr)
+				}
+			} else if err != nil || got != want {
+				t.Fatalf("root=%q error=%v, want %q", got, err, want)
+			}
+			if !reflect.DeepEqual(beforeHome, storageTreeSnapshot(t, home)) || !reflect.DeepEqual(beforeRepo, storageTreeSnapshot(t, repo)) {
+				t.Fatal("resolver changed home or repository tree")
+			}
+		})
+	}
+}
+
+func TestStorageReportKeepsTheKeyRootOfADanglingRunLink(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	home := t.TempDir()
+	repo, checkout := linkedWorktreeFixture(t, t.TempDir())
+	writer := openTestStore(t, ctx, home)
+	request := sampleCreateRunRequest()
+	request.Kind, request.SpecSlug = KindImplement, "dangling-root"
+	request.GitRoot, request.ArtifactDir = checkout, ""
+	run, err := writer.CreateRun(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeStore(t, writer)
+	keyRoot, err := roundconfig.ResolveArtifactDirectory("", repo, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkoutRoot, err := roundconfig.DefaultArtifactDirectoryForPath(checkout, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(checkoutRoot, "runs", run.ID), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(checkoutRoot, "runs", run.ID, "old.log"), []byte("checkout bytes"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(keyRoot, "runs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(home, "missing-target"), filepath.Join(keyRoot, "runs", run.ID)); err != nil {
+		if runtime.GOOS == "windows" {
+			t.Skipf("symbolic link unavailable: %v", err)
+		}
+		t.Fatal(err)
+	}
+	beforeHome, beforeRepo := storageTreeSnapshot(t, home), storageTreeSnapshot(t, repo)
+	reader, err := OpenStorageReader(ctx, home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := reader.StorageReport(ctx, home)
+	closeStore(t, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.ArtifactRoots) != 1 || report.ArtifactRoots[0].ArtifactRoot != keyRoot || report.ArtifactRoots[0].Bytes != 0 || report.ArtifactBytes != 0 {
+		t.Fatalf("report followed dangling key link to checkout root: %#v", report.ArtifactRoots)
+	}
+	if !reflect.DeepEqual(beforeHome, storageTreeSnapshot(t, home)) || !reflect.DeepEqual(beforeRepo, storageTreeSnapshot(t, repo)) {
+		t.Fatal("report changed home or repository tree")
+	}
+}

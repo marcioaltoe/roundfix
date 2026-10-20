@@ -184,29 +184,15 @@ func runRetentionPathExists(path string) (bool, error) {
 }
 
 func runRetentionArtifact(candidate store.RunRetentionCandidate, homeDir string) (gcArtifactDir, bool, error) {
-	root := candidate.ArtifactDir
-	if root == "" {
-		var err error
-		root, err = roundconfig.ResolveArtifactDirectory("", candidate.Repository, homeDir)
-		checkoutRoot, checkoutErr := roundconfig.DefaultArtifactDirectoryForPath(candidate.GitRoot, homeDir)
-		if err != nil {
-			if checkoutErr != nil {
-				return gcArtifactDir{}, false, errors.Join(err, checkoutErr)
-			}
-			root = checkoutRoot
-		} else if checkoutErr == nil && checkoutRoot != root {
-			keyPath, pathErr := gcRunArtifactPath(root, candidate.RunID)
-			if pathErr != nil {
-				return gcArtifactDir{}, true, nil
-			}
-			keyExists, existsErr := runRetentionPathExists(keyPath)
-			if existsErr != nil {
-				return gcArtifactDir{}, false, existsErr
-			}
-			if !keyExists {
-				root = checkoutRoot
-			}
-		}
+	root, err := store.ResolveRunArtifactRoot(store.ArtifactRootRun{
+		ID: candidate.RunID, GitRoot: candidate.GitRoot,
+		Repository: candidate.Repository, ArtifactDir: candidate.ArtifactDir,
+	}, homeDir)
+	if errors.Is(err, store.ErrUnsafeRunID) || errors.Is(err, store.ErrArtifactRootUnresolved) {
+		return gcArtifactDir{}, true, nil
+	}
+	if err != nil {
+		return gcArtifactDir{}, false, err
 	}
 	path, err := gcRunArtifactPath(root, candidate.RunID)
 	if err != nil {

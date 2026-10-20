@@ -508,37 +508,46 @@ ORDER BY id`)
 	return runs, nil
 }
 
-// storageArtifactRoot returns the root a Run wrote its artifacts to, without
-// creating or write-checking any path. Repository keys survive removed checkouts;
-// older Runs may instead have written under the checkout-derived default.
-func storageArtifactRoot(run storageRunRecord, homeDir string) (string, error) {
-	if filepath.Base(run.id) != run.id || run.id == "." || run.id == ".." {
-		return "", fmt.Errorf("measure Run artifacts: unsafe Run ID %q", run.id)
+// ErrUnsafeRunID identifies a Run ID that cannot safely name a path component.
+var ErrUnsafeRunID = errors.New("unsafe Run ID")
+
+// ErrArtifactRootUnresolved identifies metadata insufficient to resolve a root.
+var ErrArtifactRootUnresolved = errors.New("Artifact Root cannot be resolved")
+
+// ResolveRunArtifactRoot returns the root a Run wrote its artifacts to. It reads
+// evidence supplied from the Run Database row and the recorded repositories' Git
+// metadata, returning a path only to its caller. It never calls
+// ValidateArtifactDirectory and creates, writes or removes nothing in Roundfix
+// Home, a repository or an Artifact Root. Repository keys survive removed
+// checkouts; older Runs may have used the checkout-derived default instead.
+func ResolveRunArtifactRoot(run ArtifactRootRun, homeDir string) (string, error) {
+	if run.ID == "" || filepath.Base(run.ID) != run.ID || run.ID == "." || run.ID == ".." {
+		return "", fmt.Errorf("%w %q", ErrUnsafeRunID, run.ID)
 	}
-	if strings.TrimSpace(run.artifactRoot) != "" {
-		root, err := config.ResolveArtifactDirectory(run.artifactRoot, run.repository, homeDir)
+	if strings.TrimSpace(run.ArtifactDir) != "" {
+		root, err := config.ResolveArtifactDirectory(run.ArtifactDir, run.GitRoot, homeDir)
 		if err != nil {
-			return filepath.Clean(run.artifactRoot), nil
+			return "", fmt.Errorf("%w: %w", ErrArtifactRootUnresolved, err)
 		}
 		return root, nil
 	}
-	root, err := config.ResolveArtifactDirectory("", run.repositoryRoot, homeDir)
-	checkoutRoot, checkoutErr := config.DefaultArtifactDirectoryForPath(run.repository, homeDir)
+	root, err := config.ResolveArtifactDirectory("", run.Repository, homeDir)
+	checkoutRoot, checkoutErr := config.DefaultArtifactDirectoryForPath(run.GitRoot, homeDir)
 	if err != nil {
 		if checkoutErr != nil {
-			return ".", nil
+			return "", fmt.Errorf("%w: %w", ErrArtifactRootUnresolved, errors.Join(err, checkoutErr))
 		}
 		return checkoutRoot, nil
 	}
 	if checkoutErr == nil && checkoutRoot != root {
-		keyPath := filepath.Join(root, "runs", run.id)
-		keyExists, err := storagePathExists(keyPath)
+		keyPath := filepath.Join(root, "runs", run.ID)
+		keyExists, err := runArtifactPathExists(keyPath)
 		if err != nil {
 			return "", fmt.Errorf("inspect Run artifact directory %s: %w", keyPath, err)
 		}
 		if !keyExists {
-			checkoutPath := filepath.Join(checkoutRoot, "runs", run.id)
-			checkoutExists, err := storagePathExists(checkoutPath)
+			checkoutPath := filepath.Join(checkoutRoot, "runs", run.ID)
+			checkoutExists, err := runArtifactPathExists(checkoutPath)
 			if err != nil {
 				return "", fmt.Errorf("inspect Run artifact directory %s: %w", checkoutPath, err)
 			}
@@ -550,14 +559,31 @@ func storageArtifactRoot(run storageRunRecord, homeDir string) (string, error) {
 	return root, nil
 }
 
+func runArtifactPathExists(path string) (bool, error) {
+	_, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 func storageFilesystemGroups(runs []storageRunRecord, homeDir string) ([]StorageRepositoryGroup, []StorageStateGroup, []StorageArtifactRootGroup, int64, error) {
 	repositories := map[string]*StorageRepositoryGroup{}
 	states := map[string]*StorageStateGroup{}
 	artifactRoots := map[string]*StorageArtifactRootGroup{}
 
 	for _, run := range runs {
-		rootPath, err := storageArtifactRoot(run, homeDir)
-		if err != nil {
+		rootPath, err := ResolveRunArtifactRoot(ArtifactRootRun{
+			ID: run.id, GitRoot: run.repository, Repository: run.repositoryRoot, ArtifactDir: run.artifactRoot,
+		}, homeDir)
+		if errors.Is(err, ErrArtifactRootUnresolved) {
+			rootPath = filepath.Clean(run.artifactRoot)
+			if strings.TrimSpace(run.artifactRoot) == "" {
+				rootPath = "."
+			}
+		} else if errors.Is(err, ErrUnsafeRunID) {
+			return nil, nil, nil, 0, fmt.Errorf("measure Run artifacts: unsafe Run ID %q", run.id)
+		} else if err != nil {
 			return nil, nil, nil, 0, err
 		}
 		run.artifactRoot = rootPath
@@ -1623,6 +1649,7 @@ type ArtifactRoot struct {
 
 // ArtifactRootRun is the durable Run evidence that records an Artifact Root.
 type ArtifactRootRun struct {
+	ArtifactDir string // The recorded value, trimmed.
 	ID          string
 	GitRoot     string
 	Repository  string
@@ -1646,9 +1673,8 @@ ORDER BY artifact_dir, id`)
 	rootIndexes := map[string]int{}
 	for rows.Next() {
 		var run ArtifactRootRun
-		var path string
 		var completedAtRaw string
-		if err := rows.Scan(&run.ID, &run.GitRoot, &run.Repository, &run.State, &path, &completedAtRaw); err != nil {
+		if err := rows.Scan(&run.ID, &run.GitRoot, &run.Repository, &run.State, &run.ArtifactDir, &completedAtRaw); err != nil {
 			return nil, fmt.Errorf("scan Artifact Root Run metadata: %w", err)
 		}
 		if strings.TrimSpace(completedAtRaw) != "" {
@@ -1659,7 +1685,8 @@ ORDER BY artifact_dir, id`)
 			run.CompletedAt = &completedAt
 		}
 
-		path = strings.TrimSpace(path)
+		run.ArtifactDir = strings.TrimSpace(run.ArtifactDir)
+		path := run.ArtifactDir
 		index, ok := rootIndexes[path]
 		if !ok {
 			index = len(roots)

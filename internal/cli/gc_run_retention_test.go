@@ -479,3 +479,76 @@ func TestGCDryRunReadsCommittedWAL(t *testing.T) {
 		t.Fatal("dry run changed database, WAL, or artifacts")
 	}
 }
+
+func TestRunRetentionReadsTheRootTheSharedResolverReturns(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"relative present", "relative absent", "blank default", "home root", "unresolved root"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			home, repo := withCLIWorkspace(t)
+			mustMkdir(t, filepath.Join(home, ".roundfix"))
+			mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "store:\n  journal_retention: 0\n")
+			now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
+			withGCNow(t, now)
+			recorded, root := "relative-artifacts", filepath.Join(repo, "relative-artifacts")
+			if name == "blank default" {
+				recorded = ""
+				var err error
+				root, err = roundconfig.ResolveArtifactDirectory("", repo, home)
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if name == "home root" {
+				recorded, root = "~/.roundfix/retention-artifacts", filepath.Join(home, ".roundfix", "retention-artifacts")
+			}
+			s, err := store.Open(ctx, home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			run, err := s.CreateRun(ctx, store.CreateRunRequest{
+				Kind: store.KindImplement, GitRoot: repo, ArtifactDir: recorded,
+				LocalBranch: "fix/retention-resolver", HeadSHA: "abc123", SpecSlug: "retention-resolver",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.CompleteRun(ctx, run.ID, store.StateClean); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.Close(); err != nil {
+				t.Fatal(err)
+			}
+			setRunTimestamps(t, home, run.ID, now.Add(-40*24*time.Hour), now.Add(-31*24*time.Hour))
+			if name == "unresolved root" {
+				db := openGCRetentionDB(t, home)
+				gcRetentionExec(t, db, `UPDATE runs SET git_root = '', repository_root = '', artifact_dir = '' WHERE id = ?`, run.ID)
+				if err := db.Close(); err != nil {
+					t.Fatal(err)
+				}
+			} else if name != "relative absent" {
+				writeRunArtifact(t, root, run.ID, "preserve or reclaim through resolved root")
+			}
+			output := runGCRetentionCLI(t, false)
+			kept := name == "relative present" || name == "unresolved root"
+			wantRows := 0
+			if kept {
+				wantRows = 1
+				assertGCRetentionContains(t, output, "Runs removed: 0", "artifact root unproven 1")
+			} else {
+				assertGCRetentionContains(t, output, "Runs removed: 1", "artifact root unproven 0")
+			}
+			if rows := gcRetentionRows(t, home, []string{"runs"}, run.ID); len(rows["runs"]) != wantRows {
+				t.Fatalf("Run rows=%v, want %d; output=%s", rows, wantRows, output)
+			}
+			path := filepath.Join(root, "runs", run.ID)
+			if _, err := os.Lstat(path); kept && name != "unresolved root" {
+				if err != nil {
+					t.Fatalf("kept Run artifacts: %v", err)
+				}
+			} else if !kept && !os.IsNotExist(err) {
+				t.Fatalf("removed Run artifacts still exist: %v", err)
+			}
+		})
+	}
+}

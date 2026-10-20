@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0289-gc-sanitize-reaches-the-default-artifact-roots
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -121,3 +121,70 @@ Roundfix Homes.
 - `_prd.md` → Sources; Goals; Core Feature 1; Core Feature 4; Success Metric 3; Prerequisites
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 8; Invariants 1-2, 5; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 1
 - ADR-0301; ADR-0255; ADR-0296; ADR-0259; ADR-0271; ADR-0285; ADR-0280
+
+## Result
+
+Implemented this Task's resolver and consumer slice; Daemon Verification and
+settlement remain pending. The existing `status: in_progress` was present at
+entry and has not been edited. No other Task file or Task Graph was changed.
+
+### Implementation and acceptance evidence
+
+- One exported resolver: `store.ResolveRunArtifactRoot` now accepts the durable
+  `ArtifactRootRun` evidence, including the recorded `ArtifactDir`, and wraps
+  `ErrUnsafeRunID` or `ErrArtifactRootUnresolved` where appropriate. The storage
+  report and Run Retention call it; `storageArtifactRoot` is removed and Run
+  Retention calls neither configuration resolver. Discovery populates the new
+  evidence field but keeps its existing grouping; resolved discovery belongs
+  to task_02.
+- Storage report: unresolved roots retain the cleaned recorded value, or `.`
+  for a blank value; unsafe IDs retain the exact `measure Run artifacts:
+  unsafe Run ID "<id>"` diagnostic. No sections, columns, totals or
+  reconciliation code changed. The existing root-measurement and reconciliation
+  tests passed in the focused check below. The additional
+  `TestStorageReportKeepsTheKeyRootOfADanglingRunLink` passed, proving that a
+  dangling link at the key's Run path keeps the key root and does not measure
+  the checkout's bytes.
+- Run Retention: both typed resolver errors immediately keep the Run as
+  `artifact root unproven`; subsequent path, classification, containment and
+  physical-directory checks retain their existing code. The new CLI test
+  passed for a relative root outside Home with a present directory (kept), a
+  relative root with no directory (row removed), a blank root at the key's
+  default (row and directory removed), a `~/` root (row and directory removed),
+  and unresolved metadata (kept without failing the sweep). Existing absolute
+  root removal, unproven-root preservation and dry-run tests passed unchanged.
+- No resolver mutation: its comment states the Run Database/Git-metadata input
+  and caller-only destination. The new resolver test compares complete temporary
+  home and repository trees before and after every call, including error cases;
+  every subtest passed. Cases cover blank, removed linked checkout, relative,
+  home-relative, absolute and checkout-only roots, a dangling key link, four
+  unsafe ID shapes, and unresolved blank/relative roots. No validation or
+  write operation is called by the resolver.
+- Documentation: the Run Retention guide contains the required sentence and
+  blank/relative/absolute resolution rules. The sanctioned record command
+  regenerated only that guide's Behavior Surface Record fingerprint.
+
+### Focused checks
+
+- Red signal before implementing the API:
+  `go test ./internal/store -run '^TestResolveRunArtifactRootIsTheRootTheRunWroteTo$' -count=1`
+  failed to compile because `ArtifactDir`, the exported resolver and its errors
+  were absent.
+- `go test ./internal/store -run '^(TestResolveRunArtifactRootIsTheRootTheRunWroteTo|TestStorageReportKeepsTheKeyRootOfADanglingRunLink|TestStorageReportMeasuresTheArtifactRootARunWroteTo|TestStorageReportReconcilesMeasuredTotalsWithoutMutation)$' -count=1`
+  — exit 0.
+- `go test ./internal/cli -run '^(TestRunRetentionReadsTheRootTheSharedResolverReturns|TestGCRemovesRunsPastRunRetention|TestGCKeepsARunUnderAnUnprovenArtifactRoot|TestGCDryRunReportsRunRetention|TestRunStorageReportListsTheDefaultRootOfARunWithoutOne)$' -count=1`
+  — exit 0.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0; run as Requirement 8's explicit generation step.
+- `GOOS=windows go test -c -o "$build_dir/store.test.exe" ./internal/store`
+  and `GOOS=windows go test -c -o "$build_dir/cli.test.exe" ./internal/cli`
+  — both exit 0, each with a separate disposable directory created by
+  `mktemp -d` under `/tmp`; compilation only, no Windows execution claimed.
+- `git diff --check` — exit 0. Source inspection confirms a single exported
+  resolver and no local configuration-resolution calls in Run Retention.
+
+Commands used `rtk proxy` to preserve exact output. The sandbox executor could
+not start against its symlinked writable root; focused commands ran with
+escalation in the resolved Run checkout. All fixtures used temporary homes
+and repositories. The declared Verification, repository Verification and
+incremental Verification were not run. No commit, push or Pull Request.

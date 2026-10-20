@@ -23,6 +23,16 @@ before the cutoff leave the database whole, including their journal, Agent
 Selections, token usage and locks. GC removes each Run's artifact directory
 under its proven Artifact Root before removing the database rows.
 
+Run Retention finds each Run's artifact directory under the Artifact Root the
+Run wrote to, resolved the way `roundfix storage report` resolves it.
+
+- A blank recorded root uses the repository key's default root. The checkout's
+  default is used when the key's default cannot be resolved, or only the
+  checkout's default contains an entry for that Run.
+- A relative recorded root resolves under the Run's Git root; `~/` expands
+  under the home directory.
+- An absolute recorded root stays absolute and is cleaned.
+
 Active Runs stay. The report counts terminal Runs kept past the cutoff by
 reason: queue-referenced, worktree present, and artifact root unproven. GC keeps
 a Run when any Delivery Queue item or Run link names it, its recorded Run
