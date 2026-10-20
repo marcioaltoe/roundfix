@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0289-gc-sanitize-reaches-the-default-artifact-roots
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -141,3 +141,53 @@ Roundfix Homes.
 - `_prd.md` → Sources; Goals; Core Feature 2; Core Feature 3; Core Feature 4; Success Metric 1; Success Metric 2
 - `_techspec.md` → API Contract 4; API Contract 5; API Contract 6; API Contract 7; API Contract 8; Surface Transcript 1; Invariants 3-4, 6; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 2
 - ADR-0301; ADR-0033; ADR-0255; ADR-0259; ADR-0271; ADR-0285; ADR-0280
+
+## Result
+
+Implemented the Task 02 slice. Discovery now calls `ResolveRunArtifactRoot`
+for each Run, groups and sorts resolved paths, retains recorded values, and
+records the first non-unsafe-ID resolver error in Run ID order. Classification
+checks `Unresolved` first and otherwise preserves the existing proof order and
+evidence. `allRunIDs` uses resolved group paths.
+
+Apply opens a second dependency-provided reader for removal. Each absence-only
+candidate is read again immediately before removal; a newly present Run moves
+to the preserved list and contributes no directories or bytes. Reader-open and
+read errors stop before removal. The report prints sorted distinct recorded
+values and per-root counts, while keeping the existing total and closing text.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Blank recorded roots reach their default and eligible directories are removed | `TestDiscoverArtifactRootsGroupsRunsByTheRootTheyWroteTo` covers grouping, separate repositories, relative roots, unresolved groups, unsafe IDs and first-error ordering. `TestGCSanitizeReachesTheDefaultRootAndKeepsEveryProof` removes the eligible blank-root Run directory and an orphan, then reports zero removals and bytes on a second apply. |
+| Existing proofs preserve directories and nothing outside `runs/` is touched | The proof test preserves Active and recent Runs, a known Run recorded under another resolved root, a relative root outside Roundfix Home, a symlinked default root and its target, a shared overridden root, symlink/file entries, and `reviews/` and `delivery/` files. All existing sanitation tests, including the five pre-key-root cases, pass unchanged. The unresolved CLI test keeps its directory with the new unsafe evidence. |
+| A Run appearing before removal keeps its directory | `TestGCSanitizeKeepsADirectoryWhoseRunAppearsBeforeRemoval` inserts the orphan's Run row on the second reader-opener call, asserts the exact preservation reason, preserved path and zero global/per-root reclamation. `TestGCSanitizeStopsBeforeRemovalWhenAbsenceRecheckFails` covers removal-reader open and read errors. |
+| Dry run names resolved roots, recorded values and reclaim counts exactly | `TestGCSanitizeDryRunReachesTheDefaultRootTranscript` compares all stdout bytes with Surface Transcript 1, empty stderr and exit 0. It first reproduced the original blank-root unsafe refusal, then passed after implementation. `TestGCSanitizeReportsDistinctRecordedValuesInOrder` covers merged empty, relative, home-relative and absolute values, counts, sorting and omission of the value equal to the resolved root. |
+
+Focused checks run in this turn (all final runs exited 0):
+
+- `go test ./internal/store -run 'TestDiscoverArtifactRoots|TestResolveRunArtifactRoot' -count=1`
+- `go test ./internal/cli -run 'TestGCSanitize|TestRunGCSanitize' -count=1`
+- `go test ./internal/cli -run 'TestRunRetentionReadsTheRootTheSharedResolverReturns|TestGCKeepsARunUnderAnUnprovenArtifactRoot|TestGCRemovesRunsPastRunRetention' -count=1`
+- `GOOS=windows go test -c -o /tmp/task02-store-windows.test.exe ./internal/store`
+- `GOOS=windows go test -c -o /tmp/task02-cli-windows.test.exe ./internal/cli`
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — generated the GC guide fingerprint; no record was hand-edited.
+- `git diff --check`
+
+Added the guide's Sanitation section with the required sentences, six
+classifications, absence recheck, recorded-value lines and per-root counts.
+Searched `docs/user-guide`, `docs/agents`, `.agents/skills` and `skills` for
+sanitation/recorded-root wording. The old sanitation description remains only
+in the Roundfix `references/storage.md` canonical and mirrored copies, owned
+by task_03; neither was changed here.
+
+Environment: commands ran in the resolved `/Volumes/Brain-SSD/cache/` checkout
+because the sandbox could not initialize through the configured symlinked
+writable root. Tests used disposable homes and repositories. No real Roundfix
+Home was read or sanitized.
+
+The initial Task status modification was already present at entry. Status,
+other Task files and `_tasks.md` were left untouched. Declared Task Verification
+and repository Verification remain for the Daemon; neither was run. No commit,
+push or pull request was created.

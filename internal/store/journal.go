@@ -1640,11 +1640,12 @@ func (store *Store) DataVersion(ctx context.Context) (int64, error) {
 	return version, nil
 }
 
-// Runs retains the evidence needed by callers to classify the root without
-// deriving ownership from the filesystem.
+// ArtifactRoot groups Runs by the root they wrote to, retaining the durable
+// evidence needed to classify it without deriving ownership from the filesystem.
 type ArtifactRoot struct {
-	Path string
-	Runs []ArtifactRootRun
+	Path       string
+	Runs       []ArtifactRootRun
+	Unresolved string // First resolver failure in Run ID order, or empty.
 }
 
 // ArtifactRootRun is the durable Run evidence that records an Artifact Root.
@@ -1657,11 +1658,11 @@ type ArtifactRootRun struct {
 	CompletedAt *time.Time
 }
 
-func DiscoverArtifactRoots(ctx context.Context, runStore *Store) ([]ArtifactRoot, error) {
+func DiscoverArtifactRoots(ctx context.Context, runStore *Store, homeDir string) ([]ArtifactRoot, error) {
 	rows, err := runStore.db.QueryContext(ctx, `
 SELECT id, git_root, COALESCE(NULLIF(repository_root, ''), git_root), state, artifact_dir, completed_at
 FROM runs
-ORDER BY artifact_dir, id`)
+ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("discover Artifact Roots from Run metadata: %w", err)
 	}
@@ -1686,17 +1687,24 @@ ORDER BY artifact_dir, id`)
 		}
 
 		run.ArtifactDir = strings.TrimSpace(run.ArtifactDir)
-		path := run.ArtifactDir
+		path, resolveErr := ResolveRunArtifactRoot(run, homeDir)
+		if resolveErr != nil {
+			path = run.ArtifactDir
+		}
 		index, ok := rootIndexes[path]
 		if !ok {
 			index = len(roots)
 			rootIndexes[path] = index
 			roots = append(roots, ArtifactRoot{Path: path})
 		}
+		if resolveErr != nil && !errors.Is(resolveErr, ErrUnsafeRunID) && roots[index].Unresolved == "" {
+			roots[index].Unresolved = fmt.Sprintf("Run %q recorded as %q: %v", run.ID, run.ArtifactDir, resolveErr)
+		}
 		roots[index].Runs = append(roots[index].Runs, run)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate Artifact Root Run metadata: %w", err)
 	}
+	sort.Slice(roots, func(i, j int) bool { return roots[i].Path < roots[j].Path })
 	return roots, nil
 }
