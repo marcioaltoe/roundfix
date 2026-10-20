@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0287-reports-that-count-what-they-say
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -140,3 +140,66 @@ verifiable on its own on temporary Spec folders.
 - `_prd.md` → Sources; Goals; Core Feature 3; Core Feature 4; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 4; API Contract 5; Invariants 5-6; Interfaces; Current behavior; Testing Approach; Build Order 3
 - ADR-0247; ADR-0277; ADR-0262; ADR-0259; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+
+## Result
+
+Implemented the Task 03 slice. Task status and declared Verification remain
+Daemon-owned; no declared Verification command was run.
+
+- Summary sources now share the one-block carry rule in `archiveParagraph`:
+  the PRD title paragraph, QA Outcome, Cancel Command, Legacy Archive Folder
+  title and section fallback after quote removal, and record parsing. Lists
+  lose markers, normalize whitespace and gain missing closing punctuation;
+  exactly one following block is carried. Outcome precedence, Legacy Link
+  Rebase and `ArchiveRecordTargetBytes` are unchanged.
+- Acceptance criterion 1: the new archive summary, cancelled record and legacy
+  summary tests pass through `BuildArchiveRecord`, `Cancel` and legacy
+  conversion. They cover tight, loose and ordered lists, wrapped items,
+  punctuation, QA Outcome precedence and quoted section fallback.
+- Acceptance criterion 2: focused cases pass for a following heading, both
+  fence spellings, a table row and end of input; a following paragraph is
+  carried without recursively carrying another block.
+- Acceptance criterion 3: `TestAnArchiveRecordEndingWithAColonRoundTrips`
+  confirms the summary and rendered bytes survive parsing unchanged. Existing
+  round-trip and target-size tests pass in the focused check. No existing
+  Archive Record was edited. The code comment names source text and its
+  destination, the Archive Record's single summary line.
+- Acceptance criterion 4: the archive and history guides, canonical Roundfix
+  archive reference and Archive Record glossary definition state the required
+  sentence. Searched guides, agent guides and skill copies for one-paragraph
+  wording; the legacy fallback descriptions remain accurate with the carry
+  rule alongside them. No QA settlement text changed.
+
+Focused evidence (all commands use the resolved Run checkout because the
+sandbox rejects the symlinked workspace root):
+
+- Before the production edit,
+  `go test ./internal/spec -run '^TestArchiveSummaryCarriesWhatItsColonIntroduces$' -count=1`
+  exited 1: all eight carry cases returned only `Two gaps failed it:`.
+- After the production edit,
+  `go test ./internal/spec -run '^(TestArchiveSummaryCarriesWhatItsColonIntroduces|TestAnArchiveRecordEndingWithAColonRoundTrips|TestACancelledRecordSummaryCarriesItsList|TestLegacySummaryCarriesTheListItsColonIntroduces)$' -count=1`
+  exited 0.
+- `go test ./internal/spec -count=1 -run '^(TestArchiveSummary|TestAnArchiveRecordEnding|TestACancelledRecordSummary|TestLegacySummary|TestActiveArchiveRecordKeeps|TestArchiveRecordRoundTrips|TestArchiveRecordStays)'`
+  exited 0, including existing legacy reading, active reading, precedence,
+  round-trip and size checks.
+- `GOOS=windows go test -c -o /tmp/roundfix-0287-task03-spec.test.exe ./internal/spec`
+  exited 0, compiling production and test code for Windows.
+- Raised both canonical Roundfix skill version fields from `0.1.115` to
+  `0.1.116`, then ran `make skills-sync`,
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  and
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`;
+  each exited 0. Mirrors and records were generated, never hand-edited.
+- `make baseline-digests` exited 0 with `changed: false`.
+- `git diff --check` exited 0. Read-only assertions confirmed the required
+  documentation sentence, identical canonical/mirror bytes, unchanged QA
+  settlement section, and no changed History files, Task Graph or other Tasks.
+
+Declared Verification and repository settlement are pending with the Daemon.
+No follow-up work was added to this diff; no commit, push or PR was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261020T144117Z_258265979932c5f1`
+- Source commit: `a64242ec3a394f8bcae31bf1a82ed071df28107c`

@@ -486,10 +486,17 @@ func archiveSection(body, heading string) string {
 	}
 	return ""
 }
+
+// archiveParagraph flattens Spec PRD, QA Report or written-record text into
+// the Archive Record's single summary line. Carry only one block introduced by
+// a colon; written records already have one line and therefore carry nothing.
+// This reader never rewrites existing records (including colon-ending ones).
 func archiveParagraph(body, after string) string {
 	started := after == ""
-	var lines []string
-	for _, line := range strings.Split(body, "\n") {
+	var paragraph []string
+	lines := strings.Split(body, "\n")
+	next := len(lines)
+	for i, line := range lines {
 		if !started {
 			if strings.HasPrefix(line, after) {
 				started = true
@@ -498,7 +505,8 @@ func archiveParagraph(body, after string) string {
 		}
 		line = strings.TrimSpace(line)
 		if line == "" {
-			if len(lines) > 0 {
+			if len(paragraph) > 0 {
+				next = i + 1
 				break
 			}
 			continue
@@ -506,13 +514,79 @@ func archiveParagraph(body, after string) string {
 		if strings.HasPrefix(line, "#") {
 			break
 		}
-		lines = append(lines, line)
+		paragraph = append(paragraph, line)
 	}
-	return strings.Join(strings.Fields(strings.Join(lines, " ")), " ")
+	summary := strings.Join(strings.Fields(strings.Join(paragraph, " ")), " ")
+	if !strings.HasSuffix(summary, ":") {
+		return summary
+	}
+	for next < len(lines) && strings.TrimSpace(lines[next]) == "" {
+		next++
+	}
+	if next == len(lines) {
+		return summary
+	}
+	blocked := func(line string) bool {
+		for _, prefix := range []string{"#", "```", "~~~", "|"} {
+			if strings.HasPrefix(strings.TrimSpace(line), prefix) {
+				return true
+			}
+		}
+		return false
+	}
+	if blocked(lines[next]) {
+		return summary
+	}
+	// The first marker allows up to three spaces; subsequent markers may occur
+	// at any indentation, including nested lists, and each begins an item.
+	marker := regexp.MustCompile(`^(?:[-*+] |[0-9]+[.)] )`)
+	first := strings.TrimLeft(lines[next], " ")
+	list := len(lines[next])-len(first) <= 3 && marker.MatchString(first)
+	var items []string
+	for i := next; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if blocked(line) {
+			break
+		}
+		if line == "" {
+			if !list {
+				break
+			}
+			for i+1 < len(lines) && strings.TrimSpace(lines[i+1]) == "" {
+				i++
+			}
+			if i+1 == len(lines) || !marker.MatchString(strings.TrimSpace(lines[i+1])) {
+				break
+			}
+			continue
+		}
+		if list && marker.MatchString(line) {
+			items = append(items, marker.ReplaceAllString(line, ""))
+		} else if len(items) == 0 {
+			items = append(items, line)
+		} else {
+			items[len(items)-1] += " " + line
+		}
+	}
+	for i, item := range items {
+		item = strings.Join(strings.Fields(item), " ")
+		if list && item != "" && !strings.ContainsAny(item[len(item)-1:], ".!?:;") {
+			if i == len(items)-1 {
+				item += "."
+			} else {
+				item += ";"
+			}
+		}
+		items[i] = item
+	}
+	if carried := strings.TrimSpace(strings.Join(items, " ")); carried != "" {
+		summary += " " + carried
+	}
+	return summary
 }
 
 // Strip each line's nested block quote markers before reading the paragraph.
-// Keep archiveParagraph unchanged for active Specs and existing records.
+// All summary sources then share archiveParagraph's one-block carry rule.
 func legacyArchiveParagraph(body, after string) string {
 	lines := strings.Split(body, "\n")
 	for i, line := range lines {

@@ -294,3 +294,70 @@ func TestArchiveRecordRefusesAnOverrideDispositionWithoutATrueOverride(t *testin
 		t.Fatalf("forged override accepted: %v", err)
 	}
 }
+
+func TestArchiveSummaryCarriesWhatItsColonIntroduces(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name, block, want string
+		qa                bool
+	}{
+		{"tight list", "- `A` failed with a\n  wrapped line.\n- `B` timed out.\n", "`A` failed with a wrapped line. `B` timed out.", false},
+		{"loose list", "- A failed.\n\n- B timed out.\n\nIgnored paragraph.\n", "A failed. B timed out.", false},
+		{"ordered list", "1. A failed.\n2) B timed out.\n", "A failed. B timed out.", false},
+		{"missing punctuation", "* A failed\n+ B timed out\n", "A failed; B timed out.", false},
+		{"nested markers", "- A failed!\n    1) B timed out?\n    + C stopped:\n- D paused;\n", "A failed! B timed out? C stopped: D paused;", false},
+		{"paragraph", "A failed with a\n wrapped line.\n\nIgnored paragraph.\n", "A failed with a wrapped line.", false},
+		{"one block", "A failed:\n\n- Ignored item.\n", "A failed:", false},
+		{"fence", "```text\nignored\n```\n", "", false},
+		{"tilde fence", "~~~\nignored\n~~~\n", "", false},
+		{"heading", "## Evidence\n\nIgnored.\n", "", false},
+		{"table", "| ignored |\n| --- |\n", "", false},
+		{"end", "", "", false},
+		{"QA Outcome", "1. A failed.\n2. B timed out.\n", "A failed. B timed out.", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			folder := t.TempDir()
+			intro := "Two gaps failed it:"
+			prd := intro + "\n\n" + tc.block
+			if tc.qa {
+				prd = "PRD fallback.\n"
+				writeFile(t, filepath.Join(folder, "qa", "qa-report-2026-10-20.md"), "---\nverdict: pass\n---\n\n# QA\n\n## Outcome\n\n"+intro+"\n\n"+tc.block)
+			}
+			writeFile(t, filepath.Join(folder, "_prd.md"), "---\nspec: demo\nstatus: active\n---\n\n# Demo\n\n"+prd)
+			record, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: "demo"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := strings.TrimSpace(intro + " " + tc.want)
+			if record.Outcome != want {
+				t.Fatalf("summary = %q, want %q", record.Outcome, want)
+			}
+		})
+	}
+}
+
+func TestAnArchiveRecordEndingWithAColonRoundTrips(t *testing.T) {
+	t.Parallel()
+	req, dir := recordFixture(t)
+	record, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: dir, Slug: req.Slug})
+	if err != nil {
+		t.Fatal(err)
+	}
+	record.Outcome = "Two environment gaps failed it:"
+	content, err := RenderArchiveRecord(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := ParseArchiveRecord(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, err := RenderArchiveRecord(parsed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.Outcome != record.Outcome || string(content) != string(next) {
+		t.Fatalf("round trip changed summary or bytes: %q", parsed.Outcome)
+	}
+}

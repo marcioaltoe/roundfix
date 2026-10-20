@@ -132,6 +132,9 @@ completed, it also carries `qa_override_qa_task_status`. It does
 not change the QA Task or report verdict.
 ### Archive Record
 
+The summary is the QA Report's Outcome paragraph or the PRD's title paragraph.
+A summary paragraph that ends with a colon carries the list or paragraph that follows it, on the same line.
+
 The command writes `<slug>.md` under the resolved archive root and removes the
 Spec folder. The record names the QA Report and verdict and carries its
 `source_revision`, the Git revision where the removed folder remains
