@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.94.0] - 2026-10-19
+
+### A Git Locator is reachable in CI, and the storage report counts every page
+
+- **Default Branch Head.** Reachability reads the fetched `origin/<default>` commit, and the local default branch only when no remote-tracking branch exists. When `origin/HEAD` is unset (a GitHub Actions checkout) and the current branch does not name the default, exactly one of `origin/main` and `origin/master` names it. A freshly archived record's Git Locator no longer fails `SC-HISTORY-RETAINED` in CI until the next tag, and a stale local `main` no longer makes a valid locator invalid (ADR-0295).
+- **Same head everywhere.** The Delivery Base, the archive warning, the archive locator and the pre-PR review base (`roundfix review` without `--base`) use the Default Branch Head.
+- **Storage Snapshot.** `roundfix storage report` measures one consistent snapshot of the Run Database, reading committed write-ahead log frames, and groups every page: table, free, pointer-map and lock-byte pages. Grouped bytes equal snapshot bytes exactly (tolerance 0). The report no longer fails while the WAL is live; `File bytes`, `WAL bytes` and `Shared-memory bytes` are reported separately, and nothing is written (ADR-0296).
+- **Compaction preview under a live writer.** When a live writer advances the database during `gc compact`'s preview, the preview falls back to the Storage Snapshot; `gc compact --apply` keeps its guarded behavior.
+
 ## [0.93.0] - 2026-10-19
 
 ### The Linux Lane runs like CI
