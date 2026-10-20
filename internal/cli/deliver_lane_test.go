@@ -261,3 +261,16 @@ func TestDeliverLaneCancellationRemovesContainer(t *testing.T) {
 		t.Fatalf("starts=%+v want cleanup=%q", starts, want)
 	}
 }
+
+func TestDeliverLaneObjectStoreSkipTranscript(t *testing.T) {
+	t.Parallel()
+	f := newDeliverLaneFixture(t)
+	objects := linuxLaneFixtureObjects(t, f.repo)
+	other := filepath.Join(t.TempDir(), "other")
+	gittest.InitRepo(t, other, "-b", "main")
+	mustWrite(t, filepath.Join(objects, "info", "alternates"), linuxLaneFixtureObjects(t, other)+"\n")
+	assertDeliverLaneTranscript(t, f, "roundfix: notice: Linux Lane skipped: the object store "+objects+" borrows objects through info/alternates, which the Linux Lane does not mount", 3)
+	if starts := f.starts(t); len(starts) != 0 {
+		t.Fatalf("skip started tools: %+v", starts)
+	}
+}

@@ -20,8 +20,10 @@ import (
 	"roundfix/internal/preflight"
 )
 
+const linuxLaneHistory = "/repo-objects"
+
 const linuxLaneCap = 20 * time.Minute
-const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
+const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
 
 type linuxLaneResult struct {
 	Ran, Passed                    bool
@@ -115,6 +117,18 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 	if len(result.Packages) == 0 {
 		return skip("no changed Go package")
 	}
+	objects, err := linuxLaneObjectStore(ctx, runner, workDir)
+	if err != nil {
+		return result, err
+	}
+	historyMount, reason, err := linuxLaneHistoryMount(objects)
+	if err != nil {
+		return result, err
+	}
+	if reason != "" {
+		return skip(reason)
+	}
+
 	environment := commandDependenciesForContext(ctx).environ()
 	goBinary := linuxLaneExecutable("go", environment, workDir)
 	if goBinary == "" {
@@ -149,7 +163,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 	name := request.Name
 	args := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534",
 		"-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off",
-		"-v", strings.TrimSpace(string(cache)) + ":/go/pkg/mod:ro", image, "sh", "-ceu", linuxLaneScript, "linux-lane"}
+		"-v", strings.TrimSpace(string(cache)) + ":/go/pkg/mod:ro", "-v", historyMount, image, "sh", "-ceu", linuxLaneScript, "linux-lane"}
 	args = append(args, result.Packages...)
 	quoted := []string{"docker"}
 	for _, arg := range args {
@@ -393,4 +407,39 @@ func (workflow *commandDeliveryWorkflow) recordLinuxLaneSkip(specSlug, reason st
 	line := fmt.Sprintf("roundfix: notice: Delivery Queue item %s: Linux Lane skipped: %s\n", specSlug, reason)
 	_, err = io.WriteString(io.MultiWriter(console, log), line)
 	return err
+}
+
+// linuxLaneObjectStore resolves the host store Git reads, including the common
+// directory's store when workDir is a linked worktree.
+func linuxLaneObjectStore(ctx context.Context, runner preflight.GitRunner, workDir string) (string, error) {
+	objects, err := runner.RunGit(ctx, workDir, "rev-parse", "--path-format=absolute", "--git-path", "objects")
+	if err != nil {
+		return "", fmt.Errorf("read Linux Lane object store: %w", err)
+	}
+	return filepath.Clean(strings.TrimSpace(objects)), nil
+}
+
+// linuxLaneHistoryMount exposes all host repository objects to the lane container
+// read-only. Neither the working tree nor refs are mounted. The script writes
+// its alternate only into the container's own /tmp/work/.git, never this store.
+func linuxLaneHistoryMount(objects string) (mount, skip string, err error) {
+	if strings.Contains(strings.TrimPrefix(objects, filepath.VolumeName(objects)), ":") {
+		return "", "the object store " + objects + " cannot be mounted: its path holds a colon", nil
+	}
+	info, err := os.Stat(objects)
+	if err != nil || !info.IsDir() {
+		// In particular, do not let Docker create a missing source directory.
+		return "", "the object store " + objects + " cannot be mounted: it is not a directory", nil
+	}
+	alternates, err := os.ReadFile(filepath.Join(objects, "info", "alternates"))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", "", fmt.Errorf("read Linux Lane object store alternates: %w", err)
+	}
+	for line := range strings.SplitSeq(string(alternates), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			return "", "the object store " + objects + " borrows objects through info/alternates, which the Linux Lane does not mount", nil
+		}
+	}
+	return objects + ":" + linuxLaneHistory + ":ro", "", nil
 }
