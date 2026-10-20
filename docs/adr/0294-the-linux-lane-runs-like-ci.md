@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-19T20:00:00Z
-updated_at: 2026-10-19T20:00:00Z
+updated_at: 2026-10-20T01:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -100,3 +100,5 @@ on-demand run passes, in a change of its own.
   the toolchain.
 - The Park Class table gains `linux-lane-container`, and `deliver --help`
   gains `deliver lane`.
+
+**Amended by [ADR-0297](0297-the-linux-lane-reads-the-repository-history-read-only.md) (2026-10-19).** The container also mounts the repository object store that `git rev-parse --path-format=absolute --git-path objects` names, read-only at `/repo-objects`, and the lane script registers it as an alternate of the container repository right after `git init`, so a test that reads a historical object behaves as in CI. The working tree, refs and a writable store are still never mounted; a store whose path holds a colon, that is not a directory, or that borrows objects through `info/alternates` skips the lane with its reason.

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-18T17:30:00Z
-updated_at: 2026-10-19T20:00:00Z
+updated_at: 2026-10-20T01:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -88,3 +88,5 @@ gate and park the item `gate-failed` with the log path.
   branch, so enabling it takes effect after the change that enables it merges.
 
 **Amended by [ADR-0294](0294-the-linux-lane-runs-like-ci.md) (2026-10-19).** The container runs with `--init`; its image is `delivery.linux_lane_image` when set, read from the same fetched default-branch Project Config, and `golang:<go.mod go version>` otherwise; a test that needs a tool outside the Base Test Tools skips naming it; exit `3` from the lane's own setup, `126`, `127`, an exit of `128` or more and the 20-minute cap are a Lane Container Failure that parks `linux-lane-container` in the `environment` Park Class, while any other non-zero exit is a Lane Change Failure that parks `gate-failed` with its reason; and `roundfix deliver lane` runs the lane on demand.
+
+**Amended by [ADR-0297](0297-the-linux-lane-reads-the-repository-history-read-only.md) (2026-10-19).** The container also mounts the repository object store that `git rev-parse --path-format=absolute --git-path objects` names, read-only at `/repo-objects`, and the lane script registers it as an alternate of the container repository right after `git init`, so a test that reads a historical object behaves as in CI. The working tree, refs and a writable store are still never mounted; a store whose path holds a colon, that is not a directory, or that borrows objects through `info/alternates` skips the lane with its reason.
