@@ -611,7 +611,13 @@ configuration as the opt-in. An item branch or the owner's checkout cannot
 choose its image. Empty by default, the key selects `golang:<version>` using
 the root `go.mod`'s `go` version verbatim. The container runs under an init
 with `--init`, `--pull never`, `--network none`, `--rm`, and user
-`65534:65534`. It mounts the host module cache read-only. Its only explicitly
+`65534:65534`. Beside the host module cache, it mounts the repository object
+store read-only as `-v <objects>:/repo-objects:ro`. The store is resolved with
+`git rev-parse --path-format=absolute --git-path objects`, so a linked
+worktree uses its common directory's store. The working tree and refs are
+never mounted. After `git init`, the container repository registers
+`/repo-objects` in its own `.git/objects/info/alternates` before recording the
+candidate; the host store is never written. Its only explicitly
 supplied environment variables are `HOME`, `GOCACHE`, `GOMODCACHE`, `GOFLAGS`,
 `GOPROXY`, `GOTOOLCHAIN`, and `GOSUMDB`; no Queue Owner key or token is forwarded.
 The Docker CLI keeps the operator's own environment and Docker context. Tests
@@ -630,6 +636,10 @@ roundfix: notice: Delivery Queue item <slug>: Linux Lane skipped: <reason>
 - `no go.mod at the repository root`
 - `go.mod declares no go version` (only when no image is configured)
 - `no changed Go package`
+- `the object store <objects> cannot be mounted: its path holds a colon`
+  (outside a Windows volume name)
+- `the object store <objects> cannot be mounted: it is not a directory`
+- `the object store <objects> borrows objects through info/alternates, which the Linux Lane does not mount`
 - `go is not on PATH`
 - `docker is not on PATH`
 - `docker info failed: <first non-empty output line>`
@@ -653,7 +663,8 @@ The cause is selected in this order:
   and removes its named container with `docker rm -f <name>`.
 - Exit `3`: the text after the last `roundfix-linux-lane: container: ` output
   line, or `the lane script exited 3 before go test` when none exists. Setup
-  causes name `missing tool <tool>`, `cannot prepare /tmp/work`,
+  causes name `missing tool <tool>`,
+  `cannot read the repository history at /repo-objects`, `cannot prepare /tmp/work`,
   `cannot unpack the candidate` or `cannot record the candidate`.
 - Exit `126`: `docker run exited 126: the image could not invoke the lane command`.
 - Exit `127`: `docker run exited 127: the image lacks the lane command`.
@@ -712,9 +723,14 @@ The revision defaults to `HEAD` and must resolve to a commit. The command
 archives that commit, without including uncommitted changes. By default it
 selects the changed Go packages as the queue gate does. `--all` selects
 `./...` without reading a default branch or merge base. It uses the same
-network-free, never-pull container with `--init`, named
-`roundfix-linux-lane-<pid>`, and writes only
-`<artifact dir>/delivery/linux-lane.log`.
+network-free, never-pull container with `--init` and the same read-only history
+mount `-v <objects>:/repo-objects:ro`, named `roundfix-linux-lane-<pid>`, and
+writes only `<artifact dir>/delivery/linux-lane.log`.
+
+A checkout that borrows objects through `info/alternates` skips until
+`git repack -a` and removal of `objects/info/alternates` make its store
+self-contained. Resolve the store with the Git command above to locate that
+file; the lane never copies borrowed objects or changes the host store.
 
 Exactly one outcome line goes to standard output, with empty standard error:
 

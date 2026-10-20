@@ -165,8 +165,8 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 			run := starts[3]
 			name := fmt.Sprintf("roundfix-linux-lane-widget-%d", os.Getpid())
 			// Deliberately independent of the production script constant.
-			script := `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
-			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
+			script := `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
+			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "-v", linuxLaneFixtureObjects(t, f.repo) + ":/repo-objects:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
 			want = append(want, tc.packages...)
 			if run.Tool != "docker" || !reflect.DeepEqual(run.Args, want) {
 				t.Fatalf("run args=%q\nwant=%q", run.Args, want)
@@ -598,6 +598,166 @@ func TestLinuxLaneOutcomeClassification(t *testing.T) {
 			summary, blocker := classifyLinuxLaneOutcome(tc.code, tc.capped, []byte(tc.output))
 			if summary != tc.summary || blocker != tc.blocker {
 				t.Fatalf("summary=%q blocker=%q want %q %q", summary, blocker, tc.summary, tc.blocker)
+			}
+		})
+	}
+}
+
+func linuxLaneFixtureObjects(t *testing.T, repo string) string {
+	t.Helper()
+	objects, err := filepath.EvalSymlinks(filepath.Join(repo, ".git", "objects"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return objects
+}
+
+func assertLinuxLaneHistoryMount(t *testing.T, f *linuxLaneFixture, objects string) {
+	t.Helper()
+	var runs int
+	for _, start := range f.starts(t) {
+		if start.Tool != "docker" || len(start.Args) == 0 || start.Args[0] != "run" {
+			continue
+		}
+		runs++
+		var mounts []string
+		for i, arg := range start.Args {
+			if arg == "-v" {
+				if i+1 == len(start.Args) {
+					t.Fatal("mount lacks value")
+				}
+				mounts = append(mounts, start.Args[i+1])
+			}
+		}
+		want := []string{f.cache + ":/go/pkg/mod:ro", objects + ":/repo-objects:ro"}
+		if !reflect.DeepEqual(mounts, want) {
+			t.Fatalf("mounts=%q want=%q", mounts, want)
+		}
+		worktree, err := filepath.EvalSymlinks(f.repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, mount := range mounts {
+			source := strings.TrimSuffix(strings.TrimSuffix(mount, ":ro"), ":/repo-objects")
+			source = strings.TrimSuffix(source, ":/go/pkg/mod")
+			if source == worktree {
+				t.Fatalf("working tree mounted: %s", mount)
+			}
+		}
+		scriptAt := -1
+		for i, arg := range start.Args {
+			if arg == "-ceu" {
+				scriptAt = i + 1
+				break
+			}
+		}
+		if scriptAt < 0 || scriptAt >= len(start.Args) {
+			t.Fatal("missing lane script")
+		}
+		script := start.Args[scriptAt]
+		for _, text := range []string{
+			`[ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"`,
+			`git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A`,
+		} {
+			if !strings.Contains(script, text) {
+				t.Fatalf("script missing %q: %s", text, script)
+			}
+		}
+	}
+	if runs != 1 {
+		t.Fatalf("docker runs=%d want=1", runs)
+	}
+}
+
+func TestLinuxLaneMountsTheRepositoryHistoryReadOnly(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	for _, mode := range []string{"linked item gate", "on demand all", "on demand changed"} {
+		t.Run(mode, func(t *testing.T) {
+			f := newLinuxLaneFixture(t, docker, goBinary, map[string]string{"go.mod": "module fixture\n\ngo 1.26.1\n", "pkg/code.go": "package pkg\n"})
+			f.commit(t, "pkg/new.go", "package pkg\n")
+			objects := linuxLaneFixtureObjects(t, f.repo)
+			if mode == "linked item gate" {
+				mainRepo := f.repo
+				linked := filepath.Join(t.TempDir(), "linked item")
+				gittest.Run(t, mainRepo, "worktree", "add", "--detach", linked, f.head)
+				t.Cleanup(func() { gittest.Run(t, mainRepo, "worktree", "remove", "--force", linked) })
+				f.repo = linked
+				result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
+				if err != nil || !result.Passed {
+					t.Fatalf("gate=%+v err=%v", result, err)
+				}
+			} else {
+				var args []string
+				if mode == "on demand all" {
+					args = []string{"--all"}
+				}
+				stdout, stderr, code := invokeDeliverLane(t, f, args...)
+				if code != 0 || stderr != "" {
+					t.Fatalf("stdout=%q stderr=%q exit=%d", stdout, stderr, code)
+				}
+			}
+			assertLinuxLaneHistoryMount(t, f, objects)
+		})
+	}
+}
+
+func TestLinuxLaneSkipsAnObjectStoreItCannotMount(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	for _, commentOnly := range []bool{false, true} {
+		name := "borrowed store"
+		if commentOnly {
+			name = "comment and blank line"
+		}
+		t.Run(name, func(t *testing.T) {
+			f := newLinuxLaneFixture(t, docker, goBinary, map[string]string{"go.mod": "module fixture\n\ngo 1.26.1\n", "pkg/code.go": "package pkg\n"})
+			f.commit(t, "pkg/new.go", "package pkg\n")
+			objects := linuxLaneFixtureObjects(t, f.repo)
+			other := filepath.Join(t.TempDir(), "other")
+			gittest.InitRepo(t, other, "-b", "main")
+			data := linuxLaneFixtureObjects(t, other) + "\n"
+			if commentOnly {
+				data = "# no borrowed stores\n\n"
+			}
+			mustWrite(t, filepath.Join(objects, "info", "alternates"), data)
+			result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
+			if err != nil || !result.Passed {
+				t.Fatalf("gate=%+v err=%v", result, err)
+			}
+			if commentOnly {
+				assertLinuxLaneHistoryMount(t, f, objects)
+			} else {
+				line := "roundfix: notice: Delivery Queue item widget: Linux Lane skipped: the object store " + objects + " borrows objects through info/alternates, which the Linux Lane does not mount\n"
+				if f.log.String() != line || mustRead(t, f.logPath()) != line {
+					t.Fatalf("console=%q log=%q want=%q", f.log.String(), mustRead(t, f.logPath()), line)
+				}
+				if starts := f.starts(t); len(starts) != 0 {
+					t.Fatalf("skip started tools: %+v", starts)
+				}
+			}
+		})
+	}
+	for _, kind := range []string{"colon", "file", "missing"} {
+		t.Run(kind, func(t *testing.T) {
+			objects := filepath.Join(t.TempDir(), "objects")
+			cause := "it is not a directory"
+			if kind == "colon" {
+				objects += ":store"
+				cause = "its path holds a colon"
+			}
+			if kind == "file" {
+				mustWrite(t, objects, "file")
+			}
+			mount, skip, err := linuxLaneHistoryMount(objects)
+			want := "the object store " + objects + " cannot be mounted: " + cause
+			if mount != "" || skip != want || err != nil {
+				t.Fatalf("mount=%q skip=%q err=%v want=%q", mount, skip, err, want)
+			}
+			if kind != "file" {
+				if _, err := os.Stat(objects); !os.IsNotExist(err) {
+					t.Fatalf("skip created source: %v", err)
+				}
 			}
 		})
 	}
