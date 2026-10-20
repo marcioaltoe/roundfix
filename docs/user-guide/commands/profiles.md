@@ -97,7 +97,9 @@ Agent prompt, and closes every Session on success or error. JSON schemas are
 the maintainer's login as `cursor_login_required`, before any session opens.
 Run `cursor-agent login` in a terminal yourself, then retry the command.
 
-A proof whose setup times out is retried once. A second timeout is classified
-`temporary`; rerun the command when load drops because the configured profile
-was not shown to be wrong.
+A proof whose setup times out is retried after 5 seconds and again after 10
+seconds. A proof timed out on 3 attempts is classified `temporary`; rerun the
+command when load drops because the configured profile was not shown to be
+wrong. If the machine needs more setup time, adjust
+`defaults.profile_proof_setup_timeout`.
 

@@ -290,6 +290,13 @@ _Avoid_: Adapter found, binary check, PATH readiness
 The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, observes matching effective state, and closes the Session successfully.
 _Avoid_: Model validity, catalog match, recommendation rank
 
+**Proof Setup Deadline**:
+The wall-clock bound on one attempt of an Exact Agent Selection Proof's
+disposable Agent Session setup, set by `defaults.profile_proof_setup_timeout`
+(default `30s`). An attempt that exceeds it is retried after 5 seconds and
+again after 10 seconds, and a third timeout is classified `temporary` ([ADR-0298](docs/adr/0298-a-timed-out-profile-proof-gets-a-third-attempt-and-its-setup-deadline-is-configurable.md)).
+_Avoid_: Run Budget, test deadline, arbitrary timeout
+
 **Runtime Catalogue**:
 What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands ([ADR-0147](docs/adr/0147-the-adapters-refusal-fires-first-and-the-catalogue-is-the-net.md)).
 _Avoid_: Model list, capability payload, advertised options

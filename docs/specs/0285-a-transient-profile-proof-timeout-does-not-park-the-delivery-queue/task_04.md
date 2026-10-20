@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0285-a-transient-profile-proof-timeout-does-not-park-the-delivery-queue
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -108,3 +108,31 @@ the Roundfix skill version and re-records the Behavior Surface Record.
 - `_prd.md` → Sources; Core Feature 4; Glossary
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; Glossary; Build Order 4
 - ADR-0298; ADR-0189; ADR-0256; ADR-0280
+
+## Result
+
+Implemented the documentation slice for the configurable Proof Setup Deadline
+and the third profile-proof attempt. The configuration guide, `profiles`
+command guide, canonical Roundfix `profiles` and `runtime` references, their
+synced skill copies, and `CONTEXT.md` now describe the `5s` and `10s` waits,
+the `temporary` classification after three timeouts, and
+`defaults.profile_proof_setup_timeout`. The glossary entry links ADR-0298.
+
+Implementation commands:
+
+- `rtk proxy make skills-sync` — exit 0; canonical and mirror skill copies
+  are byte-identical.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — exit 0; Roundfix skill `0.1.112` recorded.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — exit 0; Behavior Surface Record regenerated.
+
+Focused checks:
+
+- Repository search found no `is retried once` or `timed out twice` occurrence
+  in `docs/user-guide`, `.agents/skills/roundfix`, `skills/roundfix` or
+  `README.md`.
+- Repository search found the required key, backoff, three-attempt wording and
+  glossary entry in the declared surfaces; `git diff --check` exited 0.
+- The diff changes no text under the Roundfix skill's `### QA settlement`
+  section.
+
+The Daemon must run the authored Verification and decide Task settlement.

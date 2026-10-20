@@ -468,6 +468,11 @@ context; when its deadline expires, Roundfix stops the acpx command and closes
 the disposable Session. The cleanup deadline, the Fallback Chain probe after
 Run creation and Run sessions keep their existing deadlines.
 
+A timed-out attempt is retried after 5 seconds and again after 10 seconds. If
+all three attempts time out, the proof is classified `temporary`; adjust
+`defaults.profile_proof_setup_timeout` when a slow machine needs more setup
+time.
+
 ### OpenAI and Anthropic subscription rule
 
 OpenAI and Anthropic models run only through the codex and claude
