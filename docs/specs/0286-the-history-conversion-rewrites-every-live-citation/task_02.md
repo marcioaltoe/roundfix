@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0286-the-history-conversion-rewrites-every-live-citation
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -96,3 +96,50 @@ temporary repositories.
 - `_prd.md` → Sources; Goals; Core Feature 2; Success Metric 2; Acceptance evidence
 - `_techspec.md` → API Contract 3; Invariant 3; Current behavior; Testing Approach; Build Order 2
 - ADR-0299; ADR-0282; ADR-0259; ADR-0285
+
+## Result
+
+Implemented the Task 02 slice in `internal/spec/history_entries.go` and added
+`internal/spec/history_adr_identity_test.go`.
+
+- Identifier criterion: `historyADRIdentifier` keeps `ADR-<digits>` for
+  numbered files and uses the stem for date-named and other named files.
+  The planner and predecessor detection share it. The date-named regression
+  asserts the exact required lineage line and verifies that an existing
+  stem reference in prose or front matter prevents a duplicate line.
+- Supersession-date criterion: `historyADRSupersessionDate` reads the retired
+  ADR's YAML `updated_at`, converts timestamps to UTC, then falls back to the
+  newest commit on `HEAD` that changed the file, then `HEAD` itself when no
+  file commit exists. Invalid, null and structured metadata fall through.
+  Focused cases cover timestamp day rollover, YAML and quoted dates, a YAML
+  timestamp, missing and invalid metadata, and an untracked ADR. The existing
+  `TestHistoryADRPlanWritesTheLineageASuccessorLacks` remains unchanged and
+  passed the focused check.
+- Numeric-selection criterion: bare and prefixed years refuse the retired
+  ADR with the existing reason when its only candidate is date-named.
+  Prefixed numbered identifiers still select numbered ADRs. Exact stems,
+  file names and paths still resolve date-named and other named ADRs.
+
+Focused checks:
+
+- Before implementation,
+  `rtk proxy go test ./internal/spec -run '^TestHistoryADR(LineageNamesADateNamedADRByItsFileName|LineageDatesTheSupersession|NumericReferencesSelectOnlyNumberedADRs)$' -count=1`
+  exited 1 and reproduced the wrong identifier/date, duplicate lineage,
+  year-only selection and rejection of nonnumeric names. While reviewing the
+  output, corrected the new date test's locator expectation to use the commit
+  that last changed the file; locator behavior itself is unchanged.
+- After implementation, the same focused regression selection exited 0.
+- `rtk proxy go test ./internal/spec -run '^TestHistoryADR(Lineage|Numeric|Plan|Successor)|^TestHistoryPlanRemovesTheFluxusShapeWithoutALineageLine$' -count=1 -v`
+  passed after the final code/test edit, including all three new tests and
+  the existing lineage/refusal/successor-form tests. Output was captured in
+  `/tmp/roundfix-task02-focused.log`.
+- `GOOS=windows rtk proxy go test -c -o /tmp/roundfix-task02-spec.test.exe ./internal/spec`
+  exited 0, compiling the package's tests for Windows; the resulting binary
+  was not executed. New top-level tests begin with `t.Parallel()`, reuse the
+  isolated Git test runner with cancellation/reaping cleanup, and register
+  cleanup for the dated-commit children they start directly.
+
+The execution sandbox rejected the symlinked writable root; focused commands
+used the approved escalated execution route. No Task 01 implementation was
+changed. Task status is left to the Daemon. Declared Task Verification and
+repository Verification were not run and remain Daemon-owned.
