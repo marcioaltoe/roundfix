@@ -1,4 +1,0 @@
-QAReportEligibility: accepted partial (public CLI exit 0).
-17 rows: 11 pass, 6 environment-blocked. No pending/fail/finding/declared/skipped rows.
-All linked evidence paths resolve. No tracked worktree delta.
-QA files scanned: 32; secret matches or binary artifacts: false

@@ -1,2 +1,0 @@
-command: go build -buildvcs=false -o <scratch>/base/bin/roundfix ./cmd/roundfix
-exit: 0
