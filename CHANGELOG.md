@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.99.0] - 2026-10-20
+
+### The archive rewrites relative citations from any worktree
+
+- **One root spelling.** `roundfix archive` and `roundfix cancel` read every path relative to the checkout they run in, so they write the same record and relink the same files from the main checkout, a linked worktree such as a Delivery Queue item worktree, a subdirectory of either, or a path that crosses a symbolic link. `archive --qa-override` from an item worktree no longer fails with `rebase citation …: Rel: can't make … relative to …` when the PRD links outside its folder.
+- **Relinks that no longer go missing.** An archive run through a symbolic-link spelling now relinks the Live Documents that cite the Spec instead of finishing with exit `0` and leaving them broken; `cancel` through such a spelling no longer fails to list its citation targets.
+- **Refusal names the path.** A path that still lies outside the repository after both spellings are compared is refused with the path named, where it used to be rewritten as `../…` or passed on as an absolute path. A path lexically inside the repository keeps the bytes it has today (ADR-0268, ADR-0272).
+
 ## [0.98.0] - 2026-10-20
 
 ### Reports that count what they say
