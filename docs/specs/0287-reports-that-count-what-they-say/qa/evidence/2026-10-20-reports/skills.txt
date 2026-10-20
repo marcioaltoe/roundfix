@@ -1,6 +1,0 @@
-$ go test -count=1 ./skills
-exit: 0
-stdout:
-ok  	roundfix/skills	1.156s
-
-stderr:

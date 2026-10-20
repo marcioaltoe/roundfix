@@ -1,9 +1,0 @@
-$ go test -count=1 -v -run ^(TestStorageReportMeasuresTheArtifactRootARunWroteTo)$ ./internal/store
-exit: 1
-stdout:
-FAIL	roundfix/internal/store [build failed]
-FAIL
-
-stderr:
-# roundfix/internal/store [roundfix/internal/store.test]
-internal/store/journal.go:11:2: "roundfix/internal/config" imported and not used

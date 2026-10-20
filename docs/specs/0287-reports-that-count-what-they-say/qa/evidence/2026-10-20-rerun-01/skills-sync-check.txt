@@ -1,7 +1,0 @@
-$ make skills-sync-check
-exit: 0
-stdout:
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.174s
-
-stderr:

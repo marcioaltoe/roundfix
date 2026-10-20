@@ -1,6 +1,0 @@
-$ ./bin/roundfix deliver lane --all
-exit: 0
-stdout:
-roundfix: Linux Lane passed 43 package(s) on golang:1.26.1
-
-stderr:

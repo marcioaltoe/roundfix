@@ -1,3 +1,0 @@
-package store
-import("context";"os";"path/filepath";"testing"; "roundfix/internal/config")
-func TestQA0287Seed(t *testing.T){t.Parallel();home:=os.Getenv("QA_HOME");repo:=os.Getenv("QA_REPO");s,e:=Open(context.Background(),home);if e!=nil{t.Fatal(e)};r,e:=s.CreateRun(context.Background(),CreateRunRequest{Kind:KindImplement,SpecSlug:"0001-demo",GitRoot:repo,LocalBranch:"test/qa",HeadSHA:"abc123"});if e!=nil{t.Fatal(e)};if e=s.Close();e!=nil{t.Fatal(e)};root,e:=config.ResolveArtifactDirectory("",repo,home);if e!=nil{t.Fatal(e)};p:=filepath.Join(root,"runs",r.ID);if e=os.MkdirAll(p,0755);e!=nil{t.Fatal(e)};if e=os.WriteFile(filepath.Join(p,"agent.log"),[]byte("default root artifact"),0644);e!=nil{t.Fatal(e)}}
