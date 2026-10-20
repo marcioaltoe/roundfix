@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.100.0] - 2026-10-20
+
+### GC sanitize reaches the default Artifact Roots
+
+- **Sanitation classifies the root each Run wrote to.** `roundfix gc sanitize` no longer lists one empty Artifact Root classified `unsafe` when Implement Runs recorded no Artifact Directory. Each Run's recorded value resolves to the root it wrote to: a blank value to the repository key's default root `~/.roundfix/artifacts/<repository id>` (or the recorded checkout's default when only that one holds the Run), a relative value under the Run's Git root, an absolute value as recorded. The existing proofs then run on the resolved root, in the same order, and only `runs/<run-id>` directories of `active` or `orphaned` roots are candidates (ADR-0301).
+- **One resolver for three commands.** `roundfix storage report`, `roundfix gc sanitize` and Run Retention in `roundfix gc` call the same resolver in the Run Database package, so they agree on where a Run's artifacts live. The resolver reads only; it never creates, writes or removes anything.
+- **The dry run says where each root came from.** Each resolved root lists the distinct recorded values that resolved to it with their Run counts, its classification and evidence, and its own reclaimable directory and byte counts. With `--apply` the labels become `Directories removed here` and `Artifact bytes reclaimed here`.
+- **Absence is proven again before removal.** A directory reclaimable only because its Run is absent from the Run Database is checked again immediately before `--apply` removes it; a Run that appeared meanwhile keeps its directory and the report names it. A read error stops the command before that removal.
+
 ## [0.99.0] - 2026-10-20
 
 ### The archive rewrites relative citations from any worktree
