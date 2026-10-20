@@ -1,4 +1,0 @@
-Report structure: valid; 18 rows, 13 pass, 1 fail, 4 environment blocks; all links resolve.
-Evidence: UTF-8 text, no NUL; local Secret Patterns: no matches.
-Public qa-report accept exit: 1
-roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"

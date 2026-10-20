@@ -1,3 +1,0 @@
-Non-QA worktree delta before offline archive plan: none.
-Non-QA worktree delta after offline archive plan: none.
-Task and Spec files remain present; head unchanged.

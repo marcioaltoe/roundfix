@@ -1,5 +1,0 @@
-Command: ./bin/roundfix deliver lane --all
-stdout:
-roundfix: notice: Linux Lane skipped: docker is not on PATH
-stderr:
-exit: 3

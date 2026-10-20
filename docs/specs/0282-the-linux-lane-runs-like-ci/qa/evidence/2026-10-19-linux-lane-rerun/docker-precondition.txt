@@ -1,4 +1,0 @@
-docker info exit: 0
-29.6.1
-
-image inspect exit: 0

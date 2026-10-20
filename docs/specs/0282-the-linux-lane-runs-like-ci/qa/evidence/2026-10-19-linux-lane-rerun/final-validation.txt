@@ -1,6 +1,0 @@
-Report: 18 rows; 14 pass; 4 environment-blocked; 0 failed, finding-blocked, declared-blocked, skipped or pending.
-All 18 typed input declarations and relative evidence links valid.
-All QA files are UTF-8 text without NUL; repository Secret Patterns: no matches.
-./bin/roundfix qa-report accept: exit 0, empty stdout/stderr.
-git diff --check: exit 0.
-Only Spec qa/ paths differ; no Task statuses, source or workflow files changed.
