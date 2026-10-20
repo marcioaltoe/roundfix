@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.98.0] - 2026-10-20
+
+### Reports that count what they say
+
+- **The Linux Lane counts packages, not patterns.** The lane script reports `roundfix-linux-lane: packages: <n>` with the number of packages `go list` selected in the container, and the pass line uses it: `Linux Lane passed <n> package(s) on <image>`. `roundfix deliver lane --all` no longer prints `1 package(s)` for `./...`. Without a count line, exit `0` stays a pass and says `the lane script reported no package count`. The queue gate and `roundfix deliver lane` share the same line.
+- **The storage report measures each Run where it wrote.** `roundfix storage report` measures a Run that recorded no Artifact Root under its repository's default root, `~/.roundfix/artifacts/<repository id>`, a relative root under the Run's Git root, and an absolute root as recorded. Older Runs use the checkout's default root when it holds the Run's directory. The report stays read-only and creates no directory; a missing root is still listed as `missing`.
+- **An Archive Record summary carries what its colon introduces.** A summary paragraph that ends with a colon carries the list or paragraph that follows it, on the same line. Existing records are unchanged.
+
 ## [0.97.0] - 2026-10-20
 
 ### The history conversion rewrites every live citation
