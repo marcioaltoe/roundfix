@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0286-the-history-conversion-rewrites-every-live-citation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -111,3 +111,57 @@ Transcript 1, which needs Tasks 01 and 02 as well.
 - `_prd.md` → Sources; Goals; Core Feature 3; Success Metric 3; Acceptance evidence
 - `_techspec.md` → API Contract 4; API Contract 5; Surface Transcript 1; Invariants 4-5; Current behavior; Testing Approach; Build Order 3
 - ADR-0299; ADR-0278; ADR-0282; ADR-0295; ADR-0259; ADR-0285; ADR-0184
+
+## Result
+
+Implemented this Task's pending-target exemption and unambiguous file-name
+resolution. The initial consumers resolved only the missing link's exact path
+and had no pending `creates:` exemption.
+
+- `PendingTaskCreates` reads direct Spec directories with active PRDs and uses
+  the existing Task parser. Non-completed Tasks contribute only `creates:`
+  paths; malformed Tasks contribute nothing. Read errors propagate.
+- `RemovedHistoryPaths` reads HEAD's tree and deletion history through Git,
+  with `--no-renames` and only the findings, backlog and ADR history families.
+  It excludes present working-tree paths, sorts and deduplicates results, and
+  returns no paths outside Git or without HEAD.
+- `PlanLiveLinks` keeps its signature and CLI callers. It exempts pending
+  targets, then falls back from exact-path resolution to one distinct
+  same-named candidate from planned removals and removed history. Duplicate
+  occurrences of one candidate do not create ambiguity. Citation targets keep
+  the original link path; the rewrite names the selected history file.
+- The missing-link branch of `SC-HISTORY-RETAINED` shares the exemption and
+  file-name lookup. Existing finding wording and Archive Record resolution
+  remain unchanged; resolved missing links still produce findings whose fix
+  line names the history file's locator.
+
+Acceptance evidence from focused checks:
+
+| Acceptance criterion | Evidence |
+| --- | --- |
+| A pending target survives conversion and is not reported | `TestLiveLinksLeaveAPendingTaskCreatesTarget` exercises pending/in-progress Tasks, completed Tasks and inactive PRDs. `TestHistoryRetainedSkipsAPendingTaskCreatesTarget` checks pending/completed Tasks both inside and outside Git. `TestPendingTaskCreatesUsesOnlyActiveSpecsAndValidCreates` covers malformed Tasks, inactive Specs and exclusion of interface paths. |
+| One matching removed file resolves; zero or several preserve the original fallback | `TestLiveLinksResolveABrokenLinkByTheRemovedFileName` checks planned removals, earlier committed deletions, duplicate candidate paths, ambiguous names and unknown names, including applied bytes and original citation targets. `TestRemovedHistoryPathsListsWhatHEADHeldAndTheTreeLacks` checks working-tree deletion, committed deletion, rename, present/outside-family exclusions, outside Git and unborn HEAD. `TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames` checks the retained finding and exact fix line. |
+| Surface Transcript 1 is reproduced | `TestHistorySanitizeRewritesEveryCitationTranscript` runs CLI dispatch in an isolated temporary repository with the specified commit date and annotated tag. It asserts every stdout line in order, empty stderr and exit 0; only byte counts and the fixture commit vary. |
+
+Focused commands and observed outcomes:
+
+- `rtk proxy go test ./internal/spec ./internal/speccheck ./internal/cli -run 'Test(PendingTaskCreatesUsesOnly|RemovedHistoryPathsLists|LiveLinks|HistoryRetained|HistorySanitizeRewritesEveryCitationTranscript)' -count=1`
+  — exit 0 for all three packages, including existing neighboring live-link
+  and retained-history regressions.
+- `GOOS=windows go test -c -buildvcs=false -o /private/tmp/roundfix-task03-spec.test.exe ./internal/spec`
+  — exit 0.
+- `GOOS=windows go test -c -buildvcs=false -o /private/tmp/roundfix-task03-speccheck.test.exe ./internal/speccheck`
+  — exit 0.
+- `GOOS=windows go test -c -buildvcs=false -o /private/tmp/roundfix-task03-cli.test.exe ./internal/cli`
+  — exit 0.
+- `rtk proxy git diff --check` — exit 0.
+
+All new top-level tests begin with `t.Parallel()`. Newly authored child-process
+helpers register cancellation and reaping in `t.Cleanup`; subprocess fixtures
+use private homes. The Run's symlinked worktree required execution through its
+resolved checkout with sandbox escalation; no product blocker was observed.
+
+Task status remains Daemon-owned. Declared Verification and repository gates
+were not run; the Daemon runs them after this handoff. No Task Graph or other
+Task file was edited, and no commit, push or pull request was made. The new
+removed-citation finding from API Contract 6 remains outside this Task's slice.

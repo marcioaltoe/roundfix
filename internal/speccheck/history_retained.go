@@ -111,6 +111,14 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 		return err
 	}
 	archiveRel = filepath.ToSlash(archiveRel)
+	pending, err := spec.PendingTaskCreates(specsRoot)
+	if err != nil {
+		return err
+	}
+	candidates, err := spec.RemovedHistoryPaths(ctx, root)
+	if err != nil {
+		return err
+	}
 	historyRoot := "docs/history"
 	report := func(path string, line int, summary, fix string) {
 		result.Findings = append(result.Findings, Finding{
@@ -192,7 +200,7 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 				return nil
 			}
 			for _, link := range spec.MissingRelativeLinks(root, path, content) {
-				if link.Self && !isRecord {
+				if pending[link.Target] || (link.Self && !isRecord) {
 					continue
 				}
 				fix := "Restore " + link.Target + " or replace its link; Git Locator resolution is skipped outside Git."
@@ -205,6 +213,14 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 					}
 					if err != nil {
 						return err
+					}
+					if !isRecord && l.Commit == "" {
+						if candidate, ok := spec.ResolveMissingLinkByName(link.Target, candidates); ok {
+							l, err = locate(candidate, "history-full", "")
+							if err != nil {
+								return err
+							}
+						}
 					}
 					fix = "Replace the link with " + l.Text(false) + "."
 				}

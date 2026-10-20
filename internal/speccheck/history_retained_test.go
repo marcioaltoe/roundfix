@@ -6,6 +6,8 @@ package speccheck
 // Boundary OUT: public Check findings, receipt proofs, and skips.
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -282,5 +284,84 @@ func TestHistoryRetainedAcceptsALocatorTheFetchedDefaultReachesInACIClone(t *tes
 	got := retainedFindings(retainedCheck(t, root))
 	if len(got) != 1 || !strings.Contains(got[0].Summary, "invalid Git Locator "+path+"@"+source) {
 		t.Fatalf("missing unreachable locator finding: %+v", got)
+	}
+}
+
+func pendingRetainedTestHome(t *testing.T) bool {
+	t.Helper()
+	const key = "ROUNDFIX_PENDING_RETAINED_TEST"
+	if os.Getenv(key) == t.Name() {
+		return true
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^"+regexp.QuoteMeta(t.Name())+"$", "-test.count=1")
+	for _, entry := range gittest.IsolatedEnv() {
+		if !strings.HasPrefix(entry, "HOME=") && !strings.HasPrefix(entry, key+"=") {
+			cmd.Env = append(cmd.Env, entry)
+		}
+	}
+	cmd.Env = append(cmd.Env, "HOME="+t.TempDir(), key+"="+t.Name())
+	var output bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &output, &output
+	waited := false
+	t.Cleanup(func() {
+		cancel()
+		if cmd.Process != nil && !waited {
+			_ = cmd.Wait()
+		}
+	})
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	err := cmd.Wait()
+	waited = true
+	if err != nil {
+		t.Fatalf("isolated citation test: %v\n%s", err, output.String())
+	}
+	return false
+}
+
+func TestHistoryRetainedSkipsAPendingTaskCreatesTarget(t *testing.T) {
+	t.Parallel()
+	if !pendingRetainedTestHome(t) {
+		return
+	}
+	for _, git := range []bool{true, false} {
+		root := retainedFixture(t, git)
+		writeReceiptFixture(t, root, "docs/specs/demo/_prd.md", "---\nstatus: active\n---\n[m](references/future.md)\n")
+		for _, status := range []string{"pending", "completed"} {
+			writeReceiptFixture(t, root, "docs/specs/demo/task_01.md", "---\nstatus: "+status+"\ntype: docs\n---\n## Context\n- creates: docs/specs/demo/references/future.md\n")
+			if git {
+				retainedCommit(t, root)
+			}
+			findings := retainedFindings(retainedCheck(t, root))
+			want := 0
+			if status == "completed" {
+				want = 1
+			}
+			if len(findings) != want {
+				t.Fatalf("git=%v status=%s findings=%+v", git, status, findings)
+			}
+		}
+	}
+}
+
+func TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames(t *testing.T) {
+	t.Parallel()
+	if !pendingRetainedTestHome(t) {
+		return
+	}
+	root := retainedFixture(t, true)
+	history := "docs/history/findings/named.md"
+	writeReceiptFixture(t, root, history, "# Retired\n")
+	writeReceiptFixture(t, root, "docs/specs/demo/references/note.md", "[f](../findings/named.md)\n")
+	revision := retainedCommit(t, root)
+	gittest.Run(t, root, "tag", "-a", "history-full", "-m", "history")
+	gittest.Run(t, root, "rm", history)
+	retainedCommit(t, root)
+	findings := retainedFindings(retainedCheck(t, root))
+	want := "Replace the link with `" + history + "@" + revision + "`."
+	if len(findings) != 1 || findings[0].Fix != want || !strings.Contains(findings[0].Summary, "links to a missing file or itself: docs/specs/demo/findings/named.md") {
+		t.Fatalf("findings=%+v want fix=%s", findings, want)
 	}
 }
