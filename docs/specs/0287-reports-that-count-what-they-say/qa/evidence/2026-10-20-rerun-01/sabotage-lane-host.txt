@@ -1,0 +1,37 @@
+$ go test -count=1 -v -run ^(TestLinuxLaneReportsThePackagesTheContainerSelected)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected
+=== PAUSE TestLinuxLaneReportsThePackagesTheContainerSelected
+=== CONT  TestLinuxLaneReportsThePackagesTheContainerSelected
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/all_packages
+    deliver_linux_lane_test.go:795: console="roundfix: Delivery Queue item widget: Linux Lane passed 1 package(s) on golang:1.26.1\n" want="roundfix: Delivery Queue item widget: Linux Lane passed 43 package(s) on golang:1.26.1\n"
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/no_buildable_packages
+    deliver_linux_lane_test.go:795: console="roundfix: Delivery Queue item widget: Linux Lane passed 1 package(s) on golang:1.26.1\n" want="roundfix: Delivery Queue item widget: Linux Lane passed 0 package(s) on golang:1.26.1\n"
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/no_count
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/later_test_marker
+    deliver_linux_lane_test.go:795: console="roundfix: Delivery Queue item widget: Linux Lane passed 1 package(s) on golang:1.26.1\n" want="roundfix: Delivery Queue item widget: Linux Lane passed 43 package(s) on golang:1.26.1\n"
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/signed_count_ignored
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/spaces_ignored
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/embedded_marker_ignored
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/first_valid_decimal_line
+    deliver_linux_lane_test.go:795: console="roundfix: Delivery Queue item widget: Linux Lane passed 1 package(s) on golang:1.26.1\n" want="roundfix: Delivery Queue item widget: Linux Lane passed 43 package(s) on golang:1.26.1\n"
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/overflow_ignores_later_count
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/script_reports_before_testing
+--- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected (1.96s)
+    --- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected/all_packages (0.57s)
+    --- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected/no_buildable_packages (0.15s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/no_count (0.14s)
+    --- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected/later_test_marker (0.15s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/signed_count_ignored (0.15s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/spaces_ignored (0.14s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/embedded_marker_ignored (0.14s)
+    --- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected/first_valid_decimal_line (0.14s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/overflow_ignores_later_count (0.14s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/script_reports_before_testing (0.00s)
+FAIL
+suiteguard: guard cost: measured 2615 paths; fingerprint took 76.40625ms before and 70.073084ms after
+FAIL	roundfix/internal/cli	2.524s
+FAIL
+
+stderr:

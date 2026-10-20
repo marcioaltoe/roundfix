@@ -1,0 +1,5 @@
+$ go build -o /tmp/qa0287-wf5ayjp7/standins/docker /tmp/qa0287-wf5ayjp7/standins/main.go
+exit: 0
+stdout:
+
+stderr:

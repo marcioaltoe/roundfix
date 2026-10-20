@@ -1,0 +1,10 @@
+--- /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0287-reports-that-count-what-they-say-a8d213f1b00c2257-60445d78-5b78bba0/run_20261020T160038Z_7b9ef2eb252c008e/internal/spec/archive_record_test.go	2026-10-20 13:00:38
++++ /private/tmp/qa0287-rerun-soz1dza1/observed-cases/internal/spec/archive_record_test.go	2026-10-20 13:14:29
+@@ -330,6 +330,7 @@
+ 				t.Fatal(err)
+ 			}
+ 			want := strings.TrimSpace(intro + " " + tc.want)
++			t.Logf("observed summary=%q", record.Outcome)
+ 			if record.Outcome != want {
+ 				t.Fatalf("summary = %q, want %q", record.Outcome, want)
+ 			}

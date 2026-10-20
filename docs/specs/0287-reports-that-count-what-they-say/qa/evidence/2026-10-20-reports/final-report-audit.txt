@@ -1,0 +1,1 @@
+18 terminal rows; 13 pass; 3 environment blocks; 2 declared blocks; 0 finding blocks/failures/skips. Every row has typed inputs. Single closed frontmatter; seeded auditor identity and mechanical audit/skips preserved. Evidence links resolve; all evidence is text. No evidence_snapshots written. Outcome is one paragraph and does not end in a colon.

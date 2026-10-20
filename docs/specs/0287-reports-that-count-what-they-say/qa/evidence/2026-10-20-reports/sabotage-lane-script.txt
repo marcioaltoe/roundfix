@@ -1,0 +1,34 @@
+$ go test -count=1 -v -run ^(TestLinuxLaneReportsThePackagesTheContainerSelected)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected
+=== PAUSE TestLinuxLaneReportsThePackagesTheContainerSelected
+=== CONT  TestLinuxLaneReportsThePackagesTheContainerSelected
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/all_packages
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/no_buildable_packages
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/no_count
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/later_test_marker
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/signed_count_ignored
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/spaces_ignored
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/embedded_marker_ignored
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/first_valid_decimal_line
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/overflow_ignores_later_count
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/script_reports_before_testing
+    deliver_linux_lane_test.go:814: script must report count before go test: fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && exec go test -count=1 "$@"
+--- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected (3.67s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/all_packages (0.72s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/no_buildable_packages (0.25s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/no_count (0.25s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/later_test_marker (0.27s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/signed_count_ignored (0.27s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/spaces_ignored (0.28s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/embedded_marker_ignored (0.31s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/first_valid_decimal_line (0.36s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/overflow_ignores_later_count (0.36s)
+    --- FAIL: TestLinuxLaneReportsThePackagesTheContainerSelected/script_reports_before_testing (0.00s)
+FAIL
+suiteguard: guard cost: measured 2615 paths; fingerprint took 380.65ms before and 163.634667ms after
+FAIL	roundfix/internal/cli	4.637s
+FAIL
+
+stderr:

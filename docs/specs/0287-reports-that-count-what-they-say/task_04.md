@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0287-reports-that-count-what-they-say
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

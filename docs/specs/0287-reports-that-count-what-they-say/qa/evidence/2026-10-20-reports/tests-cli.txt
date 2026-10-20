@@ -1,0 +1,92 @@
+$ go test -count=1 -v -run ^(TestLinuxLaneReportsThePackagesTheContainerSelected|TestDeliverLanePackageCountTranscript|TestDeliverLaneNoPackageCountTranscript|TestLinuxLaneRunsTheChangedPackagesInAContainer|TestDeliverLanePassedTranscript|TestDeliverLaneSelectsPackagesAndImage|TestLinuxLaneRunsTheConfiguredImage)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestDeliverLanePassedTranscript
+=== PAUSE TestDeliverLanePassedTranscript
+=== RUN   TestDeliverLaneSelectsPackagesAndImage
+=== PAUSE TestDeliverLaneSelectsPackagesAndImage
+=== RUN   TestDeliverLanePackageCountTranscript
+=== PAUSE TestDeliverLanePackageCountTranscript
+=== RUN   TestDeliverLaneNoPackageCountTranscript
+=== PAUSE TestDeliverLaneNoPackageCountTranscript
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== PAUSE TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== RUN   TestLinuxLaneRunsTheConfiguredImage
+=== PAUSE TestLinuxLaneRunsTheConfiguredImage
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected
+=== PAUSE TestLinuxLaneReportsThePackagesTheContainerSelected
+=== CONT  TestDeliverLanePassedTranscript
+=== CONT  TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== CONT  TestLinuxLaneReportsThePackagesTheContainerSelected
+=== CONT  TestLinuxLaneRunsTheConfiguredImage
+=== CONT  TestDeliverLanePackageCountTranscript
+=== CONT  TestDeliverLaneSelectsPackagesAndImage
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/help
+=== CONT  TestDeliverLaneNoPackageCountTranscript
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/all_packages
+=== RUN   TestLinuxLaneRunsTheConfiguredImage/absent=false
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/all_without_default_branch_and_revision_archive
+--- PASS: TestDeliverLanePassedTranscript (1.18s)
+--- PASS: TestDeliverLaneNoPackageCountTranscript (1.18s)
+--- PASS: TestDeliverLanePackageCountTranscript (1.19s)
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/no_buildable_packages
+=== RUN   TestLinuxLaneRunsTheConfiguredImage/absent=true
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/no_count
+--- PASS: TestLinuxLaneRunsTheConfiguredImage (1.58s)
+    --- PASS: TestLinuxLaneRunsTheConfiguredImage/absent=false (0.71s)
+    --- PASS: TestLinuxLaneRunsTheConfiguredImage/absent=true (0.24s)
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/module
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/later_test_marker
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/changed_packages_and_checkout_config_over_user_config
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/signed_count_ignored
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sum
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/spaces_ignored
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/embedded_marker_ignored
+--- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer (2.60s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file (0.80s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata (0.31s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/module (0.31s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sum (0.31s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages (0.28s)
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/first_valid_decimal_line
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/extra_argument
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/overflow_ignores_later_count
+=== RUN   TestLinuxLaneReportsThePackagesTheContainerSelected/script_reports_before_testing
+--- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected (3.13s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/all_packages (0.67s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/no_buildable_packages (0.24s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/no_count (0.21s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/later_test_marker (0.24s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/signed_count_ignored (0.25s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/spaces_ignored (0.22s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/embedded_marker_ignored (0.22s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/first_valid_decimal_line (0.23s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/overflow_ignores_later_count (0.22s)
+    --- PASS: TestLinuxLaneReportsThePackagesTheContainerSelected/script_reports_before_testing (0.00s)
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/not_a_commit
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/missing_revision
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/unknown_flag
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/invalid_config
+=== RUN   TestDeliverLaneSelectsPackagesAndImage/unknown_default
+--- PASS: TestDeliverLaneSelectsPackagesAndImage (5.21s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/help (0.75s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/all_without_default_branch_and_revision_archive (1.02s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/changed_packages_and_checkout_config_over_user_config (0.98s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/extra_argument (0.43s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/not_a_commit (0.41s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/missing_revision (0.38s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/unknown_flag (0.36s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/invalid_config (0.41s)
+    --- PASS: TestDeliverLaneSelectsPackagesAndImage/unknown_default (0.47s)
+PASS
+suiteguard: guard cost: measured 2621 paths; fingerprint took 249.358125ms before and 111.128541ms after
+suiteguard: repository boundary violated:
+suiteguard: created: docs/specs/0287-reports-that-count-what-they-say/qa/evidence/2026-10-20-reports/docker-image.txt
+suiteguard: created: docs/specs/0287-reports-that-count-what-they-say/qa/evidence/2026-10-20-reports/docker-info.txt
+FAIL	roundfix/internal/cli	6.541s
+FAIL
+
+stderr:

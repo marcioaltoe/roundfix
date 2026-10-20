@@ -1,0 +1,3 @@
+$ docker image inspect golang:1.26
+exit: 1
+Required image is not cached; no pull or image build attempted.

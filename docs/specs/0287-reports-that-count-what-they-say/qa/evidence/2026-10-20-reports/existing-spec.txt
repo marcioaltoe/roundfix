@@ -1,0 +1,6 @@
+$ go test -count=1 -run Archive|Cancel|Legacy|History ./internal/spec
+exit: 0
+stdout:
+ok  	roundfix/internal/spec	9.927s
+
+stderr:

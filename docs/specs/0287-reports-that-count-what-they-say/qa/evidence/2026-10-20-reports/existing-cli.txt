@@ -1,0 +1,6 @@
+$ go test -count=1 -run Archive|Cancel|History ./internal/cli
+exit: 0
+stdout:
+ok  	roundfix/internal/cli	33.032s
+
+stderr:

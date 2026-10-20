@@ -1,0 +1,21 @@
+import os,subprocess,json,hashlib,tarfile,io,shutil,re
+from pathlib import Path
+S=json.loads(Path('/private/tmp/qa0287-rerun-state.json').read_text()); R=Path(S['repo']); W=Path(S['work']); E=Path(S['evidence']); P=Path(S['report'])
+def row(i,status,detail):
+ s=P.read_text();start=s.index('## Results\n');end=s.index('\n## ',start+4)
+ part=s[start:end];part=re.sub(r'\| '+i+r' \| [^|]* \|','| '+i+' | '+status+' |',part,count=1)
+ s=s[:start]+part+s[end:]
+ pat=r'(### '+i+r'\n\n```yaml\n.*?```\n\n).*?(?=\n### |\n## |\Z)'
+ s=re.sub(pat,lambda m:m[1]+detail+'\n',s,count=1,flags=re.S);P.write_text(s)
+def run(name,args,cwd=R,env=None,expected=0):
+ e=os.environ.copy();e.update(GOPROXY='off',GOSUMDB='off');e.update(env or {})
+ p=subprocess.run(args,cwd=cwd,env=e,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ text='$ '+' '.join(map(str,args))+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr
+ (E/(name+'.txt')).write_text(text); print(name+': exit '+str(p.returncode),flush=True)
+ if expected is not None and p.returncode!=expected: raise RuntimeError(name+' unexpected exit; see evidence')
+ return p
+
+def copy(name):
+ d=W/name;d.mkdir(); data=subprocess.check_output(['git','archive',S['head']],cwd=R)
+ with tarfile.open(fileobj=io.BytesIO(data)) as t:t.extractall(d,filter='data')
+ return d

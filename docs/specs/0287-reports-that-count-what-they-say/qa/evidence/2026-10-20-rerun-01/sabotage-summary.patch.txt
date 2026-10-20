@@ -1,0 +1,11 @@
+--- /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0287-reports-that-count-what-they-say-a8d213f1b00c2257-60445d78-5b78bba0/run_20261020T160038Z_7b9ef2eb252c008e/internal/spec/archive_record.go	2026-10-20 13:00:38
++++ /private/tmp/qa0287-rerun-soz1dza1/sabotage-summary/internal/spec/archive_record.go	2026-10-20 13:14:18
+@@ -517,7 +517,7 @@
+ 		paragraph = append(paragraph, line)
+ 	}
+ 	summary := strings.Join(strings.Fields(strings.Join(paragraph, " ")), " ")
+-	if !strings.HasSuffix(summary, ":") {
++	if len(summary) >= 0 {
+ 		return summary
+ 	}
+ 	for next < len(lines) && strings.TrimSpace(lines[next]) == "" {

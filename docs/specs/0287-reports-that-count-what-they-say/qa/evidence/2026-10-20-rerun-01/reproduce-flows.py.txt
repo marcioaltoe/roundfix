@@ -1,0 +1,43 @@
+exec(open('/private/tmp/qa0287-rerun-lib.py').read())
+binary=R/'bin/roundfix'
+def fixture(name):
+ d=W/name;d.mkdir();h=W/(name+'-home');h.mkdir();(d/'bin').mkdir();shutil.copy2(binary,d/'bin/roundfix');return d,h
+def git(d,*args):
+ p=subprocess.run(['git',*args],cwd=d,capture_output=True,text=True);assert p.returncode==0,p.stderr
+
+def init(d):
+ git(d,'init','-q');git(d,'add','.');git(d,'-c','user.name=QA','-c','user.email=qa@localhost','commit','-qm','QA fixture')
+# Compiled tools; no shell-script stand-ins.
+tools=W/'standins';tools.mkdir();src=tools/'main.go';src.write_text('''package main
+import("fmt";"io";"os";"path/filepath")
+func main(){ if filepath.Base(os.Args[0])=="go" { fmt.Println("go1.26.1");return };if len(os.Args)>1 && os.Args[1]=="run" {io.Copy(io.Discard,os.Stdin);if os.Getenv("QA_COUNT")=="yes" {fmt.Println("roundfix-linux-lane: packages: 43")}} }
+''')
+run('compile-standins',['go','build','-o',str(tools/'docker'),str(src)]);shutil.copy2(tools/'docker',tools/'go')
+d,h=fixture('lane-fixture');(d/'go.mod').write_text('module example.test/qa\n\ngo 1.26.1\n');(d/'.roundfixrc.yml').write_text('delivery:\n  linux_lane: false\n');(d/'main.go').write_text('package qa\n');init(d)
+for name,count,expected in [('counted','yes','roundfix: Linux Lane passed 43 package(s) on golang:1.26.1\n'),('uncounted','no','roundfix: Linux Lane passed on golang:1.26.1; the lane script reported no package count\n')]:
+ p=run('public-lane-'+name,['./bin/roundfix','deliver','lane','--all'],cwd=d,env={'HOME':str(h),'PATH':str(tools)+os.pathsep+os.environ['PATH'],'QA_COUNT':count});assert p.stdout==expected and p.stderr==''
+ logs=list(h.rglob('linux-lane.log'));assert len(logs)==1;(E/('public-lane-'+name+'-log.txt')).write_text(logs[0].read_text());assert expected.split('roundfix: ')[1].strip() in logs[0].read_text()
+row('04','pass','CLI operator followed Surface Transcripts 1 and 2 using the Run-built binary copied byte-identically as `./bin/roundfix` into a disposable repository. Exact stdout, empty stderr, exit 0 and persisted lane logs matched both transcripts. Evidence: public-lane-counted.txt, public-lane-uncounted.txt and corresponding log files in [evidence](evidence/2026-10-20-rerun-01/).')
+# Seed a real temporary Run Database through a throwaway test on a git-archive copy.
+d=copy('storage-seed');h=W/'storage-home';h.mkdir();repo=W/'storage-repository';repo.mkdir();(repo/'README.md').write_text('fixture');init(repo)
+seed=d/'internal/store/qa0287_seed_test.go';seed.write_text('''package store
+import("context";"os";"path/filepath";"testing"; "roundfix/internal/config")
+func TestQA0287Seed(t *testing.T){t.Parallel();home:=os.Getenv("QA_HOME");repo:=os.Getenv("QA_REPO");s,e:=Open(context.Background(),home);if e!=nil{t.Fatal(e)};r,e:=s.CreateRun(context.Background(),CreateRunRequest{Kind:KindImplement,SpecSlug:"0001-demo",GitRoot:repo,LocalBranch:"test/qa",HeadSHA:"abc123"});if e!=nil{t.Fatal(e)};if e=s.Close();e!=nil{t.Fatal(e)};root,e:=config.ResolveArtifactDirectory("",repo,home);if e!=nil{t.Fatal(e)};p:=filepath.Join(root,"runs",r.ID);if e=os.MkdirAll(p,0755);e!=nil{t.Fatal(e)};if e=os.WriteFile(filepath.Join(p,"agent.log"),[]byte("default root artifact"),0644);e!=nil{t.Fatal(e)}}
+''')
+(E/'storage-seed.go.txt').write_text(seed.read_text());run('storage-seed',['go','test','-count=1','-run','^TestQA0287Seed$','./internal/store'],cwd=d,env={'QA_HOME':str(h),'QA_REPO':str(repo)})
+(repo/'bin').mkdir();shutil.copy2(binary,repo/'bin/roundfix')
+def snapshot(h):return {str(p.relative_to(h)):hashlib.sha256(p.read_bytes()).hexdigest() for p in h.rglob('*') if p.is_file()}
+before=snapshot(h)
+for n in [1,2]:
+ p=run('public-storage-'+str(n),['./bin/roundfix','storage','report'],cwd=repo,env={'HOME':str(h)});roots=p.stdout.split('Artifact Roots\n')[1];assert '\tpresent\t1\t21\n' in roots and '  .\t' not in roots;assert snapshot(h)==before
+(E/'storage-home-snapshot.txt').write_text('Before and after both CLI reports: identical relative paths and SHA256 bytes\n'+json.dumps(before,indent=2)+'\n')
+row('07','pass','CLI operator ran storage report twice against a temporary home seeded by a throwaway test. The default Artifact Root was present with 1 Run and 21 bytes; no dot root appeared. Full home file list and file hashes stayed identical after both reads. Evidence: public-storage-1.txt, public-storage-2.txt, storage-seed.go.txt and storage-home-snapshot.txt in [evidence](evidence/2026-10-20-rerun-01/).')
+d,h=fixture('cancel-fixture');s=d/'docs/specs/0001-demo';s.mkdir(parents=True)
+(s/'_prd.md').write_text('---\nspec: 0001-demo\nstatus: active\n---\n\n# Demo\n\nTwo gaps failed it:\n\n- A failed.\n- B timed out.\n')
+(s/'_tasks.md').write_text('---\nschema: spec-tasks/v1\nspec: 0001-demo\nqa: declined\nqa_reason: disposable cancellation fixture\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n\n# Tasks\n')
+(s/'task_01.md').write_text('---\ntask: task_01\nspec: 0001-demo\nstatus: pending\ntype: backend\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true`\n');init(d)
+run('public-cancel',['./bin/roundfix','cancel','0001-demo','--reason','qa'],cwd=d,env={'HOME':str(h)})
+a=d/'docs/history/specs/0001-demo.md';text=a.read_text();assert 'Two gaps failed it: A failed. B timed out.' in text and not s.exists();(E/'cancel-archive-record.txt').write_text(text)
+run('public-cancel-confirm',['./bin/roundfix','history','--help'],cwd=d,env={'HOME':str(h)})
+assert a.read_text()==text
+row('10','pass','Operator cancelled a committed disposable Spec through `./bin/roundfix cancel 0001-demo --reason qa`. Reopened Archive Record carries both list items, has cancelled disposition and the active Spec folder is removed. A subsequent public command preserves the record. Evidence: public-cancel.txt and cancel-archive-record.txt in [evidence](evidence/2026-10-20-rerun-01/).')

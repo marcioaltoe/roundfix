@@ -1,0 +1,10 @@
+--- /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0287-reports-that-count-what-they-say-a8d213f1b00c2257-60445d78-5b78bba0/run_20261020T144117Z_258265979932c5f1/internal/store/journal_test.go	2026-10-20 11:59:40
++++ /tmp/qa0287-wf5ayjp7/observed-cases/internal/store/journal_test.go	2026-10-20 12:38:44
+@@ -974,6 +974,7 @@
+ 				t.Fatalf("Artifact Roots = %#v", report.ArtifactRoots)
+ 			}
+ 			group := report.ArtifactRoots[0]
++			t.Logf("observed root=%q missing=%v rows=%d bytes=%d", group.ArtifactRoot, group.Missing, group.Rows, group.Bytes)
+ 			if group.ArtifactRoot != root || group.Missing != missing || group.Rows != 1 || group.Bytes != wantBytes || report.ArtifactBytes != wantBytes {
+ 				t.Fatalf("Artifact Root = %#v, measured=%d, want root=%q bytes=%d", group, report.ArtifactBytes, root, wantBytes)
+ 			}

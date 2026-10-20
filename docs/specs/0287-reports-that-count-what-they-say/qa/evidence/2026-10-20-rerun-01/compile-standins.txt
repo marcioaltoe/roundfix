@@ -1,0 +1,5 @@
+$ go build -o /private/tmp/qa0287-rerun-soz1dza1/standins/docker /private/tmp/qa0287-rerun-soz1dza1/standins/main.go
+exit: 0
+stdout:
+
+stderr:

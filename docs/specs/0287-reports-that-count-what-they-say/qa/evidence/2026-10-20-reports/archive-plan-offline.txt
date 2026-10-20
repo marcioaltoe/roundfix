@@ -1,0 +1,14 @@
+$ ./bin/roundfix archive 0287-reports-that-count-what-they-say --plan --offline
+Judge Key Variables and TYPESAFE_API_KEY unset; temporary HOME set.
+exit: 0
+stdout:
+archive plan for 0287-reports-that-count-what-they-say: removes 68 file(s) (257267 bytes) and writes docs/history/specs/0287-reports-that-count-what-they-say.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-20.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 55 file(s) (124123 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-20-an-archive-record-summary-ends-at-the-colon-that-introduces-its-list.md 1419 bytes: no advice (offline)
+candidate references/2026-10-20-the-linux-lane-counts-package-patterns-as-packages.md 1754 bytes: no advice (offline)
+candidate references/2026-10-20-the-storage-report-misses-the-default-artifact-roots.md 2317 bytes: no advice (offline)
+promote with: roundfix archive 0287-reports-that-count-what-they-say --promote <path>
+
+stderr:

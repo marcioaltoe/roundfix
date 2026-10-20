@@ -1,0 +1,6 @@
+Before and after both CLI reports: identical relative paths and SHA256 bytes
+{
+  ".roundfix/roundfix.db.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  ".roundfix/roundfix.db": "6694c615852715dbfec8b852f2ccac354473199b980f9c27e916edbc77d2752b",
+  ".roundfix/artifacts/29e39b3833adcc24/runs/run_20261020T153817Z_efef464a05cc8121/agent.log": "209645eb93aca3af2548924ac8d84768181b1d58d0f241fa84e5e6a89a121072"
+}

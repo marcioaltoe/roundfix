@@ -1,0 +1,34 @@
+exec(open('/private/tmp/qa0287-rerun-lib.py').read())
+base=S['base'];head=S['head'];out=[]
+def git(*a):return subprocess.check_output(['git',*a],cwd=R,text=True)
+# All three Task commits were mechanically audited; no unaudited tooling commit.
+for no,commit in [('01','30be4d6718b5bcf6d12970a413729e4281cb0a91'),('02','ef00de56fa967a97d3a86fc2dc1eb8a645a03008'),('03','c9778c2282c4c7005341135f9affa6fd0d79b014')]:
+ files=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();task=(R/('docs/specs/0287-reports-that-count-what-they-say/task_'+no+'.md')).read_text();missing=[f for f in files if f not in task and not f.endswith('/task_'+no+'.md')];assert not missing,missing
+ out.append('Task '+no+' '+commit+' declarations cover actual diff-tree paths:\n'+'\n'.join(files))
+ auth='docs/specs/0287-reports-that-count-what-they-say/_authorization.md';assert git('show',base+':'+auth)==(R/auth).read_text()
+ governed=['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/archive.md','.agents/skills/roundfix/references/deliver.md','.agents/skills/roundfix/references/storage.md','skills/roundfix/SKILL.md'];assert all('  - '+p in (R/auth).read_text() for p in governed)
+ out.append('All changed Governed Paths bounded; operative authorization byte-identical at Delivery Base, preceding all Task commits. Mechanical authorization table lists all three commits; no command audit of already-audited tooling commits repeated.')
+fixed=['Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml','internal/baseline/assets','docs/agents/setup-context.json','docs/history','internal/store/run_retention.go','internal/cli/run_retention.go'];assert not git('diff','--name-only',base,head,'--',*fixed).strip();out.append('Byte-identical path invariants: '+', '.join(fixed))
+def function(s,name):
+ a=s.index('func '+name+'(');b=s.find('\nfunc ',a+5);return s[a:b if b>=0 else len(s)]
+for file,name in [('internal/store/journal.go','DiscoverArtifactRoots'),('internal/cli/gc.go','classifyGCSanitationRoot')]:
+ assert function(git('show',base+':'+file),name)==function((R/file).read_text(),name);out.append(name+': byte-identical')
+for file in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ before=git('show',base+':'+file);after=(R/file).read_text(); old=re.search(r'^version: (.+)',before,re.M)[1];new=re.search(r'^version: (.+)',after,re.M)[1];assert new>old
+ assert before.split('### QA settlement\n')[1].split('\n## ')[0]==after.split('### QA settlement\n')[1].split('\n## ')[0];out.append(file+': '+old+' -> '+new+'; QA settlement unchanged')
+allpaths=git('ls-tree','-r','--name-only',head).splitlines();stale=[]
+for f in allpaths:
+ if f.endswith('.md') and (f.startswith(('docs/user-guide/','docs/agents/','.agents/skills/','skills/'))):
+  text=' '.join((R/f).read_text().split())
+  if 'counts selected package arguments' in text:stale.append(f)
+assert not stale;out.append('No guide, agent guide or skill retains old package-argument wording.')
+(E/'history-scope-audit.txt').write_text('\n\n'.join(out)+'\n');row('16','pass','Actual Task commit paths fit declarations and Recorded paths; all Governed Paths bounded by prior operative grant. Protected paths, history, deletion helpers and QA settlement sections byte-identical to Delivery Base; skill versions raised and recorded. Evidence: [history-scope-audit.txt](evidence/2026-10-20-rerun-01/history-scope-audit.txt).')
+# Outside historical measurements.
+files=[f for f in git('ls-tree','-r','--name-only',base,'--','docs/history/specs').splitlines() if f.endswith('.md')];colon=[]
+for f in files:
+ text=git('show',base+':'+f)
+ if text.rstrip().endswith(':'):colon.append(f)
+refs=R/'docs/specs/0287-reports-that-count-what-they-say/references';adopted='\n'.join(p.read_text() for p in refs.glob('2026-10-20-*.md'))
+assert '43' in adopted and '508' in adopted
+(E/'outside-offline.txt').write_text('Delivery Base '+base+'\nArchive Records: '+str(len(files))+'\nLast line ends with colon: '+str(len(colon))+'\n'+'\n'.join(colon)+'\n\nNo docs/history path changed to audited head.\n\nAdopted operator sources:\n'+adopted)
+row('11','pass','Outside-evidence row checked independently written historical Archive Records at Delivery Base: '+str(len(colon))+' of '+str(len(files))+' end in a colon; no history file changed. Adopted operator observations report 43 packages with line saying 1, and dot root missing with 508 Run rows and 0 bytes. Evidence: [outside-offline.txt](evidence/2026-10-20-rerun-01/outside-offline.txt).')

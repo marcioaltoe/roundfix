@@ -1,0 +1,3 @@
+$ docker info
+exit: 0
+Daemon reachable. Output withheld because it includes host configuration.

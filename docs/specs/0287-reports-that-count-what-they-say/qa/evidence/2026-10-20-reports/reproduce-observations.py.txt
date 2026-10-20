@@ -1,0 +1,8 @@
+exec(open('/tmp/qa0287-lib.py').read())
+d=copy('observed-cases')
+p=d/'internal/store/journal_test.go';s=p.read_text().replace('group := report.ArtifactRoots[0]','group := report.ArtifactRoots[0]\n\t\t\tt.Logf("observed root=%q missing=%v rows=%d bytes=%d", group.ArtifactRoot, group.Missing, group.Rows, group.Bytes)',1);p.write_text(s)
+p=d/'internal/spec/archive_record_test.go';s=p.read_text().replace('if record.Outcome != want {','t.Logf("observed summary=%q", record.Outcome)\n\t\t\tif record.Outcome != want {',1);p.write_text(s)
+for pkg,pat in [('store','TestStorageReportMeasuresTheArtifactRootARunWroteTo'),('spec','TestArchiveSummaryCarriesWhatItsColonIntroduces|TestAnArchiveRecordEndingWithAColonRoundTrips|TestACancelledRecordSummaryCarriesItsList|TestLegacySummaryCarriesTheListItsColonIntroduces')]:run('observed-'+pkg,['go','test','-count=1','-v','-run','^('+pat+')$','./internal/'+pkg],cwd=d)
+# Keep diagnostic additions reproducible, in noncompiled evidence.
+for file in ['internal/store/journal_test.go','internal/spec/archive_record_test.go']:
+ diff=subprocess.run(['diff','-u',str(R/file),str(d/file)],capture_output=True,text=True);(E/('observed-'+Path(file).stem+'.patch.txt')).write_text(diff.stdout)

@@ -1,0 +1,107 @@
+$ go test -count=1 -v -run ^(TestArchiveSummaryCarriesWhatItsColonIntroduces|TestAnArchiveRecordEndingWithAColonRoundTrips|TestACancelledRecordSummaryCarriesItsList|TestLegacySummaryCarriesTheListItsColonIntroduces)$ ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestACancelledRecordSummaryCarriesItsList
+=== PAUSE TestACancelledRecordSummaryCarriesItsList
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces
+=== RUN   TestAnArchiveRecordEndingWithAColonRoundTrips
+=== PAUSE TestAnArchiveRecordEndingWithAColonRoundTrips
+=== RUN   TestLegacySummaryCarriesTheListItsColonIntroduces
+=== PAUSE TestLegacySummaryCarriesTheListItsColonIntroduces
+=== CONT  TestACancelledRecordSummaryCarriesItsList
+=== CONT  TestAnArchiveRecordEndingWithAColonRoundTrips
+=== CONT  TestLegacySummaryCarriesTheListItsColonIntroduces
+=== RUN   TestLegacySummaryCarriesTheListItsColonIntroduces/#00
+=== PAUSE TestLegacySummaryCarriesTheListItsColonIntroduces/#00
+=== RUN   TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__
+=== PAUSE TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__
+=== CONT  TestLegacySummaryCarriesTheListItsColonIntroduces/#00
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/table
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/table
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/end
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/end
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+=== CONT  TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+    archive_record_test.go:333: observed summary="Two gaps failed it: `A` failed with a wrapped line. `B` timed out."
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed:"
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/table
+    archive_record_test.go:333: observed summary="Two gaps failed it:"
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed. B timed out."
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+    archive_record_test.go:333: observed summary="Two gaps failed it:"
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/end
+    archive_record_test.go:333: observed summary="Two gaps failed it:"
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+    archive_record_test.go:333: observed summary="Two gaps failed it:"
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+    archive_record_test.go:333: observed summary="Two gaps failed it:"
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed. B timed out."
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed. B timed out."
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed! B timed out? C stopped: D paused;"
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed; B timed out."
+=== NAME  TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+    archive_record_test.go:333: observed summary="Two gaps failed it: A failed with a wrapped line."
+--- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/table (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/fence (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/heading (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/end (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph (0.02s)
+--- PASS: TestAnArchiveRecordEndingWithAColonRoundTrips (0.02s)
+--- PASS: TestACancelledRecordSummaryCarriesItsList (0.03s)
+--- PASS: TestLegacySummaryCarriesTheListItsColonIntroduces (0.00s)
+    --- PASS: TestLegacySummaryCarriesTheListItsColonIntroduces/#00 (0.20s)
+    --- PASS: TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__ (0.23s)
+PASS
+suiteguard: guard cost: measured 2615 paths; fingerprint took 257.746834ms before and 167.607084ms after
+ok  	roundfix/internal/spec	0.911s
+
+stderr:

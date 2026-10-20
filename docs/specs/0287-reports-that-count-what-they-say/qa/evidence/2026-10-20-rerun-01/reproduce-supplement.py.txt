@@ -1,0 +1,45 @@
+exec(open('/private/tmp/qa0287-rerun-lib.py').read())
+# Documentation promises, glossary, and exact named-test presence.
+checks=[(['docs/user-guide/commands/deliver.md','.agents/skills/roundfix/references/deliver.md'],['roundfix-linux-lane: packages: <n>','the lane script reported no package count']),(['docs/user-guide/commands/storage-report.md','.agents/skills/roundfix/references/storage.md'],['A Run that recorded no Artifact Root is measured under its repository','A relative Artifact Root is measured under the Run']),(['docs/user-guide/commands/archive.md','docs/user-guide/commands/history.md','.agents/skills/roundfix/references/archive.md','CONTEXT.md'],['ends with a colon carries the list or paragraph that follows it'])]
+for files,phrases in checks:
+ for file in files:
+  text=' '.join((R/file).read_text().split())
+  for phrase in phrases:assert phrase in text,(file,phrase)
+assert '**Archive Record**:' in (R/'CONTEXT.md').read_text()
+for task in ['01','02','03']:
+ text=(R/f'docs/specs/0287-reports-that-count-what-they-say/task_{task}.md').read_text().split('## Verification\n')[1].split('## References')[0]
+ names=set(re.findall(r'\bTest[A-Za-z0-9]+',text))
+ output='\n'.join((E/name).read_text() for name in ['tests-cli-serialized.txt','tests-store-serialized.txt','tests-spec-serialized.txt','tests-cli-storage.txt'])
+ for name in names:assert re.search(r'--- PASS: '+name+r'\b',output),name
+(E/'glossary-and-docs.txt').write_text('All authored documentation assertions matched; Archive Record defines the changed summary rule. No other introduced domain term. Every named test in Tasks 01-03 Verification is present as PASS in the fresh transcripts. Full skills and docscontract suites passed, including glossary contracts.\n')
+run('skills-sync-check',['make','skills-sync-check'])
+run('windows-build',['go','build','-buildvcs=false','./internal/cli','./internal/store','./internal/spec'],env={'GOOS':'windows'})
+row('18','pass','All documentation sentences and Archive Record glossary rule matched. No other new domain term requires an entry. Every named Task Verification test was confirmed PASS; full docscontract and skills suites, mirror check and Windows production builds passed. Evidence: glossary-and-docs.txt, docscontract.txt, skills.txt, skills-sync-check.txt, windows-build.txt.')
+# Do not persist Docker daemon configuration or environment values.
+info=subprocess.run(['docker','info'],capture_output=True,text=True)
+(E/'docker-info.txt').write_text('$ docker info\nexit: '+str(info.returncode)+'\n'+('Daemon reachable. Output withheld because it includes host configuration.\n' if info.returncode==0 else 'Docker unreachable from Run environment.\n'))
+image=subprocess.run(['docker','image','inspect','golang:1.26'],capture_output=True,text=True)
+(E/'docker-image.txt').write_text('$ docker image inspect golang:1.26\nexit: '+str(image.returncode)+'\n'+('Cached image present; inspection metadata withheld.\n' if image.returncode==0 else 'Required image is not cached; no pull or image build attempted.\n'))
+lane='Docker info exit '+str(info.returncode)+'; image inspect golang:1.26 exit '+str(image.returncode)+'. '
+if info.returncode==0 and image.returncode==0:
+ cache=subprocess.check_output(['go','env','GOMODCACHE'],cwd=R,text=True).strip();home=W/'real-lane-home';home.mkdir()
+ p=run('real-lane',['./bin/roundfix','deliver','lane','--all'],env={'HOME':str(home),'GOMODCACHE':cache},expected=None)
+ logs=list(home.rglob('linux-lane.log'));assert logs
+ log=logs[0].read_text();lines=log.splitlines();counts=[l for l in lines if l.startswith('roundfix-linux-lane: packages:')];results=[l for l in lines if l.startswith(('ok\t','ok ','?\t','? '))]
+ (E/'real-lane-measurement.txt').write_text('\n'.join(counts)+'\nGo result lines: '+str(len(results))+'\n')
+ lane+='Real lane exit '+str(p.returncode)+'; see real-lane.txt and real-lane-measurement.txt. '
+else:
+ lane+='Real lane prerequisite unavailable; lane half blocked (environment: Docker unreachable from the Run sandbox), specifically required cached image unavailable when daemon is reachable. '
+row('14','blocked (declared: Success Metric 4)',lane+'Storage half: real Roundfix Home is expressly forbidden, so no maintainer storage report attempted. Both halves form ONE declared row under PRD Unreachable Acceptance Success Metric 4. Operator must run both checks on main after merge; satisfied-by remains unproven. Evidence: docker-info.txt, docker-image.txt.')
+for no,url,quote in [('12','https://pkg.go.dev/cmd/go#hdr-Package_lists_and_patterns','Usually, [packages] is a list of package patterns, which can take several forms:; elements in filesystem or import paths expand to match 0 or more path elements.'),('13','https://pkg.go.dev/cmd/go#hdr-List_packages_or_modules','List lists the named packages, one per line.')]:
+ row(no,'blocked (environment: network prohibited by Spec authorization)','Outside-evidence row: '+url+'. PRD-cited passage: '+quote+' Not fetched: _authorization.md Limits says no test, Verification command or QA row reaches the network. No request attempted; later authorized source check can unblock.')
+row('17','blocked (environment: no open Pull Request)','Pull Request row. Prompt establishes no open Pull Request. Approval: recorded cycle AK delivery authority, without new current-candidate acceptance. Checks/status: Daemon make verify-changed passed exit 0 at '+S['head']+'. Unresolved threads: none, because no Pull Request exists. Merge-Ready acceptance: none yet; no current-candidate Review Source supplied. Claimed candidate and check ancestry: '+S['head']+'. Obtain configured candidate review and later Pull Request controls through delivery; no remote lookup attempted.')
+# Required offline-only archive plan; remove keys without reading their values.
+keys={x['key_variable'] for x in json.loads((R/'internal/judge/questions.json').read_text())['transports']};keys.update(['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','TYPESAFE_API_KEY'])
+environment=os.environ.copy()
+for name in keys:environment.pop(name,None)
+home=W/'archive-plan-home';home.mkdir();environment['HOME']=str(home);environment.update(GOPROXY='off',GOSUMDB='off')
+args=['./bin/roundfix','archive','0287-reports-that-count-what-they-say','--plan','--offline'];p=subprocess.run(args,cwd=R,env=environment,capture_output=True,text=True)
+(E/'archive-plan-offline.txt').write_text('$ '+' '.join(args)+'\nexit: '+str(p.returncode)+'\nJudge key variables removed: '+', '.join(sorted(keys))+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+assert p.returncode==0 and 'offline' in p.stdout+p.stderr
+print('Documentation, Windows, named test presence, Docker prerequisites, offline sources, PR equivalence and offline archive plan recorded.')

@@ -1,0 +1,6 @@
+$ docker info --format {{.ServerVersion}}
+exit: 0
+stdout:
+29.6.1
+
+stderr:

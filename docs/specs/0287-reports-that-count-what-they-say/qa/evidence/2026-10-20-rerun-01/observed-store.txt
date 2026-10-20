@@ -1,0 +1,66 @@
+$ go test -count=1 -v -run ^(TestStorageReportMeasuresTheArtifactRootARunWroteTo)$ ./internal/store
+exit: 0
+stdout:
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/implement_default
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/implement_default
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/removed_linked_worktree
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/removed_linked_worktree
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/relative_fetch_root
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/relative_fetch_root
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/checkout_default
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/checkout_default
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_default
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_default
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/absolute_root
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/absolute_root
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/repository_default_wins
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/repository_default_wins
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_linked_default
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_linked_default
+=== RUN   TestStorageReportMeasuresTheArtifactRootARunWroteTo/unresolvable_repository_default
+=== PAUSE TestStorageReportMeasuresTheArtifactRootARunWroteTo/unresolvable_repository_default
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/implement_default
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/absolute_root
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/checkout_default
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_linked_default
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/repository_default_wins
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/unresolvable_repository_default
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/removed_linked_worktree
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_default
+=== CONT  TestStorageReportMeasuresTheArtifactRootARunWroteTo/relative_fetch_root
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/absolute_root
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteToabsolute_roo2829586171/003/absolute-artifacts" missing=false rows=1 bytes=22
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_default
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteTomissing_defa3970463576/001/.roundfix/artifacts/e7c2a9b700ff8515" missing=true rows=1 bytes=0
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/relative_fetch_root
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteTorelative_fet1721496889/002/relative-artifacts" missing=false rows=1 bytes=22
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/unresolvable_repository_default
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteTounresolvable3340164046/001/.roundfix/artifacts/1f10da0a8a9ace52" missing=false rows=1 bytes=22
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/implement_default
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteToimplement_de782759241/001/.roundfix/artifacts/1abffd348534b18b" missing=false rows=1 bytes=22
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_linked_default
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteTomissing_link3820807002/001/.roundfix/artifacts/d5c8d4f912a2a6b6" missing=true rows=1 bytes=0
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/checkout_default
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteTocheckout_def1234763980/001/.roundfix/artifacts/306eba52878f9769" missing=false rows=1 bytes=22
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/repository_default_wins
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteTorepository_d2691125898/001/.roundfix/artifacts/c57005d631fce26e" missing=false rows=1 bytes=22
+=== NAME  TestStorageReportMeasuresTheArtifactRootARunWroteTo/removed_linked_worktree
+    journal_test.go:977: observed root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStorageReportMeasuresTheArtifactRootARunWroteToremoved_link1259914220/001/.roundfix/artifacts/630e52e9e5015509" missing=false rows=1 bytes=22
+--- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo (0.00s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/absolute_root (0.04s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/unresolvable_repository_default (0.05s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_default (0.06s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/relative_fetch_root (0.06s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/implement_default (0.06s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/missing_linked_default (0.07s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/checkout_default (0.08s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/repository_default_wins (0.08s)
+    --- PASS: TestStorageReportMeasuresTheArtifactRootARunWroteTo/removed_linked_worktree (0.09s)
+PASS
+suiteguard: guard cost: measured 2615 paths; fingerprint took 87.089417ms before and 64.273333ms after
+ok  	roundfix/internal/store	0.539s
+
+stderr:

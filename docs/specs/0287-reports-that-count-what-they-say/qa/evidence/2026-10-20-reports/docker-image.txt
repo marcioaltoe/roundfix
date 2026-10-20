@@ -1,0 +1,7 @@
+$ docker image inspect golang:1.26 --format {{.Id}}
+exit: 1
+stdout:
+
+
+stderr:
+Error response from daemon: No such image: golang:1.26

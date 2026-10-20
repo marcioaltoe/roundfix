@@ -1,0 +1,15 @@
+$ ./bin/roundfix cancel 0001-demo --reason qa
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  read cancellation Task Graph: Task Graph QA gate in manifest "/private/tmp/qa0287-wf5ayjp7/cancel-fixture/docs/specs/0001-demo/_tasks.md": qa: declined requires a non-empty qa_reason
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix cancel --help' for usage.

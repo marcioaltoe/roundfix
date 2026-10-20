@@ -1,0 +1,6 @@
+Closed report accepted by public ./bin/roundfix qa-report accept: exit 0, empty stdout/stderr.
+17 Results rows: 13 pass, 3 environment-blocked, 1 declared-blocked; no fail/pending/skipped/finding block.
+All row inputs present; every evidence link resolves; evidence files are text.
+Seeded auditor identity and carry-forward dispositions retained.
+All modified or untracked files are under the assigned QA directory, including Daemon-imported prior artifacts; product tree unchanged.
+No command started by this gate remains running.

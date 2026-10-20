@@ -1,0 +1,184 @@
+$ go test -count=1 -v -run ^(TestArchiveSummaryCarriesWhatItsColonIntroduces|TestAnArchiveRecordEndingWithAColonRoundTrips|TestACancelledRecordSummaryCarriesItsList|TestLegacySummaryCarriesTheListItsColonIntroduces|TestLegacySummaryRemovesBlockQuoteMarkers|TestLegacySummaryFallsBackToTheFirstSection|TestLegacySummaryKeepsTheQAReportOutcome|TestActiveArchiveRecordKeepsItsSummaryReading|TestArchiveRecordRoundTrips|TestArchiveRecordStaysWithinTheTargetSize)$ ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestACancelledRecordSummaryCarriesItsList
+=== PAUSE TestACancelledRecordSummaryCarriesItsList
+=== RUN   TestArchiveRecordStaysWithinTheTargetSize
+=== PAUSE TestArchiveRecordStaysWithinTheTargetSize
+=== RUN   TestArchiveRecordRoundTrips
+=== PAUSE TestArchiveRecordRoundTrips
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces
+=== RUN   TestAnArchiveRecordEndingWithAColonRoundTrips
+=== PAUSE TestAnArchiveRecordEndingWithAColonRoundTrips
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers
+=== RUN   TestLegacySummaryFallsBackToTheFirstSection
+=== PAUSE TestLegacySummaryFallsBackToTheFirstSection
+=== RUN   TestLegacySummaryKeepsTheQAReportOutcome
+=== PAUSE TestLegacySummaryKeepsTheQAReportOutcome
+=== RUN   TestActiveArchiveRecordKeepsItsSummaryReading
+=== PAUSE TestActiveArchiveRecordKeepsItsSummaryReading
+=== RUN   TestLegacySummaryCarriesTheListItsColonIntroduces
+=== PAUSE TestLegacySummaryCarriesTheListItsColonIntroduces
+=== CONT  TestACancelledRecordSummaryCarriesItsList
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/two_lines
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/two_lines
+=== CONT  TestLegacySummaryKeepsTheQAReportOutcome
+=== CONT  TestLegacySummaryCarriesTheListItsColonIntroduces
+=== CONT  TestArchiveRecordRoundTrips
+=== RUN   TestLegacySummaryKeepsTheQAReportOutcome/title_paragraph
+=== CONT  TestAnArchiveRecordEndingWithAColonRoundTrips
+=== CONT  TestArchiveRecordStaysWithinTheTargetSize
+=== CONT  TestActiveArchiveRecordKeepsItsSummaryReading
+=== RUN   TestActiveArchiveRecordKeepsItsSummaryReading/PRD_quote
+=== PAUSE TestActiveArchiveRecordKeepsItsSummaryReading/PRD_quote
+=== RUN   TestActiveArchiveRecordKeepsItsSummaryReading/QA_quote
+=== PAUSE TestActiveArchiveRecordKeepsItsSummaryReading/QA_quote
+=== RUN   TestActiveArchiveRecordKeepsItsSummaryReading/no_section_fallback
+=== PAUSE TestActiveArchiveRecordKeepsItsSummaryReading/no_section_fallback
+=== CONT  TestActiveArchiveRecordKeepsItsSummaryReading/PRD_quote
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+=== CONT  TestLegacySummaryFallsBackToTheFirstSection
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+=== RUN   TestLegacySummaryCarriesTheListItsColonIntroduces/#00
+=== RUN   TestLegacySummaryFallsBackToTheFirstSection/plain
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/nested
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/nested
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/no_following_space
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/no_following_space
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/quote_paragraph_break
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/quote_paragraph_break
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/plain_paragraph
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/plain_paragraph
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/four_spaces
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/four_spaces
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/inline_greater_than
+=== PAUSE TestLegacySummaryFallsBackToTheFirstSection/plain
+=== RUN   TestLegacySummaryFallsBackToTheFirstSection/quoted
+=== PAUSE TestLegacySummaryFallsBackToTheFirstSection/quoted
+=== RUN   TestLegacySummaryFallsBackToTheFirstSection/title_wins
+=== PAUSE TestLegacySummaryFallsBackToTheFirstSection/title_wins
+=== RUN   TestLegacySummaryFallsBackToTheFirstSection/empty_first_section
+=== PAUSE TestLegacySummaryFallsBackToTheFirstSection/empty_first_section
+=== PAUSE TestLegacySummaryCarriesTheListItsColonIntroduces/#00
+=== RUN   TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__
+=== PAUSE TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__
+=== CONT  TestActiveArchiveRecordKeepsItsSummaryReading/no_section_fallback
+=== CONT  TestActiveArchiveRecordKeepsItsSummaryReading/QA_quote
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/table
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/table
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/end
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/end
+=== RUN   TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+=== PAUSE TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+=== PAUSE TestLegacySummaryKeepsTheQAReportOutcome/title_paragraph
+=== RUN   TestLegacySummaryKeepsTheQAReportOutcome/section_fallback
+=== PAUSE TestLegacySummaryKeepsTheQAReportOutcome/section_fallback
+=== RUN   TestLegacySummaryKeepsTheQAReportOutcome/empty_outcome
+=== PAUSE TestLegacySummaryKeepsTheQAReportOutcome/empty_outcome
+=== RUN   TestLegacySummaryKeepsTheQAReportOutcome/supersession_wins
+=== PAUSE TestLegacySummaryKeepsTheQAReportOutcome/supersession_wins
+=== CONT  TestLegacySummaryFallsBackToTheFirstSection/plain
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/inline_greater_than
+=== CONT  TestLegacySummaryCarriesTheListItsColonIntroduces/#00
+=== RUN   TestLegacySummaryRemovesBlockQuoteMarkers/nested_four_spaces
+=== PAUSE TestLegacySummaryRemovesBlockQuoteMarkers/nested_four_spaces
+=== CONT  TestLegacySummaryFallsBackToTheFirstSection/quoted
+=== CONT  TestLegacySummaryFallsBackToTheFirstSection/empty_first_section
+=== CONT  TestLegacySummaryFallsBackToTheFirstSection/title_wins
+--- PASS: TestActiveArchiveRecordKeepsItsSummaryReading (0.00s)
+    --- PASS: TestActiveArchiveRecordKeepsItsSummaryReading/PRD_quote (0.00s)
+    --- PASS: TestActiveArchiveRecordKeepsItsSummaryReading/no_section_fallback (0.00s)
+    --- PASS: TestActiveArchiveRecordKeepsItsSummaryReading/QA_quote (0.01s)
+=== CONT  TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__
+--- PASS: TestArchiveRecordRoundTrips (0.02s)
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list
+--- PASS: TestAnArchiveRecordEndingWithAColonRoundTrips (0.03s)
+=== CONT  TestLegacySummaryKeepsTheQAReportOutcome/title_paragraph
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/end
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/table
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/heading
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/fence
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block
+--- PASS: TestACancelledRecordSummaryCarriesItsList (0.05s)
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph
+=== CONT  TestLegacySummaryKeepsTheQAReportOutcome/empty_outcome
+=== CONT  TestLegacySummaryKeepsTheQAReportOutcome/section_fallback
+--- PASS: TestArchiveRecordStaysWithinTheTargetSize (0.07s)
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation
+=== CONT  TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list
+--- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/tight_list (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/nested_markers (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/QA_Outcome (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/end (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/table (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/heading (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/tilde_fence (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/fence (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/one_block (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/paragraph (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/ordered_list (0.01s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/missing_punctuation (0.00s)
+    --- PASS: TestArchiveSummaryCarriesWhatItsColonIntroduces/loose_list (0.00s)
+=== CONT  TestLegacySummaryKeepsTheQAReportOutcome/supersession_wins
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/two_lines
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/plain_paragraph
+--- PASS: TestLegacySummaryCarriesTheListItsColonIntroduces (0.00s)
+    --- PASS: TestLegacySummaryCarriesTheListItsColonIntroduces/##_Problem__ (0.23s)
+    --- PASS: TestLegacySummaryCarriesTheListItsColonIntroduces/#00 (0.24s)
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/nested_four_spaces
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/inline_greater_than
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/four_spaces
+--- PASS: TestLegacySummaryFallsBackToTheFirstSection (0.00s)
+    --- PASS: TestLegacySummaryFallsBackToTheFirstSection/plain (0.23s)
+    --- PASS: TestLegacySummaryFallsBackToTheFirstSection/quoted (0.25s)
+    --- PASS: TestLegacySummaryFallsBackToTheFirstSection/empty_first_section (0.27s)
+    --- PASS: TestLegacySummaryFallsBackToTheFirstSection/title_wins (0.30s)
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/no_following_space
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/nested
+=== CONT  TestLegacySummaryRemovesBlockQuoteMarkers/quote_paragraph_break
+--- PASS: TestLegacySummaryKeepsTheQAReportOutcome (0.00s)
+    --- PASS: TestLegacySummaryKeepsTheQAReportOutcome/title_paragraph (0.33s)
+    --- PASS: TestLegacySummaryKeepsTheQAReportOutcome/empty_outcome (0.34s)
+    --- PASS: TestLegacySummaryKeepsTheQAReportOutcome/section_fallback (0.33s)
+    --- PASS: TestLegacySummaryKeepsTheQAReportOutcome/supersession_wins (0.33s)
+--- PASS: TestLegacySummaryRemovesBlockQuoteMarkers (0.00s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/two_lines (0.20s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/plain_paragraph (0.20s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/nested_four_spaces (0.20s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/inline_greater_than (0.20s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/four_spaces (0.18s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/no_following_space (0.15s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/nested (0.13s)
+    --- PASS: TestLegacySummaryRemovesBlockQuoteMarkers/quote_paragraph_break (0.11s)
+PASS
+suiteguard: guard cost: measured 2626 paths; fingerprint took 101.537542ms before and 83.119834ms after
+ok  	roundfix/internal/spec	0.909s
+
+stderr:

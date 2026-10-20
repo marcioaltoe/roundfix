@@ -1,0 +1,182 @@
+Delivery Base 3db78a3c82390aa7a61a6bce1f1e4e22e64f0efc
+Archive Records: 258
+Last line ends with colon: 38
+docs/history/specs/0041-agent-selection-runtime-readiness.md
+docs/history/specs/0071-verification-cost.md
+docs/history/specs/0113-a-refused-gate-writes-its-refusal-once.md
+docs/history/specs/0138-a-matrix-the-spec-declares.md
+docs/history/specs/0139-a-suite-that-passes-where-it-runs.md
+docs/history/specs/0149-a-supported-way-to-reopen-a-settled-gate.md
+docs/history/specs/0162-a-durable-repository-key-per-run.md
+docs/history/specs/0164-knowledge-lifecycle-and-capture.md
+docs/history/specs/0167-verification-and-readiness-follow-ups.md
+docs/history/specs/0169-override-and-ordinal-follow-ups.md
+docs/history/specs/0170-authoring-that-fails-before-dispatch.md
+docs/history/specs/0172-a-qa-gate-that-tells-the-truth.md
+docs/history/specs/0173-a-delivery-queue-that-recovers.md
+docs/history/specs/0174-operator-surfaces-that-tell-the-truth.md
+docs/history/specs/0175-cleanup-after-a-squash-merge.md
+docs/history/specs/0176-baseline-follow-ups-and-the-incremental-tier.md
+docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly.md
+docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec.md
+docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers.md
+docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec.md
+docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on.md
+docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands.md
+docs/history/specs/0183-run-storage-that-says-what-it-holds.md
+docs/history/specs/0186-citation-scans-that-read-only-what-they-mean-to.md
+docs/history/specs/0187-a-queue-that-recovers-without-a-supervisor.md
+docs/history/specs/0189-profiles-that-follow-the-current-models.md
+docs/history/specs/0192-owned-skills-that-describe-the-product-as-it-is.md
+docs/history/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time.md
+docs/history/specs/0196-a-notice-when-profiles-fall-behind.md
+docs/history/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own.md
+docs/history/specs/0213-a-test-suite-that-does-not-flake.md
+docs/history/specs/0214-measure-before-changing.md
+docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need.md
+docs/history/specs/0220-tests-and-pins-that-hold-in-every-environment.md
+docs/history/specs/0236-baseline-update-with-a-repository-profile.md
+docs/history/specs/0247-a-run-gate-that-runs-the-repository-contracts.md
+docs/history/specs/0266-the-review-record-survives-a-fix.md
+docs/history/specs/0282-the-linux-lane-runs-like-ci.md
+
+No docs/history path changed to audited head.
+
+Adopted operator sources:
+---
+type: fix
+status: promoted
+created: 2026-10-20
+spec: 0287-reports-that-count-what-they-say
+reason: null
+---
+
+# An Archive Record summary ends at the colon that introduces its list
+
+## Symptom
+
+The Archive Record of Spec 0282 ends mid-sentence: "Two environment gaps
+failed it:". The record's summary is the PRD's title paragraph, and that
+paragraph introduces a list of the two gaps that the summary leaves out. On
+2026-10-20, 38 of the 256 Archive Records under `docs/history/specs/` ended
+with a colon.
+
+## Where
+
+`internal/spec/archive_record.go`, `archiveParagraph`: it collects the lines
+of one paragraph and stops at the first blank line or heading. Every summary
+goes through it:
+
+- `BuildArchiveRecord` reads the PRD's title paragraph, or the QA Report's
+  `## Outcome` paragraph when one exists;
+- `legacyArchiveParagraph` strips block quote markers and calls it for a
+  Legacy Archive Folder;
+- `internal/spec/cancel.go` reads a cancelled Spec's summary with it;
+- `ParseArchiveRecord` reads a written record back with it.
+
+## Expected
+
+A summary paragraph that ends with a colon carries what it introduces, so the
+record reads as a whole. Records already written stay byte-identical.
+
+## Evidence
+
+`docs/history/specs/0282-the-linux-lane-runs-like-ci.md` and the PRD at its
+`source_revision` `b026a989f1fb3fc600aa71dd5c060b27eb022fdc`; the count of
+records ending with a colon on 2026-10-20; no Finding.
+
+---
+type: fix
+status: promoted
+created: 2026-10-20
+spec: 0287-reports-that-count-what-they-say
+reason: null
+---
+
+# The storage report misses the default Artifact Roots
+
+## Symptom
+
+On 2026-10-20 `roundfix storage report` on the maintainer's machine listed one
+Artifact Root, `.`, as `missing` with 508 Run rows and 0 bytes, `Measured
+bytes: 0`, and 0 artifact bytes for every repository and every Run state. This
+repository's `.roundfixrc.yml` sets `defaults.artifact_dir: ""`, so every Run
+wrote its artifacts under the default root of its repository,
+`~/.roundfix/artifacts/<repository id>/`. That tree held 37 repository
+directories and about 605 MiB (`du -sk` reported 619,428 KiB), with 336
+`runs/<run-id>` directories.
+
+## Where
+
+- `internal/store/journal.go`, `storageRunRecords` and
+  `storageFilesystemGroups`: each Run's recorded `artifact_dir` is cleaned with
+  `filepath.Clean`, so an empty value becomes `.`, and `storageDirectoryBytes`
+  and `storageRunArtifactBytes` treat `.` as absent. A relative value is
+  measured against the process's working directory.
+- `internal/cli/gc.go`, `printStorageReport` (`:349` onward), prints the group.
+- The recorded value is empty for every Implement Run: `runImplement` resolves
+  the directory with `ValidateArtifactDirectory` and writes there, but
+  `store.CreateRunRequest` carries no `ArtifactDir`. Review Runs record the
+  configured value.
+- `internal/store/journal.go`, `DiscoverArtifactRoots` (`:1583`), gives `roundfix
+  gc sanitize` the same recorded value: its dry run on 2026-10-20 printed
+  `Artifact Root: ` classified `unsafe`, "preserved because recorded Artifact
+  Root "" is not a clean absolute path".
+- Run Retention already resolves an empty recorded root
+  (`internal/cli/run_retention.go`, `runRetentionArtifact`): the repository
+  key's default root, or the recorded checkout's default root.
+
+## Expected
+
+The storage report measures each Run's artifacts where the Run wrote them: an
+empty recorded root resolves to its repository's default root, a relative one
+resolves against the Run's Git root, and an absolute one stays as recorded. The
+report stays read-only and creates no directory.
+
+## Evidence
+
+`roundfix storage report` and `roundfix gc sanitize` (dry run) on the
+maintainer's Roundfix Home, 2026-10-20, read-only; no Finding.
+
+---
+type: fix
+status: promoted
+created: 2026-10-20
+spec: 0287-reports-that-count-what-they-say
+reason: null
+---
+
+# The Linux Lane counts package patterns as packages
+
+## Symptom
+
+`roundfix deliver lane --all` printed `Linux Lane passed 1 package(s)` on
+`main` although 43 packages ran in the container: 40 reported `ok` and 3
+reported no test files. The number on the pass line is the number of package
+arguments the host handed to the container, and `--all` hands it the single
+pattern `./...`. The Delivery Queue gate prints the same line, so a gate that
+tested a whole module reads as one package.
+
+## Where
+
+`internal/cli/deliver_linux_lane.go`, `runLinuxLane`: the lane log line
+(`:239`) and the console line (`:243`) both print `len(result.Packages)`.
+`result.Packages` is the pattern list, `./...` in `--all` mode or after a
+`go.mod` or `go.sum` change, and the nearest package directories otherwise.
+The packages that actually run are chosen inside the container by the lane
+script: `go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}'`
+expands the patterns, and `go test` runs the result. The user guide
+(`docs/user-guide/commands/deliver.md`) documents the defect as intended: "`<n>`
+counts selected package arguments". The gate and `roundfix deliver lane` share
+`runLinuxLane`, so both print the wrong number.
+
+## Expected
+
+The pass line counts the packages `go list` selected in the container, the
+packages `go test` ran, in the gate and in `roundfix deliver lane` alike. When
+the count is unknown, the line says so instead of printing a number.
+
+## Evidence
+
+The operator's on-demand lane run on `main`, reported in the cycle AK operator
+briefing of 2026-10-20 (43 packages ran, the line said 1); no Finding.

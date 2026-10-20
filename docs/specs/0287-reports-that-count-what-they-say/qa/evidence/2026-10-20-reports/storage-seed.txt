@@ -1,0 +1,6 @@
+$ go test -count=1 -run ^TestQA0287Seed$ ./internal/store
+exit: 0
+stdout:
+ok  	roundfix/internal/store	0.671s
+
+stderr:

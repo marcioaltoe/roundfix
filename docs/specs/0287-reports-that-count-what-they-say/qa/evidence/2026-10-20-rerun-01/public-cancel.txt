@@ -1,0 +1,6 @@
+$ ./bin/roundfix cancel 0001-demo --reason qa
+exit: 0
+stdout:
+cancelled 0001-demo -> docs/history/specs/0001-demo.md; 0 completed Task(s), 1 pending; removed 3 file(s) (399 bytes) kept in Git at 8e59447a11ad
+
+stderr:

@@ -1,0 +1,22 @@
+$ ./bin/roundfix history --help
+exit: 0
+stdout:
+Usage:
+  roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...] [--format text|json]
+
+Plans pending legacy folders, findings, backlog, ADRs, reviews, handoffs and superseded records in that
+order, followed by record-links and live-links repairs. Refused Units are listed with their reason, left in place and not counted
+toward --batch. Plans write nothing in the repository. Advice is optional and advisory.
+
+Options:
+  --format <value>  Print text (default) or JSON
+  --batch <n>       Select the next positive number of pending units
+  --advise          Add Jev advice for the selected folders (requires --batch)
+  --apply           Apply one batch on a clean tree covered by history-full
+  --promote <path>  Copy a repository-relative file in the batch to docs/references/
+
+Apply requires an annotated history-full tag at or before HEAD. Every removed
+path must be held by that tag or a commit the default branch reaches. This command never commits, tags or pushes.
+Exit codes: 0 plan, applied or nothing pending; 1 write failure; 2 preflight refusal.
+
+stderr:

@@ -1,0 +1,5 @@
+$ go build -buildvcs=false ./internal/store ./internal/cli ./internal/spec
+exit: 0
+stdout:
+
+stderr:
