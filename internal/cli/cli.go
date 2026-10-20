@@ -52,7 +52,7 @@ Usage:
   roundfix review dispose <finding-id> --dismiss --evidence <text>
   roundfix review dispose <finding-id> --fixed-by <commit>
   roundfix implement --spec <slug>
-  roundfix deliver <plan|start|status|resume|retry|stop> [<slug> ...]
+  roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>

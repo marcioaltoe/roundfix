@@ -795,11 +795,36 @@ delivery:
   linux_lane: true
 ```
 
-The queue reads the key from the fetched default-branch commit, so an opt-in
-on an item branch takes effect after it merges. The lane runs the candidate's
-changed Go packages in a locally available `golang:<go.mod go version>` image,
-with no network or image pull. See [deliver](commands/deliver.md#linux-lane)
-for skip reasons, outcomes, and the lane log.
+`delivery.linux_lane_image` is a YAML string, default empty. A project value
+replaces the user value; an absent project key inherits it, and an explicit
+empty string selects the default `golang:<go.mod go version>` image. For
+example:
+
+```yaml
+delivery:
+  linux_lane: true
+  linux_lane_image: registry.example.com/team/go-ci:1.26
+```
+
+A non-empty value follows the container reference grammar `name[:tag][@digest]`
+without IPv6 hosts. An optional `domain[:port]/` precedes one or more lowercase
+path components separated by `/`. Domain components contain ASCII letters or
+digits, with hyphens allowed internally; dots separate components, and a port
+is numeric.
+Path components match `[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*`;
+a tag matches `[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}`; a digest matches
+`[A-Za-z][A-Za-z0-9]*([-_+.][A-Za-z][A-Za-z0-9]*)*:[0-9a-fA-F]{32,}`.
+Whitespace and leading `-` are forbidden. A non-string or invalid value is
+refused with `parse config "<label>": delivery.linux_lane_image must be a
+container image reference, such as golang:1.26`.
+
+The queue reads both keys from the fetched default-branch commit, with User
+Config beneath it. Neither the item branch nor the owner's checkout supplies
+the Project Config; their changes take effect after merge. The lane runs the
+candidate's changed Go packages under an init (`--init`) in the locally
+available image, with no network or image pull. See
+[deliver](commands/deliver.md#linux-lane) for skip reasons, outcomes, and the
+lane log.
 
 ## Delivery conflict recovery
 

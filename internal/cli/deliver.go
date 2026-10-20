@@ -27,12 +27,14 @@ const deliverUsage = `Usage:
   roundfix deliver resume
   roundfix deliver retry <slug>
   roundfix deliver stop
+  roundfix deliver lane [--all] [<revision>]
 
 Records and advances an ordered queue of Specs. The detached owner survives the
 calling terminal. A blocked item is parked and the owner continues with the
 next item.
 
 Commands:
+  lane    Run the Linux Lane on demand and exit with its outcome
   plan    Report which Specs are approved to run
   start   Validate and record a new queue, then start its detached owner
   status  Print every queued Spec's stage, blocker and item worktree
@@ -41,6 +43,7 @@ Commands:
   stop    Prove and terminate the persisted queue owner
 
 Flags:
+  --all  Test every package in the Linux Lane
   --max-duration <duration>  Set a positive queue duration
   --max-retries <n>          Set the per-item retry limit to at least 1
   --max-tokens <n>           Set the queue token ceiling to at least 1
@@ -79,6 +82,8 @@ func runDeliverCommand(
 	subcommand := args[0]
 	subcommandArgs := args[1:]
 	switch subcommand {
+	case "lane":
+		return runDeliverLane(ctx, subcommandArgs, stdout, stderr, environment)
 	case "plan":
 		return runDeliverPlan(ctx, subcommandArgs, stdout, stderr, environment)
 	case "start":

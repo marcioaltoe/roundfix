@@ -323,7 +323,7 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | --- | --- |
 | `dependency` | `prerequisite-unmerged`; retry a parked prerequisite, or deliver/merge an external prerequisite and retry the dependent item |
 | `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry |
-| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`; the QA partial prints carry-forward, repair, authorized override and retry |
+| `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`; the QA partial prints carry-forward, repair, authorized override and retry |
 | `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: in `<worktree>`, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run `roundfix deliver retry <slug>` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -606,8 +606,11 @@ directory containing a Go file at the candidate head, including changes under
 excluded: `git archive` of the candidate supplies standard input, and the lane
 writes nothing into the item worktree.
 
-The container uses the root `go.mod`'s `go` version verbatim as
-`golang:<version>`, with `--pull never`, `--network none`, `--rm`, and user
+The container uses `delivery.linux_lane_image` from the same fetched default
+configuration as the opt-in. An item branch or the owner's checkout cannot
+choose its image. Empty by default, the key selects `golang:<version>` using
+the root `go.mod`'s `go` version verbatim. The container runs under an init
+with `--init`, `--pull never`, `--network none`, `--rm`, and user
 `65534:65534`. It mounts the host module cache read-only. Its only explicitly
 supplied environment variables are `HOME`, `GOCACHE`, `GOMODCACHE`, `GOFLAGS`,
 `GOPROXY`, `GOTOOLCHAIN`, and `GOSUMDB`; no Queue Owner key or token is forwarded.
@@ -625,38 +628,110 @@ roundfix: notice: Delivery Queue item <slug>: Linux Lane skipped: <reason>
 ```
 
 - `no go.mod at the repository root`
-- `go.mod declares no go version`
+- `go.mod declares no go version` (only when no image is configured)
 - `no changed Go package`
 - `go is not on PATH`
 - `docker is not on PATH`
 - `docker info failed: <first non-empty output line>`
-- `image golang:<version> is not present locally`
+- `image <image> is not present locally`
 - `docker could not start the container: <first non-empty output line>` (exit `125`)
 
 The lane log contains the command line and combined output. Exit `0` passes
 with this console line (`<n>` counts selected package arguments):
 
 ```text
-roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on golang:<version>
+roundfix: Delivery Queue item <slug>: Linux Lane passed <n> package(s) on <image>
 ```
 
-Every other non-zero exit fails the gate and parks the item `gate-failed` with
-this reason:
+A **Lane Container Failure** fails the gate and parks the item in the
+`environment` Park Class. The lane script checks for `tar`, `git` and `go`,
+prepares `/tmp/work`, unpacks the candidate and records it before testing.
+Setup failures print `roundfix-linux-lane: container: <cause>` and exit `3`.
+The cause is selected in this order:
+
+- The 20-minute cap: `the container exceeded 20m0s`. The cap cancels the run
+  and removes its named container with `docker rm -f <name>`.
+- Exit `3`: the text after the last `roundfix-linux-lane: container: ` output
+  line, or `the lane script exited 3 before go test` when none exists. Setup
+  causes name `missing tool <tool>`, `cannot prepare /tmp/work`,
+  `cannot unpack the candidate` or `cannot record the candidate`.
+- Exit `126`: `docker run exited 126: the image could not invoke the lane command`.
+- Exit `127`: `docker run exited 127: the image lacks the lane command`.
+- Exit `128` or more: `docker run exited <n>: the container process ended by signal <n-128>`.
+
+The gate reason and parked blocker are respectively:
 
 ```text
-Linux Lane failed: docker run exited <n>; see <lane log>
+Linux Lane container failure: <cause>; see <lane log>
+linux-lane-container: <cause>; see <lane log>
 ```
 
-The 20-minute cap cancels the run, removes its named container with
-`docker rm -f <name>`, and fails the gate with:
+A **Lane Change Failure** is any other non-zero exit of a run that started;
+exit `125` stays a skip. It parks in `finding`, with cause `go test exited <n>`.
+The gate reason and parked blocker are respectively:
 
 ```text
-Linux Lane exceeded 20m0s; see <lane log>
+Linux Lane change failure: go test exited <n>; see <lane log>
+gate-failed: Linux Lane change failure: go test exited <n>; see <lane log>
 ```
+
+The lane log ends with exactly one outcome line:
+
+```text
+Linux Lane container failure: <cause>
+Linux Lane change failure: go test exited <n>
+Linux Lane passed <n> package(s) on <image>
+```
+
+For `linux-lane-container`, the next action is `repair the Linux Lane container
+cause in the blocker (Docker, the image, or delivery.linux_lane_image on the
+default branch), then run roundfix deliver retry <slug>`. A repository
+Verification failure still parks the bare `gate-failed` with its generic next
+action.
 
 Cancelling the gate also removes the container and returns the context's error.
 With the setting off, the gate starts no Docker or Go process and emits no lane
 notice.
+
+
+### Run the Linux Lane on demand
+
+```bash
+roundfix deliver lane [--all] [<revision>]
+```
+
+Run `roundfix deliver lane --all` and obtain a pass before turning
+`delivery.linux_lane` on. The command runs independently of that setting,
+the Delivery Queue, the Run Database and any Spec. It reads the checkout's
+Project Config over User Config, including `delivery.linux_lane_image` and
+`defaults.artifact_dir`; it does not read configuration from the fetched
+default branch. An empty image uses `golang:<go.mod go version>` from the
+selected commit.
+
+The revision defaults to `HEAD` and must resolve to a commit. The command
+archives that commit, without including uncommitted changes. By default it
+selects the changed Go packages as the queue gate does. `--all` selects
+`./...` without reading a default branch or merge base. It uses the same
+network-free, never-pull container with `--init`, named
+`roundfix-linux-lane-<pid>`, and writes only
+`<artifact dir>/delivery/linux-lane.log`.
+
+Exactly one outcome line goes to standard output, with empty standard error:
+
+```text
+roundfix: notice: Linux Lane skipped: <reason>
+roundfix: Linux Lane passed <n> package(s) on <image>
+roundfix: Linux Lane change failure: go test exited <n>; see <lane log>
+roundfix: Linux Lane container failure: <cause>; see <lane log>
+```
+
+Exit codes are `0` for a pass, `1` for a Lane Change Failure, and `3` for a
+skip or Lane Container Failure. An interrupt removes the container before
+exiting `130`. An extra argument, unknown flag, revision that is not a
+commit, invalid configuration, or unknown default branch without `--all`
+exits `2` with the `deliver lane` **Preflight failed** layout on standard
+error and no outcome on standard output.
+
 
 ## Run Window
 

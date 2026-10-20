@@ -1479,7 +1479,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 	// Read the same immutable, fetched default used for delivery declarations.
 	// The lane only adds a check: when that default cannot be read, it is
 	// skipped with its reason and the repository gate's result stands.
-	enabled, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
+	enabled, image, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
 	if err != nil {
 		return delivery.GateResult{}, err
 	}
@@ -1490,12 +1490,21 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		return delivery.GateResult{Passed: true}, nil
 	}
 	if enabled {
-		lane, err := workflow.runLinuxLane(ctx, gitRoot, specSlug, head)
+		artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
+		if err != nil {
+			return delivery.GateResult{}, err
+		}
+		lane, err := workflow.runLinuxLane(ctx, linuxLaneRequest{
+			WorkDir: gitRoot, Head: head, Image: image,
+			Label:   "Delivery Queue item " + specSlug + ": ",
+			LogPath: filepath.Join(artifactDir, "delivery", specSlug, "linux-lane.log"),
+			Name:    fmt.Sprintf("roundfix-linux-lane-%.40s-%d", specSlug, os.Getpid()),
+		})
 		if err != nil {
 			return delivery.GateResult{}, err
 		}
 		if lane.Ran && !lane.Passed {
-			return delivery.GateResult{Passed: false, Reason: lane.Reason}, nil
+			return delivery.GateResult{Passed: false, Reason: lane.Reason, Blocker: lane.Blocker}, nil
 		}
 	}
 	return delivery.GateResult{Passed: true}, nil

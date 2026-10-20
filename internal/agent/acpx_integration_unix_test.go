@@ -21,6 +21,7 @@ import (
 
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/testfixture"
 	"roundfix/internal/testwait"
 )
 
@@ -34,9 +35,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	if os.Getenv(realACPXIntegrationEnv) != "1" {
 		t.Skipf("set %s=1 to run the real acpx integration test; requires Node and acpx %s or newer", realACPXIntegrationEnv, MinimumACPXVersion)
 	}
-	if _, err := exec.LookPath("node"); err != nil {
-		t.Skipf("Node is required for real acpx integration: %v", err)
-	}
+	testfixture.RequireTool(t, "node")
 	acpxPath, err := exec.LookPath(defaultACPXCommand)
 	if err != nil {
 		t.Skipf("acpx is required for real acpx integration: %v", err)

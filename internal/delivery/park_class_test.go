@@ -76,6 +76,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 		blocker string
 		class   ParkClass
 	}{
+		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
 		{BlockerSecretFound, ParkClassFinding}, {BlockerRunUnresolved, ParkClassFinding}, {BlockerReviewFindings, ParkClassFinding}, {BlockerCorrectiveSpecRequired, ParkClassFinding}, {BlockerGateFailed, ParkClassFinding}, {BlockerChecksFailed, ParkClassFinding}, {BlockerRevalidationFailed, ParkClassFinding},
 		{BlockerRunBudgetExceeded, ParkClassBudget}, {BlockerQueueDeadline, ParkClassBudget}, {BlockerReviewBlocked, ParkClassReview}, {BlockerReviewStale, ParkClassReview}, {BlockerUnauthorized, ParkClassAuthorization}, {BlockerFlakyCheck, ParkClassFlakyCheck}, {"unknown", ParkClassUnclassified},
@@ -87,6 +88,9 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				park := ClassifyPark(queue, item)
 				if tt.blocker == BlockerSecretFound && park.Next != "in /worktrees/example, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry example" {
 					t.Fatalf("secret-found next action = %q", park.Next)
+				}
+				if tt.blocker == BlockerLinuxLaneContainer && park.Next != "repair the Linux Lane container cause in the blocker (Docker, the image, or delivery.linux_lane_image on the default branch), then run roundfix deliver retry example" {
+					t.Fatalf("linux-lane-container next action = %q", park.Next)
 				}
 				question, found := PendingQuestionFor(queue)
 				if park.Class != tt.class || !found || question.Answer != park.Next {

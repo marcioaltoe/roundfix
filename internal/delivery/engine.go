@@ -23,6 +23,7 @@ const (
 	BlockerReviewStale            = "review-stale"
 	BlockerCorrectiveSpecRequired = "corrective-spec-required"
 	BlockerGateFailed             = "gate-failed"
+	BlockerLinuxLaneContainer     = "linux-lane-container"
 	BlockerChecksFailed           = "checks-failed"
 	BlockerChecksTimeout          = "checks-timeout"
 	BlockerUnauthorized           = "unauthorized"
@@ -98,8 +99,9 @@ type ArchiveResult struct {
 }
 
 type GateResult struct {
-	Passed bool
-	Reason string
+	Passed  bool
+	Reason  string
+	Blocker string
 }
 
 type Authorization struct {
@@ -1074,7 +1076,11 @@ func (engine *Engine) gateCandidate(ctx context.Context, gitRoot string, item *s
 		return fmt.Errorf("run repository gate: %w", err)
 	}
 	if !result.Passed {
-		return engine.park(ctx, gitRoot, item, BlockerGateFailed)
+		blocker := result.Blocker
+		if blocker == "" {
+			blocker = BlockerGateFailed
+		}
+		return engine.park(ctx, gitRoot, item, blocker)
 	}
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStagePublishing)
 }

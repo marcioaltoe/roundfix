@@ -693,9 +693,25 @@ _Avoid_: replay, resume, automatic carry, QA row carry-forward
 The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
 
+**Base Test Tools**:
+The tools the repository's tests require: `go`, `gofmt`, `git`, `make`, `sh`, `cat`, `kill`, `ps`, `id`, `mkfifo` and `cmd` ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+_Avoid_: container tools, optional tools
+
+**External Test Tool**:
+A tool a test runs outside the Base Test Tools. A test that needs one skips naming it when it is absent from PATH ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+_Avoid_: optional dependency, container tool
+
 **Linux Lane**:
-The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication ([ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
+The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It also runs on demand with `roundfix deliver lane`, independently of the queue opt-in, against a checkout revision's changed Go packages or every package with `--all`. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)).
 _Avoid_: Linux gate, Docker gate, cross-platform Verification
+
+**Lane Container Failure**:
+A Linux Lane failure caused by its container setup, command invocation, a signal or the run cap. It parks the candidate in the environment Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+_Avoid_: change failure, generic gate failure
+
+**Lane Change Failure**:
+A Linux Lane failure attributed to the candidate's Go test run. It parks the candidate in the finding Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+_Avoid_: container failure, generic gate failure
 
 **Queue Owner**:
 The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one. When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
