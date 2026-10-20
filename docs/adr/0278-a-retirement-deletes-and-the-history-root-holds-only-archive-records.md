@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-16T00:00:00Z
-updated_at: 2026-10-17T00:00:00Z
+updated_at: 2026-10-20T09:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -70,3 +70,5 @@ as current. This decision narrows ADR-0092, ADR-0120, ADR-0247, ADR-0248, ADR-02
 ADR-0258, ADR-0260, ADR-0261 and ADR-0277, each of which carries a dated note.
 
 **Extended by [ADR-0282](0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md) (2026-10-17).** When a superseded ADR's accepted successor does not name it, the history plan appends the dated `Supersedes` line to the successor and removes the superseded file; an ADR with no accepted successor is refused by its own path while the rest of the unit applies.
+
+**Extended by [ADR-0299](0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md) (2026-10-20).** The plan rewrites every citation it lists, in every Citation Source (each tracked text file outside the skill trees and `testdata`), including a prose path that starts with `./` or `../`, and writes a plain `<path>@<commit>` outside Markdown. Once this rule is in the guide, the Spec Consistency Check also reports a citation of a removed `docs/history/findings/`, `docs/history/backlog/` or `docs/history/adr/` file that is not a Git Locator.
