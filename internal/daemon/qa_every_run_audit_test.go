@@ -179,6 +179,22 @@ func TestQADeliveryBasePrefersTheRemoteTrackingBranch(t *testing.T) {
 	}
 }
 
+func TestQADeliveryBaseReadsTheFetchedDefaultWithoutOriginHead(t *testing.T) {
+	t.Parallel()
+	fixture := newQAEveryRunAuditFixture(t, true)
+	runGitForTest(t, fixture.repoRoot, "symbolic-ref", "--delete", "refs/remotes/origin/HEAD")
+	runGitForTest(t, fixture.repoRoot, "branch", "-D", "main")
+	fixture.commitTask("task_01", "feat: work after fetched default", filepath.Join("internal", "ordinary.go"), "package internal\n\nconst fetchedBase = true\n")
+
+	base, resolved, err := qaDeliveryBase(t.Context(), fixture.plan)
+	if err != nil {
+		t.Fatalf("qaDeliveryBase returned error: %v", err)
+	}
+	if !resolved || base != fixture.initialHead {
+		t.Fatalf("qaDeliveryBase = %q, %v, want fetched merge base %q, true", base, resolved, fixture.initialHead)
+	}
+}
+
 func TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch(t *testing.T) {
 	t.Parallel()
 	fixture := newQAEveryRunAuditFixture(t, false)

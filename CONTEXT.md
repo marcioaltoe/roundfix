@@ -113,7 +113,7 @@ A repository path the tooling-authority rules bind — the configuration, script
 _Avoid_: Protected file, restricted path, tooling file
 
 **Delivery Base**:
-The merge base of the audited head and the repository default branch. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit.
+The merge base of the audited head and the Default Branch Head. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit ([ADR-0295](docs/adr/0295-reachability-reads-the-fetched-default-branch-and-origin-names-it-when-origin-head-is-unset.md)).
 _Avoid_: Run start head, audited head, delivery target
 
 **Undeclared Governed Path**:

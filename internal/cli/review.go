@@ -1296,8 +1296,11 @@ func parseReviewCommand(args []string) (reviewCommandRequest, error) {
 func resolveReviewBaseCommit(ctx context.Context, baseRef string, gitState preflight.GitState, runner preflight.GitRunner) (string, error) {
 	baseRef = strings.TrimSpace(baseRef)
 	if baseRef == "" {
-		defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, runner)
-		if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+		head, found, err := preflight.ResolveDefaultBranchHead(ctx, gitState.Root, gitState.Branch, runner)
+		if err != nil {
+			return "", fmt.Errorf("determine review base: %w", err)
+		}
+		if !found {
 			for _, candidate := range []string{"refs/heads/main", "refs/heads/master"} {
 				if _, err := runner.RunGit(ctx, gitState.Root, "show-ref", "--verify", "--quiet", candidate); err == nil {
 					baseRef = candidate
@@ -1308,10 +1311,7 @@ func resolveReviewBaseCommit(ctx context.Context, baseRef string, gitState prefl
 				return "", errors.New("determine review base: repository default branch is unknown; pass --base <ref>")
 			}
 		} else {
-			baseRef = defaultBranch.Name
-			if defaultBranch.Source == preflight.DefaultBranchFromOriginHead {
-				baseRef = "refs/remotes/origin/" + defaultBranch.Name
-			}
+			baseRef = head.Ref
 		}
 	}
 	commit, err := runner.RunGit(ctx, gitState.Root, "rev-parse", "--verify", "--end-of-options", baseRef+"^{commit}")

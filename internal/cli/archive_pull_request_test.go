@@ -73,6 +73,13 @@ func TestArchiveOnABranchWarnsAboutASquashDroppedRevision(t *testing.T) {
 	assertArchiveTranscript(t, []string{"archive", implementTestSlug}, archivePullRequestConfirmation(t, repo, revision, false), fmt.Sprintf("roundfix: warning: source_revision %.12s is not an ancestor of origin/main; a squash merge keeps it only in the pull request's head ref, so record the pull request with --pull-request once it opens\n", revision), 0)
 }
 
+func TestArchiveChecksTheRevisionAgainstOriginWithoutOriginHead(t *testing.T) {
+	t.Parallel()
+	repo, _, revision := archivePullRequestFixture(t)
+	gittest.Run(t, repo, "symbolic-ref", "--delete", "refs/remotes/origin/HEAD")
+	assertArchiveTranscript(t, []string{"archive", implementTestSlug}, archivePullRequestConfirmation(t, repo, revision, false), fmt.Sprintf("roundfix: warning: source_revision %.12s is not an ancestor of origin/main; a squash merge keeps it only in the pull request's head ref, so record the pull request with --pull-request once it opens\n", revision), 0)
+}
+
 func TestArchiveWithAPullRequestNamesItsHeadRef(t *testing.T) {
 	t.Parallel()
 	repo, path, revision := archivePullRequestFixture(t)
@@ -206,6 +213,7 @@ func TestArchivePullRequestRefusals(t *testing.T) {
 			}
 			if strings.Contains(tc.name, "unknown default branch") {
 				gittest.Run(t, repo, "symbolic-ref", "--delete", "refs/remotes/origin/HEAD")
+				gittest.Run(t, repo, "update-ref", "-d", "refs/remotes/origin/main")
 			}
 			before := snapshotDirectoryFiles(t, filepath.Join(repo, "docs"))
 			args := append([]string{"archive", implementTestSlug}, tc.flags...)
@@ -221,6 +229,7 @@ func TestArchiveWithAnUnknownDefaultBranchWarns(t *testing.T) {
 	t.Parallel()
 	repo, _, revision := archivePullRequestFixture(t)
 	gittest.Run(t, repo, "symbolic-ref", "--delete", "refs/remotes/origin/HEAD")
+	gittest.Run(t, repo, "update-ref", "-d", "refs/remotes/origin/main")
 	assertArchiveTranscript(t, []string{"archive", implementTestSlug}, archivePullRequestConfirmation(t, repo, revision, false), fmt.Sprintf("roundfix: warning: the default branch is unknown, so source_revision %.12s was not checked\n", revision), 0)
 }
 

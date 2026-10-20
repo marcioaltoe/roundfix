@@ -237,22 +237,20 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	return exitOK
 }
 
-// archiveDefaultRef uses origin/HEAD when present and the conventional current
-// branch name otherwise, matching Preflight Validation's default detection.
+// archiveDefaultRef reads the Default Branch Head, preferring the fetched ref.
 func archiveDefaultRef(ctx context.Context, repo string) (ref, display string) {
 	branch, err := gitOutput(ctx, repo, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		branch = ""
 	}
-	detection := preflight.DetectDefaultBranch(ctx, repo, branch, nil)
-	switch detection.Source {
-	case preflight.DefaultBranchFromOriginHead:
-		return "refs/remotes/origin/" + detection.Name, "origin/" + detection.Name
-	case preflight.DefaultBranchFromNameMatch:
-		return "refs/heads/" + detection.Name, detection.Name
-	default:
+	head, found, err := preflight.ResolveDefaultBranchHead(ctx, repo, branch, nil)
+	if err != nil || !found {
 		return "", ""
 	}
+	if strings.HasPrefix(head.Ref, "refs/remotes/origin/") {
+		return head.Ref, "origin/" + head.Branch.Name
+	}
+	return head.Ref, head.Branch.Name
 }
 
 // recordArchiveCommandPullRequest decides the record-only form before any

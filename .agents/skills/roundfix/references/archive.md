@@ -102,7 +102,7 @@ keeps every write, exits `1`, and prints the command that finishes the removal:
 `chmod -R u+w '<folder>' && rm -rf '<folder>'`.
 
 After a successful archive, the command warns when `source_revision` is not an
-ancestor of the default branch. When the delivery Pull Request opens,
+ancestor of the Default Branch Head. When the delivery Pull Request opens,
 `roundfix archive <slug>` with `--pull-request <n>` stores the delivery pull
 request in the Archive Record, including a record the current branch already
 added.
