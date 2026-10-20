@@ -593,6 +593,54 @@ func TestRunStorageReportOutsideGitRepository(t *testing.T) {
 	}
 }
 
+func TestRunStorageReportListsTheDefaultRootOfARunWithoutOne(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir, repoDir := withCLIWorkspace(t)
+	root, err := roundconfig.ResolveArtifactDirectory("", repoDir, homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writer, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := writer.CreateRun(ctx, store.CreateRunRequest{
+		Kind: store.KindImplement, SpecSlug: "storage-report", GitRoot: repoDir,
+		LocalBranch: "test/storage-report", HeadSHA: "abc123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte("default root artifact")
+	mustMkdir(t, filepath.Join(root, "runs", run.ID))
+	mustWrite(t, filepath.Join(root, "runs", run.ID, "agent.log"), string(content))
+	before, err := os.ReadFile(store.DatabasePath(homeDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"storage", "report"}, &stdout, &stderr)
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	_, roots, found := strings.Cut(stdout.String(), "Artifact Roots\n")
+	want := fmt.Sprintf("  %s\tpresent\t1\t%d\n", root, len(content))
+	if !found || !strings.Contains(roots, want) || strings.Contains(roots, "  .\t") || !strings.Contains(roots, fmt.Sprintf("  Measured bytes: %d\n", len(content))) {
+		t.Fatalf("Artifact Roots section = %q, want line %q", roots, want)
+	}
+	after, err := os.ReadFile(store.DatabasePath(homeDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("storage report changed Run Database bytes")
+	}
+}
+
 func TestRunStorageReportRejectsFlags(t *testing.T) {
 	t.Parallel()
 	var stdout bytes.Buffer

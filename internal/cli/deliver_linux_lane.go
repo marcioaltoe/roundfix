@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 const linuxLaneHistory = "/repo-objects"
 
 const linuxLaneCap = 20 * time.Minute
-const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
+const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && echo "roundfix-linux-lane: packages: $#" && exec go test -count=1 "$@"`
 
 type linuxLaneResult struct {
 	Ran, Passed                    bool
@@ -236,12 +237,32 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 	if closeErr != nil {
 		return result, fmt.Errorf("close Linux Lane archive: %w", closeErr)
 	}
-	if _, err := fmt.Fprintf(log, "\nLinux Lane passed %d package(s) on %s\n", len(result.Packages), image); err != nil {
+	summary := fmt.Sprintf("Linux Lane passed on %s; the lane script reported no package count", image)
+	if count, reported := linuxLanePackageCount(runOutput.Bytes()); reported {
+		summary = fmt.Sprintf("Linux Lane passed %d package(s) on %s", count, image)
+	}
+	if _, err := fmt.Fprintln(log, "\n"+summary); err != nil {
 		return result, err
 	}
 	result.Passed = true
-	_, err = fmt.Fprintf(console, "roundfix: %sLinux Lane passed %d package(s) on %s\n", request.Label, len(result.Packages), image)
+	_, err = fmt.Fprintf(console, "roundfix: %s%s\n", request.Label, summary)
 	return result, err
+}
+
+// linuxLanePackageCount reads the first decimal count line in the container's
+// combined output, which candidate tests also write to. The script reports before
+// tests start, so later markers cannot replace its count. This value is only for
+// the console and lane log; it never controls the outcome or package selection.
+func linuxLanePackageCount(output []byte) (count int, reported bool) {
+	for _, line := range strings.Split(string(output), "\n") {
+		text, ok := strings.CutPrefix(line, "roundfix-linux-lane: packages: ")
+		if !ok || text == "" || strings.ContainsFunc(text, func(r rune) bool { return r < '0' || r > '9' }) {
+			continue
+		}
+		count, err := strconv.Atoi(text)
+		return count, err == nil
+	}
+	return 0, false
 }
 
 // classifyLinuxLaneOutcome handles runs that started; exit 125 is a skip at the caller.

@@ -40,6 +40,7 @@ func main() {
  case "run":
   data, err := io.ReadAll(os.Stdin); if err != nil { panic(err) }; if err := os.WriteFile(os.Getenv("LANE_ARCHIVE"), data, 0600); err != nil { panic(err) }
   if addr := os.Getenv("LANE_READY"); addr != "" { conn, err := net.Dial("tcp", addr); if err != nil { panic(err) }; defer conn.Close(); if _, err := io.Copy(io.Discard, conn); err != nil { panic(err) }; return }
+  if count := os.Getenv("LANE_PACKAGES"); count != "" { fmt.Println("roundfix-linux-lane: packages: " + count) }
   fmt.Fprint(os.Stdout, "\n fixture output\nsecond line\n")
   fmt.Fprint(os.Stderr, os.Getenv("LANE_OUTPUT"))
   code, err := strconv.Atoi(os.Getenv("LANE_EXIT")); if err != nil { panic(err) }; os.Exit(code)
@@ -89,7 +90,7 @@ func newLinuxLaneFixture(t *testing.T, docker, goBinary string, files map[string
 	f.workflow.loaded.Config.Defaults.ArtifactDir = filepath.Join(root, "artifacts")
 	f.workflow.loaded.Config.Defaults.Verification = "printf 'repository passed'"
 	f.workflow.loaded.Config.Delivery.LinuxLane = true
-	f.environment = []string{"PATH=" + strings.Join([]string{filepath.Dir(docker), filepath.Dir(goBinary)}, string(os.PathListSeparator)), "HOME=" + filepath.Join(root, "operator home"), "LANE_RECORD=" + f.record, "LANE_ARCHIVE=" + f.archive, "LANE_CACHE=" + f.cache, "LANE_EXIT=0", "TYPESAFE_API_KEY=private-owner-key", "DOCKER_HOST=fixture-context"}
+	f.environment = []string{"PATH=" + strings.Join([]string{filepath.Dir(docker), filepath.Dir(goBinary)}, string(os.PathListSeparator)), "HOME=" + filepath.Join(root, "operator home"), "LANE_RECORD=" + f.record, "LANE_ARCHIVE=" + f.archive, "LANE_CACHE=" + f.cache, "LANE_EXIT=0", "LANE_PACKAGES=1", "TYPESAFE_API_KEY=private-owner-key", "DOCKER_HOST=fixture-context"}
 	return f
 }
 
@@ -165,7 +166,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 			run := starts[3]
 			name := fmt.Sprintf("roundfix-linux-lane-widget-%d", os.Getpid())
 			// Deliberately independent of the production script constant.
-			script := `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; exit 0; fi && exec go test -count=1 $pkgs`
+			script := `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && echo "roundfix-linux-lane: packages: $#" && exec go test -count=1 "$@"`
 			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "-v", linuxLaneFixtureObjects(t, f.repo) + ":/repo-objects:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
 			want = append(want, tc.packages...)
 			if run.Tool != "docker" || !reflect.DeepEqual(run.Args, want) {
@@ -291,6 +292,8 @@ func TestLinuxLaneSkipsWithANamedReason(t *testing.T) {
 		}},
 		{"start refused", "docker could not start the container: fixture output", func(t *testing.T, f *linuxLaneFixture) {
 			f.environment = withEnvValue(f.environment, "LANE_EXIT", "125")
+			// Docker refused startup, so no lane script reported a count.
+			f.environment = withEnvValue(f.environment, "LANE_PACKAGES", "")
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -761,4 +764,54 @@ func TestLinuxLaneSkipsAnObjectStoreItCannotMount(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLinuxLaneReportsThePackagesTheContainerSelected(t *testing.T) {
+	t.Parallel()
+	docker, goBinary := linuxLaneTools(t)
+	for _, tc := range []struct{ name, count, output, summary string }{
+		{"all packages", "43", "", "Linux Lane passed 43 package(s) on golang:1.26.1"},
+		{"no buildable packages", "0", "", "Linux Lane passed 0 package(s) on golang:1.26.1"},
+		{"no count", "", "", "Linux Lane passed on golang:1.26.1; the lane script reported no package count"},
+		{"later test marker", "43", "roundfix-linux-lane: packages: 7\n", "Linux Lane passed 43 package(s) on golang:1.26.1"},
+		{"signed count ignored", "+43", "", "Linux Lane passed on golang:1.26.1; the lane script reported no package count"},
+		{"spaces ignored", "43 ", "", "Linux Lane passed on golang:1.26.1; the lane script reported no package count"},
+		{"embedded marker ignored", "", "test: roundfix-linux-lane: packages: 7\n", "Linux Lane passed on golang:1.26.1; the lane script reported no package count"},
+		{"first valid decimal line", "invalid", "roundfix-linux-lane: packages: 43\nroundfix-linux-lane: packages: 7\n", "Linux Lane passed 43 package(s) on golang:1.26.1"},
+		{"overflow ignores later count", "999999999999999999999999999999", "roundfix-linux-lane: packages: 7\n", "Linux Lane passed on golang:1.26.1; the lane script reported no package count"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newLinuxLaneFixture(t, docker, goBinary, map[string]string{
+				"go.mod": "module fixture\n\ngo 1.26.1\n", "pkg/code.go": "package pkg\n",
+			})
+			f.commit(t, "go.mod", "module fixture\n\ngo 1.26.1\n// candidate\n")
+			f.environment = withEnvValue(f.environment, "LANE_PACKAGES", tc.count)
+			f.environment = withEnvValue(f.environment, "LANE_OUTPUT", tc.output)
+			result, err := f.workflow.Gate(f.context(t.Context()), f.repo, "widget", f.head)
+			if err != nil || !result.Passed {
+				t.Fatalf("gate=%+v err=%v", result, err)
+			}
+			if want := "roundfix: Delivery Queue item widget: " + tc.summary + "\n"; f.log.String() != want {
+				t.Fatalf("console=%q want=%q", f.log.String(), want)
+			}
+			if log := mustRead(t, f.logPath()); !strings.HasSuffix(log, "\n"+tc.summary+"\n") {
+				t.Fatalf("lane log=%q want ending=%q", log, tc.summary)
+			}
+			starts := f.starts(t)
+			if len(starts) != 4 {
+				t.Fatalf("starts=%+v", starts)
+			}
+			args := starts[3].Args
+			if args[len(args)-1] != "./..." || args[len(args)-2] != "linux-lane" {
+				t.Fatalf("expected one package pattern: %q", args)
+			}
+		})
+	}
+	t.Run("script reports before testing", func(t *testing.T) {
+		countAt := strings.Index(linuxLaneScript, `echo "roundfix-linux-lane: packages: $#"`)
+		testAt := strings.Index(linuxLaneScript, "exec go test")
+		if countAt < 0 || testAt < countAt {
+			t.Fatalf("script must report count before go test: %s", linuxLaneScript)
+		}
+	})
 }

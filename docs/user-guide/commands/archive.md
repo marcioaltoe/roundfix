@@ -34,6 +34,8 @@ Outward relative destinations are rebased to keep naming the same file.
 The original folder's bytes stay in Git at the record's `source_revision`. The
 Archive Record is the small `<slug>.md` file under the archive root; it names
 the disposition, QA Report and verdict, source revision, and promoted files.
+Its summary is the QA Report's Outcome paragraph or the PRD's title paragraph.
+A summary paragraph that ends with a colon carries the list or paragraph that follows it, on the same line.
 After a successful archive, the command warns when `source_revision` is not an
 ancestor of the Default Branch Head. `roundfix archive <slug>` with
 `--pull-request <n>` stores the delivery pull request in the Archive Record,

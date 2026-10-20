@@ -3,6 +3,7 @@ package spec
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -115,5 +116,19 @@ func TestArchivedTaskCompletedForACancelledRecord(t *testing.T) {
 	record.CompletedTasks = nil
 	if ArchivedTaskCompleted(record, "task_01") {
 		t.Fatal("empty completed list completes a Task")
+	}
+}
+
+func TestACancelledRecordSummaryCarriesItsList(t *testing.T) {
+	t.Parallel()
+	req, dir := cancelFixture(t, 1)
+	writeFile(t, filepath.Join(dir, "_prd.md"), prdFixture("active")+"\nTwo gaps failed it:\n\n- A failed.\n- B timed out.\n")
+	result, err := Cancel(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	record := cancelReadRecord(t, result)
+	if want := "Two gaps failed it: A failed. B timed out."; record.Outcome != want {
+		t.Fatalf("summary = %q, want %q", record.Outcome, want)
 	}
 }

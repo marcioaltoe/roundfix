@@ -150,3 +150,14 @@ func TestActiveArchiveRecordKeepsItsSummaryReading(t *testing.T) {
 		})
 	}
 }
+
+func TestLegacySummaryCarriesTheListItsColonIntroduces(t *testing.T) {
+	t.Parallel()
+	for _, prefix := range []string{"", "## Problem\n\n"} {
+		t.Run(prefix, func(t *testing.T) {
+			t.Parallel()
+			req := legacySummaryFixture(t, prefix+"> Two gaps failed it:\n>\n> - A failed.\n> - B timed out.\n")
+			assertLegacySummary(t, req, "Two gaps failed it: A failed. B timed out.")
+		})
+	}
+}

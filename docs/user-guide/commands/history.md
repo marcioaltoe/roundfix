@@ -39,7 +39,9 @@ date of the oldest commit reachable from `HEAD` that added the PRD under the
 Spec Root or archive root. The folder reader stops at the TechSpec date. The
 summary is read from the PRD's title paragraph, or from the first paragraph
 after its first `## ` heading when that paragraph is empty; block quote markers
-are removed before its lines are joined. Legacy Link Rebase rewrites the
+are removed before its lines are joined.
+A summary paragraph that ends with a colon carries the list or paragraph that follows it, on the same line.
+Legacy Link Rebase rewrites the
 relative destinations in the outcome and in each promoted copy: a destination
 inside the folder points to its promoted copy or becomes a Git Locator, and
 every other destination keeps the same repository path. A Refused Unit is listed as `refused <unit>: <reason>`,
