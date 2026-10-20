@@ -111,6 +111,14 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 		return err
 	}
 	archiveRel = filepath.ToSlash(archiveRel)
+	pending, err := spec.PendingTaskCreates(specsRoot)
+	if err != nil {
+		return err
+	}
+	candidates, err := spec.RemovedHistoryPaths(ctx, root)
+	if err != nil {
+		return err
+	}
 	historyRoot := "docs/history"
 	report := func(path string, line int, summary, fix string) {
 		result.Findings = append(result.Findings, Finding{
@@ -137,6 +145,7 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 		}
 		return l, err
 	}
+	missingLinks := map[spec.HistoryCitation]bool{}
 	var citations []historyLocatorCitation
 	for _, scanRoot := range roots {
 		err := filepath.WalkDir(filepath.Join(root, scanRoot), func(full string, entry fs.DirEntry, walkErr error) error {
@@ -192,7 +201,7 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 				return nil
 			}
 			for _, link := range spec.MissingRelativeLinks(root, path, content) {
-				if link.Self && !isRecord {
+				if pending[link.Target] || (link.Self && !isRecord) {
 					continue
 				}
 				fix := "Restore " + link.Target + " or replace its link; Git Locator resolution is skipped outside Git."
@@ -206,9 +215,18 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 					if err != nil {
 						return err
 					}
+					if !isRecord && l.Commit == "" {
+						if candidate, ok := spec.ResolveMissingLinkByName(link.Target, candidates); ok {
+							l, err = locate(candidate, "history-full", "")
+							if err != nil {
+								return err
+							}
+						}
+					}
 					fix = "Replace the link with " + l.Text(false) + "."
 				}
 				report(path, link.Line, "links to a missing file or itself: "+link.Target, fix)
+				missingLinks[spec.HistoryCitation{Path: path, Line: link.Line, Target: link.Target}] = true
 			}
 			if !git {
 				return nil
@@ -225,6 +243,46 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 		})
 		if err != nil {
 			return fmt.Errorf("check retained history: %w", err)
+		}
+	}
+	// The new pass reads only tracked and untracked, unignored Citation Sources
+	// and local Git history. Nothing is sent anywhere. The legacy walk above
+	// retains its findings and wording; a missing-link finding owns its line
+	// and target, so a removed citation never reports that pair twice.
+	if git && len(candidates) > 0 {
+		paths, err := spec.CitationSources(ctx, root, true)
+		if err != nil {
+			return err
+		}
+		for _, path := range paths {
+			// History files, including Archive Records, keep their own checks.
+			if strings.HasPrefix(path, historyRoot+"/") {
+				continue
+			}
+			content, err := os.ReadFile(filepath.Join(root, path))
+			if err != nil {
+				return fmt.Errorf("read history citation source %s: %w", path, err)
+			}
+			found, err := spec.HistoryCitationsInSource(content, path, candidates)
+			if err != nil {
+				return err
+			}
+			for _, citation := range found {
+				if pending[citation.Target] || missingLinks[citation] {
+					continue
+				}
+				locator, err := locate(citation.Target, "", "")
+				if err != nil {
+					return err
+				}
+				plain := true
+				switch strings.ToLower(filepath.Ext(path)) {
+				case ".md", ".markdown", ".mdx":
+					plain = false
+				}
+				report(path, citation.Line, "cites a removed history file without a Git Locator: "+citation.Target,
+					"Replace the citation with "+locator.Text(plain)+".")
+			}
 		}
 	}
 	invalid, err := invalidHistoryLocators(ctx, root, citations)

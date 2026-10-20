@@ -180,7 +180,7 @@ func TestHistorySanitizePlanWritesNothing(t *testing.T) {
 	for _, k := range kinds {
 		fmt.Fprintf(&expected, "%s: removes %d file(s) (%d bytes)\n", k.Kind, len(k.Files), k.BytesBefore)
 	}
-	expected.WriteString("cites README.md:3 names docs/history/specs/aaa/references/lesson.md\napply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)\n")
+	expected.WriteString("cites README.md:3 names docs/history/specs/aaa/references/lesson.md; rewrites to `docs/history/specs/aaa/references/lesson.md@" + h.revision + "`\napply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)\n")
 	if out != expected.String() {
 		t.Fatalf("plan:\n%s\nwant:\n%s", out, expected.String())
 	}

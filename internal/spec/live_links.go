@@ -17,6 +17,17 @@ func PlanLiveLinks(ctx context.Context, root, specRootRel, archiveRootRel string
 	if !historyRepositoryPath(specRootRel) || !historyRepositoryPath(archiveRootRel) {
 		return p, fmt.Errorf("invalid live-links root")
 	}
+	pending, err := PendingTaskCreates(filepath.Join(root, specRootRel))
+	if err != nil {
+		return p, err
+	}
+	candidates, err := RemovedHistoryPaths(ctx, root)
+	if err != nil {
+		return p, err
+	}
+	for path := range skip {
+		candidates = append(candidates, path)
+	}
 	seen := map[string]bool{}
 	for _, scanRoot := range []string{"docs", specRootRel} {
 		err := filepath.WalkDir(filepath.Join(root, scanRoot), func(full string, entry fs.DirEntry, walkErr error) error {
@@ -56,12 +67,20 @@ func PlanLiveLinks(ctx context.Context, root, specRootRel, archiveRootRel string
 			}
 			locators := map[string]GitLocator{}
 			for _, link := range MissingRelativeLinks(root, path, content) {
-				if link.Self {
+				if link.Self || pending[link.Target] {
 					continue
 				}
 				locator, err := ResolveGitLocator(ctx, root, link.Target, "", "")
 				if err != nil {
 					return err
+				}
+				if locator.Commit == "" {
+					if candidate, ok := ResolveMissingLinkByName(link.Target, candidates); ok {
+						locator, err = ResolveGitLocator(ctx, root, candidate, "history-full", "")
+						if err != nil {
+							return err
+						}
+					}
 				}
 				locators[link.Target] = locator
 				p.Citations = append(p.Citations, HistoryCitation{Path: path, Line: link.Line, Target: link.Target, Rewrite: locator.Text(false)})

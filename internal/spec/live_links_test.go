@@ -103,3 +103,86 @@ func TestLiveLinksPlanLeavesRecordsCodeAndRemovedFiles(t *testing.T) {
 		t.Fatalf("untouched=%q err=%v", after, err)
 	}
 }
+
+func TestLiveLinksLeaveAPendingTaskCreatesTarget(t *testing.T) {
+	t.Parallel()
+	if !citationSourcesTestHome(t) {
+		return
+	}
+	root, _ := gitLocatorRepo(t)
+	target := "docs/specs/demo/references/future.md"
+	source := "docs/specs/demo/_prd.md"
+	for _, tc := range []struct {
+		task, prd string
+		links     int
+	}{{"pending", "active", 0}, {"in_progress", "active", 0}, {"completed", "active", 1}, {"pending", "completed", 1}} {
+		writeFile(t, filepath.Join(root, source), "---\nstatus: "+tc.prd+"\n---\n[m](references/future.md)\n")
+		writeFile(t, filepath.Join(root, "docs/specs/demo/task_01.md"), "---\nstatus: "+tc.task+"\ntype: docs\n---\n## Context\n- creates: "+target+"\n")
+		plan, err := PlanLiveLinks(t.Context(), root, "docs/specs", "docs/history/specs", nil)
+		if err != nil || plan.Links != tc.links || len(plan.Citations) != tc.links {
+			t.Fatalf("%+v plan=%+v err=%v", tc, plan, err)
+		}
+		if tc.links == 0 && len(plan.Files) != 0 {
+			t.Fatalf("pending target planned: %+v", plan)
+		}
+		if tc.links == 1 && !strings.Contains(string(plan.Files[source]), "not reachable from any branch or tag") {
+			t.Fatalf("missing fallback: %+v", plan)
+		}
+	}
+}
+
+func TestLiveLinksResolveABrokenLinkByTheRemovedFileName(t *testing.T) {
+	t.Parallel()
+	if !citationSourcesTestHome(t) {
+		return
+	}
+	for _, mode := range []string{"plan", "deleted", "ambiguous", "unknown", "duplicate"} {
+		t.Run(mode, func(t *testing.T) {
+			root, _ := gitLocatorRepo(t)
+			history := "docs/history/findings/named.md"
+			source := "docs/specs/demo/references/note.md"
+			target := "docs/specs/demo/findings/named.md"
+			writeFile(t, filepath.Join(root, history), "# Retired\n")
+			if mode == "ambiguous" {
+				writeFile(t, filepath.Join(root, "docs/history/backlog/named.md"), "# Other\n")
+			}
+			writeFile(t, filepath.Join(root, source), "[f](../findings/named.md)\n")
+			revision := legacyCommit(t, root, "docs: history and link")
+			gittest.Run(t, root, "tag", "-a", "history-full", "-m", "history")
+			skip := map[string]bool{history: true}
+			if mode != "plan" {
+				gittest.Run(t, root, "rm", history)
+				legacyCommit(t, root, "docs: delete history")
+				if mode != "duplicate" {
+					skip = nil
+				}
+			}
+			if mode == "ambiguous" {
+				skip = map[string]bool{"docs/history/backlog/named.md": true}
+			}
+			if mode == "unknown" {
+				writeFile(t, filepath.Join(root, source), "[f](../findings/unknown.md)\n")
+				target = "docs/specs/demo/findings/unknown.md"
+			}
+			plan, err := PlanLiveLinks(t.Context(), root, "docs/specs", "docs/history/specs", skip)
+			if err != nil || len(plan.Citations) != 1 || plan.Links != 1 {
+				t.Fatalf("plan=%+v err=%v", plan, err)
+			}
+			want := "`" + history + "@" + revision + "`"
+			if mode == "ambiguous" || mode == "unknown" {
+				want = "`" + target + "` (not reachable from any branch or tag)"
+			}
+			c := plan.Citations[0]
+			if c.Target != target || c.Rewrite != want || !strings.Contains(string(plan.Files[source]), want) {
+				t.Fatalf("citation=%+v bytes=%s want=%s", c, plan.Files[source], want)
+			}
+			if links, files, err := plan.Apply(t.Context(), root); err != nil || links != 1 || files != 1 {
+				t.Fatalf("apply=%d %d %v", links, files, err)
+			}
+			after, err := os.ReadFile(filepath.Join(root, source))
+			if err != nil || string(after) != string(plan.Files[source]) {
+				t.Fatalf("applied=%q err=%v", after, err)
+			}
+		})
+	}
+}

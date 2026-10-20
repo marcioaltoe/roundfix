@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -131,21 +132,17 @@ func PlanHistoryKind(ctx context.Context, repositoryRoot string, kind ArchiveKin
 					plan.Refused = append(plan.Refused, HistoryRefusal{Path: rel, Reason: historyADRRefusal})
 					return nil
 				}
-				id := "ADR-" + strings.SplitN(filepath.Base(path), "-", 2)[0]
+				id := historyADRIdentifier(filepath.Base(path))
 				if !historyADRNamesPredecessor(next, filepath.Base(path)) {
-					date, err := archiveGitRead(ctx, repositoryRoot, "show", "-s", "--format=%cI", "HEAD")
+					date, err := historyADRSupersessionDate(ctx, repositoryRoot, rel, content)
 					if err != nil {
-						return fmt.Errorf("read lineage date: %w", err)
-					}
-					committed, err := time.Parse(time.RFC3339, strings.TrimSpace(string(date)))
-					if err != nil {
-						return fmt.Errorf("parse lineage date: %w", err)
+						return err
 					}
 					locator, err := ResolveGitLocator(ctx, repositoryRoot, rel, "", "")
 					if err != nil {
 						return err
 					}
-					plan.Lineage = append(plan.Lineage, HistoryLineage{Successor: successor, Removed: rel, Line: fmt.Sprintf("Supersedes %s (%s); Git keeps its text at %s.", id, committed.UTC().Format("2006-01-02"), locator.Text(false))})
+					plan.Lineage = append(plan.Lineage, HistoryLineage{Successor: successor, Removed: rel, Line: fmt.Sprintf("Supersedes %s (%s); Git keeps its text at %s.", id, date, locator.Text(false))})
 				}
 			}
 		}
@@ -287,23 +284,67 @@ func historyADRSuccessor(root string, content []byte) (string, []byte, error) {
 	return "", nil, nil
 }
 
-// historyADRReferenceNames matches numeric references by number and named
-// references by the exact filename, including the last element of a path.
+// historyADRIdentifier reserves numeric identifiers for numbered, not date-named, ADRs.
+func historyADRIdentifier(name string) string {
+	stem := strings.TrimSuffix(filepath.Base(name), ".md")
+	number, slug, ok := strings.Cut(stem, "-")
+	if ok && number != "" && slug != "" && strings.Trim(number, "0123456789") == "" && !historyADRDateName.MatchString(stem) {
+		return "ADR-" + number
+	}
+	return stem
+}
+
+var historyADRDateName = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}-`)
+
+func historyADRSupersessionDate(ctx context.Context, root, rel string, content []byte) (string, error) {
+	front, _, err := splitFrontmatter(content)
+	if err == nil {
+		var metadata struct {
+			Updated yaml.Node `yaml:"updated_at"`
+		}
+		if yaml.Unmarshal(front, &metadata) == nil && metadata.Updated.Kind == yaml.ScalarNode && metadata.Updated.Tag != "!!null" {
+			var updated time.Time
+			if err := metadata.Updated.Decode(&updated); err == nil {
+				return updated.UTC().Format(time.DateOnly), nil
+			}
+			if updated, err := time.Parse(time.DateOnly, metadata.Updated.Value); err == nil {
+				return updated.Format(time.DateOnly), nil
+			}
+		}
+	}
+	date, err := archiveGitRead(ctx, root, "log", "-1", "--format=%cI", "HEAD", "--", rel)
+	if err != nil {
+		return "", fmt.Errorf("read supersession date for %s: %w", rel, err)
+	}
+	if strings.TrimSpace(string(date)) == "" {
+		date, err = archiveGitRead(ctx, root, "show", "-s", "--format=%cI", "HEAD")
+		if err != nil {
+			return "", fmt.Errorf("read lineage date: %w", err)
+		}
+	}
+	committed, err := time.Parse(time.RFC3339, strings.TrimSpace(string(date)))
+	if err != nil {
+		return "", fmt.Errorf("parse lineage date: %w", err)
+	}
+	return committed.UTC().Format(time.DateOnly), nil
+}
+
+// historyADRReferenceNames matches numeric references only for numbered ADRs,
+// and exact stems, filenames and paths for every ADR filename.
 func historyADRReferenceNames(reference, name string) bool {
 	if !strings.HasSuffix(name, ".md") {
 		return false
 	}
 	stem := strings.TrimSuffix(name, ".md")
-	number, slug, ok := strings.Cut(stem, "-")
-	if !ok || number == "" || slug == "" || strings.Trim(number, "0123456789") != "" {
-		return false
+	if reference == stem || reference == name || strings.HasSuffix(reference, "/"+name) {
+		return true
 	}
-	return reference == "ADR-"+number || reference == number ||
-		reference == stem || reference == name || strings.HasSuffix(reference, "/"+name)
+	id := historyADRIdentifier(name)
+	return id != stem && (reference == id || reference == strings.TrimPrefix(id, "ADR-"))
 }
 
 func historyADRNamesPredecessor(content []byte, name string) bool {
-	id := "ADR-" + strings.SplitN(name, "-", 2)[0]
+	id := historyADRIdentifier(name)
 	if historyEntryNamesPath(string(content), id) || historyEntryNamesPath(string(content), name) {
 		return true
 	}
@@ -462,7 +503,7 @@ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
 	return nil
 }
 
-// HistoryCitation locates a tracked Markdown line naming a removed path.
+// HistoryCitation locates a tracked source line naming a removed path.
 type HistoryCitation struct {
 	Path    string
 	Line    int
@@ -721,7 +762,7 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 		}
 		locators[path] = locator
 	}
-	p.rewrite = CitationRewrite{Moves: moves, Locate: func(path string) (GitLocator, bool, error) { l, ok := locators[path]; return l, ok, nil }}
+	p.rewrite = CitationRewrite{Moves: moves, Relative: true, Locate: func(path string) (GitLocator, bool, error) { l, ok := locators[path]; return l, ok, nil }}
 	targets := append([]string(nil), removed...)
 	folders := map[string]bool{}
 	for path := range moves {
@@ -730,7 +771,7 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 			folders[path] = true
 		}
 	}
-	citations, err := HistoryCitations(ctx, root, targets)
+	citations, err := SourceHistoryCitations(ctx, root, targets)
 	if err != nil {
 		return p, err
 	}
@@ -758,25 +799,22 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 			}
 			contents[c.Path] = content
 		}
-		scope := historyRootInstructionCarrier(c.Path) || IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
-		if scope {
-			if err := historyRewriteRegularFile(root, c.Path); err != nil {
+		if err := historyRewriteRegularFile(root, c.Path); err != nil {
+			return p, err
+		}
+		if destination, ok := moves[c.Target]; ok {
+			c.Rewrite = destination
+		} else if locator, ok := locators[c.Target]; ok {
+			c.Rewrite = locator.Text(!citationMarkdown(c.Path))
+		}
+		if _, planned := p.Files[c.Path]; !planned {
+			next, count, err := p.rewriteSource(content, c.Path)
+			if err != nil {
 				return p, err
 			}
-			if destination, ok := moves[c.Target]; ok {
-				c.Rewrite = destination
-			} else if locator, ok := locators[c.Target]; ok {
-				c.Rewrite = locator.Text(false)
-			}
-			if _, planned := p.Files[c.Path]; !planned {
-				next, count, err := p.rewrite.Apply(content, c.Path, c.Path)
-				if err != nil {
-					return p, err
-				}
-				if count > 0 {
-					p.Files[c.Path] = next
-					p.Count += count
-				}
+			if count > 0 {
+				p.Files[c.Path] = next
+				p.Count += count
 			}
 		}
 		if folders[c.Target] {
@@ -805,7 +843,10 @@ func (p HistoryRewritePlan) Apply(ctx context.Context, root string) (citations, 
 		if readErr != nil {
 			return citations, files, fmt.Errorf("read planned citation %s: %w", path, readErr)
 		}
-		next, count, rewriteErr := p.rewrite.Apply(content, path, path)
+		if citationSourceExcluded(path) || bytes.IndexByte(content[:min(len(content), 8000)], 0) >= 0 {
+			return citations, files, fmt.Errorf("planned citation %s is no longer a Citation Source", path)
+		}
+		next, count, rewriteErr := p.rewriteSource(content, path)
 		if rewriteErr != nil {
 			return citations, files, rewriteErr
 		}
@@ -821,11 +862,11 @@ func (p HistoryRewritePlan) Apply(ctx context.Context, root string) (citations, 
 	return citations, files, nil
 }
 
-// A root instruction carrier is read by every Agent session, so a citation in
-// it is rewritten like one in a Live Document. A carrier that is a tracked
-// symbolic link never reaches here; its target is rewritten under its own path.
-func historyRootInstructionCarrier(path string) bool {
-	return path == "AGENTS.md" || path == "CLAUDE.md"
+func (p HistoryRewritePlan) rewriteSource(content []byte, path string) ([]byte, int, error) {
+	if citationMarkdown(path) {
+		return p.rewrite.Apply(content, path, path)
+	}
+	return p.rewrite.ApplyText(content, path)
 }
 
 // Refuse a symlink before a citation rewrite can read or write through it.

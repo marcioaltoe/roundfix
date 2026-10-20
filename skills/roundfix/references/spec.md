@@ -30,7 +30,7 @@ links in Archive Records, Live Documents and the user guide, record self-links,
 and Git Locators whose commit lacks the path or is unreachable from the default
 branch and tags. Each diagnostic names the file and line and the deletion or
 replacement Git Locator. Outside Git, locator resolution and validation are
-listed as skipped; file checks still run. The check reads only local files and Git.
+listed as skipped; file checks still run. It also reports a citation that cites a removed history file without a Git Locator in any Citation Source outside docs/history, and skips a link to a file a pending Task declares in creates:. The check reads only local files and Git, including tracked and untracked, unignored Citation Sources, and sends nothing anywhere.
 
 Claim Receipts resolve `ADR-NNNN` in `docs/adr/`, then read the newest addition
 or modification reachable from `HEAD` in Git, including removed ADRs. Rollup

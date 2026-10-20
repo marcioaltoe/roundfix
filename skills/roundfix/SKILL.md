@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.112
+  version: 0.1.113
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.112
+version: 0.1.113
 ---
 
 # Roundfix
@@ -30,8 +30,8 @@ citations it leaves unrelinked.
 
 `roundfix baseline update` lists History Citations in text and JSON and binds
 them into the Plan Digest. Live Document citations of promotable files offer
-repeatable `--promote <path>`; the update refuses invalid values and never
-rewrites citing files. With the History Full Tag present it also reports Stale
+repeatable `--promote <path>`; the update refuses invalid values and
+rewrites every listed citation to a Git Locator. With the History Full Tag present it also reports Stale
 History Citations and the `git show history-full:<path>` restore command.
 
 <!-- roundfix:reference-index:begin -->

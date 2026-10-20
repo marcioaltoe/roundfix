@@ -921,11 +921,19 @@ The fetched `origin/<default>` commit, or the local default branch commit only w
 _Avoid_: Local-first default, work branch head
 
 **Git Locator**:
-The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the Default Branch Head or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the Default Branch Head or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request; outside Markdown it is written as plain text without backticks ([ADR-0299](docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md)).
 _Avoid_: Broken link, branch-only revision, Archive Record
 
+**Citation Source**:
+A tracked regular text file outside the skill trees and testdata directories, holding no NUL byte in its first 8,000 bytes, in which History Citations are found ([ADR-0299](docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md)).
+_Avoid_: Markdown-only source, skill fixture
+
+**Removed History Path**:
+A path under the History Root's Findings, Backlog or ADR family that HEAD or its history holds and the working tree lacks ([ADR-0299](docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md)).
+_Avoid_: Missing file, retained history file
+
 **History Citation**:
-A citation to a file or folder a selected history unit removes, listed in text and JSON and bound into the Plan Digest. It is rewritten in Archive Records, Live Documents and the user guide to a Git Locator for removed text, or to the surviving record or promoted copy when one exists ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+A citation to a file or folder a selected history unit removes, listed in text and JSON and bound into the Plan Digest. As a History Citation, it is found and rewritten in every Citation Source to a Git Locator for removed text, or to the surviving record or promoted copy when one exists ([ADR-0299](docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md)).
 _Avoid_: Relocation Citation, broken-link scan, stale citation
 
 **Stale History Citation**:
