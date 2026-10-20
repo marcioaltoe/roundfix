@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-17T00:00:00Z
-updated_at: 2026-10-18T17:30:00Z
+updated_at: 2026-10-20T09:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -102,3 +102,5 @@ ADR-0281's rule from tests to the Delivery Queue.
   build of an item; this decision adds no reclamation for them.
 
 **Amended by [ADR-0290](0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md) (2026-10-18).** Item Binary copies no longer accumulate past a merge: the Delivery Queue removes a merged item's `item-binary` directory when it releases the item's Runs, and the GC Command reclaims the directory of an item that is merged or no longer queued.
+
+**Amended by [ADR-0299](0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md) (2026-10-20).** The lineage line names a retired ADR whose file name is not `NNNN-<slug>.md` by that file name without `.md`, never by its leading digits, and the numeric forms of `superseded_by` and `supersedes` select only numbered ADRs. The line is dated with the day the ADR was superseded: its `updated_at` in UTC, else the committer date of the newest commit that changed it, and the planned `HEAD`'s committer date only when neither exists. The `live-links` unit leaves a link to a file a pending Task declares in `creates:`, and it resolves a missing link by its file name when exactly one removed history file has that name.
