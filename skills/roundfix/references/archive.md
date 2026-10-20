@@ -173,7 +173,7 @@ The Archive Command deletes the Spec folder after writing its Archive Record.
 In the copied outcome and each promoted copy, a destination inside the removed
 folder names its promoted copy or becomes a Git Locator, `` `<path>@<commit>` ``,
 never the record itself. The commit must hold the path and be reachable from
-the default branch or a tag. Without one, the path and record's pull request
+the Default Branch Head or a tag. Without one, the path and record's pull request
 name the source instead. Other destinations keep naming the same repository path.
 
 The archive refuses before writing when a promotion destination already exists,

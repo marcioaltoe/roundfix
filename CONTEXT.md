@@ -905,8 +905,12 @@ _Avoid_: Archive rewrite, source duplication, link cleanup
 The rewrite of relative destinations in an Archive Record outcome and each promoted copy: a folder destination points at its promoted copy, or becomes a Git Locator when no copy survives, never the record itself; every other destination keeps the same repository path ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive Relink, broken-link report, arbitrary link rewrite
 
+**Default Branch Head**:
+The fetched `origin/<default>` commit, or the local default branch commit only when no remote-tracking branch exists. When origin/HEAD is unset and the current branch does not name the default, exactly one of `origin/main` and `origin/master` names it ([ADR-0295](docs/adr/0295-reachability-reads-the-fetched-default-branch-and-origin-names-it-when-origin-head-is-unset.md)).
+_Avoid_: Local-first default, work branch head
+
 **Git Locator**:
-The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the default branch or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+The inline code `<path>@<commit>` naming a removed file at a commit that holds it and that the Default Branch Head or a tag reaches, written in place of a link to that file. When no such commit exists it names the path and the record's pull request ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Broken link, branch-only revision, Archive Record
 
 **History Citation**:

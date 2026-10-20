@@ -151,11 +151,12 @@ func TestResolveGitLocatorReadsTheRemoteDefaultBranch(t *testing.T) {
 	gittest.Run(t, root, "checkout", "-b", "feat/work")
 	gittest.Run(t, root, "branch", "-D", "main")
 	requireLocator(t, root, "docs/specs/demo/_prd.md", "", "", planning)
-	// Local head takes precedence over an older origin head.
+	// An unpushed local commit cannot override the fetched default head.
 	gittest.Run(t, root, "checkout", "-b", "trunk")
 	writeFile(t, filepath.Join(root, "docs/specs/demo/_prd.md"), "# Local trunk\n")
 	latest := legacyCommit(t, root, "docs: local trunk plan")
-	requireLocator(t, root, "docs/specs/demo/_prd.md", "", "", latest)
+	requireLocator(t, root, "docs/specs/demo/_prd.md", "", "", planning)
+	requireLocator(t, root, "docs/specs/demo/_prd.md", latest, "", planning)
 }
 
 func TestGitLocatorTextForms(t *testing.T) {
@@ -330,4 +331,47 @@ func TestArchiveRecordShorteningKeepsGitLocatorsWhole(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Build the same refs as an Actions checkout, without clone's origin/HEAD.
+func gitLocatorCIClone(t *testing.T) (string, string, string) {
+	t.Helper()
+	origin, older := gitLocatorRepo(t)
+	gittest.Run(t, origin, "tag", "older", older)
+	path := "docs/specs/demo/_prd.md"
+	writeFile(t, filepath.Join(origin, path), "# Fetched planning\n")
+	newer := legacyCommit(t, origin, "docs: fetched plan")
+	gittest.Run(t, origin, "rm", "--", path)
+	head := legacyCommit(t, origin, "docs: remove fetched plan")
+	root := t.TempDir()
+	gittest.InitRepo(t, root)
+	gittest.Run(t, root, "remote", "add", "origin", origin)
+	gittest.Run(t, root, "fetch", "origin", "+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*")
+	gittest.Run(t, root, "checkout", "--detach", head)
+	refs := gittest.Run(t, root, "for-each-ref", "--format=%(refname)", "refs/heads/main", "refs/remotes/origin/HEAD")
+	if strings.TrimSpace(refs) != "" {
+		t.Fatalf("unexpected CI refs: %s", refs)
+	}
+	return root, older, newer
+}
+
+func TestResolveGitLocatorReachesTheFetchedDefaultInACIClone(t *testing.T) {
+	t.Parallel()
+	if !gitLocatorTestHome(t) {
+		return
+	}
+	root, _, newer := gitLocatorCIClone(t)
+	requireLocator(t, root, "docs/specs/demo/_prd.md", newer, "", newer)
+}
+
+func TestResolveGitLocatorIgnoresAStaleLocalDefaultBranch(t *testing.T) {
+	t.Parallel()
+	if !gitLocatorTestHome(t) {
+		return
+	}
+	root, older, newer := gitLocatorCIClone(t)
+	gittest.Run(t, root, "branch", "main", older)
+	gittest.Run(t, root, "checkout", "main")
+	requireLocator(t, root, "docs/specs/demo/_prd.md", newer, "", newer)
+	requireLocator(t, root, "docs/specs/demo/_prd.md", "", "", newer)
 }
