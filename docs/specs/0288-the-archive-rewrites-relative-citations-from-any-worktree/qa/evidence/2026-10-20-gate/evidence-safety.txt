@@ -1,7 +1,0 @@
-Temporary overlay calls secretscan.ScanContent and checks UTF-8/no NUL on the complete qa/ tree.
-exit: 0
-=== RUN   TestQA0288EvidenceIsTextAndSecretFree
-    zz_qa0288_evidence_test.go:9: 15 report/evidence files scanned; no values logged
---- PASS: TestQA0288EvidenceIsTextAndSecretFree (0.02s)
-PASS
-ok  	roundfix/internal/secretscan	0.223s
