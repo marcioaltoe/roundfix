@@ -1,0 +1,15 @@
+{
+  "exit_1": true,
+  "five_source_files": true,
+  "citation_diagnostics": 7,
+  "excluded_not_reported": true,
+  "fixes_present": true
+}
+[error] SC-HISTORY-RETAINED: docs/specs/0001-demo/references/note.md links to a missing file or itself: docs/specs/0001-demo/findings/2026-01-01-x.md
+[error] SC-HISTORY-RETAINED: Makefile cites a removed history file without a Git Locator: docs/history/findings/2026-01-01-x.md
+[error] SC-HISTORY-RETAINED: docs/adr/0002-live.md cites a removed history file without a Git Locator: docs/history/adr/0001-old.md
+[error] SC-HISTORY-RETAINED: docs/adr/0002-live.md cites a removed history file without a Git Locator: docs/history/findings/2026-01-01-x.md
+[error] SC-HISTORY-RETAINED: docs/agents/deploy.md cites a removed history file without a Git Locator: docs/history/findings/2026-01-01-x.md
+[error] SC-HISTORY-RETAINED: docs/reference/notes.md cites a removed history file without a Git Locator: docs/history/backlog/2026-01-02-b.md
+[error] SC-HISTORY-RETAINED: infra/README.md cites a removed history file without a Git Locator: docs/history/backlog/2026-01-02-b.md
+[error] SC-HISTORY-RETAINED: infra/README.md cites a removed history file without a Git Locator: docs/history/findings/2026-01-01-x.md

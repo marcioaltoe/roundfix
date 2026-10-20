@@ -1,0 +1,27 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^TestLiveLinksResolveABrokenLinkByTheRemovedFileName$', './internal/spec']
+exit: 1
+wall_seconds: 2.045
+stdout:
+=== RUN   TestLiveLinksResolveABrokenLinkByTheRemovedFileName
+=== PAUSE TestLiveLinksResolveABrokenLinkByTheRemovedFileName
+=== CONT  TestLiveLinksResolveABrokenLinkByTheRemovedFileName
+    live_links_test.go:136: isolated citation test: exit status 1
+        --- FAIL: TestLiveLinksResolveABrokenLinkByTheRemovedFileName (0.56s)
+            --- FAIL: TestLiveLinksResolveABrokenLinkByTheRemovedFileName/plan (0.10s)
+                live_links_test.go:177: citation={Path:docs/specs/demo/references/note.md Line:1 Target:docs/specs/demo/findings/named.md Rewrite:`docs/specs/demo/findings/named.md` (not reachable from any branch or tag)} bytes=f (`docs/specs/demo/findings/named.md` (not reachable from any branch or tag))
+                     want=`docs/history/findings/named.md@44b481de0c59263223bccd3170fcf318f3e81657`
+            --- FAIL: TestLiveLinksResolveABrokenLinkByTheRemovedFileName/deleted (0.12s)
+                live_links_test.go:177: citation={Path:docs/specs/demo/references/note.md Line:1 Target:docs/specs/demo/findings/named.md Rewrite:`docs/specs/demo/findings/named.md` (not reachable from any branch or tag)} bytes=f (`docs/specs/demo/findings/named.md` (not reachable from any branch or tag))
+                     want=`docs/history/findings/named.md@44b481de0c59263223bccd3170fcf318f3e81657`
+            --- FAIL: TestLiveLinksResolveABrokenLinkByTheRemovedFileName/duplicate (0.11s)
+                live_links_test.go:177: citation={Path:docs/specs/demo/references/note.md Line:1 Target:docs/specs/demo/findings/named.md Rewrite:`docs/specs/demo/findings/named.md` (not reachable from any branch or tag)} bytes=f (`docs/specs/demo/findings/named.md` (not reachable from any branch or tag))
+                     want=`docs/history/findings/named.md@44b481de0c59263223bccd3170fcf318f3e81657`
+        FAIL
+        suiteguard: guard cost: measured 2627 paths; fingerprint took 65.701958ms before and 75.262833ms after
+--- FAIL: TestLiveLinksResolveABrokenLinkByTheRemovedFileName (0.71s)
+FAIL
+suiteguard: guard cost: measured 2627 paths; fingerprint took 108.065417ms before and 74.391917ms after
+FAIL	roundfix/internal/spec	1.158s
+FAIL
+
+stderr:

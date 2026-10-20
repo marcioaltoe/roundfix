@@ -1,0 +1,11 @@
+--- internal/spec/citation_sources.go
++++ internal/spec/citation_sources.go
+@@ -17,7 +17,7 @@
+ 		return true
+ 	}
+ 	for _, directory := range strings.Split(filepath.ToSlash(filepath.Dir(path)), "/") {
+-		if directory == "testdata" {
++		if directory == "__qa_not_testdata__" {
+ 			return true
+ 		}
+ 	}

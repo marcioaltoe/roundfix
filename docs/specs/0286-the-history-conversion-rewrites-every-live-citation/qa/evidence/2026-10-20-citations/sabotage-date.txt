@@ -1,0 +1,34 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^TestHistoryADRLineageDatesTheSupersession$', './internal/spec']
+exit: 1
+wall_seconds: 2.25
+stdout:
+=== RUN   TestHistoryADRLineageDatesTheSupersession
+=== PAUSE TestHistoryADRLineageDatesTheSupersession
+=== CONT  TestHistoryADRLineageDatesTheSupersession
+    history_adr_identity_test.go:89: isolated citation test: exit status 1
+        --- FAIL: TestHistoryADRLineageDatesTheSupersession (0.83s)
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/timestamp_converted_to_UTC (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@dedac4c87471ff1cecb13a980de275c5ccc8a316`." want="Supersedes ADR-0001 (2026-10-06); Git keeps its text at `docs/adr/0001-old.md@dedac4c87471ff1cecb13a980de275c5ccc8a316`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/YAML_date (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@098cf4dee96d2616dce16ab76dfaff82ca96d3bf`." want="Supersedes ADR-0001 (2026-10-05); Git keeps its text at `docs/adr/0001-old.md@098cf4dee96d2616dce16ab76dfaff82ca96d3bf`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/quoted_date (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@ce9b59939ff7d2dc789060e2dfc4e1323740821c`." want="Supersedes ADR-0001 (2026-10-05); Git keeps its text at `docs/adr/0001-old.md@ce9b59939ff7d2dc789060e2dfc4e1323740821c`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/YAML_timestamp (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@eb80a388710f7dcc5239de513f571acde4d46ec7`." want="Supersedes ADR-0001 (2026-10-05); Git keeps its text at `docs/adr/0001-old.md@eb80a388710f7dcc5239de513f571acde4d46ec7`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/missing_updated_at (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@70d522e04284ce64dc308175cf7e910462412193`." want="Supersedes ADR-0001 (2026-10-03); Git keeps its text at `docs/adr/0001-old.md@70d522e04284ce64dc308175cf7e910462412193`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/invalid_updated_at (0.10s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@c309af405533291b062795ff43565d4049495ccc`." want="Supersedes ADR-0001 (2026-10-03); Git keeps its text at `docs/adr/0001-old.md@c309af405533291b062795ff43565d4049495ccc`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/null_updated_at (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@20a0686c63feb67148064b70ad3fcabf2ff297b3`." want="Supersedes ADR-0001 (2026-10-03); Git keeps its text at `docs/adr/0001-old.md@20a0686c63feb67148064b70ad3fcabf2ff297b3`."
+            --- FAIL: TestHistoryADRLineageDatesTheSupersession/structured_updated_at (0.09s)
+                history_adr_identity_test.go:134: line="Supersedes ADR-0001 (2026-10-19); Git keeps its text at `docs/adr/0001-old.md@af2a7e33c1c074d1a965c21ca9fa22eb7ea865d9`." want="Supersedes ADR-0001 (2026-10-03); Git keeps its text at `docs/adr/0001-old.md@af2a7e33c1c074d1a965c21ca9fa22eb7ea865d9`."
+        FAIL
+        suiteguard: guard cost: measured 2627 paths; fingerprint took 66.549875ms before and 74.2515ms after
+--- FAIL: TestHistoryADRLineageDatesTheSupersession (0.98s)
+FAIL
+suiteguard: guard cost: measured 2627 paths; fingerprint took 90.582417ms before and 74.166584ms after
+FAIL	roundfix/internal/spec	1.375s
+FAIL
+
+stderr:

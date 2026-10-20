@@ -1,0 +1,9 @@
+command: ['/bin/sh', '-c', 'grep -q \'func PendingTaskCreates\' internal/spec/pending_targets.go || { printf \'missing PendingTaskCreates\\n\' >&2; exit 1; }; out="$(go test -count=1 -v -run \'^(TestLiveLinksLeaveAPendingTaskCreatesTarget|TestLiveLinksResolveABrokenLinkByTheRemovedFileName|TestRemovedHistoryPathsListsWhatHEADHeldAndTheTreeLacks)$\' ./internal/spec 2>&1)" || { printf \'%s\\n\' "$out"; exit 1; }; for name in TestLiveLinksLeaveAPendingTaskCreatesTarget TestLiveLinksResolveABrokenLinkByTheRemovedFileName TestRemovedHistoryPathsListsWhatHEADHeldAndTheTreeLacks; do printf \'%s\\n\' "$out" | grep -q -- "--- PASS: $name " || { printf \'missing pass: %s\\n\' "$name" >&2; exit 1; }; done; out="$(go test -count=1 -v -run \'^(TestHistoryRetainedSkipsAPendingTaskCreatesTarget|TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames)$\' ./internal/speccheck 2>&1)" || { printf \'%s\\n\' "$out"; exit 1; }; for name in TestHistoryRetainedSkipsAPendingTaskCreatesTarget TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames; do printf \'%s\\n\' "$out" | grep -q -- "--- PASS: $name " || { printf \'missing pass: %s\\n\' "$name" >&2; exit 1; }; done; out="$(go test -count=1 -v -run \'^TestHistorySanitizeRewritesEveryCitationTranscript$\' ./internal/cli 2>&1)" || { printf \'%s\\n\' "$out"; exit 1; }; printf \'%s\\n\' "$out" | grep -q -- \'--- PASS: TestHistorySanitizeRewritesEveryCitationTranscript \' || { printf \'missing pass: TestHistorySanitizeRewritesEveryCitationTranscript\\n\' >&2; exit 1; }; GOOS=windows go build -buildvcs=false ./internal/spec ./internal/speccheck ./internal/cli || exit 1; go test -count=1 ./internal/spec ./internal/speccheck || exit 1; go test -count=1 -run \'History|Citation|Baseline|Live|Sanitize\' ./internal/cli']
+exit: 0
+wall_seconds: 90.106
+stdout:
+ok  	roundfix/internal/spec	26.400s
+ok  	roundfix/internal/speccheck	24.496s
+ok  	roundfix/internal/cli	59.069s
+
+stderr:

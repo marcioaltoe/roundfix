@@ -1,0 +1,23 @@
+command: ['go', 'test', '-count=1', '-v', '-run', '^TestHistoryRewriteResolvesARelativeProsePath$', './internal/spec']
+exit: 1
+wall_seconds: 1.769
+stdout:
+=== RUN   TestHistoryRewriteResolvesARelativeProsePath
+=== PAUSE TestHistoryRewriteResolvesARelativeProsePath
+=== CONT  TestHistoryRewriteResolvesARelativeProsePath
+    citation_sources_test.go:110: isolated citation test: exit status 1
+        --- FAIL: TestHistoryRewriteResolvesARelativeProsePath (0.08s)
+            citation_sources_test.go:122: plan={Citations:[] Files:map[] Count:0 rewrite:{Moves:map[] Relative:true Locate:0x1029c8ef0}} err=<nil> want=`docs/history/findings/x.md@41150c475be57e30da2a218fd552fd389e17b5e0`
+                `docs/history/findings/x.md@41150c475be57e30da2a218fd552fd389e17b5e0`
+                `docs/history/findings/x.md@41150c475be57e30da2a218fd552fd389e17b5e0`
+                `docs/history/findings/x.md@41150c475be57e30da2a218fd552fd389e17b5e0`
+                findings/x.md
+        FAIL
+        suiteguard: guard cost: measured 2627 paths; fingerprint took 72.2015ms before and 78.162333ms after
+--- FAIL: TestHistoryRewriteResolvesARelativeProsePath (0.24s)
+FAIL
+suiteguard: guard cost: measured 2627 paths; fingerprint took 89.339667ms before and 80.568209ms after
+FAIL	roundfix/internal/spec	0.696s
+FAIL
+
+stderr:

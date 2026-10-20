@@ -1,0 +1,54 @@
+exec(open('/tmp/roundfix-0286-helpers.py').read())
+import hashlib
+checks={}; lines=[]
+commits=subprocess.check_output(['git','rev-list','--reverse',state['base']+'..'+state['head']],cwd=root,text=True).splitlines()
+for n,c in enumerate(commits,1):
+ paths=subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r',c],cwd=root,text=True).splitlines()
+ task=spec/f'task_{n:02}.md'; t=task.read_text()
+ declared=re.findall(r'(?m)^- (?:instruction|interface|creates|deletes): `([^`]+)`',t)
+ if '## Recorded paths' in t:declared+=re.findall(r'(?m)^- `([^`]+)`',t.split('## Recorded paths',1)[1])
+ declared.append(str(task.relative_to(root)))
+ outside=[p for p in paths if not any(p==x or p.startswith(x.rstrip('/')+'/') for x in declared)]
+ checks[f'task_{n:02}_scope']=not outside
+ lines+=['Task '+str(n)+' commit '+c,'changed: '+json.dumps(paths),'declared: '+json.dumps(declared),'outside: '+json.dumps(outside)]
+protected=['Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml','internal/baseline/assets','docs/agents/setup-context.json','internal/docscontract/testdata/corpus-golden.json']
+p=subprocess.run(['git','diff','--exit-code',state['base'],state['head'],'--']+protected,cwd=root,capture_output=True,text=True)
+checks['protected_byte_identity']=p.returncode==0
+lines+=['Protected byte comparison: '+str(p.returncode),p.stdout]
+authority=(spec/'_authorization.md').read_text()
+changed=subprocess.check_output(['git','diff','--name-only',state['base'],state['head']],cwd=root,text=True).splitlines()
+governed=[p for p in changed if p.startswith('.agents/skills/') or p=='skills/roundfix/SKILL.md']
+checks['governed_paths_bounded']=all('\n  - '+p+'\n' in authority for p in governed)
+lines+=['Governed paths: '+json.dumps(governed),'Authorization predates every Task at '+state['base']+'; seeded mechanical authorization table audits task_04 '+commits[-1]+'. No additional unlisted tooling Task commit.']
+for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ before=subprocess.check_output(['git','show',state['base']+':'+path],cwd=root,text=True);after=(root/path).read_text()
+ old=re.findall(r'(?m)^\s*version: (\S+)',before);new=re.findall(r'(?m)^\s*version: (\S+)',after)
+ checks[path+'_version']=old!=new and len(set(new))==1
+ a=before.split('### QA settlement\n')[1].split('\n## ',1)[0].split('\n### ',1)[0];b=after.split('### QA settlement\n')[1].split('\n## ',1)[0].split('\n### ',1)[0]
+ checks[path+'_settlement']=a==b;lines+=['Skill version '+path+': '+str(old)+' -> '+str(new)]
+record=(root/'skills/testdata/owned-skill-versions.json').read_text(); checks['version_recorded']='0.1.113' in record
+# Sweep every guide/agent guide/skill copy for obsolete phrases, normalized across line wraps.
+obsolete=[]
+for base in ['docs/user-guide','docs/agents','.agents/skills','skills']:
+ for p in (root/base).rglob('*.md'):
+  text=' '.join(p.read_text().split()).lower()
+  for phrase in ['other citations are listed and left','is head\'s committer date in utc','never rewrites citing files']:
+   if phrase in text:obsolete.append(str(p.relative_to(root))+': '+phrase)
+checks['old_wording_absent']=not obsolete;lines+=['Obsolete wording matches: '+json.dumps(obsolete)]
+context=(root/'CONTEXT.md').read_text()
+for term in ['Citation Source','Removed History Path','History Citation','Git Locator']:
+ line=context.split('**'+term+'**:',1)[1].split('_Avoid_',1)[0];checks[term+'_ADR0299']='0299-the-history-conversion' in line;lines.append(term+': '+line)
+lines+=['Other introduced terms needing glossary entry: none; strict Spec glossary precondition has no gap; Task 04 docscontract suite covers glossary contract.']
+(evidence/'scope-glossary-audit.txt').write_text('\n'.join(lines)+'\n'+json.dumps(checks,indent=2))
+print(json.dumps(checks,indent=2),flush=True)
+row('A','pass' if all(checks.values()) else 'fail','Actor: repository maintainer. Entry: `git diff-tree --no-commit-id --name-only -r <each Task commit>`, declared Context and Recorded paths comparison; Delivery Base byte comparison, authority ancestry, skill record/version/settlement and multiline obsolete-copy sweep. Independent confirmation: actual changed blobs and path lists, not Task result claims. No mutation. Evidence: `evidence/2026-10-20-citations/scope-glossary-audit.txt`. '+json.dumps(checks))
+# Validate adopted evidence by extracting the original measurement passages.
+p=spec/'references/2026-10-19-a-conversao-do-historico-deixa-citacoes-vivas-quebradas.txt'; text=p.read_text()
+passages=[l for l in text.splitlines() if any(x in l for x in ['45','30','18','2026-10-16','2026-10-01','ADR-2026','exit','strict','updated_at'])]
+(evidence/'adopter-evidence.txt').write_text('Origin: adopted Pantheon Inbox Entry; original path inbox/roundfix/2026-10-19-a-conversao-do-historico-deixa-citacoes-vivas-quebradas.md\n'+'\n'.join(passages))
+checks=all(x in text for x in ['45','30','18','2026-10-16','2026-10-01','strict'])
+row('O1','pass' if checks else 'fail','Actor: adopter, independently measured before this Spec. Source: committed `references/2026-10-19-a-conversao-do-historico-deixa-citacoes-vivas-quebradas.txt`, original Pantheon Inbox Entry named in its index. Matched measurement: 45 listed, 30 rewritten, 18 left, ADR-year lineage dated 2026-10-16 versus updated_at 2026-10-01, strict check exit 0. Evidence: `evidence/2026-10-20-citations/adopter-evidence.txt` extracts each observation. This is a pre-Spec external measurement, not a Spec-created rehearsal.')
+web=[('O2','https://adr.github.io/madr/decisions/0005-use-dashes-in-filenames.html','`NNNN` provides a unique number, which can be used for referencing in the forms; alternative: `YYYY-MM-DD Title`.'),('O3','https://ruzickap.github.io/myteam-adr/log4brains/adr/20201016-use-the-adr-slug-as-its-unique-id/','An ADR will be uniquely identified by its slug (ie. its filename without the extension)'),('O4','https://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text','checks for any occurrence of a zero byte (NUL “character”) in the first 8000 bytes (or the entire length if shorter)')]
+for i,url,quote in web:
+ row(i,'blocked (environment: network prohibited by Spec authorization)','Outside evidence: '+url+'. PRD-cited passage (not independently fetched): “'+quote+'”. `_authorization.md` → Limits: “No test, Verification command or QA row: ... reaches the network”. No lookup attempted. Local quote consistency checked against PRD; no equivalent current external source observation. Unblocking requires separately authorized network retrieval; no Unreachable Acceptance declaration required for this outside-evidence row.')
+row('P','blocked (environment: no open Pull Request)','Pull Request row. Supplied delivery fact: no open Pull Request. Approval: recorded cycle AK maintainer authority in `_authorization.md`, predating implementation; no review acceptance obtained. Checks/status: Daemon `make verify-changed` pass at '+state['head']+'. Unresolved threads: none, since no Pull Request exists. Merge-Ready acceptance: none yet. Review-artifact ancestry: claimed candidate '+state['head']+'; no current-candidate review artifact/acceptance supplied. Unblocking: later delivery review and Pull Request; no equivalent for Merge-Ready acceptance, therefore blocked. No GitHub lookup or mutation.')

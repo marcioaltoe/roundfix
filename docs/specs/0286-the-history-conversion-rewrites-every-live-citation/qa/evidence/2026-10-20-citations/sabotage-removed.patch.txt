@@ -1,0 +1,11 @@
+--- internal/speccheck/history_retained.go
++++ internal/speccheck/history_retained.go
+@@ -249,7 +249,7 @@
+ 	// and local Git history. Nothing is sent anywhere. The legacy walk above
+ 	// retains its findings and wording; a missing-link finding owns its line
+ 	// and target, so a removed citation never reports that pair twice.
+-	if git && len(candidates) > 0 {
++	if false && git && len(candidates) > 0 {
+ 		paths, err := spec.CitationSources(ctx, root, true)
+ 		if err != nil {
+ 			return err

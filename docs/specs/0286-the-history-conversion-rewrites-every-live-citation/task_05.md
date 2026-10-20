@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0286-the-history-conversion-rewrites-every-live-citation
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,46 @@
+exec(open('/tmp/roundfix-0286-helpers.py').read())
+import tempfile,hashlib
+cli_env.update({'GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':os.devnull,'GIT_AUTHOR_NAME':'QA fixture','GIT_AUTHOR_EMAIL':'qa@localhost','GIT_COMMITTER_NAME':'QA fixture','GIT_COMMITTER_EMAIL':'qa@localhost','GIT_AUTHOR_DATE':'2026-10-19T12:00:00Z','GIT_COMMITTER_DATE':'2026-10-19T12:00:00Z'})
+source=(root/'internal/cli/history_citations_transcript_test.go').read_text()
+block=source.split('files := map[string]string{',1)[1].split('\n\t}',1)[0]
+files={json.loads(a):json.loads(b) for a,b in re.findall(r'("(?:[^"\\]|\\.)*"):\s*("(?:[^"\\]|\\.)*")',block)}
+assert len(files)==15,len(files)
+def fixture():
+ d=Path(tempfile.mkdtemp(prefix='roundfix-0286-fixture-'))
+ for f,c in files.items():
+  p=d/f;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(c)
+ for args in [['git','init','-b','main'],['git','add','.'],['git','-c','commit.gpgsign=false','commit','-m','docs: fixture'],['git','-c','tag.gpgsign=false','tag','-a','history-full','-m','history fixture']]:
+  p=subprocess.run(args,cwd=d,env=cli_env,capture_output=True,text=True);assert p.returncode==0,p.stderr
+ (d/'bin').mkdir();(d/'bin/roundfix').symlink_to(root/'bin/roundfix');(d/'.git/info/exclude').write_text('/bin/\n')
+ return d
+d=fixture()
+p=run('surface-transcript',['./bin/roundfix','history','sanitize'],d,cli_env)
+technical=(spec/'_techspec.md').read_text(); transcript=technical.split('```transcript\n',1)[1].split('```',1)[0]; want=transcript.split('stdout:\n',1)[1].split('   stderr:',1)[0]; want='\n'.join(line[3:] if line.startswith('   ') else line for line in want.rstrip('\n').splitlines())+'\n'
+pat=re.escape(want);pat=re.sub(r'<[^>]+>',lambda m:'.+',pat)
+matched=p.returncode==0 and p.stderr=='' and re.fullmatch(pat,p.stdout) is not None
+ap=run('surface-apply',['./bin/roundfix','history','sanitize','--apply','--batch','10'],d,cli_env)
+g=run('post-apply-grep',['git','grep','-n','-E','history/(findings|backlog|adr)/','--','.',':(exclude)docs/history/**',':(exclude).agents/skills/**',':(exclude)skills/**',':(exclude)**/testdata/**'],d,cli_env)
+protected=all((d/f).read_text()==files[f] for f in ['.agents/skills/demo/SKILL.md','internal/testdata/case.md'])
+pending='[m](references/medicao.md)' in (d/'docs/specs/0001-demo/_prd.md').read_text()
+broken='docs/history/findings/2026-01-01-x.md@' in (d/'docs/specs/0001-demo/references/note.md').read_text()
+lineage=next((x for x in (d/'docs/adr/2026-10-01-new-cluster.md').read_text().splitlines() if x.startswith('Supersedes ')),'')
+replan=run('surface-replan',['./bin/roundfix','history','sanitize'],d,cli_env)
+checks={'exact_transcript_match':matched,'apply_exit_0':ap.returncode==0,'every_remaining_grep_line_is_locator':all('@' in l for l in g.stdout.splitlines()),'excluded_bytes_identical':protected,'pending_target_preserved':pending,'broken_link_repaired':broken,'lineage':lineage,'idempotent_replan':'0 unit(s) pending' in replan.stdout}
+(evidence/'surface-assertions.txt').write_text(json.dumps(checks,indent=2)+'\n'+(d/'docs/specs/0001-demo/_prd.md').read_text()+(d/'docs/specs/0001-demo/references/note.md').read_text())
+print(checks,flush=True)
+row('U1','pass' if all(v for k,v in checks.items()) else 'fail','Actor: maintainer; entry: `./bin/roundfix history sanitize`, then `--apply --batch 10`, isolated temporary repository with authored Surface Transcript 1 fixture and temporary HOME. Exact stdout template, empty stderr, exit 0 compared separately; committed fixture and annotated history-full tag. Independent confirmation: fresh git grep, byte comparisons, successor/Spec rereads and a second CLI plan. Evidence: `evidence/2026-10-20-citations/surface-transcript.txt`, `surface-apply.txt`, `post-apply-grep.txt`, `surface-assertions.txt`, `surface-replan.txt`. '+json.dumps(checks))
+d=fixture()
+for args in [['git','rm','docs/history/findings/2026-01-01-x.md','docs/history/backlog/2026-01-02-b.md','docs/history/adr/0001-old.md'],['git','-c','commit.gpgsign=false','commit','-m','docs: prior conversion']]:
+ p=subprocess.run(args,cwd=d,env=cli_env,capture_output=True,text=True);assert p.returncode==0,p.stderr
+for f,c in {'docs/agents/setup-context.json':'{"managedArtifacts":[{"id":"guide.docs-layout","path":"docs/agents/docs-layout.md"}]}','docs/agents/docs-layout.md':'<!-- setup-context-driven:begin id=guide.docs-layout version=0.0.1 -->\nA retirement deletes the file\n<!-- setup-context-driven:end id=guide.docs-layout -->\n'}.items():
+ (d/f).write_text(c)
+for args in [['git','add','.'],['git','-c','commit.gpgsign=false','commit','-m','docs: retirement rule']]:
+ p=subprocess.run(args,cwd=d,env=cli_env,capture_output=True,text=True);assert p.returncode==0,p.stderr
+p=run('prior-conversion-check',['./bin/roundfix','spec','check','--strict'],d,cli_env)
+lines=[l for l in p.stdout.splitlines() if 'SC-HISTORY-RETAINED' in l]
+removed=[l for l in lines if 'without a Git Locator' in l]
+expected=['Makefile:2','docs/adr/0002-live.md:6','docs/agents/deploy.md:1','docs/reference/notes.md:1','infra/README.md:1']
+checks={'exit_1':p.returncode==1,'five_source_files':all(('  at '+x+'\n') in p.stdout for x in expected),'citation_diagnostics':len(removed),'excluded_not_reported':not any('SKILL.md' in l or 'testdata' in l or 'medicao.md' in l for l in lines),'fixes_present':p.stdout.count('Replace the citation with')>=7}
+(evidence/'prior-conversion-assertions.txt').write_text(json.dumps(checks,indent=2)+'\n'+'\n'.join(lines))
+print(checks,flush=True)
+row('U2','pass' if checks['exit_1'] and checks['five_source_files'] and checks['citation_diagnostics']==7 and checks['excluded_not_reported'] and checks['fixes_present'] else 'fail','Actor: adopter with earlier unconverted citations. Entry: `./bin/roundfix spec check --strict` after two committed fixture changes (history deletion and retirement guide). Exit 1, seven citation diagnostics across the five required sources, one additional missing-link diagnostic; each supplies line and locator. Skill/testdata/pending creates target excluded. Other minimal-fixture errors are retained and ignored as authored. Independent confirmation: exact source/diagnostic count assertions in `evidence/2026-10-20-citations/prior-conversion-assertions.txt`; full stdout/stderr: `prior-conversion-check.txt`. '+json.dumps(checks))

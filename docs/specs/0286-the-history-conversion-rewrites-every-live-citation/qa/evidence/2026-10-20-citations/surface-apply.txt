@@ -1,0 +1,7 @@
+command: ['./bin/roundfix', 'history', 'sanitize', '--apply', '--batch', '10']
+exit: 0
+wall_seconds: 0.435
+stdout:
+history sanitize applied 4 unit(s): wrote 0 Archive Record(s), removed 4 file(s) (207 bytes) kept in Git at 974ffd1a1ce1 and tag history-full; rewrote 8 citation(s) in 6 file(s); promoted 0 file(s) to docs/references/; 0 unit(s) remain
+
+stderr:

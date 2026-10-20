@@ -1,0 +1,12 @@
+command: ['git', 'grep', '-n', '-E', 'history/(findings|backlog|adr)/', '--', '.', ':(exclude)docs/history/**', ':(exclude).agents/skills/**', ':(exclude)skills/**', ':(exclude)**/testdata/**']
+exit: 0
+wall_seconds: 0.007
+stdout:
+Makefile:2:# see docs/history/findings/2026-01-01-x.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc
+docs/adr/0002-live.md:6:`docs/history/findings/2026-01-01-x.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc` old (`docs/history/adr/0001-old.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc`)
+docs/agents/deploy.md:1:`docs/history/findings/2026-01-01-x.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc`
+docs/reference/notes.md:1:b (`docs/history/backlog/2026-01-02-b.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc`)
+docs/specs/0001-demo/references/note.md:1:f (`docs/history/findings/2026-01-01-x.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc`)
+infra/README.md:1:b (`docs/history/backlog/2026-01-02-b.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc`) `docs/history/findings/2026-01-01-x.md@974ffd1a1ce179707fb1ce8d9daf5ed3f1b874cc`
+
+stderr:

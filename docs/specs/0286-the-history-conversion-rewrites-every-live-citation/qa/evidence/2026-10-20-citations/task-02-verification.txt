@@ -1,0 +1,8 @@
+command: ['/bin/sh', '-c', 'grep -q \'func historyADRIdentifier\' internal/spec/history_entries.go || { printf \'missing historyADRIdentifier\\n\' >&2; exit 1; }; grep -q \'func historyADRSupersessionDate\' internal/spec/history_entries.go || { printf \'missing historyADRSupersessionDate\\n\' >&2; exit 1; }; out="$(go test -count=1 -v -run \'^(TestHistoryADRLineageNamesADateNamedADRByItsFileName|TestHistoryADRLineageDatesTheSupersession|TestHistoryADRNumericReferencesSelectOnlyNumberedADRs|TestHistoryADRPlanWritesTheLineageASuccessorLacks|TestHistoryADRPlanRefusesOnlyAnADRWithoutAnAcceptedSuccessor)$\' ./internal/spec 2>&1)" || { printf \'%s\\n\' "$out"; exit 1; }; for name in TestHistoryADRLineageNamesADateNamedADRByItsFileName TestHistoryADRLineageDatesTheSupersession TestHistoryADRNumericReferencesSelectOnlyNumberedADRs TestHistoryADRPlanWritesTheLineageASuccessorLacks TestHistoryADRPlanRefusesOnlyAnADRWithoutAnAcceptedSuccessor; do printf \'%s\\n\' "$out" | grep -q -- "--- PASS: $name " || { printf \'missing pass: %s\\n\' "$name" >&2; exit 1; }; done; GOOS=windows go build -buildvcs=false ./internal/spec || exit 1; go test -count=1 -run \'History|Lineage|Successor|ADR\' ./internal/spec ./internal/cli']
+exit: 0
+wall_seconds: 16.045
+stdout:
+ok  	roundfix/internal/spec	5.867s
+ok  	roundfix/internal/cli	13.868s
+
+stderr:

@@ -1,0 +1,13 @@
+command: ./bin/roundfix spec check 0286-the-history-conversion-rewrites-every-live-citation --strict
+exit: 0
+wall_seconds: 10.861
+stdout:
+Spec 0286-the-history-conversion-rewrites-every-live-citation
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0286-the-history-conversion-rewrites-every-live-citation/_techspec.md Vocabulary Contract
+
+stderr:

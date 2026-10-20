@@ -1,0 +1,13 @@
+import os,json,subprocess,time,re
+from pathlib import Path
+state=json.loads(Path('/tmp/roundfix-0286-state.json').read_text())
+root=Path(state['root']); spec=Path(state['spec']); evidence=Path(state['evidence']); report=spec/'qa/qa-report-2026-10-20.md'
+def row(i,status,detail):
+ t=report.read_text(); t=re.sub(r'(?m)^\| '+re.escape(i)+r' \| [^|]+ \|',lambda m:'| '+i+' | '+status+' |',t)
+ start=t.index('### '+i+'\n'); end=t.find('\n### ',start+1); end=len(t) if end<0 else end
+ b=t[start:end]; marker=b.index('Actor:'); b=b[:marker]+detail+'\n'; t=t[:start]+b+t[end:];report.write_text(t)
+def run(label,args,cwd=root,env=None):
+ tick=time.monotonic(); p=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True); elapsed=time.monotonic()-tick
+ (evidence/(label+'.txt')).write_text('command: '+repr(args)+'\nexit: '+str(p.returncode)+'\nwall_seconds: '+str(round(elapsed,3))+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ print(label, 'exit',p.returncode,'wall',round(elapsed,3),flush=True); return p
+cli_env={'PATH':os.environ['PATH'],'HOME':state['home'],'ROUNDFIX_RUN_ID':'qa-0286'}

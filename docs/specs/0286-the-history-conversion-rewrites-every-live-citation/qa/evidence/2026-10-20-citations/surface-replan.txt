@@ -1,0 +1,7 @@
+command: ['./bin/roundfix', 'history', 'sanitize']
+exit: 0
+wall_seconds: 0.042
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr:

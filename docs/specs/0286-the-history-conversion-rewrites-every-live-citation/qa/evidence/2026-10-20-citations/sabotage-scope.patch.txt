@@ -1,0 +1,26 @@
+--- internal/spec/history_entries.go
++++ internal/spec/history_entries.go
+@@ -799,6 +799,8 @@
+ 			}
+ 			contents[c.Path] = content
+ 		}
++		scope := historyRootInstructionCarrier(c.Path) || IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
++		if scope {
+ 		if err := historyRewriteRegularFile(root, c.Path); err != nil {
+ 			return p, err
+ 		}
+@@ -817,6 +819,8 @@
+ 				p.Count += count
+ 			}
+ 		}
++		}
++
+ 		if folders[c.Target] {
+ 			c.Target += "/"
+ 		}
+@@ -890,3 +894,5 @@
+ func historyRepositoryPath(path string) bool {
+ 	return path != "" && path != "." && !filepath.IsAbs(path) && path != ".." && !strings.HasPrefix(path, "../") && !strings.Contains(path, "\\") && filepath.ToSlash(filepath.Clean(path)) == path
+ }
++
++func historyRootInstructionCarrier(path string) bool { return path == "AGENTS.md" || path == "CLAUDE.md" }
