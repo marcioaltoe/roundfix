@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0287-reports-that-count-what-they-say
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -145,3 +145,77 @@ is verifiable on its own on temporary Roundfix Homes.
 - `_prd.md` → Sources; Goals; Core Feature 2; Core Feature 4; Success Metric 2
 - `_techspec.md` → API Contract 3; API Contract 5; Invariants 3-4; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 2
 - ADR-0296; ADR-0255; ADR-0259; ADR-0271; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+
+## Result
+
+Implemented the assigned storage-report slice; status and declared Verification
+remain Daemon-owned.
+
+- Empty recorded roots resolve from the stored repository key, with the recorded
+  checkout default selected only when its Run directory exists and the key's
+  does not, or when repository metadata cannot resolve the key's default.
+  `COALESCE(NULLIF(repository_root, ''), git_root)` preserves legacy records.
+- Nonblank roots resolve through `config.ResolveArtifactDirectory`; resolution
+  errors retain the cleaned recorded value. The CLI passes its explicit home.
+  Artifact Root, repository and state groups measure the resolved location;
+  repository groups retain the recorded Git root.
+- Run IDs are checked before root/path construction. Non-not-exist inspection
+  errors carry `inspect Run artifact directory <path>: <error>`. The source
+  comment states that database and repository Git metadata feed standard output;
+  resolution never invokes writable-directory validation.
+
+Acceptance evidence:
+
+- Default roots: `TestStorageReportMeasuresTheArtifactRootARunWroteTo` passes nine
+  subtests covering Implement defaults, removed linked worktrees, relative fetch
+  roots, checkout-only defaults, missing defaults, absolute roots, repository
+  precedence when both directories exist, differing defaults with neither
+  directory present, and unavailable repository metadata. Each asserts Artifact
+  Root, repository and state bytes. The new CLI test asserts the resolved root's
+  exact tab-separated line, no `.` root, and the measured artifact bytes.
+- Relative and absolute roots: the named store test's fetch-relative and absolute
+  cases pass; all five existing report calls now receive their test home without
+  renaming an existing test.
+- No mutation: the new store cases compare the full temporary home and repository
+  trees before/after and check missing defaults stay absent. The new CLI test
+  compares database bytes. The existing reconciliation/no-mutation test and
+  live-writer compaction fallback also pass in the focused check below.
+- Documentation: both required sentences appear in the guide and canonical skill
+  reference. A search across `docs/user-guide`, `docs/agents`, `.agents/skills`
+  and `skills` found no remaining wording claiming this report measures every
+  recorded root literally. Sanitation and retention descriptions stay intact.
+  Roundfix's two canonical version fields rose from `0.1.114` to `0.1.115`;
+  the mirror and records were regenerated, never hand-edited. QA settlement
+  sections were left unchanged.
+
+Focused checks and generation (all exit 0 after implementation):
+
+- `go test ./internal/store ./internal/cli -run 'Test(StorageReportMeasuresTheArtifactRootARunWroteTo|RunStorageReportListsTheDefaultRootOfARunWithoutOne|StorageReportReconcilesMeasuredTotalsWithoutMutation|RunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances)$' -count=1`
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+- `make baseline-digests` — repository-mandated regeneration; reported no changes.
+- `GOOS=windows go test -c -o <temporary directory>/store.test.exe ./internal/store`
+  and `GOOS=windows go test -c -o <temporary directory>/cli.test.exe ./internal/cli`
+  — both changed test packages compile for Windows.
+- `git diff --check`
+
+Before the production change, the new store test reproduced empty roots shown
+as `.` and relative roots measured literally. After correcting a missing
+fixture-directory setup, the CLI regression independently reproduced
+`.\tmissing\t1\t0` instead of its default-root line with 21 bytes. Both
+regressions pass after resolution was implemented.
+
+Environment: the supplied writable worktree path contains a symlink unsupported
+by the sandbox executor. Commands used authorized escalation in the resolved
+assigned checkout. All test homes and repositories were temporary; no test read
+the real Roundfix Home.
+
+Declared Verification and repository Verification were not run. No Task status,
+Task Graph, other Task file, commit, push or pull request was authored here.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261020T144117Z_258265979932c5f1`
+- Source commit: `151468d6271426a711d0b6cb0ace501242977427`

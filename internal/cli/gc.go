@@ -293,7 +293,7 @@ func measureStorageReport(ctx context.Context, homeDir string) (store.StorageRep
 	if err != nil {
 		return store.StorageReport{}, err
 	}
-	report, reportErr := runStore.StorageReport(ctx)
+	report, reportErr := runStore.StorageReport(ctx, homeDir)
 	closeErr := runStore.Close()
 	if reportErr != nil {
 		if closeErr != nil {

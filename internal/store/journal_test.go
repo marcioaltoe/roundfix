@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
 	"roundfix/internal/runevent"
 	"runtime"
 	"slices"
@@ -772,7 +774,7 @@ func TestStorageReportGroupsPointerMapPages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	report, err := reader.StorageReport(ctx)
+	report, err := reader.StorageReport(ctx, homeDir)
 	closeStore(t, reader)
 	if err != nil {
 		t.Fatal(err)
@@ -801,7 +803,7 @@ func TestStorageReportReadsALiveWALSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	report, err := reader.StorageReport(ctx)
+	report, err := reader.StorageReport(ctx, homeDir)
 	closeStore(t, reader)
 	if err != nil {
 		t.Fatal(err)
@@ -839,14 +841,14 @@ func TestStorageReportReleasesReadTransactionOnError(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer closeStore(t, reader)
-	if _, err := reader.StorageReport(ctx); err == nil || !strings.Contains(err.Error(), "list Runs for storage report") {
+	if _, err := reader.StorageReport(ctx, homeDir); err == nil || !strings.Contains(err.Error(), "list Runs for storage report") {
 		t.Fatalf("expected a Run query error inside the snapshot, got %v", err)
 	}
 	if _, err := writer.db.ExecContext(ctx, `ALTER TABLE snapshot_runs RENAME TO runs`); err != nil {
 		t.Fatal(err)
 	}
 	// Reuse the same connection: a leaked read transaction would reject BEGIN.
-	report, err := reader.StorageReport(ctx)
+	report, err := reader.StorageReport(ctx, homeDir)
 	if err != nil {
 		t.Fatalf("measure after the failed read: %v", err)
 	}
@@ -874,6 +876,125 @@ func assertStorageSnapshotGroups(t *testing.T, report StorageReport) {
 	grouped := report.DatabaseAllocatedBytes + report.DatabaseFreeBytes + report.DatabasePointerMapBytes + report.DatabaseLockBytePageBytes
 	if grouped != report.DatabaseSnapshotBytes || report.ReconciliationToleranceBytes != 0 {
 		t.Fatalf("snapshot=%d grouped=%d tolerance=%d", report.DatabaseSnapshotBytes, grouped, report.ReconciliationToleranceBytes)
+	}
+}
+
+func TestStorageReportMeasuresTheArtifactRootARunWroteTo(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"implement default", "removed linked worktree", "relative fetch root", "checkout default", "missing default", "absolute root", "repository default wins", "missing linked default", "unresolvable repository default"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			homeDir := t.TempDir()
+			mainRoot := t.TempDir()
+			gitRoot := mainRoot
+			if name == "removed linked worktree" || name == "checkout default" || name == "repository default wins" || name == "missing linked default" {
+				mainRoot, gitRoot = linkedWorktreeFixture(t, t.TempDir())
+			} else {
+				gittest.InitRepo(t, mainRoot)
+			}
+			root, err := roundconfig.ResolveArtifactDirectory("", mainRoot, homeDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request := sampleCreateRunRequest()
+			request.Kind = KindImplement
+			request.SpecSlug = "storage-report"
+			request.GitRoot = gitRoot
+			request.ArtifactDir = ""
+			switch name {
+			case "relative fetch root":
+				request.Kind = KindFetch
+				request.ArtifactDir = "relative-artifacts"
+				root = filepath.Join(gitRoot, request.ArtifactDir)
+			case "absolute root":
+				root = filepath.Join(t.TempDir(), "absolute-artifacts")
+				request.ArtifactDir = root
+			case "checkout default", "unresolvable repository default":
+				root, err = roundconfig.DefaultArtifactDirectoryForPath(gitRoot, homeDir)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			writer := openTestStore(t, ctx, homeDir)
+			run, err := writer.CreateRun(ctx, request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			closeStore(t, writer)
+			if name == "removed linked worktree" {
+				gittest.Run(t, mainRoot, "worktree", "remove", gitRoot)
+			}
+			var wantBytes int64
+			missing := name == "missing default" || name == "missing linked default"
+			if !missing {
+				content := []byte("measured Run artifacts")
+				path := filepath.Join(root, "runs", run.ID, "agent.log")
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, content, 0o644); err != nil {
+					t.Fatal(err)
+				}
+				wantBytes = int64(len(content))
+			}
+			if name == "repository default wins" {
+				checkoutRoot, err := roundconfig.DefaultArtifactDirectoryForPath(gitRoot, homeDir)
+				if err != nil {
+					t.Fatal(err)
+				}
+				path := filepath.Join(checkoutRoot, "runs", run.ID)
+				if err := os.MkdirAll(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(path, "old.log"), []byte("old"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if name == "unresolvable repository default" {
+				if err := os.RemoveAll(filepath.Join(mainRoot, ".git")); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(mainRoot, ".git"), []byte("gitdir: missing-git-directory\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			before := storageTreeSnapshot(t, homeDir)
+			repositoryBefore := storageTreeSnapshot(t, mainRoot)
+			reader, err := OpenStorageReader(ctx, homeDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			report, err := reader.StorageReport(ctx, homeDir)
+			closeStore(t, reader)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(report.ArtifactRoots) != 1 {
+				t.Fatalf("Artifact Roots = %#v", report.ArtifactRoots)
+			}
+			group := report.ArtifactRoots[0]
+			if group.ArtifactRoot != root || group.Missing != missing || group.Rows != 1 || group.Bytes != wantBytes || report.ArtifactBytes != wantBytes {
+				t.Fatalf("Artifact Root = %#v, measured=%d, want root=%q bytes=%d", group, report.ArtifactBytes, root, wantBytes)
+			}
+			if len(report.Repositories) != 1 || report.Repositories[0].Repository != gitRoot || report.Repositories[0].Rows != 1 || report.Repositories[0].Bytes != wantBytes {
+				t.Fatalf("repository groups = %#v", report.Repositories)
+			}
+			if len(report.States) != 1 || report.States[0].State != run.State || report.States[0].Rows != 1 || report.States[0].Bytes != wantBytes {
+				t.Fatalf("state groups = %#v", report.States)
+			}
+			if after := storageTreeSnapshot(t, homeDir); !reflect.DeepEqual(before, after) {
+				t.Fatal("report changed Roundfix Home")
+			}
+			if after := storageTreeSnapshot(t, mainRoot); !reflect.DeepEqual(repositoryBefore, after) {
+				t.Fatal("report changed repository")
+			}
+			if missing {
+				if _, err := os.Stat(root); !errors.Is(err, os.ErrNotExist) {
+					t.Fatalf("missing root was created: %v", err)
+				}
+			}
+		})
 	}
 }
 
@@ -935,7 +1056,7 @@ func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open Run Database reader: %v", err)
 	}
-	report, err := reader.StorageReport(ctx)
+	report, err := reader.StorageReport(ctx, homeDir)
 	if err != nil {
 		t.Fatalf("measure storage report: %v", err)
 	}

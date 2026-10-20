@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"roundfix/internal/config"
 	"roundfix/internal/runevent"
 	"slices"
 	"sort"
@@ -158,8 +159,8 @@ type compactionFingerprint struct {
 const StorageReportReconciliationToleranceReason = "one read transaction measures every page group, pointer-map and lock-byte pages included"
 
 // StorageReport is a read-only measurement of the Run Database and every
-// recorded Artifact Root. Table bytes are SQLite page allocations. Repository
-// and state bytes are regular-file bytes under their recorded runs/<run-id>
+// resolved Artifact Root. Table bytes are SQLite page allocations. Repository
+// and state bytes are regular-file bytes under their resolved runs/<run-id>
 // directories, so the same Run artifact is never counted twice within either
 // grouping.
 type StorageReport struct {
@@ -206,8 +207,8 @@ type StorageTableGroup struct {
 	Bytes int64
 }
 
-// StorageArtifactRootGroup reports one unique recorded Artifact Root. Rows is
-// the number of Runs that record the root; Bytes measures regular files below
+// StorageArtifactRootGroup reports one unique resolved Artifact Root. Rows is
+// the number of Runs that resolve to the root; Bytes measures regular files below
 // the root once, regardless of how many Runs reference it.
 type StorageArtifactRootGroup struct {
 	ArtifactRoot string
@@ -217,16 +218,19 @@ type StorageArtifactRootGroup struct {
 }
 
 type storageRunRecord struct {
-	id           string
-	repository   string
-	state        string
-	artifactRoot string
+	id             string
+	repository     string
+	repositoryRoot string
+	state          string
+	artifactRoot   string
 }
 
 // StorageReport measures every page group in one read transaction. Use an
 // OpenStorageReader for an idle file or OpenReader when the WAL holds frames;
-// neither connection migrates, checkpoints, or writes database bytes.
-func (store *Store) StorageReport(ctx context.Context) (StorageReport, error) {
+// neither connection migrates, checkpoints, or writes database bytes. Root
+// resolution reads the Run Database and recorded repositories' Git metadata
+// for standard output only; it never validates writable roots or creates files.
+func (store *Store) StorageReport(ctx context.Context, homeDir string) (StorageReport, error) {
 	conn, err := store.db.Conn(ctx)
 	if err != nil {
 		return StorageReport{}, fmt.Errorf("open Storage Snapshot connection: %w", err)
@@ -311,7 +315,7 @@ func (store *Store) StorageReport(ctx context.Context) (StorageReport, error) {
 	if err != nil {
 		return StorageReport{}, err
 	}
-	repositories, states, artifactRoots, artifactBytes, err := storageFilesystemGroups(runs)
+	repositories, states, artifactRoots, artifactBytes, err := storageFilesystemGroups(runs, homeDir)
 	if err != nil {
 		return StorageReport{}, err
 	}
@@ -480,7 +484,7 @@ ORDER BY name`)
 
 func storageRunRecords(ctx context.Context, db queryContextRunner) ([]storageRunRecord, error) {
 	rows, err := db.QueryContext(ctx, `
-SELECT id, git_root, state, artifact_dir
+SELECT id, git_root, COALESCE(NULLIF(repository_root, ''), git_root), state, artifact_dir
 FROM runs
 ORDER BY id`)
 	if err != nil {
@@ -492,11 +496,10 @@ ORDER BY id`)
 	runs := []storageRunRecord{}
 	for rows.Next() {
 		var run storageRunRecord
-		if err := rows.Scan(&run.id, &run.repository, &run.state, &run.artifactRoot); err != nil {
+		if err := rows.Scan(&run.id, &run.repository, &run.repositoryRoot, &run.state, &run.artifactRoot); err != nil {
 			return nil, fmt.Errorf("scan Run for storage report: %w", err)
 		}
 		run.repository = filepath.Clean(run.repository)
-		run.artifactRoot = filepath.Clean(run.artifactRoot)
 		runs = append(runs, run)
 	}
 	if err := rows.Err(); err != nil {
@@ -505,12 +508,59 @@ ORDER BY id`)
 	return runs, nil
 }
 
-func storageFilesystemGroups(runs []storageRunRecord) ([]StorageRepositoryGroup, []StorageStateGroup, []StorageArtifactRootGroup, int64, error) {
+// storageArtifactRoot returns the root a Run wrote its artifacts to, without
+// creating or write-checking any path. Repository keys survive removed checkouts;
+// older Runs may instead have written under the checkout-derived default.
+func storageArtifactRoot(run storageRunRecord, homeDir string) (string, error) {
+	if filepath.Base(run.id) != run.id || run.id == "." || run.id == ".." {
+		return "", fmt.Errorf("measure Run artifacts: unsafe Run ID %q", run.id)
+	}
+	if strings.TrimSpace(run.artifactRoot) != "" {
+		root, err := config.ResolveArtifactDirectory(run.artifactRoot, run.repository, homeDir)
+		if err != nil {
+			return filepath.Clean(run.artifactRoot), nil
+		}
+		return root, nil
+	}
+	root, err := config.ResolveArtifactDirectory("", run.repositoryRoot, homeDir)
+	checkoutRoot, checkoutErr := config.DefaultArtifactDirectoryForPath(run.repository, homeDir)
+	if err != nil {
+		if checkoutErr != nil {
+			return ".", nil
+		}
+		return checkoutRoot, nil
+	}
+	if checkoutErr == nil && checkoutRoot != root {
+		keyPath := filepath.Join(root, "runs", run.id)
+		keyExists, err := storagePathExists(keyPath)
+		if err != nil {
+			return "", fmt.Errorf("inspect Run artifact directory %s: %w", keyPath, err)
+		}
+		if !keyExists {
+			checkoutPath := filepath.Join(checkoutRoot, "runs", run.id)
+			checkoutExists, err := storagePathExists(checkoutPath)
+			if err != nil {
+				return "", fmt.Errorf("inspect Run artifact directory %s: %w", checkoutPath, err)
+			}
+			if checkoutExists {
+				return checkoutRoot, nil
+			}
+		}
+	}
+	return root, nil
+}
+
+func storageFilesystemGroups(runs []storageRunRecord, homeDir string) ([]StorageRepositoryGroup, []StorageStateGroup, []StorageArtifactRootGroup, int64, error) {
 	repositories := map[string]*StorageRepositoryGroup{}
 	states := map[string]*StorageStateGroup{}
 	artifactRoots := map[string]*StorageArtifactRootGroup{}
 
 	for _, run := range runs {
+		rootPath, err := storageArtifactRoot(run, homeDir)
+		if err != nil {
+			return nil, nil, nil, 0, err
+		}
+		run.artifactRoot = rootPath
 		repository := repositories[run.repository]
 		if repository == nil {
 			exists, err := storagePathExists(run.repository)
@@ -533,7 +583,7 @@ func storageFilesystemGroups(runs []storageRunRecord) ([]StorageRepositoryGroup,
 
 		runBytes, _, err := storageRunArtifactBytes(run.artifactRoot, run.id)
 		if err != nil {
-			return nil, nil, nil, 0, err
+			return nil, nil, nil, 0, fmt.Errorf("inspect Run artifact directory %s: %w", filepath.Join(run.artifactRoot, "runs", run.id), err)
 		}
 		repository.Rows++
 		repository.Bytes += runBytes
