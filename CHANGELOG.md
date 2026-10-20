@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.97.0] - 2026-10-20
+
+### The history conversion rewrites every live citation
+
+- **Every listed citation, in every Citation Source.** After removals, `roundfix history sanitize` and `roundfix baseline update` rewrite every History Citation they list, in each tracked text file outside the skill trees and testdata directories. A Markdown link becomes its label followed by a Git Locator; a prose or backtick path becomes the locator; outside Markdown the locator is written without backticks. A prose path starting with `./` or `../` is resolved against the citing file. The plan lists each one as `cites <path>:<line> names <target>; rewrites to <replacement>`, and a second plan is empty (ADR-0299).
+- **Removed links and pending targets.** A broken link is resolved by its file name when exactly one removed history file has that name. A link to a file that a pending Task of an active Spec declares in `creates:` is left alone.
+- **Date-named ADRs.** A retired ADR whose file name is not a number followed by a slug is named by its file name, and the supersession line carries the day it was superseded: `Supersedes ADR-<number> (<date>); Git keeps its text at <locator>.`
+- **The check reports what the conversion missed.** `SC-HISTORY-RETAINED` also reports a citation outside `docs/history` that names a removed history file without a Git Locator, with file, line and replacement locator. It reads only local files and Git.
+
+### Changed
+
+- The guides document that `baseline update --no-history` still writes the retirement rule while Pending History remains, so `SC-HISTORY-RETAINED` reports retained history on each active Spec until the conversion runs.
+
 ## [0.96.0] - 2026-10-20
 
 ### A transient profile-proof timeout does not park the Delivery Queue
