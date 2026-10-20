@@ -224,11 +224,11 @@ func TestRemovalRewriteLocatesAReducedEntryAtItsProvenance(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "# Guide\n\nfinding (`" + active + "@" + provenance + "`)\n"
-	if string(plan.Files[guide]) != want || len(plan.Files) != 1 || plan.Count != 1 {
+	if string(plan.Files[guide]) != want || len(plan.Files) != 2 || plan.Count != 2 {
 		t.Fatalf("plan=%+v want=%s", plan, want)
 	}
 	count, files, err := plan.Apply(t.Context(), root)
-	if err != nil || count != 1 || files != 1 {
+	if err != nil || count != 2 || files != 2 {
 		t.Fatalf("apply=%d %d %v", count, files, err)
 	}
 	got, err := os.ReadFile(filepath.Join(root, guide))

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0286-the-history-conversion-rewrites-every-live-citation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -126,3 +126,67 @@ temporary repositories.
 - `_prd.md` → Sources; Goals; Core Feature 1; Success Metric 1; Acceptance evidence
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 7; Invariants 1-2; Current behavior; Testing Approach; Build Order 1
 - ADR-0299; ADR-0278; ADR-0260; ADR-0254; ADR-0259; ADR-0271; ADR-0285
+
+## Result
+
+Implemented the Task 01 slice; Task status and declared Verification remain
+Daemon-owned. The only pre-existing changed path was this Task file (its
+`in_progress` status); that status was preserved.
+
+- Citation Sources now come from the repository's tracked regular text files,
+  sorted by path, excluding both skill trees, every `testdata` directory,
+  symbolic links (including index symlinks on Windows), and files with a NUL
+  in their first 8,000 bytes. Untracked files are opt-in and ignored files
+  remain excluded. Binary detection reads only that prefix.
+- The history plan uses `SourceHistoryCitations`, removes the former source
+  scope restriction, resolves explicit `./` and `../` prose paths, and marks
+  every listed citation with its replacement. Markdown uses Markdown locators;
+  other text uses plain locators and preserves surrounding link syntax.
+  Apply re-reads only planned sources, preserves Baseline edits, and refuses
+  a source that became a symlink or binary before writing.
+- `HistoryCitations` retains its tracked-Markdown behavior. Only the history
+  rewrite plan sets `CitationRewrite.Relative`. Empty target lists do not
+  scan sources, preserving repeated-apply and stale-detector behavior.
+- Updated every declared existing-test break and added the four spec tests
+  and CLI test. New isolated test children have cancellation/reaping cleanup;
+  CLI subprocess contexts also register cleanup.
+
+Acceptance evidence:
+
+1. The adopter-shaped spec and public CLI regressions list and rewrite seven
+   citations across five files (ADR, agent guide, reference page, README and
+   Makefile), then find no remaining citation of the removed path outside a
+   Git Locator. Relative-prose coverage also checks relative moves and keeps
+   an unprefixed `findings/x.md` unchanged.
+2. Makefile and Go-text assertions check exact plain locator bytes and retained
+   link syntax. Exclusion coverage checks a NUL at byte 7,999, the skill and
+   fixture paths, a tracked symlink, untracked/ignored selection, and unchanged
+   excluded bytes after Apply.
+3. Focused Archive Relink, record-links and Legacy Link Rebase regressions
+   passed; the shared legacy detector remains unchanged.
+
+Focused checks (all commands below exited 0 unless explicitly labeled red):
+
+- Initial red: `rtk proxy go test ./internal/spec -run '^TestHistoryRewriteResolvesARelativeProsePath$' -count=1`
+  failed to compile because the two new Citation Source APIs did not exist.
+- Final task cases: `rtk proxy go test ./internal/spec ./internal/cli -run '^(TestHistoryRewrite.*|TestCitationSourcesSkipSkillTreesTestdataAndBinaryFiles|TestRemovalRewriteLocatesAReducedEntryAtItsProvenance|TestBaselineUpdateRewritesEveryListedCitation|TestHistorySanitizePlanWritesNothing|TestBaselineUpdateHistoryCitationBoundaries|TestBaselineUpdateListsHistoryCitationsTranscript|TestBaselineUpdatePromotesOnlyOnRequestTranscript|TestBaselineUpdateReportsStaleHistoryCitationsTranscript|TestHistorySanitizeAppliesTheAdopterShapes|TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome)$' -count=1`
+  passed in both packages.
+- Compatibility cases: `rtk proxy go test ./internal/spec ./internal/cli -run '^(TestRelinkContentRewritesOnlyDestinationsAndPaths|TestPlanArchiveRelink.*|TestCitationRewrite.*|TestLegacyLinkRebase.*|TestLegacyConversionRebasesTheOutcomeAndPromotedCopies|TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource|TestHistorySanitizeRewritesBrokenRecordLinks|TestBaselineUpdateRewritesBrokenRecordLinks)$' -count=1`
+  passed in both packages.
+- An additional focused history selection initially exposed unnecessary
+  scans with no removal targets in the repeated-adopter and stale-detector
+  tests. The empty-target return fixes the cause; both tests passed in the
+  final focused task run above. No assertions in those tests were changed.
+- `GOOS=windows rtk proxy go test -c -o /tmp/roundfix-task01-spec.test.exe ./internal/spec`
+  and `GOOS=windows rtk proxy go test -c -o /tmp/roundfix-task01-cli.test.exe ./internal/cli`
+  both cross-compiled the final packages and tests successfully.
+- `rtk proxy git diff --check` passed.
+
+Environment: the sandbox rejected the symlinked writable root before starting
+any process. Authorized escalated execution used the resolved worktree under
+`/Volumes/Brain-SSD/cache/.roundfix/worktrees/`.
+
+Not run: the Task's declared Verification, selected repository Verification,
+selected incremental Verification, or full test suites; these remain for the
+Daemon. No other Task or Task Graph file was edited. No commit, push or pull
+request was made. No follow-up outside this slice was implemented.

@@ -171,8 +171,9 @@ func ResolveGitLocator(ctx context.Context, repositoryRoot, path, preferred, pul
 // CitationRewrite shares destination scanning and bounded path replacement
 // between Archive Relink and text copied out of a removed folder.
 type CitationRewrite struct {
-	Moves  map[string]string
-	Locate func(path string) (GitLocator, bool, error)
+	Moves    map[string]string
+	Relative bool // Resolve ./ and ../ prose only for history conversion.
+	Locate   func(path string) (GitLocator, bool, error)
 }
 
 func (rw CitationRewrite) locate(path string) (GitLocator, bool, error) {
@@ -270,7 +271,7 @@ func (rw CitationRewrite) Apply(content []byte, from, to string) ([]byte, int, e
 		if e.start < end {
 			continue
 		} // an enclosing whole-link edit owns these bytes
-		text, n, err := rw.paths(content[end:e.start], code[end:e.start], sources)
+		text, n, err := rw.paths(content[end:e.start], code[end:e.start], sources, from)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -279,7 +280,7 @@ func (rw CitationRewrite) Apply(content []byte, from, to string) ([]byte, int, e
 		count += n + e.count
 		end = e.end
 	}
-	text, n, err := rw.paths(content[end:], code[end:], sources)
+	text, n, err := rw.paths(content[end:], code[end:], sources, from)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -291,7 +292,7 @@ func citationPathBoundary(c byte) bool {
 	return strings.ContainsRune(" \t\r\n`\"'()[]<>#.,;:", rune(c))
 }
 
-func (rw CitationRewrite) paths(content []byte, code []bool, sources []string) ([]byte, int, error) {
+func (rw CitationRewrite) paths(content []byte, code []bool, sources []string, from string) ([]byte, int, error) {
 	var out bytes.Buffer
 	count := 0
 	for i := 0; i < len(content); {
@@ -329,7 +330,7 @@ func (rw CitationRewrite) paths(content []byte, code []bool, sources []string) (
 				matched = true
 				break
 			}
-			if !matched && rw.Locate != nil {
+			if !matched && (rw.Locate != nil || rw.Relative) {
 				// Paths can contain punctuation (including dots); strip sentence punctuation
 				// only at the end, and never reinterpret an existing path@commit locator.
 				end := i
@@ -339,11 +340,23 @@ func (rw CitationRewrite) paths(content []byte, code []bool, sources []string) (
 				path := strings.TrimRight(string(content[i:end]), ".,;:")
 				stop := i + len(path)
 				if path != "" {
-					locator, located, err := rw.locate(strings.TrimSuffix(path, "/"))
+					target := strings.TrimSuffix(path, "/")
+					if rw.Relative {
+						target = citationProseTarget(target, from)
+					}
+					if rw.Relative {
+						if destination, moved := rw.Moves[target]; moved {
+							out.WriteString(destination)
+							count++
+							i = stop
+							matched = true
+						}
+					}
+					locator, located, err := rw.locate(target)
 					if err != nil {
 						return nil, 0, err
 					}
-					if located {
+					if located && !matched {
 						out.WriteString(locator.Text(code[i]))
 						count++
 						i = stop
@@ -358,4 +371,34 @@ func (rw CitationRewrite) paths(content []byte, code []bool, sources []string) (
 		}
 	}
 	return out.Bytes(), count, nil
+}
+
+// ApplyText changes bounded paths only. It never parses links or adds Markdown
+// delimiters, so comments and source files receive plain Git Locators.
+func (rw CitationRewrite) ApplyText(content []byte, path string) ([]byte, int, error) {
+	sources := make([]string, 0, len(rw.Moves))
+	for source := range rw.Moves {
+		if source != "" {
+			sources = append(sources, source)
+		}
+	}
+	sort.Slice(sources, func(i, j int) bool {
+		if len(sources[i]) != len(sources[j]) {
+			return len(sources[i]) > len(sources[j])
+		}
+		return sources[i] < sources[j]
+	})
+	code := make([]bool, len(content))
+	for i := range code {
+		code[i] = true
+	}
+	return rw.paths(content, code, sources, path)
+}
+
+// Only explicit relative prose paths resolve against the citing directory.
+func citationProseTarget(path, source string) string {
+	if strings.HasPrefix(path, "./") || strings.HasPrefix(path, "../") {
+		return filepath.ToSlash(filepath.Clean(filepath.Join(filepath.Dir(source), filepath.FromSlash(path))))
+	}
+	return path
 }

@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -462,7 +463,7 @@ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
 	return nil
 }
 
-// HistoryCitation locates a tracked Markdown line naming a removed path.
+// HistoryCitation locates a tracked source line naming a removed path.
 type HistoryCitation struct {
 	Path    string
 	Line    int
@@ -721,7 +722,7 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 		}
 		locators[path] = locator
 	}
-	p.rewrite = CitationRewrite{Moves: moves, Locate: func(path string) (GitLocator, bool, error) { l, ok := locators[path]; return l, ok, nil }}
+	p.rewrite = CitationRewrite{Moves: moves, Relative: true, Locate: func(path string) (GitLocator, bool, error) { l, ok := locators[path]; return l, ok, nil }}
 	targets := append([]string(nil), removed...)
 	folders := map[string]bool{}
 	for path := range moves {
@@ -730,7 +731,7 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 			folders[path] = true
 		}
 	}
-	citations, err := HistoryCitations(ctx, root, targets)
+	citations, err := SourceHistoryCitations(ctx, root, targets)
 	if err != nil {
 		return p, err
 	}
@@ -758,25 +759,22 @@ func PlanHistoryRewrite(ctx context.Context, root, specRootRel, archiveRootRel s
 			}
 			contents[c.Path] = content
 		}
-		scope := historyRootInstructionCarrier(c.Path) || IsLiveDocument(c.Path, specRootRel, archiveRootRel) || strings.HasPrefix(c.Path, "docs/user-guide/") || (filepath.ToSlash(filepath.Dir(c.Path)) == archiveRootRel && IsArchiveRecord(filepath.Base(c.Path), content))
-		if scope {
-			if err := historyRewriteRegularFile(root, c.Path); err != nil {
+		if err := historyRewriteRegularFile(root, c.Path); err != nil {
+			return p, err
+		}
+		if destination, ok := moves[c.Target]; ok {
+			c.Rewrite = destination
+		} else if locator, ok := locators[c.Target]; ok {
+			c.Rewrite = locator.Text(!citationMarkdown(c.Path))
+		}
+		if _, planned := p.Files[c.Path]; !planned {
+			next, count, err := p.rewriteSource(content, c.Path)
+			if err != nil {
 				return p, err
 			}
-			if destination, ok := moves[c.Target]; ok {
-				c.Rewrite = destination
-			} else if locator, ok := locators[c.Target]; ok {
-				c.Rewrite = locator.Text(false)
-			}
-			if _, planned := p.Files[c.Path]; !planned {
-				next, count, err := p.rewrite.Apply(content, c.Path, c.Path)
-				if err != nil {
-					return p, err
-				}
-				if count > 0 {
-					p.Files[c.Path] = next
-					p.Count += count
-				}
+			if count > 0 {
+				p.Files[c.Path] = next
+				p.Count += count
 			}
 		}
 		if folders[c.Target] {
@@ -805,7 +803,10 @@ func (p HistoryRewritePlan) Apply(ctx context.Context, root string) (citations, 
 		if readErr != nil {
 			return citations, files, fmt.Errorf("read planned citation %s: %w", path, readErr)
 		}
-		next, count, rewriteErr := p.rewrite.Apply(content, path, path)
+		if citationSourceExcluded(path) || bytes.IndexByte(content[:min(len(content), 8000)], 0) >= 0 {
+			return citations, files, fmt.Errorf("planned citation %s is no longer a Citation Source", path)
+		}
+		next, count, rewriteErr := p.rewriteSource(content, path)
 		if rewriteErr != nil {
 			return citations, files, rewriteErr
 		}
@@ -821,11 +822,11 @@ func (p HistoryRewritePlan) Apply(ctx context.Context, root string) (citations, 
 	return citations, files, nil
 }
 
-// A root instruction carrier is read by every Agent session, so a citation in
-// it is rewritten like one in a Live Document. A carrier that is a tracked
-// symbolic link never reaches here; its target is rewritten under its own path.
-func historyRootInstructionCarrier(path string) bool {
-	return path == "AGENTS.md" || path == "CLAUDE.md"
+func (p HistoryRewritePlan) rewriteSource(content []byte, path string) ([]byte, int, error) {
+	if citationMarkdown(path) {
+		return p.rewrite.Apply(content, path, path)
+	}
+	return p.rewrite.ApplyText(content, path)
 }
 
 // Refuse a symlink before a citation rewrite can read or write through it.
