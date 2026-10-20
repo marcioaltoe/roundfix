@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0288-the-archive-rewrites-relative-citations-from-any-worktree
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -117,3 +117,56 @@ with it. It is verifiable on its own through the package entry points.
 - `_prd.md` → Sources; Goals; Core Features 1-2; Success Metric 4
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 1-3; API Contract 6; Invariants 1-5; Testing Approach; Build Order 1
 - ADR-0247; ADR-0260; ADR-0278; ADR-0262; ADR-0154; ADR-0268; ADR-0272; ADR-0299; ADR-0259; ADR-0271; ADR-0285
+
+
+## Result
+
+Implemented only this Task's package slice. `RepositoryPath` compares paths
+lexically first, then compares both spellings through
+`config.CanonicalizeResolvedPath`, returning slash-separated relative paths
+or the refusal naming both original arguments. Its comment records why the
+configured Spec Root and Git's checkout root must be compared without using
+the main checkout or process work directory as a replacement root.
+
+Archive now resolves its four Archive Relink inputs and Legacy Link Rebase
+record path through the shared resolver, with operation-specific errors before
+writes. The existing `source` computation and the library's omitted-repository
+root fallback remain intact. Cancel's relative helper and Source Return use
+the resolver and preserve the cancellation outside-repository message.
+
+Acceptance evidence:
+
+- Resolver behavior: `TestRepositoryPathComparesResolvedSpellings` covers
+  lexical paths without existing files, both linked spellings, a nonexistent
+  record under a linked parent, the root itself, a sibling sharing a name
+  prefix, and an outside path whose refusal names both original arguments.
+- Byte invariance: the new Archive and Cancel tests reproduced both original
+  failures before caller integration. Afterwards, both linked-spelling cases
+  match their control's Archive Record and relinked document bytes; Archive
+  also matches `Relinked`, and Cancel matches returned source bytes and
+  `Returned`, with every returned path checked as repository-relative.
+- Existing behavior: focused archive, cancel, Legacy Link Rebase, citation
+  rewrite, locator and relink tests passed. No existing test, fixture, golden,
+  citation implementation, QA policy or record schema was edited.
+
+Focused checks run:
+
+- `rtk proxy go test ./internal/spec -run '^TestRepositoryPathComparesResolvedSpellings$' -count=1`
+  initially exited 1 because `RepositoryPath` did not yet exist.
+- `rtk proxy go test ./internal/spec -run '^(TestRepositoryPathComparesResolvedSpellings|TestArchiveFromALinkedSpellingRewritesAndRelinks|TestCancelFromALinkedSpellingRelinksAndReturnsSources)$' -count=1`
+  first exposed the archive rebase and cancellation containment errors with
+  the resolver added but callers unchanged; after integration it exited 0.
+- `rtk proxy go test ./internal/spec -run '^(Test(Archive|Cancel|LegacyLinkRebase|CitationRewrite|ResolveGitLocator|Relink|PlanArchiveRelink))' -count=1`
+  exited 0.
+- `rtk proxy sh -c 'GOOS=windows go test -c ./internal/spec -o /tmp/roundfix-0288-task01-spec.test.exe'`
+  exited 0; the package tests compile for Windows.
+- `rtk proxy git diff --check` exited 0.
+
+Environment: normal sandbox execution could not initialize the symlinked
+writable root. Authorized escalated commands used the resolved Run checkout;
+no executor configuration was changed. The initial tracked change was the
+Daemon's `status: in_progress`, which was preserved.
+
+Declared Verification and repository Verification were not run; they remain
+Daemon-owned. Task status and checkboxes are unchanged. CLI paths and guide
+changes remain task_02's slice. No commit, push or pull request was performed.
