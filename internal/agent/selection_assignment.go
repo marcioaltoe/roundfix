@@ -114,7 +114,11 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 		return SelectionProof{}, errors.New("Agent working directory is required")
 	}
 
-	setupCtx, setupCancel := context.WithTimeout(ctx, acpxPreflightSetupTimeout)
+	setupTimeout := request.SetupTimeout
+	if setupTimeout <= 0 {
+		setupTimeout = acpxPreflightSetupTimeout
+	}
+	setupCtx, setupCancel := context.WithTimeout(ctx, setupTimeout)
 	adapter, err := checkAdapter(setupCtx, request.Runtime, runner.baseEnv())
 	if err != nil {
 		setupCancel()

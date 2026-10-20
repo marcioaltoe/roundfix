@@ -1399,10 +1399,57 @@ func TestMissingSessionIsRecognisedFromBothExitShapes(t *testing.T) {
 			if errors.As(err, &cleanupErr) {
 				t.Fatalf("missing disposable session close was appended to the diagnosis: %v", err)
 			}
-			if len(warnings) != 1 || !strings.Contains(warnings[0], "close disposable Agent Session") || !strings.Contains(warnings[0], acpxExitReasonMissingSession) {
-				t.Fatalf("missing disposable session close was not recorded: %#v", warnings)
+			if len(warnings) != 0 {
+				t.Fatalf("missing disposable session close wrote warnings: %#v", warnings)
 			}
 		})
+	}
+}
+
+func TestTimedOutProofSetupClosesAnAbsentSessionSilently(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	started := filepath.Join(harness.gitRoot, "ensure-started")
+	harness.setEnv(fakeACPXStarted, started)
+	harness.setEnv(fakeACPXBlockCmd, "sessions ensure")
+	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions close": 4}))
+	var warnings []string
+	harness.runner.warnf = func(format string, args ...any) {
+		warnings = append(warnings, fmt.Sprintf(format, args...))
+	}
+	ctx := newTestDeadlineContext()
+	defer ctx.expire()
+	result := make(chan error, 1)
+	go func() {
+		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{
+			Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+			WorkDir: harness.gitRoot,
+		})
+		result <- err
+	}()
+	waitForFile(t, "fake acpx sessions ensure fixture", started, result)
+	ctx.expire()
+
+	err := receiveError(t, result)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("error = %T %v, want context.DeadlineExceeded", err, err)
+	}
+	var cleanupErr *AgentSessionCleanupError
+	if errors.As(err, &cleanupErr) {
+		t.Fatalf("absent disposable session close was appended to the setup error: %v", err)
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if len(invocations) != 2 {
+		t.Fatalf("expected blocked ensure and cleanup close, got %#v", invocations)
+	}
+	sessionName := disposableSessionFromEnsure(t, invocations[0])
+	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
+	if !reflect.DeepEqual(invocations[1], wantClose) {
+		t.Fatalf("last invocation did not close the disposable Agent Session\nwant: %#v\ngot:  %#v", wantClose, invocations[1])
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("absent disposable session close wrote warnings: %#v", warnings)
 	}
 }
 

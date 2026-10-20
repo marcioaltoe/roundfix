@@ -397,6 +397,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `defaults.agent_full_access` | `false` | Keeps the ACP Runtime's normal sandbox or permission mode. `true` requests the full-access mode the Agent Session advertises before Agent work. |
 | `defaults.verification` | `make verify` | Verification command for review Batches. Spec Tasks use the commands in each task file. |
 | `defaults.artifact_dir` | `""` | Uses `~/.roundfix/artifacts/<repo-id>`. An absolute or repository-relative value overrides it. |
+| `defaults.profile_proof_setup_timeout` | `30s` | Bounds each disposable profile proof setup. A Go duration greater than zero and at most 10m; accepted in User and Project Config, with Project Config winning. |
 | `defaults.auto_commit` | `true` | Enables Daemon-owned review commits. `watch.auto_push: true` requires it. |
 | `specs.root` | `docs/specs` | Locates active and archived Specs. Relative paths resolve from the repository root. |
 
@@ -452,6 +453,25 @@ built-ins. Each profile is one atomic object: a complete Preferred Selection
 plus a non-empty ordered Fallback Chain. Project Config replaces User Config,
 User Config replaces built-ins, and no tuple field or fallback entry merges
 across scopes.
+
+### Profile proof setup deadline
+
+`defaults.profile_proof_setup_timeout` bounds the disposable Agent Session
+setup of each proof attempt. It defaults to `30s` and accepts a Go duration
+greater than zero and at most 10m in User Config or Project Config, with
+Project Config winning.
+
+Every profile-readiness consumer passes it: `profiles validate`, operational
+Preflight, pre-PR review, Doctor, Setup and `profiles configure`. Every
+configured tuple is still proven. The value reaches only each attempt's setup
+context; when its deadline expires, Roundfix stops the acpx command and closes
+the disposable Session. The cleanup deadline, the Fallback Chain probe after
+Run creation and Run sessions keep their existing deadlines.
+
+A timed-out attempt is retried after 5 seconds and again after 10 seconds. If
+all three attempts time out, the proof is classified `temporary`; adjust
+`defaults.profile_proof_setup_timeout` when a slow machine needs more setup
+time.
 
 ### OpenAI and Anthropic subscription rule
 
