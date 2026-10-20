@@ -1,5 +1,0 @@
-Command: ./bin/roundfix qa-report accept docs/specs/0284-the-linux-lane-reads-the-repository-history/qa/qa-report-2026-10-20.md
-Exit: 0
-stdout:
-
-stderr:
