@@ -129,6 +129,7 @@ capacity of the machine:
 ```yaml
 runs:
   max_active: 3
+  slot_wait: 2h
 ```
 
 When the number of Active Implement Runs reaches the ceiling, `implement`
@@ -137,6 +138,19 @@ repository, and Spec. Set `max_active: 0` to disable the bound. Negative values
 fail configuration validation. Only User Config can set this machine-wide
 ceiling. A `runs.max_active` value in Project Config is ignored with a warning,
 so a repository cannot raise or disable the user's limit.
+
+`runs.slot_wait` is a Go duration, default `2h`. When the ceiling is the only
+refusal, the Delivery Queue waits for a Run slot until that duration expires
+or the queue deadline arrives, whichever comes first. Set `slot_wait: 0` to
+park at once. Only the Delivery Queue waits; `roundfix implement` itself still
+refuses at the ceiling. Negative or invalid durations fail configuration
+validation.
+
+Only User Config can set `runs.slot_wait`. A Project Config value is ignored
+with this warning:
+`config: runs.slot_wait in Project Config is ignored; set runs.slot_wait in User Config`.
+An older Roundfix binary refuses a User Config that sets `runs.slot_wait` as
+an unknown key; the default needs no setting.
 
 ## Jev monthly ceiling
 
@@ -419,6 +433,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
+| `runs.slot_wait` | `2h` | How long the Delivery Queue waits for a Run slot, capped by the queue deadline. Go duration; `0` parks at once. User Config only; Project Config is ignored with a warning. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
 | `openrouter.light_models` | `[deepseek/deepseek-v4.1-flash]` | User Config list of `<author>/<slug>` OpenRouter models for light Tasks. An empty list turns the tier off; subscription-rule refusals fail validation. Project Config is ignored with a warning. |
 | `openrouter.implement_monthly_ceiling_usd` | `10` | Finite positive User Config ceiling in US dollars for light implementation spend. Project Config is ignored with a warning. |

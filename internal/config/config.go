@@ -238,6 +238,7 @@ type Specs struct {
 
 type Runs struct {
 	MaxActive int
+	SlotWait  time.Duration
 }
 
 type Loaded struct {
@@ -460,7 +461,8 @@ type worktreeOverlay struct {
 }
 
 type runsOverlay struct {
-	MaxActive *int `yaml:"max_active"`
+	MaxActive *int           `yaml:"max_active"`
+	SlotWait  *durationValue `yaml:"slot_wait"`
 }
 
 type verificationOverlay struct {
@@ -810,6 +812,7 @@ func Builtin() Config {
 		},
 		Runs: Runs{
 			MaxActive: defaultRunsMaxActive,
+			SlotWait:  2 * time.Hour,
 		},
 	}
 }
@@ -1131,6 +1134,9 @@ func Validate(config Config) error {
 	}
 	if config.Store.JournalRetention < 0 {
 		return errors.New("store.journal_retention must be greater than or equal to 0")
+	}
+	if config.Runs.SlotWait < 0 {
+		return errors.New("runs.slot_wait must be greater than or equal to 0")
 	}
 	if config.Runs.MaxActive < 0 {
 		return errors.New("runs.max_active must be greater than or equal to 0")
@@ -1620,6 +1626,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if err := prepareLightTierConfig(&document, warnings, source); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "slot_wait"}) {
+		warnings.warnIgnoredProjectSetting("runs.slot_wait")
+	}
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_active"}) {
 		warnings.warnIgnoredProjectSetting("runs.max_active")
 	}
@@ -1956,6 +1965,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 	}
 	if source != ProfileSourceProject && overlay.Runs != nil {
+		if overlay.Runs.SlotWait != nil {
+			config.Runs.SlotWait = overlay.Runs.SlotWait.value
+		}
 		if overlay.Runs.MaxActive != nil {
 			config.Runs.MaxActive = *overlay.Runs.MaxActive
 		}

@@ -40,6 +40,7 @@ const (
 )
 
 const WarningPremiseChanged = "premise-changed"
+const WarningLinuxLaneSkipped = "linux-lane-skipped"
 
 const cleanupWarningPrefix = "warning: cleanup failed"
 
@@ -102,6 +103,26 @@ type GateResult struct {
 	Passed  bool
 	Reason  string
 	Blocker string
+	// LaneSkip is the Queue Owner's lane reason, never an environment value.
+	// It is persisted in the item warning and published in the forge's PR body.
+	LaneSkip string
+}
+
+// LaneSkipBody tells PR readers which Linux check did not run before publication.
+func LaneSkipBody(reason string) string {
+	return "Linux Lane: not run. The Delivery Queue gate skipped it: " + reason + ". This candidate's Go packages were not tested on Linux before this pull request."
+}
+
+// laneSkipWarning splits off the last segment, whose reason can contain semicolons.
+func laneSkipWarning(warning string) (remaining, reason string) {
+	marker := WarningLinuxLaneSkipped + ": "
+	if reason, ok := strings.CutPrefix(warning, marker); ok {
+		return "", reason
+	}
+	if remaining, reason, ok := strings.Cut(warning, "; "+marker); ok {
+		return remaining, reason
+	}
+	return warning, ""
 }
 
 type Authorization struct {
@@ -198,6 +219,45 @@ type RetryResult struct {
 	OwnerIdentity string
 }
 
+// WaitRunSlot marks blocker text persisted for status readers during a bounded wait.
+const WaitRunSlot = "run-slot-wait"
+
+type RunSlotHolder struct{ RunID, Repository, SpecSlug string }
+
+type RunSlots struct {
+	MaxActive int
+	Holders   []RunSlotHolder
+}
+
+func (slots RunSlots) Free() bool {
+	return slots.MaxActive == 0 || len(slots.Holders) < slots.MaxActive
+}
+
+// RunSlotRefusal preserves the Implement failure used by the no-wait park path.
+type RunSlotRefusal struct {
+	Slots RunSlots
+	Err   error
+}
+
+func (refusal *RunSlotRefusal) Error() string { return refusal.Err.Error() }
+func (refusal *RunSlotRefusal) Unwrap() error { return refusal.Err }
+
+type RunSlotReader interface {
+	RunSlots(context.Context) (RunSlots, error)
+}
+
+func RunSlotWaitText(deadline time.Time, slots RunSlots) string {
+	text := fmt.Sprintf("%s: until %s; %d Run(s) hold %d slot(s)", WaitRunSlot, deadline.UTC().Format(time.RFC3339), len(slots.Holders), slots.MaxActive)
+	holders := make([]string, 0, len(slots.Holders))
+	for _, holder := range slots.Holders {
+		holders = append(holders, fmt.Sprintf("%s in %s for %s", holder.RunID, holder.Repository, holder.SpecSlug))
+	}
+	if len(holders) > 0 {
+		text += ": " + strings.Join(holders, ", ")
+	}
+	return text
+}
+
 type CandidateRunner interface {
 	RunSpec(ctx context.Context, gitRoot, specSlug string) (RunResult, error)
 }
@@ -285,6 +345,10 @@ type EngineDependencies struct {
 	Sleeper        Sleeper
 	CheckTimeout   time.Duration
 	CheckInterval  time.Duration
+
+	RunSlots            RunSlotReader
+	RunSlotWait         time.Duration
+	RunSlotPollInterval time.Duration
 }
 
 type Engine struct {
@@ -314,6 +378,10 @@ type Engine struct {
 	sleeper        Sleeper
 	checkTimeout   time.Duration
 	checkInterval  time.Duration
+
+	runSlots            RunSlotReader
+	runSlotWait         time.Duration
+	runSlotPollInterval time.Duration
 }
 
 type EngineResult struct {
@@ -341,6 +409,10 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 	if checkInterval <= 0 {
 		checkInterval = defaultCheckInterval
 	}
+	runSlotPollInterval := dependencies.RunSlotPollInterval
+	if runSlotPollInterval <= 0 {
+		runSlotPollInterval = 30 * time.Second
+	}
 	return &Engine{
 		merges:         dependencies.Merges,
 		corrections:    dependencies.Corrections,
@@ -366,6 +438,10 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		sleeper:        sleeper,
 		checkTimeout:   checkTimeout,
 		checkInterval:  checkInterval,
+
+		runSlots:            dependencies.RunSlots,
+		runSlotWait:         dependencies.RunSlotWait,
+		runSlotPollInterval: runSlotPollInterval,
 	}
 }
 
@@ -960,6 +1036,18 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 		return err
 	}
 	result, err := engine.runner.RunSpec(ctx, workDir, item.SpecSlug)
+	if err != nil && engine.runSlots != nil && engine.runSlotWait > 0 {
+		var refusal *RunSlotRefusal
+		if errors.As(err, &refusal) {
+			result, err = engine.waitRunSlot(ctx, gitRoot, workDir, item, refusal)
+			if err != nil {
+				return err
+			}
+			if item.Stage == store.DeliveryStageParked {
+				return nil
+			}
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("run Implement executor: %w", err)
 	}
@@ -984,6 +1072,76 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	}
 	item.CandidateCommits = append([]string(nil), result.CandidateCommits...)
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStageReviewing)
+}
+
+// waitRunSlot uses only the Implement refusal, recorded queue limits and slot
+// reader. Holder ids, repositories and Specs reach the Run Database blocker
+// printed by deliver status; counts and the deadline reach the owner's log.
+// A free-slot observation grants no capacity: only RunSpec retries admission,
+// and store.CreateRun's transaction remains the ceiling authority.
+func (engine *Engine) waitRunSlot(ctx context.Context, gitRoot, workDir string, item *store.DeliveryQueueItem, refusal *RunSlotRefusal) (_ RunResult, waitErr error) {
+	// Clear on every error path, even when cancellation raced a store update.
+	// The owner stopping must not leave status displaying a live wait.
+	defer func() {
+		if waitErr != nil {
+			item.Blocker = ""
+			waitErr = errors.Join(waitErr, engine.store.UpdateDeliveryQueueItem(context.WithoutCancel(ctx), gitRoot, *item))
+		}
+	}()
+	deadline := engine.clock.Now().Add(engine.runSlotWait)
+	queue, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return RunResult{}, fmt.Errorf("read Run slot wait queue: %w", err)
+	}
+	queueDeadline := !queue.Limits.Deadline.IsZero() && queue.Limits.Deadline.Before(deadline)
+	if queueDeadline {
+		deadline = queue.Limits.Deadline
+	}
+	slots := refusal.Slots
+	fmt.Fprintf(engine.log, "roundfix: Delivery Queue item %s: waiting for a Run slot until %s; %d Run(s) hold %d slot(s)\n", item.SpecSlug, deadline.UTC().Format(time.RFC3339), len(slots.Holders), slots.MaxActive)
+	for engine.clock.Now().Before(deadline) {
+		text := RunSlotWaitText(deadline, slots)
+		if item.Blocker != text {
+			item.Blocker = text
+			if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {
+				return RunResult{}, fmt.Errorf("record Run slot wait: %w", err)
+			}
+		}
+		interval := min(engine.runSlotPollInterval, deadline.Sub(engine.clock.Now()))
+		if err := engine.sleeper.Sleep(ctx, interval); err != nil {
+			return RunResult{}, err
+		}
+		if !engine.clock.Now().Before(deadline) {
+			break
+		}
+		slots, err = engine.runSlots.RunSlots(ctx)
+		if err != nil {
+			return RunResult{}, fmt.Errorf("wait for a Run slot: %w", err)
+		}
+		if !engine.clock.Now().Before(deadline) {
+			break
+		}
+		if !slots.Free() {
+			continue
+		}
+		item.Blocker = ""
+		if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {
+			return RunResult{}, fmt.Errorf("clear Run slot wait: %w", err)
+		}
+		fmt.Fprintf(engine.log, "roundfix: Delivery Queue item %s: a Run slot is free; starting the Implement Run\n", item.SpecSlug)
+		result, runErr := engine.runner.RunSpec(ctx, workDir, item.SpecSlug)
+		if runErr == nil {
+			return result, nil
+		}
+		if !errors.As(runErr, &refusal) {
+			return RunResult{}, fmt.Errorf("run Implement executor: %w", runErr)
+		}
+		slots = refusal.Slots
+	}
+	if queueDeadline {
+		return RunResult{}, engine.park(ctx, gitRoot, item, BlockerQueueDeadline)
+	}
+	return RunResult{}, fmt.Errorf("run Implement executor: %w", refusal.Err)
 }
 
 func (engine *Engine) reviewCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
@@ -1082,6 +1240,13 @@ func (engine *Engine) gateCandidate(ctx context.Context, gitRoot string, item *s
 		}
 		return engine.park(ctx, gitRoot, item, blocker)
 	}
+	item.Warning, _ = laneSkipWarning(item.Warning)
+	if result.LaneSkip != "" {
+		if item.Warning != "" {
+			item.Warning += "; "
+		}
+		item.Warning += WarningLinuxLaneSkipped + ": " + result.LaneSkip
+	}
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStagePublishing)
 }
 
@@ -1116,6 +1281,9 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	}
 	if item.Stage == store.DeliveryStageParked {
 		return nil
+	}
+	if _, reason := laneSkipWarning(item.Warning); reason != "" {
+		publication.Body += "\n\n" + LaneSkipBody(reason)
 	}
 	pullRequest, err := engine.createPullRequest(ctx, gitRoot, workDir, item.SpecSlug, publication, head)
 	if err != nil {

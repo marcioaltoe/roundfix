@@ -28,6 +28,7 @@ const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' 
 
 type linuxLaneResult struct {
 	Ran, Passed                    bool
+	SkipExpected                   bool
 	Skip, Reason, LogPath, Blocker string
 	Packages                       []string
 }
@@ -36,6 +37,25 @@ type linuxLaneRequest struct {
 	WorkDir, Head, Image string
 	Label, LogPath, Name string
 	All                  bool
+}
+
+// linuxLaneImage resolves the configured image or the revision's go directive.
+// An empty result means that go.mod declares no go version.
+func linuxLaneImage(ctx context.Context, runner preflight.GitRunner, workDir, revision, configured string) (string, error) {
+	if configured != "" {
+		return configured, nil
+	}
+	module, err := runner.RunGit(ctx, workDir, "show", revision+":go.mod")
+	if err != nil {
+		return "", fmt.Errorf("read Linux Lane go.mod: %w", err)
+	}
+	for _, line := range strings.Split(module, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == "go" {
+			return "golang:" + fields[1], nil
+		}
+	}
+	return "", nil
 }
 
 func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, request linuxLaneRequest) (result linuxLaneResult, resultErr error) {
@@ -69,26 +89,15 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 		return result, fmt.Errorf("inspect Linux Lane go.mod: %w", err)
 	}
 	if strings.TrimSpace(listing) == "" {
+		result.SkipExpected = true
 		return skip("no go.mod at the repository root")
 	}
-	image := request.Image
+	image, err := linuxLaneImage(ctx, runner, workDir, head, request.Image)
+	if err != nil {
+		return result, err
+	}
 	if image == "" {
-		module, err := runner.RunGit(ctx, workDir, "show", head+":go.mod")
-		if err != nil {
-			return result, fmt.Errorf("read Linux Lane go.mod: %w", err)
-		}
-		version := ""
-		for _, line := range strings.Split(module, "\n") {
-			fields := strings.Fields(line)
-			if len(fields) >= 2 && fields[0] == "go" {
-				version = fields[1]
-				break
-			}
-		}
-		if version == "" {
-			return skip("go.mod declares no go version")
-		}
-		image = "golang:" + version
+		return skip("go.mod declares no go version")
 	}
 	if request.All {
 		result.Packages = []string{"./..."}
@@ -116,6 +125,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 		result.Packages = linuxLanePackages(changed, tree)
 	}
 	if len(result.Packages) == 0 {
+		result.SkipExpected = true
 		return skip("no changed Go package")
 	}
 	objects, err := linuxLaneObjectStore(ctx, runner, workDir)

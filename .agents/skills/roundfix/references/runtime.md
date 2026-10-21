@@ -19,9 +19,10 @@ line lists `spec judge keys` by name in preference order:
 Each entry is `set` or `not set`, never a key value; both stages fall back
 to the shared key when their stage key is unset. Doctor runs the
 shared Node.js, minimum-supported acpx, effective adapters, configured Agent
-Selection Profiles, Repository Skill Set, process residue, storage check, and
+Selection Profiles, Repository Skill Set, process residue, storage, the
+conditional `linux-lane` check (when the checkout enables `delivery.linux_lane`), and
 codex runtime hygiene checks and prints one line per check with status `ok`,
-`failed`, or `skipped`; residue and storage can also report `found` or
+`warn`, `failed`, or `skipped`; residue and storage can also report `found` or
 `partial`. Adapter
 Readiness requires the effective Codex command to prove official
 `@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and the

@@ -727,6 +727,10 @@ _Avoid_: optional dependency, container tool
 The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It also runs on demand with `roundfix deliver lane`, independently of the queue opt-in, against a checkout revision's changed Go packages or every package with `--all`. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)). It reads the repository history through the object store mounted read-only, including the common directory's store for a linked worktree ([ADR-0297](docs/adr/0297-the-linux-lane-reads-the-repository-history-read-only.md)).
 _Avoid_: Linux gate, Docker gate, cross-platform Verification
 
+**Lane Environment Skip**:
+A skip of an enabled Linux Lane for any reason other than having nothing to test, or of a lane whose fetched configuration cannot be read. It passes the gate and is recorded on the item, shown by `roundfix deliver status`, the queue's pull request body and `roundfix doctor` ([ADR-0303](docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md)).
+_Avoid_: expected skip, lane failure
+
 **Lane Container Failure**:
 A Linux Lane failure caused by its container setup, command invocation, a signal or the run cap. It parks the candidate in the environment Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
 _Avoid_: change failure, generic gate failure
@@ -846,6 +850,10 @@ _Avoid_: Pricing model
 **Reported Cost**:
 The spend an ACP adapter itself reports for a turn; Roundfix prints only reported cost and never prices tokens from a table ([ADR-0198](docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md)).
 _Avoid_: Estimated cost, price table
+
+**Run Slot Wait**:
+The bounded wait of a running Delivery Queue item whose Implement step was refused only by the ceiling on active Implement Runs, shown as its blocker text and polled against the Run Database until a slot frees, `runs.slot_wait` expires or the queue deadline arrives ([ADR-0304](docs/adr/0304-a-queue-item-waits-for-a-run-slot-up-to-runs-slot-wait.md)).
+_Avoid_: Waiting stage, admission reservation
 
 **Queue Token Ceiling**:
 An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped ([ADR-0199](docs/adr/0199-a-queue-token-ceiling-stops-new-starts-and-never-a-running-task.md)).
