@@ -1,3 +1,0 @@
-Outside-evidence row: Damien Neil, Traversal-resistant file APIs, Go blog, 2025-03-12, https://go.dev/blog/osroot
-PRD cited passage: "If the attacker controls part of the local filesystem, they may be able to use symbolic links to cause a program to access the wrong file".
-Not fetched. _authorization.md Limits: "No test, Verification command or QA row ... reaches the network". No equivalent source retrieval exists. Unblocking: perform a separately authorized network lookup outside this gate.

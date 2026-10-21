@@ -1,9 +1,0 @@
-import runpy
-globals().update(runpy.run_path('/private/tmp/qa0293-flows.py'))
-import tarfile
-base='bd525d4b60b1b30caa58cae04ccf9c33aebb3095';d=T/'delivery-base';d.mkdir();archive=T/'base.tar';p,o=run(['git','archive',base,'-o',str(archive)]);assert p.returncode==0
-with tarfile.open(archive) as tf:tf.extractall(d,filter='data')
-p,log=run(['make','build'],d);assert p.returncode==0,log
-repo=seed('base-reproduction');outside=T/'base-outside';outside.mkdir();(repo/'docs/history').symlink_to(outside,target_is_directory=True);commit(repo);install(repo,d/'bin')
-p,out=run(['./bin/roundfix',*A],repo);record=outside/'specs/0001-demo.md';checks={'exit_0':p.returncode==0,'outside_record_written':record.is_file(),'spec_removed':not (repo/'docs/specs/0001-demo').exists()}
-finish('BASE',all(checks.values()),'Binary built offline from git archive '+base+' (Delivery Base), not from this Spec implementation.\n'+log+out+'\nIndependent fresh read:\n'+json.dumps(checks,indent=2)+'\n'+(record.read_text() if record.exists() else 'record missing'))

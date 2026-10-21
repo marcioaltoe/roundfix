@@ -1,7 +1,0 @@
-import runpy
-globals().update(runpy.run_path('/private/tmp/qa0293-flows.py'))
-args=['./bin/roundfix','archive',S.name,'--plan','--offline']
-before=git(ROOT,'status','--porcelain','--untracked-files=all');p,log=run(args);after=git(ROOT,'status','--porcelain','--untracked-files=all')
-keys=['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY'];assert all(k not in E for k in keys)
-finish('OUTCOME',p.returncode==0 and before==after,log+'\nGit status unchanged across read-only plan: '+str(before==after)+'\n'+''.join(k+' not set\n' for k in keys)+'No spec judge, provider or reviewer request was executed.\n')
-print(log)

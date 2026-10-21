@@ -1,4 +1,0 @@
-$ go vet ./internal/spec
-exit: 0
-stdout:
-stderr:

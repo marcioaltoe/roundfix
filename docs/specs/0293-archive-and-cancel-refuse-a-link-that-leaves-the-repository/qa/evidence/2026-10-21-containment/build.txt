@@ -1,8 +1,0 @@
-make build: exit 0; built Run CLI from 47a95fa1.
-$ ./bin/roundfix --version
-exit: 0
-stdout:
-roundfix 0.103.0 (47a95fa1-dirty, built 2026-10-21 17:04:47 -0300)
-stderr:
-
-Daemon-provided repository Verification: make verify-changed; pass (exit 0); diagnostics removed on success. Not rerun.
