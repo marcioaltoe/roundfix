@@ -144,7 +144,7 @@ Roundfix reads it.
 
 The prompt carries Delivery Conventions version
 `roundfix/delivery-conventions/v3`. These describe what a delivery writes by
-design:
+design, and the prompt carries them verbatim:
 
 - C1. A Spec's QA Report records the head it audited and is committed after
   that head, so it never names the commit that records it.
@@ -154,15 +154,17 @@ design:
   it did not declare; a QA Task settles on its committed QA Report and carries
   none of these sections. A Result that calls status Daemon-owned agrees with
   a `completed` status.
-- C3. The archive commit moves a completed Spec's directory to the archive
-  root and stamps its archive front matter.
+- C3. The archive commit adds an Archive Record at the archive root and removes
+  the Spec folder, whose bytes stay in Git at source_revision; legacy archives
+  move the folder and stamp its front matter.
 - C4. A planning candidate authors a Spec whose Tasks are all pending and
   which has no QA Report; that Spec's own delivery implements it and is
   reviewed then.
-- C5. A Spec archived through the QA Archive Override records
-  `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its
-  archived `_prd.md` front matter; its QA Task keeps its observed status and
-  its QA Report its observed verdict.
+- C5. A Spec archived through the QA Archive Override records `qa_override: true`,
+  `qa_override_approval` and `qa_override_reason` in its archived `_prd.md`
+  front matter; its QA Task keeps its observed status and its QA Report its
+  observed verdict. For an Archive Record, these fields are in the record and
+  the unchanged QA Task and Report stay in Git at source_revision.
 
 Roundfix checks each anchor against the same candidate diff supplied in the
 prompt. Context and added lines count, as does the new-side start line of a
@@ -178,9 +180,17 @@ to lie in that convention's mechanically computed region and a sealed
 validator judgment that the finding merely restates it. `no-failure` requires
 that the finding has no `Failure:` clause and the validator judges that it
 states no failure. A finding with a failure clause cannot receive that rule.
-C5 applies to files under an archived Spec only when its `_prd.md` at the
-review head records `qa_override: true` and non-blank approval and reason.
-Missing or incomplete records and active Specs are ineligible for C5.
+C3 and C5 regions lie only under the archive root; an anchor under the active
+Spec root receives neither. C5 applies to an Archive Record,
+`<archive-root>/<slug>.md`, only when that record at the review head has
+disposition `qa-override` with `qa_override: true` and non-blank
+`qa_override_approval` and `qa_override_reason`. It applies to a file under a
+Legacy Archive Folder, `<archive-root>/<slug>/`, only when that folder's
+`_prd.md` front matter at the review head records `qa_override: true` and
+non-blank `qa_override_approval` and `qa_override_reason`; when
+`<archive-root>/<slug>.md` is an Archive Record, a file under
+`<archive-root>/<slug>/` is judged by that record. Missing or incomplete
+records and active Specs are ineligible for C5.
 Other anchored findings stand. Each item's validation records `stands` or
 `dismissed-by-validation`, with the dismissal's rule and reason.
 

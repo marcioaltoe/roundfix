@@ -80,7 +80,7 @@ the queue.
 
 Before creating an item's worktree, the owner fetches the delivery remote's
 default branch and reads `requires` from that refreshed branch. A prerequisite
-is met only when its archived `_prd.md` exists there. An archive present only
+is met only when its Archive Record or, for a legacy archive, its archived `_prd.md` exists there. An archive present only
 in your checkout or an unmerged branch does not count. With no unmet
 prerequisites, the item starts as usual.
 
@@ -492,9 +492,7 @@ item workspace; the owner then runs the normal post-merge cleanup.
 
 The retry first reads the recorded Pull Request through `gh pr view` in the
 repository checkout. A merged Pull Request must name the recorded item branch
-and have both a head and a merge commit. Otherwise it reads the Spec's archived
-`_prd.md` on the local default branch and proves that the delivery commit that
-added it is absent from the item head: the local item branch's tip, or the
+and have both a head and a merge commit. Otherwise it reads the Spec's Archive Record, or a legacy archive's `_prd.md` on the local default branch and proves that the delivery commit that added that file is absent from the item head: the local item branch's tip, or the
 newest candidate when the branch is gone. This fallback does not fetch; the
 local default branch must already hold the delivery.
 

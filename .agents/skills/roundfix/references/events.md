@@ -23,8 +23,9 @@ starts without duplicating the boundary event; terminal Runs replay and exit
 immediately with `0`.
 
 Default replay emits these public categories in journal cursor order:
-`task-status`, `batch`, `verification`, `outcome`, and `agent-selection`.
-`--filter` accepts a comma-separated subset of only those category names. Internal Run Event kinds,
+`task-status`, `batch`, `verification`, `outcome`, `agent-selection`, and
+`usage`. `--filter` accepts a comma-separated subset of only those category
+names. Internal Run Event kinds,
 raw Agent payloads, command strings, and diagnostic paths are not filters.
 Internal Run Event kinds and raw Agent payloads are not projected.
 
@@ -36,6 +37,8 @@ Stable fields:
 | `batch` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `phase`, `summary` |
 | `verification` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `attempt`, `phase`, `verdict`, `summary` |
 | `outcome` | `schema`, `run_id`, `category`, `time`, `cursor`, `outcome`, `summary`; optional terminal `reason`, `next_action`, `review_issues_known`, `console_log`, `attach_command`, `evidence_kind`, `evidence_head_sha`, and `verified_head_sha` |
+| `agent-selection` | `schema`, `run_id`, `category`, `time`, `cursor`, `scope_kind`, `scope_id`, `scope_identity`, `selection_role`, `status`, `runtime`, `model`, `reasoning_effort`, `summary`; optional `batch`, `work_item`, `work_category`, `profile_source`, `attempt`, `fallback_index`, `next_runtime`, `next_model`, `next_reasoning_effort`, `reason_code`, and `reason` |
+| `usage` | `schema`, `run_id`, `category`, `time`, `cursor`, `scope_kind`, `scope_id`, `runtime`, `model`, `reasoning_effort`, `token_basis`, `summary`; optional `batch`, `work_item`, `tokens`, `input_tokens`, `output_tokens`, `cached_read_tokens`, `cached_write_tokens`, `thought_tokens`, `cost_amount`, and `cost_currency` |
 
 An Unobserved Verification adds classification `verification_unknown` with
 `command`, `reason`, and `diagnostic_path` on both its `failed` and `verdict`
