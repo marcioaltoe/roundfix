@@ -1,7 +1,0 @@
-$ for name in TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem TestTheDeliveryConventionContractReportsAStaleConvention TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem TestTheEventCategoryContractReportsAMissingCategory; do grep -q "^func $name(t .testing.T) {" internal/docscontract/command_documentation_test.go || { printf 'missing %s\n' "$name" >&2; exit 1; }; done; grep -q 'term: "Run Event Stream"' internal/docscontract/user_guide_contract_test.go || { echo 'missing Run Event Stream closed list' >&2; exit 1; }; GOOS=windows go vet -tags docscontract ./internal/docscontract || exit 1; go test -count=1 -tags docscontract -run '^(TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem|TestTheDeliveryConventionContractReportsAStaleConvention|TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem|TestTheEventCategoryContractReportsAMissingCategory|TestGlossaryClosedListsEqualTheirConstants|TestGlossaryContractReportsAPlantedViolationOfEachRule)$' ./internal/docscontract
-stdout:
-ok  	roundfix/internal/docscontract	0.237s
-
-stderr:
-
-exit: 0

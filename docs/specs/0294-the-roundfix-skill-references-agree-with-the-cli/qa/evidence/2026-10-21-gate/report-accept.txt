@@ -1,6 +1,0 @@
-$ ./bin/roundfix qa-report accept docs/specs/0294-the-roundfix-skill-references-agree-with-the-cli/qa/qa-report-2026-10-21.md
-stdout:
-
-stderr:
-
-exit: 0

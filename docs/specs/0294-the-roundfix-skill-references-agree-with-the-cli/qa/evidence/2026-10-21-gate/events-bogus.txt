@@ -1,7 +1,0 @@
-$ ./bin/roundfix events run_missing --filter bogus
-stdout:
-
-stderr:
-roundfix events failed: unknown event category "bogus"
-
-exit: 2

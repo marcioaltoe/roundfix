@@ -1,9 +1,0 @@
-Spec 0294-the-roundfix-skill-references-agree-with-the-cli
-No findings. Authored Verification commands were not executed.
-Skipped:
-  SC-FINDING-LIFECYCLE: missing docs/findings Finding
-  SC-ROLLUP-MEMBER: missing docs/findings rollup
-  SC-ARCHIVE-LICENSE: missing docs/history/findings
-  vocabulary documentation detector: missing docs/specs/0294-the-roundfix-skill-references-agree-with-the-cli/_techspec.md Vocabulary Contract
-
-EXIT 0
