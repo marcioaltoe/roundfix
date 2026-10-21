@@ -25,8 +25,9 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "619"
 ---
 
 # Runs causes reads the diagnostic where the Run wrote it
 
-The observed feature meets every runnable criterion at e14d09a163f49b4cb7372de8e27742730509ec98, including the exact blank-root transcript, relative-root classification, all diagnostic guards, sabotage sensitivity, privacy, unchanged signatures/help and bounded Task scope. The report records a qualifying partial because only the pre-PR Pull Request row and the outside-evidence lookup prohibited by Spec authorization remain environment-blocked. The required `./bin/roundfix archive 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it --plan --offline` ran in the disposable archived head with a disposable HOME, every Judge Key Variable and TYPESAFE_API_KEY unset, exited 0 and reported `judge: skipped (offline)`; it planned an Archive Record and removal of nine Spec files, and performed no archive. That archived copy predated the QA evidence, so its zero-evidence-file count is expected and is not a plan for this report's later contents.
+The observed feature meets every runnable criterion at e14d09a163f49b4cb7372de8e27742730509ec98, including the exact blank-root transcript, relative-root classification, all diagnostic guards, sabotage sensitivity, privacy, unchanged signatures/help and bounded Task scope. The report records a qualifying partial because only the pre-PR Pull Request row and the outside-evidence lookup prohibited by Spec authorization remain environment-blocked. The required `./bin/roundfix archive 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it --plan --offline` ran in the disposable archived head with a disposable HOME, every Judge Key Variable and TYPESAFE_API_KEY unset, exited 0 and reported `judge: skipped (offline)`; it planned an Archive Record and removal of nine Spec files, and performed no archive.
