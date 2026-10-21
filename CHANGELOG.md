@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.101.0] - 2026-10-20
+
+### The Pull Request Record Commit fits commitlint
+
+- **The record subject names the Spec by number.** The Delivery Queue's Pull Request Record Commit is now `docs: record pull request #<number> in the <spec number> Archive Record`, where the Spec number is the run of digits that starts the slug (such as `0088`); a slug without a leading number gives `docs: record pull request #<number> in the Archive Record`. The subject stays within 100 characters for every slug, so a long slug no longer trips a commitlint `header-max-length` hook (ADR-0302).
+- **Existing record commits still count.** The queue accepts a record commit already on the item branch by its change, whatever its subject, so items recorded under the old slug subject or committed by hand are not recorded twice.
+- **A refused queue commit names its hook.** When a commit hook refuses the archive commit, the Pull Request Record Commit or the derived merge commit, the item parks `delivery-error` with a reason that names the hook, the refused subject, the hook's exit status and output, and the recovery: commit the staged change in the item worktree with a subject the hook accepts, then `roundfix deliver retry <slug>`. A refused derived merge is aborted and recovered by hand like a conflict park. The queue never bypasses the hook; a hook that does not name itself is named from the installed `pre-commit` and `commit-msg` hooks.
+- **Glossary.** **Hook Refusal** now covers the queue's own commits as well as Task commits.
+
 ## [0.100.0] - 2026-10-20
 
 ### GC sanitize reaches the default Artifact Roots
