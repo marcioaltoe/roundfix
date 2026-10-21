@@ -840,3 +840,36 @@ Record a new queue for the remaining Specs with a higher ceiling or no flag.
 Items already past `queued` continue, including running items; no Run is
 signalled, stopped or cancelled. A queue may exceed its ceiling by an item's
 Run. Unreported prompts and tokens outside Runs do not count.
+
+## Run slot wait
+
+When an item's `roundfix implement` is refused only because Active Implement
+Runs hold every `runs.max_active` slot, the item waits in stage `running`.
+`roundfix deliver status` shows its blocker text on the item's status line:
+
+```text
+run-slot-wait: until <deadline>; <n> Run(s) hold <max> slot(s): <run id> in <repository> for <spec>
+```
+
+Multiple holders are separated by `, `. The deadline is UTC RFC3339. The Queue
+Owner prints these console lines when it begins waiting and when a slot frees:
+
+```text
+roundfix: Delivery Queue item <spec>: waiting for a Run slot until <deadline>; <n> Run(s) hold <max> slot(s)
+roundfix: Delivery Queue item <spec>: a Run slot is free; starting the Implement Run
+```
+
+Every 30 seconds it polls the Run Database without starting a child, reclaiming
+a Run or signalling a process. Only a holder whose recorded owner PID is no
+longer alive is excluded; a holder without a recorded PID still counts. When a
+slot looks free, it clears the blocker and retries Implement. The child's
+preflight and the store's CreateRun transaction still decide admission. Losing
+the race keeps the original wait deadline.
+
+User Config `runs.slot_wait` bounds the wait from the first refusal; its default
+is `2h`, and `0` parks immediately. Project Config cannot set it. The earlier
+queue deadline wins and parks the item as `queue-deadline`. At the wait's own
+deadline, the item parks as `delivery-error` with the same Implement failure
+reason it would have reported without waiting. Other refusals park as before.
+The blocker is cleared when the wait ends; stopping the owner clears it, and
+resume or retry starts a new wait.

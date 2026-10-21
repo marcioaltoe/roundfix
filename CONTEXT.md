@@ -851,6 +851,10 @@ _Avoid_: Pricing model
 The spend an ACP adapter itself reports for a turn; Roundfix prints only reported cost and never prices tokens from a table ([ADR-0198](docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md)).
 _Avoid_: Estimated cost, price table
 
+**Run Slot Wait**:
+The bounded wait of a running Delivery Queue item whose Implement step was refused only by the ceiling on active Implement Runs, shown as its blocker text and polled against the Run Database until a slot frees, `runs.slot_wait` expires or the queue deadline arrives ([ADR-0304](docs/adr/0304-a-queue-item-waits-for-a-run-slot-up-to-runs-slot-wait.md)).
+_Avoid_: Waiting stage, admission reservation
+
 **Queue Token Ceiling**:
 An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped ([ADR-0199](docs/adr/0199-a-queue-token-ceiling-stops-new-starts-and-never-a-running-task.md)).
 _Avoid_: Run Budget, spending limit

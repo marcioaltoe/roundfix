@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -157,3 +157,89 @@ binaries, a real Run Database and the status command.
 - `_prd.md` → Sources; Goals; Core Feature 4; Core Feature 5; Success Metric 4; Success Metric 5; Glossary
 - `_techspec.md` → API Contract 6; API Contract 7; API Contract 8; API Contract 9; Surface Transcript 2; Invariants 4-5; Interfaces; Current behavior; Testing Approach; Build Order 4; Glossary
 - ADR-0304; ADR-0279; ADR-0199; ADR-0184; ADR-0259; ADR-0271; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+
+## Result
+
+Implemented this Task's refusal recognition and queue wiring; status and declared
+Verification remain Daemon-owned. The initial tree had no exported ceiling
+prefix or slot reader, and `deliveryRunResult` returned the plain command failure
+for preflight refusals. The only pre-existing changed path at intake was this
+Task file, including its Daemon-written `in_progress` status, which was preserved.
+
+### Acceptance evidence
+
+- Ceiling-only refusal: the store now exports `ActiveImplementRunCeilingReason`
+  and builds the unchanged error text from it. Recognition requires exit `2`,
+  no new Run and the first non-empty reason line, with ANSI sequences removed,
+  beginning with the prefix plus colon. The recognition test passes ten cases,
+  including colored output, another refusal, a later matching line, unchanged
+  and newly created Runs, exit `1`, blank lines and the required colon.
+  The compiled-item test passes through `migrate --check` and `RunSpec` against
+  a temporary Run Database with another repository's holder, asserting both
+  the typed refusal's slots and byte-identical underlying failure text.
+- Gone holder: `RunSlots` reads the Queue Owner's ceiling and machine-wide
+  Active Implement Runs, sorts by Run ID and excludes only recorded owner PIDs
+  proven gone. The unix test passes with the test process, a reaped `sh` child
+  and an unrecorded PID, and confirms all three Runs remain active in storage.
+  Closed-database reads return an error. Source inspection confirms `RunSpec`
+  returns the original plain refusal when the slot read fails. No reclamation
+  or process signalling was added.
+- Status transcript: `TestDeliverStatusShowsARunSlotWaitTranscript` passes the
+  entire Surface Transcript 2 stdout, empty stderr and exit code, seeding the
+  blocker through `delivery.RunSlotWaitText`. Its fixture records the worktree
+  through `RecordDeliveryQueueItemWorktree`, as the store contract requires.
+- Documentation: the deliver guide and canonical reference describe the status
+  text, running stage, two console lines, 30-second database poll, User Config
+  duration, queue-deadline precedence, retries and unchanged expiry park reason.
+  The domain-modeling skill guided the ADR-0304-linked Run Slot Wait definition
+  in `CONTEXT.md`. Canonical and mirrored skill versions are `0.1.120`, one
+  patch above the intake version. QA settlement sections are byte-identical.
+
+### Focused checks and required generation
+
+Commands below ran through `rtk proxy` and exited `0`:
+
+- `go test ./internal/cli -run 'TestDeliveryRunResultRecognizesOnlyTheCeilingRefusal|TestRunSpecReturnsARunSlotRefusalWithItsHolders|TestDeliverStatusShowsARunSlotWaitTranscript|TestRunSlotsExcludeAHolderWhoseOwnerIsGone' -count=1 -v`
+- `go test ./internal/cli ./internal/store -run 'TestRunCeiling|TestImplementRunCeiling|TestDeliveryStepsStartTheItemBinary|TestDeliverStatusPrintsAParkLine' -count=1`
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+- `make baseline-digests`: required by repository guidance; reported
+  `changed: false`, with no final Baseline artifact diff.
+- `git diff --check`; inspection also confirmed matching canonical/mirror
+  bytes, preserved QA settlement sections and the final skill version fields.
+
+The first focused run exposed a test-fixture mistake: general item updates do
+not persist the worktree path. The fixture was corrected through the owning
+store API; all four new tests then passed without changing production status
+behavior or weakening the transcript assertion.
+
+Searched user guides, agent guides, canonical skills and skill mirrors for
+ceiling/parking wording. No stale statement that the queue immediately parks at
+the Active Implement Run ceiling was found outside the declared files; token
+ceiling parking text describes a different limit and remains intact.
+
+The environment rejected the symlinked writable root, so commands used approved
+execution through the resolved checkout. No network, real Docker, provider or
+GitHub calls were made. No task status, graph manifest, other Task file or
+existing test was edited. No commit, push or Pull Request was made.
+
+The full declared Verification, Windows vet/build and full package suites were
+not run; they remain for the Daemon. No follow-up implementation was added.
+
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon's `batch-004-attempt-1.log`. Its glossary contract rejected
+this Task's definition because “Active Implement Run” was an undefined
+capitalized phrase. Reworded only the Run Slot Wait definition in `CONTEXT.md`
+to “ceiling on active Implement Runs”, retaining the established Implement Run
+term and the same ceiling, blocker, polling and deadline semantics.
+
+Focused evidence: `go test -tags docscontract ./internal/docscontract -run
+'^TestGlossary' -count=1` (through `rtk proxy`) exited `0`; this includes
+`TestGlossaryPhrasesAreDefinedTerms`. `git diff --check` also exited `0`.
+No production code, existing test, allowlist, generated record, skill, Task
+status or other Task file changed in this repair. The declared Verification
+sequence was not rerun by this Agent; its next execution remains Daemon-owned.

@@ -228,6 +228,9 @@ type ActiveRunError struct {
 	Existing Run
 }
 
+// ActiveImplementRunCeilingReason is the stable preflight reason recognized by the queue.
+const ActiveImplementRunCeilingReason = "Active Implement Run ceiling reached"
+
 type ActiveImplementRunCeilingError struct {
 	MaxActive int
 	Holders   []Run
@@ -282,7 +285,7 @@ func (err ActiveImplementRunCeilingError) Error() string {
 	var message strings.Builder
 	fmt.Fprintf(
 		&message,
-		"Active Implement Run ceiling reached: %d Run(s) hold %d slot(s)",
+		ActiveImplementRunCeilingReason+": %d Run(s) hold %d slot(s)",
 		len(err.Holders),
 		err.MaxActive,
 	)

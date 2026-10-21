@@ -81,6 +81,8 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		History:        workflow,
 		Revalidator:    workflow,
 		Prerequisites:  workflow,
+		RunSlots:       workflow,
+		RunSlotWait:    loaded.Config.Runs.SlotWait,
 		Log:            os.Stderr,
 	})
 }
@@ -947,7 +949,39 @@ func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, s
 	if afterFound {
 		after = &afterRun
 	}
-	return workflow.runResult(ctx, gitRoot, specSlug, result, candidateHead, before, after)
+	runResult, err := workflow.runResult(ctx, gitRoot, specSlug, result, candidateHead, before, after)
+	var refusal *delivery.RunSlotRefusal
+	if errors.As(err, &refusal) {
+		// Only the recognized child refusal can become a wait. A failed database
+		// read preserves the original failure, so it parks instead of guessing.
+		slots, readErr := workflow.RunSlots(ctx)
+		if readErr != nil {
+			return runResult, refusal.Err
+		}
+		refusal.Slots = slots
+	}
+	return runResult, err
+}
+
+// RunSlots reads the Queue Owner's ceiling and the machine-wide Active Implement
+// Runs for the engine's refusal and status blocker text. It never reclaims a Run
+// or signals a process: only a recorded owner PID proven gone excludes a holder.
+func (workflow *commandDeliveryWorkflow) RunSlots(ctx context.Context) (delivery.RunSlots, error) {
+	runs, err := workflow.store.ActiveImplementRuns(ctx)
+	if err != nil {
+		return delivery.RunSlots{}, err
+	}
+	slots := delivery.RunSlots{MaxActive: workflow.loaded.Config.Runs.MaxActive}
+	for _, run := range runs {
+		if run.OwnerPID != nil && *run.OwnerPID > 0 && !store.ProcessAlive(*run.OwnerPID) {
+			continue
+		}
+		slots.Holders = append(slots.Holders, delivery.RunSlotHolder{
+			RunID: run.ID, Repository: run.GitRoot, SpecSlug: run.SpecSlug,
+		})
+	}
+	sort.Slice(slots.Holders, func(i, j int) bool { return slots.Holders[i].RunID < slots.Holders[j].RunID })
+	return slots, nil
 }
 
 // runResult reads QA evidence from the Run Branch, which need not have integrated
@@ -1097,7 +1131,27 @@ func deliveryRunResult(
 			}, nil
 		}
 	}
-	return delivery.RunResult{}, command.failure("roundfix implement")
+	failure := command.failure("roundfix implement")
+	// Child stderr is diagnostic data, not authority to wait by itself. Require
+	// the preflight exit code, no new Run, and the first reason line together;
+	// the engine may persist the resulting wait in the item's status blocker.
+	if command.exitCode == exitPreflight && !createdRun {
+		plain := regexp.MustCompile(`\x1b\[[0-?]*[ -/]*[@-~]`).ReplaceAllString(command.stderr, "")
+		reason := false
+		for _, line := range strings.Split(plain, "\n") {
+			line = strings.TrimSpace(line)
+			if reason && line != "" {
+				if strings.HasPrefix(line, store.ActiveImplementRunCeilingReason+":") {
+					return delivery.RunResult{}, &delivery.RunSlotRefusal{Err: failure}
+				}
+				break
+			}
+			if line == "Reason:" {
+				reason = true
+			}
+		}
+	}
+	return delivery.RunResult{}, failure
 }
 
 func (workflow *commandDeliveryWorkflow) ReviewPolicy(context.Context, string, string) (delivery.ReviewPolicy, error) {
