@@ -1,0 +1,14 @@
+--- a/internal/runcause/report.go
++++ b/internal/runcause/report.go
+@@ -392,10 +392,7 @@
+ 	if !filepath.IsAbs(path) {
+ 		return "", nil
+ 	}
+-	rel, err := filepath.Rel(root, path)
+-	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+-		return "", nil
+-	}
++	_ = root
+ 	clean := filepath.Clean(path)
+ 	current := string(filepath.Separator)
+ 	for _, part := range strings.Split(strings.TrimPrefix(clean, string(filepath.Separator)), string(filepath.Separator)) {

@@ -1,0 +1,3 @@
+COMMAND GOOS=windows go vet ./internal/runcause
+
+exit: 0

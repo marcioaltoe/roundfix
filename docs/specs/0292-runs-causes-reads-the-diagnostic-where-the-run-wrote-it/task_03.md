@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

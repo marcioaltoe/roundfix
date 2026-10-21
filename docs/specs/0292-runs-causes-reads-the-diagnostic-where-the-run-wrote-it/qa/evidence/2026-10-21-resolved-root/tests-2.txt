@@ -1,0 +1,4 @@
+COMMAND go test -count=1 ./skills
+ok  	roundfix/skills	1.121s
+
+exit: 0

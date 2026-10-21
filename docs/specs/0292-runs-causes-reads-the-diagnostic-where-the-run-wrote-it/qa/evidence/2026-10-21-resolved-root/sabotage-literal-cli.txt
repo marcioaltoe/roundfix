@@ -1,0 +1,14 @@
+COMMAND go test ./internal/cli -run ^TestRunsCausesReadsTheDiagnosticOfARunWithoutAnArtifactRootTranscript$ -count=1 -v
+=== RUN   TestRunsCausesReadsTheDiagnosticOfARunWithoutAnArtifactRootTranscript
+=== PAUSE TestRunsCausesReadsTheDiagnosticOfARunWithoutAnArtifactRootTranscript
+=== CONT  TestRunsCausesReadsTheDiagnosticOfARunWithoutAnArtifactRootTranscript
+    runs_causes_test.go:341: exit=0 stderr=""
+        out="verification 0300-example/task_01 run_20261001T120000Z_0000000000000001 attempt-1 unclassified -: go test ./internal/store\nverification 0300-example/task_02 run_20261001T120000Z_0000000000000001 attempt-1 unclassified -: go test ./internal/cli\nverification 0300-example/task_02 run_20261001T120000Z_0000000000000001 attempt-2 unclassified -: make verify\ncorrective 0300-example/task_04 run_20261001T120000Z_0000000000000001 - repository-convention record-or-golden: pre-pr-review\nCauses: 4 item(s) from 1 terminal Spec Run(s) in window 2026-10-01..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 1, implementation-defect 0, environment 0, unclassified 3; repository knowledge 1 of 1 classified; signatures 53e5e5a76410\n"
+        want="verification 0300-example/task_01 run_20261001T120000Z_0000000000000001 attempt-1 environment database-locked: go test ./internal/store\nverification 0300-example/task_02 run_20261001T120000Z_0000000000000001 attempt-1 implementation-defect go-test-failure: go test ./internal/cli\nverification 0300-example/task_02 run_20261001T120000Z_0000000000000001 attempt-2 unclassified -: make verify\ncorrective 0300-example/task_04 run_20261001T120000Z_0000000000000001 - repository-convention record-or-golden: pre-pr-review\nCauses: 4 item(s) from 1 terminal Spec Run(s) in window 2026-10-01..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 1, implementation-defect 1, environment 1, unclassified 1; repository knowledge 1 of 3 classified; signatures 53e5e5a76410\n"
+--- FAIL: TestRunsCausesReadsTheDiagnosticOfARunWithoutAnArtifactRootTranscript (0.02s)
+FAIL
+suiteguard: guard cost: measured 2646 paths; fingerprint took 74.386875ms before and 98.21ms after
+FAIL	roundfix/internal/cli	0.584s
+FAIL
+
+exit: 1

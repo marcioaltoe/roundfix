@@ -1,0 +1,42 @@
+{
+  "repository": {
+    "bin/roundfix": "8ab64500a28b7f619996aee6239537d6a1a34ad7414dda8e8c2aa6f6ad150318",
+    ".git/config": "b4da50b2601843b89c141b49072a7a918191e3d816821054f3bee1a4e382bc7c",
+    ".git/HEAD": "28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80",
+    ".git/description": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee",
+    ".git/index": "68a1b4b4038883f8c28799656d0b95a14b96a512bd0e857fb5808e2fcfcdfeef",
+    ".git/COMMIT_EDITMSG": "a20ea213b6fa695eb46ca5079c91d031b7ead0b2ed2efd00aa33de10c732e046",
+    ".git/info/exclude": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1",
+    ".git/logs/HEAD": "359d210ce37908527a972d31152cb96b3d77acd2a916e226aac8859f03ca8698",
+    ".git/hooks/commit-msg.sample": "efc1401b0e99d1ff51494d154d98b46c1e99059bcd8bf9f73cecde19fd3eb23b",
+    ".git/hooks/pre-rebase.sample": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3",
+    ".git/hooks/sendemail-validate.sample": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92",
+    ".git/hooks/pre-commit.sample": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b",
+    ".git/hooks/applypatch-msg.sample": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7",
+    ".git/hooks/fsmonitor-watchman.sample": "9159720099ad5595b8e66645cbfd47763c1e920f46e0b50ae75e642bbec57ef0",
+    ".git/hooks/pre-receive.sample": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989",
+    ".git/hooks/prepare-commit-msg.sample": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619",
+    ".git/hooks/post-update.sample": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5",
+    ".git/hooks/pre-merge-commit.sample": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53",
+    ".git/hooks/pre-applypatch.sample": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475",
+    ".git/hooks/pre-push.sample": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a",
+    ".git/hooks/update.sample": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106",
+    ".git/hooks/push-to-checkout.sample": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f",
+    ".git/refs/heads/main": "ae5efecccbc9305efc563053ac36299080d311d05920231ada1a36703416f60d",
+    ".git/logs/refs/heads/main": "359d210ce37908527a972d31152cb96b3d77acd2a916e226aac8859f03ca8698",
+    ".git/objects/0e/e3ba8330a6e30f1f0b8ba433f1b42cef0cab8c": "7ed1e0594a80448d831cfd6689bb439f48bfd3cc42ad9ed91e2c17ed2ee61eee",
+    ".git/objects/e2/d87115beaeb67603cfc14a6d6ac8893913da18": "963817e7a013283092f9c0e6c3520c6dd978820ec881869624fee54a34a0b6bb",
+    ".git/objects/fd/457df5050c17328054e3498edc71beee242988": "b8416e303b06aa61dfffe20503817ff299f11b1e01e5e89c90182d53cb74a6d4",
+    ".git/objects/42/2f83b6833435aaac2316da2e9df7e6d1497ca0": "c09a7c15179a74603dc122f553e9de53a80c3d97092aae4e78ea435ed3d5415c",
+    ".git/objects/7e/678403036bedf697581b5134fa38620e456d05": "845fdb2a01a51fe3f2d2dfe8fa4a2305e248cb121c645d3e2bf0f920b59fbb33",
+    ".git/objects/52/034b37b382a5907851f7ec5d3e05fa4d4d7824": "6d5c795faf8dc66dfb83e215e4af18424418f72fe468157ae4a362288aff4ec0",
+    ".git/objects/aa/54863ad7574ba194e7ca829007aae95052b18e": "cbdecd4412eefb9b40372c72acb8d10ce7c0e255df44e89c1d0354da1c990e21",
+    "docs/specs/0300-example/task_04.md": "c4cfce50e938ebea724e9b33f50cb21c9d99d39ad6afb23b9de6f99cb6ca26aa",
+    "docs/specs/0300-example/_tasks.md": "24fb7f234c91cc318f8d2885fc612f406c44d4016ad9ef61354362f4faf1b77b"
+  },
+  "artifacts": {
+    "099d0e09d2c3f22d/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+    "099d0e09d2c3f22d/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+    "099d0e09d2c3f22d/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+  }
+}

@@ -1,0 +1,9 @@
+=== RUN   TestQASeedPersistentCausesFixture
+=== PAUSE TestQASeedPersistentCausesFixture
+=== CONT  TestQASeedPersistentCausesFixture
+--- PASS: TestQASeedPersistentCausesFixture (0.02s)
+PASS
+suiteguard: guard cost: measured 2647 paths; fingerprint took 195.109041ms before and 58.892792ms after
+ok  	roundfix/internal/cli	0.663s
+
+exit: 0
