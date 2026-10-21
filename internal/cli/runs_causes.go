@@ -94,6 +94,7 @@ func runRunsCausesCommand(ctx context.Context, args []string, stdout, stderr io.
 			return fail(err, exitPreflight)
 		}
 	}
+	req.HomeDir = loaded.HomeDir
 	req.PushRemote = loaded.Config.Watch.PushRemote
 	req.SpecsRoot = root.Path
 	req.ArchiveRoot = spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot)

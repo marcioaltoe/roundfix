@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -139,3 +139,81 @@ is verifiable on its own on temporary Roundfix Homes.
 - `_prd.md` → Sources; Goals; Core Feature 1; Core Feature 2; Core Feature 3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; Surface Transcript 1; Invariants 1-5; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 1
 - ADR-0301; ADR-0214; ADR-0259; ADR-0271; ADR-0285; ADR-0280
+
+
+## Result
+
+Implemented only task_01's resolved diagnostic read. Task status, Subtasks and
+Acceptance Criteria settlement remain Daemon-owned; declared Verification and
+repository Verification were not run.
+
+### Implementation and acceptance evidence
+
+- Blank, relative and absolute roots: `Request.HomeDir` is passed from
+  `loaded.HomeDir`; `diagnosticTail` delegates to `store.ResolveRunArtifactRoot`
+  using the recorded Run ID, Git root, repository root (falling back to the Git
+  root) and trimmed recorded Artifact Directory. Declared behavior change:
+  blank and relative recorded roots now classify guarded diagnostics under the
+  resolved root. Both exact CLI transcripts pass, including every stdout line,
+  empty stderr and exit 0. Existing test names, bodies and assertions remain
+  unchanged; fixture helpers gained optional root parameters and the report
+  fixture resolves its repository's symbolic links.
+- Diagnostic guards and resolver errors: all 12 new report subtests pass:
+  blank root, relative root, absolute root, blank root without home, leaf
+  symlink, parent symlink, outside, other run, directory, missing, diagnostic
+  under the recorded value and inspection error. Each checks task_01 attempt
+  1's class, signature and evidence, or the Run-specific resolver error.
+  Unsafe/unresolved-root sentinels return no evidence immediately; other
+  resolver errors retain their error chain. The absolute-path, containment,
+  component walk, regular-file and bounded-tail checks and their error texts
+  remain unchanged.
+- One resolver: reviewed the production diff and searched non-test files under
+  `internal/runcause`; there are no calls to `ResolveArtifactDirectory`,
+  `DefaultArtifactDirectoryForPath` or `ValidateArtifactDirectory`. The only
+  path built from the resolver result is its `runs/<run-id>` directory.
+- Read-only and privacy: every new report subtest hashes both the temporary
+  home and repository before and after `Build`, checks identical hashes and
+  checks that an absent default root remains absent. The inspection-error
+  branch has the same checks. Link hashes use link metadata without following
+  the link. Fixture writes finish before opening the report reader so SQLite
+  snapshot sidecars are stable at the hash boundary. Existing database,
+  bounded-tail and private-output tests pass. The code documents the row,
+  recorded Git metadata and loaded-home inputs, classifier-only evidence and
+  absence of writes or private diagnostic data in stdout/JSON.
+- Guide: added the required paragraph after the five classes, covering all
+  three resolution rules and the diagnostic guards. Re-recorded
+  `docs/references/behavior-surfaces.json` through its owning generator.
+
+### Focused checks
+
+Commands below were invoked through `rtk proxy` to preserve exact output:
+
+- Before the resolver change, `go test ./internal/runcause -run
+  '^TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/(blank_root|relative_root)$'
+  -count=1` reproduced both failures: task_01 attempt 1 was `unclassified`
+  with nil signature/evidence instead of `environment`/`database-locked`.
+- `go test ./internal/runcause ./internal/cli -run
+  '^(TestBuild|TestRunsCauses)' -count=1`: exit 0 for both packages. Covers
+  new root/guard tests, both new exact transcripts and existing report,
+  output/privacy and database-preservation consumers.
+- After final test import formatting, `go test ./internal/runcause -run
+  '^TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot$' -count=1 -v`:
+  exit 0; all 12 subtests passed without skips on macOS.
+- `GOOS=windows go test -c -o /tmp/roundfix-0292-runcause.test.exe
+  ./internal/runcause` and `GOOS=windows go test -c -o
+  /tmp/roundfix-0292-cli.test.exe ./internal/cli`: exit 0. Both production and
+  test code compile for Windows; Windows execution was not performed. The
+  inspection-error subtest explicitly skips on Windows because that platform
+  reports a path through a regular file as missing.
+- `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  exit 0; generated record updated, never hand-edited.
+
+Environment: the sandbox refused process creation because the writable
+workspace root contains a symbolic link. Authorized escalated execution used
+its resolved checkout. All fixtures used temporary homes and repositories;
+no real Roundfix Home or network was accessed.
+
+No follow-up work discovered within this slice. Task_02's skill reference and
+glossary changes remain outside this diff. Full declared Verification and
+terminal Task settlement are pending the Daemon.

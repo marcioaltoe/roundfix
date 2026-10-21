@@ -107,6 +107,13 @@ three count as repository knowledge. An unmatched item is `unclassified`,
 which is counted separately and is not a class. The summary counts every
 class and gives the embedded signature table's digest.
 
+A failed attempt's diagnostic is read under the Artifact Root the Run wrote to,
+resolved the way `roundfix storage report` resolves it: a blank recorded Artifact
+Directory uses the repository's default root, a relative one resolves under the
+Run's Git root, and an absolute one is used as recorded. A diagnostic outside the
+Run's own `runs/<run-id>` directory, reached through a symbolic link, or not a
+regular file gives the attempt no evidence.
+
 A corrective Task is a graph node numbered after the QA Task, excluding the
 QA Task itself. The command reads the active Task Graph first, then its
 archive. A missing graph produces `corrective: null` in JSON and lists the

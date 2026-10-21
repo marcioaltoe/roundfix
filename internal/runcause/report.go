@@ -32,6 +32,7 @@ type Request struct {
 	RepositoryRoot         string
 	SpecsRoot, ArchiveRoot string
 	PushRemote             string
+	HomeDir                string // Loaded user home for resolving a Run's Artifact Root.
 	Since, Until           time.Time
 }
 
@@ -214,7 +215,7 @@ func Build(ctx context.Context, t Table, req Request) (Report, error) {
 			if check == "" {
 				check = strings.Join(p.Commands, "\n")
 			}
-			diagnostic, err := diagnosticTail(run, p.DiagnosticPath, t.DiagnosticTailBytes)
+			diagnostic, err := diagnosticTail(run, req.HomeDir, p.DiagnosticPath, t.DiagnosticTailBytes)
 			if err != nil {
 				return Report{}, err
 			}
@@ -365,11 +366,29 @@ func isCorrective(g spec.CauseGraph, id string) bool {
 
 // diagnosticTail checks every path component with Lstat. Neither a leaf link
 // nor a linked parent can turn external content into diagnostic evidence.
-func diagnosticTail(run store.Run, path string, limit int64) (string, error) {
-	if path == "" || run.ArtifactDir == "" || filepath.Base(run.ID) != run.ID {
+// Inputs come from the Run Database row, recorded repositories' Git metadata,
+// and the loaded home. The resolved root and diagnostic text stay inside the
+// classifier's evidence read; no diagnostic text, path or key enters stdout or
+// JSON. This read creates, writes and removes nothing.
+func diagnosticTail(run store.Run, homeDir, path string, limit int64) (string, error) {
+	if path == "" {
 		return "", nil
 	}
-	root := filepath.Join(run.ArtifactDir, "runs", run.ID)
+	repository := run.RepositoryRoot
+	if repository == "" {
+		repository = run.GitRoot
+	}
+	artifactRoot, err := store.ResolveRunArtifactRoot(store.ArtifactRootRun{
+		ID: run.ID, GitRoot: run.GitRoot, Repository: repository,
+		ArtifactDir: strings.TrimSpace(run.ArtifactDir),
+	}, homeDir)
+	if err != nil {
+		if errors.Is(err, store.ErrUnsafeRunID) || errors.Is(err, store.ErrArtifactRootUnresolved) {
+			return "", nil
+		}
+		return "", fmt.Errorf("resolve Artifact Root of Run %q: %w", run.ID, err)
+	}
+	root := filepath.Join(artifactRoot, "runs", run.ID)
 	if !filepath.IsAbs(path) {
 		return "", nil
 	}
