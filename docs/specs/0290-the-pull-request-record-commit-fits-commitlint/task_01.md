@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0290-the-pull-request-record-commit-fits-commitlint
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -110,3 +110,40 @@ None. This Task changes documentation, the skill mirror, the skill version recor
 - `_prd.md` → Core Feature 4; Goals; Glossary
 - `_techspec.md` → API Contract 7; Build Order 1
 - ADR-0302
+
+## Result
+
+Implemented the documentation slice while leaving the Daemon-owned status
+`in_progress` unchanged:
+
+- Added the numeric Spec subject rule and the named commit-hook refusal and
+  hand-commit recovery to `docs/user-guide/commands/deliver.md` and the
+  canonical `.agents/skills/roundfix/references/deliver.md`.
+- Revised the `Hook Refusal` glossary entry in `CONTEXT.md` with Delivery Queue
+  commits and the ADR-0302 link, preserving its existing definition and
+  `_Avoid_` line.
+- Raised both canonical Roundfix skill version fields from `0.1.117` to
+  `0.1.118`, then ran `make skills-sync`; the canonical and mirrored skill and
+  reference files are byte-identical.
+- Ran the required recorders successfully: `go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` and `go
+  test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+  They updated `skills/testdata/owned-skill-versions.json` and
+  `docs/references/behavior-surfaces.json` through their owning generators.
+- Focused checks passed: `git diff --check`; canonical/mirror `cmp`; no diff
+  inside `### QA settlement`; and the changed-path audit found only the
+  Task-declared documentation, skill, mirror and derived-record paths.
+- The required wording search found no old slug-based record-subject or
+  Git-only queue-refusal wording in `docs/user-guide`, `.agents/skills` or
+  `skills`. Historical slug wording remains in the Spec's PRD/TechSpec,
+  adopted reference and ADR, which are outside this Task's allowed changes.
+
+Acceptance evidence:
+
+- Guide and both reference copies contain the record subject and hand-commit
+  recovery paragraphs, with the reference's `### QA settlement` unchanged.
+- `CONTEXT.md` identifies a refused Delivery Queue commit as a Hook Refusal
+  and links ADR-0302.
+- Roundfix is recorded at `0.1.118`, the mirror is synchronized, and the
+  Behavior Surface Record was re-recorded successfully.

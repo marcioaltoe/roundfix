@@ -383,6 +383,7 @@ _Avoid_: Batch failure, agent crash, runtime error
 
 **Hook Refusal**:
 The outcome (`hook_refused`) of a Task commit a repository commit hook rejected after the authoritative Verification had already passed. It is a repository misconfiguration rather than a Task failure — a commit hook may never be stricter than the Verification — so the Task stays `completed`, its verified work stays staged in the surface that produced it, and the Run reports the refusing hook, its exit code, its output, and the Settle Command that recovers the work.
+A Delivery Queue commit — the archive commit, the Pull Request Record Commit or the derived merge commit — that a hook refuses is a Hook Refusal too: the item parks `delivery-error` with a reason naming the hook, the refused subject and the hand commit that recovers it, and the queue never bypasses the hook ([ADR-0302](docs/adr/0302-a-queue-commit-names-the-spec-by-number-and-a-hook-refusal-parks-with-the-hand-commit.md)).
 _Avoid_: Commit failure, pre-commit error, verification failure
 
 **Mechanical Refusal Code**:
