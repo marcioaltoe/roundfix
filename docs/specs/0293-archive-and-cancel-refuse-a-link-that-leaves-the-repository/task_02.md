@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0293-archive-and-cancel-refuse-a-link-that-leaves-the-repository
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -120,3 +120,64 @@ the `archive` and `cancel` user guides.
 - `_prd.md` → Sources; Goals; Core Features 3-4; Declared break; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior; API Contracts 4-5; Surface Transcript 1; Surface Transcript 2; Invariants 2-4; Testing Approach; Build Order 2
 - ADR-0306; ADR-0269; ADR-0262; ADR-0184; ADR-0280; ADR-0259; ADR-0271; ADR-0285
+
+## Result
+
+Implemented this Task's command transcript coverage and guide changes. The
+Daemon retains status and settlement; the pre-existing `status: in_progress`
+was preserved, and declared Verification was not run.
+
+- Outside-path acceptance evidence: the four archive subtests (Archive Root,
+  Spec folder, promotion destination and offline plan) and two cancel
+  subtests (returned Backlog Entry and citation-advice Archive Root) assert
+  exit `2`, empty standard output and the entire ordered refusal on standard
+  error. Every case snapshots the resolved Spec folder and outside directory,
+  compares their bytes after refusal, compares
+  `git status --porcelain --untracked-files=all`, and checks that the Spec
+  remains and no Archive Record appears. The outside Spec-folder case also
+  snapshots the parent outside directory, including its sentinel.
+- Accepted-path acceptance evidence: inside `docs/history`, linked-checkout
+  work directory and external Spec Root through a linked repository spelling
+  all archive through command dispatch. Each compares exit, stdout, stderr,
+  exact record bytes and relinked Backlog Entry bytes with its control and
+  asserts Spec removal. The external-root command prints an absolute record
+  path: the test asserts each exact destination spelling, substitutes only
+  that known fixture-path span, and compares all remaining output unchanged.
+  Both external worktrees share the same source revision. Fixtures resolve
+  their temporary directory first, create real links with `os.Symlink`, and
+  use temporary homes and the existing isolated Git configuration helpers.
+  All three top-level tests call `t.Parallel()` first.
+- Documentation acceptance evidence: inserted the requested paragraphs
+  immediately after each guide's symbolic-link sentence. Ran the sanctioned
+  Behavior Surface Record generator; its diff changes only the archive and
+  cancel guide fingerprints. `docs/references/skill-coverage.json` is
+  unchanged. No changes to `internal/cli/archive.go` or
+  `internal/cli/cancel.go` were necessary.
+
+Focused checks:
+
+- `go test ./internal/cli -run
+  '^(TestArchiveRefusesALinkThatLeavesTheRepositoryTranscript|TestCancelRefusesALinkThatLeavesTheRepositoryTranscript|TestArchiveKeepsLinksThatStayInsideTranscript)$'
+  -count=1 -v`: exit `0`; all three tests and all nine subtests passed.
+- `GOOS=windows go test -c -o /tmp/roundfix-task02-cli.test.exe
+  ./internal/cli`: exit `0`; the package and tests cross-compile for Windows.
+  This is compilation evidence, not Windows execution evidence.
+- `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  exit `0`; regenerated the Behavior Surface Record through its owner.
+- `git diff --check`: exit `0`.
+
+Wording search: searched `docs/user-guide/`, `docs/agents/`,
+`.agents/skills/` and `skills/` for symbolic-link/symlink wording, including
+adjacent-line acceptance, following and outside-path claims. The two command
+guides' general checkout-spelling sentences needed the new qualification;
+no guide, agent guide or skill copy explicitly claimed that archive or cancel
+accepts a link whose target leaves the repository. The two Roundfix archive
+skill references do not yet state the new refusal; their update and
+ADR-0269's broad destination-parent sentence remain task_03's slice.
+
+Environment: the configured workspace root contains a symlink and the sandbox
+could not start a process there. Used the resolved Run checkout with approved
+escalation for the authorized edits and focused checks. No network or host
+Roundfix store was used. No other Task or Task Graph was edited; no commit,
+push or Pull Request was made.

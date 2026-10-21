@@ -14,6 +14,12 @@ The cancel reads every path relative to the checkout it runs in, so it
 writes the same record from the main checkout, a linked worktree, a
 subdirectory of either, or a path that crosses a symbolic link.
 
+A path whose resolved target lies outside the repository, such as a
+`docs/history` or `docs/backlog` symbolic link to another directory, is
+refused with exit `2` before anything is written, and the refusal names the
+path. A symbolic link whose target stays inside the repository, a checkout
+reached through a symbolic link and an external Spec Root keep working.
+
 `cancel` creates no Run, never changes a Task status, and never commits or
 pushes. A cancelled Spec never meets a prerequisite or supersedes another
 Spec. `deliver retry` refuses a cancelled Spec.
