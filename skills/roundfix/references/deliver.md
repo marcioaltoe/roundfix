@@ -63,7 +63,7 @@ A Spec's optional `_tasks.md` frontmatter `requires` lists prerequisite Specs.
 Start refuses unknown slugs, self-references, duplicates and queued cycles
 before recording a queue. Before creating a worktree, the owner reads the
 manifest from the fetched default branch and requires each prerequisite's
-archived `_prd.md` there. Unmerged local archives do not count. If every unmet
+Archive Record or, for a legacy archive, its archived `_prd.md` there. Unmerged local archives do not count. If every unmet
 prerequisite is queued and neither parked nor merged, the item waits at
 `queued`; otherwise it parks `prerequisite-unmerged: <slug>, …` without a
 worktree. Each owner pass and each merge returns satisfied dependency parks to
@@ -374,8 +374,8 @@ re-enters at `gating` without a recorded pull request or at `checking` with one.
 Before those retry rules, Roundfix asks whether the parked item already merged.
 It first reads the recorded Pull Request through `gh pr view` in the repository
 checkout. A merged Pull Request must name the item's recorded branch and have
-both a head and a merge commit. Otherwise it reads the Spec's archived `_prd.md`
-on the local default branch and proves that the delivery commit that added it
+both a head and a merge commit. Otherwise it reads the Spec's Archive Record, or a legacy archive's `_prd.md`
+on the local default branch and proves that the delivery commit that added that file
 is absent from the local item branch's tip, or the newest candidate when the
 branch is gone. The fallback does not fetch; the local default branch must
 already hold the delivery.

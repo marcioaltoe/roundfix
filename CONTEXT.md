@@ -1266,7 +1266,7 @@ The append-only history of Run Events stored in the Run Database, ordered by a p
 _Avoid_: Agent log, log file, event broker
 
 **Run Event Stream**:
-A read-only JSONL projection of one Run's Run Event Journal, selected by the identifier of an explicit Run and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+A read-only JSONL projection of one Run's Run Event Journal, selected by the identifier of an explicit Run and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor categories are `task-status`, `batch`, `verification`, `outcome`, `agent-selection` and `usage`; replay includes every one by default, and a filter selects a subset of them. The command skips a record it cannot project with a warning and continues with the next journal entry.
 _Avoid_: Attach, console log, global event bus
 
 **Attach**:

@@ -21,6 +21,7 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/cli"
+	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/worktree"
@@ -47,6 +48,13 @@ var glossaryClosedLists = []struct {
 		var values []string
 		for _, taskType := range spec.AllowedTaskTypes() {
 			values = append(values, string(taskType))
+		}
+		return values
+	}()},
+	{term: "Run Event Stream", values: func() []string {
+		var values []string
+		for category := range runevent.AllStreamCategories() {
+			values = append(values, string(category))
 		}
 		return values
 	}()},
