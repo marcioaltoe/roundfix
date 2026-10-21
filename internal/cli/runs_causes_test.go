@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"roundfix/internal/config"
 	"roundfix/internal/gittest"
 	"roundfix/internal/runcause"
 	"roundfix/internal/runevent"
@@ -40,7 +41,7 @@ func causesCLIWorkspace(t *testing.T) commandEnvironment {
 	return commandEnvironment{homeDir: home, workDir: repo, environ: []string{}, dependencies: defaultCommandDependencies()}
 }
 
-func seedCausesCLI(t *testing.T) commandEnvironment {
+func seedCausesCLI(t *testing.T, recordedRoots ...string) commandEnvironment {
 	t.Helper()
 	env := causesCLIWorkspace(t)
 	dir := filepath.Join(env.workDir, "docs/specs/0300-example")
@@ -53,7 +54,15 @@ func seedCausesCLI(t *testing.T) commandEnvironment {
 	if err != nil {
 		t.Fatal(err)
 	}
-	run, err := s.CreateRun(t.Context(), store.CreateRunRequest{Kind: store.KindImplement, GitRoot: env.workDir, LocalBranch: "main", SpecSlug: "0300-example", ArtifactDir: filepath.Join(env.homeDir, "artifacts")})
+	recorded := filepath.Join(env.homeDir, "artifacts")
+	if len(recordedRoots) > 0 {
+		recorded = recordedRoots[0]
+	}
+	root, err := config.ResolveArtifactDirectory(recorded, env.workDir, env.homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := s.CreateRun(t.Context(), store.CreateRunRequest{Kind: store.KindImplement, GitRoot: env.workDir, LocalBranch: "main", SpecSlug: "0300-example", ArtifactDir: recorded})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +87,7 @@ func seedCausesCLI(t *testing.T) commandEnvironment {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logDir := filepath.Join(run.ArtifactDir, "runs", causesFixtureID, "verification")
+	logDir := filepath.Join(root, "runs", causesFixtureID, "verification")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -325,4 +334,27 @@ func TestBuildLeavesTheRunDatabaseUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertCausesHomeUnchanged(t, before, causesHomeHashes(t, env.homeDir))
+}
+
+func TestRunsCausesReadsTheDiagnosticOfARunWithoutAnArtifactRootTranscript(t *testing.T) {
+	t.Parallel()
+	assertResolvedCausesTranscript(t, seedCausesCLI(t, ""))
+}
+
+func TestRunsCausesReadsTheDiagnosticUnderARelativeArtifactRoot(t *testing.T) {
+	t.Parallel()
+	assertResolvedCausesTranscript(t, seedCausesCLI(t, "rel-artifacts"))
+}
+
+func assertResolvedCausesTranscript(t *testing.T, env commandEnvironment) {
+	t.Helper()
+	code, out, diag := runCausesCLI(t, env, "--since", "2026-10-01")
+	want := "verification 0300-example/task_01 " + causesFixtureID + " attempt-1 environment database-locked: go test ./internal/store\n" +
+		"verification 0300-example/task_02 " + causesFixtureID + " attempt-1 implementation-defect go-test-failure: go test ./internal/cli\n" +
+		"verification 0300-example/task_02 " + causesFixtureID + " attempt-2 unclassified -: make verify\n" +
+		"corrective 0300-example/task_04 " + causesFixtureID + " - repository-convention record-or-golden: pre-pr-review\n" +
+		"Causes: 4 item(s) from 1 terminal Spec Run(s) in window 2026-10-01..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 1, implementation-defect 1, environment 1, unclassified 1; repository knowledge 1 of 3 classified; signatures " + causesDigest(t) + "\n"
+	if code != 0 || diag != "" || out != want {
+		t.Fatalf("exit=%d stderr=%q\nout=%q\nwant=%q", code, diag, out, want)
+	}
 }

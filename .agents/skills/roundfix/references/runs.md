@@ -202,6 +202,11 @@ exclusive; omitting an end leaves it open. SQLite may create WAL sidecars while
 opening the database read-only; database, lock and artifact logs stay
 unchanged.
 
+Diagnostics are read under the Artifact Root the Run wrote to, through the
+resolver that `storage report`, `gc sanitize` and Run Retention share; a
+diagnostic outside the Run's `runs/<run-id>` directory or behind a symbolic
+link gives no evidence.
+
 The first embedded signature that matches determines one of five classes:
 `scope-or-authorization`, `shared-section-contract`, `repository-convention`,
 `implementation-defect`, or `environment`. The first three count as repository
