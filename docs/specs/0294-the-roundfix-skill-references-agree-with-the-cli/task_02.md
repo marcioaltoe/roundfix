@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0294-the-roundfix-skill-references-agree-with-the-cli
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -115,3 +115,50 @@ None. This Task adds tests only; no Shared Contract changes and no other suite c
 
 - `_prd.md` → Core Feature 4; Goals; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → API Contracts 4-7; Invariants 1-4; Testing Approach; Build Order 2
+
+
+## Result
+
+Implemented the Task's documentation guards in the two existing
+`//verify:always` test files. Task status and declared Verification remain
+Daemon-owned; no production source, reference document, Contract Relevance
+declaration, Task Graph manifest, or other Task file was changed.
+
+Acceptance evidence:
+
+- Conventions: the guard parses the version constant and ordered two-string
+  convention literals from the reviewer's function with `go/parser`. It checks
+  the canonical reference, mirror and user guide after whitespace normalization,
+  including their version, full prompts and convention-item count. Both the
+  corrected-document test and the planted stale-C3 test passed; the latter
+  requires a diagnostic naming the canonical reference path and `C3`.
+- Event categories: the guard reads and sorts `runevent.AllStreamCategories()`
+  keys, compares each document's anchored sentence exactly, and requires each
+  category's stable-fields table row in both references. Both the corrected
+  documents and planted missing-`usage` checks passed; the mutation removes
+  only the category sentence's final joiner and code span, preserving its
+  ending and the table, and requires the canonical path and `usage` in the
+  diagnostic.
+- Glossary: `Run Event Stream` now derives its closed-list values directly from
+  `runevent.AllStreamCategories()` in the entry's initializer. The existing
+  closed-list test passed against the six categories, and the existing planted
+  glossary-violation test passed with its automatically built conforming entry.
+
+Focused checks (not the Task's declared Verification):
+
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run 'TestThe(DeliveryConvention|EventCategor)|TestGlossary(ClosedLists|ContractReports)' -count=1 -v`
+  — exit 0; all six selected top-level tests and their subtests passed.
+- `GOOS=windows rtk proxy go test -tags docscontract -c -o /private/tmp/roundfix-task02-docscontract.test.exe ./internal/docscontract`
+  — exit 0; the affected test package cross-compiles for Windows. The Windows
+  binary was not executed on the macOS host.
+- `rtk proxy gofmt -w internal/docscontract/command_documentation_test.go internal/docscontract/user_guide_contract_test.go`
+  — exit 0.
+
+Initial inspection found none of the four requested tests or the Run Event
+Stream closed-list entry. The pre-existing worktree change was this Task's
+`in_progress` status; it was preserved. The sandbox rejected the symlinked
+writable root, so approved command execution used the resolved Run checkout
+under `/Volumes/Brain-SSD/cache/.roundfix/worktrees/`.
+
+Declared Verification and repository Verification were not run; the Daemon
+runs them after this handoff. No commit, push, or pull request was made.
