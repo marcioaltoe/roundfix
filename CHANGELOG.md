@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.105.0] - 2026-10-21
+
+### The Roundfix skill references agree with the CLI
+
+- **The review reference describes today's archive conventions.** `references/review.md` still described conventions C3 and C5 as moving the Spec folder and stamping override fields in the archived `_prd.md`, so a valid archive could draw a false review finding. C3 and C5 now carry the reviewer prompt's text verbatim: the archive commit adds an Archive Record and removes the Spec folder (legacy archives still move it), and the QA Archive Override fields live in the record. C3 and C5 apply only under the archive root, and C5 applies to an Archive Record only when its disposition is `qa-override` with a complete approval and reason. `docs/user-guide/commands/review.md` says the same.
+- **The events reference lists the `usage` category.** `references/events.md` listed five allowed `--filter` categories while telling Supervisors to use `--filter usage`. It now lists all six (`task-status`, `batch`, `verification`, `outcome`, `agent-selection`, `usage`) with the fields of `agent-selection` and `usage` records, and says replay includes every category by default.
+- **The deliver reference reads the Archive Record.** `references/deliver.md` and the deliver guide now say a dependency's archive is proved through its Archive Record, or a legacy archive's `_prd.md`.
+- **Drift guards.** New documentation contract tests derive the convention text, the event categories and the archive evidence from the CLI source and fail when a reference or guide disagrees.
+- **Glossary.** **Run Event Stream** names its six stable categories and the default replay.
+
 ## [0.104.0] - 2026-10-21
 
 ### Archive and cancel refuse a link that leaves the repository
