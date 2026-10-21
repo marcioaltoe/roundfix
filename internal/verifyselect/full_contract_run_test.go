@@ -17,8 +17,8 @@ func TestVerifyContractsRunsEveryContract(t *testing.T) {
 	t.Parallel()
 	makefile := filepath.Join(findRepositoryRoot(t), "Makefile")
 	const lines = "docscontract ^(TestDocs)$ ./internal/docscontract\nrepocontract ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
-	const first = "test -count=1 -tags docscontract -run ^(TestDocs)$ ./internal/docscontract\n"
-	const second = "test -count=1 -tags repocontract -run ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
+	const first = "test -count=1 -timeout 20m -tags docscontract -run ^(TestDocs)$ ./internal/docscontract\n"
+	const second = "test -count=1 -timeout 20m -tags repocontract -run ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
 	for _, scenario := range []struct {
 		name, selection, want             string
 		selectorFail, goFail, wantFailure bool
