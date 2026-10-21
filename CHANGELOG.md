@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.102.0] - 2026-10-21
+
+### The queue shows a skipped Linux Lane and waits for a Run slot
+
+- **A skipped Linux Lane is visible.** When `delivery.linux_lane` is on and the queue gate skips the lane for an environment reason (Docker unreachable, the lane image missing, an unreadable fetched configuration), the skip still passes the gate but becomes a Lane Environment Skip: the item records `linux-lane-skipped: <reason>`, `roundfix deliver status` prints it on the item's `Warning:` line, and the Pull Request body says `Linux Lane: not run.` with the reason. Expected skips (`no go.mod at the repository root`, `no changed Go package`) keep only the notice (ADR-0303).
+- **`roundfix doctor` checks the lane.** With `delivery.linux_lane: true`, a new `linux-lane:` line checks `docker info` and `docker image inspect <image>` (each bounded at ten seconds) and reports the image or daemon that is missing.
+- **The queue waits for a Run slot.** When an item's `roundfix implement` is refused only because Active Implement Runs hold every `runs.max_active` slot, the item waits in stage `running` instead of parking. `roundfix deliver status` shows `run-slot-wait: until <deadline>; <n> Run(s) hold <max> slot(s): …` with each holder, and the Queue Owner polls the Run Database every 30 seconds without starting, reclaiming or signalling anything. The store's admission check still decides who gets the slot (ADR-0304).
+- **New User Config `runs.slot_wait`.** Bounds the wait from the first refusal; default `2h`, `0` parks immediately as before. Project Config cannot set it. The queue deadline still wins when earlier; at the wait's own deadline the item parks `delivery-error` with the reason it would have reported without waiting.
+- **Glossary.** Adds **Lane Environment Skip** and **Run Slot Wait**.
+
 ## [0.101.0] - 2026-10-20
 
 ### The Pull Request Record Commit fits commitlint
