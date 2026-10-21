@@ -1554,6 +1554,8 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 	// Read the same immutable, fetched default used for delivery declarations.
 	// The lane only adds a check: when that default cannot be read, it is
 	// skipped with its reason and the repository gate's result stands.
+	// Both this unreadable reason and lane.Skip are computed on the Queue Owner.
+	// They reach the stored item warning and forge PR body, never environment values.
 	enabled, image, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
 	if err != nil {
 		return delivery.GateResult{}, err
@@ -1562,7 +1564,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		if err := workflow.recordLinuxLaneSkip(specSlug, unreadable); err != nil {
 			return delivery.GateResult{}, err
 		}
-		return delivery.GateResult{Passed: true}, nil
+		return delivery.GateResult{Passed: true, LaneSkip: unreadable}, nil
 	}
 	if enabled {
 		artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
@@ -1580,6 +1582,11 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		}
 		if lane.Ran && !lane.Passed {
 			return delivery.GateResult{Passed: false, Reason: lane.Reason, Blocker: lane.Blocker}, nil
+		}
+		// This owner's lane text reaches the Run Database warning and the forge's
+		// PR body. Carry only the lane's reason, never environment values.
+		if lane.Skip != "" && !lane.SkipExpected {
+			return delivery.GateResult{Passed: true, LaneSkip: lane.Skip}, nil
 		}
 	}
 	return delivery.GateResult{Passed: true}, nil

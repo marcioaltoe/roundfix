@@ -28,6 +28,7 @@ const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' 
 
 type linuxLaneResult struct {
 	Ran, Passed                    bool
+	SkipExpected                   bool
 	Skip, Reason, LogPath, Blocker string
 	Packages                       []string
 }
@@ -69,6 +70,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 		return result, fmt.Errorf("inspect Linux Lane go.mod: %w", err)
 	}
 	if strings.TrimSpace(listing) == "" {
+		result.SkipExpected = true
 		return skip("no go.mod at the repository root")
 	}
 	image := request.Image
@@ -116,6 +118,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 		result.Packages = linuxLanePackages(changed, tree)
 	}
 	if len(result.Packages) == 0 {
+		result.SkipExpected = true
 		return skip("no changed Go package")
 	}
 	objects, err := linuxLaneObjectStore(ctx, runner, workDir)

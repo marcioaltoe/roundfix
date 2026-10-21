@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -129,3 +129,70 @@ engine fakes.
 - `_prd.md` → Sources; Goals; Core Feature 1; Core Feature 5; Success Metric 1; Success Metric 2
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 9; Surface Transcript 1; Invariants 1-2, 7; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 1
 - ADR-0303; ADR-0288; ADR-0294; ADR-0297; ADR-0184; ADR-0259; ADR-0271; ADR-0285; ADR-0280
+
+## Result
+
+Implemented this Task's lane-skip propagation slice. `SkipExpected` is set only
+at the two expected-skip return sites. The gate returns every other enabled
+lane skip, plus the unresolved fetched-default reason, in `GateResult.LaneSkip`.
+Console/log notices, skip ordering and lane exit behavior are unchanged.
+The code documents that these Queue Owner reasons reach the Run Database item
+warning and the forge's Pull Request body, without adding environment values.
+
+On a passing gate the engine removes the earlier lane segment, including a
+reason containing semicolons, appends the current reason last when present,
+and persists it with `publishing`. Publication appends `LaneSkipBody` to the
+planned body. A failed gate leaves the warning untouched. No new park or schema
+is introduced.
+
+Acceptance evidence:
+
+- Missing image: `TestGateReturnsTheLaneEnvironmentSkip/image` proves the
+  passing gate returns the exact reason and retains its console/log notice.
+  `TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody` proves the
+  engine persists that reason after an existing premise warning, supplies the
+  exact paragraph to the fake forge, and reaches merged without parking.
+- Status: `TestDeliverStatusShowsTheLaneEnvironmentSkipTranscript` reproduces
+  Surface Transcript 1 in full, with the engine-format warning, empty stderr
+  and exit 0.
+- Quiet and replacement outcomes: the gate test covers both expected skips,
+  a disabled lane, a passing lane and a failed repository gate, as well as
+  missing Go/Docker, daemon failure, startup refusal, missing version and
+  unresolved fetched default. `TestAQuietGateLeavesNoLaneWarningAndReplacesAnEarlierOne`
+  covers no prior warning, preservation of a premise warning, clearing an old
+  lane warning alone or after a premise, and replacement with a new reason;
+  each asserts the exact body received by the fake forge.
+- Existing consumers: all existing lane tests and the named unreadable-default,
+  disabled-lane, lane-failure and parked-status tests passed in the focused
+  selection below. Existing engine queue/resume and worktree-consumer tests
+  also passed. Existing test files, names and assertions were not edited.
+  The daemon's complete declared Verification remains pending.
+
+Focused checks run:
+
+- Red signal: `go test ./internal/delivery -run '^TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody$' -count=1`
+  initially failed to compile because `GateResult.LaneSkip` did not exist.
+- `go test ./internal/cli ./internal/delivery -run '^(TestGateReturnsTheLaneEnvironmentSkip|TestDeliverStatusShowsTheLaneEnvironmentSkipTranscript|TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody|TestAQuietGateLeavesNoLaneWarningAndReplacesAnEarlierOne|TestLinuxLane.*|TestGateSkipsTheLaneWhenTheFetchedDefaultCannotBeRead|TestGateWithoutTheLaneStartsNoDocker|TestDeliverStatusPrintsAParkLinePerParkedItem)$' -count=1`
+  exited 0 for both packages. The first new-test run exposed the startup-refusal
+  stand-in's package-count output; its new case was corrected to suppress that
+  count, matching the existing refusal fixture. No existing assertion changed.
+- `go test ./internal/delivery -run '^(TestDeliveryEngine.*|TestDeliveryActionsRunInTheItemWorktree)$' -count=1`
+  exited 0.
+- `GOOS=windows go test -c -o /private/tmp/roundfix-0291-task01-cli.test.exe ./internal/cli`
+  and `GOOS=windows go test -c -o /private/tmp/roundfix-0291-task01-delivery.test.exe ./internal/delivery`
+  both exited 0, compiling the new tests as well as production code.
+- Requirement 8's generator,
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`,
+  exited 0 and changed only the deliver guide fingerprint in the Behavior
+  Surface Record; no generated record was hand-edited.
+- `git diff --check` exited 0. The documentation sweep covered
+  `docs/user-guide`, `docs/agents`, `.agents/skills` and `skills`. The deliver
+  guide now distinguishes expected skips from environment skips and includes
+  the exact warning and paragraph. No additional task_01-owned stale wording
+  was found. The Roundfix deliver reference and its mirror remain task_02's.
+
+Execution environment: normal shell execution rejected the symlinked writable
+root. The checks and edits used authorized escalation in the assigned resolved
+Run checkout. Tests used temporary homes/repositories and compiled stand-ins;
+no real Docker or forge call ran. Task status was left daemon-owned; no Task
+Graph, other Task, commit, push or Pull Request operation was performed.
