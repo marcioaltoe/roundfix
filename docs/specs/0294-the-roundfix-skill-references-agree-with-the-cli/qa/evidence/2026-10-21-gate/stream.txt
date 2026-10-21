@@ -1,0 +1,12 @@
+$ go test -count=1 -v ./internal/runevent -run '^(TestDefaultFilterIncludesUsage|TestUsageFilterSelectsOnlyUsage)$'
+stdout:
+=== RUN   TestDefaultFilterIncludesUsage
+--- PASS: TestDefaultFilterIncludesUsage (0.00s)
+=== RUN   TestUsageFilterSelectsOnlyUsage
+--- PASS: TestUsageFilterSelectsOnlyUsage (0.00s)
+PASS
+ok  	roundfix/internal/runevent	0.236s
+
+stderr:
+
+exit: 0

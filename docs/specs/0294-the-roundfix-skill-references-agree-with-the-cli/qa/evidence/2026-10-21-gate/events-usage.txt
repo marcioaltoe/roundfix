@@ -1,0 +1,7 @@
+$ ./bin/roundfix events run_missing --filter usage
+stdout:
+
+stderr:
+roundfix events failed: open Run Database reader "/private/tmp/roundfix-0294-qa-sqzpe1b9/home/.roundfix/roundfix.db": stat /private/tmp/roundfix-0294-qa-sqzpe1b9/home/.roundfix/roundfix.db: no such file or directory
+
+exit: 2

@@ -1,0 +1,38 @@
+Task task_01 commit d10f9436bff5c5834e3a1b37a483f10c4ef88510
+git diff-tree --no-commit-id --name-only -r d10f9436bff5c5834e3a1b37a483f10c4ef88510
+DECLARED .agents/skills/roundfix/SKILL.md
+DECLARED .agents/skills/roundfix/references/deliver.md
+DECLARED .agents/skills/roundfix/references/events.md
+DECLARED .agents/skills/roundfix/references/review.md
+DECLARED CONTEXT.md
+DECLARED docs/references/behavior-surfaces.json
+DECLARED docs/specs/0294-the-roundfix-skill-references-agree-with-the-cli/task_01.md
+DECLARED docs/user-guide/commands/deliver.md
+DECLARED docs/user-guide/commands/review.md
+DECLARED skills/roundfix/SKILL.md
+DECLARED skills/roundfix/references/deliver.md
+DECLARED skills/roundfix/references/events.md
+DECLARED skills/roundfix/references/review.md
+DECLARED skills/testdata/owned-skill-versions.json
+Task task_02 commit 5adc50760b35846390b3c10bca65c89a688f3c2d
+git diff-tree --no-commit-id --name-only -r 5adc50760b35846390b3c10bca65c89a688f3c2d
+DECLARED docs/specs/0294-the-roundfix-skill-references-agree-with-the-cli/task_02.md
+DECLARED internal/docscontract/command_documentation_test.go
+DECLARED internal/docscontract/user_guide_contract_test.go
+Protected-path changes: []
+Delivery base: f5092d421746dc5577756dd1a009505c0f225f9f
+Candidate: 5adc50760b35846390b3c10bca65c89a688f3c2d
+Authorization unchanged in delivery-base ancestry: True
+Changed governed paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', '.agents/skills/roundfix/references/events.md', '.agents/skills/roundfix/references/review.md', 'skills/roundfix/SKILL.md']
+All bounded: True
+Mechanical authorization audit independently records task_01 granted at the Delivery Base; do not repeat its Mechanical Refusal detector.
+Roundfix versions before: ['0.1.122', '0.1.122']; after: ['0.1.123', '0.1.123']
+Raised version present in owned-skill record: True
+Canonical/mirror SKILL.md identical: True
+Canonical/mirror references/review.md identical: True
+Canonical/mirror references/events.md identical: True
+Canonical/mirror references/deliver.md identical: True
+.agents/skills/roundfix/SKILL.md QA settlement unchanged: True
+skills/roundfix/SKILL.md QA settlement unchanged: True
+Tracked worktree delta: ''
+All actual changed paths above read from Git, not the Agent Result file lists.

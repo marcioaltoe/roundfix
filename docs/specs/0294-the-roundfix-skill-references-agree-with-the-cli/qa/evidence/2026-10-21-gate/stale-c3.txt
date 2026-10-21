@@ -1,0 +1,14 @@
+$ go test -count=1 -v -tags docscontract ./internal/docscontract -run '^TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem$'
+stdout:
+=== RUN   TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== PAUSE TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== CONT  TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+    command_documentation_test.go:294: .agents/skills/roundfix/references/review.md: missing or stale C3 prompt
+--- FAIL: TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.415s
+FAIL
+
+stderr:
+
+exit: 1

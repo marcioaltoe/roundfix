@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0294-the-roundfix-skill-references-agree-with-the-cli
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

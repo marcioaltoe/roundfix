@@ -1,0 +1,16 @@
+External-origin source: quaestor Inbox Entry (origin quaestor; captured 2026-10-20; copied verbatim during planning).
+Repository locator: docs/specs/0294-the-roundfix-skill-references-agree-with-the-cli/references/2026-10-20-duas-contradicoes-nas-referencias-review-e-events-da-skill.md
+
+1. `references/review.md`, linhas 128 a 134 na 0.91.0: o prompt do revisor descreve as convenções C3/C5
+   de arquivamento antigas, que exigem a pasta da Spec movida e campos de override no `_prd.md`
+   arquivado. A entrega atual grava um Archive Record e remove a pasta (`roundfix archive`). Com isso,
+   arquivamentos válidos podem gerar achados falsos ou dispensas de validação de convenção incorretas.
+2. `references/events.md`, linha 24: a lista de filtros permitidos não inclui `usage`, mas a linha 67
+   manda usar `--filter usage` e diz que ele vem incluído por padrão. O contrato público da CLI fica
+   contraditório e pode levar um supervisor a rodar um comando inválido.
+
+
+Current audited-head checks:
+True: C3 now names the Archive Record and folder removal.
+True: C5 now places fields in the record.
+True: default category sentence includes usage; help and filter probes corroborate.

@@ -1,0 +1,14 @@
+$ go test -count=1 -v -tags docscontract ./internal/docscontract -run '^TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem$'
+stdout:
+=== RUN   TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem
+=== PAUSE TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem
+=== CONT  TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem
+    command_documentation_test.go:412: .agents/skills/roundfix/references/events.md: stable-fields table missing categories ["usage"]
+--- FAIL: TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.431s
+FAIL
+
+stderr:
+
+exit: 1

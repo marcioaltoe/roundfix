@@ -1,0 +1,14 @@
+$ go test -count=1 -v -tags docscontract ./internal/docscontract -run '^TestGlossaryClosedListsEqualTheirConstants$'
+stdout:
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+    user_guide_contract_test.go:554: Run Event Stream: code spans = ["agent-selection" "batch" "outcome" "task-status" "verification"], want ["agent-selection" "batch" "outcome" "task-status" "usage" "verification"]
+--- FAIL: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.401s
+FAIL
+
+stderr:
+
+exit: 1

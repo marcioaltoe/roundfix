@@ -1,0 +1,10 @@
+$ go test -count=1 -v -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'
+stdout:
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.05s)
+PASS
+ok  	roundfix/internal/docscontract	0.280s
+
+stderr:
+
+exit: 0
