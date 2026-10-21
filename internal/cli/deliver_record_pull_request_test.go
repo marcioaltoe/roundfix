@@ -53,7 +53,7 @@ func TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord(t *testing.T) {
 	if changed := gittest.Run(t, repo, "diff", "--name-only", candidate, result.Head); strings.TrimSpace(changed) != path {
 		t.Fatalf("changed=%q", changed)
 	}
-	wantSubject := "docs: record pull request #7 in the " + implementTestSlug + " Archive Record"
+	wantSubject := "docs: record pull request #7 in the 0001 Archive Record"
 	if subject := strings.TrimSpace(gittest.Run(t, repo, "show", "-s", "--format=%s", result.Head)); subject != wantSubject {
 		t.Fatalf("subject=%q", subject)
 	}

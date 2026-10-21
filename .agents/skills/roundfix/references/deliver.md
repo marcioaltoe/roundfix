@@ -41,6 +41,24 @@ records the pull request number in the Archive Record in a Pull Request Record
 Commit. The commit changes the record's `pull_request` field and the queue
 pushes it before judging the pull request checks.
 
+Its subject is `docs: record pull request #<number> in the <spec number>
+Archive Record`, where the Spec number is the run of digits that starts the
+slug, such as `0088`; a slug that does not start with digits followed by `-`
+gives `docs: record pull request #<number> in the Archive Record`. The
+subject stays within 100 characters for every slug. The queue accepts an
+existing record commit by its change, whatever its subject.
+
+When a commit hook refuses a commit the queue makes (the archive commit, the
+Pull Request Record Commit or the derived merge commit), the item parks as
+`delivery-error` and the reason names the hook, the refused subject, the
+hook's exit status and output, and the recovery. The queue never bypasses the
+hook. To recover, commit the staged change in the item worktree with a subject
+the hook accepts, then run `roundfix deliver retry <slug>`. A refused derived
+merge is aborted, so merge the default branch into the item branch by hand as
+for a conflict park, commit it with a message the hook accepts, then retry. A
+hook that does not name itself is named from the installed `pre-commit` and
+`commit-msg` hooks.
+
 A Spec's optional `_tasks.md` frontmatter `requires` lists prerequisite Specs.
 Start refuses unknown slugs, self-references, duplicates and queued cycles
 before recording a queue. Before creating a worktree, the owner reads the
