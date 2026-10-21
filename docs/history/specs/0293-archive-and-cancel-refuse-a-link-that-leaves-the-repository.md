@@ -26,6 +26,7 @@ regeneration:
     outputs:
       - skills/testdata/owned-skill-versions.json
 promoted: []
+pull_request: "622"
 ---
 
 # Archive and cancel refuse a link that leaves the repository
