@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0293-archive-and-cancel-refuse-a-link-that-leaves-the-repository
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -89,3 +89,10 @@ None. This Task changes documentation, the skill mirror and the skill version re
 - `_prd.md` → Core Feature 4; Declared break; Goals
 - `_techspec.md` → System Architecture; API Contract 4; Build Order 3
 - ADR-0306; ADR-0269; ADR-0256
+
+## Result
+
+- Added the resolved-target refusal paragraph immediately after the ignored-file refusal in the canonical Roundfix archive reference; `make skills-sync` propagated it to the mirror. Focused checks confirmed both reference files are byte-identical and each contains the refusal text and the inside-repository, linked-checkout and external Spec Root behavior.
+- Appended the single-line dated ADR-0306 narrowing to ADR-0269 with the relative Markdown link and the accepted/refused target rule.
+- Raised both Roundfix skill version fields from `0.1.121` to `0.1.122`. The authorized `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` command passed (`1 passed in 1 packages`) and recorded the `0.1.122` digest in `skills/testdata/owned-skill-versions.json`.
+- `git diff --check` passed. The declared `## Verification` commands remain for the Daemon.
