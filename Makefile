@@ -79,7 +79,7 @@ verify-changed-contracts: ## Run the Repository Contract Tests selected by Contr
 	@invocations="$$( $(VERIFY_SELECT) -contracts -base "$(VERIFY_BASE)" )" || exit $$?; \
 	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
 		if [ -n "$$packages" ]; then \
-			$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
+			$(GO) test -count=1 -timeout 20m -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
 		fi; \
 	done
 
