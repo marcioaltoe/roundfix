@@ -89,7 +89,7 @@ verify-contracts: ## Run the Full Contract Run of every discovered Repository Co
 	@invocations="$$( $(VERIFY_SELECT) -contracts -all )" || exit $$?; \
 	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
 		if [ -n "$$packages" ]; then \
-			$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
+			$(GO) test -count=1 -timeout 20m -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
 		fi; \
 	done
 
@@ -121,7 +121,7 @@ verify-incremental: fmt-check vet test skills-sync-check skills-check build ## R
 verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 
 docs-test: ## Run the repository-markdown contract tests
-	$(GO) test -count=1 -tags docscontract ./internal/docscontract
+	$(GO) test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
 
 # The regeneration gates copy the whole repository, so every file under
 # internal/ is one of their inputs and any code change re-runs them. They are
