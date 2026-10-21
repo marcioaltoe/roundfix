@@ -1,0 +1,59 @@
+task_01 c291b54c8267daf5f637646eb9f74473d6cef8f8
+declared: docs/references/behavior-surfaces.json
+declared: docs/specs/0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot/task_01.md
+declared: docs/user-guide/commands/deliver.md
+declared: internal/cli/deliver_lane_skip_visible_test.go
+declared: internal/cli/deliver_linux_lane.go
+declared: internal/cli/deliver_workflow.go
+declared: internal/delivery/engine.go
+declared: internal/delivery/lane_skip_warning_test.go
+task_02 caf59dd6e3541da310dc94c423bf1b6660f5df95
+declared: .agents/skills/roundfix/SKILL.md
+declared: .agents/skills/roundfix/references/deliver.md
+declared: .agents/skills/roundfix/references/runtime.md
+declared: .agents/skills/roundfix/references/setup.md
+declared: CONTEXT.md
+declared: docs/references/behavior-surfaces.json
+declared: docs/specs/0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot/task_02.md
+declared: docs/user-guide/commands/doctor.md
+declared: internal/cli/deliver_linux_lane.go
+declared: internal/cli/doctor.go
+declared: internal/cli/doctor_linux_lane_test.go
+declared: internal/cli/health.go
+declared: skills/roundfix/SKILL.md
+declared: skills/roundfix/references/deliver.md
+declared: skills/roundfix/references/runtime.md
+declared: skills/roundfix/references/setup.md
+declared: skills/testdata/owned-skill-versions.json
+task_03 a803e87a4996f2292aa65772a461f5f4354d6fe9
+declared: docs/references/behavior-surfaces.json
+declared: docs/specs/0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot/task_03.md
+declared: docs/user-guide/configuration.md
+declared: internal/config/config.go
+declared: internal/config/run_slot_wait_test.go
+declared: internal/delivery/engine.go
+declared: internal/delivery/run_slot_wait_test.go
+task_04 29944e748dcb701f63301175144532f16d180fef
+declared: .agents/skills/roundfix/SKILL.md
+declared: .agents/skills/roundfix/references/deliver.md
+declared: CONTEXT.md
+declared: docs/references/behavior-surfaces.json
+declared: docs/specs/0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot/task_04.md
+declared: docs/user-guide/commands/deliver.md
+declared: internal/cli/deliver_run_slot_wait_test.go
+declared: internal/cli/deliver_run_slot_wait_unix_test.go
+declared: internal/cli/deliver_workflow.go
+declared: internal/store/store.go
+declared: skills/roundfix/SKILL.md
+declared: skills/roundfix/references/deliver.md
+declared: skills/testdata/owned-skill-versions.json
+protected byte comparison: all byte-identical
+.agents/skills/roundfix/SKILL.md QA settlement identical: True
+skill version 0.1.118 -> 0.1.120
+skills/roundfix/SKILL.md QA settlement identical: True
+skill version 0.1.118 -> 0.1.120
+glossary Lane Environment Skip: True
+glossary Run Slot Wait: True
+guide warning and wait contract docs/user-guide/commands/deliver.md: True
+guide warning and wait contract .agents/skills/roundfix/references/deliver.md: True
+scope audit pass: True

@@ -1,0 +1,15 @@
+sabotage: internal/cli/deliver_workflow.go
+replace: if run.OwnerPID != nil && *run.OwnerPID > 0 && !store.ProcessAlive(*run.OwnerPID) {
+with: if false && run.OwnerPID != nil && *run.OwnerPID > 0 && !store.ProcessAlive(*run.OwnerPID) {
+command: go test -count=1 -v -timeout=20s -run ^TestRunSlotsExcludeAHolderWhoseOwnerIsGone$ ./internal/cli
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+    deliver_run_slot_wait_unix_test.go:60: slots={MaxActive:2 Holders:[{RunID:run_20261021T050550Z_263e4323fb6247a5 Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSlotsExcludeAHolderWhoseOwnerIsGone1533206865/002 SpecSlug:unrecorded} {RunID:run_20261021T050550Z_c0151b946d12e215 Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSlotsExcludeAHolderWhoseOwnerIsGone1533206865/002 SpecSlug:live} {RunID:run_20261021T050550Z_c4a588dba2a04dd0 Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSlotsExcludeAHolderWhoseOwnerIsGone1533206865/002 SpecSlug:gone}]} error=<nil> want=[{RunID:run_20261021T050550Z_263e4323fb6247a5 Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSlotsExcludeAHolderWhoseOwnerIsGone1533206865/002 SpecSlug:unrecorded} {RunID:run_20261021T050550Z_c0151b946d12e215 Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSlotsExcludeAHolderWhoseOwnerIsGone1533206865/002 SpecSlug:live}]
+--- FAIL: TestRunSlotsExcludeAHolderWhoseOwnerIsGone (0.05s)
+FAIL
+suiteguard: guard cost: measured 2659 paths; fingerprint took 75.920958ms before and 69.285041ms after
+FAIL	roundfix/internal/cli	0.581s
+FAIL
+
+exit: 1

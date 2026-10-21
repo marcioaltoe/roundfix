@@ -1,0 +1,15 @@
+sabotage: internal/store/store.go
+replace: if req.Kind == KindImplement && req.MaxActiveImplementRuns > 0 {
+with: if false && req.Kind == KindImplement && req.MaxActiveImplementRuns > 0 {
+command: go test -count=1 -v -timeout=20s -run ^TestTwoQueuesWaitingForOneSlotStartOneRun$ ./internal/delivery
+=== RUN   TestTwoQueuesWaitingForOneSlotStartOneRun
+=== PAUSE TestTwoQueuesWaitingForOneSlotStartOneRun
+=== CONT  TestTwoQueuesWaitingForOneSlotStartOneRun
+    run_slot_wait_test.go:366: stopped waiting for initial slot wait: watched work ended: <nil>
+--- FAIL: TestTwoQueuesWaitingForOneSlotStartOneRun (0.01s)
+FAIL
+suiteguard: guard cost: measured 2659 paths; fingerprint took 77.339458ms before and 67.610583ms after
+FAIL	roundfix/internal/delivery	0.395s
+FAIL
+
+exit: 1

@@ -1,0 +1,15 @@
+sabotage: internal/delivery/engine.go
+replace: if result.LaneSkip != "" {
+with: if false && result.LaneSkip != "" {
+command: go test -count=1 -v -timeout=20s -run ^TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody$ ./internal/delivery
+=== RUN   TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody
+=== PAUSE TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody
+=== CONT  TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody
+    lane_skip_warning_test.go:61: PR body="Delivers Spec spec-one." want="Delivers Spec spec-one.\n\nLinux Lane: not run. The Delivery Queue gate skipped it: image golang:1.26 is not present locally. This candidate's Go packages were not tested on Linux before this pull request."
+--- FAIL: TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody (0.01s)
+FAIL
+suiteguard: guard cost: measured 2659 paths; fingerprint took 78.594209ms before and 67.237083ms after
+FAIL	roundfix/internal/delivery	0.393s
+FAIL
+
+exit: 1

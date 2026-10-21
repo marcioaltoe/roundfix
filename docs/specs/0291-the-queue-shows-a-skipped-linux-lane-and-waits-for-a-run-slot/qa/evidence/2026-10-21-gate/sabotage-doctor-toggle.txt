@@ -1,0 +1,23 @@
+sabotage: internal/cli/doctor.go
+replace: dependencies.linuxLane != nil && loaded.Config.Delivery.LinuxLane
+with: dependencies.linuxLane != nil
+command: go test -count=1 -v -timeout=20s -run ^TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn$ ./internal/cli
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn
+=== PAUSE TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn
+=== CONT  TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/off
+    doctor_linux_lane_test.go:112: calls=1 output="node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\nlinux-lane: warn (DR-LANE-IMAGE-MISSING: image golang:1.26.1 is not present locally; next: docker pull golang:1.26.1)\ncodex: ok\n"
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/on
+    doctor_linux_lane_test.go:108: other doctor output changed: "node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\nlinux-lane: warn (DR-LANE-IMAGE-MISSING: image golang:1.26.1 is not present locally; next: docker pull golang:1.26.1)\ncodex: ok\n"
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/no_dependency
+    doctor_linux_lane_test.go:117: missing dependency changed output: "node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ncodex: ok\n"
+--- FAIL: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn (0.00s)
+    --- FAIL: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/off (0.00s)
+    --- FAIL: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/on (0.00s)
+    --- FAIL: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/no_dependency (0.00s)
+FAIL
+suiteguard: guard cost: measured 2659 paths; fingerprint took 75.177083ms before and 67.57725ms after
+FAIL	roundfix/internal/cli	0.585s
+FAIL
+
+exit: 1

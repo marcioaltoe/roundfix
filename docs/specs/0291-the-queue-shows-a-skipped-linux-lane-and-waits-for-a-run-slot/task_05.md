@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

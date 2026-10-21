@@ -1,0 +1,12 @@
+from pathlib import Path
+import json,subprocess,os
+s=json.loads(Path('/tmp/qa0291-state.json').read_text());tmp=Path(s['tmp']);copy=tmp/'detail-copy';copy.mkdir();subprocess.run(['tar','-xf',str(tmp/'head.tar'),'-C',str(copy)],check=True)
+reasons=['go is not on PATH','docker is not on PATH','docker info failed: daemon unavailable','image golang:1.26.1 is not present locally','docker could not start the container: fixture output','go.mod declares no go version','the fetched default refs/remotes/origin/main cannot be resolved']
+literal=',\n'.join(json.dumps(x) for x in reasons)+','
+(copy/'internal/delivery/qa0291_detail_test.go').write_text('''package delivery
+import "testing"
+func TestQA0291EveryEnvironmentReasonReachesTheItem(t *testing.T){t.Parallel();for _,reason:=range []string{'''+literal+'''}{t.Run(reason,func(t *testing.T){checkLaneSkipPublication(t,"",reason,WarningLinuxLaneSkipped+": "+reason,"Delivers Spec spec-one.\\n\\n"+LaneSkipBody(reason));t.Logf("reason=%s; persisted item=yes; fake Pull Request body=yes",reason)})}}
+''')
+p=copy/'internal/cli/doctor_linux_lane_test.go';t=p.read_text().replace('if output.String() != tc.want {','t.Logf("observed line: %s", output.String())\n\t\t\tif output.String() != tc.want {',1).replace('if !reflect.DeepEqual(args, tc.args) {','t.Logf("observed Docker arguments: %q", args)\n\t\t\tif !reflect.DeepEqual(args, tc.args) {',1);p.write_text(t)
+e=os.environ.copy();e.update(GOPROXY='off',GOSUMDB='off');cmd=['go','test','-count=1','-v','-run','^(TestQA0291EveryEnvironmentReasonReachesTheItem|TestDoctorLinuxLaneCheckReportsDockerAndTheImage)$','./internal/delivery','./internal/cli']
+r=subprocess.run(cmd,cwd=copy,env=e,capture_output=True,text=True);(tmp/'observed-details.txt').write_text('command: '+' '.join(cmd)+'\n'+r.stdout+r.stderr+'\nexit: '+str(r.returncode)+'\n');print(r.returncode);print(r.stdout[-1200:])

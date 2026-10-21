@@ -1,0 +1,20 @@
+from pathlib import Path
+import json,subprocess,os
+s=json.loads(Path('/tmp/qa0291-state.json').read_text());tmp=Path(s['tmp']);env=os.environ.copy();env.update(GOPROXY='off',GOSUMDB='off')
+cases=[
+('expected-skip','internal/cli/deliver_linux_lane.go','result.Skip = reason','result.SkipExpected = true\n\t\tresult.Skip = reason','./internal/cli','TestGateReturnsTheLaneEnvironmentSkip'),
+('item-warning','internal/delivery/engine.go','if result.LaneSkip != "" {','if false && result.LaneSkip != "" {','./internal/delivery','TestAGateLaneSkipIsRecordedOnTheItemAndInThePullRequestBody'),
+('doctor-toggle','internal/cli/doctor.go','dependencies.linuxLane != nil && loaded.Config.Delivery.LinuxLane','dependencies.linuxLane != nil','./internal/cli','TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn'),
+('queue-deadline','internal/delivery/engine.go','queueDeadline := !queue.Limits.Deadline.IsZero() && queue.Limits.Deadline.Before(deadline)','queueDeadline := false && !queue.Limits.Deadline.IsZero() && queue.Limits.Deadline.Before(deadline)','./internal/delivery','TestTheQueueDeadlineEndsARunSlotWait'),
+('poll-slots','internal/delivery/engine.go','if !slots.Free() {','if false && !slots.Free() {','./internal/delivery','TestARunCeilingRefusalWaitsAndStartsWhenASlotFrees'),
+('store-ceiling','internal/store/store.go','if req.Kind == KindImplement && req.MaxActiveImplementRuns > 0 {','if false && req.Kind == KindImplement && req.MaxActiveImplementRuns > 0 {','./internal/delivery','TestTwoQueuesWaitingForOneSlotStartOneRun'),
+('all-exit-two','internal/cli/deliver_workflow.go','if command.exitCode == exitPreflight && !createdRun {','if command.exitCode == exitPreflight {\n return delivery.RunResult{}, &delivery.RunSlotRefusal{Err: failure}\n}\nif command.exitCode == exitPreflight && !createdRun {','./internal/cli','TestDeliveryRunResultRecognizesOnlyTheCeilingRefusal'),
+('dead-holder','internal/cli/deliver_workflow.go','if run.OwnerPID != nil && *run.OwnerPID > 0 && !store.ProcessAlive(*run.OwnerPID) {','if false && run.OwnerPID != nil && *run.OwnerPID > 0 && !store.ProcessAlive(*run.OwnerPID) {','./internal/cli','TestRunSlotsExcludeAHolderWhoseOwnerIsGone')]
+results={}
+for name,file,old,new,pkg,test in cases:
+ copy=tmp/('sabotage-'+name);copy.mkdir();subprocess.run(['tar','-xf',str(tmp/'head.tar'),'-C',str(copy)],check=True)
+ p=copy/file;t=p.read_text();assert t.count(old)==1,(name,t.count(old));p.write_text(t.replace(old,new,1))
+ cmd=['go','test','-count=1','-v','-timeout=20s','-run','^'+test+'$',pkg]
+ with (tmp/('sabotage-'+name+'.txt')).open('w') as f:
+  f.write(f'sabotage: {file}\nreplace: {old}\nwith: {new}\ncommand: '+ ' '.join(cmd)+'\n');f.flush();r=subprocess.run(cmd,cwd=copy,env=env,stdout=f,stderr=subprocess.STDOUT);f.write('\nexit: '+str(r.returncode)+'\n')
+ log=(tmp/('sabotage-'+name+'.txt')).read_text();results[name]={'exit':r.returncode,'detected':r.returncode!=0 and ('--- FAIL: '+test in log or 'test timed out' in log)};print(name,results[name],flush=True);(tmp/'sabotage-results.json').write_text(json.dumps(results))

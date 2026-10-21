@@ -1,0 +1,8 @@
+command: go test -count=1 -tags docscontract ./internal/docscontract
+--- FAIL: TestTheSetupManifestIsCurrent (0.05s)
+    publicdocs_test.go:1275: build Managed Refresh plan: detect Git worktree root: git rev-parse --show-toplevel: fatal: not a git repository (or any of the parent directories): .git: exit status 128; regenerate with go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes
+FAIL
+FAIL	roundfix/internal/docscontract	3.144s
+FAIL
+
+exit: 1

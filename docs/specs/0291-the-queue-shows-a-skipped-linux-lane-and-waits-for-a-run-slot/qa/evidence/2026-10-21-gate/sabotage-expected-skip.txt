@@ -1,0 +1,45 @@
+sabotage: internal/cli/deliver_linux_lane.go
+replace: result.Skip = reason
+with: result.SkipExpected = true
+		result.Skip = reason
+command: go test -count=1 -v -timeout=20s -run ^TestGateReturnsTheLaneEnvironmentSkip$ ./internal/cli
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip
+=== PAUSE TestGateReturnsTheLaneEnvironmentSkip
+=== CONT  TestGateReturnsTheLaneEnvironmentSkip
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/no_go
+    deliver_lane_skip_visible_test.go:70: gate={Passed:true Reason: Blocker: LaneSkip:} err=<nil>, want lane skip "go is not on PATH"
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/no_docker
+    deliver_lane_skip_visible_test.go:70: gate={Passed:true Reason: Blocker: LaneSkip:} err=<nil>, want lane skip "docker is not on PATH"
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/daemon
+    deliver_lane_skip_visible_test.go:70: gate={Passed:true Reason: Blocker: LaneSkip:} err=<nil>, want lane skip "docker info failed: daemon unavailable"
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/image
+    deliver_lane_skip_visible_test.go:70: gate={Passed:true Reason: Blocker: LaneSkip:} err=<nil>, want lane skip "image golang:1.26.1 is not present locally"
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/start_refused
+    deliver_lane_skip_visible_test.go:70: gate={Passed:true Reason: Blocker: LaneSkip:} err=<nil>, want lane skip "docker could not start the container: fixture output"
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/no_version
+    deliver_lane_skip_visible_test.go:70: gate={Passed:true Reason: Blocker: LaneSkip:} err=<nil>, want lane skip "go.mod declares no go version"
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/unreadable_default
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/no_module
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/no_package
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/disabled
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/passed
+=== RUN   TestGateReturnsTheLaneEnvironmentSkip/failed_repository_gate
+--- FAIL: TestGateReturnsTheLaneEnvironmentSkip (2.10s)
+    --- FAIL: TestGateReturnsTheLaneEnvironmentSkip/no_go (0.14s)
+    --- FAIL: TestGateReturnsTheLaneEnvironmentSkip/no_docker (0.13s)
+    --- FAIL: TestGateReturnsTheLaneEnvironmentSkip/daemon (0.32s)
+    --- FAIL: TestGateReturnsTheLaneEnvironmentSkip/image (0.13s)
+    --- FAIL: TestGateReturnsTheLaneEnvironmentSkip/start_refused (0.34s)
+    --- FAIL: TestGateReturnsTheLaneEnvironmentSkip/no_version (0.12s)
+    --- PASS: TestGateReturnsTheLaneEnvironmentSkip/unreadable_default (0.08s)
+    --- PASS: TestGateReturnsTheLaneEnvironmentSkip/no_module (0.11s)
+    --- PASS: TestGateReturnsTheLaneEnvironmentSkip/no_package (0.14s)
+    --- PASS: TestGateReturnsTheLaneEnvironmentSkip/disabled (0.11s)
+    --- PASS: TestGateReturnsTheLaneEnvironmentSkip/passed (0.14s)
+    --- PASS: TestGateReturnsTheLaneEnvironmentSkip/failed_repository_gate (0.07s)
+FAIL
+suiteguard: guard cost: measured 2659 paths; fingerprint took 77.734792ms before and 67.946583ms after
+FAIL	roundfix/internal/cli	2.629s
+FAIL
+
+exit: 1
