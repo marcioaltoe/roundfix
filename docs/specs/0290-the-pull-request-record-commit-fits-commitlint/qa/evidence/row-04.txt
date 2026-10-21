@@ -1,0 +1,48 @@
+command: go test -count=1 -v -run ^(TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery
+=== PAUSE TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery
+=== CONT  TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery
+    deliver_commit_hook_test.go:134: isolated queue commit test: exit status 1
+        --- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery (4.13s)
+            --- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery/record_named_hook (0.94s)
+                deliver_commit_hook_test.go:219: error=commit pull request record: git commit -m docs: record pull request #7 in the 0001 Archive Record: husky - commit-msg hook exited with code 1 (error): exit status 1
+                    want=commit pull request record: the repository commit-msg hook refused the commit "docs: record pull request #7 in the 0001 Archive Record" (exit status 1): husky - commit-msg hook exited with code 1 (error); the change stays staged in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecoveryrec3236004768/002; commit it there with a subject the hook accepts, then run roundfix deliver retry 0001-widget-flow
+            --- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery/record_silent_hook (0.82s)
+                deliver_commit_hook_test.go:219: error=commit pull request record: git commit -m docs: record pull request #7 in the 0001 Archive Record: exit status 1: exit status 1
+                    want=commit pull request record: the repository commit-msg hook refused the commit "docs: record pull request #7 in the 0001 Archive Record" (exit status 1): exit status 1; the change stays staged in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecoveryrec1780915843/002; commit it there with a subject the hook accepts, then run roundfix deliver retry 0001-widget-flow
+            --- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery/record_two_hooks (0.88s)
+                deliver_commit_hook_test.go:219: error=commit pull request record: git commit -m docs: record pull request #7 in the 0001 Archive Record: exit status 1: exit status 1
+                    want=commit pull request record: the repository pre-commit or commit-msg hook refused the commit "docs: record pull request #7 in the 0001 Archive Record" (exit status 1): exit status 1; the change stays staged in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecoveryrec3372452369/002; commit it there with a subject the hook accepts, then run roundfix deliver retry 0001-widget-flow
+            --- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery/archive_subject_names_another_hook (0.60s)
+                deliver_commit_hook_test.go:219: error=commit archived Spec: git commit -m docs: archive 0088-pre-commit-example: exit status 1: exit status 1
+                    want=commit archived Spec: the repository commit-msg hook refused the commit "docs: archive 0088-pre-commit-example" (exit status 1): exit status 1; the change stays staged in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecoveryarc758125843/002; commit it there with a subject the hook accepts, then run roundfix deliver retry 0088-pre-commit-example
+            --- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery/derived_merge (0.89s)
+                deliver_commit_hook_test.go:219: error=commit derived merge: git commit -m chore: merge default branch and regenerate derived paths
+                    
+                    Roundfix-Delivery: derived-merge: exit status 1: exit status 1
+                    want=commit derived merge: the repository commit-msg hook refused the commit "chore: merge default branch and regenerate derived paths" (exit status 1): exit status 1; the merge was aborted; merge the default branch into the item branch in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecoveryder219775692/001/item by hand, commit it with a message the hook accepts, then run roundfix deliver retry 0001-widget-flow
+        FAIL
+        suiteguard: guard cost: measured 2662 paths; fingerprint took 142.737584ms before and 155.660791ms after
+--- FAIL: TestDeliveryQueueCommitHookRefusalNamesTheHookAndTheRecovery (4.46s)
+FAIL
+suiteguard: guard cost: measured 2662 paths; fingerprint took 161.896666ms before and 110.563125ms after
+FAIL	roundfix/internal/cli	5.166s
+FAIL
+
+stderr:
+
+Sabotage patch (disposable archive copy):
+diff --git a/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0290-the-pull-request-record-commit-fits-commitlint-8035d92c12e486e9-8f86a8b0-19a6ad8a/run_20261021T005025Z_99e6b3dec4126d26/internal/cli/deliver_workflow.go b/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/unclassified/internal/cli/deliver_workflow.go
+index f2381cb1..4c2e4659 100644
+--- a/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0290-the-pull-request-record-commit-fits-commitlint-8035d92c12e486e9-8f86a8b0-19a6ad8a/run_20261021T005025Z_99e6b3dec4126d26/internal/cli/deliver_workflow.go
++++ b/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/unclassified/internal/cli/deliver_workflow.go
+@@ -1299,6 +1299,7 @@ func (workflow *commandDeliveryWorkflow) commitQueueChange(ctx context.Context,
+ 	if err == nil {
+ 		return nil
+ 	}
++	return err
+ 	var exitErr *exec.ExitError
+ 	if !errors.As(err, &exitErr) {
+ 		return err

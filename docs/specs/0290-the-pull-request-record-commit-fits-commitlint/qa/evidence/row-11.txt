@@ -1,0 +1,7 @@
+Pull Request row: no open Pull Request, per Daemon assignment for the Spec target branch. No network lookup attempted.
+Approval: operative _authorization.md at 22765a275e22cb5ab73e4d212bb9fe4e734938c2 grants implement, commit, push, pull_request and merge for this Spec, including its bounded Governed Paths. This QA session does not exercise publication authority.
+Checks: Daemon make verify-changed passed, exit 0, for audited head e31f34320e9f7cf6323c7fef428516c45a39723d.
+Threads: no unresolved Pull Request threads because no Pull Request exists; this is pre-PR evidence only.
+Merge-Ready acceptance: none yet; live approval/check/thread/acceptance controls must be observed after a PR exists.
+Claimed candidate: e31f34320e9f7cf6323c7fef428516c45a39723d.
+Run Worktree branch is never pushed; future PR uses the Spec target branch named in the assignment.

@@ -1,0 +1,12 @@
+command: ./bin/roundfix spec check 0290-the-pull-request-record-commit-fits-commitlint --strict
+exit: 0
+stdout:
+Spec 0290-the-pull-request-record-commit-fits-commitlint
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0290-the-pull-request-record-commit-fits-commitlint/_techspec.md Vocabulary Contract
+
+stderr:

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0290-the-pull-request-record-commit-fits-commitlint
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

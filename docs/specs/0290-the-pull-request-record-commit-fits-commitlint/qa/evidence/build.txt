@@ -1,0 +1,5 @@
+command: make build
+exit: 0
+Built from Run Worktree, audited head e31f34320e9f7cf6323c7fef428516c45a39723d
+User-flow version: roundfix 0.100.0 (e31f3432-dirty, built 2026-10-20 22:35:19 -0300)
+Dirty suffix is the seeded, untracked QA report; tracked implementation was clean.

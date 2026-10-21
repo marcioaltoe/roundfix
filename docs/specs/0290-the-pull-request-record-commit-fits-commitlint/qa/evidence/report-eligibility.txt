@@ -1,0 +1,13 @@
+command: go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/report-eligibility.json -count=1 -v -run ^TestQA0290ReportEligibility$ ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestQA0290ReportEligibility
+=== PAUSE TestQA0290ReportEligibility
+=== CONT  TestQA0290ReportEligibility
+    qa0290_eligibility_test.go:10: qualifying partial: environment=2 (pre-PR=1, network-prohibited=1), finding=0, declared=1, skipped=0
+--- PASS: TestQA0290ReportEligibility (0.00s)
+PASS
+suiteguard: guard cost: measured 2687 paths; fingerprint took 457.276125ms before and 104.304333ms after
+ok  	roundfix/internal/spec	0.802s
+
+stderr:

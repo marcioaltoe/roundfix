@@ -1,0 +1,69 @@
+command: go test -count=1 -v -run ^(TestPullRequestRecordSubjectNamesTheSpecNumber|TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber
+=== PAUSE TestPullRequestRecordSubjectNamesTheSpecNumber
+=== RUN   TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook
+=== PAUSE TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook
+=== CONT  TestPullRequestRecordSubjectNamesTheSpecNumber
+=== CONT  TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber/four_digits
+    deliver_commit_hook_test.go:41: subject="docs: record pull request #280 in the 0088-example Archive Record" (65 bytes), want "docs: record pull request #280 in the 0088 Archive Record", at most 70 bytes
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber/five_digits
+    deliver_commit_hook_test.go:41: subject="docs: record pull request #7 in the 12345-example Archive Record" (64 bytes), want "docs: record pull request #7 in the 12345 Archive Record", at most 70 bytes
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber/ten_digits
+    deliver_commit_hook_test.go:41: subject="docs: record pull request #1234567890 in the 1234567890-example Archive Record" (78 bytes), want "docs: record pull request #1234567890 in the 1234567890 Archive Record", at most 70 bytes
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber/eleven_digits
+    deliver_commit_hook_test.go:41: subject="docs: record pull request #7 in the 12345678901-example Archive Record" (70 bytes), want "docs: record pull request #7 in the Archive Record", at most 70 bytes
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber/digits_alone
+    deliver_commit_hook_test.go:41: subject="docs: record pull request #7 in the 0088 Archive Record" (55 bytes), want "docs: record pull request #7 in the Archive Record", at most 70 bytes
+=== RUN   TestPullRequestRecordSubjectNamesTheSpecNumber/without_digits
+    deliver_commit_hook_test.go:41: subject="docs: record pull request #7 in the example Archive Record" (58 bytes), want "docs: record pull request #7 in the Archive Record", at most 70 bytes
+--- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber (0.00s)
+    --- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber/four_digits (0.00s)
+    --- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber/five_digits (0.00s)
+    --- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber/ten_digits (0.00s)
+    --- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber/eleven_digits (0.00s)
+    --- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber/digits_alone (0.00s)
+    --- FAIL: TestPullRequestRecordSubjectNamesTheSpecNumber/without_digits (0.00s)
+=== NAME  TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook
+    deliver_commit_hook_test.go:75: isolated queue commit test: exit status 1
+        --- FAIL: TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook (0.89s)
+            deliver_commit_hook_test.go:88: record={Head: Exact:false} err=commit pull request record: the repository commit-msg hook refused the commit "docs: record pull request #280 in the 0088-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx Archive Record" (exit status 1): header must not be longer than 100 characters; the change stays staged in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook3986343447/002; commit it there with a subject the hook accepts, then run roundfix deliver retry 0088-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        FAIL
+        suiteguard: guard cost: measured 2662 paths; fingerprint took 147.959ms before and 137.17975ms after
+--- FAIL: TestDeliveryWorkflowRecordCommitPassesAHeaderLimitHook (1.21s)
+FAIL
+suiteguard: guard cost: measured 2662 paths; fingerprint took 156.429959ms before and 161.91025ms after
+FAIL	roundfix/internal/cli	1.952s
+FAIL
+
+stderr:
+
+Sabotage patch (disposable archive copy):
+diff --git a/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0290-the-pull-request-record-commit-fits-commitlint-8035d92c12e486e9-8f86a8b0-19a6ad8a/run_20261021T005025Z_99e6b3dec4126d26/internal/cli/deliver_workflow.go b/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/slug-subject/internal/cli/deliver_workflow.go
+index f2381cb1..76b054c4 100644
+--- a/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0290-the-pull-request-record-commit-fits-commitlint-8035d92c12e486e9-8f86a8b0-19a6ad8a/run_20261021T005025Z_99e6b3dec4126d26/internal/cli/deliver_workflow.go
++++ b/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/slug-subject/internal/cli/deliver_workflow.go
+@@ -1260,20 +1260,7 @@ func (workflow *commandDeliveryWorkflow) reconcileArchiveCommit(
+ 
+ // pullRequestRecordSubject returns the Pull Request Record Commit subject.
+ func pullRequestRecordSubject(specSlug, number string) string {
+-	identifier := ""
+-	if digits, _, ok := strings.Cut(specSlug, "-"); ok && len(digits) >= 1 && len(digits) <= 10 {
+-		ascii := true
+-		for _, digit := range digits {
+-			if digit < '0' || digit > '9' {
+-				ascii = false
+-				break
+-			}
+-		}
+-		if ascii {
+-			identifier = digits + " "
+-		}
+-	}
+-	return "docs: record pull request #" + number + " in the " + identifier + "Archive Record"
++ return "docs: record pull request #" + number + " in the " + specSlug + " Archive Record"
+ }
+ 
+ type deliveryCommitHookRefusalError struct {

@@ -1,0 +1,37 @@
+command: go test -count=1 -v -run ^(TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject
+=== PAUSE TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject
+=== CONT  TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject
+    deliver_commit_hook_test.go:101: isolated queue commit test: exit status 1
+        --- FAIL: TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject (1.43s)
+            --- FAIL: TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject/old_long_subject (0.69s)
+                deliver_commit_hook_test.go:120: adopt={Head:1b14d9fa5ebd8939857a72095890afc60846059c Exact:false} err=<nil>
+            --- FAIL: TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject/wip (0.30s)
+                deliver_commit_hook_test.go:120: adopt={Head:7d6292511cdb5b73f6edf2f8aa1cfaa8e32ea197 Exact:false} err=<nil>
+        FAIL
+        suiteguard: guard cost: measured 2662 paths; fingerprint took 169.9225ms before and 76.664833ms after
+--- FAIL: TestDeliveryWorkflowAdoptsARecordCommitWhateverItsSubject (1.71s)
+FAIL
+suiteguard: guard cost: measured 2662 paths; fingerprint took 186.513459ms before and 76.767792ms after
+FAIL	roundfix/internal/cli	2.410s
+FAIL
+
+stderr:
+
+Sabotage patch (disposable archive copy):
+diff --git a/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0290-the-pull-request-record-commit-fits-commitlint-8035d92c12e486e9-8f86a8b0-19a6ad8a/run_20261021T005025Z_99e6b3dec4126d26/internal/cli/deliver_workflow.go b/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/adoption-subject/internal/cli/deliver_workflow.go
+index f2381cb1..82b1bb08 100644
+--- a/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0290-the-pull-request-record-commit-fits-commitlint-8035d92c12e486e9-8f86a8b0-19a6ad8a/run_20261021T005025Z_99e6b3dec4126d26/internal/cli/deliver_workflow.go
++++ b/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0290-qa-b27f4om_/adoption-subject/internal/cli/deliver_workflow.go
+@@ -1437,6 +1437,9 @@ func (workflow *commandDeliveryWorkflow) RecordPullRequest(ctx context.Context,
+ }
+ 
+ func (workflow *commandDeliveryWorkflow) pullRequestRecordCommitIsExact(ctx context.Context, workDir, parent, head, path, number string) (bool, error) {
++ observed, subjectErr := workflow.git.RunGit(ctx, workDir, "log", "-1", "--format=%s", head)
++ if subjectErr != nil || strings.TrimSpace(observed) != pullRequestRecordSubject(strings.TrimSuffix(filepath.Base(path), ".md"), number) { return false, subjectErr }
++
+ 	parents, err := workflow.git.RunGit(ctx, workDir, "rev-list", "--parents", "-n", "1", head)
+ 	if err != nil {
+ 		return false, fmt.Errorf("read pull request record parents: %w", err)
