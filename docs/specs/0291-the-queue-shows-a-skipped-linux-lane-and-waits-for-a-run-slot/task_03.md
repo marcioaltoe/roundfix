@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -126,3 +126,84 @@ clock, a fake sleeper, a fake slot reader and a real Run Database.
 - `_prd.md` → Sources; Goals; Core Feature 3; Core Feature 5; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 5; API Contract 6; API Contract 9; Invariants 4-7; Interfaces; Data Models; Current behavior; Testing Approach; Build Order 3
 - ADR-0304; ADR-0199; ADR-0279; ADR-0259; ADR-0271; ADR-0285; ADR-0280
+
+
+## Result
+
+Implemented only Task 03's configuration, engine, tests and configuration guide.
+The incoming worktree already had this Task's Daemon-owned status changed to
+`in_progress`; that field and the Subtasks/Acceptance checkboxes are untouched.
+
+### Acceptance evidence
+
+- Ceiling refusals keep the item `running` with the exact `RunSlotWaitText`
+  blocker, updating it when holders change. The engine clears the persisted
+  blocker before retrying `RunSpec` and emits the specified wait/start log
+  lines. `TestARunCeilingRefusalWaitsAndStartsWhenASlotFrees` exercises these
+  observations, wrapped refusal recognition, and successful Run admission.
+- The wait uses the earlier of its original deadline and the recorded queue
+  deadline. `TestARunSlotWaitParksAsTodayAtItsDeadline` compares the complete
+  park reason with the no-wait path, including a lost race whose latest
+  refusal changes, and proves the last sleep is shortened without resetting
+  the deadline. `TestTheQueueDeadlineEndsARunSlotWait` observes the exact
+  `queue-deadline` blocker. `TestAZeroRunSlotWaitParksAtOnce` covers both zero
+  duration and an unset reader. `TestOtherRunSpecFailuresDoNotWait` covers a
+  different initial failure, a failure after retry, and a slot-reader error.
+  `TestAStoppedOwnerClearsTheRunSlotWait` cancels from both the sleeper and
+  reader and observes a still-running item with no blocker, persisted through
+  `context.WithoutCancel`.
+- `TestTwoQueuesWaitingForOneSlotStartOneRun` uses two engines and two queues
+  in one real Run Database. Both first refuse behind a holder, then both
+  readers observe the free slot before retrying real `store.CreateRun`
+  transactions with `MaxActiveImplementRuns: 1`. Exactly one creates a Run;
+  the loser records a new wait naming that Run. Samples after all four
+  admission attempts and the final active-Run query stay at or below one.
+  Channel events use `internal/testwait`; cancellation and a joined wait
+  group own both engine goroutines.
+- `Runs.SlotWait` defaults to `2h`, parses through the existing duration
+  parser, accepts zero, and rejects negative/invalid User Config values.
+  Project Config removes the key before parsing, retains the User Config
+  value, and emits the exact ignored-setting warning, even for invalid
+  Project Config values. The three required config tests cover these cases.
+  The configuration guide documents the default, zero, User Config warning,
+  Delivery Queue-only behavior, older-binary refusal, section YAML example
+  and settings-table row. Init templates and the Full example are unchanged.
+
+### Focused checks
+
+- Red baseline: `go test ./internal/config -run
+  '^TestRunSlotWaitIsReadFromUserConfig$' -count=1` refused to compile because
+  `Runs.SlotWait` did not exist.
+- `go test ./internal/config -run
+  '^(TestRunSlotWait|TestProjectConfigCannotSetTheRunSlotWait)' -count=1`:
+  exit 0.
+- `go test -race ./internal/config ./internal/delivery -run
+  'Test(RunSlotWait|ProjectConfigCannotSetTheRunSlotWait|ARunCeilingRefusal|ARunSlotWait|TheQueueDeadlineEndsARunSlotWait|AZeroRunSlotWait|OtherRunSpecFailures|AStoppedOwnerClearsTheRunSlotWait|TwoQueuesWaitingForOneSlot|ProjectConfigCannotRaiseTheRunCeiling|AQueuedItemParksAtTheTokenCeilingWithoutAWorktree)'
+  -count=1`: exit 0 in both packages. This includes all required new tests,
+  lost-race/latest-refusal cases, and existing ceiling/token-ceiling consumers.
+- After extending the cancellation test to both boundaries,
+  `go test -race ./internal/delivery -run
+  '^TestAStoppedOwnerClearsTheRunSlotWait$' -count=1`: exit 0.
+- Required generator:
+  `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  exit 0; regenerated `docs/references/behavior-surfaces.json`, changing only
+  the config-keys and configuration-guide fingerprints.
+- `GOOS=windows go test -c -o "$slot_test_build_dir/" ./internal/config
+  ./internal/delivery ./internal/cli`: exit 0; compiled the current tests and
+  CLI consumer into a disposable temporary directory, then removed it.
+- `git diff --check`: exit 0.
+
+### Handoff boundaries
+
+The engine retries admission only through `RunSpec`; `store.CreateRun` remains
+the sole ceiling authority. No schema, stage, store admission policy, init
+template, existing test assertion, Task Graph or other Task file changed.
+The code names the refusal/limits/reader data sources and the persisted status
+and console-log destinations. All new top-level tests call `t.Parallel()`
+first and use fake time or test-deadline-bounded events.
+
+Task 04 owns CLI refusal recognition, the real slot reader and dependency
+wiring. Those are deliberately outside this diff. Task status, declared Task
+Verification and repository Verification remain Daemon-owned and were not run
+or settled in this turn. No commit, push or pull request was made.
