@@ -39,6 +39,25 @@ type linuxLaneRequest struct {
 	All                  bool
 }
 
+// linuxLaneImage resolves the configured image or the revision's go directive.
+// An empty result means that go.mod declares no go version.
+func linuxLaneImage(ctx context.Context, runner preflight.GitRunner, workDir, revision, configured string) (string, error) {
+	if configured != "" {
+		return configured, nil
+	}
+	module, err := runner.RunGit(ctx, workDir, "show", revision+":go.mod")
+	if err != nil {
+		return "", fmt.Errorf("read Linux Lane go.mod: %w", err)
+	}
+	for _, line := range strings.Split(module, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == "go" {
+			return "golang:" + fields[1], nil
+		}
+	}
+	return "", nil
+}
+
 func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, request linuxLaneRequest) (result linuxLaneResult, resultErr error) {
 	workDir, head := request.WorkDir, request.Head
 	result.LogPath = request.LogPath
@@ -73,24 +92,12 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 		result.SkipExpected = true
 		return skip("no go.mod at the repository root")
 	}
-	image := request.Image
+	image, err := linuxLaneImage(ctx, runner, workDir, head, request.Image)
+	if err != nil {
+		return result, err
+	}
 	if image == "" {
-		module, err := runner.RunGit(ctx, workDir, "show", head+":go.mod")
-		if err != nil {
-			return result, fmt.Errorf("read Linux Lane go.mod: %w", err)
-		}
-		version := ""
-		for _, line := range strings.Split(module, "\n") {
-			fields := strings.Fields(line)
-			if len(fields) >= 2 && fields[0] == "go" {
-				version = fields[1]
-				break
-			}
-		}
-		if version == "" {
-			return skip("go.mod declares no go version")
-		}
-		image = "golang:" + version
+		return skip("go.mod declares no go version")
 	}
 	if request.All {
 		result.Packages = []string{"./..."}

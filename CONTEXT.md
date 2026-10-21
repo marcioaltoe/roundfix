@@ -727,6 +727,10 @@ _Avoid_: optional dependency, container tool
 The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It also runs on demand with `roundfix deliver lane`, independently of the queue opt-in, against a checkout revision's changed Go packages or every package with `--all`. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)). It reads the repository history through the object store mounted read-only, including the common directory's store for a linked worktree ([ADR-0297](docs/adr/0297-the-linux-lane-reads-the-repository-history-read-only.md)).
 _Avoid_: Linux gate, Docker gate, cross-platform Verification
 
+**Lane Environment Skip**:
+A skip of an enabled Linux Lane for any reason other than having nothing to test, or of a lane whose fetched configuration cannot be read. It passes the gate and is recorded on the item, shown by `roundfix deliver status`, the queue's pull request body and `roundfix doctor` ([ADR-0303](docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md)).
+_Avoid_: expected skip, lane failure
+
 **Lane Container Failure**:
 A Linux Lane failure caused by its container setup, command invocation, a signal or the run cap. It parks the candidate in the environment Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
 _Avoid_: change failure, generic gate failure

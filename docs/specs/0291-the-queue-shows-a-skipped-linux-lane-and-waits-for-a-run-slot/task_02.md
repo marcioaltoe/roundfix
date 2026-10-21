@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0291-the-queue-shows-a-skipped-linux-lane-and-waits-for-a-run-slot
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -148,3 +148,87 @@ Docker stand-in and the doctor's fake dependencies.
 - `_prd.md` → Sources; Goals; Core Feature 2; Core Feature 5; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 4; API Contract 9; Invariant 3; Interfaces; Current behavior; Testing Approach; Build Order 2; Glossary
 - ADR-0303; ADR-0294; ADR-0288; ADR-0259; ADR-0271; ADR-0285; ADR-0189; ADR-0256; ADR-0280
+
+
+## Result
+
+Implemented this Task's slice for Daemon verification; status and settlement
+remain Daemon-owned. No declared Verification command, repository Verification,
+commit, push, or pull request operation was run.
+
+### Implementation and acceptance evidence
+
+- Image absent with the lane enabled: the new `linuxLane` dependency returns
+  `DR-LANE-IMAGE-MISSING` through `readinessResult`, with status `warn` and
+  `docker pull <image>` as its next action. The new check test asserts the
+  entire rendered line and exactly `info` then `image inspect <image>`;
+  the command test proves this warning preserves exit `0` and sits between
+  `storage:` and `codex:`.
+- Missing Docker, unreachable daemon, and healthy setup: the check test
+  asserts each complete line and the recorded argument sequence, including
+  no image inspection after a failed `info`. Further cases cover a configured
+  image without a Go directive, no Go directive without an image, no module,
+  and no repository. Dirty `go.mod` never controls the selected image.
+  Each Docker read cancels its child after ten seconds. The check never
+  starts, pulls, or removes a container/image or prints the environment.
+- Lane disabled: the command test compares the whole output against the
+  enabled case with just the lane line removed, asserts no check invocation
+  while disabled, and covers an unset dependency. Existing doctor tests keep
+  their names and assertions. Both lane and doctor call `linuxLaneImage`;
+  the former's skip texts and ordering are preserved.
+- Documentation and glossary: the doctor guide and canonical setup reference
+  list all four warning codes, next actions, image selection, conditional line
+  and read-only bounds. Runtime lists the conditional check; deliver names
+  expected skips, the durable warning, the exact pull request paragraph,
+  and doctor's diagnostic surface. `CONTEXT.md` defines Lane Environment Skip
+  and links ADR-0303, following domain-modeling's glossary format.
+
+### Focused checks and required regeneration
+
+All commands below exited `0`, except the initial glossary check noted below.
+
+- `go test ./internal/cli -run '^(TestDoctorLinuxLaneCheckReportsDockerAndTheImage|TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn)$' -count=1`:
+  the two new tests passed using compiled stand-ins and temporary repositories.
+- `go test ./internal/cli -run '^(TestDoctor|TestRunDoctor|TestLinuxLane)' -count=1`:
+  focused doctor and Linux Lane consumers passed.
+- `GOOS=windows go test -c -buildvcs=false -o /tmp/roundfix-task02-cli-windows.test.exe ./internal/cli`:
+  the CLI and its tests compile for Windows; no Windows execution claimed.
+- Raised both canonical Roundfix skill version fields from `0.1.118` to
+  `0.1.119`, then ran `make skills-sync` and
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`.
+  The mirror and version record are generated, not hand-edited.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  generated the doctor guide's Behavior Surface Record fingerprint.
+- `make baseline-digests`: repository-required sanctioned regeneration;
+  reported `ok: true`, `changed: false`.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestUserGuideLinksResolve|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$' -count=1`:
+  first reported the new definition's undefined capitalized phrase
+  `Pull Request`. Using the glossary's existing lowercase `pull request`
+  wording resolved it; the focused checks then passed.
+- Direct byte comparison: all four edited canonical skill files match their
+  generated mirrors; every `### QA settlement` section is unchanged.
+- `git diff --check`: no whitespace errors.
+
+### Scope and search notes
+
+The initial worktree had only this Task file modified (Daemon-owned status).
+Only the declared Task slice and its generated records were changed; Task
+Graph and other Task files were left untouched. The full declared Verification
+and repository gates remain pending with the Daemon. No real Docker, network,
+or operator Roundfix home was used by the checks.
+
+Searched `docs/user-guide`, `docs/agents`, `.agents/skills/roundfix` and
+`skills/roundfix` for doctor check descriptions and skip/notice wording.
+Updated the exhaustive lists in the declared setup/runtime references and
+synchronized their mirrors. Other hits outside this Task's files:
+`docs/user-guide/commands/setup.md` describes only Setup's five shared readiness
+checks (still accurate); `docs/user-guide/usage.md` has a narrower readiness
+summary and an existing blanket offline claim; and
+`docs/user-guide/commands/baseline.md` has an existing blanket offline claim.
+Those unrelated summaries remain follow-up notes. The expected-skip-only
+notice text in the prior Task's deliver guide agrees with this reference.
+
+Execution environment: the sandbox could not start commands because the
+assigned writable root contains a symlink. Commands ran with authorized
+escalation in the resolved assigned Run checkout; this is an environment
+constraint, not a product failure.

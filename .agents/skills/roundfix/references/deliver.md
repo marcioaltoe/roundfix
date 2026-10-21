@@ -664,6 +664,26 @@ roundfix: notice: Delivery Queue item <slug>: Linux Lane skipped: <reason>
 - `image <image> is not present locally`
 - `docker could not start the container: <first non-empty output line>` (exit `125`)
 
+`no go.mod at the repository root` and `no changed Go package` are expected
+skips that leave only the notice. Every other skip of an enabled lane, and a
+fetched default whose configuration cannot be read, is a Lane Environment Skip.
+The item records the warning `linux-lane-skipped: <reason>`, which
+`roundfix deliver status` prints on its `Warning:` line. The Pull Request body
+adds this paragraph:
+
+```text
+Linux Lane: not run. The Delivery Queue gate skipped it: <reason>. This candidate's Go packages were not tested on Linux before this pull request.
+```
+
+A later gate replaces the earlier lane warning with its own outcome. A skip
+still passes the gate and never parks the item.
+
+When this checkout enables `delivery.linux_lane`, `roundfix doctor` reports
+Docker reachability and the local image on its `linux-lane:` line without
+pulling or starting anything. Its warnings identify what to repair before
+the next delivery; doctor reads checkout configuration, while the queue reads
+the fetched default.
+
 The lane log contains the command line and combined output. Exit `0` passes
 with this console line. `<n>` is the number of packages `go list` selected in
 the container, which the lane script reports with

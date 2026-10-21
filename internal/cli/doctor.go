@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/preflight"
 	"roundfix/internal/store"
 	"roundfix/skills"
 )
@@ -31,6 +33,7 @@ type doctorDependencies struct {
 	snapshotDifferences func(string, []string) ([]string, error)
 	residue             func(context.Context, string) []CheckResult
 	storage             func(context.Context, roundconfig.Loaded) []CheckResult
+	linuxLane           func(context.Context, roundconfig.Loaded) CheckResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -50,6 +53,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		snapshotDifferences: manifestSnapshotDifferences,
 		residue:             defaultDoctorResidueResults,
 		storage:             defaultDoctorStorageResults,
+		linuxLane:           doctorLinuxLaneCheck,
 	}
 }
 
@@ -103,6 +107,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, repositorySkillsCheck(ctx, dependencies, repositoryRoot))
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, dependencies.storage(ctx, loaded)...)
+	if dependencies.linuxLane != nil && loaded.Config.Delivery.LinuxLane {
+		results = append(results, dependencies.linuxLane(ctx, loaded))
+	}
 	results = append(results, checker.Codex(ctx))
 
 	failed := false
@@ -116,6 +123,60 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+// doctorLinuxLaneCheck reads only effective checkout configuration, go.mod at
+// HEAD, and Docker CLI answers. Its destination is one stdout report line;
+// environment values are never included. Only info and image inspect are run,
+// each with a ten-second cancellation bound; no image/container is changed.
+func doctorLinuxLaneCheck(ctx context.Context, loaded roundconfig.Loaded) CheckResult {
+	skipped := func(detail string) CheckResult {
+		return CheckResult{Name: HealthCheckLinuxLane, Status: CheckStatusSkipped, Detail: detail}
+	}
+	warn := func(code, text, next string) CheckResult {
+		return readinessResult(HealthCheckLinuxLane, "", []readinessFinding{{
+			Code: code, Status: CheckStatusWarn, Text: text, Next: next,
+		}})
+	}
+	if strings.TrimSpace(loaded.GitRoot) == "" {
+		return skipped("requires a Git repository")
+	}
+	runner := preflight.ExecGitRunner{}
+	listing, err := runner.RunGit(ctx, loaded.GitRoot, "ls-tree", "--name-only", "HEAD", "--", "go.mod")
+	if err != nil {
+		return warn("DR-LANE-IMAGE-UNKNOWN", "could not inspect go.mod at HEAD", "set delivery.linux_lane_image")
+	}
+	if strings.TrimSpace(listing) == "" {
+		return skipped("no go.mod at the repository root")
+	}
+	image, err := linuxLaneImage(ctx, runner, loaded.GitRoot, "HEAD", loaded.Config.Delivery.LinuxLaneImage)
+	if err != nil {
+		return warn("DR-LANE-IMAGE-UNKNOWN", "could not read go.mod at HEAD", "set delivery.linux_lane_image")
+	}
+	if image == "" {
+		return warn("DR-LANE-IMAGE-UNKNOWN", "go.mod declares no go version", "set delivery.linux_lane_image")
+	}
+	environment := commandDependenciesForContext(ctx).environ()
+	docker := linuxLaneExecutable("docker", environment, loaded.GitRoot)
+	if docker == "" {
+		return warn("DR-LANE-DOCKER-MISSING", "docker is not on PATH", "install Docker, or set delivery.linux_lane: false")
+	}
+	read := func(args ...string) ([]byte, error) {
+		readCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(readCtx, docker, args...)
+		cmd.Dir, cmd.Env = loaded.GitRoot, environment
+		cmd.WaitDelay = 10 * time.Second
+		return cmd.CombinedOutput()
+	}
+	output, err := read("info")
+	if err != nil {
+		return warn("DR-LANE-DOCKER-UNREACHABLE", "docker info failed: "+linuxLaneFirstLine(output), "start Docker, then re-run roundfix doctor")
+	}
+	if _, err := read("image", "inspect", image); err != nil {
+		return warn("DR-LANE-IMAGE-MISSING", "image "+image+" is not present locally", "docker pull "+image)
+	}
+	return readinessResult(HealthCheckLinuxLane, "docker reachable; image "+image+" present", nil)
 }
 
 func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies, repositoryRoot string) CheckResult {
