@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0293-archive-and-cancel-refuse-a-link-that-leaves-the-repository
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -108,3 +108,54 @@ entry points.
 - `_prd.md` → Sources; Goals; Core Features 1-3; Declared break; Success Metric 4
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 1-3; API Contract 5; Invariants 1-5; Testing Approach; Build Order 1
 - ADR-0306; ADR-0268; ADR-0272; ADR-0247; ADR-0260; ADR-0278; ADR-0262; ADR-0154; ADR-0299; ADR-0259; ADR-0271; ADR-0285
+
+## Result
+
+Implemented the resolver containment check and all three destination checks.
+`RepositoryPath` resolves both arguments before accepting a path, preserves the
+lexical relative path when it is inside, and otherwise returns the resolved
+relative path. Archive promotion, cancel promotion and Source Return check
+containment before their existing vacancy checks, using the required refusal
+texts. The resolver comment records the configured Spec Root/Git top-level
+provenance and why a commit must hold every written destination.
+
+Acceptance evidence:
+
+- Resolver containment and path compatibility: added
+  `TestRepositoryPathRefusesALinkThatLeavesTheRepository` and
+  `TestRepositoryPathKeepsLinksThatStayInside`. They cover existing and missing
+  targets, an escaping link through a linked checkout, inside parent links,
+  both arguments through a checkout link and mixed resolved/linked spellings.
+  Before production edits, the refusal test failed in all three subtests:
+  the resolver returned a relative path and no error.
+- Refusal before writes: added
+  `TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting` for the Archive
+  Root and promotion destination, and
+  `TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting` for the Archive
+  Root, promotion destination and both backlog and finding Source Return.
+  Each refusal checks exact error text, outside and repository tree snapshots,
+  Spec bytes and `git status --porcelain --untracked-files=all` for no change.
+- Compatibility: added `TestArchiveAndCancelKeepLinksThatStayInside`, comparing
+  record, relinked, promoted and returned-source bytes with a control for an
+  inside history link and for both roots through a checkout link. Existing
+  resolver, archive and cancel tests and fixtures were left byte-identical.
+
+Focused checks:
+
+- `rtk proxy go test ./internal/spec -run '^TestRepositoryPathRefusesALinkThatLeavesTheRepository$' -count=1`
+  — exit 1 before production edits, reproducing the lexical acceptance bug.
+- `rtk proxy go test ./internal/spec -run '^Test(Archive|Cancel|RepositoryPath)' -count=1`
+  — exit 0 after the final code/test edit; includes all five new top-level tests
+  and the existing archive, cancel and resolver tests matching those prefixes.
+- `rtk proxy env GOOS=windows go test -c -o /tmp/roundfix-0293-spec.test.exe ./internal/spec`
+  — exit 0 after the final code/test edit; Windows test compilation only,
+  not Windows execution.
+- `rtk proxy git diff --check` — exit 0.
+
+Environment: the executor rejected the symlinked workspace root; implementation
+and focused checks used the same assigned checkout at its resolved disk path.
+The pre-existing task status change to `in_progress` was preserved. No other
+Task or Task Graph was edited. No commit, push or Pull Request was made.
+Declared Task Verification and repository Verification were not run and remain
+Daemon-owned. Command transcripts, guides and skill wording belong to later
+Tasks; there are no additional implementation follow-ups in this slice.
