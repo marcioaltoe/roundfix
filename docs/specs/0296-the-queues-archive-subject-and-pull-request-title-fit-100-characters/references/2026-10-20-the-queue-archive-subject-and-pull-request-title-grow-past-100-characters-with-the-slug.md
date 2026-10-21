@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-20
-spec: null
+spec: 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters
 reason: null
 ---
 
