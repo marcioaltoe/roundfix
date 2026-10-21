@@ -227,8 +227,8 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 		t.Fatal("verify-changed must invoke verify-changed-contracts after its set loop")
 	}
 	const lines = "docscontract ^(TestDocs)$ ./internal/docscontract\nrepocontract ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
-	const first = "test -count=1 -tags docscontract -run ^(TestDocs)$ ./internal/docscontract\n"
-	const second = "test -count=1 -tags repocontract -run ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
+	const first = "test -count=1 -timeout 20m -tags docscontract -run ^(TestDocs)$ ./internal/docscontract\n"
+	const second = "test -count=1 -timeout 20m -tags repocontract -run ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
 	for _, scenario := range []struct {
 		name, output                      string
 		selectorFail, goFail, wantFailure bool
