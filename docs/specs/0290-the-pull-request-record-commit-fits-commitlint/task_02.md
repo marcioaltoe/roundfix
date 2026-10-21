@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0290-the-pull-request-record-commit-fits-commitlint
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -139,3 +139,69 @@ the subject and the recovery.
 - `_prd.md` → Sources; Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior; API Contracts 1-6; Invariants 1-6; Testing Approach; Build Order 2
 - ADR-0302
+
+## Result
+
+Implemented this Task's slice; Task status and declared Verification remain
+Daemon-owned.
+
+- Record subjects now use a one-to-ten-digit ASCII Spec prefix, or omit the
+  identifier when no valid prefix exists. The existing subject assertion now
+  expects `docs: record pull request #7 in the 0001 Archive Record` and is the
+  only change in `deliver_record_pull_request_test.go`.
+- Archive, record and derived-merge commits share one helper. It requires an
+  `*exec.ExitError`, extracts only the runner's output, reuses the Daemon's
+  classification, and returns a typed refusal that unwraps to the original
+  error. It names the hook, first-line subject, exit status, bounded one-line
+  output and the specified staged-change or aborted-merge recovery. The code
+  documents the third-party output's path into the blocker, status and Run
+  Database. No bypass, alternative-subject retry or rewrite was added.
+- `daemon.InstalledCommitHooks` exports the existing Git-resolved hook lookup;
+  `commitHookInstalled` now checks its list length. No other Daemon file or
+  Delivery Engine file changed. All three record proof functions were
+  compared with HEAD and remain byte-identical.
+
+Acceptance evidence from focused checks:
+
+1. The synthetic 54-character `0088-` slug records pull request 280 behind a
+   real 100-character header hook with the exact 57-character subject, an
+   exact new head and a clean worktree. Six subject subtests cover the prefix
+   cases and the 70-character ceiling.
+2. Hand commits under the old long subject, the short subject and `wip` are
+   adopted without another commit. Existing uncommitted-record and inexact
+   record tests also pass.
+3. Five refusal cases assert the whole error, `errors.As` to
+   `*exec.ExitError`, and `environment` from `delivery.ClassifyPark`. These
+   cover output naming, a silent hook, two installed hooks, an archive slug
+   containing `pre-commit` with only `commit-msg` installed, and a derived
+   merge that is aborted back to a clean candidate. Every record-refusal
+   case also checks staged work and subsequent hand-commit adoption.
+   Additional real-hook cases assert whitespace collapse, an exact 512-byte
+   output and a cut inside a UTF-8 rune. Real-Git tests run in isolated child
+   processes with temporary homes and Git configuration, without timed waits.
+4. A real stale index lock injected at the commit boundary preserves the raw
+   Git error without `hook refused`. Existing Daemon hook tests pass unchanged.
+   Both touched packages' test binaries cross-compile for Windows.
+
+Focused commands (all prefixed with `rtk proxy` where applicable):
+
+- Before implementation: `go test ./internal/cli -run '^TestPullRequestRecordSubjectNamesTheSpecNumber$' -count=1`
+  failed to compile because `pullRequestRecordSubject` did not exist.
+- `go test ./internal/cli -run 'Test(PullRequestRecordSubjectNames|DeliveryWorkflowRecordCommitPasses|DeliveryWorkflowAdoptsARecordCommit|DeliveryQueueCommit)' -count=1 -v`
+  passed all six new top-level tests, including all fixture cases.
+- `go test ./internal/cli -run 'TestDeliveryWorkflow(RecordsThePullRequest|RefusesARecordCommit|AdoptsAnUncommitted|RefusesAnUncommitted)|TestADerivedConflict|TestConflictRecoveryAborts' -count=1`
+  passed the existing record and conflict regressions.
+- `go test ./internal/daemon -run 'CommitHook|HookRefusal|GitCommitterKeepsPlain' -count=1`
+  passed the existing classification, committer and Task recovery checks.
+- `go test ./internal/daemon -run '^TestHookOutputExcerptBoundsOutputAtItsHead$' -count=1`
+  passed the remaining existing hook-output check.
+- `GOOS=windows go test -c -o "$queue_compile_dir/" ./internal/cli ./internal/daemon`
+  exited 0; `queue_compile_dir` was a fresh directory under `/private/tmp`.
+- `git diff --check` passed. Scope inspection found only the four assigned
+  code/test paths plus this Task file; the three proof functions are unchanged.
+
+The declared Verification command, including Windows vet, and repository
+Verification were not run; the Daemon owns them. No commit, push, pull request,
+Task Graph edit or other Task-file edit was made. The symlinked writable root
+prevented sandbox startup, so commands used the resolved Run checkout with
+approved escalation. No product blocker or out-of-slice follow-up was found.

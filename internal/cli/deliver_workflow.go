@@ -1224,7 +1224,7 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if _, err := workflow.git.RunGit(ctx, gitRoot, append([]string{"add", "-A", "--"}, stagePaths...)...); err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("stage archived Spec: %w", err)
 	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "commit", "-m", "docs: archive "+specSlug); err != nil {
+	if err := workflow.commitQueueChange(ctx, gitRoot, specSlug, "docs: archive "+specSlug, false); err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("commit archived Spec: %w", err)
 	}
 	head, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
@@ -1256,6 +1256,81 @@ func (workflow *commandDeliveryWorkflow) reconcileArchiveCommit(
 	}
 	result.ExactSpecMove, err = workflow.archiveCommitIsExact(ctx, gitRoot, parent, archiveHead, source, destination)
 	return result, err
+}
+
+// pullRequestRecordSubject returns the Pull Request Record Commit subject.
+func pullRequestRecordSubject(specSlug, number string) string {
+	identifier := ""
+	if digits, _, ok := strings.Cut(specSlug, "-"); ok && len(digits) >= 1 && len(digits) <= 10 {
+		ascii := true
+		for _, digit := range digits {
+			if digit < '0' || digit > '9' {
+				ascii = false
+				break
+			}
+		}
+		if ascii {
+			identifier = digits + " "
+		}
+	}
+	return "docs: record pull request #" + number + " in the " + identifier + "Archive Record"
+}
+
+type deliveryCommitHookRefusalError struct {
+	hook, subject, output, recovery string
+	exitCode                        int
+	err                             error
+}
+
+func (refusal *deliveryCommitHookRefusalError) Error() string {
+	detail := ""
+	if refusal.output != "" {
+		detail = ": " + refusal.output
+	}
+	return fmt.Sprintf("the repository %s hook refused the commit %q (exit status %d)%s; %s",
+		refusal.hook, refusal.subject, refusal.exitCode, detail, refusal.recovery)
+}
+
+func (refusal *deliveryCommitHookRefusalError) Unwrap() error { return refusal.err }
+
+func (workflow *commandDeliveryWorkflow) commitQueueChange(ctx context.Context, workDir, specSlug, message string, derivedMerge bool) error {
+	args := []string{"commit", "-m", message}
+	_, err := workflow.git.RunGit(ctx, workDir, args...)
+	if err == nil {
+		return nil
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return err
+	}
+	output := ""
+	prefix, suffix := "git "+strings.Join(args, " ")+": ", ": "+exitErr.Error()
+	if text := err.Error(); strings.HasPrefix(text, prefix) && strings.HasSuffix(text, suffix) && len(text) >= len(prefix)+len(suffix) {
+		output = text[len(prefix) : len(text)-len(suffix)]
+	}
+	hook, refused := daemon.ClassifyCommitHookRefusal(ctx, workDir, output)
+	if !refused {
+		return err
+	}
+	if hook == "" {
+		hook = strings.Join(daemon.InstalledCommitHooks(ctx, workDir), " or ")
+	}
+	if hook == "" {
+		hook = "commit"
+	}
+	// Output is third-party text from the repository's own hook. Bound it and
+	// collapse whitespace before putting it in the step error and queue blocker,
+	// which deliver status prints and the Run Database stores.
+	output = strings.Join(strings.Fields(strings.ToValidUTF8(output, "")), " ")
+	if len(output) > 512 {
+		output = strings.ToValidUTF8(output[:512], "") + " ..."
+	}
+	subject, _, _ := strings.Cut(message, "\n")
+	recovery := "the change stays staged in " + workDir + "; commit it there with a subject the hook accepts, then run roundfix deliver retry " + specSlug
+	if derivedMerge {
+		recovery = "the merge was aborted; merge the default branch into the item branch in " + workDir + " by hand, commit it with a message the hook accepts, then run roundfix deliver retry " + specSlug
+	}
+	return &deliveryCommitHookRefusalError{hook: hook, subject: subject, output: output, recovery: recovery, exitCode: exitErr.ExitCode(), err: err}
 }
 
 // RecordPullRequest resumes either side of the record commit before checks run.
@@ -1349,7 +1424,7 @@ func (workflow *commandDeliveryWorkflow) RecordPullRequest(ctx context.Context, 
 	if err != nil || !exact {
 		return inexact, err
 	}
-	if _, err := workflow.git.RunGit(ctx, workDir, "commit", "-m", "docs: record pull request #"+number+" in the "+specSlug+" Archive Record"); err != nil {
+	if err := workflow.commitQueueChange(ctx, workDir, specSlug, pullRequestRecordSubject(specSlug, number), false); err != nil {
 		return delivery.PullRequestRecord{}, fmt.Errorf("commit pull request record: %w", err)
 	}
 	newHead, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
@@ -2500,7 +2575,7 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 			return resolution, fmt.Errorf("stage regenerated path: %w", err)
 		}
 	}
-	if _, err := workflow.git.RunGit(ctx, workDir, "commit", "-m", "chore: merge default branch and regenerate derived paths\n\nRoundfix-Delivery: derived-merge"); err != nil {
+	if err := workflow.commitQueueChange(ctx, workDir, specSlug, "chore: merge default branch and regenerate derived paths\n\nRoundfix-Delivery: derived-merge", true); err != nil {
 		return resolution, fmt.Errorf("commit derived merge: %w", err)
 	}
 	committed = true

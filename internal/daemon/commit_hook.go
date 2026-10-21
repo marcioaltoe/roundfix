@@ -138,23 +138,30 @@ func classifyCommitHookOutput(output string) (string, bool) {
 // predates --path-format, the signal reports no hook: the classification falls
 // back to the output alone, which is where it stood before this second signal.
 func commitHookInstalled(ctx context.Context, workDir string) bool {
+	return len(InstalledCommitHooks(ctx, workDir)) > 0
+}
+
+// InstalledCommitHooks lists executable pre-commit and commit-msg hooks in
+// that order, using the hooks directory Git resolves for workDir.
+func InstalledCommitHooks(ctx context.Context, workDir string) []string {
 	if strings.TrimSpace(workDir) == "" {
-		return false
+		return nil
 	}
 	resolved, err := runGitOutput(ctx, workDir, "rev-parse", "--path-format=absolute", "--git-path", "hooks")
 	if err != nil {
-		return false
+		return nil
 	}
 	hooksDir := strings.TrimSpace(resolved)
 	if hooksDir == "" {
-		return false
+		return nil
 	}
+	var hooks []string
 	for _, name := range installedCommitHookNames {
 		if executableFile(filepath.Join(hooksDir, name)) {
-			return true
+			hooks = append(hooks, name)
 		}
 	}
-	return false
+	return hooks
 }
 
 // executableFile reports whether path is a regular file Git would execute as a
