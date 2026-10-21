@@ -1,3 +1,0 @@
-COMMAND GOOS=windows go build -buildvcs=false ./internal/runcause ./internal/cli
-
-exit: 0

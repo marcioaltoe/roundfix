@@ -1,4 +1,0 @@
-COMMAND ./bin/roundfix qa-report accept docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/qa/qa-report-2026-10-21.md
-stdout:
-stderr:
-exit: 0

@@ -1,3 +1,0 @@
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=' -X 'roundfix/internal/app.BuildTime=2026-10-21 12:15:02 -0300'" -o bin/roundfix ./cmd/roundfix
-
-exit: 0
