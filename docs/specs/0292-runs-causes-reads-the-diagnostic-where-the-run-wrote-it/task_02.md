@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -43,15 +43,15 @@ guide is task_01's.
 
 ## Subtasks
 
-- [ ] Add the diagnostic sentence to the Roundfix `runs` reference.
-- [ ] Revise **Artifact Root** in the glossary.
-- [ ] Raise the skill version, sync the mirror and record the version.
+- [x] Add the diagnostic sentence to the Roundfix `runs` reference.
+- [x] Revise **Artifact Root** in the glossary.
+- [x] Raise the skill version, sync the mirror and record the version.
 
 ## Acceptance Criteria
 
-- [ ] The reference states the shared resolver and the guards, in the canonical copy and its mirror.
-- [ ] `CONTEXT.md` names the run cause report among the resolver's callers.
-- [ ] The Roundfix skill version is raised and recorded, and the mirror is in sync.
+- [x] The reference states the shared resolver and the guards, in the canonical copy and its mirror.
+- [x] `CONTEXT.md` names the run cause report among the resolver's callers.
+- [x] The Roundfix skill version is raised and recorded, and the mirror is in sync.
 
 ## Consumers
 
@@ -79,3 +79,19 @@ None. This Task changes documentation, the skill mirror and the skill version re
 - `_prd.md` → Core Feature 3; Glossary; Goals
 - `_techspec.md` → API Contract 1; API Contract 3; Build Order 2
 - ADR-0301; ADR-0214; ADR-0189; ADR-0256
+
+## Result
+
+- Added the diagnostic read location, shared resolver, and symbolic-link and
+  containment guards to the `runs` reference; `make skills-sync` produced an
+  identical mirror.
+- Updated **Artifact Root** to name the run cause report and linked ADR-0214,
+  while retaining the ADR-0301 and ADR-0255 links and the existing `_Avoid_`
+  line.
+- Raised both Roundfix skill version fields from `0.1.120` to `0.1.121` and
+  recorded the new digest with `go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` (passed:
+  1 package); the canonical and mirrored skill files have identical digests.
+- Focused checks: `git diff --check` passed; content checks found the required
+  reference sentence in both copies, the revised glossary sentence, both
+  `0.1.121` fields in each skill copy, and the `0.1.121` version record.
