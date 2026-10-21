@@ -172,6 +172,9 @@ func Cancel(req CancelRequest) (CancelResult, error) {
 			return CancelResult{}, err
 		}
 		destination := filepath.Join(req.RepositoryRoot, "docs", "references", filepath.Base(path))
+		if _, err := RepositoryPath(req.RepositoryRoot, destination); err != nil {
+			return CancelResult{}, fmt.Errorf("cancellation path %q is outside the repository", destination)
+		}
 		if err := cancelVacant(destination); err != nil {
 			return CancelResult{}, err
 		}
@@ -404,6 +407,9 @@ func planSourceReturn(root, specDir, date, slug, reason string) ([]cancelCopy, [
 		}
 		to := filepath.ToSlash(filepath.Join("docs", family, path))
 		destination := filepath.Join(root, filepath.FromSlash(to))
+		if _, err := RepositoryPath(root, destination); err != nil {
+			return nil, nil, fmt.Errorf("cancellation path %q is outside the repository", destination)
+		}
 		if err := cancelVacant(destination); err != nil {
 			return nil, nil, err
 		}

@@ -306,6 +306,9 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			return ArchiveResult{}, errors.New("promotion requires RepositoryRoot")
 		}
 		destination := filepath.Join(req.RepositoryRoot, "docs", "references", base)
+		if _, err := RepositoryPath(req.RepositoryRoot, destination); err != nil {
+			return ArchiveResult{}, fmt.Errorf("resolve promotion destination: %w", err)
+		}
 		if _, err := os.Lstat(destination); err == nil {
 			return ArchiveResult{}, fmt.Errorf("promotion destination %q already exists", destination)
 		} else if !errors.Is(err, os.ErrNotExist) {

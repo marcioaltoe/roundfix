@@ -40,6 +40,8 @@ Archive refuses a Spec with a Glossary Gap, also under a QA Archive Override.
 Archive also refuses while Git ignores any file under the Spec folder. It lists
 each ignored file and writes nothing. The operator must remove each file or commit it with git add -f, then retry.
 
+Archive and Cancel also refuse, writing nothing, a path whose resolved target lies outside the repository, such as a `docs/history`, `docs/references` or `docs/backlog` symbolic link to another directory; the refusal names the path. Move the link's target inside the repository or remove the link, then retry. A symbolic link whose target stays inside the repository, a checkout reached through a symbolic link and an external Spec Root keep working (ADR-0306).
+
 Use `roundfix archive <slug>` after a Spec's Tasks are completed and the newest
 QA Report is acceptable under the one declared-acceptance eligibility policy:
 either `verdict: pass` with no disallowed blocked rows, or a `partial` verdict

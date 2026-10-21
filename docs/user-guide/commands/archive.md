@@ -35,6 +35,12 @@ writes the same record and relinks the same files from the main checkout,
 a linked worktree such as a Delivery Queue item worktree, a subdirectory
 of either, or a path that crosses a symbolic link.
 
+A path whose resolved target lies outside the repository, such as a
+`docs/history` or `docs/references` symbolic link to another directory, is
+refused with exit `2` before anything is written, and the refusal names the
+path. A symbolic link whose target stays inside the repository, a checkout
+reached through a symbolic link and an external Spec Root keep working.
+
 The original folder's bytes stay in Git at the record's `source_revision`. The
 Archive Record is the small `<slug>.md` file under the archive root; it names
 the disposition, QA Report and verdict, source revision, and promoted files.

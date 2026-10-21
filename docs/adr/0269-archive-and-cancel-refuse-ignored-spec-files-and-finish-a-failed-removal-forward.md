@@ -65,3 +65,5 @@ both commands until the operator removes or commits it, including inside a
 Delivery Queue item worktree, where the archive step parks the item as any
 failed archive does. Archive's exit code for a failed folder removal moves
 from 2 to 1, so a script that read 2 as "nothing happened" now sees the truth.
+
+**Narrowed by [ADR-0306](0306-archive-and-cancel-refuse-a-path-whose-resolved-target-leaves-the-repository.md) (2026-10-20).** A symbolic-link destination parent whose resolved target stays in the repository, or in the external Spec Root's repository, stays accepted; one whose target leaves it is refused before anything is written.
