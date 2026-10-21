@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.104.0] - 2026-10-21
+
+### Archive and cancel refuse a link that leaves the repository
+
+- **A path is inside the repository only when its resolved target is.** `roundfix archive` and `roundfix cancel` compared paths lexically before resolving them, so a symbolic link inside the repository whose target lay outside was accepted: a committed `docs/history` link to another directory made both commands write the Archive Record outside the repository and exit 0 while the Spec folder was removed, a `docs/references` link took the archive's promoted copy outside, and a `docs/backlog` link took the cancel's returned Backlog Entry outside. Both commands now resolve each path and each destination before writing anything, and accept it only when its resolved target lies inside the repository root resolved the same way (ADR-0306).
+- **Kept working.** A symbolic link whose target stays inside the repository, a checkout reached through a symbolic link (such as macOS `/var` for `/private/var` or a linked `worktree.location`) and an external Spec Root keep working, and an accepted path keeps the bytes of every record, relink and message.
+
+### Breaking
+
+- **`roundfix archive` and `roundfix cancel` refuse a path whose resolved target leaves the repository.** The refusal exits `2`, writes nothing and names the path with the text each step already printed for a path outside the repository (`path "<path>" is outside the repository "<root>"`, or `cancellation path "<path>" is outside the repository`). Move the link's target inside the repository or remove the link, then retry.
+
 ## [0.103.0] - 2026-10-21
 
 ### Runs causes reads the diagnostic where the Run wrote it
