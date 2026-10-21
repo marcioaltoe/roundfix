@@ -1,0 +1,18 @@
+import runpy
+globals().update(runpy.run_path('/private/tmp/qa0293-flows.py'))
+logs=[];ok=True
+for args in [['make','skills-sync-check'],['go','test','-count=1','./skills'],['go','test','-count=1','-v','-tags','docscontract','./internal/docscontract','-run','^(TestGlossary.*|TestTheSkillCoverageMapIsCurrent)$']]:
+ p,log=run(args);logs.append(log);ok=ok and p.returncode==0;print(' '.join(args),'exit',p.returncode,flush=True)
+for f in ['docs/user-guide/commands/archive.md','docs/user-guide/commands/cancel.md','.agents/skills/roundfix/references/archive.md','skills/roundfix/references/archive.md']:
+ paragraphs=(ROOT/f).read_text().split('\n\n');paragraph=next(p for p in paragraphs if 'resolved target lies outside the repository' in ' '.join(p.split()));logs.append(f+'\n'+paragraph+'\n');ok=ok and 'keep working' in ' '.join(paragraph.split())
+for a,b in [('.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md'),('.agents/skills/roundfix/references/archive.md','skills/roundfix/references/archive.md')]:
+ p,log=run(['cmp',a,b]);logs.append(log);ok=ok and p.returncode==0
+path='docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md';current=(ROOT/path).read_text();old=run(['git','show','bd525d4b:'+path])[0].stdout;delta=current[len(old):] if current.startswith(old) else 'modified old content';logs.append('ADR-0269 append-only delta:\n'+delta);ok=ok and current.startswith(old) and 'Narrowed by [ADR-0306]' in delta and '(2026-10-20)' in delta
+old=run(['git','show','bd525d4b:.agents/skills/roundfix/SKILL.md'])[0].stdout;current=(ROOT/'.agents/skills/roundfix/SKILL.md').read_text();ov=re.findall(r'^\s*version: ([\d.]+)$',old,re.M);nv=re.findall(r'^\s*version: ([\d.]+)$',current,re.M);record=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())
+logs.append('Roundfix skill versions: '+repr(ov)+' -> '+repr(nv)+'; latest recorded: '+record['skills']['roundfix'][-1]['version']+'\n');ok=ok and ov==['0.1.121']*2 and nv==['0.1.122']*2 and record['skills']['roundfix'][-1]['version']=='0.1.122'
+for f in ['_prd.md','_techspec.md']:
+ text=(S/f).read_text().split('## Glossary\n',1)[1].split('\n## ',1)[0];logs.append(f+' glossary declaration: '+text.strip()+'\n');ok=ok and text.strip()=='None.'
+logs.append('No term introduced: the change qualifies existing repository-path behavior and reuses Archive Command, Cancel Command, Archive Record and Spec Root. No glossary addition is needed.\n')
+p,log=run(['rg','-n','-i','symbolic.?link|symlink','docs/user-guide','docs/agents','.agents/skills','skills']);(EV/'wording-search.txt').write_text(log)
+logs.append('Wording search: rg -n -i symbolic.?link|symlink docs/user-guide docs/agents .agents/skills skills; exit '+str(p.returncode)+'. Full hits: wording-search.txt. Cross-read the archive/cancel hits: both guides qualify the general linked-checkout sentence with outside-target refusal; both skill references explicitly refuse outside targets. No wording in these surfaces claims archive/cancel accepts or follows an outside-target symbolic link. ADR-0269 retains its historical broad sentence with the dated narrowing appended.\n')
+finish('DOCS',ok,'\n'.join(logs))

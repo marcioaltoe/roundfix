@@ -1,0 +1,104 @@
+MUTATION lexical; expected assertion failures observed: True
+$ go test -count=1 -v -run ^(TestRepositoryPathRefusesALinkThatLeavesTheRepository|TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting)$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestRepositoryPathRefusesALinkThatLeavesTheRepository
+=== PAUSE TestRepositoryPathRefusesALinkThatLeavesTheRepository
+=== RUN   TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== PAUSE TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== CONT  TestRepositoryPathRefusesALinkThatLeavesTheRepository
+=== CONT  TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== NAME  TestRepositoryPathRefusesALinkThatLeavesTheRepository
+    repository_path_containment_test.go:77: isolated test: exit status 1
+        --- FAIL: TestRepositoryPathRefusesALinkThatLeavesTheRepository (0.20s)
+            --- FAIL: TestRepositoryPathRefusesALinkThatLeavesTheRepository/existing_directory (0.06s)
+                repository_path_containment_test.go:101: refused path returned "docs/history/specs"
+                repository_path_containment_test.go:98: got <nil>; want path "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathRefusesALinkThatLeavesTheRepositoryexisting_d3314614634/001/repo/docs/history/specs" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathRefusesALinkThatLeavesTheRepositoryexisting_d3314614634/001/repo"
+            --- FAIL: TestRepositoryPathRefusesALinkThatLeavesTheRepository/missing_file (0.05s)
+                repository_path_containment_test.go:101: refused path returned "docs/history/specs/demo.md"
+                repository_path_containment_test.go:98: got <nil>; want path "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathRefusesALinkThatLeavesTheRepositorymissing_fi1228448603/001/repo/docs/history/specs/demo.md" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathRefusesALinkThatLeavesTheRepositorymissing_fi1228448603/001/repo"
+            --- FAIL: TestRepositoryPathRefusesALinkThatLeavesTheRepository/linked_checkout (0.08s)
+                repository_path_containment_test.go:101: refused path returned "docs/history/specs"
+                repository_path_containment_test.go:98: got <nil>; want path "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathRefusesALinkThatLeavesTheRepositorylinked_che3838534431/001/link/docs/history/specs" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathRefusesALinkThatLeavesTheRepositorylinked_che3838534431/001/link"
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 116.038959ms before and 130.5065ms after
+--- FAIL: TestRepositoryPathRefusesALinkThatLeavesTheRepository (0.46s)
+=== NAME  TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+    repository_path_containment_test.go:142: isolated test: exit status 1
+        --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.28s)
+            --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting/history (0.15s)
+                repository_path_containment_test.go:162: got <nil>; want resolve Archive Root for archive relink: path "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritinghist579898320/001/repo/docs/history/specs" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritinghist579898320/001/repo"
+            --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting/references (0.13s)
+                repository_path_containment_test.go:162: got <nil>; want resolve promotion destination: path "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritingrefe3162027400/001/repo/docs/references/notes.md" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritingrefe3162027400/001/repo"
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 111.771042ms before and 125.266875ms after
+--- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.53s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 97.905084ms before and 92.626042ms after
+FAIL	roundfix/internal/spec	0.951s
+FAIL
+stderr:
+
+MUTATION unresolved-root; expected assertion failures observed: True
+$ go test -count=1 -v -run ^(TestRepositoryPathKeepsLinksThatStayInside)$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestRepositoryPathKeepsLinksThatStayInside
+=== PAUSE TestRepositoryPathKeepsLinksThatStayInside
+=== CONT  TestRepositoryPathKeepsLinksThatStayInside
+    repository_path_containment_test.go:111: isolated test: exit status 1
+        --- FAIL: TestRepositoryPathKeepsLinksThatStayInside (0.02s)
+            --- FAIL: TestRepositoryPathKeepsLinksThatStayInside/both_through_checkout_link (0.00s)
+                repository_path_containment_test.go:134: got "", path "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathKeepsLinksThatStayInside3016917308/001/link/docs/history/specs/demo.md" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathKeepsLinksThatStayInside3016917308/001/link"; want "docs/history/specs/demo.md"
+            --- FAIL: TestRepositoryPathKeepsLinksThatStayInside/linked_root_resolved_path (0.00s)
+                repository_path_containment_test.go:134: got "", path "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathKeepsLinksThatStayInside3016917308/001/repo/docs/history/specs/demo.md" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestRepositoryPathKeepsLinksThatStayInside3016917308/001/link"; want "docs/hist-real/specs/demo.md"
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 107.436125ms before and 129.040875ms after
+--- FAIL: TestRepositoryPathKeepsLinksThatStayInside (0.27s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 127.99675ms before and 116.995625ms after
+FAIL	roundfix/internal/spec	0.768s
+FAIL
+stderr:
+
+MUTATION promotion; expected assertion failures observed: True
+$ go test -count=1 -v -run ^(TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting)$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== PAUSE TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== CONT  TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+    repository_path_containment_test.go:142: isolated test: exit status 1
+        --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.27s)
+            --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting/references (0.14s)
+                repository_path_containment_test.go:162: got <nil>; want resolve promotion destination: path "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritingrefe3641143299/001/repo/docs/references/notes.md" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritingrefe3641143299/001/repo"
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 121.868417ms before and 124.971708ms after
+--- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.53s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 117.474584ms before and 123.871458ms after
+FAIL	roundfix/internal/spec	1.008s
+FAIL
+stderr:
+
+MUTATION source-return; expected assertion failures observed: True
+$ go test -count=1 -v -run ^(TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting)$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== PAUSE TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== CONT  TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting
+    repository_path_containment_test.go:170: isolated test: exit status 1
+        --- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.42s)
+            --- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting/backlog (0.11s)
+                repository_path_containment_test.go:188: got <nil>; want cancellation path "/private/tmp/rf293-z2z4owg6/tmp/TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWritingbackl3458000000/001/repo/docs/backlog/entry.md" is outside the repository
+            --- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting/findings (0.12s)
+                repository_path_containment_test.go:188: got <nil>; want cancellation path "/private/tmp/rf293-z2z4owg6/tmp/TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWritingfindi482248967/001/repo/docs/findings/finding.md" is outside the repository
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 96.983041ms before and 81.25625ms after
+--- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.61s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 90.512375ms before and 99.940542ms after
+FAIL	roundfix/internal/spec	1.102s
+FAIL
+stderr:

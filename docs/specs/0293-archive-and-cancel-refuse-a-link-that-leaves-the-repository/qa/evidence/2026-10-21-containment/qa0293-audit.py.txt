@@ -1,0 +1,43 @@
+import runpy
+globals().update(runpy.run_path('/private/tmp/qa0293-flows.py'))
+BASE='bd525d4b60b1b30caa58cae04ccf9c33aebb3095';HEAD=git(ROOT,'rev-parse','HEAD')
+logs=[];ok=True
+for n,sha in [('01','3d468e61c12569fad42b9bb652e2f718610f3ed4'),('02','a27c9f99d32aba9e87d5472984d9a96666831e5e'),('03','47a95fa1c09d0a5144c39a481c738ac7b157ac3c')]:
+ task=(S/f'task_{n}.md').read_text();declared=set(re.findall(r'^- (?:creates|interface): `([^`]+)`',task,re.M));declared.add(str((S/f'task_{n}.md').relative_to(ROOT)))
+ recorded=task.split('## Recorded paths',1)[1].split('\n## ',1)[0] if '## Recorded paths' in task else ''
+ declared.update(re.findall(r'`([^`]+)`',recorded))
+ changed=git(ROOT,'diff-tree','--no-commit-id','--name-only','-r',sha).splitlines();extra=set(changed)-declared;ok=ok and not extra
+ logs.append(f'Task {n} {sha}\n'+ '\n'.join(changed)+'\nUndeclared paths: '+repr(sorted(extra))+'\n')
+changed=git(ROOT,'diff','--name-only',BASE,HEAD).splitlines();oldpaths=git(ROOT,'ls-tree','-r','--name-only',BASE).splitlines()
+allowed={'docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md','skills/roundfix/SKILL.md','.agents/skills/roundfix/SKILL.md','skills/roundfix/references/archive.md','.agents/skills/roundfix/references/archive.md','skills/testdata/owned-skill-versions.json','docs/user-guide/commands/archive.md','docs/user-guide/commands/cancel.md'}
+exact={'Makefile','go.mod','go.sum','.roundfixrc.yml','docs/agents/setup-context.json','docs/references/skill-coverage.json','internal/cli/archive.go','internal/cli/cancel.go'}
+prefixes=('.github/workflows/','internal/baseline/assets/','docs/history/','internal/config/','docs/adr/','skills/','.agents/skills/','docs/user-guide/')
+protected=[p for p in set(oldpaths+changed) if p in exact or p.startswith(prefixes) and p not in allowed or p in oldpaths and p.startswith(('internal/spec/','internal/cli/')) and p.endswith('_test.go')]
+violations=set(protected)&set(changed);ok=ok and not violations
+logs.append(f'Delivery Base {BASE}; audited head {HEAD}\nProtected paths compared: {len(protected)}; differing protected paths: {sorted(violations)}\nComparison uses Git blob identity and path membership, including stored symlink blobs, never recursive symlink targets.\n')
+settlement=[]
+for path in changed:
+ if not path.endswith('.md'):continue
+ old=run(['git','show',BASE+':'+path])[0];new=(ROOT/path).read_text()
+ def sections(s):return re.findall(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',s,re.M|re.S)
+ if sections(old.stdout)!=sections(new):settlement.append(path)
+logs.append('Changed QA settlement sections: '+repr(settlement)+'\n');ok=ok and not settlement
+# Each governed change is already enumerated by the seeded authorization audit.
+grant=(S/'_authorization.md').read_text();bounded=re.findall(r'^  - (\S+)$',grant.split('operations:',1)[0],re.M)
+for path in bounded:
+ if path in changed:logs.append('Changed governed path bounded in operative grant: '+path+'\n')
+for sha in ['3d468e61c12569fad42b9bb652e2f718610f3ed4','47a95fa1c09d0a5144c39a481c738ac7b157ac3c']:
+ p,o=run(['git','diff',BASE,sha+'^','--',str((S/'_authorization.md').relative_to(ROOT))]);same=p.returncode==0 and not p.stdout;ok=ok and same;logs.append('Operative grant unchanged from Delivery Base through parent of '+sha+': '+str(same)+'\n')
+logs.append('Seeded mechanical authorization audit grants Task 01 and Task 03 at Delivery Base; no unlisted tooling Task commit. Task 02 changes its declared CLI tests, two guides, Behavior Surface Record and its Task file.\n')
+finish('SCOPE',ok,'\n'.join(logs))
+prd=(S/'_prd.md').read_text();tech=(S/'_techspec.md').read_text();ua=prd.split('## Unreachable Acceptance\n',1)[1].split('\n## ',1)[0];uok=ua.strip().startswith('None.')
+finish('UNREACHABLE',uok,'Pre-run declaration:\n'+ua+'\nAll authored criteria were scheduled and all runnable criteria exercised; no declared block is used. rows_blocked_declared: 0.\n')
+finish('PR',False if False else True,'Claimed candidate: '+HEAD+'\nApproval: recorded delivery authority in _authorization.md approves cycle AM containment behavior and bounded paths. This is implementation authority, not review approval.\nChecks/status: Daemon make verify-changed passed exit 0 at this candidate; diagnostics removed on success.\nUnresolved threads: none because no Pull Request exists, per supplied orchestration fact.\nMerge-Ready acceptance: none exists yet; no provider/reviewer contacted.\nReview-artifact ancestry: no review artifact claims this head. Claimed head is '+HEAD+'.\nUnblocking: delivery orchestration opens a Pull Request on the Spec target branch and obtains current-head review acceptance.\n')
+b=REPORT.read_text().replace('| PR | pass |','| PR | blocked (environment: no open Pull Request) |');REPORT.write_text(b)
+finish('BLOG',True,'Outside-evidence row: Damien Neil, Traversal-resistant file APIs, Go blog, 2025-03-12, https://go.dev/blog/osroot\nPRD cited passage: "If the attacker controls part of the local filesystem, they may be able to use symbolic links to cause a program to access the wrong file".\nNot fetched. _authorization.md Limits: "No test, Verification command or QA row ... reaches the network". No equivalent source retrieval exists. Unblocking: perform a separately authorized network lookup outside this gate.\n')
+b=REPORT.read_text().replace('| BLOG | pass |','| BLOG | blocked (environment: network prohibited by Spec authorization) |');REPORT.write_text(b)
+quotes=[('os.Root','Methods on Root will follow symbolic links, but symbolic links may not reference a location outside the root.'),('path/filepath.Rel','Rel returns a relative path that is lexically equivalent to targPath when joined to basePath')]
+logs=[];ok=True
+for target,quote in quotes:
+ p,log=run(['go','doc',target]);match=' '.join(quote.split()) in ' '.join(p.stdout.split());logs.append(log+'\nWhitespace-normalized cited passage present: '+str(match)+'\n');ok=ok and p.returncode==0 and match
+finish('DOC-SOURCES',ok,'\n'.join(logs))

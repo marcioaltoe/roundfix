@@ -1,0 +1,6 @@
+$ go run -overlay /private/tmp/rf293-z2z4owg6/artifact-overlay.json ./cmd/roundfix /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0293-archive-and-cancel-refuse-a-link-that-leaves-the-repository-ccd9717d3404c1a0-d48f66cd-9ceaf2d8/run_20261021T191041Z_65ca379bc059b1bd/docs/specs/0293-archive-and-cancel-refuse-a-link-that-leaves-the-repository
+exit: 0
+stdout:
+QAReportEligibility: accepted partial; environment=2 prePR=1 networkProhibited=1 finding=0 declared=0 skipped=0
+QA artifacts: 39 text files; Secret Matches: 0
+stderr:

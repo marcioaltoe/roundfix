@@ -1,0 +1,25 @@
+$ ./bin/roundfix archive 0001-demo --qa-override --approval probe --reason probe
+exit: 2
+stdout:
+stderr:
+Preflight failed
+
+Reason:
+  resolve Archive Root for archive relink: path "/private/tmp/rf293-z2z4owg6/refuse-history/docs/history/specs" is outside the repository "/private/tmp/rf293-z2z4owg6/refuse-history"
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+
+Independent confirmation:
+{
+  "exit_2": true,
+  "stdout_empty": true,
+  "stderr_exact_transcript": true,
+  "outside_unchanged": true,
+  "spec_bytes_unchanged": true,
+  "repo_tree_unchanged": true,
+  "git_status_empty_before_after": true
+}

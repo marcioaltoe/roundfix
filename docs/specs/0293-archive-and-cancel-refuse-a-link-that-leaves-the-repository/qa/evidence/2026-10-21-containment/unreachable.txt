@@ -1,0 +1,7 @@
+Pre-run declaration:
+
+None. Every criterion runs in temporary repositories; the blog post is
+recorded under its own network-prohibited row and never decides a qualifying
+`partial`.
+
+All authored criteria were scheduled and all runnable criteria exercised; no declared block is used. rows_blocked_declared: 0.

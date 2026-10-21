@@ -1,0 +1,20 @@
+$ go test -count=1 -v -run ^(TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting)$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== PAUSE TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== CONT  TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting
+    repository_path_containment_test.go:170: isolated test: exit status 1
+        --- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.42s)
+            --- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting/backlog (0.11s)
+                repository_path_containment_test.go:188: got <nil>; want cancellation path "/private/tmp/rf293-z2z4owg6/tmp/TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWritingbackl3458000000/001/repo/docs/backlog/entry.md" is outside the repository
+            --- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting/findings (0.12s)
+                repository_path_containment_test.go:188: got <nil>; want cancellation path "/private/tmp/rf293-z2z4owg6/tmp/TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWritingfindi482248967/001/repo/docs/findings/finding.md" is outside the repository
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 96.983041ms before and 81.25625ms after
+--- FAIL: TestCancelRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.61s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 90.512375ms before and 99.940542ms after
+FAIL	roundfix/internal/spec	1.102s
+FAIL
+stderr:

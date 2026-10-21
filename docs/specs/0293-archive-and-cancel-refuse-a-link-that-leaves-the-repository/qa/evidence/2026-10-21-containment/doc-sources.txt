@@ -1,0 +1,90 @@
+$ go doc os.Root
+exit: 0
+stdout:
+package os // import "os"
+
+type Root struct {
+	// Has unexported fields.
+}
+    Root may be used to only access files within a single directory tree.
+
+    Methods on Root can only access files and directories beneath a root
+    directory. If any component of a file name passed to a method of Root
+    references a location outside the root, the method returns an error.
+    File names may reference the directory itself (.).
+
+    Methods on Root will follow symbolic links, but symbolic links may not
+    reference a location outside the root. Symbolic links must not be absolute.
+
+    Methods on Root do not prohibit traversal of filesystem boundaries, Linux
+    bind mounts, /proc special files, or access to Unix device files.
+
+    Methods on Root are safe to be used from multiple goroutines simultaneously.
+
+    On most platforms, creating a Root opens a file descriptor or handle
+    referencing the directory. If the directory is moved, methods on Root
+    reference the original directory in its new location.
+
+    Root's behavior differs on some platforms:
+
+      - When GOOS=windows, file names may not reference Windows reserved device
+        names such as NUL and COM1.
+      - On Unix, Root.Chmod, Root.Chown, and Root.Chtimes are vulnerable to a
+        race condition. If the target of the operation is changed from a regular
+        file to a symlink while the operation is in progress, the operation may
+        be performed on the link rather than the link target.
+      - When GOOS=js, Root is vulnerable to TOCTOU (time-of-check-time-of-use)
+        attacks in symlink validation, and cannot ensure that operations will
+        not escape the root.
+      - When GOOS=plan9 or GOOS=js, Root does not track directories across
+        renames. On these platforms, a Root references a directory name,
+        not a file descriptor.
+      - WASI preview 1 (GOOS=wasip1) does not support Root.Chmod.
+
+func OpenRoot(name string) (*Root, error)
+func (r *Root) Chmod(name string, mode FileMode) error
+func (r *Root) Chown(name string, uid, gid int) error
+func (r *Root) Chtimes(name string, atime time.Time, mtime time.Time) error
+func (r *Root) Close() error
+func (r *Root) Create(name string) (*File, error)
+func (r *Root) FS() fs.FS
+func (r *Root) Lchown(name string, uid, gid int) error
+func (r *Root) Link(oldname, newname string) error
+func (r *Root) Lstat(name string) (FileInfo, error)
+func (r *Root) Mkdir(name string, perm FileMode) error
+func (r *Root) MkdirAll(name string, perm FileMode) error
+func (r *Root) Name() string
+func (r *Root) Open(name string) (*File, error)
+func (r *Root) OpenFile(name string, flag int, perm FileMode) (*File, error)
+func (r *Root) OpenRoot(name string) (*Root, error)
+func (r *Root) ReadFile(name string) ([]byte, error)
+func (r *Root) Readlink(name string) (string, error)
+func (r *Root) Remove(name string) error
+func (r *Root) RemoveAll(name string) error
+func (r *Root) Rename(oldname, newname string) error
+func (r *Root) Stat(name string) (FileInfo, error)
+func (r *Root) Symlink(oldname, newname string) error
+func (r *Root) WriteFile(name string, data []byte, perm FileMode) error
+stderr:
+
+Whitespace-normalized cited passage present: True
+
+$ go doc path/filepath.Rel
+exit: 0
+stdout:
+package filepath // import "path/filepath"
+
+func Rel(basePath, targPath string) (string, error)
+    Rel returns a relative path that is lexically equivalent to targPath when
+    joined to basePath with an intervening separator. That is, Join(basePath,
+    Rel(basePath, targPath)) is equivalent to targPath itself.
+
+    The returned path will always be relative to basePath, even if basePath and
+    targPath share no elements. Rel calls Clean on the result.
+
+    An error is returned if targPath can't be made relative to basePath or if
+    knowing the current working directory would be necessary to compute it.
+
+stderr:
+
+Whitespace-normalized cited passage present: True

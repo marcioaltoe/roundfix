@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0293-archive-and-cancel-refuse-a-link-that-leaves-the-repository
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

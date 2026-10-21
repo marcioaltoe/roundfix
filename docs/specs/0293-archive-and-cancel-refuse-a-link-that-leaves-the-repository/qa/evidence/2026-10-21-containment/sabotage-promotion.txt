@@ -1,0 +1,18 @@
+$ go test -count=1 -v -run ^(TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting)$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== PAUSE TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+=== CONT  TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting
+    repository_path_containment_test.go:142: isolated test: exit status 1
+        --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.27s)
+            --- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting/references (0.14s)
+                repository_path_containment_test.go:162: got <nil>; want resolve promotion destination: path "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritingrefe3641143299/001/repo/docs/references/notes.md" is outside the repository "/private/tmp/rf293-z2z4owg6/tmp/TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWritingrefe3641143299/001/repo"
+        FAIL
+        suiteguard: guard cost: measured 2674 paths; fingerprint took 121.868417ms before and 124.971708ms after
+--- FAIL: TestArchiveRefusesALinkThatLeavesTheRepositoryBeforeWriting (0.53s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 117.474584ms before and 123.871458ms after
+FAIL	roundfix/internal/spec	1.008s
+FAIL
+stderr:
