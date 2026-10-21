@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.103.0] - 2026-10-21
+
+### Runs causes reads the diagnostic where the Run wrote it
+
+- **Diagnostics of Runs that recorded no Artifact Root are read again.** `roundfix runs causes` read a failed attempt's diagnostic under the recorded Artifact Directory literally, so a Run that recorded none (every Implement Run whose configuration leaves `defaults.artifact_dir` empty) produced no evidence and an empty tail. It now reads under the Artifact Root the Run wrote to, through the same resolver as `roundfix storage report`, `roundfix gc sanitize` and Run Retention: a blank value uses the repository's default root (or, for older Runs, the checkout's default root when that one holds the Run's directory), a relative value resolves under the Run's Git root, an absolute value is used as recorded (ADR-0301).
+- **The guards are unchanged.** A diagnostic outside the Run's own `runs/<run-id>` directory, reached through a symbolic link, or not a regular file still gives the attempt no evidence. The embedded signature table and the five classes are unchanged.
+- **Glossary.** **Artifact Root** now lists the run cause report among its readers.
+
 ## [0.102.0] - 2026-10-21
 
 ### The queue shows a skipped Linux Lane and waits for a Run slot
