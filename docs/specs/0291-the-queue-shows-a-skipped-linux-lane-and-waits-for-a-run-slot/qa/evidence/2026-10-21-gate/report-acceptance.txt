@@ -1,4 +1,0 @@
-command: ./bin/roundfix qa-report accept <temporary Spec report>
-stdout:
-stderr:
-exit: 0

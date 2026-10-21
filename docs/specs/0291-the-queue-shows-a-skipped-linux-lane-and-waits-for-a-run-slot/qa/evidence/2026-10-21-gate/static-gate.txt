@@ -1,8 +1,0 @@
-Daemon-supplied repository Verification: make verify-changed
-verdict: pass
-exit: 0
-diagnostics: removed on success
-Agent did not rerun repository Verification.
-make build: exit 0
-user_flow_binary: roundfix 0.101.0 (29944e74-dirty, built 2026-10-21 02:02:06 -0300)
-strict Spec check: exit 0; No findings.

@@ -1,9 +1,0 @@
-package delivery
-import "testing"
-func TestQA0291EveryEnvironmentReasonReachesTheItem(t *testing.T){t.Parallel();for _,reason:=range []string{"go is not on PATH",
-"docker is not on PATH",
-"docker info failed: daemon unavailable",
-"image golang:1.26.1 is not present locally",
-"docker could not start the container: fixture output",
-"go.mod declares no go version",
-"the fetched default refs/remotes/origin/main cannot be resolved",}{t.Run(reason,func(t *testing.T){checkLaneSkipPublication(t,"",reason,WarningLinuxLaneSkipped+": "+reason,"Delivers Spec spec-one.\n\n"+LaneSkipBody(reason));t.Logf("reason=%s; persisted item=yes; fake Pull Request body=yes",reason)})}}

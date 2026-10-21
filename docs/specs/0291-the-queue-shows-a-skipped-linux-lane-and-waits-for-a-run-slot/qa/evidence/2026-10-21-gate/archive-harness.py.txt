@@ -1,9 +1,0 @@
-from pathlib import Path
-import subprocess,json,os,shutil
-s=json.loads(Path('/tmp/qa0291-state.json').read_text());tmp=Path(s['tmp']);p=tmp/'archive-copy';p.mkdir();subprocess.run(['tar','-xf',str(tmp/'head.tar'),'-C',str(p)],check=True)
-for a in [['init','-b','main'],['add','.'],['-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','-qm','QA disposable archived-head fixture']]:subprocess.run(['git',*a],cwd=p,check=True,stdout=subprocess.DEVNULL)
-(p/'bin').mkdir(exist_ok=True);shutil.copy2(Path(s['root'])/'bin/roundfix',p/'bin/roundfix');home=tmp/'archive-home';home.mkdir();e=os.environ.copy();e['HOME']=str(home)
-keys=['ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','OPENROUTER_API_KEY','TYPESAFE_API_KEY']
-for k in keys:e.pop(k,None)
-cmd=['./bin/roundfix','archive',Path(s['spec']).name,'--plan','--offline'];r=subprocess.run(cmd,cwd=p,env=e,capture_output=True,text=True)
-(tmp/'archive-plan.txt').write_text('command: '+' '.join(cmd)+'\n'+''.join(k+' not set\n' for k in keys)+'stdout:\n'+r.stdout+'stderr:\n'+r.stderr+'exit: '+str(r.returncode)+'\n');print(r.stdout+r.stderr);print('exit:',r.returncode)
