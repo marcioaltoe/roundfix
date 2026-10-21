@@ -1,4 +1,0 @@
-Single PRD Unreachable Acceptance: Success Metric 6 on the oraculum machine after release.
-Authorization forbids reading another repository, the real ~/.roundfix or a remote. This Run is the Roundfix checkout before release. The actual oraculum queue and commitlint installation were not read or executed.
-Satisfied-by, still unproven: the oraculum operator delivers that repository's next Spec whose slug is longer than 48 characters after release, without a hand commit.
-One declaration, one blocked row.

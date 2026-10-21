@@ -1,9 +1,0 @@
-command: for f in docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'docs: record pull request #<number> in the <spec number> Archive Record' || { printf 'missing subject in %s\n' "$f" >&2; exit 1; }; tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'commit the staged change in the item worktree with a subject the hook accepts' || { printf 'missing recovery in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Hook Refusal**:' || { echo 'missing glossary term' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'that a hook refuses is a Hook Refusal too' || { echo 'missing glossary revision' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
-exit: 0
-stdout:
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.261s
-ok  	roundfix/skills	0.979s
-ok  	roundfix/internal/docscontract	277.693s
-
-stderr:

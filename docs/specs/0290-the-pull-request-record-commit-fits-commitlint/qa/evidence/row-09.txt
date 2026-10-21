@@ -1,5 +1,0 @@
-Repository Verification: make verify-changed
-Source: Daemon assignment, outside Agent sandbox
-Audited head: e31f34320e9f7cf6323c7fef428516c45a39723d
-Result: pass, exit 0; diagnostics removed on success
-Not rerun by QA.
