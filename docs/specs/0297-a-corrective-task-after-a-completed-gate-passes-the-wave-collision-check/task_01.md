@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -115,3 +115,63 @@ after the edge.
 - `_techspec.md` → Current behavior; API Contracts 1-5; Invariants 1-5; Testing Approach; Build Order 1
 - ADR-0117
 - ADR-0182
+
+
+## Result
+
+Implemented API Contracts 1–5 within this Task's slice. `WaveCollision`
+now renders the sorted path/source list and the resolving edge. The Spec
+Consistency finding uses those methods, names both Tasks in its fix, and
+carries the edge into the durable refusal reason. The Daemon uses the same
+methods while preserving its refusal text byte for byte. Collision discovery,
+loading, gate/settlement classification and the serial-capacity exemption
+are unchanged.
+
+Added the four required top-level tests in the three declared new test files.
+Each starts with `t.Parallel()`. Both manifest orders are loaded from disk,
+and the named edge is written into the manifest before reloading and checking
+that no collision or cycle remains. The corrective-shape fixture builds a
+plan, trailer-bearing settlements on `roundfix/run-run_first`, fast-forward
+integration, an archive commit and revert, the corrective declaration and the
+reopened gate. The ordered case also leaves a corrective settlement on
+`roundfix/run-run_second`. The gate reads a detached linked worktree; the
+strict and settlement checks read the item checkout. All repositories and
+refs are disposable and use `gittest`; the tests document the evidence hazard
+and access no real Roundfix Home, other repository or network, and perform no
+real-time waits.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Finding summary, fix and recorded reason name the edge | `TestWaveCollisionFindingNamesTheResolvingEdge` asserts exact summary, fix and `RefusalReason`, plus unchanged severity and locations. The corrective-shape test asserts the exact `PreconditionRefusal.Reason`. |
+| Daemon refusal keeps its bytes | The corrective-shape test compares the entire pre-dispatch error to the existing sentence, including the merged sources and edge, at `Concurrency: 2`. |
+| Four readers agree before and after the edge | Both cases of `TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph` pass. Gate, strict check and settlement return only the exact expected collision before ordering and no findings afterward; dispatch refuses with the exact text before ordering and returns nil afterward. |
+| Existing collision tests remain unchanged | The focused collision run below passes the existing `TestCollisions*`, `TestWaveCollision*`, `TestTaskCycleRefusesAWaveCollision` and `TestTaskCycleDispatchesSerializedCollisionGraph` tests alongside the new tests. No existing test, golden or fixture file was edited. |
+
+Focused checks:
+
+- Red starting point: `rtk proxy go test ./internal/spec -run '^TestWaveCollision' -count=1`
+  exited 1 because `SharedPathList` and `ResolvingEdge` were undefined.
+- Final focused regressions: `rtk proxy go test ./internal/spec ./internal/speccheck ./internal/daemon -run '(Collisions|WaveCollision|SerializedCollisionGraph|QAGateJudges)' -count=1`
+  exited 0 for all three packages. During fixture development, the loader
+  exposed the missing QA dependency/reopening, and the stronger sole-refusal
+  assertion exposed the corrective Task's missing Consumer Declaration;
+  those fixture declarations were corrected without changing production
+  validation or filtering away diagnostics.
+- `GOOS=windows rtk proxy go test -c -o /private/tmp/roundfix-0297-spec.test.exe ./internal/spec`
+  exited 0.
+- `GOOS=windows rtk proxy go test -c -o /private/tmp/roundfix-0297-speccheck.test.exe ./internal/speccheck`
+  exited 0.
+- `GOOS=windows rtk proxy go test -c -o /private/tmp/roundfix-0297-daemon.test.exe ./internal/daemon`
+  exited 0 after the final fixture edit.
+- `rtk proxy git diff --check` exited 0.
+
+Environment: the configured writable root contains a symlink, so ordinary
+sandbox execution refused before starting a process. Authorized elevated
+execution reached the resolved Run checkout; this is an environment condition.
+The pre-existing diff was the Daemon's `status: in_progress` change in this
+Task file, and that field was preserved.
+
+The declared Task Verification, Windows vet and repository Verification were
+not run; they remain Daemon-owned. No Task Graph manifest, other Task file,
+existing test, golden, fixture, documentation/skill surface from task_02 or
+configuration was changed. No commit, push or pull request was made.

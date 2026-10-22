@@ -35,6 +35,21 @@ type WaveCollision struct {
 	Paths  map[string]TouchSource
 }
 
+// SharedPathList renders the shared paths with their sources in sorted order.
+func (collision WaveCollision) SharedPathList() string {
+	paths := make([]string, 0, len(collision.Paths))
+	for path, source := range collision.Paths {
+		paths = append(paths, fmt.Sprintf("%s (%s)", path, source))
+	}
+	sort.Strings(paths)
+	return strings.Join(paths, ", ")
+}
+
+// ResolvingEdge names the needs edge that orders the independent pair.
+func (collision WaveCollision) ResolvingEdge() string {
+	return fmt.Sprintf("add a `needs` edge from Task %s to Task %s", collision.Second, collision.First)
+}
+
 // Collisions reports every pair the Task Graph permits in one Wave that is
 // known to touch a common repository file.
 //

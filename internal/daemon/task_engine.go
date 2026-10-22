@@ -602,18 +602,12 @@ func refuseTaskPlanWaveCollisions(plan TaskPlan) error {
 
 	details := make([]string, 0, len(collisions))
 	for _, collision := range collisions {
-		paths := make([]string, 0, len(collision.Paths))
-		for path, source := range collision.Paths {
-			paths = append(paths, fmt.Sprintf("%s (%s)", path, source))
-		}
-		sort.Strings(paths)
 		details = append(details, fmt.Sprintf(
-			"Task %s and Task %s share repository files: %s; add a `needs` edge from Task %s to Task %s",
+			"Task %s and Task %s share repository files: %s; %s",
 			collision.First,
 			collision.Second,
-			strings.Join(paths, ", "),
-			collision.Second,
-			collision.First,
+			collision.SharedPathList(),
+			collision.ResolvingEdge(),
 		))
 	}
 	return fmt.Errorf("task cycle: refuse Wave before dispatch because Tasks collide: %s", strings.Join(details, "; "))

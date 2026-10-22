@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"roundfix/internal/spec"
@@ -319,22 +318,17 @@ func detectWaveCollisions(result *Result, repoRoot string, graph *spec.Graph) er
 	}
 
 	for _, collision := range collisions {
-		paths := make([]string, 0, len(collision.Paths))
-		for path, source := range collision.Paths {
-			paths = append(paths, fmt.Sprintf("%s (%s)", path, source))
-		}
-		sort.Strings(paths)
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeWaveCollision,
 			Severity: SeverityError,
 			Summary: "Task " + collision.First + " and Task " + collision.Second +
-				" can run in the same Wave and share repository files: " + strings.Join(paths, ", "),
+				" can run in the same Wave and share repository files: " + collision.SharedPathList() + "; " + collision.ResolvingEdge(),
 			Where: []Location{
 				{Path: taskPaths[collision.First], Line: 1},
 				{Path: taskPaths[collision.Second], Line: 1},
 				{Path: manifestPath, Line: 1},
 			},
-			Fix: "Give one Task a `needs` edge on the other in " + manifestPath + ".",
+			Fix: "Give Task " + collision.Second + " a `needs` edge on Task " + collision.First + " in " + manifestPath + ".",
 		})
 	}
 	return nil
