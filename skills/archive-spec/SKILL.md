@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.13
+  version: 0.0.14
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.13
+version: 0.0.14
 ---
 
 # Archive Spec
@@ -311,8 +311,10 @@ For a QA Archive Override, perform the archive only through
 For a normal archive, run `roundfix archive <slug>`; it verifies the
 preconditions, writes the Archive Record and removes the Spec folder. Never
 hand-edit the Archive Record; the command owns its refusals, provenance, and
-archive lifecycle. The Delivery Queue writes the commit subject
-`docs: archive <slug>` (Conventional Commits). Do not push unless asked.
+archive lifecycle. The Delivery Queue writes the commit subject `docs: archive
+<slug>` (Conventional Commits), or, when that would pass 100 characters,
+`docs: archive the <spec number> Spec` (`docs: archive the Spec` for a slug
+without a Spec number). Do not push unless asked.
 
 Report the new path and anything carried over (open follow-ups from task
 `## Result` sections belong in new specs, not in the archive). When the work

@@ -1001,6 +1001,10 @@ _Avoid_: Backfill, archive ref, history restore
 The Delivery Queue's commit, made after it opens a Spec's pull request, that stores the number in the Archive Record its archive commit added and changes nothing else; the queue accepts it by proof instead of a second repository gate ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)).
 _Avoid_: Archive commit, record backfill, amend
 
+**Spec Number**:
+The one to ten ASCII digits that start a Spec slug when a `-` follows them, such as `0088`; a slug without them has no Spec Number. The Delivery Queue names the Spec by it in the Pull Request Record Commit subject, and in the archive commit subject and the pull request title when the slug form would pass 100 characters ([ADR-0302](docs/adr/0302-a-queue-commit-names-the-spec-by-number-and-a-hook-refusal-parks-with-the-hand-commit.md), [ADR-0309](docs/adr/0309-a-queue-archive-subject-and-pull-request-title-keep-the-slug-while-it-fits-100-characters.md)).
+_Avoid_: Spec ID, spec prefix
+
 **History Sanitize Command**:
 The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts Legacy Archive Folders to Archive Records, removes retired families and rewrites their citations to Git Locators after the History Full Tag. `roundfix baseline update` runs the same planning for all eligible units at once ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive Command, unplanned deletion, cleanup command
