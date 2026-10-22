@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.106.0] - 2026-10-21
+
+### The archive rewrites the satisfied-by links it records as unproven
+
+- **`unproven` entries get the same link rebase as the outcome.** `roundfix archive` copies each unproven acceptance criterion (a `satisfied-by` declaration) into the Archive Record's `unproven` list, but it rebased only the outcome's relative links, so an entry that linked a file inside the removed Spec folder kept a link that pointed nowhere. Each entry is now read as text of the Spec's `_prd.md`: its relative destinations inside the removed folder name their promoted copy or become a Git Locator (`` `<path>@<commit>` ``), exactly like the outcome's. An entry without a link keeps its bytes (ADR-0308).
+- **The Record Link Repair points a promoted target at its copy.** `roundfix history sanitize` and `roundfix baseline update` repair the links of existing Archive Records. A link to a file that the record lists under `promoted` and whose `docs/references/<file>` copy the tree holds is now rewritten to a relative link to that copy, and the plan names the copy as its rewrite; every other link into the removed folder still becomes a Git Locator. The strict history check names the same copy.
+- **Unchanged.** Records with no such links keep their bytes, and the history-full tag requirement for Git Locators stays.
+- **Glossary.** **Legacy Link Rebase** and **Record Link Repair** describe the `unproven` entries and the promoted copy.
+
 ## [0.105.0] - 2026-10-21
 
 ### The Roundfix skill references agree with the CLI
