@@ -1,4 +1,0 @@
-Command: ['make', 'skills-sync-check']
-Exit: 0
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.263s

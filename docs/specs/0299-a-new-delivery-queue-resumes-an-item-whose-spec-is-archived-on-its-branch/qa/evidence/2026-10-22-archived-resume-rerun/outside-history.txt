@@ -1,4 +1,0 @@
-Command: ['git', 'log', '-1', '--format=%H%n%s', '--grep=(#619)']
-Exit: 0
-95d47ef10fcc33574547d797d55e0886c6950804
-feat: deliver 0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it (#619)

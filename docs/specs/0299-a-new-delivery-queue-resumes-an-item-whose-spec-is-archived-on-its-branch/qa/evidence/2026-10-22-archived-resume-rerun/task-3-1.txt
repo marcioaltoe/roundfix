@@ -1,2 +1,0 @@
-Command: ['go', 'vet', './internal/cli']
-Exit: 0

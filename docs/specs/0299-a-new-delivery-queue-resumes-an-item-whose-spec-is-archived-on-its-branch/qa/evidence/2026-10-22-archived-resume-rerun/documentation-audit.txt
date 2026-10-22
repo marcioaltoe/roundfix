@@ -1,5 +1,0 @@
-Prior F01 resolved: Archived Item Resume links ADR-0312; Delivery Revalidation exception defined. No additional introduced terms outside these two.
-All resume/refusal/retry/Park/exception phrases passed: docs/user-guide/commands/deliver.md
-All resume/refusal/retry/Park/exception phrases passed: .agents/skills/roundfix/references/deliver.md
-All resume/refusal/retry/Park/exception phrases passed: skills/roundfix/references/deliver.md
-Scan observed first-Run statements paired with archived-resume exceptions in all three deliver documents. Other revalidation mentions govern active Specs or unrelated authoring.

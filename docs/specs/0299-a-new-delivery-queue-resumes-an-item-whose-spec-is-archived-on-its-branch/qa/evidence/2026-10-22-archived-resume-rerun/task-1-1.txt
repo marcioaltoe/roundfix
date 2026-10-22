@@ -1,3 +1,0 @@
-Command: ['go', 'test', '-count=1', './skills']
-Exit: 0
-ok  	roundfix/skills	0.905s

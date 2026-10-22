@@ -1,3 +1,0 @@
-Command: ['./bin/roundfix', '--version']
-Exit: 0
-roundfix 0.109.0 (2b97f94e-dirty, built 2026-10-22 19:48:07 -0300)

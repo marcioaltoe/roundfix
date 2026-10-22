@@ -1,9 +1,0 @@
-command: /bin/sh -c for f in docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md; do n="$(tr -s '[:space:]' ' ' < "$f")"; for p in 'the owner resumes the item at review instead of revalidating it' 'is not an exact archive of the Spec' 'returns the item to .queued. and counts a retry' 'is not revalidated.' 'revalidation-failed., .archived-item-unproven., .secret-found' 'make the item branch hold the Spec folder or one exact archive commit of the Spec'; do printf '%s\n' "$n" | grep -q -- "$p" || { printf 'missing %s in %s\n' "$p" "$f" >&2; exit 1; }; done; done; c="$(tr -s '[:space:]' ' ' < CONTEXT.md)"; printf '%s\n' "$c" | grep -qF -- '**Archived Item Resume**:' || { echo 'missing glossary term' >&2; exit 1; }; printf '%s\n' "$c" | grep -qF -- 'It does not run for an Archived Item Resume.' || { echo 'missing revalidation revision' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
-exit: 0
-stdout:
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.135s
-ok  	roundfix/skills	0.993s
-ok  	roundfix/internal/docscontract	106.994s
-
-stderr:
