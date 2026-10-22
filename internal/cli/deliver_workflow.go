@@ -21,6 +21,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode/utf16"
 
 	"gopkg.in/yaml.v3"
 	"roundfix/internal/childexit"
@@ -1278,7 +1279,7 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if _, err := workflow.git.RunGit(ctx, gitRoot, append([]string{"add", "-A", "--"}, stagePaths...)...); err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("stage archived Spec: %w", err)
 	}
-	if err := workflow.commitQueueChange(ctx, gitRoot, specSlug, "docs: archive "+specSlug, false); err != nil {
+	if err := workflow.commitQueueChange(ctx, gitRoot, specSlug, archiveCommitSubject(specSlug), false); err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("commit archived Spec: %w", err)
 	}
 	head, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
@@ -1312,22 +1313,86 @@ func (workflow *commandDeliveryWorkflow) reconcileArchiveCommit(
 	return result, err
 }
 
+// specNumber returns the one to ten ASCII digits before the first hyphen.
+func specNumber(specSlug string) (string, bool) {
+	digits, _, ok := strings.Cut(specSlug, "-")
+	if !ok || len(digits) < 1 || len(digits) > 10 {
+		return "", false
+	}
+	for _, digit := range digits {
+		if digit < '0' || digit > '9' {
+			return "", false
+		}
+	}
+	return digits, true
+}
+
 // pullRequestRecordSubject returns the Pull Request Record Commit subject.
 func pullRequestRecordSubject(specSlug, number string) string {
 	identifier := ""
-	if digits, _, ok := strings.Cut(specSlug, "-"); ok && len(digits) >= 1 && len(digits) <= 10 {
-		ascii := true
-		for _, digit := range digits {
-			if digit < '0' || digit > '9' {
-				ascii = false
-				break
-			}
-		}
-		if ascii {
-			identifier = digits + " "
-		}
+	if digits, ok := specNumber(specSlug); ok {
+		identifier = digits + " "
 	}
 	return "docs: record pull request #" + number + " in the " + identifier + "Archive Record"
+}
+
+const queueHeaderLimit = 100
+const queueSquashReserve = " (#99999)"
+
+// queueHeaderLength counts UTF-16 code units, as commitlint does.
+func queueHeaderLength(header string) int {
+	return len(utf16.Encode([]rune(header)))
+}
+
+func archiveCommitSubject(specSlug string) string {
+	subject := "docs: archive " + specSlug
+	if queueHeaderLength(subject) <= queueHeaderLimit {
+		return subject
+	}
+	if number, ok := specNumber(specSlug); ok {
+		return "docs: archive the " + number + " Spec"
+	}
+	return "docs: archive the Spec"
+}
+
+// pullRequestTitle reads repository-authored text from the PRD's first heading,
+// stored in the Archive Record. Only fixed words, the Spec Number and a prefix
+// of that title reach the forge and, through squash merge, default-branch history.
+func pullRequestTitle(specSlug string, specTitle func() (string, error)) (string, error) {
+	limit := queueHeaderLimit - queueHeaderLength(queueSquashReserve)
+	title := "feat: deliver " + specSlug
+	if queueHeaderLength(title) <= limit {
+		return title, nil
+	}
+	text, err := specTitle()
+	if err != nil {
+		return "", fmt.Errorf("read Spec title: %w", err)
+	}
+	prefix, empty := "feat: deliver ", "feat: deliver the Spec"
+	if number, ok := specNumber(specSlug); ok {
+		prefix = "feat: deliver " + number + ": "
+		empty = "feat: deliver " + number
+	}
+	text = strings.Join(strings.Fields(text), " ")
+	budget := limit - queueHeaderLength(prefix)
+	units := 0
+	for index, char := range text {
+		units += utf16.RuneLen(char)
+		if units > budget {
+			text = text[:index]
+			if char != ' ' {
+				if space := strings.LastIndexByte(text, ' '); space >= 0 {
+					text = text[:space]
+				}
+			}
+			break
+		}
+	}
+	text = strings.TrimRight(text, " .,;:")
+	if text == "" {
+		return empty, nil
+	}
+	return prefix + text, nil
 }
 
 type deliveryCommitHookRefusalError struct {
@@ -1700,11 +1765,25 @@ func (workflow *commandDeliveryWorkflow) Publication(ctx context.Context, gitRoo
 	if remote == "" {
 		remote = "origin"
 	}
+	title, err := pullRequestTitle(specSlug, func() (string, error) {
+		_, destination, err := workflow.archivePaths(gitRoot, specSlug)
+		if err != nil {
+			return "", err
+		}
+		archived, err := spec.ReadArchivedSpec(filepath.Join(gitRoot, filepath.Dir(destination)), specSlug)
+		if err != nil {
+			return "", err
+		}
+		return archived.Record.Title, nil
+	})
+	if err != nil {
+		return delivery.Publication{}, fmt.Errorf("plan publication: %w", err)
+	}
 	return delivery.Publication{
 		Remote:     remote,
 		HeadBranch: branch,
 		BaseBranch: defaultBranch.Name,
-		Title:      "feat: deliver " + specSlug,
+		Title:      title,
 		Body:       "Delivers Spec " + specSlug + ".",
 	}, nil
 }

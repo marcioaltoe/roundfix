@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -145,3 +145,81 @@ that every reader of the two messages still works.
 - `_techspec.md` → Current behavior; API Contracts 1-6; Invariants 1-6; Testing Approach; Build Order 2
 - ADR-0302
 - ADR-0309
+
+
+## Result
+
+Implemented API Contracts 1–6 in `internal/cli/deliver_workflow.go`.
+`specNumber` now supplies the record subject without changing its output.
+Archive subjects retain fitting slugs and otherwise name the Spec Number.
+Publication titles reserve ` (#99999)`, count UTF-16 units, and lazily read
+the Archive Record title only for an over-budget slug. Whitespace collapse,
+word/rune cuts, trailing punctuation removal, empty-title forms and wrapped
+reader errors follow the TechSpec. A code comment names the repository-authored
+PRD heading's path through the Archive Record to the forge and squash history.
+The publication body keeps the complete slug.
+
+Added `internal/cli/deliver_queue_subject_test.go`; every top-level test starts
+with `t.Parallel()`. Git scenarios use `queueCommitTestHome`, disposable
+repositories and configuration, and `writeScriptFixture` hooks. No real-time
+waits or existing test/fixture changes were introduced.
+
+### Acceptance evidence
+
+- Header hook: `TestDeliveryWorkflowArchiveCommitPassesAHeaderLimitHook`
+  passed for a 100-character slug, returning an exact archive head with
+  `docs: archive the 0296 Spec` and a clean worktree.
+- Bounds and byte compatibility: the archive/title table tests passed at
+  86/87-unit and 77/78-unit boundaries, with long slugs, ten/eleven-digit
+  prefixes, absent/non-ASCII numbers, whitespace, punctuation, empty text,
+  word cuts and astral runes. Fitting titles never call the reader. Every
+  subject/title is checked against its UTF-16 budget; Spec 0278 produces the
+  specified 90-unit title.
+- Adoption: `TestDeliveryWorkflowAdoptsAnArchiveCommitWhateverItsSubject`
+  passed after a real hook refusal and hand commit under the old long
+  subject; retry returned that head, exactly one commit after the reviewed
+  head, with a clean worktree.
+- Readers: `TestQueueMessagesStayReadableBySquashReaders` passed for every
+  successful title table case with ` (#575)`, yielding number `575`, type
+  `feat`, minor impact and no breaking change; archive forms classify `docs`.
+- Existing contracts: unchanged record-subject, hook-limit, hook-refusal,
+  record-adoption, record-writing and publication tests passed in the
+  focused regression command below. Long-slug publication also passed with
+  both the built-in and a configured archive root; deleting the record
+  produced `plan publication: read Spec title:`.
+
+### Focused checks
+
+- Before implementation:
+  `go test ./internal/cli -run '^TestQueueArchiveSubjectKeepsTheSlugWhileItFits$' -count=1`
+  failed compilation because the three new message helpers were absent.
+- `go test ./internal/cli -run '^TestQueue(ArchiveSubject|PullRequestTitle|Messages)' -count=1`
+  — exit 0. An initial run exposed off-by-one expectations in four new
+  cases: the numbered prefix occupies 20 units, leaving 71; corrected those
+  expectations before this passing run.
+- `go test ./internal/cli -run '^TestDelivery(WorkflowArchiveCommitPassesAHeaderLimitHook|WorkflowAdoptsAnArchiveCommitWhateverItsSubject|PublicationTitleNamesTheSpecNumberForALongSlug)$' -count=1 -v`
+  — exit 0; all three scenarios passed.
+- `go test ./internal/cli -run '^Test(PullRequestRecordSubject|DeliveryQueueCommit|DeliveryWorkflowRecordCommit|DeliveryPublicationRequests|DeliveryWorkflowRecordsThePullRequest|DeliveryWorkflowAdoptsARecord)' -count=1 -v`
+  — exit 0; eight existing top-level regression tests passed.
+- After adding configured-root coverage:
+  `go test ./internal/cli -run '^TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug$' -count=1 -v`
+  — exit 0.
+- `GOOS=windows go test -c ./internal/cli -o /tmp/roundfix-task0296-02-cli.test.exe`
+  — exit 0 after the final test edit; compilation only, no Windows execution.
+- `git diff --check` — exit 0. A byte comparison against HEAD confirmed
+  `reconcileArchiveCommit`, `archiveCommitIsExact`, `commitQueueChange` and
+  `ResolveConflict` unchanged; `git diff --exit-code HEAD -- internal/delivery internal/spec internal/releaseplan`
+  also exited 0.
+
+Environment: the configured writable root contains a symlink, so commands
+required escalation to operate in the assigned resolved Run checkout.
+Only the workflow, the new test file and this Result were changed by this
+turn; the Task's pre-existing `in_progress` status was preserved. No follow-up
+outside this slice was identified. Declared Task Verification and repository
+Verification were not run and remain Daemon-owned. No commit, push or pull
+request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261022T014206Z_8044b8cc31aec528`
+- Source commit: `9fc4ffb020169ddb92cd06643de0fc38518c773c`
