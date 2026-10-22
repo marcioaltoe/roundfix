@@ -1,0 +1,91 @@
+Command: ['go', 'test', '-count=1', '-timeout', '10m', '-v', '-run', '^(TestANewQueueResumesAProvenArchivedItemAtReview|TestANewQueueParksAnUnprovenArchivedItem|TestANewQueueRevalidatesAnItemWithoutAnArchive|TestANewQueueParksAnArchivedItemProofError|TestARetryReturnsAnUnprovenArchivedItemToQueued|TestParkClassesAndNextActions|TestEveryBlockerHasAParkClass)$', './internal/delivery']
+Exit: 0
+=== RUN   TestANewQueueResumesAProvenArchivedItemAtReview
+=== PAUSE TestANewQueueResumesAProvenArchivedItemAtReview
+=== RUN   TestANewQueueParksAnUnprovenArchivedItem
+=== PAUSE TestANewQueueParksAnUnprovenArchivedItem
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== RUN   TestANewQueueParksAnArchivedItemProofError
+=== PAUSE TestANewQueueParksAnArchivedItemProofError
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== RUN   TestEveryBlockerHasAParkClass
+--- PASS: TestEveryBlockerHasAParkClass (0.01s)
+=== RUN   TestParkClassesAndNextActions
+=== RUN   TestParkClassesAndNextActions/linux-lane-container
+=== RUN   TestParkClassesAndNextActions/checks-timeout
+=== RUN   TestParkClassesAndNextActions/item-worktree-missing
+=== RUN   TestParkClassesAndNextActions/delivery-error
+=== RUN   TestParkClassesAndNextActions/archived-item-unproven
+=== RUN   TestParkClassesAndNextActions/secret-found
+=== RUN   TestParkClassesAndNextActions/run-unresolved
+=== RUN   TestParkClassesAndNextActions/review-findings
+=== RUN   TestParkClassesAndNextActions/corrective-spec-required
+=== RUN   TestParkClassesAndNextActions/gate-failed
+=== RUN   TestParkClassesAndNextActions/checks-failed
+=== RUN   TestParkClassesAndNextActions/revalidation-failed
+=== RUN   TestParkClassesAndNextActions/run-budget-exceeded
+=== RUN   TestParkClassesAndNextActions/queue-deadline
+=== RUN   TestParkClassesAndNextActions/review-blocked
+=== RUN   TestParkClassesAndNextActions/review-stale
+=== RUN   TestParkClassesAndNextActions/unauthorized
+=== RUN   TestParkClassesAndNextActions/flaky-check
+=== RUN   TestParkClassesAndNextActions/unknown
+--- PASS: TestParkClassesAndNextActions (0.00s)
+    --- PASS: TestParkClassesAndNextActions/linux-lane-container (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-timeout (0.00s)
+    --- PASS: TestParkClassesAndNextActions/item-worktree-missing (0.00s)
+    --- PASS: TestParkClassesAndNextActions/delivery-error (0.00s)
+    --- PASS: TestParkClassesAndNextActions/archived-item-unproven (0.00s)
+    --- PASS: TestParkClassesAndNextActions/secret-found (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-unresolved (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-findings (0.00s)
+    --- PASS: TestParkClassesAndNextActions/corrective-spec-required (0.00s)
+    --- PASS: TestParkClassesAndNextActions/gate-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/revalidation-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-budget-exceeded (0.00s)
+    --- PASS: TestParkClassesAndNextActions/queue-deadline (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-blocked (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-stale (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unauthorized (0.00s)
+    --- PASS: TestParkClassesAndNextActions/flaky-check (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unknown (0.00s)
+=== CONT  TestANewQueueResumesAProvenArchivedItemAtReview
+=== CONT  TestANewQueueParksAnArchivedItemProofError
+=== RUN   TestANewQueueParksAnArchivedItemProofError/proof_error
+=== PAUSE TestANewQueueParksAnArchivedItemProofError/proof_error
+=== RUN   TestANewQueueParksAnArchivedItemProofError/empty_head
+=== PAUSE TestANewQueueParksAnArchivedItemProofError/empty_head
+=== CONT  TestANewQueueParksAnArchivedItemProofError/proof_error
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== CONT  TestANewQueueParksAnArchivedItemProofError/empty_head
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestANewQueueParksAnUnprovenArchivedItem
+--- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued (0.00s)
+    --- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause (0.12s)
+    --- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker (0.22s)
+--- PASS: TestANewQueueParksAnUnprovenArchivedItem (0.25s)
+--- PASS: TestANewQueueParksAnArchivedItemProofError (0.00s)
+    --- PASS: TestANewQueueParksAnArchivedItemProofError/empty_head (0.22s)
+    --- PASS: TestANewQueueParksAnArchivedItemProofError/proof_error (0.26s)
+--- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive (0.00s)
+    --- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover (0.26s)
+    --- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof (0.31s)
+--- PASS: TestANewQueueResumesAProvenArchivedItemAtReview (0.36s)
+PASS
+suiteguard: guard cost: measured 2712 paths; fingerprint took 131.432125ms before and 80.404833ms after
+ok  	roundfix/internal/delivery	0.864s

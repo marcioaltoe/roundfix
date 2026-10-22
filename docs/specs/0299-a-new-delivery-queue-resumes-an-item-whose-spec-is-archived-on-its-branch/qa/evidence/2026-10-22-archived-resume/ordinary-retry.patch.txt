@@ -1,0 +1,29 @@
+--- internal/delivery/engine.go
++++ internal/delivery/engine.go
+@@ -505,7 +505,7 @@
+ 	if !itemFound {
+ 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue does not contain the item", specSlug)
+ 	}
+-	if engine.merges == nil && !prerequisitePark(item.Blocker) && !blockerMatches(item.Blocker, BlockerArchivedItemUnproven) && validationErr != nil {
++	if engine.merges == nil && !prerequisitePark(item.Blocker) && validationErr != nil {
+ 		return RetryResult{}, validationErr
+ 	}
+ 	if item.Stage != store.DeliveryStageParked {
+@@ -541,7 +541,7 @@
+ 		if observation.ClosedUnmerged {
+ 			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: pull request #%s was closed without merging; reopen it or merge the Spec into the default branch, then run roundfix deliver retry %s", specSlug, item.PullRequestNumber, specSlug)
+ 		}
+-		if !prerequisitePark(item.Blocker) && !blockerMatches(item.Blocker, BlockerArchivedItemUnproven) && validationErr != nil {
++		if !prerequisitePark(item.Blocker) && validationErr != nil {
+ 			return RetryResult{}, validationErr
+ 		}
+ 	}
+@@ -574,7 +574,7 @@
+ 		)
+ 	}
+ 
+-	if blockerMatches(item.Blocker, BlockerArchivedItemUnproven) || prerequisitePark(item.Blocker) {
++	if prerequisitePark(item.Blocker) {
+ 		blocker := item.Blocker
+ 		item.Stage = store.DeliveryStageQueued
+ 		pid, identity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, blocker)

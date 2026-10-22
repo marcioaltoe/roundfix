@@ -1,0 +1,12 @@
+command: ./bin/roundfix spec check 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch --strict
+exit: 0
+stdout:
+Spec 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch/_techspec.md Vocabulary Contract
+
+stderr:

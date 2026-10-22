@@ -1,0 +1,11 @@
+--- internal/cli/deliver_workflow.go
++++ internal/cli/deliver_workflow.go
+@@ -2036,7 +2036,7 @@
+ }
+ 
+ func (workflow *commandDeliveryWorkflow) archivePaths(gitRoot, specSlug string) (string, string, error) {
+-	specsRoot, err := resolveHistoricalSpecsRoot(workflow.loaded, gitRoot)
++	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+ 	if err != nil {
+ 		return "", "", err
+ 	}

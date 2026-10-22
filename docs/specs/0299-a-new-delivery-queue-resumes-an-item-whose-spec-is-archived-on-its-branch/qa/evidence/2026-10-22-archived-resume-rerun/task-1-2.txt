@@ -1,0 +1,3 @@
+Command: ['go', 'test', '-count=1', '-tags', 'docscontract', './internal/docscontract']
+Exit: 0
+ok  	roundfix/internal/docscontract	155.832s

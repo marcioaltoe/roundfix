@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 3m -v -run ^TestANewQueueResumesAProvenArchivedItemAtReview$ ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestANewQueueResumesAProvenArchivedItemAtReview
+=== PAUSE TestANewQueueResumesAProvenArchivedItemAtReview
+=== CONT  TestANewQueueResumesAProvenArchivedItemAtReview
+    archived_item_resume_test.go:37: review heads=[] archive heads=[]
+--- FAIL: TestANewQueueResumesAProvenArchivedItemAtReview (0.01s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 109.266583ms before and 75.001583ms after
+FAIL	roundfix/internal/delivery	0.488s
+FAIL
+
+stderr:

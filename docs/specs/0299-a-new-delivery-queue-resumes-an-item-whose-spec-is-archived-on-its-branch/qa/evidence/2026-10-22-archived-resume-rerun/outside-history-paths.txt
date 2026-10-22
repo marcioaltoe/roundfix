@@ -1,0 +1,24 @@
+Command: ['git', 'show', '--name-status', '--format=', '95d47ef10fcc33574547d797d55e0886c6950804']
+Exit: 0
+M	.agents/skills/roundfix/SKILL.md
+M	.agents/skills/roundfix/references/runs.md
+M	CONTEXT.md
+A	docs/history/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it.md
+M	docs/references/behavior-surfaces.json
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/_authorization.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/_prd.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/_tasks.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/_techspec.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/references/2026-10-20-runs-causes-reads-no-diagnostic-of-a-run-that-recorded-no-artifact-root.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/references/_index.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/task_01.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/task_02.md
+D	docs/specs/0292-runs-causes-reads-the-diagnostic-where-the-run-wrote-it/task_03.md
+M	docs/user-guide/commands/runs.md
+M	internal/cli/runs_causes.go
+M	internal/cli/runs_causes_test.go
+M	internal/runcause/report.go
+M	internal/runcause/report_test.go
+M	skills/roundfix/SKILL.md
+M	skills/roundfix/references/runs.md
+M	skills/testdata/owned-skill-versions.json

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,48 @@
+Delivery Base from merge-base of audited head and local fetched origin/main: 42f523c2dcc2a0c4511c6802c98c686f7ccb147c
+Audited head: 69680008faaf0de2fa27cf8744f6a1a2b596298f
+Express governed paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', 'skills/roundfix/SKILL.md']
+commit 7d58dd208ee6de91260c7ab4eb3561aba4f4e6ec
+command: git diff-tree --no-commit-id --name-only -r 7d58dd208ee6de91260c7ab4eb3561aba4f4e6ec
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch/task_01.md
+docs/user-guide/commands/deliver.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+undeclared paths: []
+Authorization already present in parent and byte-identical to current grant; established at af5819524442edac6a7fe6586cc701fefc29c49b
+Delivery target grant byte-identical: True
+governed changed set equals exact authorized set: True
+commit 5c7e429a697273bd6d214f5ae4cb894847bf1c8d
+command: git diff-tree --no-commit-id --name-only -r 5c7e429a697273bd6d214f5ae4cb894847bf1c8d
+docs/specs/0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch/task_02.md
+internal/delivery/archived_item_resume_test.go
+internal/delivery/engine.go
+internal/delivery/park_class.go
+internal/delivery/park_class_test.go
+undeclared paths: []
+commit 69680008faaf0de2fa27cf8744f6a1a2b596298f
+command: git diff-tree --no-commit-id --name-only -r 69680008faaf0de2fa27cf8744f6a1a2b596298f
+docs/specs/0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch/task_03.md
+internal/cli/deliver_archived_resume_test.go
+internal/cli/deliver_workflow.go
+undeclared paths: []
+Compared 790 protected files byte-for-byte with Delivery Base; mismatches: []
+Engine changes restricted to Retry, advanceItem, one blocker, proof types and dependency wiring: True
+Unchanged proof/inspection archiveCommitIsExact: True
+Unchanged proof/inspection archiveRetirementIsExact: True
+Unchanged proof/inspection reconcileArchiveCommit: True
+Unchanged proof/inspection InspectItem: True
+QA settlement unchanged .agents/skills/archive-spec/SKILL.md: True
+QA settlement unchanged .agents/skills/qa-gate/SKILL.md: True
+QA settlement unchanged .agents/skills/roundfix/SKILL.md: True
+QA settlement unchanged skills/archive-spec/SKILL.md: True
+QA settlement unchanged skills/qa-gate/SKILL.md: True
+QA settlement unchanged skills/roundfix/SKILL.md: True
+Roundfix skill versions ['0.1.127', '0.1.127'] → ['0.1.129', '0.1.129']
+Owned-skill record contains 0.1.129: True
+No added/renamed/deleted existing tests; no declared intentional breaks; CLI test file is new, base tests unchanged.
+No precondition, consequent-fix or derived Baseline pin changes occurred.

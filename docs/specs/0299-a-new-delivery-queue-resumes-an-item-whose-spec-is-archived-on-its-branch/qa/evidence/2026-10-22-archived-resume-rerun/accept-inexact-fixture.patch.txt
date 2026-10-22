@@ -1,0 +1,20 @@
+--- original test
++++ complete fake forge; assertions unchanged
+@@ -183,7 +183,7 @@
+ 	t.Parallel()
+ 	for _, name := range []string{"inexact_archive_commit", "folder_removed_without_archive", "no_removing_commit"} {
+ 		t.Run(name, func(t *testing.T) {
+-			home, repo, _, head, archiveHead := archivedResumeBranch(t, false, name)
++			home, repo, branch, head, archiveHead := archivedResumeBranch(t, false, name)
+ 			source := "docs/specs/" + implementTestSlug
+ 			cause := ""
+ 			switch name {
+@@ -194,7 +194,7 @@
+ 			case "no_removing_commit":
+ 				cause = "no commit on the item branch removed " + source + "/_prd.md"
+ 			}
+-			forge := &archivedResumeForge{}
++			forge := &archivedResumeForge{parkTestDeliveryFlow: parkTestDeliveryFlow{remoteHeads: map[string]string{branch: head}, pullRequests: map[string]delivery.PullRequest{"619": {Number: "619", State: "OPEN", HeadBranch: branch, HeadSHA: head}}}}
+ 			item := startArchivedResumeQueue(t, home, repo, forge)
+ 			if item.Stage != store.DeliveryStageParked || item.Blocker != "archived-item-unproven: "+cause {
+ 				t.Fatalf("item=%+v want cause %q", item, cause)

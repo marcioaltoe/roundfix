@@ -1,0 +1,24 @@
+command: go test -count=1 -timeout 3m -v -run ^TestARetryReturnsAnUnprovenArchivedItemToQueued$ ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+    archived_item_resume_test.go:149: retry Delivery Queue item: item workspace is required
+=== NAME  TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+    archived_item_resume_test.go:149: retry Delivery Queue item: item workspace is required
+--- FAIL: TestARetryReturnsAnUnprovenArchivedItemToQueued (0.00s)
+    --- FAIL: TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause (0.01s)
+    --- FAIL: TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker (0.01s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 115.576666ms before and 77.192334ms after
+FAIL	roundfix/internal/delivery	0.504s
+FAIL
+
+stderr:

@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 3m -v -run ^TestDeliverStartParksAnUnprovenArchivedItemBranch$/^inexact_archive_commit$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== PAUSE TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== CONT  TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit
+    deliver_archived_resume_test.go:200: item={SpecSlug:0001-widget-flow Position:0 Stage:parked Blocker:delivery-error: find or create pull request: unexpected creation for roundfix/deliver-0001-widget-flow-1111111111111111 Branch:roundfix/deliver-0001-widget-flow-1111111111111111 Worktree:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchinexact_archiv1245834925/001/worktrees/clone-674ff5b2/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b WorktreeProvisioned:true RunID: CandidateCommits:[a0daddcbc5a4772ce6df6fe30b90ff30f3a9ff24] PullRequestNumber: MergeCommit: RetryCount:0 Warning:} want cause "commit 7706a1f82d43 that removed docs/specs/0001-widget-flow is not an exact archive of the Spec"
+--- FAIL: TestDeliverStartParksAnUnprovenArchivedItemBranch (0.46s)
+    --- FAIL: TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit (0.46s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 97.935833ms before and 78.308917ms after
+FAIL	roundfix/internal/cli	1.080s
+FAIL
+
+stderr:

@@ -1,0 +1,11 @@
+--- internal/delivery/engine.go
++++ internal/delivery/engine.go
+@@ -959,7 +959,7 @@
+ 			if proof.Refusal != "" {
+ 				return engine.park(ctx, gitRoot, item, BlockerArchivedItemUnproven+": "+proof.Refusal)
+ 			}
+-			if proof.Archived {
++			if false && proof.Archived {
+ 				if proof.Head == "" {
+ 					return errors.New("prove archived item: archived item head is empty")
+ 				}

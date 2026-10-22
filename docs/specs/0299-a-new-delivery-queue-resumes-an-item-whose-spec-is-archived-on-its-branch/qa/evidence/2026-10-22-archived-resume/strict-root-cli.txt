@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 3m -v -run ^TestDeliverStartResumesAnArchivedItemBranchAtReview$/^only_active_Spec$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== PAUSE TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== CONT  TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec
+    deliver_archived_resume_test.go:162: item={SpecSlug:0001-widget-flow Position:0 Stage:parked Blocker:delivery-error: prove archived item: resolve archived item paths: specs.root resolved to "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartResumesAnArchivedItemBranchAtReviewonly_active_732313911/001/worktrees/clone-35f7a706/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b/docs/specs", which does not exist; create the directory or update specs.root Branch:roundfix/deliver-0001-widget-flow-1111111111111111 Worktree:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartResumesAnArchivedItemBranchAtReviewonly_active_732313911/001/worktrees/clone-35f7a706/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b WorktreeProvisioned:true RunID: CandidateCommits:[] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestDeliverStartResumesAnArchivedItemBranchAtReview (0.40s)
+    --- FAIL: TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec (0.40s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 98.333833ms before and 76.703375ms after
+FAIL	roundfix/internal/cli	1.016s
+FAIL
+
+stderr:

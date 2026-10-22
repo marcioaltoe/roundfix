@@ -1,0 +1,235 @@
+// Suite: archived item resume in a new Delivery Queue.
+// Boundary IN: the real SQLite store and engine stage transitions.
+// Boundary OUT: archive proof, workflow and forge operations use fakes.
+package delivery
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"reflect"
+	"strings"
+	"testing"
+
+	"roundfix/internal/store"
+)
+
+func TestANewQueueResumesAProvenArchivedItemAtReview(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newArchivedItemFixture(t, ctx)
+	const head = "proven-item-head"
+	fixture.workflow.archives["example"] = ArchiveResult{AlreadyArchived: true, Head: head}
+	fixture.dependencies.ArchivedItems = archivedItemProverFunc(func(ctx context.Context, workDir, slug string) (ArchivedItemProof, error) {
+		item := readDeliveryQueue(t, ctx, fixture.store, "/repo").Items[0]
+		if workDir != item.Worktree || slug != item.SpecSlug || !item.WorktreeProvisioned || item.Branch == "" {
+			t.Fatalf("proof before recorded workspace: workDir=%q slug=%q item=%+v", workDir, slug, item)
+		}
+		fixture.workflow.recordEvent(slug, "prove")
+		return ArchivedItemProof{Archived: true, ArchiveCommit: "archive-commit", Head: head}, nil
+	})
+	fixture.run(t, ctx)
+	item := readDeliveryQueue(t, ctx, fixture.store, "/repo").Items[0]
+	if item.Stage != store.DeliveryStageMerged || !reflect.DeepEqual(item.CandidateCommits, []string{head}) {
+		t.Fatalf("resumed item = %+v", item)
+	}
+	if !reflect.DeepEqual(fixture.workflow.reviewHeads, []string{head}) || !reflect.DeepEqual(fixture.workflow.archiveHeads, []string{head}) {
+		t.Fatalf("review heads=%v archive heads=%v", fixture.workflow.reviewHeads, fixture.workflow.archiveHeads)
+	}
+	if fixture.workflow.revalidations != 0 || len(fixture.workflow.runBranches) != 0 {
+		t.Fatalf("revalidations=%d runs=%v", fixture.workflow.revalidations, fixture.workflow.runBranches)
+	}
+	t.Logf("OBSERVED events=%v stage=%s reviewHeads=%v archiveHeads=%v revalidations=%d runBranches=%v",fixture.workflow.events["example"],item.Stage,fixture.workflow.reviewHeads,fixture.workflow.archiveHeads,fixture.workflow.revalidations,fixture.workflow.runBranches)
+ wantEvents := []string{"create-branch", "prove", "policy", "review", "archive", "gate", "authorization", "publication", "push", "pull-request", "checks", "authorization", "merge"}
+	if !reflect.DeepEqual(fixture.workflow.events["example"], wantEvents) {
+		t.Fatalf("events=%v, want %v", fixture.workflow.events["example"], wantEvents)
+	}
+	wantLog := "roundfix: Delivery Queue item example: item branch roundfix/deliver-example already archives the Spec at archive-commit; resuming at reviewing\n"
+	if !strings.Contains(fixture.log.String(), wantLog) {
+		t.Fatalf("log=%q, missing %q", fixture.log.String(), wantLog)
+	}
+}
+
+func TestANewQueueParksAnUnprovenArchivedItem(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newArchivedItemFixture(t, ctx)
+	const refusal = "archive also changes another Spec"
+	// Refusal wins even when the prover also reports an archive.
+	fixture.dependencies.ArchivedItems = archivedItemProverFunc(func(context.Context, string, string) (ArchivedItemProof, error) {
+		return ArchivedItemProof{Archived: true, Head: "unproven-head", Refusal: refusal}, nil
+	})
+	fixture.run(t, ctx)
+	queue := readDeliveryQueue(t, ctx, fixture.store, "/repo")
+	item := queue.Items[0]
+	if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerArchivedItemUnproven+": "+refusal {
+		t.Fatalf("unproven item=%+v", item)
+	}
+	park := ClassifyPark(queue, item)
+	if park.Class != ParkClassFinding || park.Next != "in /worktrees/example, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry example" {
+		t.Fatalf("classification=%+v", park)
+	}
+	t.Logf("OBSERVED refusal stage=%s blocker=%s",item.Stage,item.Blocker)
+ fixture.assertNoCandidateWork(t)
+}
+
+func TestANewQueueRevalidatesAnItemWithoutAnArchive(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"zero proof", "nil prover"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			fixture := newArchivedItemFixture(t, ctx)
+			if name == "zero proof" {
+				fixture.dependencies.ArchivedItems = archivedItemProverFunc(func(_ context.Context, workDir, slug string) (ArchivedItemProof, error) {
+					if workDir != "/worktrees/example" || slug != "example" {
+						t.Fatalf("proof arguments=%q %q", workDir, slug)
+					}
+					fixture.workflow.recordEvent(slug, "prove")
+					return ArchivedItemProof{}, nil
+				})
+			}
+			fixture.run(t, ctx)
+			item := readDeliveryQueue(t, ctx, fixture.store, "/repo").Items[0]
+			if item.Stage != store.DeliveryStageMerged || fixture.workflow.revalidations != 1 || len(fixture.workflow.runBranches) != 1 {
+				t.Fatalf("item=%+v revalidations=%d runs=%v", item, fixture.workflow.revalidations, fixture.workflow.runBranches)
+			}
+			want := []string{"create-branch", "revalidate", "run"}
+			if name == "zero proof" {
+				want = []string{"create-branch", "prove", "revalidate", "run"}
+			}
+			t.Logf("OBSERVED control events=%v stage=%s revalidations=%d runs=%d",fixture.workflow.events["example"],item.Stage,fixture.workflow.revalidations,len(fixture.workflow.runBranches))
+ if got := fixture.workflow.events["example"][:len(want)]; !reflect.DeepEqual(got, want) {
+				t.Fatalf("start events=%v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestANewQueueParksAnArchivedItemProofError(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name  string
+		proof ArchivedItemProof
+		err   error
+		cause string
+	}{
+		{name: "proof error", err: errors.New("cannot read item history"), cause: "cannot read item history"},
+		{name: "empty head", proof: ArchivedItemProof{Archived: true}, cause: "archived item head is empty"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			fixture := newArchivedItemFixture(t, ctx)
+			fixture.dependencies.ArchivedItems = archivedItemProverFunc(func(context.Context, string, string) (ArchivedItemProof, error) {
+				return tt.proof, tt.err
+			})
+			fixture.run(t, ctx)
+			item := readDeliveryQueue(t, ctx, fixture.store, "/repo").Items[0]
+			if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerDeliveryError+": prove archived item: "+tt.cause {
+				t.Fatalf("proof error item=%+v", item)
+			}
+			t.Logf("OBSERVED refusal stage=%s blocker=%s",item.Stage,item.Blocker)
+ fixture.assertNoCandidateWork(t)
+		})
+	}
+}
+
+func TestARetryReturnsAnUnprovenArchivedItemToQueued(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct{ name, suffix string }{
+		{name: "bare blocker"},
+		{name: "with cause", suffix: ": inexact archive"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			runStore := openDeliveryEngineStore(t, ctx)
+			item := seedParkedRetryItem(t, ctx, runStore, "/repo", "example", BlockerArchivedItemUnproven+tt.suffix)
+			// No workspace, recovery or revalidator is available to this retry.
+			engine := NewEngine(runStore, EngineDependencies{})
+			result, err := engine.Retry(ctx, "/repo", item.SpecSlug)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := readDeliveryQueue(t, ctx, runStore, "/repo").Items[0]
+			t.Logf("OBSERVED retry stage=%s retriesBefore=%d retriesAfter=%d blocker=%q",got.Stage,item.RetryCount,got.RetryCount,got.Blocker)
+ if result.Stage != store.DeliveryStageQueued || result.Blocker != item.Blocker || got.Stage != store.DeliveryStageQueued || got.RetryCount != item.RetryCount+1 || got.Blocker != "" {
+				t.Fatalf("retry result=%+v stored item=%+v", result, got)
+			}
+		})
+	}
+}
+
+type archivedItemProverFunc func(context.Context, string, string) (ArchivedItemProof, error)
+
+func (prove archivedItemProverFunc) ProveArchivedItem(ctx context.Context, workDir, slug string) (ArchivedItemProof, error) {
+	return prove(ctx, workDir, slug)
+}
+
+type archivedItemWorkflow struct {
+	*fakeDeliveryWorkflow
+	reviewHeads, archiveHeads []string
+	revalidations             int
+}
+
+func (workflow *archivedItemWorkflow) Review(ctx context.Context, workDir, slug, head string) (ReviewResult, error) {
+	workflow.reviewHeads = append(workflow.reviewHeads, head)
+	return workflow.fakeDeliveryWorkflow.Review(ctx, workDir, slug, head)
+}
+
+func (workflow *archivedItemWorkflow) Archive(ctx context.Context, workDir, slug, head string) (ArchiveResult, error) {
+	workflow.archiveHeads = append(workflow.archiveHeads, head)
+	return workflow.fakeDeliveryWorkflow.Archive(ctx, workDir, slug, head)
+}
+
+func (workflow *archivedItemWorkflow) Revalidate(_ context.Context, workDir, slug string, _ []string) (Revalidation, error) {
+	workflow.revalidations++
+	workflow.recordEvent(slug, "revalidate")
+	workflow.recordWorkdir("revalidate", workDir)
+	return Revalidation{}, nil
+}
+
+type archivedItemFixture struct {
+	store        *store.Store
+	dependencies EngineDependencies
+	workflow     *archivedItemWorkflow
+	boundary     *fakeDeliveryBoundary
+	log          bytes.Buffer
+}
+
+func newArchivedItemFixture(t *testing.T, ctx context.Context) *archivedItemFixture {
+	t.Helper()
+	fixture := &archivedItemFixture{store: openDeliveryEngineStore(t, ctx), workflow: &archivedItemWorkflow{fakeDeliveryWorkflow: newFakeDeliveryWorkflow()}, boundary: newFakeDeliveryBoundary()}
+	if _, err := fixture.store.CreateDeliveryQueue(ctx, "/repo", []string{"example"}); err != nil {
+		t.Fatal(err)
+	}
+	fixture.workflow.recordWorkspace = func(branch, worktree string) error {
+		if _, _, _, err := fixture.store.RecordDeliveryQueueItemWorktree(ctx, "/repo", "example", branch, worktree); err != nil {
+			return err
+		}
+		return fixture.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, "/repo", "example", true)
+	}
+	fixture.boundary.recordEvent = fixture.workflow.recordEvent
+	fixture.dependencies = EngineDependencies{
+		Workspace: fixture.workflow, Runner: fixture.workflow, Reviewer: fixture.workflow,
+		Archiver: fixture.workflow, Gate: fixture.workflow, Authorizer: fixture.workflow,
+		Publication: fixture.workflow, PullRequests: fixture.boundary,
+		Revalidator: fixture.workflow, Log: &fixture.log,
+	}
+	return fixture
+}
+
+func (fixture *archivedItemFixture) run(t *testing.T, ctx context.Context) {
+	t.Helper()
+	if _, err := NewEngine(fixture.store, fixture.dependencies).Run(ctx, "/repo"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (fixture *archivedItemFixture) assertNoCandidateWork(t *testing.T) {
+	t.Helper()
+	if fixture.workflow.revalidations != 0 || len(fixture.workflow.runBranches) != 0 || len(fixture.workflow.reviews) != 0 || len(fixture.workflow.archiveHeads) != 0 || fixture.boundary.pushEffects != 0 {
+		t.Fatalf("candidate work after refused proof: workflow=%+v boundary=%+v", fixture.workflow, fixture.boundary)
+	}
+}

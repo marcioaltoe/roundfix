@@ -1,0 +1,5 @@
+command: /bin/sh -c out="$(go test -count=1 -v -run '^(TestANewQueueResumesAProvenArchivedItemAtReview|TestANewQueueParksAnUnprovenArchivedItem|TestANewQueueRevalidatesAnItemWithoutAnArchive|TestANewQueueParksAnArchivedItemProofError|TestARetryReturnsAnUnprovenArchivedItemToQueued|TestParkClassesAndNextActions|TestEveryBlockerHasAParkClass)$' ./internal/delivery 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestANewQueueResumesAProvenArchivedItemAtReview TestANewQueueParksAnUnprovenArchivedItem TestANewQueueRevalidatesAnItemWithoutAnArchive TestANewQueueParksAnArchivedItemProofError TestARetryReturnsAnUnprovenArchivedItemToQueued TestParkClassesAndNextActions TestEveryBlockerHasAParkClass; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; grep -q 'archived-item-unproven' internal/delivery/park_class_test.go || { echo 'missing Park Class row' >&2; exit 1; }; GOOS=windows go vet ./internal/delivery
+exit: 0
+stdout:
+
+stderr:

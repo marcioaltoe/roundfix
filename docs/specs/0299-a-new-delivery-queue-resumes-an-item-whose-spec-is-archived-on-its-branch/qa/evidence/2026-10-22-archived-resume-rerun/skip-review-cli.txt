@@ -1,0 +1,13 @@
+Command: ['go', 'test', '-count=1', '-timeout', '10m', '-v', '-run', '^TestDeliverStartResumesAnArchivedItemBranchAtReview$/another_active_Spec', './internal/cli']
+Exit: 1
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== PAUSE TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== CONT  TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec
+    deliver_archived_resume_test.go:165: runs=0 reviews=[] created=0
+--- FAIL: TestDeliverStartResumesAnArchivedItemBranchAtReview (0.83s)
+    --- FAIL: TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec (0.83s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 125.161ms before and 90.52075ms after
+FAIL	roundfix/internal/cli	1.463s
+FAIL

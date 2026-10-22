@@ -1,0 +1,67 @@
+Command: ['go', 'test', '-count=1', '-timeout', '10m', '-v', '-run', '^(TestDeliverStartResumesAnArchivedItemBranchAtReview|TestDeliverStartParksAnUnprovenArchivedItemBranch|TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive|TestResumeAcceptsARealArchiveCommit|TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord|TestInspectItemReportsAnArchivedSpec|TestDeliverStartContinuesTheItemBranchThatHoldsWork|TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview|TestDeliveryPublicationRequestsNoCodeRabbitReview|TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug)$', './internal/cli']
+Exit: 0
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== PAUSE TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== PAUSE TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== RUN   TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+=== PAUSE TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+=== RUN   TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+=== PAUSE TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== PAUSE TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== PAUSE TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== RUN   TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug
+=== PAUSE TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug
+=== RUN   TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord
+=== PAUSE TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord
+=== RUN   TestInspectItemReportsAnArchivedSpec
+=== PAUSE TestInspectItemReportsAnArchivedSpec
+=== RUN   TestResumeAcceptsARealArchiveCommit
+=== PAUSE TestResumeAcceptsARealArchiveCommit
+=== CONT  TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== CONT  TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== CONT  TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug
+=== CONT  TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord
+=== CONT  TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== CONT  TestInspectItemReportsAnArchivedSpec
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_false
+=== CONT  TestResumeAcceptsARealArchiveCommit
+=== CONT  TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+=== CONT  TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit
+=== CONT  TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/codex
+--- PASS: TestInspectItemReportsAnArchivedSpec (0.33s)
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/claude
+--- PASS: TestResumeAcceptsARealArchiveCommit (0.71s)
+--- PASS: TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview (0.80s)
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/coderabbit
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/none
+--- PASS: TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug (1.40s)
+--- PASS: TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord (1.57s)
+--- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview (1.64s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/codex (0.49s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/claude (0.42s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/coderabbit (0.33s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/none (0.39s)
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_true
+--- PASS: TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive (1.77s)
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec
+--- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork (3.48s)
+    --- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_false (1.77s)
+    --- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_true (1.72s)
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit
+--- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview (4.12s)
+    --- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec (2.04s)
+    --- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec (2.07s)
+--- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch (4.49s)
+    --- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit (1.93s)
+    --- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive (1.64s)
+    --- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit (0.93s)
+PASS
+suiteguard: guard cost: measured 2713 paths; fingerprint took 102.090458ms before and 87.195792ms after
+ok  	roundfix/internal/cli	5.108s

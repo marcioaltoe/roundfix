@@ -1,0 +1,13 @@
+Command: ['go', 'test', '-count=1', '-timeout', '10m', '-v', '-run', '^TestDeliverStartResumesAnArchivedItemBranchAtReview$/another_active_Spec', './internal/cli']
+Exit: 1
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== PAUSE TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== CONT  TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec
+    deliver_archived_resume_test.go:162: item={SpecSlug:0001-widget-flow Position:0 Stage:parked Blocker:delivery-error: revalidate item: run strict Spec Consistency Check: read Spec "0001-widget-flow": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartResumesAnArchivedItemBranchAtReviewanother_acti736425122/001/worktrees/clone-c5d53375/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b/docs/specs/0001-widget-flow: no such file or directory Branch:roundfix/deliver-0001-widget-flow-1111111111111111 Worktree:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartResumesAnArchivedItemBranchAtReviewanother_acti736425122/001/worktrees/clone-c5d53375/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b WorktreeProvisioned:true RunID: CandidateCommits:[] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestDeliverStartResumesAnArchivedItemBranchAtReview (0.63s)
+    --- FAIL: TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec (0.62s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 112.509ms before and 86.620334ms after
+FAIL	roundfix/internal/cli	1.231s
+FAIL

@@ -1,0 +1,6 @@
+command: ./bin/roundfix qa-report accept docs/specs/0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch/qa/qa-report-2026-10-22.md
+exit: 1
+stdout:
+
+stderr:
+roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"

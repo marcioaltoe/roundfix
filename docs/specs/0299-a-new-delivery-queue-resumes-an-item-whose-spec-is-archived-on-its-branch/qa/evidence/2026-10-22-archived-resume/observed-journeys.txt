@@ -1,0 +1,187 @@
+command: go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0299-qa-is9_glzk/observation-overlay.json -count=1 -timeout 5m -v -run ^(TestDeliverStartResumesAnArchivedItemBranchAtReview|TestDeliverStartParksAnUnprovenArchivedItemBranch|TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive|TestANewQueueResumesAProvenArchivedItemAtReview|TestANewQueueParksAnUnprovenArchivedItem|TestANewQueueRevalidatesAnItemWithoutAnArchive|TestANewQueueParksAnArchivedItemProofError|TestARetryReturnsAnUnprovenArchivedItemToQueued|TestParkClassesAndNextActions)$ ./internal/cli ./internal/delivery
+exit: 0
+stdout:
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== PAUSE TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== PAUSE TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== RUN   TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+=== PAUSE TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+=== CONT  TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== CONT  TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+=== CONT  TestDeliverStartParksAnUnprovenArchivedItemBranch
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit
+=== NAME  TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive
+    deliver_archived_resume_test.go:239: OBSERVED stage=parked pr= implement=1 reviewedHeads=[] createdPRs=0 mergedHead= candidates=[] blocker=run-unresolved rootMissing=false
+    deliver_archived_resume_test.go:239: PUBLIC ./bin/roundfix deliver status exit=0 stdout:
+        0001-widget-flow	parked	run-unresolved	/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive2665136541/001/worktrees/clone-38916a85/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b
+        Park: 0001-widget-flow finding: resolve the blocker, then run roundfix deliver retry 0001-widget-flow
+        Limits: deadline none, retries per item none, concurrency 1, tokens none
+        Usage: no Runs recorded
+        Pending question: 0001-widget-flow parked run-unresolved
+        Answer: resolve the blocker, then run roundfix deliver retry 0001-widget-flow
+        stderr:
+--- PASS: TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive (0.49s)
+=== NAME  TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit
+    deliver_archived_resume_test.go:211: OBSERVED stage=parked pr= implement=0 reviewedHeads=[] createdPRs=0 mergedHead= candidates=[] blocker=archived-item-unproven: commit 0c1fa628366b that removed docs/specs/0001-widget-flow is not an exact archive of the Spec rootMissing=false
+    deliver_archived_resume_test.go:211: PUBLIC ./bin/roundfix deliver status exit=0 stdout:
+        0001-widget-flow	parked	archived-item-unproven: commit 0c1fa628366b that removed docs/specs/0001-widget-flow is not an exact archive of the Spec	/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchinexact_archiv663142946/001/worktrees/clone-2aa54eb6/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b
+        Park: 0001-widget-flow finding: in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchinexact_archiv663142946/001/worktrees/clone-2aa54eb6/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry 0001-widget-flow
+        Limits: deadline none, retries per item none, concurrency 1, tokens none
+        Usage: no Runs recorded
+        Pending question: 0001-widget-flow parked archived-item-unproven: commit 0c1fa628366b that removed docs/specs/0001-widget-flow is not an exact archive of the Spec
+        Answer: in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchinexact_archiv663142946/001/worktrees/clone-2aa54eb6/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry 0001-widget-flow
+        stderr:
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive
+=== NAME  TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec
+    deliver_archived_resume_test.go:173: OBSERVED stage=merged pr=619 implement=0 reviewedHeads=[920b9e3a2ed2e6b3181b67ecbf649e01ea72b575] createdPRs=0 mergedHead=920b9e3a2ed2e6b3181b67ecbf649e01ea72b575 candidates=[920b9e3a2ed2e6b3181b67ecbf649e01ea72b575] blocker=warning: cleanup failed: release merged Spec "0001-widget-flow" Runs: merge commit "merge-619" does not resolve to a commit rootMissing=false
+    deliver_archived_resume_test.go:173: PUBLIC ./bin/roundfix deliver status exit=0 stdout:
+        0001-widget-flow	merged	warning: cleanup failed: release merged Spec "0001-widget-flow" Runs: merge commit "merge-619" does not resolve to a commit	/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartResumesAnArchivedItemBranchAtReviewanother_acti4253065697/001/worktrees/clone-999a2e51/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b
+        Limits: deadline none, retries per item none, concurrency 1, tokens none
+        Usage: no Runs recorded
+        stderr:
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec
+=== NAME  TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive
+    deliver_archived_resume_test.go:211: OBSERVED stage=parked pr= implement=0 reviewedHeads=[] createdPRs=0 mergedHead= candidates=[] blocker=archived-item-unproven: item head 501786ea2ad0 holds neither docs/specs/0001-widget-flow nor an archive of the Spec rootMissing=false
+    deliver_archived_resume_test.go:211: PUBLIC ./bin/roundfix deliver status exit=0 stdout:
+        0001-widget-flow	parked	archived-item-unproven: item head 501786ea2ad0 holds neither docs/specs/0001-widget-flow nor an archive of the Spec	/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchfolder_removed3526857862/001/worktrees/clone-2a12fe4e/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b
+        Park: 0001-widget-flow finding: in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchfolder_removed3526857862/001/worktrees/clone-2a12fe4e/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry 0001-widget-flow
+        Limits: deadline none, retries per item none, concurrency 1, tokens none
+        Usage: no Runs recorded
+        Pending question: 0001-widget-flow parked archived-item-unproven: item head 501786ea2ad0 holds neither docs/specs/0001-widget-flow nor an archive of the Spec
+        Answer: in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchfolder_removed3526857862/001/worktrees/clone-2a12fe4e/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry 0001-widget-flow
+        stderr:
+=== RUN   TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit
+=== NAME  TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec
+    deliver_archived_resume_test.go:173: OBSERVED stage=merged pr=619 implement=0 reviewedHeads=[daf51013006b9269c041f90b1da9afa065b796eb] createdPRs=0 mergedHead=daf51013006b9269c041f90b1da9afa065b796eb candidates=[daf51013006b9269c041f90b1da9afa065b796eb] blocker=warning: cleanup failed: release merged Spec "0001-widget-flow" Runs: merge commit "merge-619" does not resolve to a commit rootMissing=true
+    deliver_archived_resume_test.go:173: PUBLIC ./bin/roundfix deliver status exit=0 stdout:
+        0001-widget-flow	merged	warning: cleanup failed: release merged Spec "0001-widget-flow" Runs: merge commit "merge-619" does not resolve to a commit	/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartResumesAnArchivedItemBranchAtReviewonly_active_767730642/001/worktrees/clone-877ead49/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b
+        Limits: deadline none, retries per item none, concurrency 1, tokens none
+        Usage: no Runs recorded
+        stderr:
+--- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview (1.26s)
+    --- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec (0.67s)
+    --- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec (0.59s)
+=== NAME  TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit
+    deliver_archived_resume_test.go:211: OBSERVED stage=parked pr= implement=0 reviewedHeads=[] createdPRs=0 mergedHead= candidates=[] blocker=archived-item-unproven: no commit on the item branch removed docs/specs/0001-widget-flow/_prd.md rootMissing=false
+    deliver_archived_resume_test.go:211: PUBLIC ./bin/roundfix deliver status exit=0 stdout:
+        0001-widget-flow	parked	archived-item-unproven: no commit on the item branch removed docs/specs/0001-widget-flow/_prd.md	/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchno_removing_co4051947947/001/worktrees/clone-97878cc9/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b
+        Park: 0001-widget-flow finding: in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchno_removing_co4051947947/001/worktrees/clone-97878cc9/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry 0001-widget-flow
+        Limits: deadline none, retries per item none, concurrency 1, tokens none
+        Usage: no Runs recorded
+        Pending question: 0001-widget-flow parked archived-item-unproven: no commit on the item branch removed docs/specs/0001-widget-flow/_prd.md
+        Answer: in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartParksAnUnprovenArchivedItemBranchno_removing_co4051947947/001/worktrees/clone-97878cc9/roundfix-deliver-0001-widget-flow-1111111111111111-d332dd0b, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry 0001-widget-flow
+        stderr:
+--- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch (1.37s)
+    --- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit (0.53s)
+    --- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive (0.40s)
+    --- PASS: TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit (0.45s)
+PASS
+suiteguard: guard cost: measured 2699 paths; fingerprint took 80.561917ms before and 72.331541ms after
+ok  	roundfix/internal/cli	1.824s
+=== RUN   TestANewQueueResumesAProvenArchivedItemAtReview
+=== PAUSE TestANewQueueResumesAProvenArchivedItemAtReview
+=== RUN   TestANewQueueParksAnUnprovenArchivedItem
+=== PAUSE TestANewQueueParksAnUnprovenArchivedItem
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== RUN   TestANewQueueParksAnArchivedItemProofError
+=== PAUSE TestANewQueueParksAnArchivedItemProofError
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== RUN   TestParkClassesAndNextActions
+=== RUN   TestParkClassesAndNextActions/linux-lane-container
+=== RUN   TestParkClassesAndNextActions/checks-timeout
+=== RUN   TestParkClassesAndNextActions/item-worktree-missing
+=== RUN   TestParkClassesAndNextActions/delivery-error
+=== RUN   TestParkClassesAndNextActions/archived-item-unproven
+=== RUN   TestParkClassesAndNextActions/secret-found
+=== RUN   TestParkClassesAndNextActions/run-unresolved
+=== RUN   TestParkClassesAndNextActions/review-findings
+=== RUN   TestParkClassesAndNextActions/corrective-spec-required
+=== RUN   TestParkClassesAndNextActions/gate-failed
+=== RUN   TestParkClassesAndNextActions/checks-failed
+=== RUN   TestParkClassesAndNextActions/revalidation-failed
+=== RUN   TestParkClassesAndNextActions/run-budget-exceeded
+=== RUN   TestParkClassesAndNextActions/queue-deadline
+=== RUN   TestParkClassesAndNextActions/review-blocked
+=== RUN   TestParkClassesAndNextActions/review-stale
+=== RUN   TestParkClassesAndNextActions/unauthorized
+=== RUN   TestParkClassesAndNextActions/flaky-check
+=== RUN   TestParkClassesAndNextActions/unknown
+--- PASS: TestParkClassesAndNextActions (0.00s)
+    --- PASS: TestParkClassesAndNextActions/linux-lane-container (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-timeout (0.00s)
+    --- PASS: TestParkClassesAndNextActions/item-worktree-missing (0.00s)
+    --- PASS: TestParkClassesAndNextActions/delivery-error (0.00s)
+    --- PASS: TestParkClassesAndNextActions/archived-item-unproven (0.00s)
+    --- PASS: TestParkClassesAndNextActions/secret-found (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-unresolved (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-findings (0.00s)
+    --- PASS: TestParkClassesAndNextActions/corrective-spec-required (0.00s)
+    --- PASS: TestParkClassesAndNextActions/gate-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/revalidation-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-budget-exceeded (0.00s)
+    --- PASS: TestParkClassesAndNextActions/queue-deadline (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-blocked (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-stale (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unauthorized (0.00s)
+    --- PASS: TestParkClassesAndNextActions/flaky-check (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unknown (0.00s)
+=== CONT  TestANewQueueResumesAProvenArchivedItemAtReview
+=== CONT  TestANewQueueParksAnArchivedItemProofError
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== RUN   TestANewQueueParksAnArchivedItemProofError/proof_error
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== CONT  TestANewQueueParksAnUnprovenArchivedItem
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== PAUSE TestANewQueueParksAnArchivedItemProofError/proof_error
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== RUN   TestANewQueueParksAnArchivedItemProofError/empty_head
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== PAUSE TestANewQueueParksAnArchivedItemProofError/empty_head
+=== CONT  TestANewQueueParksAnArchivedItemProofError/proof_error
+=== CONT  TestANewQueueParksAnArchivedItemProofError/empty_head
+=== NAME  TestANewQueueParksAnArchivedItemProofError/proof_error
+    archived_item_resume_test.go:132: OBSERVED refusal stage=parked blocker=delivery-error: prove archived item: cannot read item history
+=== NAME  TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+    archived_item_resume_test.go:156: OBSERVED retry stage=queued retriesBefore=0 retriesAfter=1 blocker=""
+=== NAME  TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+    archived_item_resume_test.go:156: OBSERVED retry stage=queued retriesBefore=0 retriesAfter=1 blocker=""
+=== NAME  TestANewQueueParksAnUnprovenArchivedItem
+    archived_item_resume_test.go:72: OBSERVED refusal stage=parked blocker=archived-item-unproven: archive also changes another Spec
+=== NAME  TestANewQueueParksAnArchivedItemProofError/empty_head
+    archived_item_resume_test.go:132: OBSERVED refusal stage=parked blocker=delivery-error: prove archived item: archived item head is empty
+--- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued (0.00s)
+    --- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker (0.03s)
+    --- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause (0.03s)
+=== NAME  TestANewQueueResumesAProvenArchivedItemAtReview
+    archived_item_resume_test.go:42: OBSERVED events=[create-branch prove policy review archive gate authorization publication push pull-request checks authorization merge] stage=merged reviewHeads=[proven-item-head] archiveHeads=[proven-item-head] revalidations=0 runBranches=map[]
+--- PASS: TestANewQueueParksAnArchivedItemProofError (0.00s)
+    --- PASS: TestANewQueueParksAnArchivedItemProofError/proof_error (0.03s)
+    --- PASS: TestANewQueueParksAnArchivedItemProofError/empty_head (0.03s)
+--- PASS: TestANewQueueParksAnUnprovenArchivedItem (0.03s)
+=== NAME  TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+    archived_item_resume_test.go:101: OBSERVED control events=[create-branch prove revalidate run policy review archive gate authorization publication push pull-request checks authorization merge] stage=merged revalidations=1 runs=1
+=== NAME  TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+    archived_item_resume_test.go:101: OBSERVED control events=[create-branch revalidate run policy review archive gate authorization publication push pull-request checks authorization merge] stage=merged revalidations=1 runs=1
+--- PASS: TestANewQueueResumesAProvenArchivedItemAtReview (0.03s)
+--- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive (0.00s)
+    --- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof (0.03s)
+    --- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover (0.03s)
+PASS
+suiteguard: guard cost: measured 2699 paths; fingerprint took 82.597125ms before and 75.741292ms after
+ok  	roundfix/internal/delivery	0.340s
+
+stderr:

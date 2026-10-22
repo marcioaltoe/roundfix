@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 3m -v -run ^TestANewQueueResumesAProvenArchivedItemAtReview$ ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestANewQueueResumesAProvenArchivedItemAtReview
+=== PAUSE TestANewQueueResumesAProvenArchivedItemAtReview
+=== CONT  TestANewQueueResumesAProvenArchivedItemAtReview
+    archived_item_resume_test.go:34: resumed item = {SpecSlug:example Position:0 Stage:parked Blocker:review-stale Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:true RunID:run-example CandidateCommits:[reviewed-example] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestANewQueueResumesAProvenArchivedItemAtReview (0.01s)
+FAIL
+suiteguard: guard cost: measured 2675 paths; fingerprint took 96.681833ms before and 75.9765ms after
+FAIL	roundfix/internal/delivery	0.475s
+FAIL
+
+stderr:

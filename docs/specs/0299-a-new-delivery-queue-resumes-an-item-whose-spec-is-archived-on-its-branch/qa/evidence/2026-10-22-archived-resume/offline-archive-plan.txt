@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch --plan --offline
+exit: 0
+stdout:
+archive plan for 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch: removes 35 file(s) (198132 bytes) and writes docs/history/specs/0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-22.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 24 file(s) (73049 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-22-a-new-delivery-queue-parks-an-item-whose-spec-is-archived-on-its-branch.md 3339 bytes: no advice (offline)
+promote with: roundfix archive 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch --promote <path>
+
+stderr:
