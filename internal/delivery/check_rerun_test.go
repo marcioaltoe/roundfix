@@ -280,7 +280,7 @@ func TestAnOldCheckAttemptCannotKeepResettingTheTimeout(t *testing.T) {
 	recovery := &fakeCheckRecovery{failures: []CheckFailure{outsideFailure(1), outsideFailure(1), outsideFailure(1), outsideFailure(1), outsideFailure(1), outsideFailure(1)}}
 	reports := []CheckReport{recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail")}
 	item, _, polls := exerciseCheckRecovery(t, recovery, reports)
-	if item.Blocker != BlockerChecksTimeout || polls != 6 || recovery.reruns != 1 {
+	if item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 5s" || polls != 6 || recovery.reruns != 1 {
 		t.Fatalf("item=%+v polls=%d reruns=%d", item, polls, recovery.reruns)
 	}
 }

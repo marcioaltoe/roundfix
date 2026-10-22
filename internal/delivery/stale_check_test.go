@@ -172,7 +172,7 @@ func TestStaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce(t *testing.T) {
 		reports[i] = recoveryReport("fail")
 	}
 	item, _, polls := exerciseCheckRecovery(t, recovery, reports)
-	if item.Blocker != BlockerChecksTimeout || recovery.reruns != 3 || polls != 6 {
+	if item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 5s" || recovery.reruns != 3 || polls != 6 {
 		t.Fatalf("item=%+v reruns=%d polls=%d", item, recovery.reruns, polls)
 	}
 }

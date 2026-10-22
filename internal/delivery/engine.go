@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"roundfix/internal/config"
 	"roundfix/internal/secretscan"
 	"roundfix/internal/store"
 )
@@ -49,9 +50,15 @@ const cleanupWarningPrefix = "warning: cleanup failed"
 var ErrItemWorktreeMissing = errors.New("item worktree and branch are missing")
 
 const (
-	defaultCheckTimeout  = 30 * time.Minute
+	defaultCheckTimeout  = config.DefaultDeliveryCheckTimeout
 	defaultCheckInterval = 15 * time.Second
 )
+
+// checksTimeoutBlocker is stored in the Run Database and printed by deliver
+// status. It contains only a config key and duration, never secret values.
+func checksTimeoutBlocker(timeout time.Duration) string {
+	return fmt.Sprintf("%s: current-head checks not settled within %s %s", BlockerChecksTimeout, config.DeliveryCheckTimeoutKey, timeout.String())
+}
 
 type RunOutcome string
 
@@ -1579,7 +1586,9 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 		}
 		remaining := deadline.Sub(engine.clock.Now())
 		if remaining <= 0 {
-			return engine.park(ctx, gitRoot, item, BlockerChecksTimeout)
+			// Parking leaves the Pull Request, CI runs and branch as they are;
+			// this deadline neither abandons nor cancels external work.
+			return engine.park(ctx, gitRoot, item, checksTimeoutBlocker(engine.checkTimeout))
 		}
 		wait := min(engine.checkInterval, remaining)
 		if err := engine.sleeper.Sleep(ctx, wait); err != nil {

@@ -48,6 +48,15 @@ const (
 	defaultSpecsRoot                = "docs/specs"
 )
 
+// DeliveryCheckTimeoutKey is an operator-only User Config setting.
+const DeliveryCheckTimeoutKey = "delivery.check_timeout"
+
+// DefaultDeliveryCheckTimeout bounds each check wait when unset.
+const DefaultDeliveryCheckTimeout = 60 * time.Minute
+
+// MaxDeliveryCheckTimeout is the largest configurable check wait.
+const MaxDeliveryCheckTimeout = 24 * time.Hour
+
 // DefaultProfileProofSetupTimeout bounds each disposable profile proof setup.
 const DefaultProfileProofSetupTimeout = 30 * time.Second
 
@@ -134,6 +143,7 @@ type PrePRReview struct {
 }
 
 type Delivery struct {
+	CheckTimeout   time.Duration
 	DerivedPaths   []DerivedPathDeclaration
 	ItemBinary     ItemBinaryDeclaration
 	LinuxLane      bool
@@ -388,6 +398,7 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type deliveryOverlay struct {
+	CheckTimeout   *durationValue            `yaml:"check_timeout"`
 	DerivedPaths   *[]DerivedPathDeclaration `yaml:"derived_paths"`
 	ItemBinary     *ItemBinaryDeclaration    `yaml:"item_binary"`
 	LinuxLane      *bool                     `yaml:"linux_lane"`
@@ -810,6 +821,7 @@ func Builtin() Config {
 		Specs: Specs{
 			Root: defaultSpecsRoot,
 		},
+		Delivery: Delivery{CheckTimeout: DefaultDeliveryCheckTimeout},
 		Runs: Runs{
 			MaxActive: defaultRunsMaxActive,
 			SlotWait:  2 * time.Hour,
@@ -1077,6 +1089,9 @@ resolve:
 }
 
 func Validate(config Config) error {
+	if config.Delivery.CheckTimeout <= 0 || config.Delivery.CheckTimeout > MaxDeliveryCheckTimeout {
+		return errors.New("delivery.check_timeout must be greater than 0 and at most 24h")
+	}
 	if config.Defaults.ProfileProofSetupTimeout <= 0 || config.Defaults.ProfileProofSetupTimeout > MaxProfileProofSetupTimeout {
 		return errors.New("defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m")
 	}
@@ -1626,6 +1641,11 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if err := prepareLightTierConfig(&document, warnings, source); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
+	// Repository settings, including the fetched default branch, cannot control
+	// the operator's wait. Remove even invalid values before strict decoding.
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"delivery", "check_timeout"}) {
+		warnings.warnIgnoredProjectSetting(DeliveryCheckTimeoutKey)
+	}
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "slot_wait"}) {
 		warnings.warnIgnoredProjectSetting("runs.slot_wait")
 	}
@@ -1789,6 +1809,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if source != ProfileSourceProject && overlay.Jev != nil && overlay.Jev.MonthlyCeilingUSD != nil {
 		config.Jev.MonthlyCeilingUSD = *overlay.Jev.MonthlyCeilingUSD
+	}
+	if source != ProfileSourceProject && overlay.Delivery != nil && overlay.Delivery.CheckTimeout != nil {
+		config.Delivery.CheckTimeout = overlay.Delivery.CheckTimeout.value
 	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths

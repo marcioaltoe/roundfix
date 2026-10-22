@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0298-the-delivery-queues-check-wait-is-configurable-default-60-minutes
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -166,3 +166,99 @@ wait keeps starting its own deadline.
 - ADR-0236
 - ADR-0304
 - ADR-0311
+
+
+## Result
+
+Implemented this Task's configuration, engine and CLI slice; Daemon Verification
+and settlement remain pending. The initial worktree change was this Task's
+Daemon-owned `in_progress` status, which this turn preserved.
+
+- Added the exported key/default/maximum constants, `Delivery.CheckTimeout`,
+  duration overlay, 60-minute built-in value and exact range validation.
+  Project Config removes the key before decoding and warns; the overlay also
+  refuses to apply it from that source. `DeliveryConfigAtCommit` uses
+  `ResolveConfigProposal`, so fetched default-branch Project Config reaches
+  the same removal. Init templates are unchanged.
+- The engine default uses the config constant. Deadline parking stores
+  `checks-timeout: current-head checks not settled within delivery.check_timeout <duration>`.
+  Only the key and duration reach the Run Database blocker and status output;
+  no secret is included. Parking leaves the Pull Request, CI runs and branch
+  in place and cancels or abandons none of them.
+- Extracted `commandDeliveryEngineDependencies` without changing its workflow
+  or GitHub CLI construction; it passes the loaded check timeout beside the
+  existing Run Slot Wait.
+- Declared existing-test break applied only to the five named timeout
+  assertions: the two engine tests now expect the literal `2s` blocker, the
+  blocked merge-state test `3s`, and the old-attempt and stale-rerun tests `5s`.
+  Their inputs, polling and other assertions are unchanged. No other existing
+  tests, goldens or fixtures changed.
+
+Acceptance evidence from focused checks:
+
+| Criterion | Evidence |
+| --- | --- |
+| Default wait and environment park | `TestTheCheckWaitDefaultsToSixtyMinutes` passed: exactly 60 fake minutes, 241 polls, the literal `1h0m0s` blocker persisted, and environment Park Class. |
+| User value reaches both waits | `TestDeliveryCheckTimeoutIsReadFromUserConfig`, `TestTheDeliveryEngineReceivesTheConfiguredCheckWait`, `TestTheCheckWaitUsesTheConfiguredDuration` and `TestThePullRequestHeadWaitUsesTheCheckWait` passed: absent/45m/24h loading, default/45m dependency wiring with independent 90m slot wait, and both waits bounded at exactly 45 fake minutes. |
+| Project source and bounds | `TestProjectConfigCannotSetTheDeliveryCheckTimeout` passed for 0, 5m, -1h and invalid with exact warning and User Config 45m preserved. `TestDeliveryCheckTimeoutRefusesAValueOutsideItsBounds` passed for 0, 0s, -1m and 24h1s with exact range error and soon with invalid-duration decoding. |
+| Independent deadlines and bounded restart | `TestEachCheckWaitStartsItsOwnDeadline` passed: first wait merges at poll 161 after 40 fake minutes, second parks 45 minutes after its own start. Existing `TestCheckRerunRestartsTheTimeout`, `TestAnOldCheckAttemptCannotKeepResettingTheTimeout` and `TestStaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce` passed. All three deadline assignments and `timeoutRestarted` logic are unchanged. |
+
+Commands and outcomes:
+
+- Red starting signal: `rtk proxy go test ./internal/config -run '^TestDeliveryCheckTimeoutIsReadFromUserConfig$' -count=1`
+  failed to compile because the new constants and field were absent.
+- An initial focused run reported Go vet's suspect-or diagnostic for a
+  redundant comparison against equal default constants; removed the redundant
+  comparison, retaining the separate config constant-equality assertion.
+- Final focused regression command:
+  `rtk proxy go test -count=1 -run 'CheckWait|DeliveryCheckTimeout|PersistentCheckReadErrorsParkAtTheDeadline|ChecksTimeoutParksTheItem|ABlockedMergeStateParksAtTheChecksTimeout|AnOldCheckAttemptCannotKeepResettingTheTimeout|StaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce|CheckRerunRestartsTheTimeout|AConflictingPullRequestStopsTheCheckWaitAtOnce' ./internal/config ./internal/delivery ./internal/cli`
+  exited 0 for all three packages. This includes all eight new top-level
+  tests, the five moved assertions and the unchanged re-run/conflict checks.
+- Windows test compilation: created a disposable output directory with
+  `task_windows_dir=$(mktemp -d /tmp/roundfix-check-wait-windows.XXXXXX)`, then
+  `GOOS=windows rtk proxy go test -c -o "$task_windows_dir/" ./internal/config ./internal/delivery ./internal/cli`
+  exited 0. No Windows binary was executed.
+- `rtk proxy git diff --check` exited 0. Diff inspection confirmed only this
+  Task's declared implementation/test paths and this Task file changed.
+
+Environment: normal execution refused the symlinked writable root; commands
+ran with authorized escalation in the resolved Run checkout. No host config,
+forge, real-time wait, commit, push or Pull Request was used. No follow-up
+outside this slice was found. The declared Verification, full delivery suite,
+Windows vet, status regression and repository gates were not run by this
+Agent; the Daemon owns them and Task settlement.
+
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon diagnostic artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261022T163107Z_e127f4e4a764d3ab/verification/batch-002-attempt-1.log`.
+The reported failure was the Behavior Surface Record's stale config-key
+fingerprint: this Task adds the `check_timeout` YAML tag after task_01's
+record was generated. The owning contract computes its config-key surface
+from production YAML struct tags, so this is derived fallout of this Task's
+new key.
+
+Ran the exact generator already sanctioned by this Spec's `_authorization.md`:
+`rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+— exit 0. This regenerated `docs/references/behavior-surfaces.json`; reviewed
+the diff and confirmed that only its `config keys` fingerprint changed. No
+fingerprint was edited by hand, no contract was weakened, and no other Task
+file or source was changed in this feedback turn.
+
+Focused confirmation without record mode:
+`rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -count=1`
+— exit 0. `rtk proxy git diff --check` also exited 0.
+
+This adds the generated Behavior Surface Record to this Task's implementation
+fallout. The earlier implementation evidence remains applicable because no
+Go source or test changed in this feedback turn. Task status remains
+Daemon-owned and unchanged; the full configured Verification sequence and
+settlement remain pending with the Daemon. No declared Verification command,
+`make verify-changed`, commit, push or Pull Request was run by this Agent.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/references/behavior-surfaces.json`
