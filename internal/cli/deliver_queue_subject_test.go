@@ -52,6 +52,7 @@ func queuePullRequestTitleCases() []struct{ name, slug, title, want string } {
 	long := "0296-" + strings.Repeat("x", 95)
 	return []struct{ name, slug, title, want string }{
 		{"77 units", "0296-" + strings.Repeat("x", 72), "", "feat: deliver 0296-" + strings.Repeat("x", 72)},
+		{"77 units non ASCII", "0296-" + strings.Repeat("é", 72), "", "feat: deliver 0296-" + strings.Repeat("é", 72)},
 		{"78 units", "0296-" + strings.Repeat("x", 73), "A useful title", "feat: deliver 0296: A useful title"},
 		{"0278", "0278-a-fixed-round-2-finding-gets-one-correction-review-and-the-plan-names-only-what-it-delivers", "A fixed round-2 finding gets one Correction Review, and the plan names only what it delivers", "feat: deliver 0278: A fixed round-2 finding gets one Correction Review, and the plan names"},
 		{"full stop", long, "A useful title.", "feat: deliver 0296: A useful title"},
@@ -77,13 +78,13 @@ func TestQueuePullRequestTitleKeepsTheSlugWhileItFits(t *testing.T) {
 			calls := 0
 			got, err := pullRequestTitle(tc.slug, func() (string, error) {
 				calls++
-				if tc.name == "77 units" {
+				if tc.want == "feat: deliver "+tc.slug {
 					t.Fatal("fitting slug called title reader")
 				}
 				return tc.title, nil
 			})
 			wantCalls := 1
-			if tc.name == "77 units" {
+			if tc.want == "feat: deliver "+tc.slug {
 				wantCalls = 0
 			}
 			if err != nil || got != tc.want || calls != wantCalls || !utf8.ValidString(got) || len(utf16.Encode([]rune(got+" (#99999)"))) > 100 {

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -78,3 +78,43 @@ None. The Task changes one test file and no contract another package reads.
 
 - `_techspec.md` → API Contract 2
 - `task_03.md` → Requirement 3
+
+## Result
+
+Added `77 units non ASCII` with `"0296-" + strings.Repeat("é", 72)` and
+expected title `"feat: deliver " + slug`. The slug has 77 UTF-16 units and
+149 bytes. Both the reader refusal and expected read count now derive from
+`tc.want == "feat: deliver "+tc.slug`; every previous case and the reader-error
+subtest retain their expectations. No production code or other test changed.
+
+Focused evidence for acceptance criterion 1 and Requirements 1–3:
+
+- `go test -count=1 -v -run '^TestQueuePullRequestTitleKeepsTheSlugWhileItFits$/.' ./internal/cli`
+  exited 0. All 17 table cases and `reader_error` passed, including
+  `77_units_non_ASCII` and the existing `77_units`; fitting slugs read no title.
+- `go test -count=1 -v -run '^TestQueueMessagesStayReadableBySquashReaders$/.' ./internal/cli`
+  exited 0. All shared-table reader cases passed, including
+  `title/77_units_non_ASCII`, which preserves squash number `575`, type `feat`,
+  minor impact and no breaking change.
+
+Negative-control evidence for acceptance criterion 2 and Requirement 4:
+
+- Extracted `git archive HEAD` into a Python-managed temporary directory under
+  `/private/tmp`, copied only the changed test file into it, and replaced the
+  single `return len(utf16.Encode([]rune(header)))` with `return len(header)`
+  in that copy's `queueHeaderLength`.
+- There, `go test -count=1 -v -run '^TestQueuePullRequestTitleKeepsTheSlugWhileItFits$' ./internal/cli`
+  exited 1. Only `77_units_non_ASCII` failed, reporting
+  `deliver_queue_subject_test.go:82: fitting slug called title reader`;
+  the ASCII boundary case and every other title subtest passed.
+- The temporary-directory context removed the archive copy, and an explicit
+  existence check confirmed removal. The proof wrote nothing under this checkout.
+
+The checkout initially contained only the Daemon's `pending` to `in_progress`
+status change in this Task file. Implementation edits are limited to
+`internal/cli/deliver_queue_subject_test.go` and this Result section.
+The sandbox rejected the symlinked checkout path; focused work used its resolved
+physical path with authorized escalation. Declared Verification, Windows vet,
+repository Verification and terminal settlement remain for the Daemon; none
+were run here. Task status, checkboxes, graph and other Task files are unchanged
+by this turn. No commit, push or pull request was made.
