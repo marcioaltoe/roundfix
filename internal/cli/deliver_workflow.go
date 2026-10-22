@@ -56,6 +56,10 @@ var deliveryPullRequestNumber = regexp.MustCompile(`^[1-9][0-9]{0,9}$`)
 const deliveryBranchPrefix = "roundfix/deliver-"
 
 func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) deliveryEngine {
+	return delivery.NewEngine(runStore, commandDeliveryEngineDependencies(runStore, loaded))
+}
+
+func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig.Loaded) delivery.EngineDependencies {
 	github := delivery.NewGitHubCLI(loaded.GitRoot)
 	workflow := &commandDeliveryWorkflow{
 		store:  runStore,
@@ -63,7 +67,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		git:    preflight.ExecGitRunner{},
 		gh:     github,
 	}
-	return delivery.NewEngine(runStore, delivery.EngineDependencies{
+	return delivery.EngineDependencies{
 		Merges:         workflow,
 		Corrections:    workflow,
 		SecretRewrites: workflow,
@@ -84,8 +88,9 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Prerequisites:  workflow,
 		RunSlots:       workflow,
 		RunSlotWait:    loaded.Config.Runs.SlotWait,
+		CheckTimeout:   loaded.Config.Delivery.CheckTimeout,
 		Log:            os.Stderr,
-	})
+	}
 }
 
 func (workflow *commandDeliveryWorkflow) ObserveMerge(ctx context.Context, gitRoot string, item store.DeliveryQueueItem) (delivery.MergeObservation, error) {

@@ -628,7 +628,7 @@ func TestPersistentCheckReadErrorsParkAtTheDeadline(t *testing.T) {
 	}
 
 	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
-	if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerChecksTimeout {
+	if item.Stage != store.DeliveryStageParked || item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 2s" {
 		t.Fatalf("check-read-error item = %+v, want parked as checks-timeout", item)
 	}
 	if clock.sleeps != 2 {
@@ -660,7 +660,7 @@ func TestChecksTimeoutParksTheItem(t *testing.T) {
 	}
 
 	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
-	if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerChecksTimeout {
+	if item.Stage != store.DeliveryStageParked || item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 2s" {
 		t.Fatalf("timed-out item = %+v, want parked as checks-timeout", item)
 	}
 }

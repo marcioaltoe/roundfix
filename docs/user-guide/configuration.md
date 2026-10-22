@@ -434,6 +434,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
 | `runs.slot_wait` | `2h` | How long the Delivery Queue waits for a Run slot, capped by the queue deadline. Go duration; `0` parks at once. User Config only; Project Config is ignored with a warning. |
+| `delivery.check_timeout` | `60m` | Bounds each Delivery Queue Check Wait for current-head checks. Go duration greater than 0 and at most 24h. User Config only; Project Config is ignored with a warning. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
 | `openrouter.light_models` | `[deepseek/deepseek-v4.1-flash]` | User Config list of `<author>/<slug>` OpenRouter models for light Tasks. An empty list turns the tier off; subscription-rule refusals fail validation. Project Config is ignored with a warning. |
 | `openrouter.implement_monthly_ceiling_usd` | `10` | Finite positive User Config ceiling in US dollars for light implementation spend. Project Config is ignored with a warning. |
@@ -816,6 +817,37 @@ verification when acpx delivered a parsed prompt result before that exit
 with the Settle Command. For latency-sensitive setups, configure direct
 adapter binaries in acpx config so default adapters do not launch through
 `npx -y` on first use.
+
+## Delivery Queue check wait
+
+`delivery.check_timeout` bounds each Check Wait of the Delivery Queue: the
+wait of an item in `checking` for its current-head checks and a mergeable
+state, and the wait for an existing Pull Request to report the candidate head.
+It is a Go duration, default `60m`, greater than `0` and at most `24h`. For
+example:
+
+```yaml
+delivery:
+  check_timeout: 90m
+```
+
+Each wait starts its own deadline, and a re-run of a failed check restarts it
+once. At the deadline of the `checking` wait the item parks as
+`checks-timeout: current-head checks not settled within
+delivery.check_timeout <duration>`, with the duration in Go's form such as
+`1h0m0s`. At the deadline of the Pull Request head wait, publication fails
+with `find or create pull request: PR Head Branch is at "<sha>", expected
+"<sha>"` instead of parking `checks-timeout`. `0`, a negative value or a
+value above `24h` fails configuration validation with
+`delivery.check_timeout must be greater than 0 and at most 24h`.
+
+Only User Config can set `delivery.check_timeout`. A Project Config value, in
+the checkout or on the fetched default branch, is ignored with this warning:
+`config: delivery.check_timeout in Project Config is ignored; set
+delivery.check_timeout in User Config`. A Queue Owner or `roundfix deliver
+retry` reads the value when it starts; an owner already running keeps the
+value it read. An older Roundfix binary refuses a User Config that sets
+`delivery.check_timeout` as an unknown key; the default needs no setting.
 
 ## Linux Lane
 
