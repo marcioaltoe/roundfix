@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -122,3 +122,30 @@ None. This Task changes documentation, the skill mirrors, the skill version reco
 - `_techspec.md` → API Contract 7; Build Order 1
 - ADR-0302
 - ADR-0309
+
+## Result
+
+Implemented the documentation slice for the archive commit subject and pull
+request title bounds. The deliver guide and both Roundfix deliver references
+now state the slug and Spec Number forms, the 100 and 91 character bounds, the
+UTF-16 counting rule, the squash suffix reservation, the Archive Record title
+cut, and the full-slug pull request body. The canonical `archive-spec` skill
+now documents the Spec Number archive subject fallback, with both owned skills
+raised from `roundfix` 0.1.124 to 0.1.125 and `archive-spec` 0.0.13 to 0.0.14;
+`make skills-sync` produced byte-identical mirrors. `CONTEXT.md` now defines
+Spec Number and links ADR-0302 and ADR-0309.
+
+Focused evidence:
+
+- `make skills-sync` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed; `skills/testdata/owned-skill-versions.json` records both new versions.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed; `docs/references/behavior-surfaces.json` has the new `deliver.md` fingerprint.
+- Focused phrase checks passed for all three deliver documents, both archive-spec skill copies, and the glossary links. Canonical skills and synced mirrors are byte-identical; `git diff --check` passed.
+- The required wording sweep found live fallback wording only in the updated deliver documents and archive-spec skills. Remaining old-form mentions are source context in the Spec PRD, TechSpec, ADR-0309, task files, and the historical squash-subject reference; those files are outside this Task's scope and remain unchanged.
+
+The daemon-owned `## Verification` commands were not run, and the Task status remains daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261022T014206Z_8044b8cc31aec528`
+- Source commit: `dfff75bdd35b452bedb50f37e11d97e0c99be524`
