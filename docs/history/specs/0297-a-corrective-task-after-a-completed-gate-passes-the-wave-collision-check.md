@@ -27,6 +27,7 @@ regeneration:
 promoted: []
 relinked:
   - docs/backlog/2026-10-22-a-qa-precondition-refusal-report-records-no-audited-commit.md
+pull_request: "632"
 ---
 
 # A corrective Task after a completed gate passes the Wave collision check
