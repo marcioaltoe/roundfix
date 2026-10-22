@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.109.0] - 2026-10-22
+
+### The Delivery Queue's check wait is a User Config duration, 60 minutes by default
+
+- **`delivery.check_timeout` sets the Check Wait.** Each Check Wait of the Delivery Queue (an item in `checking` waiting for its current-head checks and a mergeable state, and publication waiting for an existing Pull Request to report the candidate head) lasts User Config `delivery.check_timeout`, a Go duration. It starts its own deadline and restarts once when the queue re-runs a failed check. A Queue Owner or `roundfix deliver retry` reads it when it starts.
+- **The default rises from 30 to 60 minutes.** This is a declared behavior change for every repository that sets nothing; 60 minutes is the job timeout of Roundfix's own CI Verification gate.
+- **Bounded and User Config only.** A value of `0`, a negative value or one above `24h` fails configuration validation with `delivery.check_timeout must be greater than 0 and at most 24h`. A value in Project Config, in the checkout or on the fetched default branch, is ignored with the warning `config: delivery.check_timeout in Project Config is ignored; set delivery.check_timeout in User Config`.
+- **The park names what it waited.** At the deadline of the `checking` wait the item parks as `checks-timeout: current-head checks not settled within delivery.check_timeout <duration>`, the duration in Go's form such as `1h0m0s`. To give a slow CI more time, raise the value in User Config and run `roundfix deliver retry <slug>`.
+- The configuration guide, the `deliver` guide, the Roundfix skill reference (skill version 0.1.127) and the glossary (**Check Wait**) describe the key.
+
 ## [0.108.0] - 2026-10-22
 
 ### The Wave collision finding names the edge that resolves it
