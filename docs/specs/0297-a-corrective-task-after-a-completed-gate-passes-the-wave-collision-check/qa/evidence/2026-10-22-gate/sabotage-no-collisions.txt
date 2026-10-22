@@ -1,0 +1,65 @@
+Mutation no-collisions
+internal/spec/collision.go
+replace '\troot, err := collisionRepoRoot(repoRoot)' with '\treturn nil, nil\n\troot, err := collisionRepoRoot(repoRoot)'
+
+$ go test -count=1 -v -run ^TestWaveCollisionNamesTheEdgeThatOrdersThePair$ ./internal/spec
+=== RUN   TestWaveCollisionNamesTheEdgeThatOrdersThePair
+=== PAUSE TestWaveCollisionNamesTheEdgeThatOrdersThePair
+=== CONT  TestWaveCollisionNamesTheEdgeThatOrdersThePair
+=== RUN   TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+=== PAUSE TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+=== RUN   TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+=== PAUSE TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+=== CONT  TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+=== CONT  TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+=== NAME  TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+    collision_edge_test.go:50: Collisions = []spec.WaveCollision(nil), <nil>
+=== NAME  TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+    collision_edge_test.go:50: Collisions = []spec.WaveCollision(nil), <nil>
+--- FAIL: TestWaveCollisionNamesTheEdgeThatOrdersThePair (0.00s)
+    --- FAIL: TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order (0.01s)
+    --- FAIL: TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order (0.01s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 74.439666ms before and 67.688459ms after
+FAIL	roundfix/internal/spec	0.399s
+FAIL
+
+
+exit: 1
+$ go test -count=1 -v -run ^TestWaveCollisionFindingNamesTheResolvingEdge$ ./internal/speccheck
+=== RUN   TestWaveCollisionFindingNamesTheResolvingEdge
+=== PAUSE TestWaveCollisionFindingNamesTheResolvingEdge
+=== CONT  TestWaveCollisionFindingNamesTheResolvingEdge
+    wave_collision_edge_test.go:55: findings = []speccheck.Finding(nil)
+--- FAIL: TestWaveCollisionFindingNamesTheResolvingEdge (0.03s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 78.492583ms before and 70.11475ms after
+FAIL	roundfix/internal/speccheck	0.443s
+FAIL
+
+
+exit: 1
+$ go test -count=1 -v -run ^TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph$ ./internal/daemon
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== NAME  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+    qa_gate_wave_collision_test.go:137: gate findings = [], want only "SC-WAVE-COLLISION: Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions.test.ts (declared context; prior Run settlement commit); add a `needs` edge from Task task_05 to Task task_02"
+=== NAME  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+    qa_gate_wave_collision_test.go:158: four readers agree with task_05 needs [task_02]
+--- FAIL: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph (0.00s)
+    --- FAIL: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task (0.25s)
+    --- PASS: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement (0.28s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 75.698541ms before and 68.456416ms after
+FAIL	roundfix/internal/daemon	0.975s
+FAIL
+
+
+exit: 1

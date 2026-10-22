@@ -1,0 +1,11 @@
+$ ./bin/roundfix archive 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check --plan --offline
+Judge Key Variables and TYPESAFE_API_KEY not set in child. Disposable child user configuration; no host Roundfix Home accessed.
+archive plan for 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check: removes 35 file(s) (170855 bytes) and writes docs/history/specs/0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-22.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 25 file(s) (80194 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-21-sc-wave-collision-no-portao-com-needs-e-check-estrito-limpo.md 2849 bytes: no advice (offline)
+relinks docs/backlog/2026-10-22-a-qa-precondition-refusal-report-records-no-audited-commit.md: 1 citation(s)
+promote with: roundfix archive 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check --promote <path>
+
+exit: 0

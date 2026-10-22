@@ -1,0 +1,27 @@
+21cb8af380847b009e97a1a0eb5417d527dc4a45 fix: order corrective task
+
+6fec3b07d1b9a74c129183cbce1bebd77130e8e6 feat: settle task_04
+Roundfix-Spec: corrective-wave-cli
+Roundfix-Task: task_04
+
+fb9f2bf19db6d9999d0bb70634768b2eed4f8074 fix: add corrective task
+
+0a0bd0a1255d02b6753721b79e779123db968635 feat: settle task_03
+Roundfix-Spec: corrective-wave-cli
+Roundfix-Task: task_03
+
+2cd6bacfb2239df1c684cee1ea7322ec7f7b1c0f Revert "docs: archive"
+This reverts commit a555d7ee63b8b9ce63533a5ecec50fc8a500dbf6.
+
+430b76dd746df5ad8b18645b4dc9620b163c0f60 feat: settle task_02
+Roundfix-Spec: corrective-wave-cli
+Roundfix-Task: task_02
+
+a555d7ee63b8b9ce63533a5ecec50fc8a500dbf6 docs: archive
+
+76a0dc0c4ca0831748bcfbe232e93569e0538ea3 feat: settle task_01
+Roundfix-Spec: corrective-wave-cli
+Roundfix-Task: task_01
+
+d0bf6e8d45b7ad29baa677cbc4d66ea95e7f9daf docs: plan
+

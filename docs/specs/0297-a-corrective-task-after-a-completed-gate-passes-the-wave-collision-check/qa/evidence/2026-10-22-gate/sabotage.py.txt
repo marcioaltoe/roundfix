@@ -1,0 +1,21 @@
+import os,pathlib,subprocess,tarfile,io
+root=pathlib.Path.cwd();tmp=pathlib.Path('/private/tmp/qa0297');child_env={k:v for k,v in os.environ.items() if not any(s in k for s in ('API_KEY','TOKEN','SECRET','PASSWORD'))};child_env.update(GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1',GOPROXY='off',GOTOOLCHAIN='local')
+archive=subprocess.check_output(['git','archive','HEAD'],cwd=root)
+spec='TestWaveCollisionNamesTheEdgeThatOrdersThePair';finding='TestWaveCollisionFindingNamesTheResolvingEdge';daemon='TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph'
+cases=[('reverse-edge','internal/spec/collision.go','collision.Second, collision.First)','collision.First, collision.Second)',[('./internal/spec',spec),('./internal/speccheck',finding),('./internal/daemon',daemon)]),('omit-remedy','internal/speccheck/coherence.go','collision.SharedPathList() + "; " + collision.ResolvingEdge(),','collision.SharedPathList(),',[('./internal/speccheck',finding),('./internal/daemon',daemon)]),('omit-history','internal/spec/collision.go','for path := range prior[sets[index].TaskID] {','for path := range map[string]bool{} {',[('./internal/daemon',daemon)]),('no-collisions','internal/spec/collision.go','\troot, err := collisionRepoRoot(repoRoot)','\treturn nil, nil\n\troot, err := collisionRepoRoot(repoRoot)',[('./internal/spec',spec),('./internal/speccheck',finding),('./internal/daemon',daemon)])]
+summary=[]
+for name,path,old,new,tests in cases:
+ scratch=tmp/('sabotage-'+name);scratch.mkdir(exist_ok=True)
+ with tarfile.open(fileobj=io.BytesIO(archive)) as tar:tar.extractall(scratch,filter='fully_trusted')
+ p=scratch/path;text=p.read_text();assert old in text;p.write_text(text.replace(old,new,1))
+ if name=='omit-history':
+  # Keep the read and error path compiled, discard its successful result.
+  text=p.read_text().replace('\tfor index := range sets {','\t_ = prior\n\tfor index := range sets {',1);p.write_text(text)
+ log=['Mutation '+name+'\n'+path+'\nreplace '+repr(old)+' with '+repr(new)+'\n']
+ for pkg,test in tests:
+  cmd=['go','test','-count=1','-v','-run','^'+test+'$',pkg];r=subprocess.run(cmd,cwd=scratch,env=child_env,text=True,capture_output=True)
+  log+=['$ '+' '.join(cmd),r.stdout,r.stderr,'exit: '+str(r.returncode)]
+  assert r.returncode!=0 and '--- FAIL: '+test in r.stdout, name+' '+test+' did not fail its assertion:\n'+r.stdout+r.stderr
+  print(name,test,'expected assertion failure',flush=True);summary.append(name+' '+test+' exit '+str(r.returncode)+' (assertion failure)')
+ (tmp/('sabotage-'+name+'.txt')).write_text('\n'.join(log))
+(tmp/'sabotage-summary.txt').write_text('\n'.join(summary)+'\n')

@@ -1,0 +1,28 @@
+Mutation omit-history
+internal/spec/collision.go
+replace 'for path := range prior[sets[index].TaskID] {' with 'for path := range map[string]bool{} {'
+
+$ go test -count=1 -v -run ^TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph$ ./internal/daemon
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== NAME  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+    qa_gate_wave_collision_test.go:137: gate findings = [], want only "SC-WAVE-COLLISION: Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions.test.ts (declared context; prior Run settlement commit); add a `needs` edge from Task task_05 to Task task_02"
+=== NAME  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+    qa_gate_wave_collision_test.go:158: four readers agree with task_05 needs [task_02]
+--- FAIL: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph (0.00s)
+    --- FAIL: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task (0.35s)
+    --- PASS: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement (0.44s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 76.933125ms before and 67.654709ms after
+FAIL	roundfix/internal/daemon	0.871s
+FAIL
+
+
+exit: 1

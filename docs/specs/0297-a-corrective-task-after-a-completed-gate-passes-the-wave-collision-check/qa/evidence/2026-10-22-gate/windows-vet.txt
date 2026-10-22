@@ -1,0 +1,3 @@
+$ GOOS=windows go vet ./internal/spec ./internal/speccheck ./internal/daemon
+
+exit: 0

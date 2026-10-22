@@ -1,0 +1,51 @@
+
+task_01 1f286a9461ec4c81a4d2905a52ee887309981695
+docs/specs/0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check/task_01.md
+internal/daemon/qa_gate_wave_collision_test.go
+internal/daemon/task_engine.go
+internal/spec/collision.go
+internal/spec/collision_edge_test.go
+internal/speccheck/coherence.go
+internal/speccheck/wave_collision_edge_test.go
+PASS every changed file is declared for task_01
+PASS authorization precedes task_01
+
+task_02 1ab29d8357e36df87fbe638dd7b477a9f315ab38
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+docs/references/behavior-surfaces.json
+docs/specs/0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check/task_02.md
+docs/user-guide/commands/spec.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+PASS every changed file is declared for task_02
+PASS authorization precedes task_02
+PASS Delivery Base bytes preserved: Makefile
+PASS Delivery Base bytes preserved: .github/workflows/
+PASS Delivery Base bytes preserved: go.mod
+PASS Delivery Base bytes preserved: go.sum
+PASS Delivery Base bytes preserved: .roundfixrc.yml
+PASS Delivery Base bytes preserved: internal/baseline/assets/
+PASS Delivery Base bytes preserved: docs/agents/setup-context.json
+PASS Delivery Base bytes preserved: CONTEXT.md
+PASS Delivery Base bytes preserved: docs/history/
+PASS Delivery Base bytes preserved: internal/delivery/
+PASS Delivery Base bytes preserved: docs/references/skill-coverage.json
+PASS 175 existing tests byte-identical to Delivery Base
+PASS QA settlement unchanged: .agents/skills/archive-spec/SKILL.md
+PASS QA settlement unchanged: .agents/skills/qa-gate/SKILL.md
+PASS QA settlement unchanged: .agents/skills/roundfix/SKILL.md
+PASS QA settlement unchanged: skills/archive-spec/SKILL.md
+PASS QA settlement unchanged: skills/qa-gate/SKILL.md
+PASS QA settlement unchanged: skills/roundfix/SKILL.md
+PASS QA settlement sections found
+PASS all four changed governed paths are exactly bounded in approved authorization
+PASS Roundfix skill patch 0.1.125 -> 0.1.126
+PASS both skill version fields agree
+PASS shipped skill version matches canonical
+PASS documented actionable diagnostic: docs/user-guide/commands/spec.md
+PASS documented actionable diagnostic: .agents/skills/roundfix/references/spec.md
+PASS documented actionable diagnostic: skills/roundfix/references/spec.md
+Documentation sweep captured in docs-search.txt; reviewed for contradictory guidance.
+No glossary terms declared; changes reuse Wave, Task, Task Graph and needs. CONTEXT.md remains byte-identical. No new glossary entry required.

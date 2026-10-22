@@ -1,0 +1,65 @@
+Mutation reverse-edge
+internal/spec/collision.go
+replace 'collision.Second, collision.First)' with 'collision.First, collision.Second)'
+
+$ go test -count=1 -v -run ^TestWaveCollisionNamesTheEdgeThatOrdersThePair$ ./internal/spec
+=== RUN   TestWaveCollisionNamesTheEdgeThatOrdersThePair
+=== PAUSE TestWaveCollisionNamesTheEdgeThatOrdersThePair
+=== CONT  TestWaveCollisionNamesTheEdgeThatOrdersThePair
+=== RUN   TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+=== PAUSE TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+=== RUN   TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+=== PAUSE TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+=== CONT  TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+=== CONT  TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+=== NAME  TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order
+    collision_edge_test.go:57: edge = "add a `needs` edge from Task task_02 to Task task_05", want "add a `needs` edge from Task task_05 to Task task_02"
+=== NAME  TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order
+    collision_edge_test.go:57: edge = "add a `needs` edge from Task task_05 to Task task_02", want "add a `needs` edge from Task task_02 to Task task_05"
+--- FAIL: TestWaveCollisionNamesTheEdgeThatOrdersThePair (0.00s)
+    --- FAIL: TestWaveCollisionNamesTheEdgeThatOrdersThePair/reversed_manifest_order (0.02s)
+    --- FAIL: TestWaveCollisionNamesTheEdgeThatOrdersThePair/original_manifest_order (0.02s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 74.835583ms before and 67.892792ms after
+FAIL	roundfix/internal/spec	0.420s
+FAIL
+
+
+exit: 1
+$ go test -count=1 -v -run ^TestWaveCollisionFindingNamesTheResolvingEdge$ ./internal/speccheck
+=== RUN   TestWaveCollisionFindingNamesTheResolvingEdge
+=== PAUSE TestWaveCollisionFindingNamesTheResolvingEdge
+=== CONT  TestWaveCollisionFindingNamesTheResolvingEdge
+    wave_collision_edge_test.go:60: summary = "Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions_test.go (declared context); add a `needs` edge from Task task_02 to Task task_05", want "Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions_test.go (declared context); add a `needs` edge from Task task_05 to Task task_02"
+--- FAIL: TestWaveCollisionFindingNamesTheResolvingEdge (0.03s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 75.903ms before and 68.175916ms after
+FAIL	roundfix/internal/speccheck	0.441s
+FAIL
+
+
+exit: 1
+$ go test -count=1 -v -run ^TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph$ ./internal/daemon
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== RUN   TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== PAUSE TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+=== CONT  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+=== NAME  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task
+    qa_gate_wave_collision_test.go:137: gate findings = [{Code:SC-WAVE-COLLISION Severity:error Summary:Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions.test.ts (declared context; prior Run settlement commit); add a `needs` edge from Task task_02 to Task task_05 Where:[{Path:docs/specs/corrective-wave/task_02.md Line:1} {Path:docs/specs/corrective-wave/task_05.md Line:1} {Path:docs/specs/corrective-wave/_tasks.md Line:1}] Fix:Give Task task_05 a `needs` edge on Task task_02 in docs/specs/corrective-wave/_tasks.md. declaredVocabularySpec:}], want only "SC-WAVE-COLLISION: Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions.test.ts (declared context; prior Run settlement commit); add a `needs` edge from Task task_05 to Task task_02"
+=== NAME  TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement
+    qa_gate_wave_collision_test.go:158: four readers agree with task_05 needs [task_02]
+--- FAIL: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph (0.00s)
+    --- FAIL: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/unordered_corrective_Task (0.35s)
+    --- PASS: TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/ordered_corrective_Task_with_another_Run_settlement (0.43s)
+FAIL
+suiteguard: guard cost: measured 2690 paths; fingerprint took 78.164167ms before and 69.018709ms after
+FAIL	roundfix/internal/daemon	0.867s
+FAIL
+
+
+exit: 1

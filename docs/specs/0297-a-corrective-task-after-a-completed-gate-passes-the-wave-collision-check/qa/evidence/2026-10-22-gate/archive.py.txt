@@ -1,0 +1,6 @@
+import pathlib,subprocess,os
+root=pathlib.Path.cwd();tmp=pathlib.Path('/private/tmp/qa0297');spec=next((root/'docs/specs').glob('0297-*'));ev=spec/'qa/evidence/2026-10-22-gate'
+child_env={k:v for k,v in os.environ.items() if not any(s in k for s in ('API_KEY','TOKEN','SECRET','PASSWORD'))};child_env.update(HOME=str(tmp/'home'),GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1',GOPROXY='off',GOTOOLCHAIN='local')
+for key in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']:assert key not in child_env
+cmd=['./bin/roundfix','archive',spec.name,'--plan','--offline'];r=subprocess.run(cmd,cwd=root,env=child_env,text=True,capture_output=True)
+log='$ '+' '.join(cmd)+'\nJudge Key Variables and TYPESAFE_API_KEY not set in child. Disposable child user configuration; no host Roundfix Home accessed.\n'+r.stdout+r.stderr+'\nexit: '+str(r.returncode)+'\n';(ev/'archive-plan.txt').write_text(log);print(log);assert r.returncode==0

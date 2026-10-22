@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
