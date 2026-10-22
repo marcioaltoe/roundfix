@@ -58,9 +58,10 @@ func RecordTaskPaths(taskPath string, paths []string) error {
 		return fmt.Errorf("read Task file %q before recording paths: %w", taskPath, err)
 	}
 
+	sections := recordedPathsSections(content)
 	base := content
-	if offset, ok := recordedPathsSectionOffset(content); ok {
-		base = content[:offset]
+	if len(sections) > 0 {
+		base = content[:sections[0].start]
 	}
 	updated := append([]byte(nil), base...)
 	if len(paths) > 0 {
@@ -75,6 +76,14 @@ func RecordTaskPaths(taskPath string, paths []string) error {
 			updated = append(updated, "`\n"...)
 		}
 	}
+	if len(sections) > 0 {
+		cursor := sections[0].end
+		for _, section := range sections[1:] {
+			updated = append(updated, content[cursor:section.start]...)
+			cursor = section.end
+		}
+		updated = append(updated, content[cursor:]...)
+	}
 	if bytes.Equal(updated, content) {
 		return nil
 	}
@@ -86,28 +95,38 @@ func RecordTaskPaths(taskPath string, paths []string) error {
 
 // RecordedTaskPaths reads the paths from the Daemon-owned recorded section.
 func RecordedTaskPaths(content []byte) []string {
-	offset, ok := recordedPathsSectionOffset(content)
-	if !ok {
-		return nil
-	}
-	section := content[offset:]
-	if len(section) > 0 && section[0] == '\n' {
-		section = section[1:]
-	}
-	lines := strings.Split(string(section), "\n")
-	paths := make([]string, 0)
-	for _, line := range lines[1:] {
-		if !strings.HasPrefix(line, "- `") || !strings.HasSuffix(line, "`") {
-			continue
+	var paths []string
+	seen := make(map[string]bool)
+	for _, bounds := range recordedPathsSections(content) {
+		section := content[bounds.start:bounds.end]
+		if len(section) > 0 && section[0] == '\n' {
+			section = section[1:]
 		}
-		paths = append(paths, strings.TrimSuffix(strings.TrimPrefix(line, "- `"), "`"))
+		lines := strings.Split(string(section), "\n")
+		for _, line := range lines[1:] {
+			if !strings.HasPrefix(line, "- `") || !strings.HasSuffix(line, "`") {
+				continue
+			}
+			path := strings.TrimSuffix(strings.TrimPrefix(line, "- `"), "`")
+			if !seen[path] {
+				seen[path] = true
+				paths = append(paths, path)
+			}
+		}
 	}
 	return paths
 }
 
-func recordedPathsSectionOffset(content []byte) (int, bool) {
-	lastHeadingOffset := -1
-	lastHeading := ""
+type taskFileSection struct {
+	heading    string
+	start, end int
+}
+
+// recordedPathsSections returns, in file order, recorded sections followed
+// only by Daemon-written settlement sections. Bounds include the newline
+// before each heading and end at the next section's start or the file's end.
+func recordedPathsSections(content []byte) []taskFileSection {
+	var sections []taskFileSection
 	inFence := false
 	fence := ""
 	for lineStart := 0; lineStart <= len(content); {
@@ -129,8 +148,14 @@ func recordedPathsSectionOffset(content []byte) (int, bool) {
 			}
 		} else if !inFence {
 			if depth, _, ok := markdownHeading(trimmed); ok && depth == 2 {
-				lastHeadingOffset = lineStart
-				lastHeading = line
+				start := lineStart
+				if start > 0 && content[start-1] == '\n' {
+					start--
+				}
+				if len(sections) > 0 {
+					sections[len(sections)-1].end = start
+				}
+				sections = append(sections, taskFileSection{heading: line, start: start, end: len(content)})
 			}
 		}
 		if lineEnd == len(content) {
@@ -138,11 +163,21 @@ func recordedPathsSectionOffset(content []byte) (int, bool) {
 		}
 		lineStart = lineEnd + 1
 	}
-	if lastHeading != RecordedPathsHeading {
-		return 0, false
+	first := len(sections)
+settlementRun:
+	for first > 0 {
+		switch sections[first-1].heading {
+		case RecordedPathsHeading, "## Result", "## Carry-forward provenance":
+			first--
+		default:
+			break settlementRun
+		}
 	}
-	if lastHeadingOffset > 0 && content[lastHeadingOffset-1] == '\n' {
-		return lastHeadingOffset - 1, true
+	var recorded []taskFileSection
+	for _, section := range sections[first:] {
+		if section.heading == RecordedPathsHeading {
+			recorded = append(recorded, section)
+		}
 	}
-	return lastHeadingOffset, true
+	return recorded
 }

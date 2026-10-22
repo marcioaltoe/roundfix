@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0308-recorded-paths-are-read-before-carry-forward-provenance
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -125,3 +125,59 @@ it in place.
 - `_prd.md` → Sources; Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior; API Contracts 1-4; Invariants 1-4; Testing Approach; Build Order 1
 - ADR-0166
+
+
+## Result
+
+Implemented the trailing settlement-section reader and in-place writer in
+`internal/spec/recorded_paths.go`. The helper keeps the existing fence and
+exact-heading rules, walks back over Daemon settlement sections, and returns
+recorded section bounds in file order. Reading unions paths without duplicates;
+writing replaces the first collected section, removes the rest, preserves all
+other bytes, and avoids replacement when the bytes are unchanged. Input checks
+and generated section bytes are unchanged. No consumer implementation changed.
+
+Acceptance evidence from focused checks:
+
+- Corrective retry: `TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared`
+  accepts `review.txt` through the real proof for `archive-record` and
+  `legacy-folder`; each also refuses the added `other.txt` with exactly
+  `changed path other.txt is outside the named archived Specs and the paths their Tasks declared`.
+- Reconcile: `TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance`
+  classifies the synthetic Run Worktree with dirty `recorded.txt` as
+  `superseded` when the archived Task records it before provenance.
+- Writer preservation: all four rows of
+  `TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance` assert
+  exact output and provenance bytes. `same-paths` also checks file identity;
+  `duplicate-sections` collapses the two sections at the first one's position.
+- Ownership: all five rows of
+  `TestRecordedPathsAreReadBeforeTrailingSettlementSections` assert recorded
+  paths and declarations, including file-order deduplication and exclusion of
+  authored/fenced headings. Existing tests were left unchanged except the
+  required suite Invariant line.
+
+Focused commands and outcomes:
+
+- Before changing production code,
+  `go test ./internal/spec -run 'TestRecordedPathsAreReadBeforeTrailingSettlementSections|TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance' -count=1`
+  exited 1: carried reader rows lost paths, and writer rows retained or
+  duplicated the old section.
+- The four new tests together passed in `./internal/spec`, `./internal/cli`
+  and `./internal/worktree` after the implementation change.
+- Final focused regression check:
+  `go test ./internal/spec ./internal/cli ./internal/worktree -run 'Recorded|RecordTaskPaths|DeclaredTaskPaths|DeclaredPaths|CodeCorrection|ArchivedSpecLeftover' -count=1`
+  exited 0 in all three packages. This covers the existing recorded-path,
+  declared-path, corrective-scope and archived-leftover tests selected by
+  that expression, alongside the new tests.
+- Temporary `go test -overlay` sabotage checks in `./internal/spec` each
+  exited 1 at the intended named writer row: discarding the suffix failed
+  `new-paths`; always appending instead of replacing failed `same-paths`.
+  Overlays were created outside the repository and removed afterwards.
+- `git diff --check` exited 0.
+
+The Run checkout uses a symlinked writable root that prevents sandbox startup;
+focused commands used the resolved checkout with execution escalation. Task
+status remains Daemon-owned. Declared Verification, Windows vet, repository
+Verification and the terminal QA gate were not run; the Daemon owns those
+checks and settlement. No commit, push or pull request was made. No follow-up
+implementation outside this slice was added.

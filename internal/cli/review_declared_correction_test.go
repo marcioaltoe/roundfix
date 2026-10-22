@@ -157,3 +157,27 @@ func TestUnreadableDeclaredPathsRefuseTheCorrection(t *testing.T) {
 		})
 	}
 }
+
+func TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared(t *testing.T) {
+	t.Parallel()
+	for _, form := range []string{"archive-record", "legacy-folder"} {
+		t.Run(form, func(t *testing.T) {
+			t.Parallel()
+			task := declaredCorrectionTask("", true) + "\n## Carry-forward provenance\n\n- Source Run: synthetic-run\n- Source commit: abc123\n"
+			fixture, _ := newDeclaredCorrectionFixture(t, form, task, false)
+			record := reviewSymlinkedCheckout(t, fixture)
+			head := commitReviewCorrectionFile(t, fixture, "review.txt", "corrected code\n")
+			disposeSymlinkedReviewFinding(t, fixture, head)
+			result := proveSymlinkedReviewCorrection(t, fixture, record.HeadCommit, head, true)
+			if !result.Accepted || result.Reason != "" {
+				t.Fatalf("proof=%+v, want accepted carried recorded path", result)
+			}
+			head = commitReviewCorrectionFile(t, fixture, "other.txt", "undeclared code\n")
+			result = proveSymlinkedReviewCorrection(t, fixture, record.HeadCommit, head, true)
+			want := "changed path other.txt is outside the named archived Specs and the paths their Tasks declared"
+			if result.Accepted || result.Reason != want {
+				t.Fatalf("proof=%+v, want refusal %q", result, want)
+			}
+		})
+	}
+}

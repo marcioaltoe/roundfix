@@ -202,3 +202,14 @@ func TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths(t *testing.T) {
 	result := inspectMergedHeadTestRun(t, f, nil)
 	assertTerminalRunReconciliation(t, result, f.run, ReconciliationSuperseded)
 }
+
+func TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance(t *testing.T) {
+	t.Parallel()
+	f := newArchivedLeftoverFixture(t, "archived-carried-recorded")
+	commitMergedHeadFiles(t, f.repoDir, map[string]string{
+		archivedLeftoverRoot(f) + "/task_01.md": "---\ntask: task_01\nspec: " + f.run.SpecSlug + "\nstatus: completed\ntype: backend\ncomplexity: low\n---\n\n# Task\n\n## Context\n\n## Verification\n\n- `true`\n\n## Recorded paths\n\n- `recorded.txt`\n\n## Carry-forward provenance\n\n- Source Run: synthetic-run\n- Source commit: abc123\n",
+	}, "docs: carry recorded scope forward")
+	mustWriteWorktreeTest(t, filepath.Join(f.ref.Path, "recorded.txt"), "scoped leftover\n")
+	result := inspectMergedHeadTestRun(t, f, nil)
+	assertTerminalRunReconciliation(t, result, f.run, ReconciliationSuperseded)
+}
