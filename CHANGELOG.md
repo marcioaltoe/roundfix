@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.108.0] - 2026-10-22
+
+### The Wave collision finding names the edge that resolves it
+
+- **`SC-WAVE-COLLISION` says which `needs` edge to add.** The Spec Consistency finding for two Tasks the Task Graph lets run in one Wave while they touch a common repository file now ends its summary with ``add a `needs` edge from Task <later> to Task <earlier>``, and its fix line names the same two Tasks. The Daemon's pre-dispatch refusal already named the edge; both messages are now built from the same collision data, and the Daemon's text keeps its bytes.
+- **The rule is unchanged.** Which pairs collide does not change. The QA gate's precondition, the settlement checks, the pre-dispatch refusal and `roundfix spec check --strict` read the same working-tree Task Graph and settlement history, so a corrective Task given the named edge passes all of them. The `spec` guide and the Roundfix skill reference describe the finding and its sources (Verification operand, declared path, prior Run settlement commit).
+
 ## [0.107.0] - 2026-10-22
 
 ### The queue's archive subject and pull request title fit 100 characters
