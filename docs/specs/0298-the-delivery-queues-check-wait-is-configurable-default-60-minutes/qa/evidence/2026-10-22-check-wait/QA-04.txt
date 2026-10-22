@@ -1,0 +1,98 @@
+Command: ./bin/roundfix deliver status; fixture bin symlinks to the Run-built bin (same bytes). Temporary HOME; temporary Git repository with no remote. Each case starts twice.
+zero fresh-process 1
+Exit: 2
+STDOUT:
+
+STDERR:
+Preflight failed
+
+Reason:
+  delivery.check_timeout must be greater than 0 and at most 24h
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+zero fresh-process 2
+Exit: 2
+STDOUT:
+
+STDERR:
+Preflight failed
+
+Reason:
+  delivery.check_timeout must be greater than 0 and at most 24h
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+over-day fresh-process 1
+Exit: 2
+STDOUT:
+
+STDERR:
+Preflight failed
+
+Reason:
+  delivery.check_timeout must be greater than 0 and at most 24h
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+over-day fresh-process 2
+Exit: 2
+STDOUT:
+
+STDERR:
+Preflight failed
+
+Reason:
+  delivery.check_timeout must be greater than 0 and at most 24h
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+project-override fresh-process 1
+Exit: 2
+STDOUT:
+
+STDERR:
+config: delivery.check_timeout in Project Config is ignored; set delivery.check_timeout in User Config
+Preflight failed
+
+Reason:
+  open Run Database reader "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0298-cli-4ebyms82/home/.roundfix/roundfix.db": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0298-cli-4ebyms82/home/.roundfix/roundfix.db: no such file or directory
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+project-override fresh-process 2
+Exit: 2
+STDOUT:
+
+STDERR:
+config: delivery.check_timeout in Project Config is ignored; set delivery.check_timeout in User Config
+Preflight failed
+
+Reason:
+  open Run Database reader "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0298-cli-4ebyms82/home/.roundfix/roundfix.db": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0298-cli-4ebyms82/home/.roundfix/roundfix.db: no such file or directory
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.

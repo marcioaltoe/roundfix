@@ -1,0 +1,10 @@
+--- audited/internal/cli/deliver_workflow.go
++++ sabotaged/internal/cli/deliver_workflow.go
+@@ -88,7 +88,6 @@
+ 		Prerequisites:  workflow,
+ 		RunSlots:       workflow,
+ 		RunSlotWait:    loaded.Config.Runs.SlotWait,
+-		CheckTimeout:   loaded.Config.Delivery.CheckTimeout,
+ 		Log:            os.Stderr,
+ 	}
+ }

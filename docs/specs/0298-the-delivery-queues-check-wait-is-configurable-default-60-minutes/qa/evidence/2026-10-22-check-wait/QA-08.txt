@@ -1,0 +1,14 @@
+Command: git archive 0f7b68e7e10cdc85a60998e1baf66aae53e4f602 -> disposable copy; mutate only internal/cli/deliver_workflow.go; go test -count=1 -v -run ^TestTheDeliveryEngineReceivesTheConfiguredCheckWait$ ./internal/cli
+Exit: 1
+STDOUT:
+=== RUN   TestTheDeliveryEngineReceivesTheConfiguredCheckWait
+=== PAUSE TestTheDeliveryEngineReceivesTheConfiguredCheckWait
+=== CONT  TestTheDeliveryEngineReceivesTheConfiguredCheckWait
+    deliver_check_timeout_test.go:18: default check timeout = 0s
+--- FAIL: TestTheDeliveryEngineReceivesTheConfiguredCheckWait (0.00s)
+FAIL
+suiteguard: guard cost: measured 2683 paths; fingerprint took 100.585583ms before and 74.116459ms after
+FAIL	roundfix/internal/cli	0.618s
+FAIL
+
+STDERR:

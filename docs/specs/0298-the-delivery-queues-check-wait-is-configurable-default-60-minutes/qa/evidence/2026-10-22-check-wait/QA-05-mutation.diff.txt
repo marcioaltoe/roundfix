@@ -1,0 +1,11 @@
+--- audited/internal/delivery/engine.go
++++ sabotaged/internal/delivery/engine.go
+@@ -50,7 +50,7 @@
+ var ErrItemWorktreeMissing = errors.New("item worktree and branch are missing")
+ 
+ const (
+-	defaultCheckTimeout  = config.DefaultDeliveryCheckTimeout
++	defaultCheckTimeout  = 30 * time.Minute
+ 	defaultCheckInterval = 15 * time.Second
+ )
+ 

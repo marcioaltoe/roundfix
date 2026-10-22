@@ -1,0 +1,12 @@
+Command: ./bin/roundfix spec check 0298-the-delivery-queues-check-wait-is-configurable-default-60-minutes --strict
+Exit: 0
+STDOUT:
+Spec 0298-the-delivery-queues-check-wait-is-configurable-default-60-minutes
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0298-the-delivery-queues-check-wait-is-configurable-default-60-minutes/_techspec.md Vocabulary Contract
+
+STDERR:

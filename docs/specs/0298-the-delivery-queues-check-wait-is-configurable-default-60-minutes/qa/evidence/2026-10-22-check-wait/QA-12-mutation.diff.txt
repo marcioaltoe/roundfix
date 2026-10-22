@@ -1,0 +1,22 @@
+--- audited/internal/delivery/engine.go
++++ sabotaged/internal/delivery/engine.go
+@@ -383,6 +383,7 @@
+ 	log            io.Writer
+ 	clock          Clock
+ 	sleeper        Sleeper
++	qaCheckDeadline time.Time
+ 	checkTimeout   time.Duration
+ 	checkInterval  time.Duration
+ 
+@@ -1448,7 +1449,10 @@
+ 			return engine.setStage(ctx, gitRoot, item, store.DeliveryStagePublishing)
+ 		}
+ 	}
+-	deadline := engine.clock.Now().Add(engine.checkTimeout)
++	if engine.qaCheckDeadline.IsZero() {
++		engine.qaCheckDeadline = engine.clock.Now().Add(engine.checkTimeout)
++	}
++	deadline := engine.qaCheckDeadline
+ 	rerunRuns := make(map[string]bool)
+ 	stalePairs := make(map[[2]string]bool)
+ 	staleRuns := make(map[string]bool)

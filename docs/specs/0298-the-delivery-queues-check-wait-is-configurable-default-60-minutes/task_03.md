@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0298-the-delivery-queues-check-wait-is-configurable-default-60-minutes
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

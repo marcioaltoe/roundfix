@@ -1,0 +1,14 @@
+Command: git archive 0f7b68e7e10cdc85a60998e1baf66aae53e4f602 -> disposable copy; mutate only internal/delivery/engine.go; go test -count=1 -v -run ^TestEachCheckWaitStartsItsOwnDeadline$ ./internal/delivery
+Exit: 1
+STDOUT:
+=== RUN   TestEachCheckWaitStartsItsOwnDeadline
+=== PAUSE TestEachCheckWaitStartsItsOwnDeadline
+=== CONT  TestEachCheckWaitStartsItsOwnDeadline
+    check_wait_test.go:100: elapsed=5m0s item={SpecSlug:example Position:0 Stage:parked Blocker:checks-timeout: current-head checks not settled within delivery.check_timeout 45m0s Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID: CandidateCommits:[earlier candidate] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestEachCheckWaitStartsItsOwnDeadline (0.01s)
+FAIL
+suiteguard: guard cost: measured 2683 paths; fingerprint took 109.96175ms before and 72.891625ms after
+FAIL	roundfix/internal/delivery	0.496s
+FAIL
+
+STDERR:
