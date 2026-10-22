@@ -750,8 +750,12 @@ The read-only account of which Specs have delivery authority, what blocks the ot
 _Avoid_: Delivery Queue, execution plan, approval grant
 
 **Delivery Revalidation**:
-The check of a queued Spec against the refreshed default branch immediately before its first Run. A strict finding parks it as `revalidation-failed`; a production-premise overlap records a `premise-changed` warning without parking it.
+The check of a queued Spec against the refreshed default branch immediately before its first Run. A strict finding parks it as `revalidation-failed`; a production-premise overlap records a `premise-changed` warning without parking it. It does not run for an Archived Item Resume.
 _Avoid_: Initial validation, retry, approval check
+
+**Archived Item Resume**:
+The start of a new Delivery Queue item whose continued Item Branch already archives its Spec in a commit proven to be an exact archive of it: the item enters review with its head as the candidate, without Delivery Revalidation, an Implement Run or a new archive. An item branch whose archive cannot be proven parks as `archived-item-unproven` ([ADR-0312](docs/adr/0312-a-new-delivery-queue-resumes-an-archived-item-branch-at-review.md)).
+_Avoid_: Archived retry, requeue
 
 **Delivery Queue Limit**:
 A queue's fixed optional deadline, per-item retry allowance or Queue Token Ceiling. It bounds new item starts or explicit retries without changing a Run Budget or an item already past `queued`.

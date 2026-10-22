@@ -38,6 +38,7 @@ const (
 	BlockerFlakyCheck             = "flaky-check"
 	BlockerPullRequestConflict    = "pull-request-conflict"
 	BlockerPrerequisiteUnmerged   = "prerequisite-unmerged"
+	BlockerArchivedItemUnproven   = "archived-item-unproven"
 )
 
 const WarningPremiseChanged = "premise-changed"
@@ -166,6 +167,19 @@ type Revalidation struct {
 	ChangedPremises []string // unique, sorted repository-relative paths
 	ChangedBy       []string // the prior merge commits that changed at least one of them, in queue order
 	OwnerWarning    string   // empty or the warning that the queue owner predates the item's starting main
+}
+
+// ArchivedItemProof is what a queued item's worktree proves about an archive
+// its Item Branch already holds.
+type ArchivedItemProof struct {
+	Archived      bool   // the head holds a proven archive of the Spec
+	ArchiveCommit string // the commit that removed the Spec's _prd.md
+	Head          string // the item worktree head
+	Refusal       string // non-empty: the cause the item cannot be proven
+}
+
+type ArchivedItemProver interface {
+	ProveArchivedItem(ctx context.Context, workDir, specSlug string) (ArchivedItemProof, error)
 }
 
 type ItemRevalidator interface {
@@ -345,6 +359,7 @@ type EngineDependencies struct {
 	PullRequests   PullRequestBoundary
 	Recovery       ItemRecovery
 	History        ItemHistory
+	ArchivedItems  ArchivedItemProver
 	Revalidator    ItemRevalidator
 	Checks         CheckRecovery
 	Log            io.Writer
@@ -378,6 +393,7 @@ type Engine struct {
 	pullRequests   PullRequestBoundary
 	recovery       ItemRecovery
 	history        ItemHistory
+	archivedItems  ArchivedItemProver
 	revalidator    ItemRevalidator
 	checks         CheckRecovery
 	log            io.Writer
@@ -438,6 +454,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		pullRequests:   dependencies.PullRequests,
 		recovery:       dependencies.Recovery,
 		history:        dependencies.History,
+		archivedItems:  dependencies.ArchivedItems,
 		revalidator:    dependencies.Revalidator,
 		checks:         dependencies.Checks,
 		log:            log,
@@ -488,7 +505,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 	if !itemFound {
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue does not contain the item", specSlug)
 	}
-	if engine.merges == nil && !prerequisitePark(item.Blocker) && validationErr != nil {
+	if engine.merges == nil && !prerequisitePark(item.Blocker) && !blockerMatches(item.Blocker, BlockerArchivedItemUnproven) && validationErr != nil {
 		return RetryResult{}, validationErr
 	}
 	if item.Stage != store.DeliveryStageParked {
@@ -524,7 +541,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		if observation.ClosedUnmerged {
 			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: pull request #%s was closed without merging; reopen it or merge the Spec into the default branch, then run roundfix deliver retry %s", specSlug, item.PullRequestNumber, specSlug)
 		}
-		if !prerequisitePark(item.Blocker) && validationErr != nil {
+		if !prerequisitePark(item.Blocker) && !blockerMatches(item.Blocker, BlockerArchivedItemUnproven) && validationErr != nil {
 			return RetryResult{}, validationErr
 		}
 	}
@@ -557,7 +574,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		)
 	}
 
-	if prerequisitePark(item.Blocker) {
+	if blockerMatches(item.Blocker, BlockerArchivedItemUnproven) || prerequisitePark(item.Blocker) {
 		blocker := item.Blocker
 		item.Stage = store.DeliveryStageQueued
 		pid, identity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, blocker)
@@ -934,36 +951,57 @@ func (engine *Engine) advanceItem(
 			return errors.New("create item worktree: path is empty")
 		}
 		item.WorktreeProvisioned = true
-		revalidation, err := engine.revalidator.Revalidate(ctx, item.Worktree, item.SpecSlug, priorMerges)
-		warnings := make([]string, 0, 2)
-		if len(revalidation.ChangedPremises) > 0 {
-			warnings = append(warnings, fmt.Sprintf(
-				"%s: %s (merge %s)",
-				WarningPremiseChanged,
-				strings.Join(revalidation.ChangedPremises, ", "),
-				strings.Join(revalidation.ChangedBy, ", "),
-			))
+		if engine.archivedItems != nil {
+			proof, err := engine.archivedItems.ProveArchivedItem(ctx, item.Worktree, item.SpecSlug)
+			if err != nil {
+				return fmt.Errorf("prove archived item: %w", err)
+			}
+			if proof.Refusal != "" {
+				return engine.park(ctx, gitRoot, item, BlockerArchivedItemUnproven+": "+proof.Refusal)
+			}
+			if proof.Archived {
+				if proof.Head == "" {
+					return errors.New("prove archived item: archived item head is empty")
+				}
+				fmt.Fprintf(engine.log, "roundfix: Delivery Queue item %s: item branch %s already archives the Spec at %s; resuming at reviewing\n", item.SpecSlug, item.Branch, proof.ArchiveCommit)
+				item.CandidateCommits = []string{proof.Head}
+				if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageReviewing); err != nil {
+					return err
+				}
+			}
 		}
-		if ownerWarning := strings.TrimSpace(revalidation.OwnerWarning); ownerWarning != "" {
-			warnings = append(warnings, ownerWarning)
-		}
-		if len(warnings) > 0 {
-			item.Warning = strings.Join(warnings, "; ")
-			fmt.Fprintf(engine.log, "roundfix: warning: Delivery Queue item %s: %s\n", item.SpecSlug, item.Warning)
-		}
-		if err != nil {
-			return fmt.Errorf("revalidate item: %w", err)
-		}
-		if len(revalidation.Findings) > 0 {
-			return engine.park(
-				ctx,
-				gitRoot,
-				item,
-				BlockerRevalidationFailed+": "+strings.Join(revalidation.Findings, ", "),
-			)
-		}
-		if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
-			return err
+		if item.Stage == store.DeliveryStageQueued {
+			revalidation, err := engine.revalidator.Revalidate(ctx, item.Worktree, item.SpecSlug, priorMerges)
+			warnings := make([]string, 0, 2)
+			if len(revalidation.ChangedPremises) > 0 {
+				warnings = append(warnings, fmt.Sprintf(
+					"%s: %s (merge %s)",
+					WarningPremiseChanged,
+					strings.Join(revalidation.ChangedPremises, ", "),
+					strings.Join(revalidation.ChangedBy, ", "),
+				))
+			}
+			if ownerWarning := strings.TrimSpace(revalidation.OwnerWarning); ownerWarning != "" {
+				warnings = append(warnings, ownerWarning)
+			}
+			if len(warnings) > 0 {
+				item.Warning = strings.Join(warnings, "; ")
+				fmt.Fprintf(engine.log, "roundfix: warning: Delivery Queue item %s: %s\n", item.SpecSlug, item.Warning)
+			}
+			if err != nil {
+				return fmt.Errorf("revalidate item: %w", err)
+			}
+			if len(revalidation.Findings) > 0 {
+				return engine.park(
+					ctx,
+					gitRoot,
+					item,
+					BlockerRevalidationFailed+": "+strings.Join(revalidation.Findings, ", "),
+				)
+			}
+			if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
+				return err
+			}
 		}
 	} else {
 		if strings.TrimSpace(item.Branch) == "" {
