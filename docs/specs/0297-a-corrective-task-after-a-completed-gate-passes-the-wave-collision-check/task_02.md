@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -67,13 +67,13 @@ Behavior Surface Record (`_prd.md` → Core Feature 4).
 
 ## Subtasks
 
-- [ ] Add the `SC-WAVE-COLLISION` row to the `spec` guide and the bullet to the Roundfix `spec` reference.
-- [ ] Raise the skill version, sync the mirror, record the version and re-record the Behavior Surface Record.
+- [x] Add the `SC-WAVE-COLLISION` row to the `spec` guide and the bullet to the Roundfix `spec` reference.
+- [x] Raise the skill version, sync the mirror, record the version and re-record the Behavior Surface Record.
 
 ## Acceptance Criteria
 
-- [ ] The guide and both copies of the reference describe `SC-WAVE-COLLISION`, its sources and its edge.
-- [ ] The skill version is raised and recorded, the mirror is in sync, and the Behavior Surface Record is current.
+- [x] The guide and both copies of the reference describe `SC-WAVE-COLLISION`, its sources and its edge.
+- [x] The skill version is raised and recorded, the mirror is in sync, and the Behavior Surface Record is current.
 
 ## Consumers
 
@@ -102,3 +102,28 @@ None. This Task changes documentation, the skill mirror, the skill version recor
 - `_prd.md` → Core Feature 4; Goals
 - `_techspec.md` → API Contract 6; Build Order 2
 - ADR-0117
+
+## Result
+
+Added the `SC-WAVE-COLLISION` row to the `spec` user guide and the matching
+finding bullet to both Roundfix `spec` reference copies. The wording describes
+all required shared-file sources, names the graph-ordering `needs` edge, and
+states that the QA precondition, settlement checks and pre-dispatch refusal
+read the same working-tree graph and settlement history.
+
+Raised both Roundfix skill version fields from `0.1.125` to `0.1.126`.
+`make skills-sync` synchronized the mirror, the owned-skill version recorder
+passed with `1 passed`, and the Behavior Surface recorder passed with `1
+passed`, updating the `spec` guide fingerprint. Focused checks confirmed both
+skill copies and both reference copies are identical, the new code and version
+are present in all three surfaces/records, and `git diff --check` exited 0.
+
+The required wording sweep found no contradictory Wave-collision or `needs`
+remedy wording in guides, agent guides or skill copies. It found only the
+Task/spec context, implementation references, historical notes and unrelated
+task-template mentions of collision auditing; none conflicts with Task 01's
+finding.
+
+The declared Task Verification and repository Verification were not run;
+they remain Daemon-owned. Task status remains `in_progress`, and no commit,
+push or pull request was made.
