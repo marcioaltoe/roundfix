@@ -47,6 +47,28 @@ type RecordLinkPlan struct {
 	Links     int
 	Citations []HistoryCitation
 	rewrites  map[string]map[string]GitLocator
+	moves     map[string]map[string]string
+}
+
+// RecordLinkPromotion names the surviving copy listed by an earlier archive.
+// The record's source, promoted list and links are historical input: repair
+// writes the record later readers follow, so require a regular checkout copy.
+func RecordLinkPromotion(root string, link MissingLink, record ArchiveRecord) (string, bool) {
+	if link.Self || !historyRepositoryPath(record.Source) {
+		return "", false
+	}
+	target, _, relative := archiveLinkTarget(link.Destination, record.Source)
+	target = filepath.ToSlash(target)
+	if !relative || !historyRepositoryPath(target) || !strings.HasPrefix(target, record.Source+"/") {
+		return "", false
+	}
+	copyPath := "docs/references/" + filepath.Base(target)
+	for _, promoted := range record.Promoted {
+		if promoted == copyPath && historyRewriteRegularFile(root, copyPath) == nil {
+			return copyPath, true
+		}
+	}
+	return "", false
 }
 
 // ResolveRecordLink tries the record-relative target before its original source.
@@ -75,7 +97,7 @@ func ResolveRecordLink(ctx context.Context, root string, link MissingLink, recor
 
 // PlanRecordLinks plans only surviving Archive Records, never legacy folders.
 func PlanRecordLinks(ctx context.Context, root, archiveRootRel string, skip map[string]bool) (RecordLinkPlan, error) {
-	p := RecordLinkPlan{Files: map[string][]byte{}, rewrites: map[string]map[string]GitLocator{}}
+	p := RecordLinkPlan{Files: map[string][]byte{}, rewrites: map[string]map[string]GitLocator{}, moves: map[string]map[string]string{}}
 	entries, err := os.ReadDir(filepath.Join(root, archiveRootRel))
 	if os.IsNotExist(err) {
 		return p, nil
@@ -103,7 +125,13 @@ func PlanRecordLinks(ctx context.Context, root, archiveRootRel string, skip map[
 			return p, fmt.Errorf("parse record links %s: %w", path, err)
 		}
 		locators := map[string]GitLocator{}
+		moves := map[string]string{}
 		for _, link := range MissingRelativeLinks(root, path, content) {
+			if copyPath, ok := RecordLinkPromotion(root, link, record); ok {
+				moves[link.Target] = copyPath
+				p.Citations = append(p.Citations, HistoryCitation{Path: path, Line: link.Line, Target: link.Target, Rewrite: copyPath})
+				continue
+			}
 			locator, err := ResolveRecordLink(ctx, root, link, record)
 			if err != nil {
 				return p, err
@@ -111,14 +139,14 @@ func PlanRecordLinks(ctx context.Context, root, archiveRootRel string, skip map[
 			locators[link.Target] = locator
 			p.Citations = append(p.Citations, HistoryCitation{Path: path, Line: link.Line, Target: link.Target, Rewrite: locator.Text(false)})
 		}
-		if len(locators) == 0 {
+		if len(locators) == 0 && len(moves) == 0 {
 			continue
 		}
-		next, count, err := rewriteRecordLinks(content, path, locators)
+		next, count, err := rewriteRecordLinks(content, path, locators, moves)
 		if err != nil {
 			return p, err
 		}
-		p.Files[path], p.rewrites[path] = next, locators
+		p.Files[path], p.rewrites[path], p.moves[path] = next, locators, moves
 		p.Links += count
 	}
 	return p, nil
@@ -142,7 +170,7 @@ func (p RecordLinkPlan) Apply(ctx context.Context, root string) (links, files in
 		if err != nil {
 			return links, files, fmt.Errorf("read record links %s: %w", path, err)
 		}
-		next, count, err := rewriteRecordLinks(content, path, p.rewrites[path])
+		next, count, err := rewriteRecordLinks(content, path, p.rewrites[path], p.moves[path])
 		if err != nil {
 			return links, files, err
 		}
@@ -160,7 +188,7 @@ func (p RecordLinkPlan) Apply(ctx context.Context, root string) (links, files in
 
 // A repair owns only link spans. The general Citation Rewrite also rewrites
 // prose paths, which here could alter an Archive Record's source metadata.
-func rewriteRecordLinks(content []byte, path string, locators map[string]GitLocator) ([]byte, int, error) {
+func rewriteRecordLinks(content []byte, path string, locators map[string]GitLocator, moves map[string]string) ([]byte, int, error) {
 	spans := scanArchiveMarkdown(content)
 	sort.SliceStable(spans, func(i, j int) bool {
 		if spans[i].linkStart != spans[j].linkStart {
@@ -168,7 +196,7 @@ func rewriteRecordLinks(content []byte, path string, locators map[string]GitLoca
 		}
 		return spans[i].linkEnd > spans[j].linkEnd
 	})
-	rw := CitationRewrite{Locate: func(target string) (GitLocator, bool, error) { l, ok := locators[target]; return l, ok, nil }}
+	rw := CitationRewrite{Moves: moves, Locate: func(target string) (GitLocator, bool, error) { l, ok := locators[target]; return l, ok, nil }}
 	var out bytes.Buffer
 	end, count := 0, 0
 	for _, span := range spans {
@@ -176,7 +204,9 @@ func rewriteRecordLinks(content []byte, path string, locators map[string]GitLoca
 			continue
 		}
 		target, _, relative := archiveLinkTarget(string(content[span.start:span.end]), filepath.Dir(path))
-		if _, ok := locators[filepath.ToSlash(target)]; !relative || !ok {
+		_, located := locators[filepath.ToSlash(target)]
+		_, moved := moves[filepath.ToSlash(target)]
+		if !relative || (!located && !moved) {
 			continue
 		}
 		next, n, err := rw.Apply(content[span.linkStart:span.linkEnd], path, path)

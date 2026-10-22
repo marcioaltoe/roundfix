@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0295-the-archive-rewrites-the-satisfied-by-links-it-records
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -164,3 +164,53 @@ guides and the glossary.
 - `_prd.md` → Sources; Goals; Core Features 2-4; Behavior changes; Success Metric 2; Success Metric 3; Glossary
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 4-5; Surface Transcript 1; Invariants 4-5; Testing Approach; Build Order 2
 - ADR-0308; ADR-0248; ADR-0254; ADR-0299; ADR-0261; ADR-0184; ADR-0280; ADR-0259; ADR-0271; ADR-0285
+
+
+## Result
+
+Implemented this Task's slice; Task status and declared Verification remain
+Daemon-owned.
+
+- Repair and plans: `RecordLinkPromotion` resolves the historical destination
+  against the record's `source`, requires containment under that folder, a
+  matching `promoted` entry and a regular checkout copy (including no symlink
+  components), and excludes self-links. `PlanRecordLinks` records per-record
+  moves beside locators, names the copy's repository path in the citation,
+  and applies both through the existing Citation Rewrite. Other links still
+  use `ResolveRecordLink`; live-links passes no moves. The command handlers,
+  plan formats and digest rules were not edited, and nothing is fetched.
+- Strict check: `SC-HISTORY-RETAINED` names the relative promoted copy before
+  Git Locator resolution, including outside Git; the existing finding text,
+  severity, location and non-promotion fix remain covered by regression tests.
+- Documentation: added the prescribed sentences to the history, baseline
+  and spec guides and the Record Link Repair term after History Sanitize
+  Command in `CONTEXT.md`, linking ADR-0308. Re-recorded the Behavior Surface
+  Record with its owning generator; only those three guide fingerprints
+  changed. `docs/references/skill-coverage.json` is unchanged.
+
+Acceptance evidence:
+
+| Criterion | Focused evidence |
+| --- | --- |
+| Promoted-copy repair and both plans, preserving other locators | `TestPlanRecordLinksPointsAPromotedTargetAtItsCopy` checks citation rewrites, relative planned bytes, planning without writes, Apply's exact bytes and an empty second plan. `TestRecordLinkPromotionRequiresTheListedCopy` covers absent/unlisted/directory copies, outside-source targets and self-links. Both new command tests passed: sanitize asserts the entire Surface Transcript 1, empty stderr and exit 0 using historical record bytes; baseline asserts JSON citations and proves changing only the promoted rewrite changes the digest. Existing record-link, live-link, history apply and baseline citation/digest regressions passed unchanged. |
+| Strict fix names the same copy | `TestHistoryRetainedNamesThePromotedCopyForARecordLink` passed inside and outside Git, checking exact fixes and unchanged finding text, severity and location; the removed link retains its locator inside Git. Existing History Retained regressions passed. |
+| Guides, glossary and current Behavior Surface Record | Required text is present, and the owning record command exited 0 after the final guide edits. Diff inspection confirms exactly the three expected guide fingerprints changed. |
+
+Focused checks (all exited 0):
+
+- `go test ./internal/spec ./internal/speccheck ./internal/cli -run 'Test(PlanRecordLinks|RecordLinkPromotion|MissingRelativeLinks|LiveLinks|HistoryRetained|HistorySanitize(RewritesBroken|PointsAPromoted|PlanWritesNothing|AppliesTheNextBatch)|BaselineUpdate(RewritesBroken|PlansAPromoted|RewritesEveryListedCitation|HistoryDigestBindsCitations))' -count=1`
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` (required generation, not the Daemon's read-only Verification command).
+- `GOOS=windows go test -c -o <temporary-directory>/spec.test.exe ./internal/spec`, then the equivalent compile commands for `./internal/speccheck` and `./internal/cli`; all three test executables compiled into a disposable directory under `/tmp`.
+- `git diff --check`.
+
+The initial focused spec-test attempt failed to compile because
+`RecordLinkPromotion` did not yet exist. After implementation, the new
+behavior tests and existing focused regressions passed. The sandbox rejected
+the symlinked writable root before command execution; authorized escalated
+execution accessed the assigned checkout without changing sandbox settings.
+
+Not run: the authored `## Verification` command, repository Verification,
+incremental Verification or the full suite; these remain for Daemon
+settlement. No Task status, Task Graph manifest, other Task file, existing
+test assertion or skill was edited; no commit, push or pull request was made.
+No follow-up outside this slice was identified.

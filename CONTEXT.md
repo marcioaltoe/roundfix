@@ -1005,6 +1005,9 @@ _Avoid_: Archive commit, record backfill, amend
 The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts Legacy Archive Folders to Archive Records, removes retired families and rewrites their citations to Git Locators after the History Full Tag. `roundfix baseline update` runs the same planning for all eligible units at once ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive Command, unplanned deletion, cleanup command
 
+**Record Link Repair**: The `record-links` unit of the History Sanitize Command and of the history section of `roundfix baseline update`, which rewrites each broken relative link and self-link of a surviving Archive Record: a target the record promoted points at its `docs/references/` copy, and any other becomes a Git Locator tried against the record's directory, then its `source` folder ([ADR-0308](docs/adr/0308-an-archive-rebases-the-unproven-links-it-records-and-the-record-link-repair-points-a-promoted-target-at-its-copy.md)).
+_Avoid_: Live-links repair, record rewrite, Archive Relink
+
 **Pending History**:
 The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Active history, current history, unplanned archive
