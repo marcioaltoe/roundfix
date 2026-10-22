@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-22
-spec: null
+spec: 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit
 reason: null
 ---
 
