@@ -934,7 +934,7 @@ The Archive Command's pre-write operation that promotes a cited non-core file to
 _Avoid_: Archive rewrite, source duplication, link cleanup
 
 **Legacy Link Rebase**:
-The rewrite of relative destinations in an Archive Record outcome and each promoted copy: a folder destination points at its promoted copy, or becomes a Git Locator when no copy survives, never the record itself; every other destination keeps the same repository path ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
+The rewrite of relative destinations in an Archive Record outcome, its unproven entries and each promoted copy: a folder destination points at its promoted copy, or becomes a Git Locator when no copy survives, never the record itself; every other destination keeps the same repository path. An unproven entry is read as text of the folder's `_prd.md` ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md), [ADR-0308](docs/adr/0308-an-archive-rebases-the-unproven-links-it-records-and-the-record-link-repair-points-a-promoted-target-at-its-copy.md)).
 _Avoid_: Archive Relink, broken-link report, arbitrary link rewrite
 
 **Default Branch Head**:
@@ -1005,6 +1005,9 @@ _Avoid_: Archive commit, record backfill, amend
 The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts Legacy Archive Folders to Archive Records, removes retired families and rewrites their citations to Git Locators after the History Full Tag. `roundfix baseline update` runs the same planning for all eligible units at once ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Archive Command, unplanned deletion, cleanup command
 
+**Record Link Repair**: The `record-links` unit of the History Sanitize Command and of the history section of `roundfix baseline update`, which rewrites each broken relative link and self-link of a surviving Archive Record: a target the record promoted points at its `docs/references/` copy, and any other becomes a Git Locator tried against the record's directory, then its `source` folder ([ADR-0308](docs/adr/0308-an-archive-rebases-the-unproven-links-it-records-and-the-record-link-repair-points-a-promoted-target-at-its-copy.md)).
+_Avoid_: Live-links repair, record rewrite, Archive Relink
+
 **Pending History**:
 The units of a repository's existing history that the History Sanitize Command would plan, which the Managed Refresh includes in its plan and the upgrade notice names. `roundfix baseline update` plans these units with the Baseline Plan ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md)).
 _Avoid_: Active history, current history, unplanned archive
@@ -1018,7 +1021,7 @@ A pending History Sanitize Command unit that cannot be converted. The plan and t
 _Avoid_: Converted unit, skipped silently, failed batch
 
 **Lenient Legacy Reading**:
-The reading of a Legacy Archive Folder that tolerates and names projection rows outside the graph and retired Task types, accepts a legacy list of maps `unproven`, and reads the summary, `legacy: not recorded` for missing legacy override approval or reason, adopted sources and creation-date fallbacks. Legacy Link Rebase is part of this reading for the outcome and promoted copies. It is never applied to an active Spec ([ADR-0251](docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md), [ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0277](docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md)).
+The reading of a Legacy Archive Folder that tolerates and names projection rows outside the graph and retired Task types, accepts a legacy list of maps `unproven`, and reads the summary, `legacy: not recorded` for missing legacy override approval or reason, adopted sources and creation-date fallbacks. Legacy Link Rebase is part of this reading for the outcome, the unproven entries and promoted copies. It is never applied to an active Spec ([ADR-0251](docs/adr/0251-a-legacy-archive-folder-is-read-leniently-and-a-failed-qa-keeps-its-verdict.md), [ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0277](docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md), [ADR-0308](docs/adr/0308-an-archive-rebases-the-unproven-links-it-records-and-the-record-link-repair-points-a-promoted-target-at-its-copy.md)).
 _Avoid_: Relaxed active reading, manifest rewrite, schema bypass
 
 **Sanitize Batch**:

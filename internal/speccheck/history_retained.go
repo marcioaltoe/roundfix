@@ -205,7 +205,14 @@ func detectHistoryRetained(result *Result, root, specsRoot string) error {
 					continue
 				}
 				fix := "Restore " + link.Target + " or replace its link; Git Locator resolution is skipped outside Git."
-				if git {
+				copyPath, promoted := spec.RecordLinkPromotion(root, link, record)
+				if isRecord && promoted {
+					relative, err := filepath.Rel(filepath.Dir(path), filepath.FromSlash(copyPath))
+					if err != nil {
+						return err
+					}
+					fix = "Replace the link with " + filepath.ToSlash(relative) + ", the copy the archive promoted to " + copyPath + "."
+				} else if git {
 					var l spec.GitLocator
 					if isRecord {
 						l, err = spec.ResolveRecordLink(ctx, root, link, record)

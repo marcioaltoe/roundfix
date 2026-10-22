@@ -29,7 +29,9 @@ Review and Handoff families, terminal Findings left active, broken relative
 links in Archive Records, Live Documents and the user guide, record self-links,
 and Git Locators whose commit lacks the path or is unreachable from the default
 branch and tags. Each diagnostic names the file and line and the deletion or
-replacement Git Locator. Outside Git, locator resolution and validation are
+replacement Git Locator. For a broken Archive Record link to a file the record
+promoted, the fix names the relative link to its `docs/references/` copy instead
+(ADR-0308). Outside Git, locator resolution and validation are
 listed as skipped; file checks still run. It also reports a citation that cites a removed history file without a Git Locator in any Citation Source outside docs/history, and skips a link to a file a pending Task declares in creates:. The check reads only local files and Git, including tracked and untracked, unignored Citation Sources, and sends nothing anywhere.
 
 Claim Receipts resolve `ADR-NNNN` in `docs/adr/`, then read the newest addition

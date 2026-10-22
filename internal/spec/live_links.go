@@ -88,7 +88,7 @@ func PlanLiveLinks(ctx context.Context, root, specRootRel, archiveRootRel string
 			if len(locators) == 0 {
 				return nil
 			}
-			next, count, err := rewriteRecordLinks(content, path, locators)
+			next, count, err := rewriteRecordLinks(content, path, locators, nil)
 			if err != nil {
 				return err
 			}
