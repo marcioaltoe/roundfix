@@ -1,0 +1,223 @@
+$ go test -count=1 -v -run ^(TestArchiveRebasesTheUnprovenLinksItRecords|TestLegacyConversionRebasesTheUnprovenLinksItRecords|TestLegacyUnprovenMapsBecomeOneLineEach|TestLegacyUnprovenRefusesANestedMap|TestActiveSpecStillRefusesUnprovenMaps|TestSpec0058ReplayArchivesDeclaredUnreachableRelease|TestArchiveQAOverrideRecordsARelativeOutcome|TestArchiveAppliesTheOneEligibilityDecision|TestLegacyConversionWritesARecordGitStillHolds|TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck|TestRunArchiveDeclaredUnreachableContract|TestRunArchiveUsesConfiguredExternalSpecRoot|TestPlanRecordLinksPointsAPromotedTargetAtItsCopy|TestRecordLinkPromotionRequiresTheListedCopy|TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource|TestMissingRelativeLinksFindsBrokenAndSelfLinks|TestHistoryRetainedNamesThePromotedCopyForARecordLink|TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator|TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames|TestHistorySanitizePointsAPromotedRecordLinkAtItsCopyTranscript|TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy|TestHistorySanitizePlanWritesNothing|TestHistorySanitizeAppliesTheNextBatch|TestBaselineUpdateRewritesEveryListedCitation|TestBaselineUpdateHistoryDigestBindsCitations|TestArchiveUnprovenRebaseKeepsTheCallerSlice)$ ./internal/spec ./internal/speccheck ./internal/cli
+stdout:
+=== RUN   TestArchiveQAOverrideRecordsARelativeOutcome
+=== PAUSE TestArchiveQAOverrideRecordsARelativeOutcome
+=== RUN   TestSpec0058ReplayArchivesDeclaredUnreachableRelease
+=== PAUSE TestSpec0058ReplayArchivesDeclaredUnreachableRelease
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords
+=== RUN   TestLegacyConversionRebasesTheUnprovenLinksItRecords
+=== PAUSE TestLegacyConversionRebasesTheUnprovenLinksItRecords
+=== RUN   TestArchiveUnprovenRebaseKeepsTheCallerSlice
+=== PAUSE TestArchiveUnprovenRebaseKeepsTheCallerSlice
+=== RUN   TestLegacyConversionWritesARecordGitStillHolds
+=== PAUSE TestLegacyConversionWritesARecordGitStillHolds
+=== RUN   TestLegacyUnprovenMapsBecomeOneLineEach
+=== PAUSE TestLegacyUnprovenMapsBecomeOneLineEach
+=== RUN   TestLegacyUnprovenRefusesANestedMap
+=== PAUSE TestLegacyUnprovenRefusesANestedMap
+=== RUN   TestActiveSpecStillRefusesUnprovenMaps
+=== PAUSE TestActiveSpecStillRefusesUnprovenMaps
+=== RUN   TestPlanRecordLinksPointsAPromotedTargetAtItsCopy
+=== PAUSE TestPlanRecordLinksPointsAPromotedTargetAtItsCopy
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy
+=== PAUSE TestRecordLinkPromotionRequiresTheListedCopy
+=== RUN   TestMissingRelativeLinksFindsBrokenAndSelfLinks
+=== PAUSE TestMissingRelativeLinksFindsBrokenAndSelfLinks
+=== RUN   TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource
+=== PAUSE TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource
+=== CONT  TestArchiveQAOverrideRecordsARelativeOutcome
+=== CONT  TestLegacyUnprovenMapsBecomeOneLineEach
+=== CONT  TestRecordLinkPromotionRequiresTheListedCopy
+=== CONT  TestPlanRecordLinksPointsAPromotedTargetAtItsCopy
+=== CONT  TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource
+=== CONT  TestLegacyConversionWritesARecordGitStillHolds
+=== CONT  TestArchiveUnprovenRebaseKeepsTheCallerSlice
+=== CONT  TestActiveSpecStillRefusesUnprovenMaps
+=== RUN   TestArchiveUnprovenRebaseKeepsTheCallerSlice/nil_rebase
+=== PAUSE TestArchiveUnprovenRebaseKeepsTheCallerSlice/nil_rebase
+=== RUN   TestArchiveUnprovenRebaseKeepsTheCallerSlice/rewritten_copy
+=== PAUSE TestArchiveUnprovenRebaseKeepsTheCallerSlice/rewritten_copy
+=== RUN   TestArchiveUnprovenRebaseKeepsTheCallerSlice/second_entry_error
+=== PAUSE TestArchiveUnprovenRebaseKeepsTheCallerSlice/second_entry_error
+=== CONT  TestMissingRelativeLinksFindsBrokenAndSelfLinks
+=== CONT  TestLegacyUnprovenRefusesANestedMap
+=== CONT  TestLegacyConversionRebasesTheUnprovenLinksItRecords
+=== RUN   TestLegacyUnprovenRefusesANestedMap/empty
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy/listed_copy
+--- PASS: TestMissingRelativeLinksFindsBrokenAndSelfLinks (0.01s)
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/pass
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/pass
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/pass_with_environment-blocked_rows
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/pass_with_environment-blocked_rows
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/qualifying_partial
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/qualifying_partial
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/fail_verdict
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/fail_verdict
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/unsupported_verdict
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/unsupported_verdict
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/partial_with_finding-blocked_rows
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/partial_with_finding-blocked_rows
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/partial_with_environment-blocked_rows
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/partial_with_environment-blocked_rows
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/partial_without_declared-blocked_rows
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/partial_without_declared-blocked_rows
+=== RUN   TestArchiveAppliesTheOneEligibilityDecision/partial_with_more_declared_rows_than_declarations
+=== PAUSE TestArchiveAppliesTheOneEligibilityDecision/partial_with_more_declared_rows_than_declarations
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords/removed_on_main
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords/removed_on_main
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords/removed_only_on_pull_request
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords/removed_only_on_pull_request
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords/promoted
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords/promoted
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords/plain_bytes
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords/plain_bytes
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords/outside_folder
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords/outside_folder
+=== RUN   TestArchiveRebasesTheUnprovenLinksItRecords/external_Spec_Root
+=== PAUSE TestArchiveRebasesTheUnprovenLinksItRecords/external_Spec_Root
+=== CONT  TestSpec0058ReplayArchivesDeclaredUnreachableRelease
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy/absent_copy
+--- PASS: TestActiveSpecStillRefusesUnprovenMaps (0.01s)
+=== CONT  TestArchiveUnprovenRebaseKeepsTheCallerSlice/nil_rebase
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy/unlisted_copy
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy/outside_source
+=== CONT  TestArchiveUnprovenRebaseKeepsTheCallerSlice/second_entry_error
+--- PASS: TestArchiveQAOverrideRecordsARelativeOutcome (0.01s)
+=== CONT  TestArchiveUnprovenRebaseKeepsTheCallerSlice/rewritten_copy
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy/self_link
+=== RUN   TestRecordLinkPromotionRequiresTheListedCopy/directory_copy
+--- PASS: TestRecordLinkPromotionRequiresTheListedCopy (0.02s)
+    --- PASS: TestRecordLinkPromotionRequiresTheListedCopy/listed_copy (0.01s)
+    --- PASS: TestRecordLinkPromotionRequiresTheListedCopy/absent_copy (0.00s)
+    --- PASS: TestRecordLinkPromotionRequiresTheListedCopy/unlisted_copy (0.00s)
+    --- PASS: TestRecordLinkPromotionRequiresTheListedCopy/outside_source (0.00s)
+    --- PASS: TestRecordLinkPromotionRequiresTheListedCopy/self_link (0.00s)
+    --- PASS: TestRecordLinkPromotionRequiresTheListedCopy/directory_copy (0.00s)
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/pass
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/partial_with_finding-blocked_rows
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/partial_with_more_declared_rows_than_declarations
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/partial_without_declared-blocked_rows
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/partial_with_environment-blocked_rows
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/fail_verdict
+--- PASS: TestArchiveUnprovenRebaseKeepsTheCallerSlice (0.00s)
+    --- PASS: TestArchiveUnprovenRebaseKeepsTheCallerSlice/nil_rebase (0.00s)
+    --- PASS: TestArchiveUnprovenRebaseKeepsTheCallerSlice/second_entry_error (0.00s)
+    --- PASS: TestArchiveUnprovenRebaseKeepsTheCallerSlice/rewritten_copy (0.01s)
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/unsupported_verdict
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/qualifying_partial
+=== CONT  TestArchiveAppliesTheOneEligibilityDecision/pass_with_environment-blocked_rows
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords/removed_on_main
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords/plain_bytes
+--- PASS: TestArchiveAppliesTheOneEligibilityDecision (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/pass (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/partial_with_finding-blocked_rows (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/partial_without_declared-blocked_rows (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/partial_with_more_declared_rows_than_declarations (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/fail_verdict (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/partial_with_environment-blocked_rows (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/unsupported_verdict (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/pass_with_environment-blocked_rows (0.00s)
+    --- PASS: TestArchiveAppliesTheOneEligibilityDecision/qualifying_partial (0.00s)
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords/external_Spec_Root
+=== RUN   TestLegacyUnprovenRefusesANestedMap/nested
+--- PASS: TestLegacyUnprovenMapsBecomeOneLineEach (0.04s)
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords/outside_folder
+=== RUN   TestLegacyUnprovenRefusesANestedMap/sequence_holds_map
+=== RUN   TestLegacyUnprovenRefusesANestedMap/duplicate_key
+--- PASS: TestLegacyUnprovenRefusesANestedMap (0.11s)
+    --- PASS: TestLegacyUnprovenRefusesANestedMap/empty (0.03s)
+    --- PASS: TestLegacyUnprovenRefusesANestedMap/nested (0.03s)
+    --- PASS: TestLegacyUnprovenRefusesANestedMap/sequence_holds_map (0.02s)
+    --- PASS: TestLegacyUnprovenRefusesANestedMap/duplicate_key (0.03s)
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords/promoted
+--- PASS: TestSpec0058ReplayArchivesDeclaredUnreachableRelease (0.20s)
+=== CONT  TestArchiveRebasesTheUnprovenLinksItRecords/removed_only_on_pull_request
+--- PASS: TestLegacyConversionWritesARecordGitStillHolds (0.27s)
+--- PASS: TestLegacyConversionRebasesTheUnprovenLinksItRecords (0.35s)
+--- PASS: TestArchiveRebasesTheUnprovenLinksItRecords (0.00s)
+    --- PASS: TestArchiveRebasesTheUnprovenLinksItRecords/plain_bytes (0.27s)
+    --- PASS: TestArchiveRebasesTheUnprovenLinksItRecords/external_Spec_Root (0.27s)
+    --- PASS: TestArchiveRebasesTheUnprovenLinksItRecords/outside_folder (0.26s)
+    --- PASS: TestArchiveRebasesTheUnprovenLinksItRecords/promoted (0.26s)
+    --- PASS: TestArchiveRebasesTheUnprovenLinksItRecords/removed_on_main (0.35s)
+    --- PASS: TestArchiveRebasesTheUnprovenLinksItRecords/removed_only_on_pull_request (0.40s)
+--- PASS: TestPlanRecordLinksPointsAPromotedTargetAtItsCopy (0.97s)
+--- PASS: TestPlanRecordLinksResolvesAgainstTheRecordThenItsSource (1.23s)
+PASS
+suiteguard: guard cost: measured 2664 paths; fingerprint took 84.703625ms before and 86.571667ms after
+ok  	roundfix/internal/spec	1.715s
+=== RUN   TestHistoryRetainedNamesThePromotedCopyForARecordLink
+=== PAUSE TestHistoryRetainedNamesThePromotedCopyForARecordLink
+=== RUN   TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator
+=== PAUSE TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator
+=== RUN   TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames
+=== PAUSE TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames
+=== CONT  TestHistoryRetainedNamesThePromotedCopyForARecordLink
+=== CONT  TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames
+=== CONT  TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator
+--- PASS: TestHistoryRetainedNamesThePromotedCopyForARecordLink (0.92s)
+--- PASS: TestHistoryRetainedPrintsTheLocatorOfTheFileABrokenLinkNames (0.92s)
+--- PASS: TestHistoryRetainedReportsBrokenAndSelfLinksWithTheirGitLocator (1.04s)
+PASS
+suiteguard: guard cost: measured 2664 paths; fingerprint took 136.28775ms before and 104.521542ms after
+ok  	roundfix/internal/speccheck	1.573s
+=== RUN   TestRunArchiveDeclaredUnreachableContract
+=== PAUSE TestRunArchiveDeclaredUnreachableContract
+=== RUN   TestRunArchiveUsesConfiguredExternalSpecRoot
+=== PAUSE TestRunArchiveUsesConfiguredExternalSpecRoot
+=== RUN   TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck
+=== PAUSE TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck
+=== RUN   TestBaselineUpdateHistoryDigestBindsCitations
+=== PAUSE TestBaselineUpdateHistoryDigestBindsCitations
+=== RUN   TestBaselineUpdateRewritesEveryListedCitation
+=== PAUSE TestBaselineUpdateRewritesEveryListedCitation
+=== RUN   TestHistorySanitizePointsAPromotedRecordLinkAtItsCopyTranscript
+=== PAUSE TestHistorySanitizePointsAPromotedRecordLinkAtItsCopyTranscript
+=== RUN   TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== PAUSE TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== RUN   TestHistorySanitizePlanWritesNothing
+=== PAUSE TestHistorySanitizePlanWritesNothing
+=== RUN   TestHistorySanitizeAppliesTheNextBatch
+=== PAUSE TestHistorySanitizeAppliesTheNextBatch
+=== CONT  TestRunArchiveDeclaredUnreachableContract
+=== RUN   TestRunArchiveDeclaredUnreachableContract/passing_report_remains_unchanged
+=== CONT  TestHistorySanitizePointsAPromotedRecordLinkAtItsCopyTranscript
+=== CONT  TestHistorySanitizeAppliesTheNextBatch
+=== CONT  TestHistorySanitizePlanWritesNothing
+=== CONT  TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== CONT  TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck
+=== CONT  TestRunArchiveUsesConfiguredExternalSpecRoot
+=== CONT  TestBaselineUpdateRewritesEveryListedCitation
+=== CONT  TestBaselineUpdateHistoryDigestBindsCitations
+=== RUN   TestRunArchiveDeclaredUnreachableContract/declared-only_partial_report_archives
+--- PASS: TestRunArchiveUsesConfiguredExternalSpecRoot (0.77s)
+--- PASS: TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck (1.26s)
+=== RUN   TestRunArchiveDeclaredUnreachableContract/surplus_declarations_still_cover_declared_rows
+--- PASS: TestHistorySanitizePlanWritesNothing (1.42s)
+--- PASS: TestHistorySanitizePointsAPromotedRecordLinkAtItsCopyTranscript (1.43s)
+--- PASS: TestHistorySanitizeAppliesTheNextBatch (1.70s)
+=== RUN   TestRunArchiveDeclaredUnreachableContract/finding-blocked_partial_report_refuses
+=== RUN   TestRunArchiveDeclaredUnreachableContract/environment-blocked_partial_report_refuses
+=== RUN   TestRunArchiveDeclaredUnreachableContract/declaration_shortfall_refuses
+=== RUN   TestRunArchiveDeclaredUnreachableContract/failing_report_refuses_exactly_as_before
+--- PASS: TestRunArchiveDeclaredUnreachableContract (2.17s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/passing_report_remains_unchanged (0.50s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/declared-only_partial_report_archives (0.91s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/surplus_declarations_still_cover_declared_rows (0.30s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/finding-blocked_partial_report_refuses (0.11s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/environment-blocked_partial_report_refuses (0.14s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/declaration_shortfall_refuses (0.10s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/failing_report_refuses_exactly_as_before (0.10s)
+--- PASS: TestBaselineUpdateHistoryDigestBindsCitations (2.18s)
+--- PASS: TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy (2.29s)
+--- PASS: TestBaselineUpdateRewritesEveryListedCitation (2.51s)
+PASS
+suiteguard: guard cost: measured 2664 paths; fingerprint took 265.028375ms before and 70.436416ms after
+ok  	roundfix/internal/cli	3.159s
+stderr:
+exit: 0

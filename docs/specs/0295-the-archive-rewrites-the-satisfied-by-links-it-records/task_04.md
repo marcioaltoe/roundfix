@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0295-the-archive-rewrites-the-satisfied-by-links-it-records
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

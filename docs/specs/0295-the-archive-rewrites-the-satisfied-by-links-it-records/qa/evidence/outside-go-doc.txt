@@ -1,0 +1,15 @@
+$ go doc net/url.URL.ResolveReference
+stdout:
+package url // import "net/url"
+
+func (u *URL) ResolveReference(ref *URL) *URL
+    ResolveReference resolves a URI reference to an absolute URI from an
+    absolute base URI u, per RFC 3986 Section 5.2. The URI reference may be
+    relative or absolute. ResolveReference always returns a new URL instance,
+    even if the returned URL is identical to either the base or reference.
+    If ref is an absolute URL, then ResolveReference ignores base and returns a
+    copy of ref.
+
+stderr:
+exit: 0
+PRD cited passage occurs exactly after whitespace normalization.

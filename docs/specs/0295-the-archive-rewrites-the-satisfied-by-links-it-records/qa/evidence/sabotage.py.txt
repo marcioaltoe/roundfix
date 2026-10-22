@@ -1,0 +1,17 @@
+import pathlib
+exec(pathlib.Path('/private/tmp/0295-common.py').read_text())
+cases=[('unproven','internal/spec/archive_record.go','if r.Unproven != nil {','if false && r.Unproven != nil {',[('./internal/spec','TestArchiveRebasesTheUnprovenLinksItRecords'),('./internal/cli','TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck')]),('promotion','internal/spec/record_links.go',None,None,[('./internal/spec','TestPlanRecordLinksPointsAPromotedTargetAtItsCopy'),('./internal/cli','TestHistorySanitizePointsAPromotedRecordLinkAtItsCopyTranscript'),('./internal/speccheck','TestHistoryRetainedNamesThePromotedCopyForARecordLink')]),('copy-required','internal/spec/record_links.go','promoted == copyPath && historyRewriteRegularFile(root, copyPath) == nil','promoted == copyPath',[('./internal/spec','TestRecordLinkPromotionRequiresTheListedCopy')])]
+logs=[]
+for name,path,old,new,tests in cases:
+ repo=archive_copy(S['head'],'sabotage-'+name);p=repo/path;text=p.read_text()
+ if old:
+  assert text.count(old)==1;(p).write_text(text.replace(old,new,1))
+ else:
+  start=text.index('func RecordLinkPromotion(');end=text.index('\n// ResolveRecordLink',start)
+  text=text[:start]+text[start:text.index('{',start)+1]+'\n\treturn "", false\n}\n'+text[end:];p.write_text(text)
+ for package,test in tests:
+  log=[];result=run(['go','test','-count=1','-v','-run','^'+test+'$',package],repo,log)
+  logs.append('Sabotage '+name+': '+path+'\n'+''.join(log))
+  assert result.returncode!=0 and '--- FAIL: '+test in result.stdout,(name,test,result.stdout,result.stderr)
+  print(name+': '+test+' fails as required',flush=True)
+(TMP/'sabotage.txt').write_text('\n'.join(logs));(TMP/'sabotage-success').write_text('pass')

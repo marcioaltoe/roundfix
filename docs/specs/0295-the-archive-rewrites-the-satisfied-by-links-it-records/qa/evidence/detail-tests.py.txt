@@ -1,0 +1,10 @@
+import pathlib
+exec(pathlib.Path('/private/tmp/0295-common.py').read_text())
+names=[]
+for task in ('task_01','task_02'):
+ text=(SPEC/(task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+ for pattern in re.findall(r"-run '(\^\([^']+\)\$)'",text):names+=pattern[2:-2].split('|')
+names.append('TestArchiveUnprovenRebaseKeepsTheCallerSlice');log=[]
+p=run(['go','test','-count=1','-v','-run','^('+'|'.join(names)+')$','./internal/spec','./internal/speccheck','./internal/cli'],ROOT,log,0)
+for name in names:assert '--- PASS: '+name+' ' in p.stdout,'No observed pass for '+name
+(TMP/'named-tests.txt').write_text(''.join(log));print(str(len(names))+' named tests observed PASS, no skips.')

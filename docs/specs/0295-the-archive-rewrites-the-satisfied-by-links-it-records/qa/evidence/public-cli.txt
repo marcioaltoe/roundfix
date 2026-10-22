@@ -1,0 +1,489 @@
+$ git init --bare /private/tmp/roundfix-0295-_k4e88kk/audited-branch-origin.git
+stdout:
+Initialized empty Git repository in /private/tmp/roundfix-0295-_k4e88kk/audited-branch-origin.git/
+stderr:
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+exit: 0
+
+Fixture audited-branch resolved path /private/tmp/roundfix-0295-_k4e88kk/audited-branch
+main: 8b735628f04ecec31ce2740e5fd013933240430e
+source_revision: 31af357e4027821c42b0bcf4d2a65fcd7214b95b
+
+$ ./bin/roundfix archive 0001-demo --promote references/promoted.md --pull-request 91
+stdout:
+archived 0001-demo -> docs/history/specs/0001-demo.md; removed 7 file(s) (1767 bytes) kept in Git at 31af357e4027; promoted 1 file(s) to docs/references/; pull request 91
+stderr:
+roundfix: warning: source_revision 31af357e4027 is not an ancestor of origin/main; readers recover it from refs/pull/91/head
+exit: 0
+
+Archive Record:
+---
+schema: roundfix/archive-record/v1
+spec: 0001-demo
+title: PRD
+status: archived
+created: ""
+archived: "2026-10-21"
+disposition: partial
+source: docs/specs/0001-demo
+source_revision: 31af357e4027821c42b0bcf4d2a65fcd7214b95b
+qa_task: ""
+qa_report: qa-report-2026-10-21.md
+qa_verdict: partial
+unproven:
+  - the operator records it in [`references/promoted.md`](../../references/promoted.md)
+  - the operator follows `references/removed.md` (`docs/specs/0001-demo/references/removed.md@8b735628f04ecec31ce2740e5fd013933240430e`)
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/promoted.md
+pull_request: "91"
+---
+
+# PRD
+
+Implementation verified; production evidence remains declared.
+
+$ ./bin/roundfix spec check --strict 0002-other
+stdout:
+Spec 0002-other
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  SC-CONSTRAINT-MISSING: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-UNREASONED: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-SOURCE: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNBOUNDED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNTYPED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAPPROVED: missing docs/specs/0002-other/_techspec.md
+  vocabulary documentation detector: missing docs/specs/0002-other/_techspec.md
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-ABSENCE-UNPROVEN: missing docs/specs/0002-other/_techspec.md
+  SC-ADR-ALTERNATIVES-UNRELATED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNREAD: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNMAPPED: missing docs/specs/0002-other/_techspec.md
+  SC-CONTRACT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/0002-other/references/_index.md
+stderr:
+exit: 0
+
+$ git init --bare /private/tmp/roundfix-0295-_k4e88kk/audited-main-origin.git
+stdout:
+Initialized empty Git repository in /private/tmp/roundfix-0295-_k4e88kk/audited-main-origin.git/
+stderr:
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+exit: 0
+
+Fixture audited-main resolved path /private/tmp/roundfix-0295-_k4e88kk/audited-main
+main: f098f6f4330ab7b4f5ce49f19b9170e43cfa237b
+source_revision: f098f6f4330ab7b4f5ce49f19b9170e43cfa237b
+
+$ ./bin/roundfix archive 0001-demo --promote references/promoted.md
+stdout:
+archived 0001-demo -> docs/history/specs/0001-demo.md; removed 7 file(s) (1899 bytes) kept in Git at f098f6f4330a; promoted 1 file(s) to docs/references/
+stderr:
+exit: 0
+
+Archive Record:
+---
+schema: roundfix/archive-record/v1
+spec: 0001-demo
+title: PRD
+status: archived
+created: ""
+archived: "2026-10-21"
+disposition: partial
+source: docs/specs/0001-demo
+source_revision: f098f6f4330ab7b4f5ce49f19b9170e43cfa237b
+qa_task: ""
+qa_report: qa-report-2026-10-21.md
+qa_verdict: partial
+unproven:
+  - the operator records it in [`references/promoted.md`](../../references/promoted.md)
+  - the operator follows `references/removed.md` (`docs/specs/0001-demo/references/removed.md@f098f6f4330ab7b4f5ce49f19b9170e43cfa237b`)
+  - byte-identical plain text; no relative link.
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/promoted.md
+---
+
+# PRD
+
+Implementation verified; production evidence remains declared.
+
+$ ./bin/roundfix spec check --strict 0002-other
+stdout:
+Spec 0002-other
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  SC-CONSTRAINT-MISSING: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-UNREASONED: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-SOURCE: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNBOUNDED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNTYPED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAPPROVED: missing docs/specs/0002-other/_techspec.md
+  vocabulary documentation detector: missing docs/specs/0002-other/_techspec.md
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-ABSENCE-UNPROVEN: missing docs/specs/0002-other/_techspec.md
+  SC-ADR-ALTERNATIVES-UNRELATED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNREAD: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNMAPPED: missing docs/specs/0002-other/_techspec.md
+  SC-CONTRACT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/0002-other/references/_index.md
+stderr:
+exit: 0
+
+$ git init --bare /private/tmp/roundfix-0295-_k4e88kk/base-branch-origin.git
+stdout:
+Initialized empty Git repository in /private/tmp/roundfix-0295-_k4e88kk/base-branch-origin.git/
+stderr:
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+exit: 0
+
+Fixture base-branch resolved path /private/tmp/roundfix-0295-_k4e88kk/base-branch
+main: 34e256ffde7386f9b57281704ef4923db19fc252
+source_revision: 6b34ed0dd43d8deb70b4a58626f2618eb903ac11
+
+$ ./bin/roundfix archive 0001-demo --promote references/promoted.md --pull-request 91
+stdout:
+archived 0001-demo -> docs/history/specs/0001-demo.md; removed 7 file(s) (1767 bytes) kept in Git at 6b34ed0dd43d; promoted 1 file(s) to docs/references/; pull request 91
+stderr:
+roundfix: warning: source_revision 6b34ed0dd43d is not an ancestor of origin/main; readers recover it from refs/pull/91/head
+exit: 0
+
+Archive Record:
+---
+schema: roundfix/archive-record/v1
+spec: 0001-demo
+title: PRD
+status: archived
+created: ""
+archived: "2026-10-21"
+disposition: partial
+source: docs/specs/0001-demo
+source_revision: 6b34ed0dd43d8deb70b4a58626f2618eb903ac11
+qa_task: ""
+qa_report: qa-report-2026-10-21.md
+qa_verdict: partial
+unproven:
+  - the operator records it in [`references/promoted.md`](references/promoted.md)
+  - the operator follows [`references/removed.md`](references/removed.md)
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/promoted.md
+pull_request: "91"
+---
+
+# PRD
+
+Implementation verified; production evidence remains declared.
+
+$ ./bin/roundfix spec check --strict 0002-other
+stdout:
+Spec 0002-other
+[error] SC-HISTORY-RETAINED: docs/history/specs/0001-demo.md links to a missing file or itself: docs/history/specs/references/promoted.md
+  at docs/history/specs/0001-demo.md:15
+  fix: Replace the link with `docs/history/specs/references/promoted.md` (pull request #91).
+[error] SC-HISTORY-RETAINED: docs/history/specs/0001-demo.md links to a missing file or itself: docs/history/specs/references/removed.md
+  at docs/history/specs/0001-demo.md:16
+  fix: Replace the link with `docs/specs/0001-demo/references/removed.md@34e256ffde7386f9b57281704ef4923db19fc252`.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  SC-CONSTRAINT-MISSING: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-UNREASONED: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-SOURCE: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNBOUNDED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNTYPED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAPPROVED: missing docs/specs/0002-other/_techspec.md
+  vocabulary documentation detector: missing docs/specs/0002-other/_techspec.md
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-ABSENCE-UNPROVEN: missing docs/specs/0002-other/_techspec.md
+  SC-ADR-ALTERNATIVES-UNRELATED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNREAD: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNMAPPED: missing docs/specs/0002-other/_techspec.md
+  SC-CONTRACT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/0002-other/references/_index.md
+stderr:
+exit: 1
+
+$ ./bin/roundfix history sanitize
+stdout:
+history sanitize plan: 1 unit(s) pending; 0 file(s) (0 bytes) leave docs/history
+record-links: rewrites 2 link(s) in 1 Archive Record(s)
+cites docs/history/specs/0001-demo.md:15 names docs/history/specs/references/promoted.md; rewrites to `docs/history/specs/references/promoted.md` (pull request #91)
+cites docs/history/specs/0001-demo.md:16 names docs/history/specs/references/removed.md; rewrites to `docs/specs/0001-demo/references/removed.md@34e256ffde7386f9b57281704ef4923db19fc252`
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+stderr:
+exit: 0
+
+$ ./bin/roundfix history sanitize
+stdout:
+history sanitize plan: 1 unit(s) pending; 0 file(s) (0 bytes) leave docs/history
+record-links: rewrites 2 link(s) in 1 Archive Record(s)
+cites docs/history/specs/0001-demo.md:15 names docs/history/specs/references/promoted.md; rewrites to docs/references/promoted.md
+cites docs/history/specs/0001-demo.md:16 names docs/history/specs/references/removed.md; rewrites to `docs/specs/0001-demo/references/removed.md@34e256ffde7386f9b57281704ef4923db19fc252`
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+stderr:
+exit: 0
+
+$ ./bin/roundfix spec check --strict 0002-other
+stdout:
+Spec 0002-other
+[error] SC-HISTORY-RETAINED: docs/history/specs/0001-demo.md links to a missing file or itself: docs/history/specs/references/promoted.md
+  at docs/history/specs/0001-demo.md:15
+  fix: Replace the link with ../../references/promoted.md, the copy the archive promoted to docs/references/promoted.md.
+[error] SC-HISTORY-RETAINED: docs/history/specs/0001-demo.md links to a missing file or itself: docs/history/specs/references/removed.md
+  at docs/history/specs/0001-demo.md:16
+  fix: Replace the link with `docs/specs/0001-demo/references/removed.md@34e256ffde7386f9b57281704ef4923db19fc252`.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  SC-CONSTRAINT-MISSING: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-UNREASONED: missing docs/specs/0002-other/_techspec.md
+  SC-CONSTRAINT-SOURCE: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNBOUNDED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNTYPED: missing docs/specs/0002-other/_techspec.md
+  SC-TOOLING-UNAPPROVED: missing docs/specs/0002-other/_techspec.md
+  vocabulary documentation detector: missing docs/specs/0002-other/_techspec.md
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-ABSENCE-UNPROVEN: missing docs/specs/0002-other/_techspec.md
+  SC-ADR-ALTERNATIVES-UNRELATED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNREAD: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0002-other/_techspec.md
+  SC-COVERAGE-UNMAPPED: missing docs/specs/0002-other/_techspec.md
+  SC-CONTRACT-UNDECLARED: missing docs/specs/0002-other/_techspec.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/0002-other/references/_index.md
+stderr:
+exit: 1
+
+$ git init --bare /private/tmp/roundfix-0295-_k4e88kk/base-main-origin.git
+stdout:
+Initialized empty Git repository in /private/tmp/roundfix-0295-_k4e88kk/base-main-origin.git/
+stderr:
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+exit: 0
+
+Fixture base-main resolved path /private/tmp/roundfix-0295-_k4e88kk/base-main
+main: 9c9b62925cf746506ddf0d61eff58f18863c4f27
+source_revision: 9c9b62925cf746506ddf0d61eff58f18863c4f27
+
+$ ./bin/roundfix archive 0001-demo --promote references/promoted.md
+stdout:
+archived 0001-demo -> docs/history/specs/0001-demo.md; removed 7 file(s) (1767 bytes) kept in Git at 9c9b62925cf7; promoted 1 file(s) to docs/references/
+stderr:
+exit: 0
+
+Archive Record:
+---
+schema: roundfix/archive-record/v1
+spec: 0001-demo
+title: PRD
+status: archived
+created: ""
+archived: "2026-10-21"
+disposition: partial
+source: docs/specs/0001-demo
+source_revision: 9c9b62925cf746506ddf0d61eff58f18863c4f27
+qa_task: ""
+qa_report: qa-report-2026-10-21.md
+qa_verdict: partial
+unproven:
+  - the operator records it in [`references/promoted.md`](references/promoted.md)
+  - the operator follows [`references/removed.md`](references/removed.md)
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/promoted.md
+---
+
+# PRD
+
+Implementation verified; production evidence remains declared.
+
+$ ./bin/roundfix history sanitize
+stdout:
+history sanitize plan: 1 unit(s) pending; 0 file(s) (0 bytes) leave docs/history
+record-links: rewrites 2 link(s) in 1 Archive Record(s)
+cites docs/history/specs/0001-demo.md:15 names docs/history/specs/references/promoted.md; rewrites to docs/references/promoted.md
+cites docs/history/specs/0001-demo.md:16 names docs/history/specs/references/removed.md; rewrites to `docs/specs/0001-demo/references/removed.md@9c9b62925cf746506ddf0d61eff58f18863c4f27`
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+stderr:
+exit: 0
+
+Surface Transcript 1: exact stdout, empty stderr, exit 0 matched.
+Dry-run snapshot: 71 files, byte-identical including Git metadata.
+
+$ ./bin/roundfix history sanitize --apply --batch 1
+stdout:
+history sanitize applied 1 unit(s): wrote 0 Archive Record(s), removed 0 file(s) (0 bytes) kept in Git at d827d2711557 and tag history-full; rewrote 2 citation(s) in 1 file(s); promoted 0 file(s) to docs/references/; 0 unit(s) remain
+stderr:
+exit: 0
+
+Archive Record:
+---
+schema: roundfix/archive-record/v1
+spec: 0001-demo
+title: PRD
+status: archived
+created: ""
+archived: "2026-10-21"
+disposition: partial
+source: docs/specs/0001-demo
+source_revision: 9c9b62925cf746506ddf0d61eff58f18863c4f27
+qa_task: ""
+qa_report: qa-report-2026-10-21.md
+qa_verdict: partial
+unproven:
+  - the operator records it in [`references/promoted.md`](../../references/promoted.md)
+  - the operator follows `references/removed.md` (`docs/specs/0001-demo/references/removed.md@9c9b62925cf746506ddf0d61eff58f18863c4f27`)
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/promoted.md
+---
+
+# PRD
+
+Implementation verified; production evidence remains declared.
+
+$ ./bin/roundfix history sanitize
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+stderr:
+exit: 0
+
+All CLI assertions passed, including persistence after fresh public reads and empty second repair plan.

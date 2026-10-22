@@ -1,0 +1,49 @@
+task_01 commit 52f4a9e849671c59bca8a6a0c640361f056e436a
+Actual changed paths from git diff-tree:
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0295-the-archive-rewrites-the-satisfied-by-links-it-records/task_01.md
+docs/user-guide/commands/archive.md
+internal/cli/archive_unproven_links_test.go
+internal/spec/archive_record.go
+internal/spec/archive_unproven_links_test.go
+All paths declared in Context or Recorded paths, plus assigned Task file.
+
+task_02 commit 2c89295fc7fd12274d7581321690c56ded7a4450
+Actual changed paths from git diff-tree:
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0295-the-archive-rewrites-the-satisfied-by-links-it-records/task_02.md
+docs/user-guide/commands/baseline.md
+docs/user-guide/commands/history.md
+docs/user-guide/commands/spec.md
+internal/cli/history_record_links_promoted_test.go
+internal/spec/live_links.go
+internal/spec/record_links.go
+internal/spec/record_links_promoted_test.go
+internal/speccheck/history_retained.go
+internal/speccheck/history_retained_promoted_test.go
+All paths declared in Context or Recorded paths, plus assigned Task file.
+
+task_03 commit 0352987cbf8b95ef2cceaa267083aaef97d2ee47
+Actual changed paths from git diff-tree:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/baseline.md
+.agents/skills/roundfix/references/spec.md
+docs/specs/0295-the-archive-rewrites-the-satisfied-by-links-it-records/task_03.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/roundfix/references/baseline.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+All paths declared in Context or Recorded paths, plus assigned Task file.
+
+Byte-identical protected blobs: 1273; existing tests: 344. No file added in protected tree scopes.
+
+Every changed Markdown QA settlement section is byte-identical to the Delivery Base.
+
+Operative authorization is present at Delivery Base 7181f1e624b52b1aa9f17f33d2c382e50ee00b2e before every Task commit. Changed governed paths: .agents/skills/roundfix/SKILL.md, .agents/skills/roundfix/references/archive.md, .agents/skills/roundfix/references/baseline.md, .agents/skills/roundfix/references/spec.md, skills/roundfix/SKILL.md. All bounded. Mechanical authorization audit names task_03 commit 0352987cbf8b95ef2cceaa267083aaef97d2ee47; no unaudited Task tooling commit remains. No prerequisite/consequent fix claimed.
+
+Current delta:
+?? docs/specs/0295-the-archive-rewrites-the-satisfied-by-links-it-records/qa/
