@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.107.0] - 2026-10-22
+
+### The queue's archive subject and pull request title fit 100 characters
+
+- **The archive commit subject keeps the slug while it fits.** The Delivery Queue's archive commit was always `docs: archive <slug>`, so a slug longer than 86 characters passed 100 characters and a commitlint `commit-msg` hook refused it. The subject is now `docs: archive <slug>` while that is at most 100 characters, and otherwise `docs: archive the <spec number> Spec`, or `docs: archive the Spec` for a slug without a Spec Number (ADR-0309).
+- **The pull request title keeps the slug while it fits with the squash suffix.** The title is `feat: deliver <slug>` while that is at most 91 characters, leaving room for the ` (#<number>)` a squash merge appends for any pull request number below 100000. Otherwise it is `feat: deliver <spec number>: <Spec title>` (or `feat: deliver <Spec title>` without a Spec Number), where the Spec title comes from the Archive Record and is cut at a word, with trailing punctuation removed, to fit. The squash subject on the default branch therefore stays within 100 characters.
+- **Lengths count UTF-16 code units, as commitlint does.** A non-ASCII slug that fits in units keeps the slug form.
+- **Unchanged.** Short slugs keep both messages byte for byte. The pull request body still names the full slug, the pull request record subject is unchanged, the queue still adopts an existing archive commit by its change whatever its subject, and every reader of squash subjects (Spec Number, `feat` type, release planning) keeps working.
+- **Glossary.** **Spec Number** names the archive subject and the title among its uses.
+
 ## [0.106.0] - 2026-10-21
 
 ### The archive rewrites the satisfied-by links it records as unproven
