@@ -22,4 +22,4 @@ A refusal report records the commit it audited, as a full report does, so a read
 
 ## Evidence
 
-Spec 0297 (`docs/specs/0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check/_techspec.md`, characterization) read oraculum's history read-only on 2026-10-22. Left out of 0297 because changing the report format is a decision its briefing did not cover.
+Spec 0297 (`docs/history/specs/0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check.md`, characterization) read oraculum's history read-only on 2026-10-22. Left out of 0297 because changing the report format is a decision its briefing did not cover.

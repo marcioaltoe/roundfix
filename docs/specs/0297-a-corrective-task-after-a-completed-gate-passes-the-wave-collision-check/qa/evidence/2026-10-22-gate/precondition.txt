@@ -1,9 +1,0 @@
-Spec 0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check
-No findings. Authored Verification commands were not executed.
-Skipped:
-  SC-FINDING-LIFECYCLE: missing docs/findings Finding
-  SC-ROLLUP-MEMBER: missing docs/findings rollup
-  SC-ARCHIVE-LICENSE: missing docs/history/findings
-  vocabulary documentation detector: missing docs/specs/0297-a-corrective-task-after-a-completed-gate-passes-the-wave-collision-check/_techspec.md Vocabulary Contract
-
-exit: 0

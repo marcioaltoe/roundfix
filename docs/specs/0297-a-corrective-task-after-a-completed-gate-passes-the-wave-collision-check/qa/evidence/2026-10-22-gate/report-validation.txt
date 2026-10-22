@@ -1,5 +1,0 @@
-Report structure: valid single frontmatter; closed partial; 12 rows, 9 pass, 2 environment-blocked, 1 declared-blocked.
-All 10 declared Requirements and non-waivable sources covered; all 12 rows have typed inputs.
-All 11 required top-level test PASS markers found.
-All evidence links resolve; every evidence file is text without NUL.
-Mechanical rows, authorization table and skips preserved.

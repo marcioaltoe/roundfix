@@ -1,4 +1,0 @@
-$ go test -count=1 -tags docscontract ./internal/docscontract
-ok  	roundfix/internal/docscontract	207.464s
-
-exit: 0
