@@ -78,6 +78,19 @@ unproven branch parks with its cause.
    `TestDeliveryPublicationRequestsNoCodeRabbitReview` and
    `TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug`. No existing
    test, golden or fixture changes.
+7. MUST keep every child process these tests start bounded. Without
+   `delivery.item_binary`, `stepExecutable` returns `os.Executable()`, which
+   in a test is the `internal/cli` test binary: started without
+   `ROUNDFIX_CLI_TEST_HELPER=1` it runs the whole suite again instead of the
+   command, and the suite starts the same test again, without end (on
+   2026-10-22 an authoring characterization test of this shape left 405
+   `cli.test archive 0001-widget-flow --pull-request 1` processes running
+   for two hours). Each new test either reaches no step that starts
+   `roundfix` (assert it) or starts it only as the CLI helper the way the
+   existing deliver tests do (`cliTestHelperEnv` in the child's
+   environment, never through `t.Setenv` in a parallel test). No child
+   outlives its test, and the Verification bounds the run with
+   `-timeout 10m`.
 
 ## Subtasks
 
@@ -85,6 +98,7 @@ unproven branch parks with its cause.
 - [ ] Resolve archive paths without the Specs Root directory.
 - [ ] Add the deliver start tests for the resume, the three refusals and the unarchived control.
 - [ ] Run the unchanged archive, record, publication and retry tests.
+- [ ] Keep every child the new tests start bounded: no step starts `roundfix`, or it runs as the CLI helper.
 
 ## Acceptance Criteria
 
@@ -117,7 +131,7 @@ unproven branch parks with its cause.
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run '^(TestDeliverStartResumesAnArchivedItemBranchAtReview|TestDeliverStartParksAnUnprovenArchivedItemBranch|TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive|TestResumeAcceptsARealArchiveCommit|TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord|TestInspectItemReportsAnArchivedSpec|TestDeliverStartContinuesTheItemBranchThatHoldsWork|TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview|TestDeliveryPublicationRequestsNoCodeRabbitReview|TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive TestResumeAcceptsARealArchiveCommit TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord TestInspectItemReportsAnArchivedSpec TestDeliverStartContinuesTheItemBranchThatHoldsWork TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview TestDeliveryPublicationRequestsNoCodeRabbitReview TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/cli` — expected: exit 0. Before this Task the three new tests do not exist, so the command fails at its first pass check. Afterwards the resume, refusal and control tests pass through `roundfix deliver start` with the unchanged archive, record, recovery, continuation, retry and publication tests, and the package's tests compile for Windows.
+- `out="$(go test -count=1 -timeout 10m -v -run '^(TestDeliverStartResumesAnArchivedItemBranchAtReview|TestDeliverStartParksAnUnprovenArchivedItemBranch|TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive|TestResumeAcceptsARealArchiveCommit|TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord|TestInspectItemReportsAnArchivedSpec|TestDeliverStartContinuesTheItemBranchThatHoldsWork|TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview|TestDeliveryPublicationRequestsNoCodeRabbitReview|TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec TestDeliverStartParksAnUnprovenArchivedItemBranch/inexact_archive_commit TestDeliverStartParksAnUnprovenArchivedItemBranch/folder_removed_without_archive TestDeliverStartParksAnUnprovenArchivedItemBranch/no_removing_commit TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive TestResumeAcceptsARealArchiveCommit TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord TestInspectItemReportsAnArchivedSpec TestDeliverStartContinuesTheItemBranchThatHoldsWork TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview TestDeliveryPublicationRequestsNoCodeRabbitReview TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/cli` — expected: exit 0. Before this Task the three new tests do not exist, so the command fails at its first pass check. Afterwards the resume, refusal and control tests pass through `roundfix deliver start` with the unchanged archive, record, recovery, continuation, retry and publication tests, and the package's tests compile for Windows.
 
 ## References
 
