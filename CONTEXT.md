@@ -857,6 +857,10 @@ _Avoid_: Estimated cost, price table
 The bounded wait of a running Delivery Queue item whose Implement step was refused only by the ceiling on active Implement Runs, shown as its blocker text and polled against the Run Database until a slot frees, `runs.slot_wait` expires or the queue deadline arrives ([ADR-0304](docs/adr/0304-a-queue-item-waits-for-a-run-slot-up-to-runs-slot-wait.md)).
 _Avoid_: Waiting stage, admission reservation
 
+**Check Wait**:
+The bounded wait of a Delivery Queue item in `checking` for its current-head checks and a mergeable state, and of its publication for an existing pull request to report the candidate head. Each wait lasts `delivery.check_timeout` (User Config, 60 minutes by default) from its own start, restarts once after a check re-run, and ends in a `checks-timeout` park that names the key and the duration ([ADR-0311](docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md)).
+_Avoid_: CI timeout, check deadline
+
 **Queue Token Ceiling**:
 An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped ([ADR-0199](docs/adr/0199-a-queue-token-ceiling-stops-new-starts-and-never-a-running-task.md)).
 _Avoid_: Run Budget, spending limit

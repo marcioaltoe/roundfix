@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0298-the-delivery-queues-check-wait-is-configurable-default-60-minutes
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -146,3 +146,37 @@ None. This Task changes documentation, the skill mirror, the skill version recor
 - ADR-0236
 - ADR-0304
 - ADR-0311
+
+## Result
+
+Implemented the documentation slice for the Delivery Queue Check Wait:
+
+- Added the `delivery.check_timeout` section and `60m` reference row to the
+  configuration guide, including bounds, User Config scope, Project Config
+  warning, validation refusal, and park text.
+- Updated the `deliver` guide and both Roundfix `deliver` reference copies with
+  the Check Wait park text, duration contract, retry guidance, and configured
+  key in the existing Pull Request polling sentence.
+- Added **Check Wait** to `CONTEXT.md` immediately after **Run Slot Wait**, with
+  the ADR-0311 glossary link and avoided terms.
+- Raised the canonical Roundfix skill from `0.1.126` to `0.1.127`, ran
+  `make skills-sync`, and confirmed the canonical and embedded skill copies
+  are identical.
+- Re-recorded `skills/testdata/owned-skill-versions.json` with
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` (`1 passed`).
+- Re-recorded `docs/references/behavior-surfaces.json` with
+  `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  (`1 passed`).
+
+Focused evidence:
+
+- `git diff --check` passed.
+- The canonical and embedded Roundfix skill files compare identical with
+  `cmp`.
+- A repository search found no remaining `existing checks timeout` or
+  `checks timeout parks` wording in the guides, agent guides, skill copies, or
+  glossary.
+
+The Daemon-owned `## Verification` commands were not run in this handoff.

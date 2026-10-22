@@ -387,7 +387,7 @@ delivery.derived_paths`. Otherwise the owner commits the merge with the
 `Roundfix-Delivery: derived-merge` trailer and returns the item to `gating`.
 The repository gate, push and current-head checks run again. An existing Pull
 Request still reporting an earlier candidate is read again at each check
-interval up to the check timeout.
+interval up to `delivery.check_timeout`.
 
 Line-scoped derived paths may resolve a conflicted path when every conflict
 hunk contains only matching lines, and regeneration may change that path only
@@ -396,11 +396,19 @@ line-scoped for the record command, so a derived merge can take the default
 branch's version lines before the command raises and records the next version.
 
 During `checking`, Roundfix waits while GitHub reports the Pull Request merge
-state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. The existing
-checks timeout parks the item as `checks-timeout`; only a mergeable state with
+state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. At the end of
+the Check Wait the item parks as `checks-timeout: current-head checks not
+settled within delivery.check_timeout <duration>`; only a mergeable state with
 passing checks proceeds to merge. If GitHub refuses that merge because
 `base branch policy prohibits the merge`, Roundfix returns to `checking` once
 for that head. A second refusal for the same head parks `delivery-error`.
+
+Each Check Wait lasts User Config `delivery.check_timeout`, a Go duration
+greater than `0` and at most `24h`, default `60m`, from its own start; a re-run
+of a failed check restarts it once. Project Config cannot set it. A Queue Owner
+or `roundfix deliver retry` reads it when it starts, so raise it in User
+Config, then run `roundfix deliver retry <slug>` for an item parked
+`checks-timeout`.
 
 A conflict park has class `conflict`. Its next action is to merge the default
 branch into the item branch in the printed worktree, resolve the named paths,
