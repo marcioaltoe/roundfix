@@ -832,11 +832,14 @@ delivery:
 ```
 
 Each wait starts its own deadline, and a re-run of a failed check restarts it
-once. At the deadline the item parks as `checks-timeout: current-head checks
-not settled within delivery.check_timeout <duration>`, with the duration in
-Go's form such as `1h0m0s`. `0`, a negative value or a value above `24h` fails
-configuration validation with `delivery.check_timeout must be greater than 0
-and at most 24h`.
+once. At the deadline of the `checking` wait the item parks as
+`checks-timeout: current-head checks not settled within
+delivery.check_timeout <duration>`, with the duration in Go's form such as
+`1h0m0s`. At the deadline of the Pull Request head wait, publication fails
+with `find or create pull request: PR Head Branch is at "<sha>", expected
+"<sha>"` instead of parking `checks-timeout`. `0`, a negative value or a
+value above `24h` fails configuration validation with
+`delivery.check_timeout must be greater than 0 and at most 24h`.
 
 Only User Config can set `delivery.check_timeout`. A Project Config value, in
 the checkout or on the fetched default branch, is ignored with this warning:
