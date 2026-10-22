@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-19T20:00:00Z
-updated_at: 2026-10-20T01:00:00Z
+updated_at: 2026-10-22T22:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -102,3 +102,5 @@ on-demand run passes, in a change of its own.
   gains `deliver lane`.
 
 **Amended by [ADR-0297](0297-the-linux-lane-reads-the-repository-history-read-only.md) (2026-10-19).** The container also mounts the repository object store that `git rev-parse --path-format=absolute --git-path objects` names, read-only at `/repo-objects`, and the lane script registers it as an alternate of the container repository right after `git init`, so a test that reads a historical object behaves as in CI. The working tree, refs and a writable store are still never mounted; a store whose path holds a colon, that is not a directory, or that borrows objects through `info/alternates` skips the lane with its reason.
+
+**Amended by [ADR-0316](0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md) (2026-10-22).** A non-zero exit of the lane script's package-selection `go list` prints `roundfix-linux-lane: go list: exited <n>` and exits `4`. Below `128` it is a Lane Change Failure whose cause is `go list exited <n>`; `128` or more is a Lane Container Failure whose cause is `go list exited <n>: the process ended by signal <n-128>`. Every other exit keeps this record's classification, `go test exited <n>` included.
