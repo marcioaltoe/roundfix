@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-21
-spec: null
+spec: 0300-reconcile-releases-a-stale-run-owner-record
 reason: null
 ---
 
