@@ -25,6 +25,7 @@ regeneration:
     outputs:
       - skills/testdata/owned-skill-versions.json
 promoted: []
+pull_request: "626"
 ---
 
 # The archive rewrites the satisfied-by links it records as unproven
