@@ -1,9 +1,0 @@
-Command: for f in docs/user-guide/configuration.md docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'current-head checks not settled within delivery.check_timeout <duration>' || { printf 'missing park text in %s\n' "$f" >&2; exit 1; }; tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'greater than' || { printf 'missing bound in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < docs/user-guide/configuration.md | grep -qF -- 'config: delivery.check_timeout in Project Config is ignored; set delivery.check_timeout in User Config' || { echo 'missing warning' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/configuration.md | grep -qF -- 'delivery.check_timeout must be greater than 0 and at most 24h' || { echo 'missing refusal' >&2; exit 1; }; grep -qE '^[|] .delivery[.]check_timeout. [|] .60m. [|]' docs/user-guide/configuration.md || { echo 'missing key row' >&2; exit 1; }; for f in docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'Each Check Wait lasts User Config' || { printf 'missing check wait paragraph in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Check Wait**:' || { echo 'missing glossary term' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
-Exit: 0
-STDOUT:
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.319s
-ok  	roundfix/skills	1.078s
-ok  	roundfix/internal/docscontract	152.805s
-
-STDERR:
