@@ -1,0 +1,50 @@
+command: go test -count=1 -v -run ^TestQueuePullRequestTitleKeepsTheSlugWhileItFits$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits
+=== PAUSE TestQueuePullRequestTitleKeepsTheSlugWhileItFits
+=== CONT  TestQueuePullRequestTitleKeepsTheSlugWhileItFits
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/77_units
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/77_units_non_ASCII
+    deliver_queue_subject_test.go:82: fitting slug called title reader
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/78_units
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/0278
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/full_stop
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/whitespace
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/long_first_word
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/astral_rune
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/astral_rune_at_cut
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/whole_word_at_cut
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/partial_word_at_cut
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/punctuation
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/empty_numbered
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/empty_unnumbered
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/unnumbered
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/ten_digits
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/eleven_digits
+=== RUN   TestQueuePullRequestTitleKeepsTheSlugWhileItFits/reader_error
+--- FAIL: TestQueuePullRequestTitleKeepsTheSlugWhileItFits (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/77_units (0.00s)
+    --- FAIL: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/77_units_non_ASCII (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/78_units (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/0278 (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/full_stop (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/whitespace (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/long_first_word (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/astral_rune (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/astral_rune_at_cut (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/whole_word_at_cut (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/partial_word_at_cut (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/punctuation (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/empty_numbered (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/empty_unnumbered (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/unnumbered (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/ten_digits (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/eleven_digits (0.00s)
+    --- PASS: TestQueuePullRequestTitleKeepsTheSlugWhileItFits/reader_error (0.00s)
+FAIL
+suiteguard: guard cost: measured 2649 paths; fingerprint took 87.862042ms before and 48.851333ms after
+FAIL	roundfix/internal/cli	0.585s
+FAIL
+
+stderr:

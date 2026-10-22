@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

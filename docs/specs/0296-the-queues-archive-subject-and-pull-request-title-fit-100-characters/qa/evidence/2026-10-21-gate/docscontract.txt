@@ -1,0 +1,6 @@
+command: go test -count=1 -tags docscontract ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/internal/docscontract	56.286s
+
+stderr:

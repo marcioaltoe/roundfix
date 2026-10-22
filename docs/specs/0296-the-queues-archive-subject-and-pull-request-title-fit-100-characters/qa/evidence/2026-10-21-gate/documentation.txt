@@ -1,0 +1,37 @@
+All three deliver paragraphs are identical:
+The archive commit's subject is `docs: archive <slug>` while that is at most 100 characters, and otherwise `docs: archive the <spec number> Spec`, or `docs: archive the Spec` for a slug without a Spec number. The pull request title is `feat: deliver <slug>` while that is at most 91 characters, which leaves room for the ` (#<number>)` a squash merge appends for any pull request number below 100000; otherwise it is `feat: deliver <spec number>: <Spec title>`, or `feat: deliver <Spec title>` for a slug without a Spec number, where the Spec title is the Archive Record's title cut at a word to fit. Lengths count UTF-16 code units, as commitlint does. The pull request body still names the full slug, and the queue accepts an existing archive commit by its change, whatever its subject.
+
+Glossary:
+**Spec Number**:
+The one to ten ASCII digits that start a Spec slug when a `-` follows them, such as `0088`; a slug without them has no Spec Number. The Delivery Queue names the Spec by it in the Pull Request Record Commit subject, and in the archive commit subject and the pull request title when the slug form would pass 100 characters ([ADR-0302](docs/adr/0302-a-queue-commit-names-the-spec-by-number-and-a-hook-refusal-parks-with-the-hand-commit.md), [ADR-0309](docs/adr/0309-a-queue-archive-subject-and-pull-request-title-keep-the-slug-while-it-fits-100-characters.md)).
+_Avoid_: Spec ID, spec prefix
+
+**History Sanitize Command**:
+The `roundfix history sanitize` command
+
+Archive skill sentence:
+The Delivery Queue writes the commit subject `docs: archive <slug>` (Conventional Commits), or, when that would pass 100 characters, `docs: archive the <spec number> Spec` (`docs: archive the Spec` for a slug without a Spec number).
+
+Wording sweep:
+docs/user-guide/commands/deliver.md:52:The archive commit's subject is `docs: archive <slug>` while that is at most
+docs/user-guide/commands/deliver.md:53:100 characters, and otherwise `docs: archive the <spec number> Spec`, or
+docs/user-guide/commands/deliver.md:54:`docs: archive the Spec` for a slug without a Spec number. The pull request
+docs/user-guide/commands/deliver.md:55:title is `feat: deliver <slug>` while that is at most 91 characters, which
+docs/user-guide/commands/deliver.md:57:number below 100000; otherwise it is `feat: deliver <spec number>: <Spec
+docs/user-guide/commands/deliver.md:58:title>`, or `feat: deliver <Spec title>` for a slug without a Spec number,
+skills/archive-spec/SKILL.md:314:archive lifecycle. The Delivery Queue writes the commit subject `docs: archive
+skills/archive-spec/SKILL.md:316:`docs: archive the <spec number> Spec` (`docs: archive the Spec` for a slug
+.agents/skills/archive-spec/SKILL.md:314:archive lifecycle. The Delivery Queue writes the commit subject `docs: archive
+.agents/skills/archive-spec/SKILL.md:316:`docs: archive the <spec number> Spec` (`docs: archive the Spec` for a slug
+skills/roundfix/references/deliver.md:51:The archive commit's subject is `docs: archive <slug>` while that is at most
+skills/roundfix/references/deliver.md:52:100 characters, and otherwise `docs: archive the <spec number> Spec`, or
+skills/roundfix/references/deliver.md:53:`docs: archive the Spec` for a slug without a Spec number. The pull request
+skills/roundfix/references/deliver.md:54:title is `feat: deliver <slug>` while that is at most 91 characters, which
+skills/roundfix/references/deliver.md:56:number below 100000; otherwise it is `feat: deliver <spec number>: <Spec
+skills/roundfix/references/deliver.md:57:title>`, or `feat: deliver <Spec title>` for a slug without a Spec number,
+.agents/skills/roundfix/references/deliver.md:51:The archive commit's subject is `docs: archive <slug>` while that is at most
+.agents/skills/roundfix/references/deliver.md:52:100 characters, and otherwise `docs: archive the <spec number> Spec`, or
+.agents/skills/roundfix/references/deliver.md:53:`docs: archive the Spec` for a slug without a Spec number. The pull request
+.agents/skills/roundfix/references/deliver.md:54:title is `feat: deliver <slug>` while that is at most 91 characters, which
+.agents/skills/roundfix/references/deliver.md:56:number below 100000; otherwise it is `feat: deliver <spec number>: <Spec
+.agents/skills/roundfix/references/deliver.md:57:title>`, or `feat: deliver <Spec title>` for a slug without a Spec number,

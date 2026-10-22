@@ -1,0 +1,12 @@
+command: go test -count=1 -v -run ^TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit$ ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit
+=== PAUSE TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit
+=== CONT  TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit
+--- PASS: TestSourceRevisionRecoveryReadsTheNumberFromTheAddingCommit (0.29s)
+PASS
+suiteguard: guard cost: measured 2654 paths; fingerprint took 111.112292ms before and 73.915666ms after
+ok  	roundfix/internal/spec	0.757s
+
+stderr:

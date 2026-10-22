@@ -1,0 +1,16 @@
+command: ./bin/roundfix archive 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters --plan --offline
+Isolated HOME and XDG_CONFIG_HOME; no host store access.
+ROUNDFIX_OPENROUTER_API_KEY not set
+ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set
+ROUNDFIX_TYPESAFE_API_KEY not set
+TYPESAFE_API_KEY not set
+exit: 0
+stdout:
+archive plan for 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters: removes 29 file(s) (175461 bytes) and writes docs/history/specs/0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-21.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 18 file(s) (72751 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-20-the-queue-archive-subject-and-pull-request-title-grow-past-100-characters-with-the-slug.md 2390 bytes: no advice (offline)
+promote with: roundfix archive 0296-the-queues-archive-subject-and-pull-request-title-fit-100-characters --promote <path>
+
+stderr:
