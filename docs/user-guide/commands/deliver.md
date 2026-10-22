@@ -128,6 +128,8 @@ starts at `queued`, as any new item does; Roundfix does not merge the default
 branch into it at start. With no branch holding work, it creates a new item
 branch from the refreshed default branch.
 
+When the continued item branch already archives the Spec, the owner resumes the item at review instead of revalidating it. Its worktree head holds the Spec's Archive Record, or a legacy archive folder, and not the Spec folder, and the commit that removed the Spec's `_prd.md` is an exact archive of the Spec, proven by its change as the queue proves its own archive commit. The owner records that head as the candidate and moves the item to `reviewing`: it runs neither Delivery Revalidation nor the Implement Command, the pre-PR review runs per the configured policy, the archive step finds the Spec archived and commits nothing, and an open Pull Request of the item branch is found rather than opened again. When the head lacks the Spec folder and no such archive is proven, the item parks as `archived-item-unproven: <cause>` before any Run, where the cause is `item head <commit> holds neither <Spec folder> nor an archive of the Spec`, `no commit on the item branch removed <Spec folder>/_prd.md` or `commit <commit> that removed <Spec folder> is not an exact archive of the Spec`. A Delivery Retry of that park returns the item to `queued` and counts a retry, so the owner proves the branch again.
+
 With two or more item branches with commits the default branch lacks, start
 exits `2` before recording a queue. The reason names every branch in sorted
 order:
@@ -227,6 +229,7 @@ the item unchanged.
 After the item worktree is created or continued and before the first Run,
 Roundfix runs the strict Spec Consistency Check in the worktree. A finding
 parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
+An item resumed from an item branch that already archives its Spec is not revalidated.
 
 Revalidation also compares the Spec's declared production Go `interface:`
 paths with the merge commits of earlier queue items. An overlap records
@@ -448,7 +451,7 @@ The Park Class identifies the reason and the next action:
 | `conflict` | `pull-request-conflict` |
 | `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
-| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `secret-found`: in `<worktree>`, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run `roundfix deliver retry <slug>` |
+| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `archived-item-unproven`, `secret-found`: in `<worktree>`, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run `roundfix deliver retry <slug>` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
 | `review` | `review-blocked`, `review-stale` |
 | `authorization` | `unauthorized` |
@@ -458,6 +461,7 @@ An unrecovered Provider System Error parks the item as
 `runtime-infrastructure: <scope_id> hit a provider system error: <detail>`.
 Each existing blocker keeps its previous next action. A queue without parked
 items adds no `Park:` line.
+An `archived-item-unproven` park's next action is `in <worktree>, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry <slug>`.
 
 A Delivery Retry from `runtime-infrastructure` is not counted against the retry
 limit and re-enters as a `run-unresolved` retry does.

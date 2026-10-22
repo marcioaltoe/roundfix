@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -131,3 +131,32 @@ None. This Task changes documentation, the skill mirror, the skill version recor
 - `_techspec.md` → API Contract 7; Build Order 1
 - ADR-0223
 - ADR-0312
+
+## Result
+
+Implemented the documentation slice for archived item resume. The user guide and both Roundfix deliver references now describe proven archive resume at `reviewing`, the three `archived-item-unproven` causes, retry behavior, the finding Park Class and its next action. The guide and references state that an archived item resume skips Delivery Revalidation. `CONTEXT.md` now defines Archived Item Resume with the ADR-0312 link form and states that Delivery Revalidation does not run for it.
+
+Focused checks and required generators:
+
+- `git diff --check` — passed.
+- `make skills-sync` — passed; canonical and mirrored Roundfix skill references compare byte-for-byte.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed; Roundfix raised from `0.1.127` to `0.1.128` and the owned-skill record was updated.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed; the Behavior Surface Record was regenerated.
+- Wording scan across `docs/user-guide`, `.agents/skills`, and `skills/roundfix` found the old continuation and first-Run revalidation wording in the three deliver documents and the unrelated `write-idea` use of “every queued entry”; the deliver wording was updated and the unrelated result was left unchanged.
+
+Acceptance evidence:
+
+- The guide and both reference copies contain the resume paragraph, all three causes, retry behavior, `archived-item-unproven` in the finding row, and the blocker next action.
+- `CONTEXT.md` contains **Archived Item Resume**, the ADR-0312 glossary link, and the revised Delivery Revalidation definition.
+- The canonical and mirrored skill files are identical at `0.1.129`; the owned-skill version record and Behavior Surface Record were regenerated successfully.
+
+Repair evidence after Daemon feedback:
+
+- The diagnostic artifact showed the phrase checks had passed and identified that the final reference-placement edit changed the canonical skill content under recorded version `0.1.128`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed; the Roundfix skill was raised to `0.1.129` and its record was updated.
+- `make skills-sync` — passed after the repair; the canonical and mirrored Roundfix skill files are synchronized.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261022T185827Z_40eaac6cfc61bb95`
+- Source commit: `f8e08e284e0e464b0663e353d78e923bdeb85520`
