@@ -48,6 +48,7 @@ var _ delivery.ItemHistory = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
+var _ delivery.ArchivedItemProver = (*commandDeliveryWorkflow)(nil)
 var _ delivery.PullRequestRecorder = (*commandDeliveryWorkflow)(nil)
 var _ delivery.MergeObserver = (*commandDeliveryWorkflow)(nil)
 
@@ -85,6 +86,7 @@ func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig
 		Recovery:       workflow,
 		History:        workflow,
 		Revalidator:    workflow,
+		ArchivedItems:  workflow,
 		Prerequisites:  workflow,
 		RunSlots:       workflow,
 		RunSlotWait:    loaded.Config.Runs.SlotWait,
@@ -1978,8 +1980,63 @@ func (workflow *commandDeliveryWorkflow) runReview(ctx context.Context, gitRoot,
 	return record, result, nil
 }
 
+// ProveArchivedItem reads only Git objects in the queue's recorded item
+// worktree. Refusals reach the Run Database blocker and deliver status: include
+// only repository paths and commit prefixes, never environment or file content.
+func (workflow *commandDeliveryWorkflow) ProveArchivedItem(ctx context.Context, workDir, specSlug string) (delivery.ArchivedItemProof, error) {
+	source, destination, err := workflow.archivePaths(workDir, specSlug)
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("resolve archived item paths: %w", err)
+	}
+	output, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("read item head: %w", err)
+	}
+	head := strings.TrimSpace(output)
+	active, err := workflow.gitObjectExists(ctx, workDir, head+":"+source+"/_prd.md")
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("inspect active item Spec: %w", err)
+	}
+	if active {
+		return delivery.ArchivedItemProof{}, nil
+	}
+	archived, err := workflow.gitObjectExists(ctx, workDir, head+":"+destination+".md")
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("inspect item Archive Record: %w", err)
+	}
+	if !archived {
+		archived, err = workflow.gitObjectExists(ctx, workDir, head+":"+destination+"/_prd.md")
+		if err != nil {
+			return delivery.ArchivedItemProof{}, fmt.Errorf("inspect item Archive Folder: %w", err)
+		}
+	}
+	if !archived {
+		return delivery.ArchivedItemProof{Refusal: fmt.Sprintf("item head %s holds neither %s nor an archive of the Spec", deliveryCommitName(head), source)}, nil
+	}
+	output, err = workflow.git.RunGit(ctx, workDir, "rev-list", "-n", "1", head, "--", source+"/_prd.md")
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("find item archive commit: %w", err)
+	}
+	commit := strings.TrimSpace(output)
+	if commit == "" {
+		return delivery.ArchivedItemProof{Refusal: "no commit on the item branch removed " + source + "/_prd.md"}, nil
+	}
+	output, err = workflow.git.RunGit(ctx, workDir, "rev-parse", commit+"^")
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("read item archive commit parent: %w", err)
+	}
+	exact, err := workflow.archiveCommitIsExact(ctx, workDir, strings.TrimSpace(output), commit, source, destination)
+	if err != nil {
+		return delivery.ArchivedItemProof{}, fmt.Errorf("prove item archive commit: %w", err)
+	}
+	if !exact {
+		return delivery.ArchivedItemProof{Refusal: fmt.Sprintf("commit %s that removed %s is not an exact archive of the Spec", deliveryCommitName(commit), source)}, nil
+	}
+	return delivery.ArchivedItemProof{Archived: true, ArchiveCommit: commit, Head: head}, nil
+}
+
 func (workflow *commandDeliveryWorkflow) archivePaths(gitRoot, specSlug string) (string, string, error) {
-	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+	specsRoot, err := resolveHistoricalSpecsRoot(workflow.loaded, gitRoot)
 	if err != nil {
 		return "", "", err
 	}

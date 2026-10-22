@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -139,3 +139,77 @@ unproven branch parks with its cause.
 - `_techspec.md` → Current behavior; API Contracts 1, 5 and 6; Invariants 1-5; Testing Approach; Build Order 3
 - ADR-0223
 - ADR-0312
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification:
+
+- `commandDeliveryWorkflow.ProveArchivedItem` reads the recorded item
+  worktree's Git objects, returns the zero proof for an active PRD, emits
+  each specified refusal, and proves the removing commit against its full
+  first-parent hash with the existing `archiveCommitIsExact`. It reads no
+  commit subject and performs no writes. Its comment records that refusal
+  paths and commit prefixes reach the Run Database blocker and status,
+  without environment values or file contents.
+- The command engine wires `ArchivedItems: workflow`, with the interface
+  assertion. `archivePaths` now uses `resolveHistoricalSpecsRoot`.
+  Byte comparisons against HEAD confirmed `archiveCommitIsExact`,
+  `archiveRetirementIsExact`, `reconcileArchiveCommit`, `InspectItem` and
+  the `deliver_revalidate.go` file are unchanged.
+- Added only `internal/cli/deliver_archived_resume_test.go`; no existing
+  test, golden or fixture was changed. Every top-level test calls
+  `t.Parallel()` first. Disposable homes, a bare origin, a hardened clone,
+  real `spec.Archive` and `spec.RecordArchivePullRequest` supply the Git
+  history. Only readiness, owner launch and implementation/review/forge
+  boundaries are replaced. The owner uses real workspace, recovery,
+  history, revalidator, archiver, recorder and archive prover behavior.
+
+Acceptance evidence from focused checks:
+
+1. Both `TestDeliverStartResumesAnArchivedItemBranchAtReview` subtests
+   (`another_active_Spec`, `only_active_Spec`) passed through `deliver
+   start`: merged with existing PR #619, zero Implement calls, exactly one
+   review at the record commit head, zero PR creations, and unchanged
+   candidate/item head. The head and absent Specs Root are observed before
+   the real workspace's normal merged-branch cleanup.
+2. All three `TestDeliverStartParksAnUnprovenArchivedItemBranch` subtests
+   passed: the persisted blocker equals `archived-item-unproven: ` plus
+   the exact cause, with zero Implement/review calls, and `deliver status`
+   prints the specified `finding` Park Class and next action.
+3. `TestDeliverStartRevalidatesAContinuedBranchWithoutAnArchive` passed
+   with real revalidation and one Implement call, then the fake runner
+   deliberately returns unresolved before any archive/publication step.
+
+Commands and outcomes:
+
+- `go test -count=1 -timeout 3m -v -run '^TestDeliverStart(ResumesAnArchivedItemBranchAtReview|ParksAnUnprovenArchivedItemBranch|RevalidatesAContinuedBranchWithoutAnArchive)$' ./internal/cli`
+  — exit 0; all three tests and five named subtests passed.
+- `go test -count=1 -timeout 4m -run '^(TestResumeAcceptsARealArchiveCommit|TestDeliveryWorkflowRecordsThePullRequestInTheArchiveRecord|TestInspectItemReportsAnArchivedSpec|TestDeliverStartContinuesTheItemBranchThatHoldsWork|TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview|TestDeliveryPublicationRequestsNoCodeRabbitReview|TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug)$' ./internal/cli`
+  — exit 0; unchanged consumer tests passed.
+- `GOOS=windows go test -c -o /tmp/roundfix-task03-cli.test.exe ./internal/cli`
+  — exit 0 for the final test source; Windows compilation checked, not
+  Windows execution.
+- A temporary Go overlay restoring strict Specs Root resolution ran only
+  `TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec`:
+  expected exit 1 with `delivery-error` and the missing Specs Root cause.
+  This confirms the regression test detects the old behavior without
+  changing repository files.
+- `git diff --check` — exit 0.
+
+Child-process bound: tests use the test context for Git processes and set
+`cliTestHelperEnv=1` through per-test command environment overrides, never
+`t.Setenv`. Any regression that reaches a roundfix step therefore dispatches
+as the CLI helper instead of recursively running the suite. The resume
+assertions prove no new commit or Implement Run; refusals stop before Run
+or review. No real-time wait is introduced.
+
+Environment: the sandbox could not initialize its symlinked writable root;
+commands used approved escalation in the resolved Run checkout. No project
+configuration changed. Task status, the declared Verification command and
+repository Verification remain Daemon-owned and were not run or settled by
+this turn. No commit, push or PR was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261022T213854Z_c379322ae483e8bf`
+- Source commit: `69680008faaf0de2fa27cf8744f6a1a2b596298f`
