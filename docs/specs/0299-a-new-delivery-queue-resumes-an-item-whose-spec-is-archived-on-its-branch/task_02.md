@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0299-a-new-delivery-queue-resumes-an-item-whose-spec-is-archived-on-its-branch
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -105,3 +105,71 @@ Retry of that park returns the item to `queued`.
 - ADR-0223
 - ADR-0229
 - ADR-0312
+
+
+## Result
+
+Implemented API Contracts 1–4 within this Task's engine slice. The optional
+`ArchivedItems` dependency proves the item after branch/worktree creation and
+before revalidation. A proven archive records exactly its head as the candidate
+and enters `reviewing`; refusal parks `archived-item-unproven`, while proof
+errors and an empty archived head take the existing `delivery-error` path.
+The new blocker has the specified finding class and worktree-specific next
+action. Its retry shares the counted return-to-queued path after the existing
+merge observation, token, deadline and retry-limit checks, without requiring
+workspace, recovery or revalidation dependencies.
+
+Acceptance evidence from focused implementation checks:
+
+- Proven archive: `TestANewQueueResumesAProvenArchivedItemAtReview` reaches
+  `merged` through the existing workflow/forge fakes and real temporary SQLite
+  store. It asserts no Implement or revalidation call, the proven head in both
+  review and archive calls, the exact candidate list and resume log, and the
+  ordered review-through-merge actions. The prover also checks that its
+  arguments match the already recorded workspace.
+- Refusal and errors: `TestANewQueueParksAnUnprovenArchivedItem` asserts the
+  refusal blocker, finding class and exact next action, with no candidate work
+  or push. `TestANewQueueParksAnArchivedItemProofError` covers a prover error
+  and the empty-head error, with exact delivery-error text and no candidate
+  work. The Park Class table retains every old row and adds the new blocker
+  and exact next-action assertion for bare and cause-suffixed blockers.
+- Compatibility: `TestANewQueueRevalidatesAnItemWithoutAnArchive` covers the
+  zero proof and nil prover separately; each revalidates once, invokes
+  Implement once and reaches `merged`, with the expected start ordering.
+- Retry: `TestARetryReturnsAnUnprovenArchivedItemToQueued` covers both the
+  exact blocker and its colon/cause form with workspace, recovery and
+  revalidator absent; the persisted stage is `queued`, the blocker clears,
+  and the retry count increases by one.
+
+Focused command:
+
+```sh
+go test ./internal/delivery -run '^(TestANewQueue|TestARetryReturnsAnUnproven|TestParkClass|TestEveryBlocker|TestDeliveryEngineMerges|TestDeliveryActions|TestRetry|TestArchivedRetry|TestExistingGenericPark)' -count=1
+```
+
+Outcome: exit 0, `ok roundfix/internal/delivery`. All new top-level tests call
+`t.Parallel()` first and introduce no timed waits. The initial focused run
+before implementation failed to compile because the proof types and engine
+field did not exist. During test development, the workspace fixture was
+corrected to record provisioning as the real workflow does, and retry
+subtests received explicit names to avoid a generated `#00` in a SQLite URI
+path. The reported successful run follows those corrections.
+
+A byte comparison against the starting engine confirms that every existing
+function except `advanceItem`, `Retry` and `NewEngine` is unchanged, and that
+`NewEngine` differs only by the new dependency assignment. Check timeout and
+Pull Request behavior are untouched. `git diff --check` reports no whitespace
+errors.
+
+Execution environment: the sandbox rejects the supplied symlinked writable
+root; task-scoped commands ran with escalation in its resolved checkout.
+The pre-existing task-file status change was preserved. No other Task or Task
+Graph was edited, and no commit, push or Pull Request was made. Command-workflow
+proof and CLI wiring remain task_03's slice. Declared Task Verification,
+including its Windows vet step, and repository Verification were not run;
+the Daemon owns them and Task settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261022T213854Z_c379322ae483e8bf`
+- Source commit: `5c7e429a697273bd6d214f5ae4cb894847bf1c8d`

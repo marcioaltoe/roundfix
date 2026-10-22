@@ -78,6 +78,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 	}{
 		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
+		{BlockerArchivedItemUnproven, ParkClassFinding}, // archived-item-unproven
 		{BlockerSecretFound, ParkClassFinding}, {BlockerRunUnresolved, ParkClassFinding}, {BlockerReviewFindings, ParkClassFinding}, {BlockerCorrectiveSpecRequired, ParkClassFinding}, {BlockerGateFailed, ParkClassFinding}, {BlockerChecksFailed, ParkClassFinding}, {BlockerRevalidationFailed, ParkClassFinding},
 		{BlockerRunBudgetExceeded, ParkClassBudget}, {BlockerQueueDeadline, ParkClassBudget}, {BlockerReviewBlocked, ParkClassReview}, {BlockerReviewStale, ParkClassReview}, {BlockerUnauthorized, ParkClassAuthorization}, {BlockerFlakyCheck, ParkClassFlakyCheck}, {"unknown", ParkClassUnclassified},
 	} {
@@ -86,6 +87,9 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				item := store.DeliveryQueueItem{SpecSlug: "example", Worktree: "/worktrees/example", Stage: store.DeliveryStageParked, Blocker: tt.blocker + suffix}
 				queue := store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}
 				park := ClassifyPark(queue, item)
+				if tt.blocker == BlockerArchivedItemUnproven && park.Next != "in /worktrees/example, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry example" {
+					t.Fatalf("archived-item-unproven next action = %q", park.Next)
+				}
 				if tt.blocker == BlockerSecretFound && park.Next != "in /worktrees/example, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry example" {
 					t.Fatalf("secret-found next action = %q", park.Next)
 				}

@@ -65,6 +65,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 		classification.Class = ParkClassFlakyCheck
 		classification.Next = "the check failed twice in " + strings.TrimSpace(detail) + ", which " + item.SpecSlug +
 			" did not change; fix or re-run it, then run roundfix deliver retry " + item.SpecSlug
+	case BlockerArchivedItemUnproven:
+		classification.Class = ParkClassFinding
+		classification.Next = "in " + item.Worktree + ", make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry " + item.SpecSlug
 	case BlockerSecretFound:
 		classification.Class = ParkClassFinding
 		classification.Next = "in " + item.Worktree + ", rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry " + item.SpecSlug
