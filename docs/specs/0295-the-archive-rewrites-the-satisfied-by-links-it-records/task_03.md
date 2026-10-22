@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0295-the-archive-rewrites-the-satisfied-by-links-it-records
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -101,3 +101,9 @@ None. This Task changes skill text, its mirror and the skill version record only
 - `_prd.md` → Core Feature 4; Behavior changes; Goals
 - `_techspec.md` → System Architecture; API Contracts 2, 4 and 5; Build Order 3
 - ADR-0308; ADR-0256
+
+## Result
+
+- Updated the canonical `archive`, `baseline` and `spec` Roundfix references with the `unproven` rebase, promoted-copy repair, and strict-check fix wording required by ADR-0308. `make skills-sync` completed with exit 0 and produced matching mirror references.
+- Raised both canonical and mirrored Roundfix skill version fields from `0.1.123` to `0.1.124`. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` completed with `1 passed in 1 packages` and recorded the new digest in `skills/testdata/owned-skill-versions.json`.
+- Focused checks: `cmp` passed for the canonical and mirrored `SKILL.md` plus all three reference pairs; `git diff --check` passed. The Task's declared Verification commands remain for the Daemon and were not run in this turn.

@@ -74,7 +74,9 @@ For a passing verdict, archive writes `<slug>.md` under the resolved archive
 root and removes the Spec folder, which stays in Git at the record's
 `source_revision`. For a qualifying `partial`, the record also carries the
 declarations' `satisfied-by` actions under `unproven`, so a reader learns what
-was never verified. With the default Spec Root, stdout carries the
+was never verified. Each entry is read as text of the Spec's `_prd.md`, so its
+relative links are rewritten like the outcome's, and an entry without one keeps
+its bytes (ADR-0308). With the default Spec Root, stdout carries the
 deterministic report:
 
 ```text
@@ -175,8 +177,8 @@ in place, and the Archive Record carries its sorted paths under the optional
 `relinked` key.
 
 The Archive Command deletes the Spec folder after writing its Archive Record.
-In the copied outcome and each promoted copy, a destination inside the removed
-folder names its promoted copy or becomes a Git Locator, `` `<path>@<commit>` ``,
+In the copied outcome, each `unproven` entry and each promoted copy, a destination
+inside the removed folder names its promoted copy or becomes a Git Locator, `` `<path>@<commit>` ``,
 never the record itself. The commit must hold the path and be reachable from
 the Default Branch Head or a tag. Without one, the path and record's pull request
 name the source instead. Other destinations keep naming the same repository path.
@@ -228,11 +230,13 @@ when `references/_index.md` is absent or lists no path, `sources` falls back to
 the sorted direct Markdown files whose front matter identifies a Backlog Entry or
 Finding. An empty PRD `created` falls back to the valid TechSpec date and then to
 the author date of the oldest commit that added the PRD in the two commands that
-read Git. Legacy Link Rebase rewrites the relative destinations in the outcome
-and each promoted copy, pointing folder destinations at their promoted copy or
+read Git. Legacy Link Rebase rewrites the relative destinations in the outcome,
+the `unproven` entries and each promoted copy, pointing folder destinations at their promoted copy or
 a Git Locator while keeping every other destination on the same repository
 path. Surviving Archive Records with broken or self-links join the final
-`record-links` unit, which rewrites those links to Git Locators. `roundfix baseline update` plans these same units at once; pass `roundfix baseline update --no-history` to keep this command's reviewed-batch path.
+`record-links` unit, which rewrites a link to a file the record promoted to its
+`docs/references/` copy and every other such link to a Git Locator (ADR-0308).
+`roundfix baseline update` plans these same units at once; pass `roundfix baseline update --no-history` to keep this command's reviewed-batch path.
 Apply requires the annotated `history-full` tag on an ancestor of `HEAD`.
 Every removed path must be held by that tag or a commit the default branch
 reaches. After removals the plan rewrites every History Citation it lists, in every Citation Source: each tracked text file outside the skill trees and testdata directories. A prose path that starts with ./ or ../ is resolved against the directory of the citing file. Outside Markdown the Git Locator is written without backticks.

@@ -136,7 +136,11 @@ After removal units, `record-links` repairs each surviving Archive Record's
 relative links to missing files and to itself. It tries the record-relative
 path, then the record's original `source` folder; the first reachable commit
 holding the target wins. A self-link becomes the Git Locator of the source
-folder. When neither path has a qualifying commit, the record-relative path
+folder. Before that, a link whose target, resolved against the `source` folder,
+is a file whose copy `docs/references/<file>` the record lists under `promoted`
+and the tree holds is rewritten to a relative link to that copy, and the plan
+names `docs/references/<file>` as its rewrite (ADR-0308). When neither path has
+a qualifying commit, the record-relative path
 and its pull request are used. Code spans, fences, URLs and Git Locators are
 not relative links. A record removed by the same plan is skipped.
 
