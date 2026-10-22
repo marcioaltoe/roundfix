@@ -62,7 +62,7 @@ type ArchiveRecordInput struct {
 	Unproven                                        []string
 	QAOverride                                      *QAArchiveOverrideRecord
 	Promoted                                        []string
-	Rebase                                          *LegacyLinkRebase // nil keeps the outcome as read.
+	Rebase                                          *LegacyLinkRebase // nil keeps the outcome and unproven entries as read.
 }
 
 func ArchiveRecordPath(root, slug string) string { return filepath.Join(root, slug+".md") }
@@ -298,6 +298,22 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 			return r, fmt.Errorf("rebase archive outcome: %w", err)
 		}
 		r.Outcome = string(rewritten)
+		// Declarations are authored against the Spec's _prd.md. Strict checks,
+		// history sanitize and later readers see this record after that folder
+		// is removed, so its entries need the same promoted-copy or Git Locator
+		// rewrite as the outcome. Copy before writing to protect the input slice.
+		if r.Unproven != nil {
+			unproven := make([]string, len(r.Unproven))
+			from := filepath.ToSlash(filepath.Join(in.Rebase.Folder, "_prd.md"))
+			for i, entry := range r.Unproven {
+				rewritten, err := in.Rebase.Rebase([]byte(entry), from, in.Rebase.RecordPath)
+				if err != nil {
+					return r, fmt.Errorf("rebase archive unproven entry %d: %w", i+1, err)
+				}
+				unproven[i] = string(rewritten)
+			}
+			r.Unproven = unproven
+		}
 	}
 	return r, nil
 }

@@ -62,7 +62,7 @@
     "config keys": "sha256:84149be6ddba5efc648f6444350259d6317f6bf46abe3e6553067c4c8670ee12",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
     "guide docs/user-guide/commands.md": "sha256:546d0c320ebcc3e8c4ba2851bd1568625761dad2d87d5034c02187d3075288f4",
-    "guide docs/user-guide/commands/archive.md": "sha256:376a950f951a8b2ec6e2a7f4f3046e62ffd6c03dc30d3d89532c445a661e71d7",
+    "guide docs/user-guide/commands/archive.md": "sha256:51cfd68636a6e1357b152ed39aca51ac90055689ac569656076cabb7b0f6aba3",
     "guide docs/user-guide/commands/attach.md": "sha256:9439b3d9af405b2891440462b7947c94a41d3e34e31569a0e0d1ff2dcd2ea1a2",
     "guide docs/user-guide/commands/baseline.md": "sha256:18dfb6af74a0aec3fd244ea5f85b914d3357429fe13abc6694df1219b337d319",
     "guide docs/user-guide/commands/cancel.md": "sha256:0dc91c42c47a2540fbd47859636324ac742622f7b009c2df04f48ec6cb735df0",

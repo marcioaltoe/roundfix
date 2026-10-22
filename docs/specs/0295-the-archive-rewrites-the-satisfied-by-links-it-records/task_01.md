@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0295-the-archive-rewrites-the-satisfied-by-links-it-records
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -149,3 +149,77 @@ and the commands, and states it in the `archive` guide and the glossary.
 - `_prd.md` → Sources; Goals; Core Features 1 and 4; Behavior changes; Success Metric 1; Success Metric 3; Glossary
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 1-3; Invariants 1-3; Testing Approach; Build Order 1
 - ADR-0308; ADR-0247; ADR-0277; ADR-0278; ADR-0230; ADR-0260; ADR-0261; ADR-0251; ADR-0240; ADR-0259; ADR-0271; ADR-0285; ADR-0280
+
+## Result
+
+Implemented this Task's slice; status and declared Verification remain
+Daemon-owned.
+
+- `BuildArchiveRecord` now rewrites every `unproven` entry through the same
+  `LegacyLinkRebase` as the outcome, using `<Folder>/_prd.md` as its source.
+  A fresh slice preserves the caller's input, entry order and count. Nil
+  `Rebase` retains the existing behavior; errors wrap the cause as
+  `rebase archive unproven entry <n>: <error>`. The code comment names the
+  declaration source and the readers that see the record after removal.
+- Added the required package tests for a qualifying newest partial report:
+  removed files on main, branch-only files with a pull request, promotion,
+  plain bytes, an outward repository link and an external Spec Root. Each
+  subtest compares the whole list and checks the written record with
+  `MissingRelativeLinks`. Legacy conversion compares planned and written
+  entries and preserves the plain line's bytes.
+- Added the command regression with an enabled managed retirement rule:
+  `archive 0001-demo --promote references/promoted.md`, a fixture-only archive
+  commit, then `spec check --strict 0002-other`. It asserts both record
+  entries, exit 0 and no `SC-HISTORY-RETAINED` diagnostic. The second Spec's
+  fixture Task declares its lack of consumers so the strict check also exits
+  0 under the current authoring contract.
+- Added focused builder checks for nil-rebase compatibility, independent
+  output storage and an error on the second entry without input mutation.
+- Updated the archive guide and only the two assigned glossary definitions,
+  citing ADR-0308. Generated the Behavior Surface Record through its owning
+  command; only the archive-guide fingerprint changed.
+
+### Focused evidence
+
+Before the implementation, the new package regressions failed for removed
+files, promotion, the external root and legacy conversion: each observed
+an unchanged relative link. The command regression also reproduced both
+`SC-HISTORY-RETAINED` findings. Its initial fixture additionally lacked a
+Consumer Declaration; that fixture was corrected without changing any
+existing test or production check.
+
+After implementation:
+
+- `rtk proxy go test ./internal/spec -run '^(TestArchive(RebasesTheUnprovenLinksItRecords|UnprovenRebaseKeepsTheCallerSlice|RecordRoundTrips|RecordKeepsEveryOverrideField|RecordOfASupersededSpec)|TestLegacyConversionRebasesTheUnprovenLinksItRecords)$' -count=1 -v`
+  exited 0: all six top-level tests passed, including all six archive cases
+  and all three builder cases.
+- `rtk proxy go test ./internal/cli -run '^TestArchiveOfAQualifyingPartialPassesTheStrictHistoryCheck$' -count=1 -v`
+  exited 0; archive and the subsequent strict check both exited 0.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  (through `rtk proxy`) exited 0 and regenerated
+  `docs/references/behavior-surfaces.json`; `docs/references/skill-coverage.json`
+  is unchanged.
+- `GOOS=windows rtk proxy go test -c -o "$test_binary_dir/" ./internal/spec ./internal/cli`
+  exited 0 with a disposable output directory removed on exit; both packages'
+  tests compile for Windows.
+- `rtk proxy git diff --check` exited 0.
+
+### Acceptance evidence and remaining verification
+
+1. The qualifying partial archive and strict-history behavior are covered by
+   the package and command regressions above, including promotion and Git
+   Locators after folder removal.
+2. Plain-entry bytes, nil-rebase behavior and caller-slice preservation are
+   covered by the focused tests. All existing test names and assertions,
+   archive orchestration and Delivery Queue code remain unchanged. The
+   existing metadata round-trip, override and supersession checks above
+   passed; the complete declared legacy, replay and eligibility set remains
+   for Daemon Verification.
+3. The archive guide and the two glossary definitions state the rewrite;
+   the required generator passed and recorded the new guide fingerprint.
+
+No Task status, Task Graph, other Task file, skill or archive-orchestration
+change was made. No repository commit, push or Pull Request was created.
+Declared Verification and repository Verification were not run. The executor
+required approved escalation because the configured writable workspace root
+contains a symlink; commands used the resolved Run checkout.

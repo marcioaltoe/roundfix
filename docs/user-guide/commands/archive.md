@@ -13,14 +13,16 @@ Non-interactive; creates no Run and never pushes. Verifies every Task is
 verdict. Declared-only means every unmet row is declared unreachable and fully
 covered by the Spec's `## Unreachable Acceptance` declarations. For that case,
 archive records the declarations' `satisfied-by` actions under `unproven` in
-the Archive Record, so it names what was never verified. It writes
+the Archive Record, so it names what was never verified. Each entry is read as
+text of the Spec's `_prd.md`, so its relative links are rewritten like the outcome's, and an
+entry without one keeps its bytes (ADR-0308). It writes
 `docs/history/specs/<slug>.md` for the built-in Spec Root, or
 `<specs.root>/_archived/<slug>.md` for another configured root, then removes
 `<specs.root>/<slug>/`. The archive performs an Archive Relink before writing:
 Live Document citations are rewritten to promoted copies or the Archive Record.
 
-In the outcome and each promoted copy, a citation of a removed folder file
-points at its promoted copy or becomes a Git Locator: `path@commit`, written as
+In the outcome, each `unproven` entry and each promoted copy, a citation of a
+removed folder file points at its promoted copy or becomes a Git Locator: `path@commit`, written as
 code. The locator prefers `source_revision` when the Default Branch Head or a
 tag reaches it; otherwise it names the newest commit the Default Branch Head
 reaches that holds the file. If no such commit exists, it names the path and
