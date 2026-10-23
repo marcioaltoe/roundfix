@@ -18,6 +18,7 @@ sources:
   - 2026-10-22-retry-corrective-spec-required-ignora-recorded-paths.md
 regeneration: []
 promoted: []
+pull_request: "639"
 ---
 
 # Recorded paths are read before carry-forward provenance
