@@ -1,6 +1,0 @@
-$ ./bin/roundfix qa-report accept docs/specs/0300-reconcile-releases-a-stale-run-owner-record/qa/qa-report-2026-10-23.md
-stdout:
-
-stderr:
-
-exit=0

@@ -1,3 +1,0 @@
-$ go vet ./internal/store ./internal/cli
-
-exit=0

@@ -1,4 +1,0 @@
-Source: docs/specs/0300-reconcile-releases-a-stale-run-owner-record/references/2026-10-21-reconcile-preserves-forever-a-process-candidate-whose-owner-pid-now-belongs-to-another-process.md (maintainer observation predating Spec)
-Normalized source refusal: owner process identity cannot be proven: live process start identity does not match the recorded owner identity
-Exact test message: owner process 4242 failed step "prove owner process identity": owner process identity cannot be proven: live process start identity does not match the recorded owner identity
-Substring comparison PASS; named test also passed.
