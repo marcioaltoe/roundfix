@@ -118,6 +118,9 @@ func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusa
 	var report strings.Builder
 	report.WriteString("---\n")
 	fmt.Fprintf(&report, "verdict: %s\n", VerdictFail)
+	if commit := strings.TrimSpace(evidence.AuditedCommit); commit != "" {
+		fmt.Fprintf(&report, "build: %s\n", strconv.Quote(commit))
+	}
 	fmt.Fprintf(&report, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
 	fmt.Fprintf(&report, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
 	// One refusal is one row, and every other cause stays explicitly zero:

@@ -25,6 +25,10 @@ type AuditorEvidence struct {
 	Binary       app.AuditingBinary
 	DeliveryBase string
 	SelfAudit    bool
+
+	// AuditedCommit is the commit the gate audited, written as a final report's
+	// build key, and empty when not resolved.
+	AuditedCommit string
 }
 
 // roundfixVersionManifest is the file the Roundfix repository declares its own

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -100,3 +100,57 @@ bytes (`_prd.md` → Core Feature 3).
 - `_prd.md` → Core Feature 3; Goals; Success Metrics 3-4
 - `_techspec.md` → API Contracts 5-7; Testing Approach; Build Order 3
 - ADR-0132
+
+
+## Result
+
+Implemented this Task's report provenance slice. `AuditorEvidence.AuditedCommit`
+is documented and remains unset by `ResolveAuditorEvidence`. The Daemon resolves
+it from the Run Worktree's `HEAD`; an unsuccessful lookup leaves it empty and
+returns the other auditor evidence. Both final report writers emit the trimmed,
+quoted `build` immediately after `verdict`. The mechanical seed does not emit it.
+Only the two declared expectations and their local fixture plumbing changed in
+`TestWriteMechanicalQAReportWritesThePreconditionRefusal`.
+
+Acceptance evidence:
+
+- Final refusal and blocking reports: the two new named tests assert the exact
+  frontmatter prefix, whitespace trimming, quoting of
+  `1234567e89012345678901234567890123456789`, and exactly one `build` key.
+  The Daemon test writes a refusal through the task-cycle fixture and compares
+  its `build` with `runGitForTest(t, plan.WorkDir, "rev-parse", "HEAD")`.
+- Compatibility: new tests assert no key for blank/unresolved commits, unchanged
+  seed bytes, unchanged report bytes apart from the added line, unchanged
+  refusal readback through `ReadQAReport`, and retained auditor evidence when
+  HEAD cannot resolve. Both top-level tests start with `t.Parallel()` and add
+  no real-time duration. Readers, shape detection, templates, and report
+  selection were not modified.
+
+Focused checks:
+
+- Before the writer changes, the focused run of the two new tests exited 1:
+  final report prefixes lacked `build` (captured in
+  `/tmp/roundfix-task03-red.log`).
+- After the final code/test edits, this focused command exited 0; all seven
+  selected top-level tests and their subtests passed:
+
+  ```sh
+  go test -count=1 -v -run '^(TestPreconditionRefusalReportRecordsItsAuditedCommit|TestMechanicalQAReportRecordsTheAuditedCommitWhenItIsFinal|TestWriteMechanicalQAReportWritesThePreconditionRefusal|TestWritePreconditionRefusalReportKeepsTheRefusalOnOneLine|TestWritePreconditionRefusalReportRecordsAnUnnamedRefusal|TestMechanicalQAReportSeedStartsPending|TestMechanicalQAReportStartsUnsuffixedOnAFreshDate)$' ./internal/spec ./internal/daemon
+  ```
+
+  Invoked through `rtk proxy`; output captured in
+  `/tmp/roundfix-task03-focused.log`.
+- `git diff --check`: exit 0.
+
+Environment: the sandbox rejected the symlinked writable root; operations used
+its resolved `/Volumes/Brain-SSD/cache/.roundfix/worktrees/` checkout with
+escalation. The pre-existing `status: in_progress` change was preserved.
+
+Declared Task Verification, Windows vet, and repository Verification remain
+Daemon-owned and were not run. No follow-up work identified; no commit, push,
+or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T070317Z_62af7ae2274ed43c`
+- Source commit: `820a82968405e1fc8bc11a8f4e0451311c3a5ed5`
