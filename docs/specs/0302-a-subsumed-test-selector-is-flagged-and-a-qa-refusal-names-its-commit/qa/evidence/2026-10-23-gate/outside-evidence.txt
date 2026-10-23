@@ -1,3 +1,0 @@
-Quaestor: source is the adopted operator transcription of its pre-Spec report; command shape tests/a.py::test_novo with tests/a.py, original observed exit 0 vs 4 alone. Current CLI structurally reports that exact shape once and removes the code on repair. No current pytest execution is claimed.
-
-oraculum: adopted pre-Spec history states refusal qa-report-2026-10-21-01.md lacked build; later -02/-03/-04 named 8736693/7472ad34/75a9dd0. Current written-refusal fixture logs its freshly resolved HEAD and quoted build in observed-tests.txt; this comparison supports provenance repair without rereading another repository.

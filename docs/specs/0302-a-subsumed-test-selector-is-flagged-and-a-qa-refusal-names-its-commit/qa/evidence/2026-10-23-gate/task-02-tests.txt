@@ -1,9 +1,0 @@
-Command: for f in docs/user-guide/commands/spec.md .agents/skills/roundfix/references/spec.md skills/roundfix/references/spec.md .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'SC-VERIFY-SUBSUMED-SELECTOR' || { printf 'missing check code in %s\n' "$f" >&2; exit 1; }; tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'exempts the invocation' || { printf 'missing exemption in %s\n' "$f" >&2; exit 1; }; done; for f in .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md; do grep -qx -- '## Test selectors and their containing path' "$f" || { printf 'missing section in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Subsumed Test Selector**:' || { echo 'missing glossary term' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'pytest 9 runs the containing argument whole and drops the selector without an error' || { echo 'missing glossary definition' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'
-Exit: 0
-stdout:
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.422s
-ok  	roundfix/skills	1.025s
-ok  	roundfix/internal/docscontract	0.441s
-
-stderr:

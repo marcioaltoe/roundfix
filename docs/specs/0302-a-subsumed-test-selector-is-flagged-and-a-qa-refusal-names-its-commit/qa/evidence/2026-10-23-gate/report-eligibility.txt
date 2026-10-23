@@ -1,5 +1,0 @@
-Command: ./bin/roundfix qa-report accept docs/specs/0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit/qa/qa-report-2026-10-23.md
-Exit: 0
-stdout:
-
-stderr:
