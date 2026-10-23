@@ -181,6 +181,8 @@ malformed owner record stays in `preservedCandidates` with the refusal reason.
 `--apply` releases stale staging, and `--carry-forward` releases it before
 creating that mode's own staging worktree.
 
+Reconcile also proves the recorded owner of each terminal Run. When the live process at the owner PID presents a start identity that differs from the one the Run recorded, the system gave that PID to another process and the recorded owner ended: the Run's owner PID and identity are a Stale Run Owner Record. The report lists it once in `processCandidates` with `kind` `runOwnerRecord`, the owner PID, an empty `processIds` list and that proof, and the text report prints `Run owner record candidate: Run <run-id> owner PID <pid>`. `--apply` releases it: it clears the Run's recorded owner PID and identity, journals what it cleared, and sends no signal; it never inspects the processes of the PID's new holder. `debrisSummary.runOwnerRecordsReleased`, `run-owner-records-released` in the text summary, counts the releases. An owner identity that cannot be read or compared, and a Run recorded without one, stay in `preservedCandidates` with the refusal reason, and the Stop Command still never signals such a PID ([ADR-0313](../../adr/0313-a-proven-owner-identity-mismatch-releases-a-terminal-runs-owner-record-without-a-signal.md)).
+
 There is no force flag or user assertion that bypasses the proof. Apply acts
 only on entries classified `safe` or `superseded` during that invocation, then
 rechecks the metadata, worktree cleanliness, Run head, target or merged head,

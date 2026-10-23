@@ -128,6 +128,10 @@ _Avoid_: Missing documentation, undocumented command, downstream guide
 A process Roundfix started that outlived the Run that started it, so no live Run record owns it. The readiness diagnostic reports residue with each process's age, its consumed CPU time, and its originating Run when the Run Database still knows it; reporting settles nothing and creates no Run record.
 _Avoid_: Orphan, zombie, leaked run, stale process
 
+**Stale Run Owner Record**:
+The owner PID and start identity a terminal Run still records after the live process at that PID has presented a different start identity, which proves the recorded owner ended and the PID now names another process. The Reconcile Command reports it, and `--apply` releases it by clearing the Run's owner PID and identity and journaling them, without sending any signal ([ADR-0313](docs/adr/0313-a-proven-owner-identity-mismatch-releases-a-terminal-runs-owner-record-without-a-signal.md)).
+_Avoid_: Orphan PID, dead owner lock, staging owner record
+
 **PR Head Branch**:
 The branch on GitHub that supplies the pull request's head commits.
 _Avoid_: Local branch, checkout branch
@@ -702,7 +706,7 @@ The local recovery command that re-runs one Task's Verification commands in the 
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
-The support command that inspects the Run Worktrees and Run Branches of terminal Spec Runs and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.
+The support command that inspects the Run Worktrees and Run Branches of terminal Spec Runs and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward. `--apply` also releases each Stale Run Owner Record without sending a signal ([ADR-0313](docs/adr/0313-a-proven-owner-identity-mismatch-releases-a-terminal-runs-owner-record-without-a-signal.md)).
 _Avoid_: GC Command, Settle Command, automatic integration
 
 **Binding Text**:
