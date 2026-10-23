@@ -1,8 +1,8 @@
 ---
 type: perf
-status: open
+status: promoted
 created: 2026-10-22
-spec: null
+spec: 0305-the-documentation-contracts-cost-seconds-per-active-spec
 reason: null
 ---
 
