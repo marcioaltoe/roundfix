@@ -142,7 +142,10 @@ archive plan without `--offline`.
     - the audited head named as the claimed candidate.
 11. MUST, for the Outcome for the Archive Record, run only
     `bin/roundfix archive 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff --plan --offline`
-    with every Judge Key Variable and `TYPESAFE_API_KEY` unset, and write the
+    with every Judge Key Variable and `TYPESAFE_API_KEY` unset and with `HOME`
+    set to a fresh empty temporary directory created for this row (the CLI
+    loads User Config from `$HOME/.roundfix/config.yml`, so the default home
+    would read `~/.roundfix`), and write the
     report's `## Outcome` as one paragraph that does not end with a colon. It
     MUST NOT do any of these:
     - accept a row whose only evidence is that a file was read;
