@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -142,3 +142,32 @@ None. This Task changes documentation, the skill mirrors, the skill version reco
 - `_prd.md` → Core Features 2 and 4; Goals; Glossary
 - `_techspec.md` → API Contract 8; Build Order 2
 - ADR-0315
+
+## Result
+
+Implemented the documentation contract for `SC-VERIFY-SUBSUMED-SELECTOR`: the
+spec command guide, Roundfix spec reference, and write-tasks authoring guidance
+now describe the subsumed pytest selector rule and its `--keep-duplicates`
+exemption. The canonical Roundfix and write-tasks skills were raised to
+`0.1.132` and `0.0.19`; `make skills-sync` produced matching mirrors. The
+glossary now defines **Subsumed Test Selector** with the ADR-0315 link.
+
+Focused implementation checks and required records:
+
+- `make skills-sync` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed (`1 passed`); updated `skills/testdata/owned-skill-versions.json`.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed (`1 passed`); updated `docs/references/behavior-surfaces.json`.
+- `cmp` checks confirmed all three canonical/mirror pairs are equal; focused content probes found the new code in all five required documents, the glossary term and ADR link, and both version fields in each canonical skill. `git diff --check` passed.
+
+Acceptance criteria evidence:
+
+- The guide, both Roundfix reference copies, and both write-tasks skill copies contain `SC-VERIFY-SUBSUMED-SELECTOR` and its exemption.
+- `CONTEXT.md` defines **Subsumed Test Selector** and links ADR-0315.
+- Both skill versions are raised and recorded, mirrors are synchronized, and the Behavior Surface Record was re-recorded after the guide edit.
+
+The Daemon still owns Task status and must run the declared Verification before settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T070317Z_62af7ae2274ed43c`
+- Source commit: `22e495d0d4e90b4939fb1b878c40c92d774ad03a`

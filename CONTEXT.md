@@ -369,6 +369,10 @@ _Avoid_: Line-bound grep, phrase grep, wrapped-text failure
 The Spec Consistency Check error (`SC-VERIFY-NON-HERMETIC`) raised when an authored Verification command depends on an undeclared environment variable or a pre-existing path outside the repository. A command-local variable or a path the Task creates before reading is not an external dependency.
 _Avoid_: External-state Verification, environment guard, temporary-path check
 
+**Subsumed Test Selector**:
+The Spec Consistency Check error (`SC-VERIFY-SUBSUMED-SELECTOR`) raised when a pending non-QA Task's Verification passes a test selector, a pytest node id such as `tests/test_a.py::test_new`, together with a collection argument of the same invocation that contains it: its file, a directory above it, `.`, or a node id that prefixes it. pytest 9 runs the containing argument whole and drops the selector without an error, so a test that does not exist yet goes unnoticed and the command passes before the work ([ADR-0315](docs/adr/0315-a-test-selector-another-argument-of-its-invocation-contains-is-refused-at-authoring.md)).
+_Avoid_: Duplicate test path, redundant node id, shadowed test
+
 **Unobserved Verification**:
 The Run Event classification (`verification_unknown`) recorded when a Verification command's verdict could not be observed — a timeout, a partial execution, or a runner error that is not the command's answer. It is distinct from a command that ran and exited non-zero, which has a verdict, and it keeps "the work is wrong" separable from "we did not find out".
 _Avoid_: Flaky test, transient failure, retry

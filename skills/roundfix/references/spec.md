@@ -92,6 +92,15 @@ oldest commit that added it; an uncommitted PRD is held.
   Specs without a Task Graph skip with the manifest path. Reads files only
   and executes no command.
 
+- `SC-VERIFY-SUBSUMED-SELECTOR` — a pending non-QA Task's Verification
+  passes a pytest node id together with a collection argument of the same
+  invocation that contains it (its file, a directory above it, `.`, or a
+  node id that prefixes it), so pytest 9 runs that argument whole and the
+  command passes before the test exists. `--keep-duplicates` exempts the
+  invocation. An error with no horizon from the Tasks stage; reads files only
+  and executes no command. Name the selector alone and run its containing path
+  in a separate command (ADR-0315).
+
 - `SC-DECISIONS-UNRECORDED` — a PRD's `## Decisions` section lacks both a
   dated answer and the autonomous-route line naming its decision source. A gap
   from the PRD stage that reads shape only. Its horizon is the oldest commit

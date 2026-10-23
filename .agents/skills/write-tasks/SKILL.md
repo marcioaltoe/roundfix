@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.18
+  version: 0.0.19
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.18
+version: 0.0.19
 ---
 
 # Write Tasks
@@ -314,7 +314,27 @@ Tasks stage, with no horizon. It reads literal paths under existing top-level
 repository directories, excluding grep/rg patterns, printf/echo operands,
 negated test operands, variables, globs, ellipses and paths under the Spec
 Root. The check executes no command. Correct the command or declare how the
-plan provides a missing path before starting a Run.
+  plan provides a missing path before starting a Run.
+
+## Test selectors and their containing path
+
+A Verification command that runs a new test by its selector names the
+selector alone. pytest 9 and later collapse collection arguments that
+overlap: when one invocation passes a node id such as
+`tests/test_a.py::test_new` and also its file, a directory above it or `.`,
+pytest runs the containing path whole and drops the node id without an error.
+Before the test exists the command passes on the tests the file already holds,
+and the pre-work probe refuses it as vacuous without naming why; with the node
+id alone pytest exits 4 and the command fails as it should. Run the containing
+path in a separate command when the Task also needs it.
+
+`SC-VERIFY-SUBSUMED-SELECTOR` reports an error for a pending non-QA Task at
+the Tasks stage, with no horizon. It reads each pytest invocation —
+`pytest`, `py.test` or `python -m pytest`, behind `uv run`, `poetry run`,
+`pdm run`, `pipenv run` or `hatch run`, and inside a `$(...)` substitution —
+and reports a node id that another collection argument of the same invocation
+contains: its file, a directory above it, `.`, or a node id that prefixes it.
+`--keep-duplicates` exempts the invocation. The check executes no command.
 
 ## Owned skill versions
 
