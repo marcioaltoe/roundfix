@@ -1,0 +1,56 @@
+// Boundary: roundfix implement with temporary Project Config, User Config and fake runner.
+package cli
+
+import (
+	"bytes"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"roundfix/internal/agent"
+	"roundfix/internal/openrouterkey"
+	"roundfix/internal/spec"
+)
+
+func TestImplementSkipsTheLightTierUnderProjectFullAccess(t *testing.T) {
+	t.Parallel()
+	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "docs"}})
+	path := filepath.Join(repo, "docs", "specs", implementTestSlug, "task_01.md")
+	mustWrite(t, path, strings.Replace(mustRead(t, path), "status: pending\n", "status: pending\ncomplexity: low\n", 1))
+	mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), "defaults:\n  agent_full_access: true\n")
+	gitImplement(t, repo, "add", ".")
+	gitImplement(t, repo, "commit", "-m", "seed full-access light task")
+	mustMkdir(t, filepath.Join(home, ".roundfix"))
+	mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "openrouter:\n  light_models: [x-ai/grok-4.5]\n")
+	var requests []agent.ExecuteRequest
+	runner := &implementFakeRunner{gitRoot: repo, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}, onTask: func(req agent.ExecuteRequest, _ string) error { requests = append(requests, req); return nil }}
+	withImplementCollaborators(t, runner)
+	environment := commandEnvironmentForTest(t)
+	for _, key := range []string{openrouterkey.Implement, openrouterkey.Judge, openrouterkey.Shared} {
+		environment.environ = withEnvValue(environment.environ, key, "")
+	}
+	keyValue := strings.Join([]string{"fixture", "private", t.Name()}, "-")
+	environment.environ = withEnvValue(environment.environ, openrouterkey.Shared, keyValue)
+	var stdout, stderr bytes.Buffer
+	code := runWithContext(t.Context(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr, environment)
+	if strings.Contains(stdout.String()+stderr.String(), keyValue) {
+		t.Fatal("key value reached command output")
+	}
+	if code != exitOK {
+		t.Fatalf("exit %d: stdout=%s stderr=%s", code, &stdout, &stderr)
+	}
+	if len(requests) != 1 {
+		t.Fatalf("work requests=%d", len(requests))
+	}
+	runtime := requests[0].Runtime
+	if runtime.ID != "codex" || runtime.RequestedPolicy() != agent.AccessPolicyFullAccess || runtime.OpenRouterKeyVariable != "" {
+		t.Fatalf("work runtime=%+v", runtime)
+	}
+	if err := runtime.ValidateRequestedAccessPolicy(); err != nil {
+		t.Fatal(err)
+	}
+	const warning = `roundfix: warning: light tier skipped for Task task_01: light runtime opencode offers no mode for access policy "full-access"; it runs on its docs profile`
+	if strings.Count(stderr.String(), warning+"\n") != 1 || strings.Contains(stdout.String(), "light tier skipped") {
+		t.Fatalf("stdout=%s stderr=%s", &stdout, &stderr)
+	}
+}

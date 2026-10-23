@@ -39,6 +39,12 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   (current and pinned profiles both qualify); `found` names the counts and
   suggests `roundfix profiles check`. If comparison cannot run, `skipped`
   carries the reason. This line opens no Agent Session and never fails Doctor.
+- `light-tier:` — printed after `recommendations:` only when
+  `openrouter.light_models` is not empty and `defaults.agent_full_access` is
+  `true`. It builds each light model's runtime as a Run would and reports
+  `DR-LIGHT-ACCESS-MODE` (`warn`) when none offers a full-access mode, because
+  light Tasks then run on their category profile; otherwise it reports `ok`.
+  It opens no Agent Session, reads no key, and never changes the exit code.
 - `gh:` — GitHub CLI is on `PATH`, at least 2.81.0, authenticated for the
   delivery forge and able to write to the repository. The active account login
   is reported; tokens and scope lists are never printed.
@@ -217,6 +223,7 @@ Child diagnostics are not forwarded, protecting credentials and identity values.
 | `DR-LANE-DOCKER-UNREACHABLE` | warn | `docker info` failed; start Docker, then re-run `roundfix doctor`. |
 | `DR-LANE-IMAGE-MISSING` | warn | The image is not local; `docker pull <image>`. |
 | `DR-LANE-IMAGE-UNKNOWN` | warn | The image cannot be resolved from `go.mod`; set `delivery.linux_lane_image`. |
+| `DR-LIGHT-ACCESS-MODE` | warn | No light runtime offers a full-access mode; set `openrouter.light_models: []` in User Config, or `defaults.agent_full_access: false`. |
 
 An offline machine with otherwise ready checks prints warnings and exits `0`:
 

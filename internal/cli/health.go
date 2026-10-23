@@ -26,6 +26,7 @@ const (
 	HealthCheckAdapter         = "adapter"
 	HealthCheckAgent           = "agent"
 	HealthCheckRecommendations = "recommendations"
+	HealthCheckLightTier       = "light-tier"
 	HealthCheckProfiles        = "profiles"
 	HealthCheckPrePRReview     = "pre-pr-review"
 	HealthCheckGH              = "gh"

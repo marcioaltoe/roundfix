@@ -196,8 +196,14 @@ pass the subscription rule. The light session reads its key under
 and never receives the Judge Key Variables or generic `OPENROUTER_API_KEY`.
 
 A skipped light Task emits phase `light_tier_skipped` with reason code
-`key_missing`, `spend_unreadable`, or `ceiling_reached`. A light Task that
-fails Verification escalates once. The escalation emits phase
+`access_mode_unavailable`, `key_missing`, `spend_unreadable`, or
+`ceiling_reached`. The `access_mode_unavailable` check comes first: under a
+full-access request, a light model whose runtime offers no full-access mode is
+not chosen, and when none remains the Task runs on its category profile. Any
+other refusal of a light session before Agent work emits phase
+`light_tier_yielded`, naming the light model, a reason code and the cause, and
+opens the category's Preferred Selection without trying the remaining light
+models. A light Task that fails Verification escalates once. The escalation emits phase
 `light_tier_escalated`, naming the light model and failed commands, and runs a
 new session on the category's Preferred Selection or its pre-work fallback.
 The light prompt, read files, and diagnostics are sent to OpenRouter and its

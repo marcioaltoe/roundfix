@@ -18,6 +18,7 @@ import (
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/lighttier"
 	"roundfix/internal/preflight"
 	"roundfix/internal/store"
 	"roundfix/skills"
@@ -100,6 +101,11 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	profileReadiness := dependencies.profileReadiness(ctx, loaded.Config, roundconfig.ConfiguredWorkCategories(loaded.Config), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
 	results = append(results, doctorRecommendationsResult(loaded.Config))
+	if result, printed := doctorLightTierResult(loaded.Config, func(selection roundconfig.AgentSelection) (agent.RuntimeSpec, error) {
+		return runtimeForProfileSelectionWithOptions(selection, profileProofOptions{EnableFullAccess: loaded.Config.Defaults.AgentFullAccess})
+	}); printed {
+		results = append(results, result)
+	}
 	results = append(results, doctorPrePRReviewResult(loaded.Config.PrePRReview))
 	if dependencies.readiness != nil {
 		results = append(results, dependencies.readiness(ctx, loaded)...)
@@ -219,6 +225,24 @@ func doctorRecommendationsResult(config roundconfig.Config) CheckResult {
 		result.Detail += "; run roundfix profiles check"
 	}
 	return result
+}
+
+// doctorLightTierResult reads only loaded configuration and static runtime
+// capabilities. It opens no Agent Session, starts no process and reads no key.
+// Its stdout finding is only ok or warn, so it never changes Doctor's exit code.
+func doctorLightTierResult(config roundconfig.Config, runtimeFor func(roundconfig.AgentSelection) (agent.RuntimeSpec, error)) (CheckResult, bool) {
+	if !config.Defaults.AgentFullAccess || len(config.OpenRouter.LightModels) == 0 {
+		return CheckResult{}, false
+	}
+	kept, refused := lighttier.ServingSelections(config.OpenRouter.LightModels, runtimeFor)
+	if len(kept) != 0 {
+		return readinessResult(HealthCheckLightTier, "light runtime "+kept[0].Runtime+" serves full access", nil), true
+	}
+	return readinessResult(HealthCheckLightTier, "", []readinessFinding{{
+		Code: "DR-LIGHT-ACCESS-MODE", Status: CheckStatusWarn,
+		Text: "light runtime " + refused[0].Selection.Runtime + " offers no full-access mode; light Tasks run on their category profile",
+		Next: "set openrouter.light_models: [] in User Config, or defaults.agent_full_access: false",
+	}}), true
 }
 
 func doctorPrePRReviewResult(policy roundconfig.PrePRReview) CheckResult {
