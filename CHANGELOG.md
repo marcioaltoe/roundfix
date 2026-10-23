@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.110.0] - 2026-10-22
+
+### A new Delivery Queue resumes an item whose Spec is already archived on its branch
+
+- **Archived Item Resume.** When `roundfix deliver start` continues an item branch whose head already archives the Spec, the owner resumes the item at review instead of revalidating a Spec folder that no longer exists. The head must hold the Spec's Archive Record (or a legacy archive folder) and not the Spec folder, and the commit that removed the Spec's `_prd.md` must be an exact archive of the Spec, proven as the queue proves its own archive commit. The owner records that head as the candidate and moves to `reviewing`: no Delivery Revalidation, no Implement Run, no new archive commit. The pre-PR review runs per policy, and an open Pull Request of the item branch is found rather than opened again. Before this release such an item parked `delivery-error` at revalidation.
+- **An unproven archive parks with its cause.** When the head lacks the Spec folder and no exact archive is proven, the item parks as `archived-item-unproven: <cause>` before any Run. The cause names the head that holds neither the folder nor an archive, the missing removing commit, or the inexact archive commit. The Park Class is `finding`, and the next action is to make the item branch hold the Spec folder or one exact archive commit, then run `roundfix deliver retry <slug>`; the retry returns the item to `queued` and counts a retry.
+
+### Recorded paths are read before carry-forward provenance
+
+- **A carried Task keeps its Recorded paths.** The reader of a Task file's Daemon-owned `## Recorded paths` section accepted it only as the file's last level-2 section, but carry-forward appends `## Carry-forward provenance` after it, so every carried Task lost its recorded paths. The reader now accepts the section when only Daemon-written settlement sections (`## Result`, `## Carry-forward provenance`, another recorded section) follow it, never after an authored section or inside a fence.
+- **Effects.** A `corrective-spec-required` retry now accepts a changed path listed in a carried Task's Recorded paths at the recorded revision, as the `deliver` guide states; a path in no Task is still refused with the same text. `roundfix reconcile` classifies such a Run Worktree `superseded` instead of `dirty`. Settlement rewrites the recorded section in place, keeping the provenance bytes, instead of appending a second one.
+- The `deliver` guide, the Roundfix skill reference (skill version 0.1.129) and the glossary (**Archived Item Resume**) describe the resume.
+
 ## [0.109.0] - 2026-10-22
 
 ### The Delivery Queue's check wait is a User Config duration, 60 minutes by default
