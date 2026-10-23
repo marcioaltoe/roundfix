@@ -109,15 +109,16 @@ type reconcileDebrisResult struct {
 }
 
 type reconcileDebrisSummary struct {
-	ProcessCandidates    int `json:"processCandidates"`
-	RunBranchCandidates  int `json:"runBranchCandidates"`
-	StagingCandidates    int `json:"stagingCandidates"`
-	Preserved            int `json:"preserved"`
-	ProcessesApplied     int `json:"processesApplied"`
-	RunBranchesApplied   int `json:"runBranchesApplied"`
-	StagingApplied       int `json:"stagingApplied"`
-	ItemBranchCandidates int `json:"itemBranchCandidates"`
-	ItemBranchesApplied  int `json:"itemBranchesApplied"`
+	ProcessCandidates       int `json:"processCandidates"`
+	RunBranchCandidates     int `json:"runBranchCandidates"`
+	StagingCandidates       int `json:"stagingCandidates"`
+	Preserved               int `json:"preserved"`
+	ProcessesApplied        int `json:"processesApplied"`
+	RunOwnerRecordsReleased int `json:"runOwnerRecordsReleased"`
+	RunBranchesApplied      int `json:"runBranchesApplied"`
+	StagingApplied          int `json:"stagingApplied"`
+	ItemBranchCandidates    int `json:"itemBranchCandidates"`
+	ItemBranchesApplied     int `json:"itemBranchesApplied"`
 }
 
 type reconcileRunSelection struct {
@@ -797,6 +798,19 @@ func inspectReconcileProcesses(
 			continue
 		}
 		processIDs, err := controller.InspectTree(ctx, pid, run.OwnerIdentity)
+		if errors.Is(err, store.ErrOwnerProcessIdentityMismatch) {
+			action := "would release the Run owner record with --apply"
+			if opts.apply {
+				action = "release the Run owner record without a signal"
+			}
+			report.ProcessCandidates = append(report.ProcessCandidates, reconcileDebrisResult{
+				Kind: "runOwnerRecord", RunID: run.ID, Outcome: run.State, OwnerPID: pid,
+				ProcessIDs: []int{},
+				Proof:      fmt.Sprintf("terminal Run %q outcome %q records owner PID %d, which now has a different start identity: the recorded owner ended", run.ID, run.State, pid),
+				Action:     action, run: run,
+			})
+			continue
+		}
 		if err != nil {
 			report.PreservedCandidates = append(report.PreservedCandidates, reconcileDebrisResult{
 				Kind:          "process",
@@ -1087,7 +1101,7 @@ func applyReconcileReport(
 	opts reconcileOptions,
 	report *reconcileReport,
 ) {
-	applyReconcileProcesses(ctx, report)
+	applyReconcileProcesses(ctx, homeDir, report)
 	applyReconcileWorktrees(ctx, homeDir, opts, report)
 	applyReconcileStaging(ctx, report.Repository, report)
 	applyReconcileItemBranches(ctx, homeDir, report)
@@ -1127,10 +1141,44 @@ func applyReconcileStaging(ctx context.Context, repository string, report *recon
 	}
 }
 
-func applyReconcileProcesses(ctx context.Context, report *reconcileReport) {
+func applyReconcileProcesses(ctx context.Context, homeDir string, report *reconcileReport) {
+	var runStore *store.Store
+	var openErr error
+	for _, candidate := range report.ProcessCandidates {
+		if candidate.Kind == "runOwnerRecord" {
+			runStore, openErr = store.Open(ctx, homeDir)
+			if openErr == nil {
+				defer func() { _ = runStore.Close() }()
+			}
+			break
+		}
+	}
+
 	controller := commandDependenciesForContext(ctx).reconcileProcesses
 	for index := range report.ProcessCandidates {
 		candidate := &report.ProcessCandidates[index]
+		// A proven mismatch names a database record, never a process tree.
+		if candidate.Kind == "runOwnerRecord" {
+			released := false
+			err := openErr
+			if err == nil {
+				released, err = runStore.ReleaseStaleRunOwnerRecord(ctx, candidate.RunID, candidate.OwnerPID, candidate.run.OwnerIdentity,
+					fmt.Sprintf("reconcile proved owner PID %d now has a different start identity", candidate.OwnerPID))
+			}
+			switch {
+			case err != nil:
+				candidate.Action = "preserve"
+				candidate.RefusalReason = fmt.Sprintf("release Run owner record: %v", err)
+				report.DebrisSummary.Preserved++
+				report.Summary.OperationalFailures++
+			case released:
+				candidate.Action = "released Run owner record; no signal sent"
+				report.DebrisSummary.RunOwnerRecordsReleased++
+			default:
+				candidate.Action = "none; Run owner record already released"
+			}
+			continue
+		}
 		outcomes, err := controller.TerminateTreeAndWait(
 			ctx,
 			candidate.OwnerPID,
@@ -1271,7 +1319,11 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(result.RefusalReason))
 	}
 	for _, candidate := range report.ProcessCandidates {
-		fmt.Fprintf(&output, "Process candidate: Run %s owner PID %d\n", candidate.RunID, candidate.OwnerPID)
+		heading := "Process candidate"
+		if candidate.Kind == "runOwnerRecord" {
+			heading = "Run owner record candidate"
+		}
+		fmt.Fprintf(&output, "%s: Run %s owner PID %d\n", heading, candidate.RunID, candidate.OwnerPID)
 		fmt.Fprintf(&output, "  process-ids: %v\n", candidate.ProcessIDs)
 		fmt.Fprintf(&output, "  proof: %s\n", textReconcileValue(candidate.Proof))
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
@@ -1343,13 +1395,14 @@ func reconcileText(report reconcileReport) string {
 	)
 	fmt.Fprintf(
 		&output,
-		"Debris summary: process-candidates=%d run-branch-candidates=%d staging-candidates=%d staging-applied=%d preserved=%d processes-applied=%d run-branches-applied=%d item-branch-candidates=%d item-branches-applied=%d\n",
+		"Debris summary: process-candidates=%d run-branch-candidates=%d staging-candidates=%d staging-applied=%d preserved=%d processes-applied=%d run-owner-records-released=%d run-branches-applied=%d item-branch-candidates=%d item-branches-applied=%d\n",
 		report.DebrisSummary.ProcessCandidates,
 		report.DebrisSummary.RunBranchCandidates,
 		report.DebrisSummary.StagingCandidates,
 		report.DebrisSummary.StagingApplied,
 		report.DebrisSummary.Preserved,
 		report.DebrisSummary.ProcessesApplied,
+		report.DebrisSummary.RunOwnerRecordsReleased,
 		report.DebrisSummary.RunBranchesApplied,
 		report.DebrisSummary.ItemBranchCandidates,
 		report.DebrisSummary.ItemBranchesApplied,

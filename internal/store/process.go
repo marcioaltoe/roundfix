@@ -21,6 +21,7 @@ var (
 	ErrOwnerProcessUnsupported      = errors.New("owner process control is unsupported")
 	ErrOwnerIdentityUnreadable      = errors.New("owner process identity is unreadable")
 	ErrOwnerProcessIdentityUnproven = errors.New("owner process identity cannot be proven")
+	ErrOwnerProcessIdentityMismatch = fmt.Errorf("%w: live process start identity does not match the recorded owner identity", ErrOwnerProcessIdentityUnproven)
 	errOwnerProcessAlreadyAbsent    = errors.New("owner process is already absent")
 	errGracefulSignalUnsupported    = errors.New("graceful owner process termination is unsupported")
 )
@@ -137,7 +138,7 @@ func (controller *OwnerProcessControl) proveOwner(ctx context.Context, pid int, 
 		}
 		if liveIdentity != recorded {
 			return false, ownerProcessControlError(pid, "prove owner process identity",
-				fmt.Errorf("%w: live process start identity does not match the recorded owner identity", ErrOwnerProcessIdentityUnproven))
+				ErrOwnerProcessIdentityMismatch)
 		}
 	}
 	return false, nil

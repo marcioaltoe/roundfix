@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0300-reconcile-releases-a-stale-run-owner-record
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -140,3 +140,83 @@ preserved.
 - `_prd.md` → Sources; Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Success Metric 6
 - `_techspec.md` → Current behavior; API Contracts 1-6; Invariants 1-6; Testing Approach; Build Order 2
 - ADR-0313
+
+
+## Result
+
+Implemented this Task's owner-record release path. The comparable identity
+mismatch has its own sentinel wrapping the existing unproven error with the
+same diagnostic bytes. Reconcile reports it as `runOwnerRecord`, with an
+empty process list, and applies it through a terminal-state-guarded
+compare-and-set in the Run Database. The release and its single
+`daemon.outcome` journal event share one write transaction. The release never
+enumerates the unrelated process's tree or requests termination. The report
+includes the specified text heading, actions and release count.
+
+Acceptance evidence from focused checks:
+
+- Proven mismatch and idempotence: the new command test asserts exact text
+  and JSON fields, unchanged database bytes through both dry runs, one
+  signal-free release, unchanged Run outcome and timestamps, one journal
+  event, no candidate or inspection on a second apply, and no doctor lineage
+  read afterwards. Additional cases cover an already-released record, a
+  missing Run and a database-open failure with the required actions and
+  failure counts.
+- Preserved records: the new command test exercises unreadable read failure,
+  uncomparable token, bare unproven, unsupported and identity-less records in
+  dry-run and apply modes. Each retains its exact refusal reason and database
+  bytes and requests no termination; an identity-less record is never
+  inspected.
+- Proof compatibility: the new process-table test asserts the exact mismatch
+  message, matching of both mismatch and unproven sentinels, refusal by
+  `TerminateAndWait` without a signal, own PID and PID zero as bare unproven,
+  read failure/unsupported read/foreign token as unreadable, and absence on
+  the second liveness read as success. The Unix test inspects a real helper
+  and observes it still alive after the mismatch refusal.
+- Guarded persistence: the new store test checks required inputs, missing
+  and Active Run refusals, no mutation or event for a different PID or
+  identity, trimming, clearing only the owner fields, unchanged state and
+  timestamps, exact journal source/kind/summary/payload, idempotence, and
+  rollback of the owner clear when journal insertion fails.
+- Existing behavior: focused owner-proof, Force Stop, residue, process and
+  branch reconciliation, item-branch release and staging tests passed
+  unchanged. Byte comparison against HEAD confirms that
+  `internal/store/store.go`, `internal/store/delivery.go`,
+  `internal/store/process_signal_unix.go`, `internal/cli/cli.go`,
+  `internal/cli/doctor.go`, `internal/cli/deliver.go`, `TerminateAndWait` and
+  every existing test retain their bytes. The complete declared Verification
+  remains pending with the Daemon.
+
+Focused checks executed:
+
+1. Before implementation,
+   `go test ./internal/store -run '^TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity$' -count=1`
+   exited 1 because `ErrOwnerProcessIdentityMismatch` was undefined.
+2. After implementation,
+   `go test ./internal/store ./internal/cli -run '^(TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity|TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt|TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner|TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal|TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale)$' -count=1 -v`
+   exited 0; all five named tests and their subtests passed.
+3. `go test ./internal/store -run '^TestOwnerProcessController.*(Identity|ProveOwner)' -count=1`
+   exited 0.
+4. `go test ./internal/cli -run '^(TestRunForceStopOwnerIdentityUnreadable|TestRunReconcile.*(Process|Branch)|TestDoctorReportsProcessResidue|TestReconcile.*Staging|TestReconcileListsAndReleasesAnItemBranch)' -count=1`
+   exited 0.
+5. `GOOS=windows go test -c -o /tmp/roundfix-0300-task02-store.test.exe ./internal/store`
+   and
+   `GOOS=windows go test -c -o /tmp/roundfix-0300-task02-cli.test.exe ./internal/cli`
+   both exited 0. These compile the Windows tests; they do not execute them.
+6. `git diff --check` exited 0. All five new top-level tests begin with
+   `t.Parallel()` and introduce no real-time durations.
+
+Execution environment: the sandbox refused all commands because the assigned
+writable root contains a symlink. Approved execution outside the sandbox
+resolved this same Run checkout to `/Volumes/Brain-SSD/cache/.roundfix/worktrees/`.
+Tests used disposable homes and repositories; no maintainer Run Database was
+read or changed. The task file already carried the Daemon's `in_progress`
+change at the initial Git-status check; its status was left untouched.
+
+No declared Verification command, repository Verification, commit, push or
+pull-request operation was run. No Task Graph or other Task file was edited.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T022528Z_d6dffdb8e615fb09`
+- Source commit: `3bbf7e3ffeeca697fcdbbcb6b08b7239d1d172bd`
