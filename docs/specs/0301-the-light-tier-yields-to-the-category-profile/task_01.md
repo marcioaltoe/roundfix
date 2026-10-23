@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0301-the-light-tier-yields-to-the-category-profile
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -158,3 +158,31 @@ None. This Task changes documentation, the skill mirrors, the skill version reco
 - `_prd.md` → Core Feature 4; Goals; Glossary
 - `_techspec.md` → API Contract 6; Build Order 1
 - ADR-0314
+
+## Result
+
+- Updated the configuration and Doctor guides with the `access_mode_unavailable`
+  skip, the `light_tier_yielded` pre-work yield, the `light-tier:` Doctor line,
+  and `DR-LIGHT-ACCESS-MODE`.
+- Updated the canonical Roundfix `runtime` and `setup` references, then ran
+  `make skills-sync`; the canonical and embedded Roundfix skill copies are
+  byte-identical.
+- Revised the **Light Tier** glossary definition with the ADR-0314 link while
+  preserving its `_Avoid_` line.
+- Raised both Roundfix skill version fields from `0.1.130` to `0.1.131` and
+  recorded that version with `go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed,
+  `1 passed in 1 packages`.
+- Re-recorded `docs/references/behavior-surfaces.json` last with `go test
+  -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` —
+  passed, `1 passed in 1 packages`.
+- Focused checks after the final edit: required-term search found the new terms
+  in all requested guide/reference copies; mirror comparison passed; `git diff
+  --check` passed. The wording sweep found no remaining targeted Light Tier
+  statement limited to three skip reasons, treating a refusal as a Task failure,
+  or omitting `light-tier:` from the updated Doctor descriptions. Remaining
+  generic refusal/failure matches are in unrelated history, delivery,
+  profiles, implementation, and workflow documents.
+- The Daemon-owned `## Verification` commands and repository Verification were
+  not run.

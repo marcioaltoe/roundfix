@@ -231,15 +231,28 @@ placed in Project Config. Before each light Task, Roundfix sums the current
 month's Light Spend Log. A reached ceiling or unreadable log skips the light
 tier and uses the category profile.
 
+When `defaults.agent_full_access` or `--agent-full-access` requests full access
+and no light runtime offers a full-access mode, as OpenCode offers none, the
+light tier is skipped before any other check with the reason code
+`access_mode_unavailable`, and the Task runs on its category profile with the
+same access request. A light session refused for any other reason before Agent
+work, such as a failed setup or a prompt that fails before any Agent output,
+yields: Roundfix prints `roundfix: warning: light tier yielded for Task <id>
+before Agent work: <cause>; it runs on its <category> profile`, publishes the
+Task event phase `light_tier_yielded`, and opens the category's Preferred
+Selection without trying the remaining light models. `roundfix doctor` warns
+about the first case on its `light-tier:` line ([ADR-0314](../adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md)).
+
 The Light Spend Log is one JSONL file per UTC month at
 `<home>/.roundfix/openrouter/implement/<YYYY-MM>.jsonl`. Each line records
 `schema`, `time`, `repository`, `run_id`, `spec`, `task`, `session`, `model`,
 `cost_usd`, `cost_source` (`opencode` or `unreported`), and `key_variable`, the
 selected variable's name. It contains no key value, prompt, or diagnostic.
 A skipped Task prints
-`roundfix: warning: light tier skipped for Task` and names one of the three
-reasons: the key variable is not set, the Light Spend Log could not be read,
-or this month's light spend reached the ceiling.
+`roundfix: warning: light tier skipped for Task` and names one of the four
+reasons: the light runtime offers no mode for the requested access policy, the
+key variable is not set, the Light Spend Log could not be read, or this month's
+light spend reached the ceiling.
 
 ## Context-Driven Baseline state
 

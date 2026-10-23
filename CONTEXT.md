@@ -1351,7 +1351,7 @@ A domain term a Spec introduces that the glossary does not carry as required: a 
 _Avoid_: Missing term, undocumented token, stale glossary
 
 **Light Tier**:
-The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection. A light runtime that offers no mode for the requested access policy is not chosen, and a light session refused before Agent work yields to the category's Preferred Selection ([ADR-0314](docs/adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md)).
 _Avoid_: Cheap model, Jev routing, light model profile
 
 **Light Spend Log**:
