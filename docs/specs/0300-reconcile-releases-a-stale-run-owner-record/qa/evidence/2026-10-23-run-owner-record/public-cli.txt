@@ -1,0 +1,62 @@
+$ ./bin/roundfix reconcile
+stdout:
+Repository: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0300-cd9m3amf/public-repo-resolved
+Mode: dry-run
+Run: run_20261023T032749Z_7e359bc8f836bf39
+  outcome: Failed
+  classification: released
+  run-branch: roundfix/run-run_20261023T032749Z_7e359bc8f836bf39
+  run-head: -
+  target-branch: main
+  target-head: -
+  worktree: -
+  superseding-report: -
+  evidence: Run Worktree and Run Branch are absent
+  action: none
+  refusal-reason: -
+Run owner record candidate: Run run_20261023T032749Z_7e359bc8f836bf39 owner PID 2899
+  process-ids: []
+  proof: terminal Run "run_20261023T032749Z_7e359bc8f836bf39" outcome "Failed" records owner PID 2899, which now has a different start identity: the recorded owner ended
+  action: would release the Run owner record with --apply
+  refusal-reason: -
+Summary: total=1 safe=0 superseded=0 unintegrated=0 dirty=0 unknown=0 released=1 applied=0 preserved=0 operational-failures=0
+Debris summary: process-candidates=1 run-branch-candidates=0 staging-candidates=0 staging-applied=0 preserved=0 processes-applied=0 run-owner-records-released=0 run-branches-applied=0 item-branch-candidates=0 item-branches-applied=0
+Apply with: roundfix reconcile --apply
+
+stderr:
+
+exit=0
+
+$ ./bin/roundfix reconcile --format=json
+stdout:
+{"schemaVersion":"roundfix-reconcile/v1","mode":"dry-run","repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0300-cd9m3amf/public-repo-resolved","applyCommand":"roundfix reconcile --apply","results":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"runs":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"summary":{"total":1,"safe":0,"superseded":0,"unintegrated":0,"dirty":0,"unknown":0,"released":1,"applied":0,"preserved":0,"operationalFailures":0},"processCandidates":[{"kind":"runOwnerRecord","runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","ownerPid":2899,"processIds":[],"runBranch":"","targetBranch":"","worktree":"","specSlug":"","supersedingReport":"","proof":"terminal Run \"run_20261023T032749Z_7e359bc8f836bf39\" outcome \"Failed\" records owner PID 2899, which now has a different start identity: the recorded owner ended","action":"would release the Run owner record with --apply","refusalReason":""}],"runBranchCandidates":[],"stagingCandidates":[],"itemBranchCandidates":[],"preservedCandidates":[],"debrisSummary":{"processCandidates":1,"runBranchCandidates":0,"stagingCandidates":0,"preserved":0,"processesApplied":0,"runOwnerRecordsReleased":0,"runBranchesApplied":0,"stagingApplied":0,"itemBranchCandidates":0,"itemBranchesApplied":0},"carryForwards":null}
+
+stderr:
+
+exit=0
+
+$ ./bin/roundfix reconcile --apply --format=json
+stdout:
+{"schemaVersion":"roundfix-reconcile/v1","mode":"apply","repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0300-cd9m3amf/public-repo-resolved","applyCommand":"roundfix reconcile --apply","results":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"runs":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"summary":{"total":1,"safe":0,"superseded":0,"unintegrated":0,"dirty":0,"unknown":0,"released":1,"applied":0,"preserved":0,"operationalFailures":0},"processCandidates":[{"kind":"runOwnerRecord","runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","ownerPid":2899,"processIds":[],"runBranch":"","targetBranch":"","worktree":"","specSlug":"","supersedingReport":"","proof":"terminal Run \"run_20261023T032749Z_7e359bc8f836bf39\" outcome \"Failed\" records owner PID 2899, which now has a different start identity: the recorded owner ended","action":"released Run owner record; no signal sent","refusalReason":""}],"runBranchCandidates":[],"stagingCandidates":[],"itemBranchCandidates":[],"preservedCandidates":[],"debrisSummary":{"processCandidates":1,"runBranchCandidates":0,"stagingCandidates":0,"preserved":0,"processesApplied":0,"runOwnerRecordsReleased":1,"runBranchesApplied":0,"stagingApplied":0,"itemBranchCandidates":0,"itemBranchesApplied":0},"carryForwards":null}
+
+stderr:
+
+exit=0
+
+$ ./bin/roundfix reconcile --apply --format=json
+stdout:
+{"schemaVersion":"roundfix-reconcile/v1","mode":"apply","repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0300-cd9m3amf/public-repo-resolved","applyCommand":"roundfix reconcile --apply","results":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"runs":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"summary":{"total":1,"safe":0,"superseded":0,"unintegrated":0,"dirty":0,"unknown":0,"released":1,"applied":0,"preserved":0,"operationalFailures":0},"processCandidates":[],"runBranchCandidates":[],"stagingCandidates":[],"itemBranchCandidates":[],"preservedCandidates":[],"debrisSummary":{"processCandidates":0,"runBranchCandidates":0,"stagingCandidates":0,"preserved":0,"processesApplied":0,"runOwnerRecordsReleased":0,"runBranchesApplied":0,"stagingApplied":0,"itemBranchCandidates":0,"itemBranchesApplied":0},"carryForwards":null}
+
+stderr:
+
+exit=0
+
+$ ./bin/roundfix reconcile --format=json
+stdout:
+{"schemaVersion":"roundfix-reconcile/v1","mode":"dry-run","repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0300-cd9m3amf/public-repo-resolved","applyCommand":"roundfix reconcile --apply","results":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"runs":[{"runId":"run_20261023T032749Z_7e359bc8f836bf39","outcome":"Failed","classification":"released","runBranch":"roundfix/run-run_20261023T032749Z_7e359bc8f836bf39","runHead":"","targetBranch":"main","targetHead":"","worktree":"","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"summary":{"total":1,"safe":0,"superseded":0,"unintegrated":0,"dirty":0,"unknown":0,"released":1,"applied":0,"preserved":0,"operationalFailures":0},"processCandidates":[],"runBranchCandidates":[],"stagingCandidates":[],"itemBranchCandidates":[],"preservedCandidates":[],"debrisSummary":{"processCandidates":0,"runBranchCandidates":0,"stagingCandidates":0,"preserved":0,"processesApplied":0,"runOwnerRecordsReleased":0,"runBranchesApplied":0,"stagingApplied":0,"itemBranchCandidates":0,"itemBranchesApplied":0},"carryForwards":null}
+
+stderr:
+
+exit=0
+
+Independent SQLite read: owner PID NULL, identity empty; all outcome/timestamp and other fields unchanged; exactly one journal event. Dry-run database bytes unchanged. Live child alive after every command. Restarted commands confirm persistence and idempotency.

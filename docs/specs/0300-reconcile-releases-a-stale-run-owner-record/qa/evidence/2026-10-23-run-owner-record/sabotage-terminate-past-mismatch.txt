@@ -1,0 +1,34 @@
+$ git archive HEAD (separate disposable copy)
+$ go test -count=1 -v -run ^(TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity|TestOwnerProcessControllerRefusesMismatchedOwnerIdentity)$ ./internal/store
+Mutation: terminate-past-mismatch
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== PAUSE TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== RUN   TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+=== PAUSE TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+=== CONT  TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== CONT  TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch
+    process_identity_mismatch_test.go:41: refused proof sent a signal
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read
+--- FAIL: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity (0.00s)
+    --- FAIL: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read (0.00s)
+=== NAME  TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+    process_unix_test.go:320: mismatched identity error = <nil>, want ErrOwnerProcessIdentityUnproven
+--- FAIL: TestOwnerProcessControllerRefusesMismatchedOwnerIdentity (0.01s)
+FAIL
+suiteguard: guard cost: measured 2709 paths; fingerprint took 90.864667ms before and 61.574875ms after
+FAIL	roundfix/internal/store	0.417s
+FAIL
+
+exit=1

@@ -1,0 +1,4 @@
+$ go test -count=1 ./skills
+ok  	roundfix/skills	1.114s
+
+exit=0

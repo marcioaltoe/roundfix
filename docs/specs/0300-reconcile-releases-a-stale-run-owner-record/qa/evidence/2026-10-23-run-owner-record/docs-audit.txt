@@ -1,0 +1,23 @@
+docs/user-guide/commands/reconcile.md: candidate, empty processes, release and count assertions PASS; documented commands exercised with Run-built binary in public-cli.txt.
+
+.agents/skills/roundfix/references/reconcile.md: candidate, empty processes, release and count assertions PASS; documented commands exercised with Run-built binary in public-cli.txt.
+
+skills/roundfix/references/reconcile.md: candidate, empty processes, release and count assertions PASS; documented commands exercised with Run-built binary in public-cli.txt.
+
+Stale Run Owner Record: glossary definition and accepted ADR-0313 link assertions PASS.
+
+Reconcile Command: glossary definition and accepted ADR-0313 link assertions PASS.
+
+$ rg -n -i processCandidates|mismatch.{0,35}identity|identity.{0,35}mismatch|mismatched owner docs/user-guide docs/agents .agents/skills skills --glob *.md
+docs/user-guide/commands/reconcile.md:184:Reconcile also proves the recorded owner of each terminal Run. When the live process at the owner PID presents a start identity that differs from the one the Run recorded, the system gave that PID to another process and the recorded owner ended: the Run's owner PID and identity are a Stale Run Owner Record. The report lists it once in `processCandidates` with `kind` `runOwnerRecord`, the owner PID, an empty `processIds` list and that proof, and the text report prints `Run owner record candidate: Run <run-id> owner PID <pid>`. `--apply` releases it: it clears the Run's recorded owner PID and identity, journals what it cleared, and sends no signal; it never inspects the processes of the PID's new holder. `debrisSummary.runOwnerRecordsReleased`, `run-owner-records-released` in the text summary, counts the releases. An owner identity that cannot be read or compared, and a Run recorded without one, stay in `preservedCandidates` with the refusal reason, and the Stop Command still never signals such a PID ([ADR-0313](../../adr/0313-a-proven-owner-identity-mismatch-releases-a-terminal-runs-owner-record-without-a-signal.md)).
+docs/user-guide/commands/review.md:242:mismatched findings record, an unknown identity, invalid or blank forms,
+docs/user-guide/usage.md:771:Force Stop refuses a proven identity mismatch: investigate PID reuse and do not
+docs/user-guide/usage.md:777:If identity is readable or proves a mismatch, Roundfix exits `2` without
+skills/roundfix/references/stop.md:55:and signals nothing when identity is readable or proves a mismatch; no
+skills/roundfix/references/review.md:232:mismatched findings record, an unknown identity, invalid or blank forms,
+.agents/skills/roundfix/references/stop.md:55:and signals nothing when identity is readable or proves a mismatch; no
+.agents/skills/roundfix/references/review.md:232:mismatched findings record, an unknown identity, invalid or blank forms,
+
+exit=0
+
+Search assessment: no current guide claims every processCandidates entry names live processes, or that proven comparable mismatches are always preserved. Preserved wording applies to unreadable/unproven ownership, staging, or unrelated lifecycle evidence. Stop guides correctly refuse mismatch signaling. Canonical and mirror reconcile references include the explicit record exception. Domain declaration adds only Stale Run Owner Record and revises Reconcile Command; both exist, and no further new term needs an entry. Emitted candidate kind, heading and summary match the guide and public-cli.txt. Full docscontract suite passed, including glossary contracts and TestTheSkillCoverageMapIsCurrent (docs-tests.txt).

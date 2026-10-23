@@ -1,0 +1,35 @@
+$ git archive HEAD (separate disposable copy)
+$ go test -count=1 -v -run ^(TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity|TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt)$ ./internal/store
+Mutation: enumerate-past-mismatch
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== PAUSE TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== RUN   TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+=== PAUSE TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+=== CONT  TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch
+=== CONT  TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+=== NAME  TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch
+    process_identity_mismatch_test.go:37: refused proof enumerated a process tree
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read
+--- FAIL: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity (0.00s)
+    --- FAIL: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read (0.00s)
+=== NAME  TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+    process_identity_mismatch_unix_test.go:17: InspectTree = [3110], <nil>
+--- FAIL: TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt (0.01s)
+FAIL
+suiteguard: guard cost: measured 2709 paths; fingerprint took 99.15275ms before and 83.4805ms after
+FAIL	roundfix/internal/store	0.467s
+FAIL
+
+exit=1

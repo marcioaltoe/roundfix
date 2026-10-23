@@ -1,0 +1,16 @@
+$ go test -count=1 -v -run ^TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner$/^different_PID$ ./internal/store
+The unchanged test runs its parent assertions but selects only different_PID among subtests so the earlier rollback assertion cannot stop it before the event count.
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== PAUSE TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== CONT  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID
+=== NAME  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+    run_owner_record_test.go:110: journal = [], <nil>
+--- FAIL: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner (0.01s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID (0.00s)
+FAIL
+suiteguard: guard cost: measured 2709 paths; fingerprint took 109.587375ms before and 81.875708ms after
+FAIL	roundfix/internal/store	0.556s
+FAIL
+
+exit=1

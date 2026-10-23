@@ -1,0 +1,16 @@
+$ ./bin/roundfix archive 0300-reconcile-releases-a-stale-run-owner-record --plan --offline
+ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set
+ROUNDFIX_OPENROUTER_API_KEY not set
+ROUNDFIX_TYPESAFE_API_KEY not set
+TYPESAFE_API_KEY not set
+stdout:
+archive plan for 0300-reconcile-releases-a-stale-run-owner-record: removes 34 file(s) (165836 bytes) and writes docs/history/specs/0300-reconcile-releases-a-stale-run-owner-record.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-23.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 24 file(s) (73232 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-21-reconcile-preserves-forever-a-process-candidate-whose-owner-pid-now-belongs-to-another-process.md 1934 bytes: no advice (offline)
+promote with: roundfix archive 0300-reconcile-releases-a-stale-run-owner-record --promote <path>
+
+stderr:
+
+exit=0

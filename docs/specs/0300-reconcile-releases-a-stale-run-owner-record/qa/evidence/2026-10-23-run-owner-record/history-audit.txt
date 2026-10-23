@@ -1,0 +1,28 @@
+task_01 1254350b515ff127b04e6d42c2a0e5f1e7ce30a6 scope PASS
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/reconcile.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0300-reconcile-releases-a-stale-run-owner-record/task_01.md
+docs/user-guide/commands/reconcile.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/reconcile.md
+skills/testdata/owned-skill-versions.json
+
+task_02 dc5a1db85edf5e602875f188afbd1b79d660a7de scope PASS
+docs/specs/0300-reconcile-releases-a-stale-run-owner-record/task_02.md
+internal/cli/reconcile.go
+internal/cli/reconcile_run_owner_record_test.go
+internal/store/process.go
+internal/store/process_identity_mismatch_test.go
+internal/store/process_identity_mismatch_unix_test.go
+internal/store/run_owner_record.go
+internal/store/run_owner_record_test.go
+
+Protected explicit files, all baseline assets, workflow/history trees and 261 pre-existing test files unchanged.
+
+.agents/skills/roundfix/SKILL.md version ['0.1.129', '0.1.129'] -> ['0.1.130', '0.1.130']; QA settlement unchanged
+
+skills/roundfix/SKILL.md version ['0.1.129', '0.1.129'] -> ['0.1.130', '0.1.130']; QA settlement unchanged
+
+Grant existed at Delivery Base, before consuming Task. Mechanical authorization table covers task_01 governed writes; no uncovered tooling Task commit. No consequent-fix declaration exists. Canonical/mirror bytes match. No undeclared paths. Governed writes are the three bounded grant paths.

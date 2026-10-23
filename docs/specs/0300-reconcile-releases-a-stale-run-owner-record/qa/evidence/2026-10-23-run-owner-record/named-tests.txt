@@ -1,0 +1,135 @@
+$ go test -count=1 -v -run ^(TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity|TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt|TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner|TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence|TestOwnerProcessControllerRefusesMismatchedOwnerIdentity|TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity|TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal|TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale|TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches|TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven|TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec|TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof|TestDoctorReportsProcessResidueUnreadable)$ ./internal/store ./internal/cli
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== PAUSE TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== RUN   TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+=== PAUSE TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+=== RUN   TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+=== PAUSE TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+=== RUN   TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity
+=== PAUSE TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence
+=== PAUSE TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== PAUSE TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== CONT  TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== CONT  TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity
+=== CONT  TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence
+=== CONT  TestOwnerProcessControllerRefusesMismatchedOwnerIdentity
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/live_identity_read_failure_is_unreadable
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch
+=== CONT  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== CONT  TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/owner_exit_after_identity_read_failure_is_proven_absent
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/legacy_token_without_prefix_is_unreadable
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/token_from_another_platform_is_unreadable
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/comparable_mismatch_remains_unproven
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/matching_identity_remains_proven
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/initial_absence_remains_proof
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token
+=== RUN   TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/empty_recorded_identity_keeps_PID-only_proof
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read
+--- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/live_identity_read_failure_is_unreadable (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/owner_exit_after_identity_read_failure_is_proven_absent (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/legacy_token_without_prefix_is_unreadable (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/token_from_another_platform_is_unreadable (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/comparable_mismatch_remains_unproven (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/matching_identity_remains_proven (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/initial_absence_remains_proof (0.00s)
+    --- PASS: TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence/empty_recorded_identity_keeps_PID-only_proof (0.00s)
+--- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read (0.00s)
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_ID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_identity
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_reason
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/invalid_PID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/missing_Run
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/active_Run
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_identity
+--- PASS: TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity (0.01s)
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/journal_failure_rolls_back_owner_release
+--- PASS: TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt (0.01s)
+--- PASS: TestOwnerProcessControllerRefusesMismatchedOwnerIdentity (0.01s)
+--- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner (0.01s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_ID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_identity (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_reason (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/invalid_PID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/missing_Run (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/active_Run (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_identity (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/journal_failure_rolls_back_owner_release (0.00s)
+PASS
+suiteguard: guard cost: measured 2714 paths; fingerprint took 292.423625ms before and 91.738875ms after
+ok  	roundfix/internal/store	0.904s
+=== RUN   TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+=== PAUSE TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+=== RUN   TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven
+=== PAUSE TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof
+=== PAUSE TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof
+=== RUN   TestDoctorReportsProcessResidueUnreadable
+=== PAUSE TestDoctorReportsProcessResidueUnreadable
+=== RUN   TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+=== PAUSE TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal
+=== PAUSE TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale
+=== PAUSE TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale
+=== CONT  TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+=== CONT  TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+=== CONT  TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unreadable_read_failure
+=== CONT  TestDoctorReportsProcessResidueUnreadable
+=== CONT  TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof
+=== CONT  TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal
+=== CONT  TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_permits_supervised_stop
+--- PASS: TestDoctorReportsProcessResidueUnreadable (0.00s)
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/readable_matching_identity_refuses_supervised_flag
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/proven_mismatch_refuses_supervised_flag
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_without_flag_fails_closed
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/supervised_flag_requires_Force_Stop
+--- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof (0.06s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_permits_supervised_stop (0.01s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/readable_matching_identity_refuses_supervised_flag (0.01s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/proven_mismatch_refuses_supervised_flag (0.01s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_without_flag_fails_closed (0.01s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/supervised_flag_requires_Force_Stop (0.01s)
+--- PASS: TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven (0.25s)
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/uncomparable_token
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/changed_identity
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/missing_Run
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/database_open_failure
+--- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal (0.65s)
+    --- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/changed_identity (0.00s)
+    --- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/missing_Run (0.00s)
+    --- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/database_open_failure (0.00s)
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/bare_unproven
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unsupported
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/without_identity
+--- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale (1.52s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unreadable_read_failure (0.38s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/uncomparable_token (0.32s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/bare_unproven (0.28s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unsupported (0.27s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/without_identity (0.27s)
+--- PASS: TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches (3.85s)
+--- PASS: TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec (6.18s)
+PASS
+suiteguard: guard cost: measured 2714 paths; fingerprint took 96.079167ms before and 74.474709ms after
+ok  	roundfix/internal/cli	6.769s
+
+exit=0

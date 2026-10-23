@@ -1,0 +1,34 @@
+from pathlib import Path
+import os,subprocess,tarfile,io,re
+root=Path.cwd(); temp=Path(Path('/tmp/qa0300-location').read_text()); ev=temp/'sabotage-logs'; ev.mkdir(exist_ok=True)
+en=os.environ.copy()
+for k in list(en):
+ if 'API_KEY' in k: en.pop(k)
+for k in ['GOCACHE','GOMODCACHE','GOPATH']:
+ if k not in en:en[k]=subprocess.check_output(['go','env',k],text=True).strip()
+en.update(HOME=str(temp/'home'),GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1')
+archive=subprocess.check_output(['git','archive','HEAD'])
+base='TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity'
+preserve='TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale'
+release='TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner'
+cases=[('unproven','internal/cli/reconcile.go','if errors.Is(err, store.ErrOwnerProcessIdentityMismatch) {','if errors.Is(err, store.ErrOwnerProcessIdentityUnproven) {',preserve,['bare_unproven']),('unreadable','internal/cli/reconcile.go','if errors.Is(err, store.ErrOwnerProcessIdentityMismatch) {','if errors.Is(err, store.ErrOwnerProcessIdentityMismatch) || errors.Is(err, store.ErrOwnerIdentityUnreadable) {',preserve,['unreadable_read_failure','uncomparable_token']),('termination','internal/cli/reconcile.go','// A proven mismatch names a database record, never a process tree.\n\t\tif candidate.Kind == "runOwnerRecord" {','// SABOTAGE: route owner records to termination.\n\t\tif candidate.Kind == "disabled" {','TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal',['TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal']),('own-pid','internal/store/process.go','if pid <= 0 || pid == os.Getpid() {\n\t\treturn false, ownerProcessControlError(pid, "prove owner process identity", ErrOwnerProcessIdentityUnproven)','if pid <= 0 || pid == os.Getpid() {\n\t\treturn false, ownerProcessControlError(pid, "prove owner process identity", ErrOwnerProcessIdentityMismatch)',base,['own_PID','PID_zero']),('foreign','internal/store/process.go','fmt.Errorf("%w: recorded owner identity is not comparable on %s", ErrOwnerIdentityUnreadable, runtime.GOOS)','fmt.Errorf("%w: recorded owner identity is not comparable on %s", ErrOwnerProcessIdentityMismatch, runtime.GOOS)',base,['foreign_token']),('terminate-past-mismatch','internal/store/process.go','absent, err := controller.proveOwner(ctx, pid, recordedIdentity)\n\tif err != nil {','absent, err := controller.proveOwner(ctx, pid, recordedIdentity)\n\tif err != nil && !errors.Is(err, ErrOwnerProcessIdentityMismatch) {',base+'|TestOwnerProcessControllerRefusesMismatchedOwnerIdentity',['comparable_mismatch','TestOwnerProcessControllerRefusesMismatchedOwnerIdentity']),('enumerate-past-mismatch','internal/store/process.go','ownerAbsent, err := controller.proveOwner(ctx, pid, recordedIdentity)\n\tif err != nil {','ownerAbsent, err := controller.proveOwner(ctx, pid, recordedIdentity)\n\tif err != nil && !errors.Is(err, ErrOwnerProcessIdentityMismatch) {',base+'|TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt',['comparable_mismatch','TestInspectTreeReportsAProvenMismatchOfALiveProcessWithoutSignallingIt']),('identity-cas','internal/store/run_owner_record.go','AND owner_identity = ?`, runID, pid, identity)','`, runID, pid)',release,['different_identity']),('terminal','internal/store/run_owner_record.go','if !IsTerminalState(run.State) {','if false && !IsTerminalState(run.State) {',release,['active_Run']),('journal','internal/store/run_owner_record.go',None,None,release,['journal'])]
+failed=[]
+for name,file,old,new,test,need in cases[6:]:
+ d=temp/('sabotage-resumed-'+name);d.mkdir();tarfile.open(fileobj=io.BytesIO(archive)).extractall(d,filter='data')
+ p=d/file;s=p.read_text()
+ if name=='journal':
+  start=s.index('\t\tif _, err := appendRunEvent(');end=s.index('\n\t\treleased = true',start)
+  s=s[:start]+'\t\t_ = payload\n\t\t_ = runevent.SourceDaemon'+s[end:]
+ else:
+  assert s.count(old)==(2 if name=='enumerate-past-mismatch' else 1),(name,s.count(old));s=s.replace(old,new,1)
+ p.write_text(s)
+ package='./internal/cli' if 'cli/' in file else './internal/store'
+ cmd=['go','test','-count=1','-v','-run','^('+test+')$',package]
+ proc=subprocess.run(cmd,cwd=d,env=en,text=True,capture_output=True)
+ output=proc.stdout+proc.stderr
+ (ev/('sabotage-'+name+'.txt')).write_text('$ git archive HEAD (separate disposable copy)\n$ '+' '.join(cmd)+'\nMutation: '+name+'\n'+output+'\nexit='+str(proc.returncode)+'\n')
+ failures=[line for line in output.splitlines() if '--- FAIL:' in line]
+ good=proc.returncode!=0 and failures and all(any(n in l for l in failures) for n in need)
+ print(name,'detected='+str(bool(good)),'exit='+str(proc.returncode),'; '.join(failures),flush=True)
+ if not good: failed.append(name)
+assert not failed,failed

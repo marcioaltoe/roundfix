@@ -1,0 +1,34 @@
+$ git archive HEAD (separate disposable copy)
+$ go test -count=1 -v -run ^(TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner)$ ./internal/store
+Mutation: journal
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== PAUSE TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== CONT  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_ID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_identity
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_reason
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/invalid_PID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/missing_Run
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/active_Run
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_identity
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/journal_failure_rolls_back_owner_release
+    run_owner_record_test.go:86: release = true, <nil>
+=== NAME  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+    run_owner_record_test.go:95: release = false, <nil>
+--- FAIL: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner (0.01s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_ID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_identity (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_reason (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/invalid_PID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/missing_Run (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/active_Run (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_identity (0.00s)
+    --- FAIL: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/journal_failure_rolls_back_owner_release (0.00s)
+FAIL
+suiteguard: guard cost: measured 2709 paths; fingerprint took 107.38975ms before and 78.846333ms after
+FAIL	roundfix/internal/store	0.494s
+FAIL
+
+exit=1

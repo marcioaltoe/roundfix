@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0300-reconcile-releases-a-stale-run-owner-record
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

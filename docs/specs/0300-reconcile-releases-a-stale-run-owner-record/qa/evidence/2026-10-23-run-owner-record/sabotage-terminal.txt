@@ -1,0 +1,32 @@
+$ git archive HEAD (separate disposable copy)
+$ go test -count=1 -v -run ^(TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner)$ ./internal/store
+Mutation: terminal
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== PAUSE TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== CONT  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_ID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_identity
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_reason
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/invalid_PID
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/missing_Run
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/active_Run
+    run_owner_record_test.go:52: release = true, <nil>
+=== RUN   TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID
+=== NAME  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner
+    run_owner_record_test.go:77: unexpected journal: [{Cursor:1 Event:{RunID:run_20261023T032755Z_c0a355cd5516df57 Batch:0 Source:daemon Kind:daemon.outcome ReviewIssue: ToolID: ToolState: Summary:Run released its Stale Run Owner Record: proof. Time:2026-10-23 03:27:55.778126 +0000 UTC Payload:[123 34 101 118 101 110 116 34 58 34 115 116 97 108 101 95 114 117 110 95 111 119 110 101 114 95 114 101 99 111 114 100 95 114 101 108 101 97 115 101 34 44 34 111 119 110 101 114 95 105 100 101 110 116 105 116 121 34 58 34 116 101 115 116 58 111 108 100 34 44 34 111 119 110 101 114 95 112 105 100 34 58 52 50 52 50 44 34 114 101 97 115 111 110 34 58 34 112 114 111 111 102 34 125]}}], <nil>
+=== NAME  TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID
+    testing.go:1913: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner (0.01s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_ID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_identity (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/empty_reason (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/invalid_PID (0.00s)
+    --- PASS: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/missing_Run (0.00s)
+    --- FAIL: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/active_Run (0.00s)
+    --- FAIL: TestReleaseStaleRunOwnerRecordClearsOnlyTheRecordedTerminalOwner/different_PID (0.00s)
+FAIL
+suiteguard: guard cost: measured 2709 paths; fingerprint took 96.303958ms before and 103.907625ms after
+FAIL	roundfix/internal/store	0.476s
+FAIL
+
+exit=1
