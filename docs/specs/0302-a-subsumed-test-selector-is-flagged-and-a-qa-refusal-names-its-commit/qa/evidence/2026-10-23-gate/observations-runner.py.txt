@@ -1,0 +1,18 @@
+from pathlib import Path
+exec(Path('/tmp/qa0302-common.py').read_text())
+d=archive('observed-output')
+def edit(file,old,new):
+ f=d/file; s=f.read_text(); assert old in s,(file,old); f.write_text(s.replace(old,new))
+edit('internal/speccheck/verification_selector_test.go','finding := findings[0]','finding := findings[0]\n\t\t\t\tt.Logf("Observed command=%q stage=%s findings=%d summary=%q fix=%q where=%+v", tc.command, stage, len(findings), finding.Summary, finding.Fix, finding.Where)')
+edit('internal/spec/qa_build_test.go','prefix := "---\\nverdict: fail\\n"','t.Logf("Observed report for %s:\\n%s", tt.name, content.String())\n\t\t\tprefix := "---\\nverdict: fail\\n"')
+edit('internal/daemon/qa_report_build_test.go','verdict := spec.VerdictPending','t.Logf("Observed %s report:\\n%s", tt.name, content)\n\t\t\tverdict := spec.VerdictPending')
+edit('internal/daemon/qa_report_build_test.go','prefix := "---\\nverdict: fail\\nbuild: " + strconv.Quote(head)','t.Logf("Observed fixture HEAD %s report:\\n%s", head, content)\n\t\tprefix := "---\\nverdict: fail\\nbuild: " + strconv.Quote(head)')
+names='TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath|TestSubsumedSelectorAcceptsSelectorsNoArgumentContains|TestSubsumedSelectorJudgesOnlyPendingNonQATasks|TestVerificationPathUndeclaredRaisesTheMissingFile|TestVerificationPathUndeclaredIgnoresWhatThePlanProvides|TestPreconditionRefusalReportRecordsItsAuditedCommit|TestMechanicalQAReportRecordsTheAuditedCommitWhenItIsFinal|TestWriteMechanicalQAReportWritesThePreconditionRefusal|TestWritePreconditionRefusalReportWritesOneTerminalRow|TestWritePreconditionRefusalReportIsReadableAsARefusal|TestPreconditionRefusalReportNamesItsAuditor|TestMechanicalQAReportSeedStartsPending|TestWriteMechanicalQAReportRecordsTheRefusal|TestMechanicalQAReportStartsUnsuffixedOnAFreshDate'
+args=['go','test','-count=1','-v','-run','^('+names+')$','./internal/speccheck','./internal/spec','./internal/daemon']; p=run(args,d); save('observed-tests.txt',args,p); print('observations exit',p.returncode,p.stdout[-900:],p.stderr,flush=True); assert p.returncode==0
+# List every unmodified assertion's observed subtest result. Zero-case tests assert no findings.
+summary=[]
+for line in p.stdout.splitlines():
+ if '--- PASS:' in line or 'Observed command=' in line or 'Observed fixture HEAD ' in line: summary.append(line)
+(EVID/'subtest-observations.txt').write_text('\n'.join(summary)+'\n')
+(EVID/'observations-note.txt').write_text('The archive copy adds t.Logf calls only; assertions and production files are unchanged. This run captures successful assertion values omitted by the Task Verification wrappers. See observed-tests.txt for exact commands, summaries, fixes, Verification line 41, frontmatter and fixture HEAD. Accept subtests assert zero findings in All and Tasks stages; the PRD-stage subtest asserts zero and the skip.\n')
+shutil.copy2('/tmp/qa0302-observe.py',EVID/'observations-runner.py.txt')

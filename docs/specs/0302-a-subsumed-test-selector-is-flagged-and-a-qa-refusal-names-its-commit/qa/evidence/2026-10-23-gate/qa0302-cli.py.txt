@@ -1,0 +1,50 @@
+from pathlib import Path
+exec(Path('/tmp/qa0302-common.py').read_text())
+d=archive('cli-corrected'); (d/'bin').mkdir(exist_ok=True); shutil.copy2(ROOT/'bin/roundfix',d/'bin/roundfix')
+for args in [['git','init'],['git','add','.'],['git','commit','-m','test: archive audited head']]:
+ p=run(args,d,CE); assert p.returncode==0,p.stderr
+sp=d/'docs/specs'/SLUG
+(sp/'task_06.md').write_text('''---
+task: task_06
+spec: '''+SLUG+'''
+status: pending
+type: backend
+complexity: low
+---
+
+# Task 06: Check a new selector
+
+## Overview
+
+Reproduce the adopted Quaestor command shape through the public checker.
+
+## Consumers
+
+None. This is a temporary authoring fixture with no production consumer.
+
+## Verification
+
+- `uv run pytest tests/a.py::test_novo tests/a.py`
+''')
+p=sp/'_tasks.md'; text=p.read_text().replace('needs: [task_04]\n','needs: [task_04, task_06]\n',1).replace('---\n\n# Tasks','    - id: task_06\n      file: task_06.md\n      needs: [task_04]\n---\n\n# Tasks',1); text=text.replace('\nWaves:', '| task_06 | Check a new selector | backend | low | task_04 |\n\nWaves:',1); p.write_text(text)
+for phase in ['overlap','repaired']:
+ if phase=='repaired':
+  f=sp/'task_06.md'; f.write_text(f.read_text().replace('tests/a.py::test_novo tests/a.py','tests/a.py::test_novo'))
+ for args in [['git','add','.'],['git','commit','-m','test: '+phase+' selector fixture']]:
+  result=run(args,d,CE); assert result.returncode==0,result.stderr
+ args=['./bin/roundfix','spec','check',SLUG,'--strict','--format','json']; result=run(args,d,CE); save('cli-'+phase+'.txt',args,result)
+ data=json.loads(result.stdout); print(phase,'exit',result.returncode,'keys',list(data),flush=True)
+ findings=data.get('findings',[])
+ if not findings:
+  for v in data.values():
+   if isinstance(v,list):
+    for obj in v:
+     if isinstance(obj,dict) and 'findings' in obj: findings+=obj['findings']
+ print('findings',json.dumps(findings),flush=True)
+ selected=[f for f in findings if f.get('code')=='SC-VERIFY-SUBSUMED-SELECTOR']
+ assert len(selected)==(1 if phase=='overlap' else 0),data
+ (EVID/('cli-'+phase+'-summary.json')).write_text(json.dumps({'exit':result.returncode,'selector_findings':selected,'all_codes':[f.get('code') for f in findings]},indent=2)+'\n')
+ # Repeat public read proves persisted committed Task state, no Verification execution.
+ again=run(args,d,CE); assert again.returncode==result.returncode and again.stdout==result.stdout
+print('CLI overlap and repair confirmed twice',flush=True)
+update('QA-03','pass','Public CLI used a committed `git archive` copy of the audited head with pending task_06, Overview, Consumers (None with reason), task_04 dependency and task_05 edge. `uv run pytest tests/a.py::test_novo tests/a.py` raises exactly one selector finding; removing the containing path and committing makes the code disappear. Each state was read twice through `./bin/roundfix spec check '+SLUG+' --strict --format json`, with byte-identical JSON on the second read. Other finding codes and exits are recorded without attributing them to the selector detector: `cli-overlap.txt`, `cli-repaired.txt` and their summary JSON. No pytest or Verification command ran.')

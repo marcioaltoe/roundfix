@@ -1,0 +1,103 @@
+Command: go test -count=1 -v -run ^(TestPreconditionRefusalReportRecordsItsAuditedCommit)$ ./internal/spec
+Exit: 1
+stdout:
+=== RUN   TestPreconditionRefusalReportRecordsItsAuditedCommit
+=== PAUSE TestPreconditionRefusalReportRecordsItsAuditedCommit
+=== CONT  TestPreconditionRefusalReportRecordsItsAuditedCommit
+=== RUN   TestPreconditionRefusalReportRecordsItsAuditedCommit/resolved
+    qa_build_test.go:45: audited commit changed other refusal report bytes:
+        ---
+        verdict: fail
+        build: "1234567e89012345678901234567890123456789"
+        auditing_binary: "0.112.0"
+        auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"
+        rows_blocked_precondition: 1
+        rows_blocked_environment: 0
+        rows_blocked_finding: 0
+        rows_blocked_declared: 0
+        precondition_check: "strict"
+        precondition_reason: "SC-REQUIREMENT-CONTRADICTORY"
+        ---
+        
+        # QA Report
+        
+        ## Results
+        
+        | # | Status | Provenance |
+        | - | --- | --- |
+        | 0 | blocked | precondition |
+        
+        ## Precondition refusal
+        
+        - check: strict
+        - reason: SC-REQUIREMENT-CONTRADICTORY
+        
+        The gate stopped at this check before it built its QA matrix, so no requirement was measured and the row above records the refusal itself.
+=== RUN   TestPreconditionRefusalReportRecordsItsAuditedCommit/blank
+    qa_build_test.go:37: report must start with "---\nverdict: fail\nauditing_binary:" and contain 0 build keys:
+        ---
+        verdict: fail
+        build: ""
+        auditing_binary: "0.112.0"
+        auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"
+        rows_blocked_precondition: 1
+        rows_blocked_environment: 0
+        rows_blocked_finding: 0
+        rows_blocked_declared: 0
+        precondition_check: "strict"
+        precondition_reason: "SC-REQUIREMENT-CONTRADICTORY"
+        ---
+        
+        # QA Report
+        
+        ## Results
+        
+        | # | Status | Provenance |
+        | - | --- | --- |
+        | 0 | blocked | precondition |
+        
+        ## Precondition refusal
+        
+        - check: strict
+        - reason: SC-REQUIREMENT-CONTRADICTORY
+        
+        The gate stopped at this check before it built its QA matrix, so no requirement was measured and the row above records the refusal itself.
+=== RUN   TestPreconditionRefusalReportRecordsItsAuditedCommit/unresolved
+    qa_build_test.go:37: report must start with "---\nverdict: fail\nauditing_binary:" and contain 0 build keys:
+        ---
+        verdict: fail
+        build: ""
+        auditing_binary: "0.112.0"
+        auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"
+        rows_blocked_precondition: 1
+        rows_blocked_environment: 0
+        rows_blocked_finding: 0
+        rows_blocked_declared: 0
+        precondition_check: "strict"
+        precondition_reason: "SC-REQUIREMENT-CONTRADICTORY"
+        ---
+        
+        # QA Report
+        
+        ## Results
+        
+        | # | Status | Provenance |
+        | - | --- | --- |
+        | 0 | blocked | precondition |
+        
+        ## Precondition refusal
+        
+        - check: strict
+        - reason: SC-REQUIREMENT-CONTRADICTORY
+        
+        The gate stopped at this check before it built its QA matrix, so no requirement was measured and the row above records the refusal itself.
+--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit (0.00s)
+    --- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/resolved (0.00s)
+    --- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/blank (0.00s)
+    --- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/unresolved (0.00s)
+FAIL
+suiteguard: guard cost: measured 2697 paths; fingerprint took 120.891292ms before and 56.116ms after
+FAIL	roundfix/internal/spec	0.447s
+FAIL
+
+stderr:

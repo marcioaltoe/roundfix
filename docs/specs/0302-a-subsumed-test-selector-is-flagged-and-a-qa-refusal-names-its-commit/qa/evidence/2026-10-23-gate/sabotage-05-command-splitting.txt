@@ -1,0 +1,102 @@
+Command: go test -count=1 -v -run ^(TestSubsumedSelectorAcceptsSelectorsNoArgumentContains|TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath)$ ./internal/speccheck
+Exit: 1
+stdout:
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_b.py
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_b.py
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_old
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_old
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_ab.py::test_new_tests/test_a
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_ab.py::test_new_tests/test_a
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--keep-duplicates_tests/test_a.py::test_new_tests/test_a.py
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--keep-duplicates_tests/test_a.py::test_new_tests/test_a.py
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--deselect_tests/test_a.py::test_old_tests/test_a.py::test_old[new]
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--deselect_tests/test_a.py::test_old_tests/test_a.py::test_old[new]
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new]
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new]
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_-k_tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_-k_tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new]
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/grep_-qF_--_tests/test_a.py::test_new_tests/test_a.py
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/grep_-qF_--_tests/test_a.py::test_new_tests/test_a.py
+=== RUN   TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new
+=== NAME  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+    verification_selector_test.go:47: stage  findings = []speccheck.Finding(nil), want exactly one selector error
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/grep_-qF_--_tests/test_a.py::test_new_tests/test_a.py
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_-k_tests/test_a.py_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--deselect_tests/test_a.py::test_old_tests/test_a.py::test_old[new]
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--keep-duplicates_tests/test_a.py::test_new_tests/test_a.py
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_ab.py::test_new_tests/test_a
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_old
+--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath (0.00s)
+    --- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests (0.03s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new (0.04s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new] (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new (0.06s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new (0.06s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew (0.06s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1 (0.06s)
+=== CONT  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_b.py
+=== NAME  TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py
+    verification_selector_test.go:80: stage  findings = []speccheck.Finding{speccheck.Finding{Code:"SC-VERIFY-SUBSUMED-SELECTOR", Severity:"error", Summary:"Task task_01 Verification passes the test selector tests/test_a.py::test_new together with tests/test_a.py, which contains it; pytest runs tests/test_a.py whole and ignores the selector, so a test that does not exist yet goes unnoticed", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/proof/task_01.md", Line:14}}, Fix:"Name only the selectors in one command and run tests/test_a.py in a separate command, following the write-tasks rule \"Test selectors and their containing path\".", declaredVocabularySpec:""}}, want none
+    verification_selector_test.go:80: stage tasks findings = []speccheck.Finding{speccheck.Finding{Code:"SC-VERIFY-SUBSUMED-SELECTOR", Severity:"error", Summary:"Task task_01 Verification passes the test selector tests/test_a.py::test_new together with tests/test_a.py, which contains it; pytest runs tests/test_a.py whole and ignores the selector, so a test that does not exist yet goes unnoticed", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/proof/task_01.md", Line:14}}, Fix:"Name only the selectors in one command and run tests/test_a.py in a separate command, following the write-tasks rule \"Test selectors and their containing path\".", declaredVocabularySpec:""}}, want none
+--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains (0.00s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new (0.05s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_new (0.04s)
+    --- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py (0.05s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_ab.py::test_new_tests/test_a (0.04s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--deselect_tests/test_a.py::test_old_tests/test_a.py::test_old[new] (0.04s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_-k_tests/test_a.py_tests/test_a.py::test_new (0.05s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/grep_-qF_--_tests/test_a.py::test_new_tests/test_a.py (0.05s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_b.py (0.04s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--keep-duplicates_tests/test_a.py::test_new_tests/test_a.py (0.04s)
+    --- PASS: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_old (0.04s)
+FAIL
+suiteguard: guard cost: measured 2697 paths; fingerprint took 108.609667ms before and 77.871958ms after
+FAIL	roundfix/internal/speccheck	0.603s
+FAIL
+
+stderr:

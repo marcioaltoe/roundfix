@@ -1,0 +1,136 @@
+[
+  {
+    "mutation": "keep-duplicates",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains (0.00s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--keep-duplicates_tests/test_a.py::test_new_tests/test_a.py (0.05s)"
+    ]
+  },
+  {
+    "mutation": "option-values",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains (0.00s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_-k_tests/test_a.py_tests/test_a.py::test_new (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--deselect_tests/test_a.py::test_old_tests/test_a.py::test_old[new] (0.05s)"
+    ]
+  },
+  {
+    "mutation": "path-boundary",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains (0.00s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_ab.py::test_new_tests/test_a (0.05s)"
+    ]
+  },
+  {
+    "mutation": "identical-node",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains (0.00s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_-k_tests/test_a.py_tests/test_a.py::test_new (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_b.py (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_new (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_--deselect_tests/test_a.py::test_old_tests/test_a.py::test_old[new] (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new_tests/test_a.py::test_old (0.05s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_ab.py::test_new_tests/test_a (0.05s)"
+    ]
+  },
+  {
+    "mutation": "command-splitting",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath (0.00s)",
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests (0.03s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains (0.00s)",
+      "--- FAIL: TestSubsumedSelectorAcceptsSelectorsNoArgumentContains/pytest_tests/test_a.py::test_new;_pytest_tests/test_a.py (0.05s)"
+    ]
+  },
+  {
+    "mutation": "substitution",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath (0.00s)",
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out=\"$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)\"_||_exit_1 (0.03s)"
+    ]
+  },
+  {
+    "mutation": "run-wrapper",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath (0.00s)",
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new (0.03s)",
+      "--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new (0.03s)"
+    ]
+  },
+  {
+    "mutation": "task-status",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestSubsumedSelectorJudgesOnlyPendingNonQATasks (0.00s)",
+      "--- FAIL: TestSubsumedSelectorJudgesOnlyPendingNonQATasks/completed (0.02s)",
+      "--- FAIL: TestSubsumedSelectorJudgesOnlyPendingNonQATasks/in_progress (0.02s)"
+    ]
+  },
+  {
+    "mutation": "drop-build",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit (0.00s)",
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/resolved (0.00s)"
+    ]
+  },
+  {
+    "mutation": "unquoted-build",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit (0.00s)",
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/resolved (0.00s)"
+    ]
+  },
+  {
+    "mutation": "blank-build",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit (0.00s)",
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/resolved (0.00s)",
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/blank (0.00s)",
+      "--- FAIL: TestPreconditionRefusalReportRecordsItsAuditedCommit/unresolved (0.00s)"
+    ]
+  },
+  {
+    "mutation": "seed-build",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestMechanicalQAReportRecordsTheAuditedCommitWhenItIsFinal (0.15s)",
+      "--- FAIL: TestMechanicalQAReportRecordsTheAuditedCommitWhenItIsFinal/pending_seed (0.00s)"
+    ]
+  },
+  {
+    "mutation": "unresolved-head",
+    "exit": 1,
+    "detected": true,
+    "failed_subtests": [
+      "--- FAIL: TestMechanicalQAReportRecordsTheAuditedCommitWhenItIsFinal (0.20s)",
+      "--- FAIL: TestMechanicalQAReportRecordsTheAuditedCommitWhenItIsFinal/written_refusal_names_the_Run_Worktree_HEAD (0.19s)",
+      "--- FAIL: TestWriteMechanicalQAReportWritesThePreconditionRefusal (0.00s)",
+      "--- FAIL: TestWriteMechanicalQAReportWritesThePreconditionRefusal/a_gate_that_refused_nothing_writes_the_report_it_wrote_before (0.19s)",
+      "--- FAIL: TestWriteMechanicalQAReportWritesThePreconditionRefusal/the_refusal_is_recorded_as_one_terminal_row_and_its_frontmatter (0.20s)"
+    ]
+  }
+]

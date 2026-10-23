@@ -1,0 +1,9 @@
+Command: for f in .agents/skills/qa-gate/SKILL.md skills/qa-gate/SKILL.md; do grep -qxF -- '  build: "<audited-commit>"' "$f" || { printf 'missing template build line in %s\n' "$f" >&2; exit 1; }; tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'so a reader can tell this refusal from one an earlier Run left on the branch' || { printf 'missing refusal paragraph in %s\n' "$f" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'naming the commit the gate audited, as a full report does' || { echo 'missing guide build key' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'the pending report it seeds for the gate carries none' || { echo 'missing guide seed sentence' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Precondition Refusal**:' || { echo 'missing Precondition Refusal' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'so a reader can tell a refusal an earlier Run left on the branch from the current Run' || { echo 'missing Precondition Refusal revision' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**QA Report**:' || { echo 'missing QA Report' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'records the audited commit as' || { echo 'missing QA Report revision' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'
+Exit: 0
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.135s
+ok  	roundfix/skills	0.949s
+ok  	roundfix/internal/docscontract	0.342s
+
+stderr:

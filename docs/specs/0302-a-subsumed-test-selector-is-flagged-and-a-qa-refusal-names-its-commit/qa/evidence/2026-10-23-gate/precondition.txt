@@ -1,0 +1,12 @@
+Command: ./bin/roundfix spec check 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit --strict
+Exit: 0
+stdout:
+Spec 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit/_techspec.md Vocabulary Contract
+
+stderr:

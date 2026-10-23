@@ -1,0 +1,60 @@
+[
+  {
+    "commit": "34286e4308177260ad725597902f7f7130da3073",
+    "task": "task_03.md",
+    "paths": [
+      "docs/specs/0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit/task_03.md",
+      "internal/daemon/qa_report_build_test.go",
+      "internal/daemon/task_engine.go",
+      "internal/daemon/task_engine_test.go",
+      "internal/spec/auditor_evidence.go",
+      "internal/spec/qa.go",
+      "internal/spec/qa_build_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "32f86a86a2b1015596c3c7c84f6db6d1a0acce5d",
+    "task": "task_01.md",
+    "paths": [
+      "docs/specs/0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit/task_01.md",
+      "internal/speccheck/coherence.go",
+      "internal/speccheck/constraints.go",
+      "internal/speccheck/verification_selector.go",
+      "internal/speccheck/verification_selector_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "5c08f2080ae2d8b74f324f67844cbb00dd0970d2",
+    "task": "task_02.md",
+    "paths": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/spec.md",
+      ".agents/skills/write-tasks/SKILL.md",
+      "CONTEXT.md",
+      "docs/references/behavior-surfaces.json",
+      "docs/specs/0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit/task_02.md",
+      "docs/user-guide/commands/spec.md",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/spec.md",
+      "skills/testdata/owned-skill-versions.json",
+      "skills/write-tasks/SKILL.md"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "a1461e6f8884881d78f469fc08ffa8f03ef50df8",
+    "task": "task_04.md",
+    "paths": [
+      ".agents/skills/qa-gate/SKILL.md",
+      "CONTEXT.md",
+      "docs/references/behavior-surfaces.json",
+      "docs/specs/0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit/task_04.md",
+      "docs/user-guide/context-driven-development.md",
+      "skills/qa-gate/SKILL.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "undeclared": []
+  }
+]

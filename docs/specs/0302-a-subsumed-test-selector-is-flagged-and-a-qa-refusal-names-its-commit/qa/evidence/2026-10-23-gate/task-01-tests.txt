@@ -1,0 +1,5 @@
+Command: out="$(go test -count=1 -v -run '^(TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath|TestSubsumedSelectorAcceptsSelectorsNoArgumentContains|TestSubsumedSelectorJudgesOnlyPendingNonQATasks|TestVerificationPathUndeclaredRaisesTheMissingFile|TestVerificationPathUndeclaredIgnoresWhatThePlanProvides)$' ./internal/speccheck 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath TestSubsumedSelectorAcceptsSelectorsNoArgumentContains TestSubsumedSelectorJudgesOnlyPendingNonQATasks TestVerificationPathUndeclaredRaisesTheMissingFile TestVerificationPathUndeclaredIgnoresWhatThePlanProvides; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/speccheck
+Exit: 0
+stdout:
+
+stderr:

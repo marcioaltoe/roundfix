@@ -1,0 +1,55 @@
+Command: go test -count=1 -v -run ^(TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath)$ ./internal/speccheck
+Exit: 1
+stdout:
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new]
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new]
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+=== RUN   TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+=== PAUSE TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new]
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests
+=== CONT  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new
+=== NAME  TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1
+    verification_selector_test.go:47: stage  findings = []speccheck.Finding(nil), want exactly one selector error
+--- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath (0.00s)
+    --- FAIL: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/out="$(pytest_tests/test_a.py::test_new_tests/test_a.py_2>&1)"_||_exit_1 (0.03s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_--group_dev_pytest_tests_tests/test_a.py::test_new (0.04s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/cd_tools_&&_.venv/bin/pytest_tests/test_a.py::test_new_tests (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::TestNew_tests/test_a.py::TestNew::test_it (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python3.12_-m_pytest_._tests/test_a.py::test_new (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_./tests/test_a.py_tests/test_a.py::test_new (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_it_tests/test_a.py::test_it[new] (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/pytest_tests/test_a.py::test_new_tests/test_a.py (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/python_-m_pytest_tests/_tests/test_a.py::TestNew (0.05s)
+    --- PASS: TestSubsumedSelectorRaisesANodeIdBesideItsContainingPath/uv_run_pytest_-q_tests/test_a.py_tests/test_a.py::test_new (0.05s)
+FAIL
+suiteguard: guard cost: measured 2697 paths; fingerprint took 108.185375ms before and 77.551708ms after
+FAIL	roundfix/internal/speccheck	0.549s
+FAIL
+
+stderr:

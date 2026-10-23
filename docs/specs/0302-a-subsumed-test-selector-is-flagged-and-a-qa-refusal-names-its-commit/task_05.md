@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

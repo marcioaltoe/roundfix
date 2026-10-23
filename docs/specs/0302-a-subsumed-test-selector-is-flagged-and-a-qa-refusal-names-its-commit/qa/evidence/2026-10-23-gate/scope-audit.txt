@@ -1,0 +1,95 @@
+task_03.md 34286e4308177260ad725597902f7f7130da3073: 7 actual paths, all declared; governed: []; grant 9f105d2f17207dfe22ef240df99a315e18c7ac5d is an ancestor in a separate commit.
+
+task_01.md 32f86a86a2b1015596c3c7c84f6db6d1a0acce5d: 5 actual paths, all declared; governed: ['internal/speccheck/coherence.go', 'internal/speccheck/constraints.go']; grant 9f105d2f17207dfe22ef240df99a315e18c7ac5d is an ancestor in a separate commit.
+
+task_02.md 5c08f2080ae2d8b74f324f67844cbb00dd0970d2: 11 actual paths, all declared; governed: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/spec.md', '.agents/skills/write-tasks/SKILL.md', 'skills/roundfix/SKILL.md', 'skills/write-tasks/SKILL.md']; grant 9f105d2f17207dfe22ef240df99a315e18c7ac5d is an ancestor in a separate commit.
+
+task_04.md a1461e6f8884881d78f469fc08ffa8f03ef50df8: 7 actual paths, all declared; governed: ['.agents/skills/qa-gate/SKILL.md', 'skills/qa-gate/SKILL.md']; grant 9f105d2f17207dfe22ef240df99a315e18c7ac5d is an ancestor in a separate commit.
+
+Delivery Base byte-identity: Makefile PASS
+
+Delivery Base byte-identity: .github/workflows PASS
+
+Delivery Base byte-identity: go.mod PASS
+
+Delivery Base byte-identity: go.sum PASS
+
+Delivery Base byte-identity: .roundfixrc.yml PASS
+
+Delivery Base byte-identity: internal/baseline/assets PASS
+
+Delivery Base byte-identity: docs/agents/setup-context.json PASS
+
+Delivery Base byte-identity: docs/history PASS
+
+Delivery Base byte-identity: internal/daemon/verification_probe.go PASS
+
+Delivery Base byte-identity: internal/cli/spec_check.go PASS
+
+Delivery Base byte-identity: internal/speccheck/verification.go PASS
+
+Delivery Base byte-identity: internal/speccheck/verification_path.go PASS
+
+Delivery Base byte-identity: internal/speccheck/citations.go PASS
+
+Delivery Base byte-identity: internal/speccheck/mechanical.go PASS
+
+Delivery Base byte-identity: internal/spec/qa_test.go PASS
+
+Delivery Base byte-identity: internal/daemon/qa_hollow_report_test.go PASS
+
+Delivery Base byte-identity: internal/daemon/qa_report_sequence_test.go PASS
+
+Delivery Base byte-identity: internal/docscontract/testdata/corpus-golden.json PASS
+
+Delivery Base byte-identity: docs/references/skill-coverage.json PASS
+
+.agents/skills/roundfix/SKILL.md: version 0.1.131 -> 0.1.132; QA settlement bytes unchanged
+
+skills/roundfix/SKILL.md: version 0.1.131 -> 0.1.132; QA settlement bytes unchanged
+
+.agents/skills/qa-gate/SKILL.md: version 0.0.18 -> 0.0.19; QA settlement bytes unchanged
+
+skills/qa-gate/SKILL.md: version 0.0.18 -> 0.0.19; QA settlement bytes unchanged
+
+.agents/skills/write-tasks/SKILL.md: version 0.0.18 -> 0.0.19; QA settlement bytes unchanged
+
+skills/write-tasks/SKILL.md: version 0.0.18 -> 0.0.19; QA settlement bytes unchanged
+
+Canonical/mirror byte-identity: qa-gate/SKILL.md PASS
+
+Canonical/mirror byte-identity: roundfix/SKILL.md PASS
+
+Canonical/mirror byte-identity: roundfix/references/spec.md PASS
+
+Canonical/mirror byte-identity: write-tasks/SKILL.md PASS
+
+Sanctioned regeneration: task_02/task_04 Results record all three commands; current mirror, version and behavior surface contracts pass without record mode. No prerequisite/consequent fix commit exists in the four-commit range; mechanical skip retained.
+
+**Subsumed Test Selector**:
+The Spec Consistency Check error (`SC-VERIFY-SUBSUMED-SELECTOR`) raised when a pending non-QA Task's Verification passes a test selector, a pytest node id such as `tests/test_a.py::test_new`, together with a collection argument of the same invocation that contains it: its file, a directory above it, `.`, or a node id that prefixes it. pytest 9 runs the containing argument whole and drops the selector without an error, so a test that does not exist yet goes unnoticed and the command passes before the work ([ADR-0315](docs/adr/0315-a-test-selector-another-argument-of-its-invocation-contains-is-refused-at-authoring.md)).
+_Avoid_: Duplicate test path, redundant node id, shadowed test
+
+**Precondition Refusal**:
+A QA gate stop at a check that runs before the matrix is built — a strict Spec check being the usual one — recorded as the gate's entire QA Report rather than as a missing one: verdict `fail`, `rows_blocked_precondition` counting the stop, `precondition_check` naming what was checked, `precondition_reason` carrying every refusing code and the sentence beside it, and one terminal row `0 | blocked | precondition` in the Results table. The gate measured no requirement, so row `0` records the refusal itself instead of a result, and the prose justifying it is written as a list rather than a second table. An empty Results table is not the alternative: it refuses every later run on the report instead of on the Spec, and prescribes a repair — materialize every planned row — that a run which never built a matrix cannot perform. It also records `build`, the commit the gate audited, as a full QA Report does, so a reader can tell a refusal an earlier Run left on the branch from the current Run's result; a refusal written before this rule keeps its bytes.
+_Avoid_: Empty report, failed gate, skipped QA, precondition error
+
+**QA Report**:
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A report the Daemon closes without an Agent turn, a Precondition Refusal or a blocking mechanical result, records the audited commit as `build`, as the gate's full report does; the pending report the Daemon seeds for the gate carries none. The pre-PR pull request row, recorded as `blocked (environment: no open Pull Request)` with the pull request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+_Avoid_: Test report, QA log
+
+docs/user-guide/commands/spec.md: SC-VERIFY-SUBSUMED-SELECTOR PASS
+
+.agents/skills/roundfix/references/spec.md: SC-VERIFY-SUBSUMED-SELECTOR PASS
+
+skills/roundfix/references/spec.md: SC-VERIFY-SUBSUMED-SELECTOR PASS
+
+.agents/skills/write-tasks/SKILL.md: ## Test selectors and their containing path PASS
+
+skills/write-tasks/SKILL.md: ## Test selectors and their containing path PASS
+
+.agents/skills/qa-gate/SKILL.md:   build: "<audited-commit>" PASS
+
+skills/qa-gate/SKILL.md:   build: "<audited-commit>" PASS
+
+docs/user-guide/context-driven-development.md: the pending report it seeds for the gate carries none PASS
