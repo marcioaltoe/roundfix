@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.114.0] - 2026-10-23
+
+### The Linux Lane names the step that failed
+
+- **A failed `go list` is named.** The Linux Lane selects packages with `go list` before it runs `go test`. A `go list` failure (for example a broken `go.mod` in the candidate) never reached `go test`, yet the lane reported it as `go test exited <n>`. The lane script now prints `roundfix-linux-lane: go list: exited <n>` and exits `4`, and the gate reason, the parked blocker, the lane log and `roundfix deliver lane` say `go list exited <n>`. An exit code below 128 is a change failure (Park Class `finding`); 128 or more means the process ended by a signal and parks as a container failure (Park Class `environment`), with the signal named. `go test` failures keep their bytes.
+- The `deliver` guide and the Roundfix skill reference (skill version 0.1.133) describe the causes.
+
 ## [0.113.0] - 2026-10-23
 
 ### A test selector beside its own containing path is refused at authoring, and a QA refusal names its commit
