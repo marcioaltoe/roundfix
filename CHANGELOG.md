@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.113.0] - 2026-10-23
+
+### A test selector beside its own containing path is refused at authoring, and a QA refusal names its commit
+
+- **`SC-VERIFY-SUBSUMED-SELECTOR`.** pytest 9 and later collapse collection arguments that overlap: when one invocation passes a node id such as `tests/test_a.py::test_new` and also its file, a directory above it or `.`, pytest runs the containing path whole and drops the node id without an error. Before the test exists such a Verification command passed on the tests the file already held, and `spec check --run-verification` refused it as vacuous without naming why. The Spec Consistency Check now reports an error for a pending non-QA Task at the Tasks stage when a pytest invocation (`pytest`, `py.test` or `python -m pytest`, behind `uv run`, `poetry run`, `pdm run`, `pipenv run` or `hatch run`, and inside `$(...)`) names a node id that another collection argument of the same invocation contains. It reads only the written command and runs nothing. The `write-tasks` skill (0.0.19) states the rule: a Verification command runs a new test by its selector alone, and the containing path in a separate command.
+- **A QA precondition refusal records `build`.** The report the QA gate writes when its precondition refuses, and the blocking mechanical report, now record `build: "<audited-commit>"` like a full report, so a reader can tell the current refusal from one an earlier Run left on the branch. Reports already written keep their bytes. The `qa-gate` skill (0.0.19) shows the field in its refusal template.
+- The `spec` guide, the Roundfix skill reference (skill version 0.1.132) and the glossary (**Subsumed Test Selector**, **Precondition Refusal**, **QA Report**) describe the changes.
+
 ## [0.112.0] - 2026-10-23
 
 ### The Light Tier yields to the category profile when it cannot serve the requested access
