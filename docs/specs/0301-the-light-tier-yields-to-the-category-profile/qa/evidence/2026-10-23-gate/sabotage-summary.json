@@ -1,0 +1,86 @@
+[
+  {
+    "mutation": "01-skip-access",
+    "test": "TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess",
+    "subtests": "full-access",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "02-reject-all",
+    "test": "TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess",
+    "subtests": "second-model-serves",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "02-reject-all",
+    "test": "TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess",
+    "subtests": "second-model-serves",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "03-drop-factory-error",
+    "test": "TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess",
+    "subtests": "factory-error",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "04-key-before-access",
+    "test": "TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess",
+    "subtests": "full-access-key-missing",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "05-no-activate-yield",
+    "test": "TestLightTierYieldsToTheCategoryProfileBeforeAgentWork",
+    "subtests": "factory-refused|setup-refused",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "06-no-run-yield",
+    "test": "TestLightTierYieldsToTheCategoryProfileBeforeAgentWork",
+    "subtests": "prompt-failed-before-work",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "07-after-work-yield",
+    "test": "TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier",
+    "subtests": "after-work-started",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "08-category-yield",
+    "test": "TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier",
+    "subtests": "category-refused",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "09-next-light",
+    "test": "TestLightTierYieldsToTheCategoryProfileBeforeAgentWork",
+    "subtests": "prompt-failed-before-work",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "10-doctor-full-access-off",
+    "test": "TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels",
+    "subtests": "built-in",
+    "exit": 1,
+    "killed": true
+  },
+  {
+    "mutation": "11-doctor-always-warn",
+    "test": "TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess",
+    "subtests": "serving_runtime",
+    "exit": 1,
+    "killed": true
+  }
+]

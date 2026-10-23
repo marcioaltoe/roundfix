@@ -1,0 +1,5 @@
+command: go vet ./internal/lighttier ./internal/daemon ./internal/cli
+exit: 0
+stdout:
+
+stderr:

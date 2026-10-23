@@ -1,0 +1,10 @@
+--- internal/lighttier/access.go
++++ internal/lighttier/access.go
+@@ -29,6 +29,7 @@
+ 	var refused []AccessUnavailable
+ 	for _, selection := range Selections(models) {
+ 		runtime, err := runtimeFor(selection)
++		if err != nil { continue }
+ 		if err == nil {
+ 			var accessErr *agent.AccessPolicyError
+ 			if errors.As(runtime.ValidateRequestedAccessPolicy(), &accessErr) && accessErr.Predicate == agent.AccessModeAvailablePredicate {

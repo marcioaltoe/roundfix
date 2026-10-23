@@ -1,0 +1,16 @@
+command: go test -count=1 -v -run ^TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier$/^(after-work-started)$ ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier
+=== PAUSE TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier
+=== CONT  TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier
+=== RUN   TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier/after-work-started
+    light_tier_access_test.go:228: cycle={Completed:1 Failed:0 Skipped:0 QAVerdict: QAAccepted:false QAReportPath: Outcomes:[{Task:task_01 Status:completed Reason:}] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:} <nil>
+--- FAIL: TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier (0.12s)
+    --- FAIL: TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier/after-work-started (0.12s)
+FAIL
+suiteguard: guard cost: measured 2704 paths; fingerprint took 91.670584ms before and 66.275083ms after
+FAIL	roundfix/internal/daemon	0.596s
+FAIL
+
+stderr:

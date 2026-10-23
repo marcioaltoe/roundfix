@@ -1,0 +1,15 @@
+command: go test -count=1 -v -run ^TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess$/^(factory-error)$ ./internal/lighttier
+exit: 1
+stdout:
+=== RUN   TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess
+=== PAUSE TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess
+=== CONT  TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess
+=== RUN   TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess/factory-error
+    access_test.go:55: kept=[] refused=[]
+--- FAIL: TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess (0.00s)
+    --- FAIL: TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess/factory-error (0.00s)
+FAIL
+FAIL	roundfix/internal/lighttier	0.287s
+FAIL
+
+stderr:

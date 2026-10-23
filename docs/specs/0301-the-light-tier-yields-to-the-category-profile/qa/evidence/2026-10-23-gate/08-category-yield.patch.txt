@@ -1,0 +1,11 @@
+--- internal/daemon/agent_session_owner.go
++++ internal/daemon/agent_session_owner.go
+@@ -503,7 +503,7 @@
+ 
+ // canYieldLight preserves the Agent-work boundary and infrastructure recovery.
+ func (owner *agentSessionOwner) canYieldLight(ctx context.Context, cause error) bool {
+-	if owner.scope.Kind != "task" || owner.candidateIndex >= owner.lightCandidates || owner.workStarted.Load() || ctx.Err() != nil || errors.Is(cause, context.Canceled) || isSelectionStartFailure(cause) {
++	if owner.scope.Kind != "task" || owner.workStarted.Load() || ctx.Err() != nil || errors.Is(cause, context.Canceled) || isSelectionStartFailure(cause) {
+ 		return false
+ 	}
+ 	if _, ok := agent.DescribeLostRollout(cause); ok {

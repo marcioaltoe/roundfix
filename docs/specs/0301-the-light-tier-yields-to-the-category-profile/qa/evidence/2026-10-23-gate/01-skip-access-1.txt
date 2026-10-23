@@ -1,0 +1,16 @@
+command: go test -count=1 -v -run ^TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess$/^(full-access)$ ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess
+=== PAUSE TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess
+=== CONT  TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess
+=== RUN   TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess/full-access
+    light_tier_access_test.go:87: unexpected yield
+--- FAIL: TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess (0.12s)
+    --- FAIL: TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess/full-access (0.12s)
+FAIL
+suiteguard: guard cost: measured 2704 paths; fingerprint took 91.3285ms before and 66.1995ms after
+FAIL	roundfix/internal/daemon	0.606s
+FAIL
+
+stderr:

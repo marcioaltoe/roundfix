@@ -1,0 +1,5 @@
+command: ./bin/roundfix qa-report accept docs/specs/0301-the-light-tier-yields-to-the-category-profile/qa/qa-report-2026-10-23.md
+exit: 0
+stdout:
+
+stderr:

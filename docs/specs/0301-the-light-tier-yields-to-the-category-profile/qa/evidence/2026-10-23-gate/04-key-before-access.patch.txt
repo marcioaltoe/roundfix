@@ -1,0 +1,15 @@
+--- internal/daemon/agent_session_owner.go
++++ internal/daemon/agent_session_owner.go
+@@ -1090,10 +1090,10 @@
+ 	kept, refused := lighttier.ServingSelections(plan.Models, owner.runtimeFactory)
+ 	reason, code := "", ""
+ 	switch {
++	case !plan.KeyPresent:
++		reason, code = plan.KeyVariable+" is not set", "key_missing"
+ 	case len(kept) == 0 && len(refused) > 0:
+ 		reason, code = fmt.Sprintf("light runtime %s offers no mode for access policy %q", refused[0].Err.Runtime, refused[0].Err.Policy), "access_mode_unavailable"
+-	case !plan.KeyPresent:
+-		reason, code = plan.KeyVariable+" is not set", "key_missing"
+ 	default:
+ 		spent, err := lighttier.ReadMonth(plan.HomeDir, owner.engine.deps.Now())
+ 		if err != nil {

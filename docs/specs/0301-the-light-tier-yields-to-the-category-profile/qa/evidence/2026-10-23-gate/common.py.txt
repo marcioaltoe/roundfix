@@ -1,0 +1,19 @@
+import os,pathlib,json,subprocess,re,sys,tarfile,io
+s=json.loads(pathlib.Path('/tmp/rf0301-state.json').read_text()); root=pathlib.Path(s['root']); tmp=pathlib.Path(s['tmp']); sp=root/'docs/specs/0301-the-light-tier-yields-to-the-category-profile'; report=sp/'qa/qa-report-2026-10-23.md'; ev=sp/'qa/evidence/2026-10-23-gate'
+e=os.environ.copy()
+for k in list(e):
+ if any(x in k.upper() for x in ('API_KEY','TOKEN','SECRET','PASSWORD')):e.pop(k,None)
+e.update(HOME=str(tmp/'home'),GOPROXY='off',GOSUMDB='off',GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1',GOPATH=str(pathlib.Path(os.environ['HOME'])/'go'),GOCACHE=str(pathlib.Path(os.environ['HOME'])/'Library/Caches/go-build'))
+def run(args,name,cwd=root,extra=None):
+ en=e.copy();en.update(extra or {})
+ p=subprocess.run(args,cwd=cwd,env=en,text=True,capture_output=True)
+ (ev/(name+'.txt')).write_text('command: '+ ' '.join(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ print(name, 'exit',p.returncode,flush=True)
+ if p.returncode: print((p.stdout+p.stderr)[-2500:],flush=True)
+ return p
+
+def settle(row,status,detail):
+ text=report.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+ marker='### '+row+'\n';start=text.index(marker)+len(marker);end=text.find('\n### ',start)
+ if end<0:end=len(text)
+ text=text[:end]+'\nObserved: '+detail+'\n'+text[end:];report.write_text(text)

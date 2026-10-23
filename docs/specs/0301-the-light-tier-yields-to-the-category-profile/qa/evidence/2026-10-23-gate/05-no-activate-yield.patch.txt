@@ -1,0 +1,28 @@
+--- internal/daemon/agent_session_owner.go
++++ internal/daemon/agent_session_owner.go
+@@ -419,12 +419,6 @@
+ 		owner.selectionFailurePublished.Store(false)
+ 		runtime, err := owner.runtimeFactory(candidate.Selection)
+ 		if err != nil {
+-			if owner.canYieldLight(ctx, err) {
+-				if yieldErr := owner.yieldLight(ctx, err, agent.RuntimeSpec{}, agent.SessionRef{}); yieldErr != nil {
+-					return yieldErr
+-				}
+-				continue
+-			}
+ 			return err
+ 		}
+ 		if index < owner.lightCandidates {
+@@ -444,12 +438,6 @@
+ 				if publishErr := owner.publishSelectionFailed(context.WithoutCancel(ctx), prepareReq); publishErr != nil {
+ 					return publishErr
+ 				}
+-			}
+-			if !isSelectionStartFailure(err) && owner.canYieldLight(ctx, err) {
+-				if yieldErr := owner.yieldLight(ctx, err, runtime, session); yieldErr != nil {
+-					return yieldErr
+-				}
+-				continue
+ 			}
+ 			owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
+ 			if !isSelectionStartFailure(err) || index == len(candidates)-1 {

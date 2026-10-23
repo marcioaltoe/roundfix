@@ -1,0 +1,11 @@
+--- internal/daemon/agent_session_owner.go
++++ internal/daemon/agent_session_owner.go
+@@ -1087,7 +1087,7 @@
+ }
+ 
+ func (owner *agentSessionOwner) applyLightTier(ctx context.Context, plan lighttier.Plan) error {
+-	kept, refused := lighttier.ServingSelections(plan.Models, owner.runtimeFactory)
++	kept, refused := lighttier.Selections(plan.Models), []lighttier.AccessUnavailable(nil)
+ 	reason, code := "", ""
+ 	switch {
+ 	case len(kept) == 0 && len(refused) > 0:

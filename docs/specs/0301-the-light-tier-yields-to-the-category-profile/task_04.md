@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0301-the-light-tier-yields-to-the-category-profile
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

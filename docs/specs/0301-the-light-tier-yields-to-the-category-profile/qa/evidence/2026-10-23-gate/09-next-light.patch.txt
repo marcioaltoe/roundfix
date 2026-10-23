@@ -1,0 +1,16 @@
+--- internal/daemon/agent_session_owner.go
++++ internal/daemon/agent_session_owner.go
+@@ -538,11 +538,11 @@
+ 	if _, err := fmt.Fprintln(owner.engine.deps.Progress, summary); err != nil {
+ 		return fmt.Errorf("write light tier yield warning: %w", err)
+ 	}
+-	next := owner.candidates()[owner.lightCandidates]
++	next := owner.candidates()[owner.candidateIndex+1]
+ 	if err := owner.publishFallback(ctx, failed, next, cause); err != nil {
+ 		return err
+ 	}
+-	owner.candidateIndex = owner.lightCandidates
++	owner.candidateIndex++
+ 	owner.selectionFailurePublished.Store(false)
+ 	return nil
+ }

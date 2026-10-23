@@ -1,0 +1,9 @@
+--- internal/lighttier/access.go
++++ internal/lighttier/access.go
+@@ -38,5 +38,6 @@
+ 		}
+ 		kept = append(kept, selection)
+ 	}
++	if len(refused) > 0 { kept = nil }
+ 	return kept, refused
+ }

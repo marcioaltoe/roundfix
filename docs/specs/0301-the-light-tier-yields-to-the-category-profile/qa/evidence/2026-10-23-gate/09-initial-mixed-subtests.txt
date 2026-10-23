@@ -1,0 +1,92 @@
+command: go test -count=1 -v -run ^TestLightTierYieldsToTheCategoryProfileBeforeAgentWork$/^(setup-refused|prompt-failed-before-work)$ ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestLightTierYieldsToTheCategoryProfileBeforeAgentWork
+=== PAUSE TestLightTierYieldsToTheCategoryProfileBeforeAgentWork
+=== CONT  TestLightTierYieldsToTheCategoryProfileBeforeAgentWork
+=== RUN   TestLightTierYieldsToTheCategoryProfileBeforeAgentWork/setup-refused
+=== RUN   TestLightTierYieldsToTheCategoryProfileBeforeAgentWork/prompt-failed-before-work
+    light_tier_access_test.go:146: work=[{Runtime:{OpenRouterKeyVariable:ROUNDFIX_OPENROUTER_API_KEY ID:opencode DisplayName:OpenCode Protocol:acp Command: Model:openrouter/deepseek/deepseek-v4.1-flash ReasoningEffort: RequestedAccessPolicy: SupportedFullAccessMode: FullAccessMode: FullAccessModes:[]} Session:{Name:roundfix-run_20261023T055009Z_46ef4d506a115524-task_01 WorkDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/002} Access: RunID:run_20261023T055009Z_46ef4d506a115524 Batch:{Number:1 Issues:[]} LogPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/003/artifacts/runs/run_20261023T055009Z_46ef4d506a115524/agent/batch-001.log Prompt:You are the Roundfix child Agent for one Spec Task.
+        
+        Spec: 0001-sample-feature
+        Task: task_01
+        Task file: docs/specs/0001-sample-feature/task_01.md
+        
+        Execution invariants:
+        - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
+        - The Daemon owns Task status during Implement; do not edit the task file's status field.
+        - Do not run commands from the task file's ## Verification section; the Daemon runs them after your turn.
+        - Run focused implementation checks while working when useful.
+        - Append or update a ## Result section in the task file with implementation and focused-check evidence for each acceptance criterion.
+        - Hand back implementation-ready work without claiming the Task is completed or failed.
+        - Never commit, push, or open a pull request.
+        - Never edit the Task Graph manifest (_tasks.md) or any other task file.
+        - If the task file arrives with status: in_progress, a prior Run died mid-task; start the Task fresh. The work-target lock guarantees no live owner.
+        
+        Spec Context Bundle:
+        - PRD: docs/specs/0001-sample-feature/_prd.md
+        - Task Graph: docs/specs/0001-sample-feature/_tasks.md
+        - Prior changed files: none
+        - Omitted prior files: 0
+        
+        Task file content, verbatim:
+        
+        ---
+        task: task_01
+        spec: 0001-sample-feature
+        status: in_progress
+        type: backend
+        ---
+        
+        # Do the task_01 work
+        
+        ## Verification
+        
+        - `true` — expected: passes.
+         ArtifactDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/003/artifacts GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/002 Verification: ReasoningHint: StopGrace:0s} {Runtime:{OpenRouterKeyVariable:ROUNDFIX_OPENROUTER_API_KEY ID:opencode DisplayName:OpenCode Protocol:acp Command: Model:openrouter/x-ai/grok-4.5 ReasoningEffort: RequestedAccessPolicy: SupportedFullAccessMode: FullAccessMode: FullAccessModes:[]} Session:{Name:roundfix-run_20261023T055009Z_46ef4d506a115524-task_01-fallback-01 WorkDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/002} Access: RunID:run_20261023T055009Z_46ef4d506a115524 Batch:{Number:1 Issues:[]} LogPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/003/artifacts/runs/run_20261023T055009Z_46ef4d506a115524/agent/batch-001.log Prompt:You are the Roundfix child Agent for one Spec Task.
+        
+        Spec: 0001-sample-feature
+        Task: task_01
+        Task file: docs/specs/0001-sample-feature/task_01.md
+        
+        Execution invariants:
+        - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
+        - The Daemon owns Task status during Implement; do not edit the task file's status field.
+        - Do not run commands from the task file's ## Verification section; the Daemon runs them after your turn.
+        - Run focused implementation checks while working when useful.
+        - Append or update a ## Result section in the task file with implementation and focused-check evidence for each acceptance criterion.
+        - Hand back implementation-ready work without claiming the Task is completed or failed.
+        - Never commit, push, or open a pull request.
+        - Never edit the Task Graph manifest (_tasks.md) or any other task file.
+        - If the task file arrives with status: in_progress, a prior Run died mid-task; start the Task fresh. The work-target lock guarantees no live owner.
+        
+        Spec Context Bundle:
+        - PRD: docs/specs/0001-sample-feature/_prd.md
+        - Task Graph: docs/specs/0001-sample-feature/_tasks.md
+        - Prior changed files: none
+        - Omitted prior files: 0
+        
+        Task file content, verbatim:
+        
+        ---
+        task: task_01
+        spec: 0001-sample-feature
+        status: in_progress
+        type: backend
+        ---
+        
+        # Do the task_01 work
+        
+        ## Verification
+        
+        - `true` — expected: passes.
+         ArtifactDir:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/003/artifacts GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLightTierYieldsToTheCategoryProfileBeforeAgentWorkprompt-fa920992048/002 Verification: ReasoningHint: StopGrace:0s}]
+--- FAIL: TestLightTierYieldsToTheCategoryProfileBeforeAgentWork (0.23s)
+    --- PASS: TestLightTierYieldsToTheCategoryProfileBeforeAgentWork/setup-refused (0.13s)
+    --- FAIL: TestLightTierYieldsToTheCategoryProfileBeforeAgentWork/prompt-failed-before-work (0.10s)
+FAIL
+suiteguard: guard cost: measured 2704 paths; fingerprint took 93.791083ms before and 65.2485ms after
+FAIL	roundfix/internal/daemon	0.719s
+FAIL
+
+stderr:

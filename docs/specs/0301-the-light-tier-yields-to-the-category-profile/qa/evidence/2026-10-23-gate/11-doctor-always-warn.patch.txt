@@ -1,0 +1,11 @@
+--- internal/cli/doctor.go
++++ internal/cli/doctor.go
+@@ -236,7 +236,7 @@
+ 	}
+ 	kept, refused := lighttier.ServingSelections(config.OpenRouter.LightModels, runtimeFor)
+ 	if len(kept) != 0 {
+-		return readinessResult(HealthCheckLightTier, "light runtime "+kept[0].Runtime+" serves full access", nil), true
++		return CheckResult{Name: HealthCheckLightTier, Status: CheckStatusWarn, Detail: "forced warning"}, true
+ 	}
+ 	return readinessResult(HealthCheckLightTier, "", []readinessFinding{{
+ 		Code: "DR-LIGHT-ACCESS-MODE", Status: CheckStatusWarn,

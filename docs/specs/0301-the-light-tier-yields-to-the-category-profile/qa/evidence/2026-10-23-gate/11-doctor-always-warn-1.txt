@@ -1,0 +1,16 @@
+command: go test -count=1 -v -run ^TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess$/^(serving_runtime)$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess
+=== PAUSE TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess
+=== CONT  TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/serving_runtime
+    doctor_light_tier_test.go:51: line="light-tier: warn (forced warning)\n" want="light-tier: ok (light runtime opencode serves full access)\n"
+--- FAIL: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess (0.00s)
+    --- FAIL: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/serving_runtime (0.00s)
+FAIL
+suiteguard: guard cost: measured 2704 paths; fingerprint took 87.19775ms before and 53.003542ms after
+FAIL	roundfix/internal/cli	0.671s
+FAIL
+
+stderr:

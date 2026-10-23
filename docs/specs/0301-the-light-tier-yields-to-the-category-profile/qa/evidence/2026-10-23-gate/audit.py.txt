@@ -1,0 +1,76 @@
+from common import *
+base='e4379f26485a53c179a3899d080f9598363da38b'
+def git(*args):return subprocess.check_output(['git',*args],cwd=root,text=True)
+def blob(rev,path):return subprocess.check_output(['git','show',rev+':'+path],cwd=root)
+# Each actual committed path, independently read from the Task commit.
+commits=[('task_01','2917b5de4539d47ce24aa14f8aa9846de3a0ea68'),('task_02','42dba642'),('task_03','32a7982b')]
+audit=[]
+for task,commit in commits:
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines()
+ tasktext=(sp/(task+'.md')).read_text(); declared=set(re.findall(r'^\s*- (?:interface|creates|instruction|deletes):\s*`?([^`\s]+)',tasktext,re.M)); declared.add(str((sp/(task+'.md')).relative_to(root)))
+ recorded=tasktext.split('## Recorded paths',1)[-1] if '## Recorded paths' in tasktext else ''
+ declared.update(re.findall(r'`([^`]+)`',recorded))
+ missing=[p for p in paths if not any(p==d or p.startswith(d.rstrip('/')+'/') for d in declared)]
+ audit.append({'task':task,'commit':git('rev-parse',commit).strip(),'changed':paths,'declared':sorted(declared),'undeclared':missing})
+ assert not missing,(task,missing)
+ assert subprocess.run(['git','merge-base','--is-ancestor',base,commit],cwd=root).returncode==0
+changed=git('diff','--name-only',base,s['head']).splitlines()
+basefiles=git('ls-tree','-r','--name-only',base).splitlines()
+exact={'Makefile','go.mod','go.sum','.roundfixrc.yml','docs/agents/setup-context.json','internal/lighttier/tier.go','internal/daemon/task_engine.go','internal/cli/implement.go','internal/cli/profiles_validate.go','docs/references/skill-coverage.json'}
+prefixes=('.github/workflows/','internal/baseline/assets/','docs/history/','internal/agent/')
+protected=[p for p in basefiles if p in exact or p.startswith(prefixes) or (p.endswith('_test.go') and p.startswith(('internal/lighttier/','internal/daemon/','internal/cli/')))]
+violations=[p for p in protected if blob(base,p)!=blob(s['head'],p)];assert not violations
+# Include newly created paths in forbidden directories too.
+assert not [p for p in changed if p in exact or p.startswith(prefixes)]
+sections=[]
+for p in basefiles:
+ if p.startswith(('.agents/skills/','skills/')) and p.endswith('.md'):
+  old=blob(base,p).decode();new=blob(s['head'],p).decode()
+  if '### QA settlement' in old:
+   def section(x):return re.search(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',x,re.M|re.S).group(0)
+   assert section(old)==section(new),p;sections.append(p)
+versionpath='.agents/skills/roundfix/SKILL.md';oldver=re.findall(r'^version: (.+)$',blob(base,versionpath).decode(),re.M)[0];newver=re.findall(r'^version: (.+)$',blob(s['head'],versionpath).decode(),re.M)[0];assert oldver=='0.1.130' and newver=='0.1.131'
+record=json.loads((root/'skills/testdata/owned-skill-versions.json').read_text());assert '0.1.131' in json.dumps(record)
+# Mechanical table already audited governed paths; independently ensure changed canonical skill paths are bounded.
+auth=blob(base,str((sp/'_authorization.md').relative_to(root))).decode();bounded=re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M)
+governed=[p for p in changed if p.startswith('.agents/skills/') or p=='skills/roundfix/SKILL.md'];assert set(governed)<=set(bounded)
+# Diff remains confined to the allowed QA output; compare byte-for-byte source tree to audited head.
+delta=git('diff','--name-only','HEAD').splitlines();assert not delta,delta
+(ev/'history-audit.json').write_text(json.dumps({'base':base,'head':s['head'],'tasks':audit,'protected_file_count':len(protected),'protected_violations':violations,'governed':governed,'bounded':bounded,'qa_settlement_sections_unchanged':sections,'roundfix_skill_version_before':oldver,'roundfix_skill_version_after':newver,'tracked_delta':delta},indent=2)+'\n')
+(ev/'protected-paths.txt').write_text('\n'.join(protected)+'\n')
+# Extract and assert operator-facing documentation obligations rather than crediting a read.
+paragraphs={}
+for path in ['docs/user-guide/configuration.md','docs/user-guide/commands/doctor.md','.agents/skills/roundfix/references/runtime.md','skills/roundfix/references/runtime.md','.agents/skills/roundfix/references/setup.md','skills/roundfix/references/setup.md','CONTEXT.md']:
+ text=(root/path).read_text();norm=' '.join(text.split())
+ if path.endswith('runtime.md') or path.endswith('configuration.md'):
+  assert all(t in norm for t in ['access_mode_unavailable','light_tier_yielded','Preferred Selection'])
+ if path.endswith('setup.md') or path.endswith('/doctor.md'):
+  assert all(t in norm for t in ['light-tier:','DR-LIGHT-ACCESS-MODE','recommendations:'])
+  assert '| `DR-LIGHT-ACCESS-MODE` | warn | No light runtime offers a full-access mode; set `openrouter.light_models: []` in User Config, or `defaults.agent_full_access: false`. |' in norm
+ if path.endswith('setup.md'):assert 'the conditional `light-tier` and `linux-lane` checks' in norm
+ if path.endswith('configuration.md'):assert 'names one of the four reasons: the light runtime offers no mode for the requested access policy' in norm
+ paragraphs[path]=[p for p in text.split('\n\n') if any(v in p for v in ['access_mode_unavailable','light_tier_yielded','DR-LIGHT-ACCESS-MODE','conditional `light-tier`','**Light Tier**:'])]
+context=(root/'CONTEXT.md').read_text();definition=context.split('**Light Tier**:',1)[1].split('\n\n',1)[0];assert 'ADR-0314' in definition and 'is not chosen, and a light session refused before Agent work yields' in definition
+avoid=context.split('**Light Tier**:',1)[1].split('_Avoid_:',1)[1].splitlines()[0];oldavoid=blob(base,'CONTEXT.md').decode().split('**Light Tier**:',1)[1].split('_Avoid_:',1)[1].splitlines()[0];assert avoid==oldavoid
+assert (root/'.agents/skills/roundfix/references/runtime.md').read_bytes()==(root/'skills/roundfix/references/runtime.md').read_bytes()
+assert (root/'.agents/skills/roundfix/references/setup.md').read_bytes()==(root/'skills/roundfix/references/setup.md').read_bytes()
+# Search the complete guides and both skill copies, record candidate paragraphs for manual assessment.
+candidates=[]
+for directory in ['docs/user-guide','docs/agents','.agents/skills','skills']:
+ for path in (root/directory).rglob('*.md'):
+  for paragraph in path.read_text().split('\n\n'):
+   n=' '.join(paragraph.split())
+   if (re.search(r'light (?:tier|task|session)',n,re.I) and re.search(r'three reasons|refus|fail',n,re.I)) or ('doctor' in n.lower() and 'checks' in n and 'linux-lane' in n):
+    candidates.append(str(path.relative_to(root))+': '+n)
+   assert not ('light' in n.lower() and 'names one of the three reasons' in n),path
+(ev/'documentation-obligations.json').write_text(json.dumps(paragraphs,indent=2)+'\n');(ev/'wording-sweep.txt').write_text('\n\n'.join(candidates)+'\n')
+# Fluxus report assertion versus exact new full-access test constant.
+backlog=(sp/'references/2026-10-21-the-light-tier-fails-a-task-under-agent-full-access.md').read_text();passage=re.search(r'requested access policy.*?supports it',backlog,re.S).group(0);passage=' '.join(passage.split())
+test=(root/'internal/lighttier/access_test.go').read_text();want=re.search(r'const want = `([^`]+)`',test).group(1);assert passage==want
+(ev/'outside-offline.txt').write_text('Source: Fluxus report, adopted Backlog Entry references/2026-10-21-the-light-tier-fails-a-task-under-agent-full-access.md; original Run run_20261021T223522Z_9aa628a4520889af, roundfix 0.104.0.\nWhitespace-collapsed external report text == full-access test assertion: true\n'+passage+'\nLive assertion: TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess/full-access passed (focused-tests.txt).\n')
+settle('QA-09','pass','Compared whitespace-collapsed Fluxus report refusal text with the exact full-access test assertion: byte-identical. Full-access subtest ran and asserted real static runtime refusal text, then Task cycle independently proved it skips. See outside-offline.txt and focused-tests.txt. The adopted source was authored into this Spec from the external report; it is not a fresh Fluxus observation.')
+settle('QA-10','blocked (environment: network prohibited by Spec authorization)','Requirement 7 and _authorization.md Limits forbid reaching the network. No lookup attempted. OpenCode source https://opencode.ai/v2/docs/cli/acp is cited in PRD as mode values "Visible primary agents." and permission choices "Allow once", "Always allow", "Reject"; ACP source https://agentclientprotocol.com/protocol/session-modes is cited as mode passed to session/set_mode "Must be one of the modes listed in availableModes" (PRD formats availableModes in code). These are PRD quotations, not refreshed external evidence. Unblock only through an operator-authorized external documentation observation; this outside-evidence row is an allowed offline block.')
+settle('QA-11','blocked (declared unreachable)','Exactly the PRD single Unreachable Acceptance entry, criterion Success Metric 7: post-release Fluxus Run with defaults.agent_full_access true and restored light_models. _authorization.md forbids other repositories, real ~/.roundfix, real ACP and OpenRouter; no such access attempted. satisfied-by remains unproven: operator notice to Fluxus after release, then its next Run with openrouter.light_models restored. Counted once as declared, not environment.')
+settle('QA-12','pass','All three diff-tree Task commit path lists are within interface/creates declarations plus the assigned Task file; no Recorded paths additions. Exact base/head blob comparison preserved '+str(len(protected))+' protected existing files, all protected directory scopes and all '+str(len(sections))+' QA settlement sections. Governed changes are bounded by the base-ancestral operative grant; no new Task commit beyond the mechanical authorization table changes tooling. Skill rises 0.1.130 to 0.1.131, record and both mirrors match. Context revises only Light Tier and preserves Avoid line; no new term needs an entry. Assertions checked exact four-reason configuration wording, added paragraph, Doctor bullet/table row, runtime sentences and setup checklist/bullet/row in both copies. Full glossary/skill/documentation contracts pass. Vocabulary tokens are documented. See history-audit.json, protected-paths.txt, documentation-obligations.json, wording-sweep.txt; sweep assessment follows in report.')
+settle('QA-13','blocked (environment: no open Pull Request)','Pull Request row: prompt establishes none open; no lookup or mutation. Approval: operative cycle AP maintainer delivery authority at Delivery Base approves exact action, not a new PR review. Checks: Daemon make verify-changed pass exit 0 at audited head '+s['head']+'. Unresolved threads: none because no Pull Request exists. Merge-Ready acceptance: none exists yet. Review-artifact ancestry: no separate review artifact exists; claimed candidate is audited head '+s['head']+', after three Task commits and the base grant. A live PR approval/Merge-Ready observation remains unavailable; allowed pre-PR block.')
+print('History, documentation and offline coverage completed',flush=True)

@@ -1,0 +1,123 @@
+{
+  "base": "e4379f26485a53c179a3899d080f9598363da38b",
+  "head": "32a7982be136a5125ab480e71801487e5778a848",
+  "tasks": [
+    {
+      "task": "task_01",
+      "commit": "2917b5de4539d47ce24aa14f8aa9846de3a0ea68",
+      "changed": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        ".agents/skills/roundfix/references/setup.md",
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0301-the-light-tier-yields-to-the-category-profile/task_01.md",
+        "docs/user-guide/commands/doctor.md",
+        "docs/user-guide/configuration.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/roundfix/references/setup.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        ".agents/skills/roundfix/references/setup.md",
+        "CONTEXT.md",
+        "docs/adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0301-the-light-tier-yields-to-the-category-profile/task_01.md",
+        "docs/user-guide/commands/doctor.md",
+        "docs/user-guide/configuration.md",
+        "internal/docscontract/skill_coverage_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/roundfix/references/setup.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "42dba64259c20f3d4de95410d1204adcc8ee3c96",
+      "changed": [
+        "docs/specs/0301-the-light-tier-yields-to-the-category-profile/task_02.md",
+        "internal/cli/implement_light_tier_access_test.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/light_tier_access_test.go",
+        "internal/lighttier/access.go",
+        "internal/lighttier/access_test.go"
+      ],
+      "declared": [
+        "docs/adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md",
+        "docs/specs/0301-the-light-tier-yields-to-the-category-profile/task_02.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/agent.go",
+        "internal/cli/implement.go",
+        "internal/cli/implement_light_tier_access_test.go",
+        "internal/cli/implement_light_tier_test.go",
+        "internal/cli/implement_test.go",
+        "internal/cli/profile_preflight.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/light_tier_access_test.go",
+        "internal/daemon/light_tier_test.go",
+        "internal/daemon/task_engine.go",
+        "internal/daemon/task_engine_test.go",
+        "internal/lighttier/access.go",
+        "internal/lighttier/access_test.go",
+        "internal/lighttier/tier.go",
+        "internal/lighttier/tier_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "32a7982be136a5125ab480e71801487e5778a848",
+      "changed": [
+        "docs/specs/0301-the-light-tier-yields-to-the-category-profile/task_03.md",
+        "internal/cli/doctor.go",
+        "internal/cli/doctor_light_tier_test.go",
+        "internal/cli/health.go"
+      ],
+      "declared": [
+        "docs/adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md",
+        "docs/specs/0301-the-light-tier-yields-to-the-category-profile/task_03.md",
+        "docs/user-guide/commands/doctor.md",
+        "internal/cli/doctor.go",
+        "internal/cli/doctor_light_tier_test.go",
+        "internal/cli/doctor_linux_lane_test.go",
+        "internal/cli/doctor_test.go",
+        "internal/cli/health.go",
+        "internal/cli/profiles_validate.go",
+        "internal/cli/readiness.go"
+      ],
+      "undeclared": []
+    }
+  ],
+  "protected_file_count": 740,
+  "protected_violations": [],
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/runtime.md",
+    ".agents/skills/roundfix/references/setup.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "bounded": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/runtime.md",
+    ".agents/skills/roundfix/references/setup.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "qa_settlement_sections_unchanged": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/archive-spec/SKILL.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "roundfix_skill_version_before": "0.1.130",
+  "roundfix_skill_version_after": "0.1.131",
+  "tracked_delta": []
+}
