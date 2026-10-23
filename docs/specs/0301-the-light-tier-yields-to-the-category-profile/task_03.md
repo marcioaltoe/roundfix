@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0301-the-light-tier-yields-to-the-category-profile
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -95,3 +95,50 @@ list is not empty and full access is requested, that warns with
 - `_prd.md` → Goals; Core Feature 3; Success Metric 6
 - `_techspec.md` → API Contracts 4-5; Invariant 6; Testing Approach; Build Order 3
 - ADR-0314
+
+## Result
+
+Added the conditional `light-tier:` readiness result immediately after
+`recommendations:` and before `pre-pr-review:`. The command builds static
+runtime capabilities with `EnableFullAccess` from the loaded configuration,
+and the result calls `lighttier.ServingSelections`. The check opens no Agent
+Session, starts no process, reads no key, and returns only `ok` or `warn`.
+
+Acceptance evidence from focused checks:
+
+- Full access with the built-in light model: the new result test asserts the
+  exact `DR-LIGHT-ACCESS-MODE` warning; the command test asserts that line's
+  position, exactly one occurrence, empty stderr and exit 0. The fake serving
+  runtime case asserts the exact `ok` line naming `opencode`.
+- Full access off or an empty light model list: both new tests assert the
+  absence of the line. The result test also rejects any runtime-factory call
+  for these cases. Removing the warning from the full-access command output
+  leaves it byte-identical to the built-in run; the empty-model run also
+  matches that baseline byte for byte.
+- Existing Doctor behavior: the four existing tests named below pass without
+  edits. `profiles_validate.go`, `internal/lighttier`, `internal/daemon`, all
+  existing tests, goldens and fixtures are unchanged by this Task.
+
+Commands and outcomes:
+
+- Before implementation, `go test ./internal/cli -run
+  '^TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess$'
+  -count=1` failed to compile with `undefined: doctorLightTierResult`, proving
+  the missing seam with the new tests in place.
+- `go test ./internal/cli -run
+  '^(TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess|TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels)$'
+  -count=1` — exit 0.
+- `go test ./internal/cli -run
+  '^(TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts|TestRunDoctorMissingRepositoryRoot|TestDoctorReportsPrePRReviewPolicy|TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn)$'
+  -count=1` — exit 0.
+- `GOOS=windows go test -c -o /tmp/roundfix-task03-cli.test.exe
+  ./internal/cli` — exit 0; package tests compile for Windows.
+- `git diff --check` — exit 0.
+
+Environment: the executor refused the symlinked writable workspace root;
+commands ran in its resolved `/Volumes/Brain-SSD/cache/.roundfix/worktrees/`
+checkout with approved escalation. No repository configuration changed.
+
+The declared Verification (including Windows vet) and repository Verification
+were not run; the Daemon owns those checks and Task settlement. Task status
+and authored checkboxes remain unchanged. No follow-up work was identified.
