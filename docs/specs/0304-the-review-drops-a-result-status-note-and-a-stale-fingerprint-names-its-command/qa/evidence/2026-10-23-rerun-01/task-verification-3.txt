@@ -1,3 +1,0 @@
-$ sh -c 'go test -tags docscontract -list '"'"'^TestTheStaleFingerprintProblemNamesTheProjectRegeneration$'"'"' ./internal/docscontract | grep -qx '"'"'TestTheStaleFingerprintProblemNamesTheProjectRegeneration'"'"' || { echo '"'"'missing contract test'"'"' >&2; exit 1; }; go test -count=1 -tags docscontract -run '"'"'^(TestAStaleBehaviorSurfaceIsReported|TestTheStaleFingerprintProblemNamesTheProjectRegeneration|TestTheSkillCoverageMapIsCurrent)$'"'"' ./internal/docscontract'
-exit: 0
-ok  	roundfix/internal/docscontract	0.329s
