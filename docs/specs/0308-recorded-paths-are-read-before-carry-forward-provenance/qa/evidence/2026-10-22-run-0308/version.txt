@@ -1,7 +1,0 @@
-command: ./bin/roundfix --version
-stdout:
-roundfix 0.109.0 (b7e94afb-dirty, built 2026-10-22 21:02:11 -0300)
-
-stderr:
-
-exit: 0
