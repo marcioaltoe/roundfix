@@ -1,0 +1,103 @@
+**Delivery Convention**:
+A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect ([ADR-0196](docs/adr/0196-a-pre-pr-review-finding-parks-only-after-validation.md)). A finding that names a Result Status Note against a `completed` Task is dismissed by validation without the sealed validator ([ADR-0317](docs/adr/0317-a-result-status-note-of-a-completed-task-is-dismissed-without-the-validator.md)).
+_Avoid_: Review exemption, ignore list
+
+**Result Status Note**:
+A line of a non-QA Task's `## Result` that reports the Task's status as `in_progress` or Daemon-owned, which the Agent writes while the Daemon holds the Task `in_progress`; it does not contradict the `completed` status the Daemon writes after the Task's Verification passes, and the Pre-PR Review Command dismisses a finding that names that pair without the validator ([ADR-0317](docs/adr/0317-a-result-status-note-of-a-completed-task-is-dismissed-without-the-validator.md)).
+_Avoid_: Status contradiction, stale status, Result status claim
+
+docs/user-guide/commands/review.md
+Assertions: version v4; Result Status Note definition; validator exception present.
+
+
+The prompt carries Delivery Conventions version
+`roundfix/delivery-conventions/v4`. These describe what a delivery writes by
+design, and the prompt carries them verbatim:
+
+A Result Status Note is a line of a non-QA Task's `## Result` that contains
+`in_progress` or `Daemon-owned` in any letter case; the Agent writes it
+while the Daemon holds the Task `in_progress`. Before the validator is
+asked, Roundfix dismisses a finding with rule `convention:C2` when, at the
+review head, the whole anchor lies in a Task file's C2 region, the Task's
+front matter has one `status: completed` line and no `type: qa`, its `##
+Result` holds a Result Status Note, and the finding's text contains
+`completed` and one of `in_progress`, `in progress` or `Daemon-owned` in any
+letter case. Its reason is `Result Status Note: the Agent wrote this Result
+while the Daemon held the Task in_progress, and the Daemon wrote completed
+after the Task's Verification passed (C2)`. A review whose findings are all
+dismissed this way reads `findings-dismissed`, and its `validator` stays
+`not-needed`.
+
+Only anchored findings inside a convention region or lacking a failure
+clause, and not dismissed as a Result Status Note, are sent to the
+validator. It uses the review's selected runtime in a sealed
+session and may use no tools. The validator fails closed: an unavailable
+runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
+ineligible rule or blank reason leaves every asked finding standing. The
+record's `validation` identifies the conventions version and reports
+`validator` as `not-needed`, `ran` or `unavailable`, with the unavailable
+reason. Each validation dismissal prints its ID, rule and reason on stderr.
+
+.agents/skills/roundfix/references/review.md
+Assertions: version v4; Result Status Note definition; validator exception present.
+
+
+The prompt carries Delivery Conventions version
+`roundfix/delivery-conventions/v4`. These describe what a delivery writes by
+design, and the prompt carries them verbatim:
+
+A Result Status Note is a line of a non-QA Task's `## Result` that contains
+`in_progress` or `Daemon-owned` in any letter case; the Agent writes it
+while the Daemon holds the Task `in_progress`. Before the validator is
+asked, Roundfix dismisses a finding with rule `convention:C2` when, at the
+review head, the whole anchor lies in a Task file's C2 region, the Task's
+front matter has one `status: completed` line and no `type: qa`, its `##
+Result` holds a Result Status Note, and the finding's text contains
+`completed` and one of `in_progress`, `in progress` or `Daemon-owned` in any
+letter case. Its reason is `Result Status Note: the Agent wrote this Result
+while the Daemon held the Task in_progress, and the Daemon wrote completed
+after the Task's Verification passed (C2)`. A review whose findings are all
+dismissed this way reads `findings-dismissed`, and its `validator` stays
+`not-needed`.
+
+Only anchored findings inside a convention region or lacking a failure
+clause, and not dismissed as a Result Status Note, are sent to the
+validator. It uses the review's selected runtime in a sealed
+session and may use no tools. The validator fails closed: an unavailable
+runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
+ineligible rule or blank reason leaves every asked finding standing. The
+record's `validation` identifies the conventions version and reports
+`validator` as `not-needed`, `ran` or `unavailable`, with the unavailable
+reason. Each validation dismissal prints its ID, rule and reason on stderr.
+
+skills/roundfix/references/review.md
+Assertions: version v4; Result Status Note definition; validator exception present.
+
+
+The prompt carries Delivery Conventions version
+`roundfix/delivery-conventions/v4`. These describe what a delivery writes by
+design, and the prompt carries them verbatim:
+
+A Result Status Note is a line of a non-QA Task's `## Result` that contains
+`in_progress` or `Daemon-owned` in any letter case; the Agent writes it
+while the Daemon holds the Task `in_progress`. Before the validator is
+asked, Roundfix dismisses a finding with rule `convention:C2` when, at the
+review head, the whole anchor lies in a Task file's C2 region, the Task's
+front matter has one `status: completed` line and no `type: qa`, its `##
+Result` holds a Result Status Note, and the finding's text contains
+`completed` and one of `in_progress`, `in progress` or `Daemon-owned` in any
+letter case. Its reason is `Result Status Note: the Agent wrote this Result
+while the Daemon held the Task in_progress, and the Daemon wrote completed
+after the Task's Verification passed (C2)`. A review whose findings are all
+dismissed this way reads `findings-dismissed`, and its `validator` stays
+`not-needed`.
+
+Only anchored findings inside a convention region or lacking a failure
+clause, and not dismissed as a Result Status Note, are sent to the
+validator. It uses the review's selected runtime in a sealed
+session and may use no tools. The validator fails closed: an unavailable
+runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
+ineligible rule or blank reason leaves every asked finding standing. The
+record's `validation` identifies the conventions version and reports
+`validator` as `not-needed`, `ran` or `unavailable`, with the unavailable
+reason. Each validation dismissal prints its ID, rule and reason on stderr.

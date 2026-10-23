@@ -1,0 +1,10 @@
+$ go test -overlay <artifact-overlay.json> ./internal/spec -run '^TestQA0304ArtifactAudit$' -v -count=1
+exit: 0
+=== RUN   TestQA0304ArtifactAudit
+=== PAUSE TestQA0304ArtifactAudit
+=== CONT  TestQA0304ArtifactAudit
+    qa0304_artifact_audit_test.go:9: Native report reader and eligibility accept qualifying partial; scanned 39 QA files
+--- PASS: TestQA0304ArtifactAudit (0.02s)
+PASS
+suiteguard: guard cost: measured 2766 paths; fingerprint took 91.432458ms before and 67.347ms after
+ok  	roundfix/internal/spec	0.314s

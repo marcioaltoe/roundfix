@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

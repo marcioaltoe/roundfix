@@ -1,0 +1,10 @@
+$ go test -v -count=1 -tags docscontract -run '^TestAStaleBehaviorSurfaceIsReported/stale$' ./internal/docscontract
+exit: 1
+=== RUN   TestAStaleBehaviorSurfaceIsReported
+=== RUN   TestAStaleBehaviorSurfaceIsReported/stale
+    skill_coverage_test.go:348: problems = [guide docs/user-guide/usage.md: stale fingerprint], want "guide docs/user-guide/usage.md: stale fingerprint; re-record docs/references/behavior-surfaces.json after the last edit of its sources with: go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage"
+--- FAIL: TestAStaleBehaviorSurfaceIsReported (0.00s)
+    --- FAIL: TestAStaleBehaviorSurfaceIsReported/stale (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.364s
+FAIL

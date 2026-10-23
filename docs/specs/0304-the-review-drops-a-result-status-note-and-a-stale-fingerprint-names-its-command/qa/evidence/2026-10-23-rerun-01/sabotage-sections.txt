@@ -1,0 +1,15 @@
+$ go test -v -count=1 -run '^TestReviewKeepsAContradictionThatIsNotAResultStatusNote/note_outside_the_Result$' ./internal/cli
+exit: 1
+=== RUN   TestReviewKeepsAContradictionThatIsNotAResultStatusNote
+=== PAUSE TestReviewKeepsAContradictionThatIsNotAResultStatusNote
+=== CONT  TestReviewKeepsAContradictionThatIsNotAResultStatusNote
+=== RUN   TestReviewKeepsAContradictionThatIsNotAResultStatusNote/note_outside_the_Result
+=== PAUSE TestReviewKeepsAContradictionThatIsNotAResultStatusNote/note_outside_the_Result
+=== CONT  TestReviewKeepsAContradictionThatIsNotAResultStatusNote/note_outside_the_Result
+    review_result_status_note_test.go:81: exit=0 record={Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:540 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewKeepsAContradictionThatIsNotAResultStatusNotenote_out3472402887/002 BaseCommit:237dc5a908d67ef90765deb2a24b7b3a8afb742f BaseTipCommit:237dc5a908d67ef90765deb2a24b7b3a8afb742f HeadCommit:5978a0f5c0c6c3351b1fdaa7bd694211cbb6ed52 Provider:codex Source:project Outcome:findings-dismissed Findings:- `docs/specs/0001-example/task_01.md:4` — The Task is completed while its Result says in progress. Failure: an invalid Task state transition. FindingItems:[{Segment:0 ID:F1 Text:`docs/specs/0001-example/task_01.md:4` — The Task is completed while its Result says in progress. Failure: an invalid Task state transition. Anchor:0x7c9d7e6c00a0 Validation:0x7c9d7e38cb40}] Dispositions:[] Reused:false Reason: AnswerPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewKeepsAContradictionThatIsNotAResultStatusNotenote_out3472402887/003/artifacts/pre-pr-review/32b9a9661ab24e05/pre-pr-review-answer.txt Specs:[] SkippedSpecs:[0001-example] ArchivedSpecs:[] SpecContextTruncated:false Validation:0x7c9d7e38cc00 Lineage:0x7c9d7e3c61e0} stderr="roundfix: review finding F1 dismissed by validation (convention:C2): Result Status Note: the Agent wrote this Result while the Daemon held the Task in_progress, and the Daemon wrote completed after the Task's Verification passed (C2)\n"
+--- FAIL: TestReviewKeepsAContradictionThatIsNotAResultStatusNote (0.00s)
+    --- FAIL: TestReviewKeepsAContradictionThatIsNotAResultStatusNote/note_outside_the_Result (0.19s)
+FAIL
+suiteguard: guard cost: measured 2724 paths; fingerprint took 84.900166ms before and 66.087292ms after
+FAIL	roundfix/internal/cli	0.794s
+FAIL

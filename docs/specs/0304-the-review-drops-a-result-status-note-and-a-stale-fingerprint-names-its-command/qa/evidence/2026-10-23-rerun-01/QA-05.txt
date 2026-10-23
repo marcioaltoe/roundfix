@@ -1,0 +1,18 @@
+$ go test -v -count=1 -tags docscontract -run '^(TestAStaleBehaviorSurfaceIsReported|TestTheStaleFingerprintProblemNamesTheProjectRegeneration|TestTheSkillCoverageMapIsCurrent)$' ./internal/docscontract
+exit: 0
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.06s)
+=== RUN   TestAStaleBehaviorSurfaceIsReported
+=== RUN   TestAStaleBehaviorSurfaceIsReported/stale
+=== RUN   TestAStaleBehaviorSurfaceIsReported/missing
+=== RUN   TestAStaleBehaviorSurfaceIsReported/extra
+--- PASS: TestAStaleBehaviorSurfaceIsReported (0.00s)
+    --- PASS: TestAStaleBehaviorSurfaceIsReported/stale (0.00s)
+    --- PASS: TestAStaleBehaviorSurfaceIsReported/missing (0.00s)
+    --- PASS: TestAStaleBehaviorSurfaceIsReported/extra (0.00s)
+=== RUN   TestTheStaleFingerprintProblemNamesTheProjectRegeneration
+=== PAUSE TestTheStaleFingerprintProblemNamesTheProjectRegeneration
+=== CONT  TestTheStaleFingerprintProblemNamesTheProjectRegeneration
+--- PASS: TestTheStaleFingerprintProblemNamesTheProjectRegeneration (0.00s)
+PASS
+ok  	roundfix/internal/docscontract	0.328s

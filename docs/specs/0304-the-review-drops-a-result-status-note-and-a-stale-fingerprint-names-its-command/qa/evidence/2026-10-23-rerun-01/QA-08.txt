@@ -1,0 +1,47 @@
+$ git diff-tree --no-commit-id --name-only -r 29deff6d358bfe177000ddf6b10c45ad7913a27e
+docs/specs/0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command/task_02.md
+internal/docscontract/skill_coverage_test.go
+outside declarations: []
+$ git diff-tree --no-commit-id --name-only -r c0d2232eb86e93ace178bdd3fae6f2e66347dfe7
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/review.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command/task_01.md
+docs/user-guide/commands/review.md
+internal/cli/review_convention_qa_task_test.go
+internal/cli/review_convention_validator.go
+internal/cli/review_convention_validator_test.go
+internal/cli/review_conventions.go
+internal/cli/review_result_status_note_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json
+outside declarations: []
+protected Makefile: byte-identical
+protected .github/workflows: byte-identical
+protected go.mod: byte-identical
+protected go.sum: byte-identical
+protected .roundfixrc.yml: byte-identical
+protected internal/baseline/assets: byte-identical
+protected docs/agents/setup-context.json: byte-identical
+protected docs/history: byte-identical
+protected internal/agent/spec_prompt.go: byte-identical
+protected .agents/skills/implement-task: byte-identical
+protected skills/implement-task: byte-identical
+protected internal/cli/review.go: byte-identical
+protected internal/cli/review_validation.go: byte-identical
+protected docs/references/skill-coverage.json: byte-identical
+protected docs/adr: byte-identical
+Authorization at Delivery Base equals current authorization: True
+Governed changed paths: .agents/skills/roundfix/SKILL.md; .agents/skills/roundfix/references/review.md; skills/roundfix/SKILL.md. Each explicitly bounded; operative grant predates both Tasks.
+Mechanical authorization audit lists task_01 commit c0d2232eb86e93ace178bdd3fae6f2e66347dfe7. task_02 changes no governed path. No consequent fix declared.
+.agents/skills/roundfix/SKILL.md version: ['0.1.133', '0.1.133'] -> ['0.1.134', '0.1.134']
+.agents/skills/roundfix/SKILL.md QA settlement unchanged: True
+skills/roundfix/SKILL.md version: ['0.1.133', '0.1.133'] -> ['0.1.134', '0.1.134']
+skills/roundfix/SKILL.md QA settlement unchanged: True
+C1 byte-identical: True
+C3 byte-identical: True
+C4 byte-identical: True
+C5 byte-identical: True
+Wording sweep matches: 0

@@ -1,0 +1,5 @@
+Outside source: Anthropic cookbook Building Evals
+https://github.com/anthropics/anthropic-cookbook/blob/main/misc/building_evals.ipynb
+PRD-cited passage (not independently retrieved): This is by far the best grading method if you can design an eval that allows for it, as it is super fast and highly reliable.
+Authorization: No Task, Verification command or QA row ... reaches the network ...
+No lookup attempted. Unblocking action: author must permit network lookup in a later gate.

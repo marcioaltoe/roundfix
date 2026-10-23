@@ -1,0 +1,10 @@
+package spec
+import("testing";"os";"path/filepath";"roundfix/internal/secretscan")
+func TestQA0304ArtifactAudit(t *testing.T) {
+ t.Parallel()
+ report,err:=ReadQAReportFile("/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command-31c910a823c4ef02-1823bb1e-9b308ad7/run_20261023T211938Z_8a6bba6898c45a59/docs/specs/0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command/qa/qa-report-2026-10-23-01.md"); if err!=nil {t.Fatal(err)}
+ if err:=QAReportEligibility("/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command-31c910a823c4ef02-1823bb1e-9b308ad7/run_20261023T211938Z_8a6bba6898c45a59/docs/specs/0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command",report);err!=nil {t.Fatal(err)}
+ count:=0
+ err=filepath.WalkDir("/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command-31c910a823c4ef02-1823bb1e-9b308ad7/run_20261023T211938Z_8a6bba6898c45a59/docs/specs/0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command/qa",func(path string,d os.DirEntry,err error)error{if err!=nil{return err};if d.IsDir(){return nil};b,err:=os.ReadFile(path);if err!=nil{return err};for _,m:=range secretscan.ScanContent(path,b){t.Error(m.String())};count++;return nil})
+ if err!=nil {t.Fatal(err)};t.Logf("Native report reader and eligibility accept qualifying partial; scanned %d QA files",count)
+}

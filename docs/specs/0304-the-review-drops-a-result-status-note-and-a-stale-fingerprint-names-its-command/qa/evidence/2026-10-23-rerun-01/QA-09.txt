@@ -1,0 +1,8 @@
+Pull Request row
+Environment fact: no open Pull Request (Daemon assignment)
+Approval: recorded cycle AP maintainer grant in docs/specs/0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command/_authorization.md at 15c2b88be3706dbb453d7b7d550c041439c78183; delivery authority, not code-review acceptance.
+Checks: Daemon make verify-changed exit 0 at c0d2232eb86e93ace178bdd3fae6f2e66347dfe7; focused checks recorded in this report.
+Unresolved review threads: none because no PR exists.
+Merge-Ready acceptance: none yet.
+Review-artifact ancestry: claimed candidate c0d2232eb86e93ace178bdd3fae6f2e66347dfe7; no current Review Source evidence is asserted.
+Unblocking action: delivery workflow opens PR and obtains current-head review/checks after QA settlement.

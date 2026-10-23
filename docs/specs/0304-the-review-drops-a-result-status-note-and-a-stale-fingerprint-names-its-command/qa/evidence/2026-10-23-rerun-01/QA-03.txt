@@ -1,0 +1,13 @@
+status: detected
+qa-type: detected
+sections: detected
+note: detected
+finding-text: detected
+c2-region: detected
+no-question-exit: detected
+stale-hint: detected
+missing-hint: detected
+command-drift: detected
+mirror-v3: detected
+
+Exact mutations and commands: qa0304_sabotage.py.txt. Every isolated copy was exported from the audited head via git archive.
