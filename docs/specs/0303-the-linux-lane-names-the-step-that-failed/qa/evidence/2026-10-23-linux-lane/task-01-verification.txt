@@ -1,9 +1,0 @@
-Command: sh -c for f in docs/user-guide/commands/deliver.md .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md; do n="$(tr -s '[:space:]' ' ' < "$f")"; printf '%s' "$n" | grep -qF -- 'roundfix-linux-lane: go list: exited <n>' || { printf 'missing go list marker in %s\n' "$f" >&2; exit 1; }; printf '%s' "$n" | grep -qF -- 'go list exited <n>: the process ended by signal <n-128>' || { printf 'missing go list signal cause in %s\n' "$f" >&2; exit 1; }; printf '%s' "$n" | grep -qF -- 'the lane script exited 4 without reporting the go list exit code' || { printf 'missing go list no-line cause in %s\n' "$f" >&2; exit 1; }; printf '%s' "$n" | grep -qF -- 'roundfix: Linux Lane change failure: <cause>; see <lane log>' || { printf 'missing generalized deliver lane line in %s\n' "$f" >&2; exit 1; }; printf '%s' "$n" | grep -qF -- 'gate-failed: Linux Lane change failure: <cause>; see <lane log>' || { printf 'missing generalized blocker in %s\n' "$f" >&2; exit 1; }; if printf '%s' "$n" | grep -q -- 'It parks in .finding., with cause'; then printf 'stale change failure sentence in %s\n' "$f" >&2; exit 1; fi; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -q -- 'its Go test run, or the .go list. run that selects its packages exiting below 128' || { echo 'missing Lane Change Failure revision' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md' || { echo 'missing ADR-0316 link in the glossary' >&2; exit 1; }; make skills-sync-check || exit 1; go test -count=1 ./skills || exit 1; go test -count=1 -tags docscontract ./internal/docscontract
-Exit: 0
-stdout:
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.280s
-ok  	roundfix/skills	1.186s
-ok  	roundfix/internal/docscontract	287.649s
-
-stderr:

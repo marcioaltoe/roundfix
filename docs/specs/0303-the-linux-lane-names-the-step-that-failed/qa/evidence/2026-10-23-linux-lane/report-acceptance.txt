@@ -1,5 +1,0 @@
-Command: ./bin/roundfix qa-report accept docs/specs/0303-the-linux-lane-names-the-step-that-failed/qa/qa-report-2026-10-23.md
-Exit: 0
-stdout:
-
-stderr:
