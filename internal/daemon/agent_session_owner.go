@@ -261,7 +261,16 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 			continue
 		}
 		var selectionErr *agent.SelectionFailureError
-		if !errors.As(err, &selectionErr) || owner.workStarted.Load() {
+		if !errors.As(err, &selectionErr) {
+			if owner.canYieldLight(ctx, err) {
+				if yieldErr := owner.yieldLight(ctx, err, owner.activeRuntime, owner.activeSession); yieldErr != nil {
+					return result, yieldErr
+				}
+				continue
+			}
+			return result, err
+		}
+		if owner.workStarted.Load() {
 			return result, err
 		}
 		if !owner.selectionFailurePublished.Load() {
@@ -410,6 +419,12 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 		owner.selectionFailurePublished.Store(false)
 		runtime, err := owner.runtimeFactory(candidate.Selection)
 		if err != nil {
+			if owner.canYieldLight(ctx, err) {
+				if yieldErr := owner.yieldLight(ctx, err, agent.RuntimeSpec{}, agent.SessionRef{}); yieldErr != nil {
+					return yieldErr
+				}
+				continue
+			}
 			return err
 		}
 		if index < owner.lightCandidates {
@@ -429,6 +444,12 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 				if publishErr := owner.publishSelectionFailed(context.WithoutCancel(ctx), prepareReq); publishErr != nil {
 					return publishErr
 				}
+			}
+			if !isSelectionStartFailure(err) && owner.canYieldLight(ctx, err) {
+				if yieldErr := owner.yieldLight(ctx, err, runtime, session); yieldErr != nil {
+					return yieldErr
+				}
+				continue
 			}
 			owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
 			if !isSelectionStartFailure(err) || index == len(candidates)-1 {
@@ -478,6 +499,52 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 		Surface:   owner.scope.Session.WorkDir,
 		Attempts:  append([]agentSelectionAttempt(nil), owner.attempts...),
 	}
+}
+
+// canYieldLight preserves the Agent-work boundary and infrastructure recovery.
+func (owner *agentSessionOwner) canYieldLight(ctx context.Context, cause error) bool {
+	if owner.scope.Kind != "task" || owner.candidateIndex >= owner.lightCandidates || owner.workStarted.Load() || ctx.Err() != nil || errors.Is(cause, context.Canceled) || isSelectionStartFailure(cause) {
+		return false
+	}
+	if _, ok := agent.DescribeLostRollout(cause); ok {
+		return false
+	}
+	if _, ok := agent.DescribeProviderSystemError(cause); ok {
+		return false
+	}
+	return true
+}
+
+// yieldLight sends the Task prompt to the category runtime with the same
+// requested access policy. It never weakens access to keep a light session.
+func (owner *agentSessionOwner) yieldLight(ctx context.Context, cause error, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+	failed := owner.activeCandidate()
+	owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
+	owner.active = false
+	owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: failed, Err: cause})
+	if err := owner.persistSelectionAttempt(context.WithoutCancel(ctx), failed, store.AgentSelectionStatusFailed, cause); err != nil {
+		return err
+	}
+	code := "light_session_failed"
+	var accessErr *agent.AccessPolicyError
+	if errors.As(cause, &accessErr) {
+		code = accessErr.Kind
+	}
+	summary := fmt.Sprintf("roundfix: warning: light tier yielded for Task %s before Agent work: %s; it runs on its %s profile", owner.scope.ID, cause, owner.scope.Category)
+	if err := owner.engine.publishTaskEvent(ctx, owner.scope.RunID, owner.scope.Batch, owner.scope.ID, runevent.KindDaemonTask, summary,
+		map[string]any{"task": owner.scope.ID, "phase": "light_tier_yielded", "model": failed.Selection.Model, "reason_code": code, "reason": cause.Error()}); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(owner.engine.deps.Progress, summary); err != nil {
+		return fmt.Errorf("write light tier yield warning: %w", err)
+	}
+	next := owner.candidates()[owner.lightCandidates]
+	if err := owner.publishFallback(ctx, failed, next, cause); err != nil {
+		return err
+	}
+	owner.candidateIndex = owner.lightCandidates
+	owner.selectionFailurePublished.Store(false)
+	return nil
 }
 
 func (owner *agentSessionOwner) candidates() []agentSelectionCandidate {
@@ -1020,8 +1087,11 @@ func (engine *Engine) recordPromptUsage(ctx context.Context, req agent.ExecuteRe
 }
 
 func (owner *agentSessionOwner) applyLightTier(ctx context.Context, plan lighttier.Plan) error {
+	kept, refused := lighttier.ServingSelections(plan.Models, owner.runtimeFactory)
 	reason, code := "", ""
 	switch {
+	case len(kept) == 0 && len(refused) > 0:
+		reason, code = fmt.Sprintf("light runtime %s offers no mode for access policy %q", refused[0].Err.Runtime, refused[0].Err.Policy), "access_mode_unavailable"
 	case !plan.KeyPresent:
 		reason, code = plan.KeyVariable+" is not set", "key_missing"
 	default:
@@ -1038,15 +1108,12 @@ func (owner *agentSessionOwner) applyLightTier(ctx context.Context, plan lightti
 		return owner.engine.publishTaskEvent(ctx, owner.scope.RunID, owner.scope.Batch, owner.scope.ID, runevent.KindDaemonTask, summary,
 			map[string]any{"task": owner.scope.ID, "phase": "light_tier_skipped", "reason_code": code})
 	}
-	selections := make([]roundconfig.AgentSelection, 0, len(plan.Models)+1+len(owner.profile.Profile.Fallbacks))
-	for _, model := range plan.Models {
-		selections = append(selections, roundconfig.AgentSelection{Runtime: "opencode", Model: "openrouter/" + model})
-	}
+	selections := append([]roundconfig.AgentSelection(nil), kept...)
 	selections = append(selections, owner.profile.Profile.Preferred)
 	selections = append(selections, owner.profile.Profile.Fallbacks...)
 	owner.profile.Profile = roundconfig.AgentSelectionProfile{Preferred: selections[0], Fallbacks: selections[1:]}
 	owner.profile.Source = "light-tier"
-	owner.lightPlan, owner.lightCandidates = plan, len(plan.Models)
+	owner.lightPlan, owner.lightCandidates = plan, len(kept)
 	return nil
 }
 

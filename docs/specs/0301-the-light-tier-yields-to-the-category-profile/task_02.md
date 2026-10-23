@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0301-the-light-tier-yields-to-the-category-profile
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -136,3 +136,81 @@ category's Preferred Selection.
 - `_prd.md` → Sources; Goals; Core Features 1-2; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior; API Contracts 1-3 and 5; Invariants 1-5; Testing Approach; Build Order 2
 - ADR-0314
+
+
+## Result
+
+Implemented the Task 02 slice; status and declared Verification remain
+Daemon-owned.
+
+- Added `lighttier.Selections`, `AccessUnavailable` and `ServingSelections`.
+  The helper preserves order, retains runtime factory errors for activation,
+  and refuses only access errors with `AccessModeAvailablePredicate`.
+- `applyLightTier` checks requested-access support before credentials, spend
+  and ceiling. With no serving runtime it publishes `access_mode_unavailable`
+  and the exact warning; otherwise it uses only the serving light selections.
+- Factory, setup and prompt failures eligible for the pre-work yield close the
+  light session when one exists, persist a failed attempt, publish the yield
+  event and warning, notify fallback, and jump to the category's Preferred
+  Selection. The same Task prompt goes to the category runtime, built by the
+  same runtime factory with the same requested access policy. Remaining light
+  models are not opened. Selection failures and runtime-infrastructure
+  recovery keep their existing paths.
+- Added all five named top-level tests in the three requested new test files.
+  Each starts with `t.Parallel()`. They reuse temporary repository/home/store
+  fixtures and fake runners, start no ACP runtime, and add no real-time waits.
+  The command fixture builds its key at runtime and checks both output streams.
+
+Acceptance evidence from focused checks:
+
+1. `TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess` passed
+   all four authored subtests: full access opens no light session, emits one
+   exact access-skip event/warning and runs `category-model`; a missing key
+   does not override that reason. Runtime-default and second-model support
+   preserve the expected light dispatch. The helper test passed all six
+   authored subtests, including the exact Fluxus refusal text.
+   `TestImplementSkipsTheLightTierUnderProjectFullAccess` passed through the
+   command: exit 0, one category work request, requested full access validated,
+   exact warning on stderr, and no fixture key on stdout or stderr.
+2. `TestLightTierYieldsToTheCategoryProfileBeforeAgentWork` passed
+   `factory-refused`, `setup-refused` and `prompt-failed-before-work`.
+   Each asserts one yield with model/cause/reason code, a persisted failed
+   light attempt, one fallback notification before category setup, one exact
+   warning and no remaining light model. Prompt failure additionally asserts
+   that the category receives the same prompt; access refusal asserts that
+   the category retains full access. Opened light and category sessions close.
+3. `TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier` passed
+   `after-work-started`, `category-refused`, `canceled-error` and `context-done`.
+   The first two still fail the fixture Task. No case yields or publishes a
+   fallback; cancellation during setup opens no category session. The existing
+   dispatch, three skip reasons, spend, bounded escalation and selection
+   fallback tests below passed unchanged. The existing tier classifier, plan
+   availability and command plan tests also passed unchanged.
+
+Commands run (all final focused checks exited 0):
+
+- `go test ./internal/lighttier ./internal/daemon -run '^(TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess|TestLightTierSkipsWhenTheLightRuntimeCannotServeTheRequestedAccess|TestLightTierYieldsToTheCategoryProfileBeforeAgentWork|TestLightTierDoesNotYieldAfterWorkOrOutsideTheLightTier)$' -count=1`
+- `go test ./internal/cli -run '^TestImplementSkipsTheLightTierUnderProjectFullAccess$' -count=1`
+- `go test ./internal/daemon -run '^(TestLightTierDispatchOrder|TestLightTierSkipsWithAWarning|TestLightTierRecordsSpend|TestLightTierEscalatesOnce|TestNoFallbackAfterAgentWorkStarted|TestAgentSelectionFallbackPublishesBeforeNextSession)$' -count=1`
+- `go test ./internal/cli -run '^TestImplementBuildsTheLightTierPlan$' -count=1`
+- `go test ./internal/lighttier -run '^(TestTierFor|TestPlanEnabled)$' -count=1`
+- `GOOS=windows go test -c -o <temporary-output>/<package>.test.exe ./internal/<package>`
+  for each of `lighttier`, `daemon` and `cli`; temporary binaries removed.
+- `git diff --check`.
+
+Starting signal: before adding the helper, the focused helper full-access
+subtest command failed to compile with undefined `Selections` and
+`ServingSelections`. After implementation the helper's complete focused test
+passed. A byte comparison against HEAD confirmed `internal/lighttier/tier.go`,
+`internal/daemon/task_engine.go`, `internal/cli/implement.go` and every tracked
+file under `internal/agent` are unchanged. The tracked diff changes no existing
+test, golden or fixture.
+
+Environment: the executor rejected the symlinked writable root. Work used the
+resolved Run checkout with authorized escalation; this was an executor
+constraint, not a product finding.
+
+Not run: the Task's declared Verification (including Windows vet), repository
+Verification and incremental Verification; the Daemon owns them. No other
+Task, Task Graph manifest, status field, commit, push or pull request was
+changed or created. No follow-up outside this slice was identified.
