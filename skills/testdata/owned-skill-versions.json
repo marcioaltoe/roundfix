@@ -173,6 +173,10 @@
       {
         "version": "0.0.18",
         "digest": "5369b9e2a0c75722ea7d965a1af0f54462706d69e96ea7daf28820e575e63a9f"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "99fae3395df155aa8d3752c42042ae1f43ef5935c34b8fd555ee6a9681f67ef9"
       }
     ],
     "roundfix": [

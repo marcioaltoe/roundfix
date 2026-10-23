@@ -87,7 +87,8 @@ part of the contract.
 
 A gate can also stop before it builds its matrix, at a precondition check such
 as `roundfix spec check <slug> --strict`. What that refusal leaves behind is a
-complete report, not an empty one: verdict `fail`, `rows_blocked_precondition`
+complete report, not an empty one: verdict `fail`, `build` naming the commit
+the gate audited, as a full report does, `rows_blocked_precondition`
 counting the `blocked` rows whose provenance is `precondition`,
 `precondition_check` naming the check that refused, `precondition_reason`
 carrying every refusing code with the sentence beside it, and a Results table
@@ -100,7 +101,9 @@ tree. The prose justifying that row is written as a list rather than as a second
 table: only the one table under the `## Results` heading is read as results, so
 every other table a report carries is evidence a reader weighs, never a row a
 later run can be blocked by. A gate that reached its matrix writes none of those
-three keys.
+three keys. The Daemon also records `build` in the report it closes for a
+blocking mechanical result, and the pending report it seeds for the gate carries
+none, because the gate's full report writes its own.
 
 Before a later gate run, the mechanical stage validates the newest report in
 that directory and nothing else, ranking by the embedded date first and the

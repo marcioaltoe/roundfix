@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.18
+  version: 0.0.19
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.18
+version: 0.0.19
 ---
 
 # QA Gate
@@ -123,6 +123,7 @@ provenance and preserve the observed output as evidence.
   ```markdown
   ---
   verdict: fail
+  build: "<audited-commit>"
   rows_blocked_precondition: 1
   auditing_binary: "<version-and-build-identity>"
   auditor_staleness: "<state>: <reason>"
@@ -159,6 +160,11 @@ provenance and preserve the observed output as evidence.
 
   A gate that stopped here writes nothing else: no matrix, and no rows for the
   checks that never executed.
+
+  A refusal records `build` as a full report does: the commit the gate
+  audited, quoted, so a reader can tell this refusal from one an earlier Run
+  left on the branch. A refusal the Daemon wrote already carries it; keep its
+  value.
 
   When the command passes, record the clean result in the report's scope and
   environment, but do not create QA matrix rows that repeat the authoring rules
