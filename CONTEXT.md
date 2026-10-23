@@ -838,8 +838,12 @@ The fixed-list outcome a QA pass records for every row of the prior report: carr
 _Avoid_: Row status, verdict
 
 **Delivery Convention**:
-A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect ([ADR-0196](docs/adr/0196-a-pre-pr-review-finding-parks-only-after-validation.md)).
+A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect ([ADR-0196](docs/adr/0196-a-pre-pr-review-finding-parks-only-after-validation.md)). A finding that names a Result Status Note against a `completed` Task is dismissed by validation without the sealed validator ([ADR-0317](docs/adr/0317-a-result-status-note-of-a-completed-task-is-dismissed-without-the-validator.md)).
 _Avoid_: Review exemption, ignore list
+
+**Result Status Note**:
+A line of a non-QA Task's `## Result` that reports the Task's status as `in_progress` or Daemon-owned, which the Agent writes while the Daemon holds the Task `in_progress`; it does not contradict the `completed` status the Daemon writes after the Task's Verification passes, and the Pre-PR Review Command dismisses a finding that names that pair without the validator ([ADR-0317](docs/adr/0317-a-result-status-note-of-a-completed-task-is-dismissed-without-the-validator.md)).
+_Avoid_: Status contradiction, stale status, Result status claim
 
 **Review Segment**:
 One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound, each within the bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md)).

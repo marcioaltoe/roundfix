@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0304-the-review-drops-a-result-status-note-and-a-stale-fingerprint-names-its-command
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -174,3 +174,85 @@ Core Features 1-3).
 - `_prd.md` → Goals; Core Features 1-3; Success Metrics 1-4; Glossary
 - `_techspec.md` → Current behavior; API Contracts 1-4 and 7; Invariants 1-5; Testing Approach; Build Order 1
 - ADR-0317
+
+
+## Result
+
+Implemented the task_01 slice for ADR-0317 and the adopted 2026-10-22
+Backlog Entry about the Spec 0290 and Spec 0297 pre-PR findings.
+
+- Acceptance criterion 1: `reviewResultStatusNote` reads the immutable review
+  head, requires C2 eligibility, the finding's status pair, exactly one
+  completed status, no QA type, and a note inside the Result. Accepted
+  findings retain their identity and record `dismissed-by-validation`,
+  `convention:C2` and the fixed reason without a sealed request. Shared
+  settlement returns `findings-dismissed` and exit 0 with `not-needed` when
+  all findings are dismissed. The three positive CLI subtests cover the
+  exact 0297 ending paragraph, 0290 opening sentence with a blank-line
+  anchor, and the front-matter anchor; each asserts the whole stderr line.
+- Acceptance criterion 2: all six negative CLI subtests retain standing
+  findings and exit 1. The failed Task, QA Task, Result without a note, note
+  outside the Result and another failure each ask the fake validator once
+  with C2 and retain its reason. The Requirements anchor asks no question.
+  The existing fail-closed and validation-dismissal disposal checks also
+  passed. The sealed prompt, grammar and fail-closed logic are unchanged.
+- Acceptance criterion 3: conventions are v4 with the exact authored C2;
+  C1, C3, C4 and C5 are byte-identical. The prompt test checks v4 and C2,
+  and the negative cases' existing `validatorQuestions` helper checks the
+  sealed input against `deliveryConventions()`. The focused documentation
+  contract passed for the guide and both reference copies. Only the two
+  declared existing-test breaks changed.
+- Acceptance criterion 4: CONTEXT.md now defines Result Status Note directly
+  after Delivery Convention and extends that definition with ADR-0317;
+  both Avoid lines have the required text. Both Roundfix skill version
+  fields rose from 0.1.133 to 0.1.134. Mirrors and records were generated,
+  not edited by hand; static comparison found the mirrors byte-identical.
+  The Behavior Surface Record changes only the review guide fingerprint.
+
+Focused checks and generation evidence:
+
+- `rtk proxy go test ./internal/cli -run '^(TestReviewDismissesAResultStatusNoteOfACompletedTaskWithoutTheValidator|TestReviewKeepsAContradictionThatIsNotAResultStatusNote|TestReviewValidatorDismissesADaemonSettlementAsC2|TestDeliveryConventionC2ExemptsTheQATask|TestReviewValidatorFailureLeavesEveryAskedFindingStanding|TestReviewDisposeRefusesAConventionDismissal)$' -count=1`
+  — exit 0 on the final implementation, including all nine new subtests.
+- `GOOS=windows rtk proxy go test -c -o /tmp/roundfix-task01-cli-windows.test.exe ./internal/cli`
+  — exit 0; the CLI tests cross-compile for Windows.
+- `rtk proxy go test -overlay /tmp/roundfix-task01-red-overlay.json ./internal/cli -run '^TestReviewDismissesAResultStatusNoteOfACompletedTaskWithoutTheValidator$' -count=1`
+  — expected exit 1 against the original validator in a temporary overlay
+  (only the reason constant was supplied to compile the new tests). All
+  three positive cases fail with exit 1, outcome findings and one sealed
+  call, demonstrating the regression without modifying checkout sources.
+- `make skills-sync`, then
+  `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; the final generated record adds only version 0.1.134.
+- `make baseline-digests` — exit 0, `changed:false`; no Baseline file changed.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0, re-recorded after the final guide/reference edit.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem$' -count=1`
+  — exit 0.
+- `rtk proxy git diff --check` — exit 0. Static postflight also checked the
+  exact changed-path allowlist, untouched prohibited sources, both unchanged
+  QA settlement sections, mirror equality and unchanged C1/C3/C4/C5.
+
+Wording sweep: searched Markdown under docs/user-guide, docs/agents,
+.agents/skills and skills, including normalized paragraphs across wrapping,
+for Daemon-authored Results and validator-only anchored dismissal claims.
+The remaining matches are the updated C2 ownership paragraph and the
+convention-validation paragraph in the review guide and both reference
+copies. The latter now explicitly excepts a Result Status Note. No other
+obsolete claim was found in those surfaces; no other guide was changed.
+
+During focused work the documentation build exposed a test-only membership
+helper used by production code; this was corrected to `slices.Contains` and
+all final checks above postdate that fix. An initial digest regeneration
+refused concurrent checkout edits; the serialized rerun succeeded unchanged.
+The interim skill record was restored from its original tracked bytes and
+regenerated after the final reference edit, preserving the one-patch bump.
+
+The declared Task Verification and repository Verification were not run;
+they remain Daemon-owned. Task status remains `in_progress`, and no commit,
+push or pull request was made. The stale-fingerprint diagnostic belongs to
+task_02 and is outside this diff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T205240Z_cb3296cbba44e77f`
+- Source commit: `4935f55960fc181a11c48d664b7c331a478cacac`
