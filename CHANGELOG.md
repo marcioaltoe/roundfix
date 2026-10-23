@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.115.0] - 2026-10-23
+
+### The pre-PR review drops a Result Status Note, and a stale fingerprint names its command
+
+- **Result Status Note.** The Agent writes a non-QA Task's `## Result` while the Daemon holds the Task `in_progress`, so a Result line that says `in_progress` or `Daemon-owned` and a later `status: completed` do not contradict each other (convention C2). The pre-PR reviewer kept reporting that pair as a failure and the validator kept it standing. Before the validator is asked, Roundfix now dismisses such a finding with rule `convention:C2` when its whole anchor lies in a completed non-QA Task's C2 region, the Result holds the note, and the finding's text names `completed` and the in-progress status. A review whose findings are all dismissed this way reads `findings-dismissed` and its `validator` stays `not-needed`. Real contradictions still go to the validator. The delivery conventions move to `roundfix/delivery-conventions/v4`.
+- **A stale Behavior Surface fingerprint names the re-record command.** `TestTheSkillCoverageMapIsCurrent` reported only `<id>: stale fingerprint`; the problem now names the command that re-records it. Its other problems keep their bytes.
+- The `review` guide and the Roundfix skill reference (skill version 0.1.134) describe the changes.
+
 ## [0.114.0] - 2026-10-23
 
 ### The Linux Lane names the step that failed
