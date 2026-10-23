@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0302-a-subsumed-test-selector-is-flagged-and-a-qa-refusal-names-its-commit
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -102,3 +102,27 @@ through `CheckStage` (`_prd.md` → Core Feature 1).
 - `_prd.md` → Core Feature 1; Goals; Success Metrics 1-2
 - `_techspec.md` → API Contracts 1-4; Testing Approach; Build Order 1
 - ADR-0315
+
+## Result
+
+Implementation:
+
+- `internal/speccheck/verification_selector.go` (new): `CodeVerifySubsumedSelector` and `detectSubsumedSelectors`. It judges pending Tasks that are neither the manifest's QA Task nor `type: qa`, reads each Verification command and every `$(...)` body (`commandSubstitutions`), splits them with `shellWords` at `;`, `&&`, `||`, `|`, `&`, `(`, `)`, `{`, `}`, and recognizes `pytest`/`py.test` by base name, `python[0-9.]* -m pytest`, and `uv|poetry|pdm|pipenv|hatch … run … <runner>`, after `!`, `rtk`, `env`, `exec` and `NAME=value`. Collection arguments exclude options, the values of the API Contract 2 option list, redirection targets, and globs/`$`/backticks without `::`. `--keep-duplicates` skips the invocation. Subsumption follows API Contract 3: `.`, an equal path, or a directory above it at a `/` boundary; or an equal path whose parts prefix the selector's, with the last part matching exactly or as the name before `[`. Each finding uses the exact summary and fix from API Contract 4, located at the Verification line via `sectionLineContaining`. A nil graph records a skip naming `_tasks.md`. Nothing is executed, and the Task file is read only when a finding needs its line.
+- `internal/speccheck/constraints.go`: one call right after `detectVerificationPaths`.
+- `internal/speccheck/coherence.go`: `{code: CodeVerifySubsumedSelector, stage: StageTasks}` right after `CodeVerifyPathUndeclared`.
+- `internal/speccheck/verification_selector_test.go` (new): the three tests with the commands listed in the TechSpec's Testing Approach, run through `CheckStage` using `writeConsumerFixture`, `checkProofFixture`, `findingsWithCode`, `hasExactLocation` (and `hasSkip` for the PRD-stage skip).
+
+Acceptance criteria evidence:
+
+- Overlapping commands raise one error each, and non-overlapping commands, non-pending Tasks and the PRD stage raise none: `go test -count=1 -run 'TestSubsumedSelector|TestVerificationPath' ./internal/speccheck` → `ok`. Sabotage runs (reverted afterwards) prove the tests can fail:
+  - Dropping the parametrized match fails the `test_it[new]` case.
+  - Dropping the `.` rule fails the `python3.12 -m pytest .` case.
+  - Removing the `/` boundary fails `tests/test_ab.py::test_new tests/test_a`.
+  - Ignoring `--keep-duplicates` fails that accept case.
+  - Judging every status fails the `completed` and `in_progress` subtests.
+- The prober, the CLI and every other detector are unchanged. `git diff --stat` lists only `coherence.go` (+1) and `constraints.go` (+3) plus the two new files. `go test -count=1 ./internal/speccheck` → `ok` (40.8s), `go test -count=1 ./internal/cli/...` → `ok`, `GOOS=windows go vet ./internal/speccheck` → clean, and `gofmt -l` → clean.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T070317Z_62af7ae2274ed43c`
+- Source commit: `e1f61677b58086d92e2facb27d848d2bd91deb16`
