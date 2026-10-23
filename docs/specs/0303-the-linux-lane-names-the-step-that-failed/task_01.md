@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0303-the-linux-lane-names-the-step-that-failed
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -118,3 +118,28 @@ None. This Task changes documentation, the skill mirrors, the skill version reco
 - `_prd.md` → Core Feature 3; Goals; Success Metric 6; Glossary
 - `_techspec.md` → API Contract 5; Build Order 1
 - ADR-0316
+
+## Result
+
+- Updated the Linux Lane sections in `docs/user-guide/commands/deliver.md` and
+  `.agents/skills/roundfix/references/deliver.md` with the Exit `4` `go list`
+  marker, signal cause, no-line cause, and generalized `<cause>` outcome
+  lines. `make skills-sync` propagated the canonical reference and raised
+  skill version `0.1.132` to `0.1.133` in both skill copies.
+- Revised the `Lane Change Failure` glossary definition in `CONTEXT.md` to
+  include the candidate's package-selecting `go list` run and linked ADR-0316
+  after ADR-0294.
+- Wording sweep: outside the edited guide/reference surfaces, the old
+  `go test` wording remains only in ADR-0294 and ADR-0316 as historical or
+  unchanged-outcome context; no other guide, agent guide, or skill copy has a
+  claim that every Lane Change Failure belongs to `go test`.
+- Focused evidence: `git diff --check` passed before regeneration; the three
+  target references were inspected for the new marker and causes; and the
+  canonical and mirror reference files were synchronized by `make skills-sync`.
+- Required record commands passed:
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` (1 passed) and
+  `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  (1 passed). The latter was run after the final guide edit.
+- Daemon-owned Verification was not run, and Task status remains unchanged.
