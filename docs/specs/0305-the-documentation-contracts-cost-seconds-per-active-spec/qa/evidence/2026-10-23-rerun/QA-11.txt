@@ -1,6 +1,0 @@
-Pull Request row: no open Pull Request, per assignment.
-Approval: recorded maintainer cycle AP delivery authority in _authorization.md, not a current review acceptance.
-Checks: daemon make verify-changed passed exit 0 at d8416963cde68f9eb4c178d17207696c54590d1f.
-Unresolved threads: none, because no PR exists.
-Merge-Ready acceptance: not yet available.
-Review-artifact ancestry: no current-candidate review artifact exists; claimed candidate is d8416963cde68f9eb4c178d17207696c54590d1f. No live provider or PR lookup made.

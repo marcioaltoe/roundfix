@@ -1,2 +1,0 @@
-PRD and TechSpec Glossary: None. CONTEXT.md blob equality against Delivery Base: True
-Changed behavior inspected: existing History Citation matching and internal test memo only; no domain concept introduced requiring an entry.
