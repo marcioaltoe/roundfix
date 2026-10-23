@@ -1,0 +1,8 @@
+docker 'run' '--rm' '-i' '--init' '--pull' 'never' '--network' 'none' '--name' 'roundfix-linux-lane-65027' '--user' '65534:65534' '-e' 'HOME=/tmp' '-e' 'GOCACHE=/tmp/go-build' '-e' 'GOMODCACHE=/go/pkg/mod' '-e' 'GOFLAGS=-mod=readonly' '-e' 'GOPROXY=off' '-e' 'GOTOOLCHAIN=local' '-e' 'GOSUMDB=off' '-v' '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/cache:/go/pkg/mod:ro' '-v' '/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/public/.git/objects:/repo-objects:ro' 'golang:1.26.1' 'sh' '-ceu' 'fail() { printf '"'"'roundfix-linux-lane: container: %s\n'"'"' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '"'"'{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}'"'"' "$@")" || { code=$?; printf '"'"'roundfix-linux-lane: go list: exited %s\n'"'"' "$code" >&2; exit 4; }; if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && echo "roundfix-linux-lane: packages: $#" && exec go test -count=1 "$@"' 'linux-lane' './...'
+roundfix-linux-lane: packages: 1
+
+ fixture output
+second line
+roundfix-linux-lane: go list: exited 1
+
+Linux Lane change failure: go list exited 1

@@ -1,0 +1,18 @@
+Command: go test -count=1 -v -run ^TestLinuxLaneScriptNamesAFailedGoList$/go_list_failure$ ./internal/cli
+Exit: 1
+stdout:
+=== RUN   TestLinuxLaneScriptNamesAFailedGoList
+=== PAUSE TestLinuxLaneScriptNamesAFailedGoList
+=== CONT  TestLinuxLaneScriptNamesAFailedGoList
+=== RUN   TestLinuxLaneScriptNamesAFailedGoList/go_list_failure
+=== PAUSE TestLinuxLaneScriptNamesAFailedGoList/go_list_failure
+=== CONT  TestLinuxLaneScriptNamesAFailedGoList/go_list_failure
+    deliver_linux_lane_go_list_test.go:75: exit=1 output="roundfix-linux-lane: go list: exited 1\n"; want exit=4 whole line="roundfix-linux-lane: go list: exited 1"
+--- FAIL: TestLinuxLaneScriptNamesAFailedGoList (0.18s)
+    --- FAIL: TestLinuxLaneScriptNamesAFailedGoList/go_list_failure (0.24s)
+FAIL
+suiteguard: guard cost: measured 2733 paths; fingerprint took 191.787667ms before and 140.279708ms after
+FAIL	roundfix/internal/cli	1.223s
+FAIL
+
+stderr:

@@ -1,0 +1,2 @@
+Normal sandbox command failed before startup: assigned writable root contains a symlink. Escalated execution used the resolved Run checkout.
+Initial isolated HOME changed the Go default module cache; GOPROXY off prevented missing-module lookup before tests could run. GOMODCACHE was then resolved from the installed toolchain without printing or persisting its value. Both complete Task verification commands and the named tests passed after that setup correction, still offline. No GOCACHE override.

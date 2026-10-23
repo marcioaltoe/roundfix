@@ -1,0 +1,27 @@
+import os,re,subprocess,pathlib,json
+R=pathlib.Path.cwd(); S=R/'docs/specs/0303-the-linux-lane-names-the-step-that-failed'; E=S/'qa/evidence/2026-10-23-linux-lane'; T=pathlib.Path('/tmp/qa0303-root').read_text(); T=pathlib.Path(T)
+e=os.environ.copy()
+module_cache=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip()
+e['GOMODCACHE']=module_cache
+for k in list(e):
+ if any(x in k for x in ('API_KEY','TOKEN','SECRET','PASSWORD')) or k.startswith('GIT_CONFIG'): e.pop(k,None)
+e.update(HOME=str(T/'home'),GIT_CONFIG_GLOBAL=str(T/'gitconfig'),GIT_CONFIG_NOSYSTEM='1',GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',TMPDIR=str(T))
+def run(args,name,cwd=R,environment=e):
+ p=subprocess.run(args,cwd=cwd,env=environment,capture_output=True,text=True)
+ (E/(name+'.txt')).write_text('Command: '+(args if isinstance(args,str) else ' '.join(args))+'\nExit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ print(name,'exit',p.returncode,flush=True);return p
+
+def update(row,status,detail):
+ p=S/'qa/qa-report-2026-10-23.md';s=p.read_text();s=s.replace('| '+row+' | pending |','| '+row+' | '+status+' |');start=s.index('### '+row+'\n');end=s.find('\n### ',start+4);end=len(s) if end<0 else end;s=s[:end]+'\nObserved: '+detail+'\n'+s[end:];p.write_text(s)
+
+if __name__=='__main__':
+ update('QA-01','pass','`make build` exited 0; Run binary identity in [version](evidence/2026-10-23-linux-lane/version.txt); strict authoring check exited 0 in [precondition](evidence/2026-10-23-linux-lane/precondition.txt). Daemon `make verify-changed` passed (exit 0) at audited head; it was not rerun.')
+ # Read and execute authored Task verification literally, without markdown explanation.
+ for task in ('01','02'):
+  text=(S/('task_'+task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## References',1)[0]
+  cmd=text.split('- `',1)[1].rsplit('` — expected:',1)[0]
+  p=run(['sh','-c',cmd],'task-'+task+'-verification')
+  if p.returncode: print(p.stdout[-3000:],p.stderr[-1000:],flush=True)
+ names='TestLinuxLaneScriptNamesAFailedGoList|TestLinuxLaneGoListFailureIsNamed|TestDeliverLaneGoListFailureTranscript|TestDeliverLaneGoListSignalTranscript|TestLinuxLaneOutcomeClassification|TestLinuxLaneRunsTheChangedPackagesInAContainer|TestLinuxLaneFailureFailsTheGate|TestLinuxLaneContainerFailureIsToldApartFromAChangeFailure|TestLinuxLaneReportsThePackagesTheContainerSelected|TestDeliverLaneChangeFailureTranscript|TestDeliverLaneContainerFailureTranscript|TestGateParksWithTheBlockerItNames'
+ p=run(['go','test','-count=1','-v','-run','^('+names+')$','./internal/cli','./internal/delivery'],'named-tests')
+ print(p.stdout[-2200:],p.stderr[-1000:],flush=True)

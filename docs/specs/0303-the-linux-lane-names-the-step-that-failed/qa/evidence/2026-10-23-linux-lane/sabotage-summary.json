@@ -1,0 +1,76 @@
+[
+  {
+    "mutation": "01-native-exit",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneScriptNamesAFailedGoList/go_list_failure"
+    ]
+  },
+  {
+    "mutation": "02-no-marker",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneScriptNamesAFailedGoList/go_list_failure"
+    ]
+  },
+  {
+    "mutation": "03-no-branch",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneScriptNamesAFailedGoList/go_list_signal"
+    ]
+  },
+  {
+    "mutation": "04-no-classifier",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_change",
+      "TestLinuxLaneGoListFailureIsNamed"
+    ]
+  },
+  {
+    "mutation": "05-signal-as-change",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_killed",
+      "TestDeliverLaneGoListSignalTranscript"
+    ]
+  },
+  {
+    "mutation": "06-boundary",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_signal_zero"
+    ]
+  },
+  {
+    "mutation": "07-first-marker",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_last_marker"
+    ]
+  },
+  {
+    "mutation": "08-embedded-marker",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_embedded_marker_ignored"
+    ]
+  },
+  {
+    "mutation": "09-carriage-return",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_carriage_return"
+    ]
+  },
+  {
+    "mutation": "10-spaced-code",
+    "detected": true,
+    "tests": [
+      "TestLinuxLaneOutcomeClassification/go_list_spaced_code_ignored"
+    ],
+    "evidence": "sabotage-10-spaced-code-corrected.txt",
+    "harness_note": "Initial mutation targeted the similar package-count parser guard; corrected mutation uniquely targets the go-list marker line in a fresh archive copy."
+  }
+]

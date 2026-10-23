@@ -1,0 +1,18 @@
+[
+  {
+    "marker_code": 1,
+    "exit": 1,
+    "stdout": "roundfix: Linux Lane change failure: go list exited 1; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/home/.roundfix/artifacts/461da502120ad5d3/delivery/linux-lane.log\n",
+    "stderr": "",
+    "log_ending": "Linux Lane change failure: go list exited 1",
+    "pass": true
+  },
+  {
+    "marker_code": 137,
+    "exit": 3,
+    "stdout": "roundfix: Linux Lane container failure: go list exited 137: the process ended by signal 9; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/home/.roundfix/artifacts/461da502120ad5d3/delivery/linux-lane.log\n",
+    "stderr": "",
+    "log_ending": "Linux Lane container failure: go list exited 137: the process ended by signal 9",
+    "pass": true
+  }
+]

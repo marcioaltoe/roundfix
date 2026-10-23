@@ -1,0 +1,26 @@
+Command: rg -n -i -e It parks in .finding., with cause -e Lane Change Failure -e go test exited <n> docs/user-guide docs/agents .agents/skills skills
+Exit: 0
+stdout:
+.agents/skills/roundfix/references/deliver.md:750:A **Lane Change Failure** is any other non-zero exit of a run that started;
+.agents/skills/roundfix/references/deliver.md:756:Every other exit has the cause `go test exited <n>`.
+.agents/skills/roundfix/references/deliver.md:760:Linux Lane change failure: <cause>; see <lane log>
+.agents/skills/roundfix/references/deliver.md:761:gate-failed: Linux Lane change failure: <cause>; see <lane log>
+.agents/skills/roundfix/references/deliver.md:768:Linux Lane change failure: <cause>
+.agents/skills/roundfix/references/deliver.md:817:roundfix: Linux Lane change failure: <cause>; see <lane log>
+.agents/skills/roundfix/references/deliver.md:821:Exit codes are `0` for a pass, `1` for a Lane Change Failure, and `3` for a
+skills/roundfix/references/deliver.md:750:A **Lane Change Failure** is any other non-zero exit of a run that started;
+skills/roundfix/references/deliver.md:756:Every other exit has the cause `go test exited <n>`.
+skills/roundfix/references/deliver.md:760:Linux Lane change failure: <cause>; see <lane log>
+skills/roundfix/references/deliver.md:761:gate-failed: Linux Lane change failure: <cause>; see <lane log>
+skills/roundfix/references/deliver.md:768:Linux Lane change failure: <cause>
+skills/roundfix/references/deliver.md:817:roundfix: Linux Lane change failure: <cause>; see <lane log>
+skills/roundfix/references/deliver.md:821:Exit codes are `0` for a pass, `1` for a Lane Change Failure, and `3` for a
+docs/user-guide/commands/deliver.md:752:A **Lane Change Failure** is any other non-zero exit of a run that started;
+docs/user-guide/commands/deliver.md:758:Every other exit has the cause `go test exited <n>`.
+docs/user-guide/commands/deliver.md:762:Linux Lane change failure: <cause>; see <lane log>
+docs/user-guide/commands/deliver.md:763:gate-failed: Linux Lane change failure: <cause>; see <lane log>
+docs/user-guide/commands/deliver.md:770:Linux Lane change failure: <cause>
+docs/user-guide/commands/deliver.md:819:roundfix: Linux Lane change failure: <cause>; see <lane log>
+docs/user-guide/commands/deliver.md:823:Exit codes are `0` for a pass, `1` for a Lane Change Failure, and `3` for a
+
+stderr:

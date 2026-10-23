@@ -1,0 +1,53 @@
+from qa0303_checks import *
+import qa0303_checks as shared
+E=T/"deferred-evidence"
+E.mkdir(exist_ok=True)
+shared.E=E
+def update(row,status,detail):
+ with (T/"deferred-updates.jsonl").open("a") as f: f.write(json.dumps([row,status,detail])+"\n")
+base='dde9d5f5a3f2ded1b3921dd7253c35bdce51374c';head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True)
+commits=git('rev-list','--reverse',base+'..'+head).splitlines();audit=[]
+for commit,task in zip(commits,('01','02')):
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();decl=(S/('task_'+task+'.md')).read_text();outside=[p for p in paths if p not in decl and p!=str((S/('task_'+task+'.md')).relative_to(R))];audit.append({'task':task,'commit':commit,'paths':paths,'outside_declarations':outside})
+changed=git('diff','--name-only',base,head).splitlines();baseline=git('ls-tree','-r','--name-only',base).splitlines()
+exceptions={'internal/cli/deliver_linux_lane_test.go','internal/cli/deliver_lane_test.go','internal/delivery/gate_blocker_test.go'}
+def protected(p):
+ return p in {'Makefile','go.mod','go.sum','.roundfixrc.yml','docs/agents/setup-context.json','internal/cli/deliver_lane.go','internal/cli/deliver_workflow.go','docs/references/skill-coverage.json'} or p.startswith(('.github/workflows/','internal/baseline/assets/','docs/history/','docs/adr/')) or p.startswith('internal/delivery/') and not p.endswith('_test.go') or p.startswith(('internal/cli/','internal/delivery/')) and p.endswith('_test.go') and p not in exceptions
+protected_paths=[p for p in baseline if protected(p)];bad=[p for p in protected_paths if p in changed]
+settlement_changes=[]
+for p in changed:
+ if '/skills/' not in p and not p.startswith('skills/'):continue
+ old=git('show',base+':'+p);new=(R/p).read_text()
+ def section(t):
+  if '### QA settlement\n' not in t:return None
+  return t.split('### QA settlement\n',1)[1].split('\n### ',1)[0]
+ if section(old)!=section(new):settlement_changes.append(p)
+# The classifier and script are the sole production changes; undoing them must restore base bytes.
+p='internal/cli/deliver_linux_lane.go';old=git('show',base+':'+p);new=(R/p).read_text();a=new.index('\tcase code == 4:');b=new.index('\tcase code == 0:',a);reverted=new[:a]+new[b:];reverted=reverted.replace('|| { code=$?; printf \'roundfix-linux-lane: go list: exited %s\\n\' "$code" >&2; exit 4; }; if','&& if',1)
+script_only=reverted==old
+version_old=re.search(r'\nversion: ([^\n]+)',git('show',base+':.agents/skills/roundfix/SKILL.md')).group(1);version_new=re.search(r'\nversion: ([^\n]+)',(R/'.agents/skills/roundfix/SKILL.md').read_text()).group(1)
+record=(R/'skills/testdata/owned-skill-versions.json').read_text();versionok=version_new!=version_old and version_new in record
+ctxold=git('show',base+':CONTEXT.md');ctxnew=(R/'CONTEXT.md').read_text()
+def entry(t,name):
+ pos=t.index('**'+name+'**');rest=t[pos:];end=re.search(r'\n(?:[-*] |##|\*\*)',rest[1:]);return rest if not end else rest[:end.start()+1]
+# Explicitly compare the enclosing glossary paragraph for the untouched container term.
+def paragraph(t,name):
+ lines=t.splitlines();i=next(i for i,x in enumerate(lines) if '**'+name+'**' in x);j=i+1
+ while j<len(lines) and lines[j].strip():j+=1
+ return '\n'.join(lines[i:j])
+container_same=paragraph(ctxold,'Lane Container Failure')==paragraph(ctxnew,'Lane Container Failure')
+result={'delivery_base':base,'head':head,'tasks':audit,'all_changed_paths':changed,'protected_paths_compared':len(protected_paths),'protected_changes':bad,'qa_settlement_changes':settlement_changes,'production_reverts_exactly_to_base':script_only,'skill_version_before':version_old,'skill_version_after':version_new,'version_recorded':versionok,'container_glossary_byte_identical':container_same,'governed_changed_paths':['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/SKILL.md'],'mechanical_authorization_commit':'ab12b933934577aabfc8e873b8ec0a8d81021201','authorization_revision':base}
+(E/'scope-audit.json').write_text(json.dumps(result,indent=2)+'\n')
+ok=not bad and not settlement_changes and script_only and versionok and container_same and all(not x['outside_declarations'] for x in audit)
+update('QA-11','pass' if ok else 'fail','[History audit](evidence/2026-10-23-linux-lane/scope-audit.json) lists every Task commit and its `git diff-tree` paths against declarations. All protected paths are byte-identical to the Delivery Base. The only production delta is the script branch and exit-4 classifier (reversing both restores the base file exactly). All three governed changes are bounded by the earlier operative authorization, already audited mechanically for task_01; task_02 changes no governed path. No QA settlement section changed.')
+print(json.dumps(result,indent=2),flush=True)
+# Offline sources: observe tool text and compare external report with actual shell outcome.
+p=run(['go','help','list'],'go-help-list');quote='With the -e flag, the list command never prints errors to standard error and instead processes the erroneous packages with the usual printing.'
+backlog=(S/'references/2026-10-22-the-linux-lane-reports-a-failed-go-list-as-go-test.md').read_text();backlogok='a `go list` failure never reaches' in backlog and '`go test` and is misclassified' in backlog
+ok=quote in ' '.join(p.stdout.split()) and backlogok
+(E/'outside-comparison.txt').write_text('Source: adopted Quaestor report, 2026-10-21 19:02 BRT; original reported before this Spec.\nBacklog quoted claim: package selection runs go list first; a go list failure never reaches go test and is misclassified.\nInstalled go help list: whitespace-collapsed -e passage matched exactly: '+str(quote in ' '.join(p.stdout.split()))+'\nIndependent shell list-1 observation: script exit 4, marker exited 1, go test ran false.\n')
+update('QA-07','pass' if ok else 'fail','[Comparison](evidence/2026-10-23-linux-lane/outside-comparison.txt) checks the adopted pre-Spec Quaestor report against the observed list-1 shell row (test-record absent), and matches the exact whitespace-collapsed `-e` passage in [installed Go help](evidence/2026-10-23-linux-lane/go-help-list.txt). This is a behavior comparison, not read-only acceptance.')
+update('QA-08','blocked (environment: network prohibited by Spec authorization)','The outside-evidence row for https://pkg.go.dev/cmd/go is not fetched: `_authorization.md` → Limits forbids every QA row reaching the network. Offline equivalent: installed `go help list` passage matches in QA-07. No network was attempted. A future operator may fetch the published page outside this authorization.')
+update('QA-09','blocked (declared: Success Metric 7)','Exactly one declared-unreachable row matches `_prd.md` → Unreachable Acceptance: real `golang:1.26` container after release with a malformed candidate go.mod. Authorization explicitly prohibits starting a container; no attempt is authorized. Satisfied-by remains unproven: operator runs `roundfix deliver lane --all` in the declared scratch clone after release. No additional declared row is created.')
+update('QA-12','blocked (environment: no open Pull Request)','Pull Request row: no open Pull Request per assignment. Approval: recorded maintainer cycle AP delivery authority in `_authorization.md` (operative at delivery base), not a review acceptance. Checks: Daemon `make verify-changed` pass exit 0 at '+head+'. Unresolved review threads: none because no PR exists. Merge-Ready acceptance: none yet. Review-artifact ancestry: no review artifact exists for this candidate; the claimed and audited candidate is '+head+'. Missing acceptance prevents crediting the PR controls as complete. Later pre-PR review and publication remain Daemon/operator-owned.')

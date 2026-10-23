@@ -1,0 +1,11 @@
+from qa0303_checks import *
+import qa0303_checks as shared,tarfile,io
+E=T/'deferred-evidence';shared.E=E
+d=T/'10-spaced-code-corrected';d.mkdir()
+with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive','HEAD']))) as a:a.extractall(d,filter='data')
+p=d/'internal/cli/deliver_linux_lane.go';text=p.read_text();old='text, ok := strings.CutPrefix(strings.TrimSuffix(line, "\\r"), "roundfix-linux-lane: go list: exited ")';assert text.count(old)==1;text=text.replace(old,old+'\n\t\t\ttext = strings.TrimSpace(text)',1);p.write_text(text)
+result=run(['go','test','-count=1','-v','-run','^TestLinuxLaneOutcomeClassification$/go_list_spaced_code_ignored$','./internal/cli'],'sabotage-10-spaced-code-corrected',cwd=d)
+assert result.returncode!=0 and '--- FAIL: TestLinuxLaneOutcomeClassification/go_list_spaced_code_ignored' in result.stdout
+summary=json.loads((E/'sabotage-summary.json').read_text());summary[-1]['detected']=True;summary[-1]['evidence']='sabotage-10-spaced-code-corrected.txt';summary[-1]['harness_note']='Initial mutation targeted the similar package-count parser guard; corrected mutation uniquely targets the go-list marker line in a fresh archive copy.';(E/'sabotage-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+with (T/'deferred-updates.jsonl').open('a') as f:f.write(json.dumps(['QA-06','pass','All ten intended production mutations were detected by the exact named tests in separate `git archive HEAD` copies; see [summary](evidence/2026-10-23-linux-lane/sabotage-summary.json) and sabotage logs. Two mutations each have both required detectors. The initial whitespace mutation hit a similar package-count guard; the corrected copy uniquely trims the go-list marker and makes the spaced-code subtest fail. This harness correction changed no audited file.'])+'\n')
+print(result.stdout[-1600:])

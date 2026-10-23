@@ -1,0 +1,5 @@
+Command: go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/tools-go-shell/go-shell /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/tools-go-shell/main.go
+Exit: 0
+stdout:
+
+stderr:

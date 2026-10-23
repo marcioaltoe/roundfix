@@ -1,0 +1,34 @@
+[
+  {
+    "case": "list-1",
+    "script_exit": 4,
+    "stdout": "",
+    "stderr": "roundfix-linux-lane: go list: exited 1\n",
+    "go_test_ran": false,
+    "pass": true
+  },
+  {
+    "case": "list-137",
+    "script_exit": 4,
+    "stdout": "",
+    "stderr": "roundfix-linux-lane: go list: exited 137\n",
+    "go_test_ran": false,
+    "pass": true
+  },
+  {
+    "case": "test-1",
+    "script_exit": 1,
+    "stdout": "roundfix-linux-lane: packages: 1\n",
+    "stderr": "",
+    "go_test_ran": true,
+    "pass": true
+  },
+  {
+    "case": "no-package",
+    "script_exit": 0,
+    "stdout": "no package builds on linux\nroundfix-linux-lane: packages: 0\n",
+    "stderr": "",
+    "go_test_ran": false,
+    "pass": true
+  }
+]

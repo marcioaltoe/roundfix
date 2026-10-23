@@ -1,0 +1,34 @@
+{
+  "phrase_checks": {
+    "docs/user-guide/commands/deliver.md": {
+      "roundfix-linux-lane: go list: exited <n>": true,
+      "go list exited <n>: the process ended by signal <n-128>": true,
+      "the lane script exited 4 without reporting the go list exit code": true,
+      "roundfix: Linux Lane change failure: <cause>; see <lane log>": true,
+      "gate-failed: Linux Lane change failure: <cause>; see <lane log>": true,
+      "Linux Lane change failure: <cause>": true
+    },
+    ".agents/skills/roundfix/references/deliver.md": {
+      "roundfix-linux-lane: go list: exited <n>": true,
+      "go list exited <n>: the process ended by signal <n-128>": true,
+      "the lane script exited 4 without reporting the go list exit code": true,
+      "roundfix: Linux Lane change failure: <cause>; see <lane log>": true,
+      "gate-failed: Linux Lane change failure: <cause>; see <lane log>": true,
+      "Linux Lane change failure: <cause>": true
+    },
+    "skills/roundfix/references/deliver.md": {
+      "roundfix-linux-lane: go list: exited <n>": true,
+      "go list exited <n>: the process ended by signal <n-128>": true,
+      "the lane script exited 4 without reporting the go list exit code": true,
+      "roundfix: Linux Lane change failure: <cause>; see <lane log>": true,
+      "gate-failed: Linux Lane change failure: <cause>; see <lane log>": true,
+      "Linux Lane change failure: <cause>": true
+    }
+  },
+  "glossary_revision_and_ADR_0316": true,
+  "reference_mirrors_equal": true,
+  "skill_mirrors_equal": true,
+  "obsolete_universal_sentence_matches": false,
+  "other_terms_introduced": [],
+  "review": "Remaining go test exited <n> mentions in the changed guides explicitly describe every OTHER exit, an unchanged-outcome contract. Other Lane Change Failure mentions do not claim every failure belongs to go test. Historical ADRs are outside this live-guide sweep."
+}

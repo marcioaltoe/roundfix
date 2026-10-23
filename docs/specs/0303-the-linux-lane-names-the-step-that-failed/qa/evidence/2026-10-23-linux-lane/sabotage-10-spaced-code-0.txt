@@ -1,0 +1,14 @@
+Command: go test -count=1 -v -run ^TestLinuxLaneOutcomeClassification$/go_list_spaced_code_ignored$ ./internal/cli
+Exit: 0
+stdout:
+=== RUN   TestLinuxLaneOutcomeClassification
+=== PAUSE TestLinuxLaneOutcomeClassification
+=== CONT  TestLinuxLaneOutcomeClassification
+=== RUN   TestLinuxLaneOutcomeClassification/go_list_spaced_code_ignored
+--- PASS: TestLinuxLaneOutcomeClassification (0.00s)
+    --- PASS: TestLinuxLaneOutcomeClassification/go_list_spaced_code_ignored (0.00s)
+PASS
+suiteguard: guard cost: measured 2733 paths; fingerprint took 116.13825ms before and 94.65875ms after
+ok  	roundfix/internal/cli	0.606s
+
+stderr:

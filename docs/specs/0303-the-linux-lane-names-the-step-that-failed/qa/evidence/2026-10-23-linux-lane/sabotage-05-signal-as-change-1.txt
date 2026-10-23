@@ -1,0 +1,14 @@
+Command: go test -count=1 -v -run ^TestDeliverLaneGoListSignalTranscript$ ./internal/cli
+Exit: 1
+stdout:
+=== RUN   TestDeliverLaneGoListSignalTranscript
+=== PAUSE TestDeliverLaneGoListSignalTranscript
+=== CONT  TestDeliverLaneGoListSignalTranscript
+    deliver_lane_test.go:305: stdout="roundfix: Linux Lane change failure: go list exited 137; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/TestDeliverLaneGoListSignalTranscript2490532449/003/owner home/.roundfix/artifacts/7a0bb71ce7d370c6/delivery/linux-lane.log\n" stderr="" exit=1; want stdout="roundfix: Linux Lane container failure: go list exited 137: the process ended by signal 9; see /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0303-k6dlagrn/TestDeliverLaneGoListSignalTranscript2490532449/003/owner home/.roundfix/artifacts/7a0bb71ce7d370c6/delivery/linux-lane.log\n" stderr empty exit=3
+--- FAIL: TestDeliverLaneGoListSignalTranscript (0.85s)
+FAIL
+suiteguard: guard cost: measured 2733 paths; fingerprint took 125.41925ms before and 100.547292ms after
+FAIL	roundfix/internal/cli	1.348s
+FAIL
+
+stderr:

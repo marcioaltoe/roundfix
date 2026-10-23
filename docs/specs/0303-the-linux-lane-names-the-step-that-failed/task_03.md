@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0303-the-linux-lane-names-the-step-that-failed
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

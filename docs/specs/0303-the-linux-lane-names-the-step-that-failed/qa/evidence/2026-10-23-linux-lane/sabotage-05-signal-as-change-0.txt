@@ -1,0 +1,16 @@
+Command: go test -count=1 -v -run ^TestLinuxLaneOutcomeClassification$/go_list_killed$ ./internal/cli
+Exit: 1
+stdout:
+=== RUN   TestLinuxLaneOutcomeClassification
+=== PAUSE TestLinuxLaneOutcomeClassification
+=== CONT  TestLinuxLaneOutcomeClassification
+=== RUN   TestLinuxLaneOutcomeClassification/go_list_killed
+    deliver_linux_lane_test.go:613: summary="Linux Lane change failure: go list exited 137" blocker="gate-failed" want "Linux Lane container failure: go list exited 137: the process ended by signal 9" "linux-lane-container"
+--- FAIL: TestLinuxLaneOutcomeClassification (0.00s)
+    --- FAIL: TestLinuxLaneOutcomeClassification/go_list_killed (0.00s)
+FAIL
+suiteguard: guard cost: measured 2733 paths; fingerprint took 125.35675ms before and 81.715459ms after
+FAIL	roundfix/internal/cli	0.606s
+FAIL
+
+stderr:

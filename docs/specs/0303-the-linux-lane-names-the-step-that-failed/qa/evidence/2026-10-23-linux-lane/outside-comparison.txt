@@ -1,0 +1,4 @@
+Source: adopted Quaestor report, 2026-10-21 19:02 BRT; original reported before this Spec.
+Backlog quoted claim: package selection runs go list first; a go list failure never reaches go test and is misclassified.
+Installed go help list: whitespace-collapsed -e passage matched exactly: True
+Independent shell list-1 observation: script exit 4, marker exited 1, go test ran false.
