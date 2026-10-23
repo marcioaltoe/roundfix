@@ -24,7 +24,7 @@ import (
 const linuxLaneHistory = "/repo-objects"
 
 const linuxLaneCap = 20 * time.Minute
-const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" && if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && echo "roundfix-linux-lane: packages: $#" && exec go test -count=1 "$@"`
+const linuxLaneScript = `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" || { code=$?; printf 'roundfix-linux-lane: go list: exited %s\n' "$code" >&2; exit 4; }; if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && echo "roundfix-linux-lane: packages: $#" && exec go test -count=1 "$@"`
 
 type linuxLaneResult struct {
 	Ran, Passed                    bool
@@ -282,6 +282,27 @@ func classifyLinuxLaneOutcome(code int, capped bool, output []byte) (summary, bl
 	switch {
 	case capped:
 		cause = "the container exceeded " + linuxLaneCap.String()
+	case code == 4:
+		// This outcome sends the operator to repair Docker or the change.
+		// Only the script's reserved exit and a whole marker line name go list;
+		// a process ended by a signal must remain a container outcome.
+		listCode, reported := 0, false
+		for _, line := range strings.Split(string(output), "\n") {
+			text, ok := strings.CutPrefix(strings.TrimSuffix(line, "\r"), "roundfix-linux-lane: go list: exited ")
+			if !ok || text == "" || strings.ContainsFunc(text, func(r rune) bool { return r < '0' || r > '9' }) {
+				continue
+			}
+			if n, err := strconv.Atoi(text); err == nil {
+				listCode, reported = n, true
+			}
+		}
+		if !reported {
+			return "Linux Lane change failure: the lane script exited 4 without reporting the go list exit code", delivery.BlockerGateFailed
+		}
+		if listCode < 128 {
+			return fmt.Sprintf("Linux Lane change failure: go list exited %d", listCode), delivery.BlockerGateFailed
+		}
+		cause = fmt.Sprintf("go list exited %d: the process ended by signal %d", listCode, listCode-128)
 	case code == 0:
 		return "", ""
 	case code == 3:

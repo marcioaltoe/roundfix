@@ -15,6 +15,8 @@ func TestGateParksWithTheBlockerItNames(t *testing.T) {
 	}{
 		{"container", BlockerLinuxLaneContainer + ": missing tool git; see lane.log", BlockerLinuxLaneContainer + ": missing tool git; see lane.log", ParkClassEnvironment},
 		{"change", BlockerGateFailed + ": Linux Lane change failure: go test exited 1; see lane.log", BlockerGateFailed + ": Linux Lane change failure: go test exited 1; see lane.log", ParkClassFinding},
+		{"go list change", BlockerGateFailed + ": Linux Lane change failure: go list exited 1; see lane.log", BlockerGateFailed + ": Linux Lane change failure: go list exited 1; see lane.log", ParkClassFinding},
+		{"go list signal", BlockerLinuxLaneContainer + ": go list exited 137: the process ended by signal 9; see lane.log", BlockerLinuxLaneContainer + ": go list exited 137: the process ended by signal 9; see lane.log", ParkClassEnvironment},
 		{"repository", "", BlockerGateFailed, ParkClassFinding},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

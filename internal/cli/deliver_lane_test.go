@@ -288,3 +288,19 @@ func TestDeliverLaneNoPackageCountTranscript(t *testing.T) {
 	f.environment = withEnvValue(f.environment, "LANE_PACKAGES", "")
 	assertDeliverLaneTranscript(t, f, "roundfix: Linux Lane passed on golang:1.26.1; the lane script reported no package count", 0)
 }
+
+func TestDeliverLaneGoListFailureTranscript(t *testing.T) {
+	t.Parallel()
+	f := newDeliverLaneFixture(t)
+	f.environment = withEnvValue(f.environment, "LANE_EXIT", "4")
+	f.environment = withEnvValue(f.environment, "LANE_OUTPUT", "roundfix-linux-lane: go list: exited 1\n")
+	assertDeliverLaneTranscript(t, f, "roundfix: Linux Lane change failure: go list exited 1; see "+deliverLaneLog(f), 1)
+}
+
+func TestDeliverLaneGoListSignalTranscript(t *testing.T) {
+	t.Parallel()
+	f := newDeliverLaneFixture(t)
+	f.environment = withEnvValue(f.environment, "LANE_EXIT", "4")
+	f.environment = withEnvValue(f.environment, "LANE_OUTPUT", "roundfix-linux-lane: go list: exited 137\n")
+	assertDeliverLaneTranscript(t, f, "roundfix: Linux Lane container failure: go list exited 137: the process ended by signal 9; see "+deliverLaneLog(f), 3)
+}

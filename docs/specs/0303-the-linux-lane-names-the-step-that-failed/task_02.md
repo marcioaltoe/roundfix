@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0303-the-linux-lane-names-the-step-that-failed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -116,3 +116,55 @@ Park Class ADR-0316 sets, while every other outcome keeps its bytes.
 - `_prd.md` → Sources; Goals; Core Features 1-2; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior; API Contracts 1-4; Surface Transcripts; Invariants 1-5; Testing Approach; Build Order 2
 - ADR-0316
+
+
+## Result
+
+Implemented the API Contracts 1–4 slice. A failed package-selection `go list`
+prints its whole marker line, exits the script with `4`, and never starts
+`go test`. The classifier handles that reserved exit after the cap, keeps the
+last valid ASCII-decimal marker (dropping one trailing carriage return), and
+uses the change or container blocker at the `128` boundary. Its comment names
+the operator hazard: choosing whether to repair Docker or the change.
+
+Acceptance evidence from focused checks:
+
+- Failed `go list` exits `4` without testing: the four rows of
+  `TestLinuxLaneScriptNamesAFailedGoList` pass against the real `sh -ceu`
+  script tail with a compiled Go stand-in. Before the production edit, the
+  same test failed for list exits `1` and `137`: the script returned those
+  codes with empty output instead of exit `4` and the marker. Successful
+  selection retains the failing test's exit `1`; empty selection exits `0`.
+- Exit `4` names and classifies the selection failure: the ten new rows in
+  `TestLinuxLaneOutcomeClassification` pass, including `127`, `128`, `137`,
+  last-marker selection, missing/embedded/signed/spaced markers and CRLF.
+  `TestLinuxLaneGoListFailureIsNamed` passes for change and signal results,
+  asserting gate reason, blocker and the lane log's final summary.
+  The two new rows in `TestGateParksWithTheBlockerItNames` pass with
+  `finding` and `environment` respectively.
+- Other outcomes and command behavior: the unchanged classification rows,
+  independent container-script assertion, existing gate failures, package
+  counts and change/container transcripts pass. Both new whole command
+  transcripts pass, asserting standard output, empty standard error and
+  exits `1` and `3`. A byte comparison against `HEAD` confirms the exact
+  script substitution with every other script byte preserved, an unchanged
+  `runLinuxLane`, unchanged `deliver_lane.go` and `deliver_workflow.go`, and
+  no production change under `internal/delivery`.
+
+Focused commands (each exited `0` after the implementation):
+
+- `go test ./internal/cli -count=1 -run 'TestLinuxLane(ScriptNamesAFailedGoList|GoListFailureIsNamed|OutcomeClassification|RunsTheChangedPackagesInAContainer)$|TestDeliverLaneGoList'`
+- `go test ./internal/delivery -count=1 -run '^TestGateParksWithTheBlockerItNames$/go_list'`
+- `go test ./internal/cli -count=1 -run 'TestLinuxLane(FailureFailsTheGate|ContainerFailureIsToldApartFromAChangeFailure|ReportsThePackagesTheContainerSelected)$|TestDeliverLane(ChangeFailure|ContainerFailure)Transcript$'`
+- `build_dir=$(mktemp -d /tmp/roundfix-0303-windows.XXXXXX)` followed by
+  `GOOS=windows go test -c -o "$build_dir/" ./internal/cli ./internal/delivery`
+  compiled both Windows test binaries without running them.
+- `git diff --check` and the focused byte-comparison probe above.
+
+All new top-level tests begin with `t.Parallel()`, use disposable repositories
+and compiled stand-ins, and pass no real-time duration. No real container or
+network service was exercised. The checkout's symlinked writable root was
+rejected by the sandbox; checks and edits used its resolved Run path with
+approved escalation. The pre-existing Task status remains Daemon-owned.
+Declared Task Verification and repository Verification were not run; the
+Daemon owns both and settlement. No follow-up outside this slice was found.
