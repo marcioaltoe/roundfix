@@ -1,4 +1,0 @@
-Tracked source changes: none
-Only untracked output: docs/specs/0301-the-light-tier-yields-to-the-category-profile/qa/
-Text-only QA files verified: 53
-All launched process sessions have exited. No Task status, Task Graph, source, commit, push or Pull Request mutation.

@@ -1,4 +1,0 @@
-Source: Fluxus report, adopted Backlog Entry references/2026-10-21-the-light-tier-fails-a-task-under-agent-full-access.md; original Run run_20261021T223522Z_9aa628a4520889af, roundfix 0.104.0.
-Whitespace-collapsed external report text == full-access test assertion: true
-requested access policy "full-access" failed predicate "runtime_has_access_mode" for runtime "opencode"; recovery: disable full access or select a runtime that supports it
-Live assertion: TestServingSelectionsKeepsOnlyRuntimesThatServeTheRequestedAccess/full-access passed (focused-tests.txt).
