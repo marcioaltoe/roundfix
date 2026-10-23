@@ -83,6 +83,14 @@ All proof comes from local Git; reconciliation does not read GitHub.
   prove it stale when the PID's `OwnerProcessIdentity` lookup fails or differs
   from the record. A legacy registration is stale only while it is
   `locked initializing`; an unlocked legacy staging worktree is preserved.
+- A `runOwnerRecord` candidate is a Stale Run Owner Record: the live
+  process at a terminal Run's recorded owner PID presents a start identity
+  that differs from the recorded one, which proves the recorded owner ended.
+  Its report names the Run outcome, owner PID, an empty process list and that
+  proof. `--apply` clears the Run's recorded owner PID and identity, journals
+  them, sends no signal, and counts the release in
+  `debrisSummary.runOwnerRecordsReleased`; an identity that cannot be read or
+  compared stays in `preservedCandidates`.
 
 Ambiguous ownership, identity, Git, active-Run, or cleanliness evidence goes
 to `preservedCandidates` with a refusal reason instead of becoming a cleanup
@@ -105,8 +113,8 @@ roundfix reconcile <run-id> --carry-forward
 ```
 
 These three mutation switches are mutually exclusive. `--apply` releases
-entries classified `safe` or `superseded`, or proven process, Run Branch, and
-staging candidates, after rechecking the applicable metadata, ownership,
+entries classified `safe` or `superseded`, or proven process, Run owner record,
+Run Branch, and staging candidates, after rechecking the applicable metadata, ownership,
 cleanliness, heads, ancestry, merged-head records, Task status, content, and
 superseding QA Report evidence. `--discard-superseded`
 records a Branch Disposition before removing a Run Branch proven superseded.
