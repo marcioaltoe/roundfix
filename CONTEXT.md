@@ -746,7 +746,7 @@ A Linux Lane failure caused by its container setup, command invocation, a signal
 _Avoid_: change failure, generic gate failure
 
 **Lane Change Failure**:
-A Linux Lane failure attributed to the candidate's Go test run. It parks the candidate in the finding Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+A Linux Lane failure attributed to the candidate: its Go test run, or the `go list` run that selects its packages exiting below 128. It parks the candidate in the finding Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), [ADR-0316](docs/adr/0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md)).
 _Avoid_: container failure, generic gate failure
 
 **Queue Owner**:

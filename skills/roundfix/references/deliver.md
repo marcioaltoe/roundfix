@@ -733,6 +733,9 @@ The cause is selected in this order:
   causes name `missing tool <tool>`,
   `cannot read the repository history at /repo-objects`, `cannot prepare /tmp/work`,
   `cannot unpack the candidate` or `cannot record the candidate`.
+- Exit `4` whose last `roundfix-linux-lane: go list: exited <n>` output line
+  names `<n>` of `128` or more: `go list exited <n>: the process ended by signal
+  <n-128>`.
 - Exit `126`: `docker run exited 126: the image could not invoke the lane command`.
 - Exit `127`: `docker run exited 127: the image lacks the lane command`.
 - Exit `128` or more: `docker run exited <n>: the container process ended by signal <n-128>`.
@@ -745,19 +748,24 @@ linux-lane-container: <cause>; see <lane log>
 ```
 
 A **Lane Change Failure** is any other non-zero exit of a run that started;
-exit `125` stays a skip. It parks in `finding`, with cause `go test exited <n>`.
+exit `125` stays a skip. It parks in `finding`. The lane script selects the packages
+with `go list` before `go test`; when `go list` exits non-zero, the script prints
+`roundfix-linux-lane: go list: exited <n>` and exits `4`. Exit `4` has the cause
+`go list exited <n>` from the last such line whose `<n>` is below `128`, or `the lane
+script exited 4 without reporting the go list exit code` when no such line exists.
+Every other exit has the cause `go test exited <n>`.
 The gate reason and parked blocker are respectively:
 
 ```text
-Linux Lane change failure: go test exited <n>; see <lane log>
-gate-failed: Linux Lane change failure: go test exited <n>; see <lane log>
+Linux Lane change failure: <cause>; see <lane log>
+gate-failed: Linux Lane change failure: <cause>; see <lane log>
 ```
 
 The lane log ends with exactly one outcome line:
 
 ```text
 Linux Lane container failure: <cause>
-Linux Lane change failure: go test exited <n>
+Linux Lane change failure: <cause>
 Linux Lane passed <n> package(s) on <image>
 Linux Lane passed on <image>; the lane script reported no package count
 ```
@@ -806,7 +814,7 @@ Exactly one outcome line goes to standard output, with empty standard error:
 roundfix: notice: Linux Lane skipped: <reason>
 roundfix: Linux Lane passed <n> package(s) on <image>
 roundfix: Linux Lane passed on <image>; the lane script reported no package count
-roundfix: Linux Lane change failure: go test exited <n>; see <lane log>
+roundfix: Linux Lane change failure: <cause>; see <lane log>
 roundfix: Linux Lane container failure: <cause>; see <lane log>
 ```
 
