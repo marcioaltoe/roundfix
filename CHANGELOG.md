@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.112.0] - 2026-10-23
+
+### The Light Tier yields to the category profile when it cannot serve the requested access
+
+- **Full access skips the Light Tier.** When `defaults.agent_full_access` or `--agent-full-access` requests full access and no light runtime offers a full-access mode (OpenCode offers none), the light tier is skipped before any other check with the new reason code `access_mode_unavailable`, and the Task runs on its category profile with the same access request. Before this release every light-eligible Task (complexity low, not QA, no Governed Path) failed in about 15 seconds with `requested access policy "full-access" failed predicate "runtime_has_access_mode" for runtime "opencode"`, its dependents were skipped and the Run ended Unresolved. The other skip reasons (`key_missing`, `spend_unreadable`, `ceiling_reached`) keep their bytes.
+- **A light session refused before Agent work yields.** Any other refusal of a light session before Agent work, such as a failed setup or a prompt that fails before any Agent output, no longer fails the Task: Roundfix prints `roundfix: warning: light tier yielded for Task <id> before Agent work: <cause>; it runs on its <category> profile`, publishes the Task event phase `light_tier_yielded`, and opens the category's Preferred Selection without trying the remaining light models.
+- **`roundfix doctor` warns about the combination.** A new `light-tier:` line, printed after `recommendations:` only when `openrouter.light_models` is not empty and `defaults.agent_full_access` is `true`, reports `DR-LIGHT-ACCESS-MODE` (`warn`) when no light runtime offers a full-access mode. It opens no Agent Session, reads no key and never changes the exit code.
+- The configuration and doctor guides, the Roundfix skill references (skill version 0.1.131) and the glossary (**Light Tier**) describe the change.
+
 ## [0.111.0] - 2026-10-23
 
 ### Reconcile releases a stale Run owner record without a signal
