@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.111.0] - 2026-10-23
+
+### Reconcile releases a stale Run owner record without a signal
+
+- **A proven identity mismatch frees the record.** `roundfix reconcile` now proves the recorded owner of each terminal Run. When the live process at the owner PID presents a start identity that differs from the one the Run recorded, the operating system gave that PID to another process and the recorded owner has ended: the Run's owner PID and identity are a Stale Run Owner Record. Before this release such Runs stayed in `preserved` forever with `owner process identity cannot be proven`.
+- **Report and apply.** The report lists the record once in `processCandidates` with `kind` `runOwnerRecord`, the owner PID, an empty `processIds` list and the proof; the text report prints `Run owner record candidate: Run <run-id> owner PID <pid>`. `--apply` clears the Run's recorded owner PID and identity, journals what it cleared, and sends no signal; it never inspects the processes of the PID's new holder. `debrisSummary.runOwnerRecordsReleased` (`run-owner-records-released` in the text summary) counts the releases.
+- **Unproven stays preserved.** An owner identity that cannot be read or compared, and a Run recorded without one, stay in `preservedCandidates` with the refusal reason, and the Stop Command still never signals such a PID.
+- The `reconcile` guide, the Roundfix skill reference (skill version 0.1.130) and the glossary (**Stale Run Owner Record**) describe the release.
+
 ## [0.110.0] - 2026-10-22
 
 ### A new Delivery Queue resumes an item whose Spec is already archived on its branch
