@@ -25,11 +25,19 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"roundfix/internal/cli"
 	"roundfix/internal/skillcoverage"
 )
 
 var recordSkillCoverage = flag.Bool("record-skill-coverage", false, "record the current Behavior Surface fingerprints")
+
+// behaviorSurfaceRecordCommand re-records the Behavior Surface Record. It is
+// held equal to the `delivery.derived_paths` regeneration `.roundfixrc.yml`
+// declares for skillcoverage.RecordPath by
+// TestTheStaleFingerprintProblemNamesTheProjectRegeneration.
+const behaviorSurfaceRecordCommand = "go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage"
 
 func TestTheSkillCoverageMapIsCurrent(t *testing.T) {
 	root := baselineDocumentationRepoRoot()
@@ -241,7 +249,7 @@ func skillCoverageProblems(computed map[string]string, record skillcoverage.Reco
 		if !exists {
 			problems = append(problems, id+": missing from Behavior Surface Record")
 		} else if recorded != fingerprint {
-			problems = append(problems, id+": stale fingerprint")
+			problems = append(problems, id+": stale fingerprint; re-record "+skillcoverage.RecordPath+" after the last edit of its sources with: "+behaviorSurfaceRecordCommand)
 		}
 	}
 	for id := range record.Surfaces {
@@ -330,7 +338,7 @@ func TestAStaleBehaviorSurfaceIsReported(t *testing.T) {
 		surfaces map[string]string
 		want     string
 	}{
-		{"stale", map[string]string{id: skillcoverage.Fingerprint([]byte("old"))}, id + ": stale fingerprint"},
+		{"stale", map[string]string{id: skillcoverage.Fingerprint([]byte("old"))}, id + ": stale fingerprint; re-record " + skillcoverage.RecordPath + " after the last edit of its sources with: " + behaviorSurfaceRecordCommand},
 		{"missing", map[string]string{}, id + ": missing from Behavior Surface Record"},
 		{"extra", map[string]string{id: fingerprint, "exit codes": fingerprint}, "exit codes: extra Behavior Surface Record entry"},
 	} {
@@ -341,6 +349,44 @@ func TestAStaleBehaviorSurfaceIsReported(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTheStaleFingerprintProblemNamesTheProjectRegeneration(t *testing.T) {
+	t.Parallel()
+	root := baselineDocumentationRepoRoot()
+	var config struct {
+		Delivery struct {
+			DerivedPaths []struct {
+				Paths      []string `yaml:"paths"`
+				Regenerate string   `yaml:"regenerate"`
+			} `yaml:"derived_paths"`
+		} `yaml:"delivery"`
+	}
+	if err := yaml.Unmarshal([]byte(readContractDocument(t, filepath.Join(root, ".roundfixrc.yml"))), &config); err != nil {
+		t.Fatalf(".roundfixrc.yml: %v", err)
+	}
+	var regenerations []string
+	for _, derived := range config.Delivery.DerivedPaths {
+		if slices.Contains(derived.Paths, skillcoverage.RecordPath) {
+			regenerations = append(regenerations, derived.Regenerate)
+		}
+	}
+	if !reflect.DeepEqual(regenerations, []string{behaviorSurfaceRecordCommand}) {
+		t.Fatalf(".roundfixrc.yml regeneration for %s = %v, want %q", skillcoverage.RecordPath, regenerations, behaviorSurfaceRecordCommand)
+	}
+	if !flagPresent("record-skill-coverage") {
+		t.Fatalf("flag record-skill-coverage is not registered")
+	}
+	if !strings.Contains(behaviorSurfaceRecordCommand, " -record-skill-coverage") {
+		t.Fatalf("behaviorSurfaceRecordCommand does not name -record-skill-coverage: %q", behaviorSurfaceRecordCommand)
+	}
+	if !strings.Contains(behaviorSurfaceRecordCommand, "-run '^TestTheSkillCoverageMapIsCurrent$'") {
+		t.Fatalf("behaviorSurfaceRecordCommand does not name the recording run: %q", behaviorSurfaceRecordCommand)
+	}
+}
+
+func flagPresent(name string) bool {
+	return flag.Lookup(name) != nil
 }
 
 func TestAnUnmappedBehaviorSurfaceIsReported(t *testing.T) {

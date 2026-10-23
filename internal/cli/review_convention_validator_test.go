@@ -110,7 +110,7 @@ func validatorQuestions(t *testing.T, runner *conventionValidatorRunner) []valid
 
 func TestReviewValidatorDismissesADaemonSettlementAsC2(t *testing.T) {
 	t.Parallel()
-	finding := "`" + validatorTaskPath + ":4` — The Task is `completed` while its Result says status is Daemon-owned. Failure: an invalid Task state transition."
+	finding := "`" + validatorTaskPath + ":4` — The Task is `completed` while its Result gives no evidence. Failure: an invalid Task state transition."
 	fixture, runner := validatorFixture(t, "- "+finding, validatorAnswer(validatorVerdict{"F1", "dismiss", "convention:C2", "restates the Daemon settlement"}))
 	code, record, stderr := fixture.run(t)
 	if code != exitOK || record.Outcome != reviewOutcomeFindingsDismissed || record.Validation.Validator != "ran" || record.Validation.Reason != "" || record.Findings != "- "+finding {

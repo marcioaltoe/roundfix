@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -217,6 +218,66 @@ func reviewValidatorExcerpt(ctx context.Context, repo reviewRepository, anchor r
 	return excerpt.String(), nil
 }
 
+// reviewResultStatusNoteReason is the fixed reason of the dismissal.
+const reviewResultStatusNoteReason = "Result Status Note: the Agent wrote this Result while the Daemon held the Task in_progress, and the Daemon wrote completed after the Task's Verification passed (C2)"
+
+// reviewResultStatusNote reports whether a finding names the C2 pair of a
+// completed non-QA Task whose Result holds a Result Status Note.
+func reviewResultStatusNote(ctx context.Context, repo reviewRepository, finding reviewFinding, conventions []string) (bool, error) {
+	if finding.Anchor == nil || !slices.Contains(conventions, "C2") {
+		return false, nil
+	}
+	text := strings.ToLower(finding.Text)
+	if !strings.Contains(text, "completed") || !(strings.Contains(text, "in_progress") || strings.Contains(text, "in progress") || strings.Contains(text, "daemon-owned")) {
+		return false, nil
+	}
+	body, err := repo.Git.RunGit(ctx, repo.Root, "show", repo.Head+":"+finding.Anchor.Path)
+	if err != nil {
+		return false, fmt.Errorf("read Result Status Note Task %s: %w", finding.Anchor.Path, err)
+	}
+	lines := reviewFileLines(body)
+	end := reviewFrontMatterEnd(lines)
+	if end == 0 {
+		return false, nil
+	}
+	statuses := 0
+	for _, line := range lines[1 : end-1] {
+		if strings.HasPrefix(line, "status:") {
+			statuses++
+			if strings.TrimSpace(strings.TrimPrefix(line, "status:")) != "completed" {
+				return false, nil
+			}
+		}
+		if strings.HasPrefix(line, "type:") && strings.TrimSpace(strings.TrimPrefix(line, "type:")) == "qa" {
+			return false, nil
+		}
+	}
+	if statuses != 1 {
+		return false, nil
+	}
+	result := false
+	for _, line := range lines[end:] {
+		if strings.HasPrefix(line, "## ") {
+			result = line == "## Result"
+		}
+		lower := strings.ToLower(line)
+		if result && (strings.Contains(lower, "in_progress") || strings.Contains(lower, "daemon-owned")) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func settleReviewConventions(record reviewRecord) (reviewRecord, int) {
+	for _, finding := range record.FindingItems {
+		if !reviewFindingDismissedByValidation(finding) && !reviewFindingEvidenceDismissed(record, finding) {
+			return record, exitRunFailed
+		}
+	}
+	record.Outcome = reviewOutcomeFindingsDismissed
+	return record, exitOK
+}
+
 func validateReviewConventions(ctx context.Context, repo reviewRepository, record reviewRecord, runner agent.Runner, runtime agent.RuntimeSpec) (reviewRecord, int) {
 	if record.Outcome != reviewOutcomeFindings {
 		return record, exitOK
@@ -227,13 +288,22 @@ func validateReviewConventions(ctx context.Context, repo reviewRepository, recor
 		return record, exitRunFailed
 	}
 	var asked []validatorQuestion
-	for _, finding := range record.FindingItems {
-		if reviewFindingDismissedByValidation(finding) || finding.Anchor == nil {
+	for i := range record.FindingItems {
+		finding := &record.FindingItems[i]
+		if reviewFindingDismissedByValidation(*finding) || finding.Anchor == nil {
 			continue
 		}
 		conventions, err := conventionRegions(ctx, repo, *finding.Anchor)
 		if err != nil {
 			return unavailable(err)
+		}
+		note, err := reviewResultStatusNote(ctx, repo, *finding, conventions)
+		if err != nil {
+			return unavailable(err)
+		}
+		if note {
+			finding.Validation = &reviewFindingValidation{Status: "dismissed-by-validation", Rule: "convention:C2", Reason: reviewResultStatusNoteReason}
+			continue
 		}
 		var rules []string
 		for _, convention := range conventions {
@@ -252,7 +322,7 @@ func validateReviewConventions(ctx context.Context, repo reviewRepository, recor
 		asked = append(asked, validatorQuestion{finding.ID, *finding.Anchor, finding.Text, rules, excerpt})
 	}
 	if len(asked) == 0 {
-		return record, exitRunFailed
+		return settleReviewConventions(record)
 	}
 	sealed, ok := runner.(reviewSealedRunner)
 	if !ok {
@@ -280,11 +350,5 @@ func validateReviewConventions(ctx context.Context, repo reviewRepository, recor
 			finding.Validation.Rule = verdict.Rule
 		}
 	}
-	for _, finding := range record.FindingItems {
-		if !reviewFindingDismissedByValidation(finding) && !reviewFindingEvidenceDismissed(record, finding) {
-			return record, exitRunFailed
-		}
-	}
-	record.Outcome = reviewOutcomeFindingsDismissed
-	return record, exitOK
+	return settleReviewConventions(record)
 }

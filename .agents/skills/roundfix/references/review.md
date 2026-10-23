@@ -143,17 +143,19 @@ in a clause beginning with `Failure:`. An older record without `findingItems` de
 Roundfix reads it.
 
 The prompt carries Delivery Conventions version
-`roundfix/delivery-conventions/v3`. These describe what a delivery writes by
+`roundfix/delivery-conventions/v4`. These describe what a delivery writes by
 design, and the prompt carries them verbatim:
 
 - C1. A Spec's QA Report records the head it audited and is committed after
   that head, so it never names the commit that records it.
 - C2. The Daemon writes a Task file's status after the Task's Verification
-  passes, its `## Result` and `## Carry-forward provenance` sections for
-  non-QA Tasks only, and `## Recorded paths` only when a Task changed a path
-  it did not declare; a QA Task settles on its committed QA Report and carries
-  none of these sections. A Result that calls status Daemon-owned agrees with
-  a `completed` status.
+  passes, its `## Carry-forward provenance` section for non-QA Tasks only,
+  and `## Recorded paths` only when a Task changed a path it did not
+  declare; a QA Task settles on its committed QA Report and carries none of
+  these sections. The Agent writes a non-QA Task's `## Result` during its
+  turn, while the Daemon holds the Task `in_progress`, so a Result that
+  reports the status as `in_progress`, unchanged or Daemon-owned states what
+  was true when it was written and does not contradict a `completed` status.
 - C3. The archive commit adds an Archive Record at the archive root and removes
   the Spec folder, whose bytes stay in Git at source_revision; legacy archives
   move the folder and stamp its front matter.
@@ -176,8 +178,9 @@ diagnostic on stderr.
 
 Validation has three dismissal rules. `unanchored` is the mechanical anchor
 check above. `convention:C1` through `convention:C5` requires the whole anchor
-to lie in that convention's mechanically computed region and a sealed
-validator judgment that the finding merely restates it. `no-failure` requires
+to lie in that convention's mechanically computed region and, except for a
+Result Status Note below, a sealed validator judgment that the finding merely
+restates it. `no-failure` requires
 that the finding has no `Failure:` clause and the validator judges that it
 states no failure. A finding with a failure clause cannot receive that rule.
 C3 and C5 regions lie only under the archive root; an anchor under the active
@@ -194,8 +197,23 @@ records and active Specs are ineligible for C5.
 Other anchored findings stand. Each item's validation records `stands` or
 `dismissed-by-validation`, with the dismissal's rule and reason.
 
-Only anchored findings inside a convention region or lacking a failure clause
-are sent to the validator. It uses the review's selected runtime in a sealed
+A Result Status Note is a line of a non-QA Task's `## Result` that contains
+`in_progress` or `Daemon-owned` in any letter case; the Agent writes it
+while the Daemon holds the Task `in_progress`. Before the validator is
+asked, Roundfix dismisses a finding with rule `convention:C2` when, at the
+review head, the whole anchor lies in a Task file's C2 region, the Task's
+front matter has one `status: completed` line and no `type: qa`, its `##
+Result` holds a Result Status Note, and the finding's text contains
+`completed` and one of `in_progress`, `in progress` or `Daemon-owned` in any
+letter case. Its reason is `Result Status Note: the Agent wrote this Result
+while the Daemon held the Task in_progress, and the Daemon wrote completed
+after the Task's Verification passed (C2)`. A review whose findings are all
+dismissed this way reads `findings-dismissed`, and its `validator` stays
+`not-needed`.
+
+Only anchored findings inside a convention region or lacking a failure
+clause, and not dismissed as a Result Status Note, are sent to the
+validator. It uses the review's selected runtime in a sealed
 session and may use no tools. The validator fails closed: an unavailable
 runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
 ineligible rule or blank reason leaves every asked finding standing. The

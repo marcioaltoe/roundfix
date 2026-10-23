@@ -19,8 +19,8 @@ func TestDeliveryConventionC2ExemptsTheQATask(t *testing.T) {
 		t.Fatal(err)
 	}
 	prompt := buildReviewPrompt(fixture.baseCommit, head, diff, omitted)
-	const c2 = "The Daemon writes a Task file's status after the Task's Verification passes, its `## Result` and `## Carry-forward provenance` sections for non-QA Tasks only, and `## Recorded paths` only when a Task changed a path it did not declare; a QA Task settles on its committed QA Report and carries none of these sections. A Result that calls status Daemon-owned agrees with a `completed` status."
-	if !strings.Contains(prompt, "Delivery Conventions (roundfix/delivery-conventions/v3)") || !strings.Contains(prompt, "C2. "+c2+"\n") || !strings.Contains(prompt, "+type: qa") {
+	const c2 = "The Daemon writes a Task file's status after the Task's Verification passes, its `## Carry-forward provenance` section for non-QA Tasks only, and `## Recorded paths` only when a Task changed a path it did not declare; a QA Task settles on its committed QA Report and carries none of these sections. The Agent writes a non-QA Task's `## Result` during its turn, while the Daemon holds the Task `in_progress`, so a Result that reports the status as `in_progress`, unchanged or Daemon-owned states what was true when it was written and does not contradict a `completed` status."
+	if !strings.Contains(prompt, "Delivery Conventions (roundfix/delivery-conventions/v4)") || !strings.Contains(prompt, "C2. "+c2+"\n") || !strings.Contains(prompt, "+type: qa") {
 		t.Fatalf("missing QA convention or candidate: %s", prompt)
 	}
 	if runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {

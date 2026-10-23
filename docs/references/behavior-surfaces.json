@@ -82,7 +82,7 @@
     "guide docs/user-guide/commands/reopen.md": "sha256:2af1c3a8246fcb1a5db1ab430eeb88d8395bb48a207f08876f9d078817160015",
     "guide docs/user-guide/commands/resolve.md": "sha256:30f9c10b3af94202961d828d8c38322094f680188d98f7678929bd6da5ec758b",
     "guide docs/user-guide/commands/review-report-shape.md": "sha256:a297a03fed3a6fcfa0ab3bd2d8574fcbe7b9c5c5ea02fc570d0dacbed3d73854",
-    "guide docs/user-guide/commands/review.md": "sha256:10e5b17c799db03e8d32a2eeedd12213d2c737ebdd281c522dd049d951293ccc",
+    "guide docs/user-guide/commands/review.md": "sha256:321c384f981c0d27cc5f4cd41f533d44a5ba828cc141c76f76d12078d52501c9",
     "guide docs/user-guide/commands/runs.md": "sha256:65c7c5e2d0710ed9a27150c6b47c89a0c30ddbefebe67e12f8427510b4c3c359",
     "guide docs/user-guide/commands/settle.md": "sha256:c22503f670cf8a07492651d1bf7388b4cfaffd305b87e671b276e9c8a3d7413f",
     "guide docs/user-guide/commands/setup.md": "sha256:73fcdeef8a20c910798f4cd33967a5548545f6dea538e2d48692a02b244530ac",

@@ -13,7 +13,7 @@ import (
 	"roundfix/internal/spec"
 )
 
-const deliveryConventionsVersion = "roundfix/delivery-conventions/v3"
+const deliveryConventionsVersion = "roundfix/delivery-conventions/v4"
 
 type deliveryConvention struct {
 	ID     string
@@ -23,7 +23,7 @@ type deliveryConvention struct {
 func deliveryConventions() []deliveryConvention {
 	return []deliveryConvention{
 		{"C1", "A Spec's QA Report records the head it audited and is committed after that head, so it never names the commit that records it."},
-		{"C2", "The Daemon writes a Task file's status after the Task's Verification passes, its `## Result` and `## Carry-forward provenance` sections for non-QA Tasks only, and `## Recorded paths` only when a Task changed a path it did not declare; a QA Task settles on its committed QA Report and carries none of these sections. A Result that calls status Daemon-owned agrees with a `completed` status."},
+		{"C2", "The Daemon writes a Task file's status after the Task's Verification passes, its `## Carry-forward provenance` section for non-QA Tasks only, and `## Recorded paths` only when a Task changed a path it did not declare; a QA Task settles on its committed QA Report and carries none of these sections. The Agent writes a non-QA Task's `## Result` during its turn, while the Daemon holds the Task `in_progress`, so a Result that reports the status as `in_progress`, unchanged or Daemon-owned states what was true when it was written and does not contradict a `completed` status."},
 		{"C3", "The archive commit adds an Archive Record at the archive root and removes the Spec folder, whose bytes stay in Git at source_revision; legacy archives move the folder and stamp its front matter."},
 		{"C4", "A planning candidate authors a Spec whose Tasks are all pending and which has no QA Report; that Spec's own delivery implements it and is reviewed then."},
 		{"C5", "A Spec archived through the QA Archive Override records `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its archived `_prd.md` front matter; its QA Task keeps its observed status and its QA Report its observed verdict. For an Archive Record, these fields are in the record and the unchanged QA Task and Report stay in Git at source_revision."},
