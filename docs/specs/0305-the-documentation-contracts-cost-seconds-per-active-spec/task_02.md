@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0305-the-documentation-contracts-cost-seconds-per-active-spec
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -84,3 +84,56 @@ None. The change is test code inside `internal/docscontract`; no production code
 
 - `_prd.md` → Goals; Core Feature 2; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior; API Contracts 2-3; Invariants 3-4; Testing Approach; Build Order 2
+
+
+## Result
+
+Implemented the shared corpus sweep in `internal/docscontract/corpus_test.go`.
+The process-wide memo keys on `(specsRoot, repoRoot)` and uses `sync.Map`
+with `sync.OnceValue` to publish one immutable sweep per pair, including
+stored failures. The sweep preserves directory selection and ReadDir order,
+counts each Check through `checkCorpusSpec`, and records results, finding
+counts, work and elapsed time. Each requesting test reports a stored error;
+the corpus error text is preserved.
+
+Acceptance evidence:
+
+- One Check and one CheckStage per active Spec: all four consumers now read
+  `sharedCorpusSweep`. The no-error test still iterates `spec.ListActive`
+  and checks only slugs absent from the memo. Stage subtests iterate the
+  stored ordered slugs and compare cached Check results with a fresh
+  `CheckStage(StageAll)`. The focused consumer run reported 3 Check operations
+  across 3 Specs; golden, budget and no-error tests passed, as did all three
+  stage comparison subtests. Golden computed the sweep; budget and no-error
+  reused it and each reported 0.00s test duration.
+- Existing assertions: golden comparison, operation ceiling, severity-error
+  reporting, gap logging and stage equality remain in place. The golden
+  file, Contract Relevance, production code, Makefile and workflows were
+  not changed. The focused run passed against the repository corpus.
+  Failure-injection QA and full declared Verification remain Daemon-owned;
+  this turn does not claim that those checks ran.
+- Memo fixture: `TestTheCorpusTestsCheckEachSpecOncePerProcess` calls
+  `t.Parallel()` first, writes two temporary carrier Specs, requests the
+  same pair three times, and asserts pointer identity, exactly 2 Specs and
+  2 Check operations, and results for both slugs. It passed three repetitions
+  with the race detector enabled. Before this edit the memo helper and
+  regression test were absent from the inspected source.
+
+Focused checks (exit 0):
+
+- `go test -race -count=3 -timeout 3m -tags docscontract -run '^TestTheCorpusTestsCheckEachSpecOncePerProcess$' ./internal/docscontract`
+- `go test -count=1 -timeout 3m -tags docscontract -v -run '^Test(CheckCorpusGolden|CheckCorpusBudget|CheckActiveCorpusHasNoErrors|StageScopeDefaultSweepIsUnchanged)$' ./internal/docscontract`
+- `git diff --check`
+
+Commands ran through `rtk proxy`. The sandbox rejected the symlinked
+checkout root, so command execution used escalation against the assigned
+checkout's resolved path. Only the assigned test file and this Result were
+edited; the pre-existing Task status change was preserved. No declared
+Verification, repository Verification, status settlement, commit, push or
+pull request was performed. No follow-up beyond the Spec's existing CI
+package-duplication non-goal was found.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T230327Z_48bea4b01c18b895`
+- Source commit: `8077f11697865908387c0b54d3ef95c26a948280`
