@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0305-the-documentation-contracts-cost-seconds-per-active-spec
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

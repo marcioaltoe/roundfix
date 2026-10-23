@@ -1,0 +1,5 @@
+make build: exit 0
+./bin/roundfix --version: exit 0
+roundfix 0.115.0 (8077f116-dirty, built 2026-10-23 20:27:15 -0300)
+./bin/roundfix spec check 0305-the-documentation-contracts-cost-seconds-per-active-spec --strict: exit 0; no findings
+Daemon gate: make verify-changed pass (exit 0), diagnostics removed on success.

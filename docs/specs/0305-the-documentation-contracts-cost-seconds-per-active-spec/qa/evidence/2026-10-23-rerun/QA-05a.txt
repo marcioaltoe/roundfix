@@ -1,0 +1,35 @@
+Isolated git archive of d8416963cde68f9eb4c178d17207696c54590d1f; mutation a
+$ go test -count=1 -timeout 20m -v -run ^TestHistoryCitationsInSourceWorkDoesNotGrowWithTheRemovedPaths$ ./internal/spec
+=== RUN   TestHistoryCitationsInSourceWorkDoesNotGrowWithTheRemovedPaths
+    history_citation_cost_test.go:38: allocations per call: one removed path = 1220; 2000 removed paths = 802828
+    history_citation_cost_test.go:40: 2000 removed paths allocate 801608 more per call; maximum 64
+--- FAIL: TestHistoryCitationsInSourceWorkDoesNotGrowWithTheRemovedPaths (0.10s)
+FAIL
+suiteguard: guard cost: measured 2714 paths; fingerprint took 97.816708ms before and 77.938833ms after
+FAIL	roundfix/internal/spec	0.525s
+FAIL
+
+exit: 1; wall_seconds: 1.89
+
+Exact disposable-copy mutation:
+--- audited-head/internal/spec/citation_sources.go
++++ sabotage-a/internal/spec/citation_sources.go
+@@ -161,16 +161,11 @@
+ 		rw.Locate = func(candidate string) (GitLocator, bool, error) {
+ 			candidate = citationProseTarget(candidate, path)
+ 			matched := false
+-			for target := candidate; ; {
+-				if targetSet[target] {
++			for _, target := range targets {
++				if candidate == target || strings.HasPrefix(candidate, target+"/") {
+ 					found[HistoryCitation{Path: path, Line: i + 1, Target: target}] = true
+ 					matched = true
+ 				}
+-				slash := strings.LastIndexByte(target, '/')
+-				if slash < 0 {
+-					break
+-				}
+-				target = target[:slash]
+ 			}
+ 			return GitLocator{Path: candidate}, matched, nil
+ 		}

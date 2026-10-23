@@ -1,0 +1,117 @@
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestCheckCorpusGolden$' ./internal/docscontract
+=== RUN   TestCheckCorpusGolden
+    corpus_test.go:52: active Spec corpus finding counts changed; inspect the consistency regression or intentional detector change, then deliberately update testdata/corpus-golden.json:
+        {
+          "SC-ABSENCE-UNPROVEN": 0,
+          "SC-ADR-ALTERNATIVES-UNRELATED": 0,
+          "SC-ADR-RELATED": 0,
+          "SC-ADR-UNLISTED": 0,
+          "SC-ARCHIVE-LICENSE": 0,
+          "SC-CITATION-UNSUPPORTED": 0,
+          "SC-CLI-UNDOCUMENTED": 0,
+          "SC-CONSTRAINT-MISSING": 0,
+          "SC-CONSTRAINT-SOURCE": 0,
+          "SC-CONSTRAINT-UNREASONED": 0,
+          "SC-CONSUMERS-UNPROVEN": 0,
+          "SC-CONTRACT-UNDECLARED": 0,
+          "SC-COVERAGE-UNMAPPED": 0,
+          "SC-COVERAGE-UNREAD": 0,
+          "SC-COVERAGE-UNTASKED": 0,
+          "SC-DECISIONS-UNRECORDED": 0,
+          "SC-FINDING-LIFECYCLE": 0,
+          "SC-GLOSSARY-MISSING": 0,
+          "SC-GLOSSARY-UNDECLARED": 0,
+          "SC-GLOSSARY-UNPLANNED": 0,
+          "SC-HISTORY-RETAINED": 0,
+          "SC-LOOP-ORDER-DIVERGENT": 0,
+          "SC-METRIC-UNDECLARED": 0,
+          "SC-QA-BYTES-PINNED": 0,
+          "SC-RECEIPT-MISSING": 0,
+          "SC-RECEIPT-UNPROVEN": 0,
+          "SC-REF-UNRESOLVED": 0,
+          "SC-REHEARSAL-UNDECLARED": 0,
+          "SC-REQUIREMENT-CONTRADICTORY": 0,
+          "SC-ROLLUP-MEMBER": 0,
+          "SC-SKILL-VERSION-UNTASKED": 0,
+          "SC-SKILLS-MALFORMED": 0,
+          "SC-SKILLS-UNTASKED": 0,
+          "SC-SURFACE-RECORD-UNTASKED": 0,
+          "SC-TOOLING-UNAUTHORIZED": 0,
+          "SC-TOOLING-UNBOUNDED": 0,
+          "SC-TOOLING-UNDECLARED": 0,
+          "SC-TRANSCRIPT-MALFORMED": 0,
+          "SC-TRANSCRIPT-UNDECLARED": 0,
+          "SC-TRANSCRIPT-UNGATED": 0,
+          "SC-VERIFY-INVERTED-EXIT": 0,
+          "SC-VERIFY-NON-HERMETIC": 0,
+          "SC-VERIFY-PATH-UNDECLARED": 0,
+          "SC-VERIFY-VACUOUS-COMMAND": 0,
+          "SC-VERIFY-WORK-INDEPENDENT": 0,
+          "SC-VERIFY-WRAP-FRAGILE": 0,
+          "SC-VOCABULARY-UNDOCUMENTED": 0
+        }
+--- FAIL: TestCheckCorpusGolden (0.52s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.893s
+FAIL
+
+exit: 1; wall: 3.867s
+
+Applied mutation, relative to audited HEAD (temporary git-archive copy only):
+--- a/internal/docscontract/testdata/corpus-golden.json
++++ b/internal/docscontract/testdata/corpus-golden.json
+@@ -1,53 +1 @@
+-{
+-  "schema": "roundfix-speccheck-corpus/v2",
+-  "update": "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. SC-VERIFY-WRAP-FRAGILE joined the characterized code set at 0. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change. Spec 0191 Task 01 adds proved Claim Receipts and the contract horizon; SC-RECEIPT-UNPROVEN and SC-RECEIPT-MISSING join the characterized code set at 0, with every earlier count unchanged. Spec 0191 Task 02 adds declared, well-formed and traced Surface Transcripts; SC-TRANSCRIPT-UNDECLARED, SC-TRANSCRIPT-MALFORMED and SC-TRANSCRIPT-UNGATED join at 0, with every earlier count unchanged. SC-GLOSSARY-UNDECLARED, SC-GLOSSARY-UNPLANNED and SC-GLOSSARY-MISSING join the characterized code set at 0. SC-SKILLS-UNTASKED and SC-SKILLS-MALFORMED join the characterized code set at 0, with every earlier count unchanged. SC-ABSENCE-UNPROVEN, SC-ADR-ALTERNATIVES-UNRELATED and SC-COVERAGE-UNREAD join the characterized code set at 0, with every earlier count unchanged. SC-CONSUMERS-UNPROVEN joins the characterized code set at 0, with every earlier count unchanged. SC-QA-BYTES-PINNED joins the characterized code set at 0, with every earlier count unchanged. SC-HISTORY-RETAINED joins at 0, gated on the recorded retirement rule. SC-SURFACE-RECORD-UNTASKED joins the characterized code set, with every earlier count unchanged. SC-DECISIONS-UNRECORDED joins the characterized code set, with every earlier count unchanged. SC-SKILL-VERSION-UNTASKED joins the characterized code set, with every earlier count unchanged. SC-VERIFY-PATH-UNDECLARED joins the characterized code set, with every earlier count unchanged.",
+-  "active": {
+-    "SC-VERIFY-PATH-UNDECLARED": 0,
+-    "SC-SKILL-VERSION-UNTASKED": 0,
+-    "SC-DECISIONS-UNRECORDED": 0,
+-    "SC-SURFACE-RECORD-UNTASKED": 0,
+-    "SC-QA-BYTES-PINNED": 0,
+-    "SC-CONSUMERS-UNPROVEN": 0,
+-    "SC-ABSENCE-UNPROVEN": 0,
+-    "SC-ADR-ALTERNATIVES-UNRELATED": 0,
+-    "SC-COVERAGE-UNREAD": 0,
+-    "SC-SKILLS-UNTASKED": 0,
+-    "SC-SKILLS-MALFORMED": 0,
+-    "SC-GLOSSARY-UNDECLARED": 0,
+-    "SC-GLOSSARY-UNPLANNED": 0,
+-    "SC-GLOSSARY-MISSING": 0,
+-    "SC-ADR-RELATED": 0,
+-    "SC-ADR-UNLISTED": 0,
+-    "SC-ARCHIVE-LICENSE": 0,
+-    "SC-HISTORY-RETAINED": 0,
+-    "SC-CITATION-UNSUPPORTED": 0,
+-    "SC-CLI-UNDOCUMENTED": 0,
+-    "SC-CONSTRAINT-MISSING": 0,
+-    "SC-CONSTRAINT-SOURCE": 0,
+-    "SC-CONSTRAINT-UNREASONED": 0,
+-    "SC-CONTRACT-UNDECLARED": 0,
+-    "SC-COVERAGE-UNMAPPED": 0,
+-    "SC-COVERAGE-UNTASKED": 0,
+-    "SC-FINDING-LIFECYCLE": 0,
+-    "SC-LOOP-ORDER-DIVERGENT": 0,
+-    "SC-METRIC-UNDECLARED": 0,
+-    "SC-RECEIPT-MISSING": 0,
+-    "SC-RECEIPT-UNPROVEN": 0,
+-    "SC-REF-UNRESOLVED": 0,
+-    "SC-REHEARSAL-UNDECLARED": 0,
+-    "SC-REQUIREMENT-CONTRADICTORY": 0,
+-    "SC-ROLLUP-MEMBER": 0,
+-    "SC-TOOLING-UNAUTHORIZED": 0,
+-    "SC-TOOLING-UNBOUNDED": 0,
+-    "SC-TOOLING-UNDECLARED": 0,
+-    "SC-TRANSCRIPT-MALFORMED": 0,
+-    "SC-TRANSCRIPT-UNDECLARED": 0,
+-    "SC-TRANSCRIPT-UNGATED": 0,
+-    "SC-VERIFY-INVERTED-EXIT": 0,
+-    "SC-VERIFY-NON-HERMETIC": 0,
+-    "SC-VERIFY-VACUOUS-COMMAND": 0,
+-    "SC-VERIFY-WORK-INDEPENDENT": 0,
+-    "SC-VERIFY-WRAP-FRAGILE": 0,
+-    "SC-VOCABULARY-UNDOCUMENTED": 0
+-  }
+-}
++{"schema": "roundfix-speccheck-corpus/v2", "update": "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. SC-VERIFY-WRAP-FRAGILE joined the characterized code set at 0. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change. Spec 0191 Task 01 adds proved Claim Receipts and the contract horizon; SC-RECEIPT-UNPROVEN and SC-RECEIPT-MISSING join the characterized code set at 0, with every earlier count unchanged. Spec 0191 Task 02 adds declared, well-formed and traced Surface Transcripts; SC-TRANSCRIPT-UNDECLARED, SC-TRANSCRIPT-MALFORMED and SC-TRANSCRIPT-UNGATED join at 0, with every earlier count unchanged. SC-GLOSSARY-UNDECLARED, SC-GLOSSARY-UNPLANNED and SC-GLOSSARY-MISSING join the characterized code set at 0. SC-SKILLS-UNTASKED and SC-SKILLS-MALFORMED join the characterized code set at 0, with every earlier count unchanged. SC-ABSENCE-UNPROVEN, SC-ADR-ALTERNATIVES-UNRELATED and SC-COVERAGE-UNREAD join the characterized code set at 0, with every earlier count unchanged. SC-CONSUMERS-UNPROVEN joins the characterized code set at 0, with every earlier count unchanged. SC-QA-BYTES-PINNED joins the characterized code set at 0, with every earlier count unchanged. SC-HISTORY-RETAINED joins at 0, gated on the recorded retirement rule. SC-SURFACE-RECORD-UNTASKED joins the characterized code set, with every earlier count unchanged. SC-DECISIONS-UNRECORDED joins the characterized code set, with every earlier count unchanged. SC-SKILL-VERSION-UNTASKED joins the characterized code set, with every earlier count unchanged. SC-VERIFY-PATH-UNDECLARED joins the characterized code set, with every earlier count unchanged.", "active": {"SC-VERIFY-PATH-UNDECLARED": 1, "SC-SKILL-VERSION-UNTASKED": 0, "SC-DECISIONS-UNRECORDED": 0, "SC-SURFACE-RECORD-UNTASKED": 0, "SC-QA-BYTES-PINNED": 0, "SC-CONSUMERS-UNPROVEN": 0, "SC-ABSENCE-UNPROVEN": 0, "SC-ADR-ALTERNATIVES-UNRELATED": 0, "SC-COVERAGE-UNREAD": 0, "SC-SKILLS-UNTASKED": 0, "SC-SKILLS-MALFORMED": 0, "SC-GLOSSARY-UNDECLARED": 0, "SC-GLOSSARY-UNPLANNED": 0, "SC-GLOSSARY-MISSING": 0, "SC-ADR-RELATED": 0, "SC-ADR-UNLISTED": 0, "SC-ARCHIVE-LICENSE": 0, "SC-HISTORY-RETAINED": 0, "SC-CITATION-UNSUPPORTED": 0, "SC-CLI-UNDOCUMENTED": 0, "SC-CONSTRAINT-MISSING": 0, "SC-CONSTRAINT-SOURCE": 0, "SC-CONSTRAINT-UNREASONED": 0, "SC-CONTRACT-UNDECLARED": 0, "SC-COVERAGE-UNMAPPED": 0, "SC-COVERAGE-UNTASKED": 0, "SC-FINDING-LIFECYCLE": 0, "SC-LOOP-ORDER-DIVERGENT": 0, "SC-METRIC-UNDECLARED": 0, "SC-RECEIPT-MISSING": 0, "SC-RECEIPT-UNPROVEN": 0, "SC-REF-UNRESOLVED": 0, "SC-REHEARSAL-UNDECLARED": 0, "SC-REQUIREMENT-CONTRADICTORY": 0, "SC-ROLLUP-MEMBER": 0, "SC-TOOLING-UNAUTHORIZED": 0, "SC-TOOLING-UNBOUNDED": 0, "SC-TOOLING-UNDECLARED": 0, "SC-TRANSCRIPT-MALFORMED": 0, "SC-TRANSCRIPT-UNDECLARED": 0, "SC-TRANSCRIPT-UNGATED": 0, "SC-VERIFY-INVERTED-EXIT": 0, "SC-VERIFY-NON-HERMETIC": 0, "SC-VERIFY-VACUOUS-COMMAND": 0, "SC-VERIFY-WORK-INDEPENDENT": 0, "SC-VERIFY-WRAP-FRAGILE": 0, "SC-VOCABULARY-UNDOCUMENTED": 0}}

@@ -1,0 +1,135 @@
+internal/cli/archive.go:76-105
+76: 		printPreflightFailure("archive", err, stderr)
+77: 		return exitPreflight
+78: 	}
+79: 	loaded, err := loadCommandConfig(environment, stderr)
+80: 	if err != nil {
+81: 		printPreflightFailure("archive", err, stderr)
+82: 		return exitPreflight
+83: 	}
+84: 	if loaded.GitRoot == "" {
+85: 		printPreflightFailure("archive", fmt.Errorf("archive requires a git repository working tree"), stderr)
+86: 		return exitPreflight
+87: 	}
+88: 	if req.plan {
+89: 		if req.qaOverride || req.approval != "" || req.reason != "" || len(req.promote) > 0 {
+90: 			printPreflightFailure("archive", validationError{message: "--plan cannot be combined with --promote, --qa-override, --approval or --reason"}, stderr)
+91: 			return exitPreflight
+92: 		}
+93: 		return runArchivePlan(ctx, req, loaded, stdout, stderr, environment)
+94: 	}
+95: 	if err := ctx.Err(); err != nil {
+96: 		printPreflightFailure("archive", err, stderr)
+97: 		return exitPreflight
+98: 	}
+99: 	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+100: 	if err != nil {
+101: 		printPreflightFailure("archive", err, stderr)
+102: 		return exitPreflight
+103: 	}
+104: 	revisionRoot := loaded.GitRoot
+105: 	if resolvedSpecsRoot.External {
+
+internal/cli/cli.go:402-420
+402: 	return commandEnvironmentWithDependencies(defaultCommandDependencies())
+403: }
+404: 
+405: func commandEnvironmentWithDependencies(dependencies commandDependencies) commandEnvironment {
+406: 	homeDir, homeDirErr := os.UserHomeDir()
+407: 	workDir, workDirErr := os.Getwd()
+408: 	branchActor := ""
+409: 	for _, key := range []string{"GITHUB_ACTOR", "GIT_AUTHOR_NAME", "USER", "USERNAME"} {
+410: 		if value := strings.TrimSpace(dependencies.getenv(key)); value != "" {
+411: 			branchActor = value
+412: 			break
+413: 		}
+414: 	}
+415: 	return commandEnvironment{
+416: 		homeDir:        homeDir,
+417: 		homeDirErr:     homeDirErr,
+418: 		workDir:        workDir,
+419: 		workDirErr:     workDirErr,
+420: 		environ:        dependencies.environ(),
+
+internal/cli/cli.go:450-474
+450: 
+451: func (environment commandEnvironment) loadOptions(stderr io.Writer) (roundconfig.LoadOptions, error) {
+452: 	if environment.homeDirErr != nil {
+453: 		return roundconfig.LoadOptions{}, fmt.Errorf("resolve User Config home: %w", environment.homeDirErr)
+454: 	}
+455: 	if environment.workDirErr != nil {
+456: 		return roundconfig.LoadOptions{}, fmt.Errorf("resolve work directory: %w", environment.workDirErr)
+457: 	}
+458: 	return roundconfig.LoadOptions{
+459: 		HomeDir: environment.homeDir,
+460: 		WorkDir: environment.workDir,
+461: 		Stderr:  stderr,
+462: 	}, nil
+463: }
+464: 
+465: func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+466: 	options, err := environment.loadOptions(stderr)
+467: 	if err != nil {
+468: 		return roundconfig.Loaded{}, err
+469: 	}
+470: 	return roundconfig.Load(options)
+471: }
+472: 
+473: func (environment commandEnvironment) resolveWorkDir(operation string) (string, error) {
+474: 	if environment.workDirErr != nil {
+
+internal/config/config.go:25-31
+25: var linuxLaneImageReference = regexp.MustCompile(`^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*(?::[0-9]+)?/)?[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*)*(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?(?:@[A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*:[0-9a-fA-F]{32,})?$`)
+26: 
+27: const (
+28: 	userConfigRelPath               = ".roundfix/config.yml"
+29: 	projectConfigName               = ".roundfixrc.yml"
+30: 	defaultReviewSource             = "coderabbit"
+31: 	defaultReviewRequestCommand     = "@coderabbitai review"
+
+internal/config/config.go:831-853
+831: 
+832: func Load(opts LoadOptions) (Loaded, error) {
+833: 	homeDir, err := resolveHomeDir(opts.HomeDir)
+834: 	if err != nil {
+835: 		return Loaded{}, err
+836: 	}
+837: 	workDir, err := resolveWorkDir(opts.WorkDir)
+838: 	if err != nil {
+839: 		return Loaded{}, err
+840: 	}
+841: 
+842: 	loaded := Loaded{
+843: 		Config:         Builtin(),
+844: 		GitRoot:        findGitRoot(workDir),
+845: 		HomeDir:        homeDir,
+846: 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
+847: 	}
+848: 	warnings := newConfigWarnings(opts.Stderr)
+849: 	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings, ProfileSourceUser); err != nil {
+850: 		return Loaded{}, err
+851: 	}
+852: 
+853: 	if loaded.GitRoot != "" {
+
+internal/config/config.go:1621-1638
+1621: func applyConfigFile(config *Config, path string, warnings *configWarnings, source ProfileSource) error {
+1622: 	content, err := os.ReadFile(path)
+1623: 	if errors.Is(err, os.ErrNotExist) {
+1624: 		return nil
+1625: 	}
+1626: 	if err != nil {
+1627: 		return fmt.Errorf("read config %q: %w", path, err)
+1628: 	}
+1629: 	return applyConfigContent(config, path, content, warnings, source)
+1630: }
+1631: 
+1632: func applyConfigContent(config *Config, label string, content []byte, warnings *configWarnings, source ProfileSource) error {
+1633: 	var document yaml.Node
+1634: 	decoder := yaml.NewDecoder(bytes.NewReader(content))
+1635: 	if err := decoder.Decode(&document); err != nil {
+1636: 		if errors.Is(err, io.EOF) {
+1637: 			return nil
+1638: 		}
+
+Inference: the successful public CLI archive invocation used its default os.UserHomeDir-based config loader. Config.Load attempts os.ReadFile of ~/.roundfix/config.yml before the offline-plan dispatch. This violates task_03 Requirement 12 and the gate overview. The config itself was not printed or persisted, and no config or store write was performed.

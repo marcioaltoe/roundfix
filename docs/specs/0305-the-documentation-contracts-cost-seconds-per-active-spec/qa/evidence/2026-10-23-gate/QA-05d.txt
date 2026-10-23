@@ -1,0 +1,27 @@
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheCorpusTestsCheckEachSpecOncePerProcess$' ./internal/docscontract
+=== RUN   TestTheCorpusTestsCheckEachSpecOncePerProcess
+=== PAUSE TestTheCorpusTestsCheckEachSpecOncePerProcess
+=== CONT  TestTheCorpusTestsCheckEachSpecOncePerProcess
+    corpus_test.go:264: sweep pointers = 0x6ffdea2c910, 0x6ffdea2cc80, 0x6ffdea2cff0, want one shared sweep
+--- FAIL: TestTheCorpusTestsCheckEachSpecOncePerProcess (0.04s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.440s
+FAIL
+
+exit: 1; wall: 3.342s
+
+Applied mutation, relative to audited HEAD (temporary git-archive copy only):
+--- a/internal/docscontract/corpus_test.go
++++ b/internal/docscontract/corpus_test.go
+@@ -186,10 +186,7 @@
+ func sharedCorpusSweep(t *testing.T, specsRoot, repoRoot string) *corpusSweep {
+ 	t.Helper()
+ 
+-	compute, _ := corpusSweeps.LoadOrStore([2]string{specsRoot, repoRoot}, sync.OnceValue(func() *corpusSweep {
+-		return sweepCorpus(specsRoot, repoRoot)
+-	}))
+-	sweep := compute.(func() *corpusSweep)()
++	sweep := sweepCorpus(specsRoot, repoRoot)
+ 	if sweep.err != nil {
+ 		t.Fatal(sweep.err)
+ 	}

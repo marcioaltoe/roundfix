@@ -1,0 +1,23 @@
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheCorpusTestsCheckEachSpecOncePerProcess$' ./internal/docscontract
+=== RUN   TestTheCorpusTestsCheckEachSpecOncePerProcess
+=== PAUSE TestTheCorpusTestsCheckEachSpecOncePerProcess
+=== CONT  TestTheCorpusTestsCheckEachSpecOncePerProcess
+    corpus_test.go:271: sweep work = docscontract.corpusSweepWork{specs:2, checkOperations:4}, want 2 Specs and 2 Check operations
+--- FAIL: TestTheCorpusTestsCheckEachSpecOncePerProcess (0.02s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.415s
+FAIL
+
+exit: 1; wall: 3.323s
+
+Applied mutation, relative to audited HEAD (temporary git-archive copy only):
+--- a/internal/docscontract/corpus_test.go
++++ b/internal/docscontract/corpus_test.go
+@@ -223,6 +223,7 @@
+ 			return sweep
+ 		}
+ 		sweep.work.specs++
++		_, _ = checkCorpusSpec(specsRoot, repoRoot, entry.Name(), &sweep.work)
+ 		result, err := checkCorpusSpec(specsRoot, repoRoot, entry.Name(), &sweep.work)
+ 		if err != nil {
+ 			sweep.err = fmt.Errorf("Check(%q) in corpus %q: %w", entry.Name(), specsRoot, err)

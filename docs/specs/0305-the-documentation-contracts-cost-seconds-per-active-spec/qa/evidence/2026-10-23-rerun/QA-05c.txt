@@ -1,0 +1,58 @@
+Isolated git archive of d8416963cde68f9eb4c178d17207696c54590d1f; mutation c
+$ go test -count=1 -timeout 20m -v -run ^TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants$ ./internal/spec
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/exact_path
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/exact_path
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/descendant
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/descendant
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/nested_removed_paths
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/nested_removed_paths
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/relative_prose_path
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/relative_prose_path
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/explicit_dot_prose_path
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/explicit_dot_prose_path
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/trailing_slash
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/trailing_slash
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/file_prefix_only
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/file_prefix_only
+=== RUN   TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/directory_prefix_only
+=== PAUSE TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/directory_prefix_only
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/exact_path
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/explicit_dot_prose_path
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/file_prefix_only
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/nested_removed_paths
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/trailing_slash
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/descendant
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/directory_prefix_only
+=== CONT  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/relative_prose_path
+=== NAME  TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/nested_removed_paths
+    history_citation_cost_test.go:78: citations = [{Path:Makefile Line:2 Target:docs/history/specs/0001-old/references/source.md Rewrite:}], want [{Path:Makefile Line:2 Target:docs/history/specs/0001-old Rewrite:} {Path:Makefile Line:2 Target:docs/history/specs/0001-old/references/source.md Rewrite:}]
+--- FAIL: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/exact_path (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/file_prefix_only (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/trailing_slash (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/descendant (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/explicit_dot_prose_path (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/directory_prefix_only (0.00s)
+    --- PASS: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/relative_prose_path (0.00s)
+    --- FAIL: TestHistoryCitationsInSourceNamesEachRemovedPathAndItsDescendants/nested_removed_paths (0.00s)
+FAIL
+suiteguard: guard cost: measured 2714 paths; fingerprint took 105.728625ms before and 57.639542ms after
+FAIL	roundfix/internal/spec	0.416s
+FAIL
+
+exit: 1; wall_seconds: 1.416
+
+Exact disposable-copy mutation:
+--- audited-head/internal/spec/citation_sources.go
++++ sabotage-c/internal/spec/citation_sources.go
+@@ -165,6 +165,7 @@
+ 				if targetSet[target] {
+ 					found[HistoryCitation{Path: path, Line: i + 1, Target: target}] = true
+ 					matched = true
++					break
+ 				}
+ 				slash := strings.LastIndexByte(target, '/')
+ 				if slash < 0 {

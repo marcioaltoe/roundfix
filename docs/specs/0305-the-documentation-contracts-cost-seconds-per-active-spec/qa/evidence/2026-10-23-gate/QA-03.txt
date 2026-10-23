@@ -1,0 +1,98 @@
+$ git clone --local --no-checkout /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0305-the-documentation-contracts-cost-seconds-per-active-spec-a13b1ca144eb331c-de16802e-65a9924b/run_20261023T230327Z_48bea4b01c18b895 /private/tmp/roundfix-0305-qa/clone-base
+Cloning into '/private/tmp/roundfix-0305-qa/clone-base'...
+done.
+
+exit: 0; wall: 1.671s
+$ git checkout --detach 10debe1608b30cb9af837a4a2e0d3abb6274c980
+HEAD is now at 10debe16 chore: release v0.115.0 (#651)
+
+exit: 0; wall: 0.318s
+$ go test -c -timeout 20m -tags docscontract -o /private/tmp/roundfix-0305-qa/base.test ./internal/docscontract
+
+exit: 0; wall: 3.095s
+$ git clone --local --no-checkout /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0305-the-documentation-contracts-cost-seconds-per-active-spec-a13b1ca144eb331c-de16802e-65a9924b/run_20261023T230327Z_48bea4b01c18b895 /private/tmp/roundfix-0305-qa/clone-head
+Cloning into '/private/tmp/roundfix-0305-qa/clone-head'...
+done.
+
+exit: 0; wall: 1.587s
+$ git checkout --detach 8077f11697865908387c0b54d3ef95c26a948280
+HEAD is now at 8077f116 test: the corpus tests share one Check per active Spec
+
+exit: 0; wall: 0.223s
+$ go test -c -timeout 20m -tags docscontract -o /private/tmp/roundfix-0305-qa/head.test ./internal/docscontract
+
+exit: 0; wall: 3.085s
+run 1 base; 1-minute load average: 2.18
+$ /usr/bin/time -p /private/tmp/roundfix-0305-qa/base.test -test.run '^TestCheckLoopOrderRepositoryAgrees$' -test.v -test.timeout 10m
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+--- PASS: TestCheckLoopOrderRepositoryAgrees (9.07s)
+PASS
+real 9.57
+user 15.10
+sys 1.58
+
+exit: 0; wall: 9.574s
+run 1 head; 1-minute load average: 2.32
+$ /usr/bin/time -p /private/tmp/roundfix-0305-qa/head.test -test.run '^TestCheckLoopOrderRepositoryAgrees$' -test.v -test.timeout 10m
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+--- PASS: TestCheckLoopOrderRepositoryAgrees (1.07s)
+PASS
+real 1.52
+user 1.12
+sys 0.23
+
+exit: 0; wall: 1.527s
+run 2 base; 1-minute load average: 2.32
+$ /usr/bin/time -p /private/tmp/roundfix-0305-qa/base.test -test.run '^TestCheckLoopOrderRepositoryAgrees$' -test.v -test.timeout 10m
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+--- PASS: TestCheckLoopOrderRepositoryAgrees (9.19s)
+PASS
+real 9.19
+user 15.25
+sys 1.81
+
+exit: 0; wall: 9.197s
+run 2 head; 1-minute load average: 3.36
+$ /usr/bin/time -p /private/tmp/roundfix-0305-qa/head.test -test.run '^TestCheckLoopOrderRepositoryAgrees$' -test.v -test.timeout 10m
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+--- PASS: TestCheckLoopOrderRepositoryAgrees (1.06s)
+PASS
+real 1.06
+user 1.11
+sys 0.21
+
+exit: 0; wall: 1.071s
+run 3 base; 1-minute load average: 3.36
+$ /usr/bin/time -p /private/tmp/roundfix-0305-qa/base.test -test.run '^TestCheckLoopOrderRepositoryAgrees$' -test.v -test.timeout 10m
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+--- PASS: TestCheckLoopOrderRepositoryAgrees (9.04s)
+PASS
+real 9.05
+user 15.18
+sys 1.53
+
+exit: 0; wall: 9.055s
+run 3 head; 1-minute load average: 3.16
+$ /usr/bin/time -p /private/tmp/roundfix-0305-qa/head.test -test.run '^TestCheckLoopOrderRepositoryAgrees$' -test.v -test.timeout 10m
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+--- PASS: TestCheckLoopOrderRepositoryAgrees (1.10s)
+PASS
+real 1.10
+user 1.14
+sys 0.22
+
+exit: 0; wall: 1.110s
+
+User CPU base [15.1, 15.25, 15.18], head [1.12, 1.11, 1.14]; medians 15.18s and 1.12s; head/base ratio 0.0738, threshold <=0.2. This is a per-Check ratio, not a predicted CI duration.

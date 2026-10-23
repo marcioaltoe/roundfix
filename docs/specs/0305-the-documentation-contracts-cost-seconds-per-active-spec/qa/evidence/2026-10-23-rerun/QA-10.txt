@@ -1,0 +1,294 @@
+Delivery Base: 10debe1608b30cb9af837a4a2e0d3abb6274c980
+Audited head: d8416963cde68f9eb4c178d17207696c54590d1f
+$ git diff-tree --no-commit-id --name-only -r 6b550ec426190e3fe8d3cde8407e0bf6c61f32fc
+docs/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec/task_03.md
+
+exit: 0; wall_seconds: 0.022
+Planning prerequisite commit, not a Task implementation; message: docs: isolate HOME for the 0305 QA archive plan row
+
+Run run_20261023T230327Z_48bea4b01c18b895 failed QA-12 because the archive
+plan read ~/.roundfix/config.yml under the default home, which Requirement 12
+forbids. The row now runs with HOME set to a fresh temporary directory.
+
+Claude-Session: https://claude.ai/code/session_016Nk8tFDb29i4aAZEVJeGf2
+$ git diff-tree --no-commit-id --name-only -r 184d77dd3f06cfe5652225b295ba3ba0caab3382
+docs/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec/task_01.md
+internal/spec/citation_sources.go
+internal/spec/history_citation_cost_test.go
+
+exit: 0; wall_seconds: 0.019
+task_01 declaration closure: True; outside: []
+$ git diff-tree --no-commit-id --name-only -r d8416963cde68f9eb4c178d17207696c54590d1f
+docs/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec/task_02.md
+internal/docscontract/corpus_test.go
+
+exit: 0; wall_seconds: 0.019
+task_02 declaration closure: True; outside: []
+Protected existing blobs compared: 805; differing: []; unauthorized added protected files: []
+$ git diff 10debe1608b30cb9af837a4a2e0d3abb6274c980 d8416963cde68f9eb4c178d17207696c54590d1f -- internal/spec/citation_sources.go internal/docscontract/corpus_test.go
+diff --git a/internal/docscontract/corpus_test.go b/internal/docscontract/corpus_test.go
+index bf43ad47..e2d22e0b 100644
+--- a/internal/docscontract/corpus_test.go
++++ b/internal/docscontract/corpus_test.go
+@@ -18,11 +18,13 @@ import (
+ 	"bytes"
+ 	"encoding/json"
+ 	"errors"
++	"fmt"
+ 	"os"
+ 	"path/filepath"
+ 	"reflect"
+ 	"runtime"
+ 	"strings"
++	"sync"
+ 	"testing"
+ 	"time"
+ 
+@@ -40,7 +42,7 @@ func TestCheckCorpusGolden(t *testing.T) {
+ 
+ 	// Archived Specs are historical and are never validated: only the active
+ 	// corpus is swept, where a changed count is a consistency regression.
+-	active := sweepCorpus(t, activeRoot, repoRoot, nil)
++	active := sharedCorpusSweep(t, activeRoot, repoRoot).counts
+ 
+ 	if !reflect.DeepEqual(active, want.Active) {
+ 		actual, err := json.MarshalIndent(active, "", "  ")
+@@ -56,10 +58,9 @@ func TestCheckCorpusBudget(t *testing.T) {
+ 	repoRoot := characterizationRepositoryRoot(t)
+ 	activeRoot := filepath.Join(repoRoot, "docs", "specs")
+ 
+-	var work corpusSweepWork
+-	started := time.Now()
+-	sweepCorpus(t, activeRoot, repoRoot, &work)
+-	elapsed := time.Since(started)
++	sweep := sharedCorpusSweep(t, activeRoot, repoRoot)
++	work := sweep.work
++	elapsed := sweep.elapsed
+ 	t.Logf(
+ 		"active Spec corpus sweep completed in %s; work: %d Check operations across %d Specs (budget: at most %d Check operation per Spec)",
+ 		elapsed,
+@@ -106,8 +107,13 @@ func TestCheckActiveCorpusHasNoErrors(t *testing.T) {
+ 		t.Fatalf("list active Specs: %v", err)
+ 	}
+ 
++	sweep := sharedCorpusSweep(t, specsRoot, repoRoot)
+ 	for _, activeSpec := range active {
+-		result, err := speccheck.Check(specsRoot, repoRoot, activeSpec.Slug)
++		result, checked := sweep.results[activeSpec.Slug]
++		var err error
++		if !checked {
++			result, err = speccheck.Check(specsRoot, repoRoot, activeSpec.Slug)
++		}
+ 		if err != nil {
+ 			t.Errorf("%s: check active Spec: %v", activeSpec.Slug, err)
+ 			continue
+@@ -164,16 +170,47 @@ func readCorpusGolden(t *testing.T) corpusGolden {
+ 	return golden
+ }
+ 
+-func sweepCorpus(t *testing.T, specsRoot, repoRoot string, work *corpusSweepWork) map[string]int {
++type corpusSweep struct {
++	slugs   []string
++	results map[string]speccheck.Result
++	counts  map[string]int
++	work    corpusSweepWork
++	elapsed time.Duration
++	err     error
++}
++
++// corpusSweeps stores one once-only computation per (specsRoot, repoRoot).
++// Published sweeps are immutable, including their errors.
++var corpusSweeps sync.Map
++
++func sharedCorpusSweep(t *testing.T, specsRoot, repoRoot string) *corpusSweep {
+ 	t.Helper()
+ 
+-	counts := make(map[string]int, len(corpusFindingCodes))
++	compute, _ := corpusSweeps.LoadOrStore([2]string{specsRoot, repoRoot}, sync.OnceValue(func() *corpusSweep {
++		return sweepCorpus(specsRoot, repoRoot)
++	}))
++	sweep := compute.(func() *corpusSweep)()
++	if sweep.err != nil {
++		t.Fatal(sweep.err)
++	}
++	return sweep
++}
++
++func sweepCorpus(specsRoot, repoRoot string) *corpusSweep {
++	started := time.Now()
++	sweep := &corpusSweep{
++		results: make(map[string]speccheck.Result),
++		counts:  make(map[string]int, len(corpusFindingCodes)),
++	}
++	defer func() { sweep.elapsed = time.Since(started) }()
++
+ 	for _, code := range corpusFindingCodes {
+-		counts[code] = 0
++		sweep.counts[code] = 0
+ 	}
+ 	entries, err := os.ReadDir(specsRoot)
+ 	if err != nil {
+-		t.Fatalf("read Spec corpus %q: %v", specsRoot, err)
++		sweep.err = fmt.Errorf("read Spec corpus %q: %w", specsRoot, err)
++		return sweep
+ 	}
+ 	for _, entry := range entries {
+ 		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+@@ -182,23 +219,61 @@ func sweepCorpus(t *testing.T, specsRoot, repoRoot string, work *corpusSweepWork
+ 		if _, err := os.Stat(filepath.Join(specsRoot, entry.Name(), "_prd.md")); errors.Is(err, os.ErrNotExist) {
+ 			continue
+ 		} else if err != nil {
+-			t.Fatalf("inspect Spec %q: %v", entry.Name(), err)
++			sweep.err = fmt.Errorf("inspect Spec %q: %w", entry.Name(), err)
++			return sweep
+ 		}
+-		if work != nil {
+-			work.specs++
+-		}
+-		result, err := checkCorpusSpec(specsRoot, repoRoot, entry.Name(), work)
++		sweep.work.specs++
++		result, err := checkCorpusSpec(specsRoot, repoRoot, entry.Name(), &sweep.work)
+ 		if err != nil {
+-			t.Fatalf("Check(%q) in corpus %q: %v", entry.Name(), specsRoot, err)
++			sweep.err = fmt.Errorf("Check(%q) in corpus %q: %w", entry.Name(), specsRoot, err)
++			return sweep
+ 		}
++		sweep.slugs = append(sweep.slugs, entry.Name())
++		sweep.results[entry.Name()] = result
+ 		for _, finding := range result.Findings {
+-			if _, known := counts[finding.Code]; !known {
+-				t.Fatalf("Check(%q) returned uncharacterized code %q", entry.Name(), finding.Code)
++			if _, known := sweep.counts[finding.Code]; !known {
++				sweep.err = fmt.Errorf("Check(%q) returned uncharacterized code %q", entry.Name(), finding.Code)
++				return sweep
+ 			}
+-			counts[finding.Code]++
++			sweep.counts[finding.Code]++
++		}
++	}
++	return sweep
++}
++
++func TestTheCorpusTestsCheckEachSpecOncePerProcess(t *testing.T) {
++	t.Parallel()
++
++	repoRoot := t.TempDir()
++	specsRoot := writeLoopOrderCarrier(t, repoRoot)
++	const secondSlug = "loop-order-second"
++	secondDir := filepath.Join(specsRoot, secondSlug)
++	if err := os.MkdirAll(secondDir, 0o755); err != nil {
++		t.Fatalf("create second fixture Spec: %v", err)
++	}
++	content, err := os.ReadFile(filepath.Join(specsRoot, loopOrderCarrierSlug, "_prd.md"))
++	if err != nil {
++		t.Fatalf("read fixture PRD: %v", err)
++	}
++	content = bytes.ReplaceAll(content, []byte(loopOrderCarrierSlug), []byte(secondSlug))
++	if err := os.WriteFile(filepath.Join(secondDir, "_prd.md"), content, 0o644); err != nil {
++		t.Fatalf("write second fixture PRD: %v", err)
++	}
++
++	first := sharedCorpusSweep(t, specsRoot, repoRoot)
++	second := sharedCorpusSweep(t, specsRoot, repoRoot)
++	third := sharedCorpusSweep(t, specsRoot, repoRoot)
++	if first != second || first != third {
++		t.Fatalf("sweep pointers = %p, %p, %p, want one shared sweep", first, second, third)
++	}
++	if first.work.specs != 2 || first.work.checkOperations != 2 {
++		t.Errorf("sweep work = %#v, want 2 Specs and 2 Check operations", first.work)
++	}
++	for _, slug := range []string{loopOrderCarrierSlug, secondSlug} {
++		if _, ok := first.results[slug]; !ok {
++			t.Errorf("sweep results missing Spec %q", slug)
+ 		}
+ 	}
+-	return counts
+ }
+ 
+ func TestCheckLoopOrderRepositoryAgrees(t *testing.T) {
+@@ -255,25 +330,11 @@ func TestStageScopeDefaultSweepIsUnchanged(t *testing.T) {
+ func assertDefaultStageSweepUnchanged(t *testing.T, specsRoot, repoRoot string) {
+ 	t.Helper()
+ 
+-	entries, err := os.ReadDir(specsRoot)
+-	if err != nil {
+-		t.Fatalf("read Spec corpus %q: %v", specsRoot, err)
+-	}
+-	for _, entry := range entries {
+-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+-			continue
+-		}
+-		if _, err := os.Stat(filepath.Join(specsRoot, entry.Name(), "_prd.md")); errors.Is(err, os.ErrNotExist) {
+-			continue
+-		} else if err != nil {
+-			t.Fatalf("inspect Spec %q: %v", entry.Name(), err)
+-		}
+-		t.Run(filepath.Base(specsRoot)+"/"+entry.Name(), func(t *testing.T) {
+-			fullResult, err := speccheck.Check(specsRoot, repoRoot, entry.Name())
+-			if err != nil {
+-				t.Fatalf("Check(): %v", err)
+-			}
+-			defaultResult, err := speccheck.CheckStage(specsRoot, repoRoot, entry.Name(), speccheck.StageAll)
++	sweep := sharedCorpusSweep(t, specsRoot, repoRoot)
++	for _, slug := range sweep.slugs {
++		t.Run(filepath.Base(specsRoot)+"/"+slug, func(t *testing.T) {
++			fullResult := sweep.results[slug]
++			defaultResult, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageAll)
+ 			if err != nil {
+ 				t.Fatalf("CheckStage(StageAll): %v", err)
+ 			}
+diff --git a/internal/spec/citation_sources.go b/internal/spec/citation_sources.go
+index d5ae9a4e..19af3df1 100644
+--- a/internal/spec/citation_sources.go
++++ b/internal/spec/citation_sources.go
+@@ -152,16 +152,25 @@ func HistoryCitationsInSource(content []byte, path string, targets []string) ([]
+ 	// Probe with the writer's bounded path pass, discarding its output.
+ 	// Consuming matched tokens also avoids counting their internal dots
+ 	// as the start of a second, unrelated relative path.
++	targetSet := make(map[string]bool, len(targets))
++	for _, target := range targets {
++		targetSet[target] = true
++	}
+ 	rw := CitationRewrite{}
+ 	for i, line := range strings.Split(string(content), "\n") {
+ 		rw.Locate = func(candidate string) (GitLocator, bool, error) {
+ 			candidate = citationProseTarget(candidate, path)
+ 			matched := false
+-			for _, target := range targets {
+-				if candidate == target || strings.HasPrefix(candidate, target+"/") {
++			for target := candidate; ; {
++				if targetSet[target] {
+ 					found[HistoryCitation{Path: path, Line: i + 1, Target: target}] = true
+ 					matched = true
+ 				}
++				slash := strings.LastIndexByte(target, '/')
++				if slash < 0 {
++					break
++				}
++				target = target[:slash]
+ 			}
+ 			return GitLocator{Path: candidate}, matched, nil
+ 		}
+
+exit: 0; wall_seconds: 0.008
+$ go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0305-audit-7pq582gv/overlay.json -count=1 -timeout 5m -v -run ^TestQA0305ScopeProbe$ ./internal/speccheck
+=== RUN   TestQA0305ScopeProbe
+=== PAUSE TestQA0305ScopeProbe
+=== CONT  TestQA0305ScopeProbe
+    qa0305_scope_probe_test.go:3: docs/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec/task_01.md governed=false
+    qa0305_scope_probe_test.go:3: docs/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec/task_02.md governed=false
+    qa0305_scope_probe_test.go:3: docs/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec/task_03.md governed=false
+    qa0305_scope_probe_test.go:3: internal/docscontract/corpus_test.go governed=false
+    qa0305_scope_probe_test.go:3: internal/spec/citation_sources.go governed=false
+    qa0305_scope_probe_test.go:3: internal/spec/history_citation_cost_test.go governed=false
+--- PASS: TestQA0305ScopeProbe (0.00s)
+PASS
+suiteguard: guard cost: measured 2761 paths; fingerprint took 488.253041ms before and 64.241459ms after
+ok  	roundfix/internal/speccheck	0.862s
+
+exit: 0; wall_seconds: 1.827
+Tracked worktree delta:
+$ git diff --name-only
+
+exit: 0; wall_seconds: 0.011
+No skill blobs changed, hence no QA settlement section changed. No Governed Path, prerequisite/consequent tooling fix or regeneration. Authorization paths=[] and recorded delivery operations were present at Delivery Base.

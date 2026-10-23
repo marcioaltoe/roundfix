@@ -1,0 +1,10 @@
+Fresh empty temporary HOME; ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY and TYPESAFE_API_KEY unset. No environment values recorded.
+$ ./bin/roundfix archive 0305-the-documentation-contracts-cost-seconds-per-active-spec --plan --offline
+archive plan for 0305-the-documentation-contracts-cost-seconds-per-active-spec: removes 52 file(s) (336189 bytes) and writes docs/history/specs/0305-the-documentation-contracts-cost-seconds-per-active-spec.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-23-01.md, qa/qa-report-2026-10-23.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 41 file(s) (224217 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-22-the-documentation-contract-suite-costs-about-a-minute-per-active-spec-and-runs-twice-in-one-ci-job.md 1556 bytes: no advice (offline)
+promote with: roundfix archive 0305-the-documentation-contracts-cost-seconds-per-active-spec --promote <path>
+
+exit: 0; wall_seconds: 0.84
