@@ -2029,6 +2029,7 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 	}
 
 	type writtenReport struct {
+		head     string
 		repoRoot string
 		specDir  string
 		path     string
@@ -2044,6 +2045,7 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 			t.Fatalf("writeMechanicalQAReport() error = %v", err)
 		}
 		return writtenReport{
+			head:     strings.TrimSpace(runGitForTest(t, plan.WorkDir, "rev-parse", "HEAD")),
 			repoRoot: fixture.gitRoot,
 			specDir:  plan.Spec.Dir,
 			path:     reportPath,
@@ -2053,11 +2055,13 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 
 	t.Run("the refusal is recorded as one terminal row and its frontmatter", func(t *testing.T) {
 		t.Parallel()
-		report := writeReport(t, refusedResult).body
+		written := writeReport(t, refusedResult)
+		report := written.body
 		auditor := app.Auditor()
 		auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 
 		wantFrontmatter := "---\nverdict: fail\n" +
+			"build: " + strconv.Quote(written.head) + "\n" +
 			"auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
 			"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n" +
 			"rows_blocked_precondition: 1\n" +
@@ -2132,9 +2136,10 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		unrefused := refusedResult
 		unrefused.PreconditionRefused = false
 		unrefused.PreconditionRefusal = spec.PreconditionRefusal{}
-		report := writeReport(t, unrefused).body
+		written := writeReport(t, unrefused)
+		report := written.body
 
-		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
+		want := "---\nverdict: fail\nbuild: " + strconv.Quote(written.head) + "\n" + qaAuditorFrontmatterForTest() +
 			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
 			"## Authorization audit inputs\n\nNone.\n\n" +

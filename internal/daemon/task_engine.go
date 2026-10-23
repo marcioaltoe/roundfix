@@ -3396,7 +3396,11 @@ func (engine *Engine) resolveQAAuditorEvidence(ctx context.Context, plan TaskPla
 			deliveryBase = base
 		}
 	}
-	return spec.ResolveAuditorEvidence(ctx, plan.WorkDir, deliveryBase, engine.auditor()), nil
+	evidence := spec.ResolveAuditorEvidence(ctx, plan.WorkDir, deliveryBase, engine.auditor())
+	if commit, err := qaAuditedHead(ctx, plan.WorkDir); err == nil {
+		evidence.AuditedCommit = commit
+	}
+	return evidence, nil
 }
 
 func (engine *Engine) publishAuditorStalenessWarning(ctx context.Context, plan TaskPlan, ordinal int, reportPath string, evidence spec.AuditorEvidence) error {
@@ -3546,6 +3550,9 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	if commit := strings.TrimSpace(evidence.AuditedCommit); result.Blocking && commit != "" {
+		fmt.Fprintf(&content, "build: %s\n", strconv.Quote(commit))
+	}
 	auditor := auditorEvidenceBinary(evidence)
 	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
