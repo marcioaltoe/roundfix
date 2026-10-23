@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0305-the-documentation-contracts-cost-seconds-per-active-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -106,3 +106,89 @@ Removed History Paths.
 
 - `_prd.md` → Sources; Goals; Core Feature 1; Success Metric 1; Success Metric 2; Success Metric 5
 - `_techspec.md` → Current behavior; API Contract 1; Invariants 1-2; Testing Approach; Build Order 1
+
+
+## Result
+
+Implemented API Contract 1 for the adopted performance Backlog Entry: the
+prose pass builds one target set per call and probes each normalized candidate
+and its slash-delimited ancestors, recording every matching target. The
+returned Git Locator still contains the full candidate. The Markdown pass,
+rewrite implementation and final citation ordering retain their bytes.
+
+Added `internal/spec/history_citation_cost_test.go` with the requested
+Sequential allocation test and parallel descendant table. The table checks
+exact files, descendants, nested targets in sorted order, explicit `../` and
+`./` prose paths, trailing slashes, and both file and directory prefix-only
+nonmatches. Both tests use in-memory content without Git, a temporary home or
+real-time measurements.
+
+Focused evidence by acceptance criterion:
+
+1. Allocation bound: `rtk proxy go test -count=1 -timeout 2m -v
+   ./internal/spec -run '^TestHistoryCitationsInSource'` exposed the original
+   loop at 1,220 allocations with one removed path versus 802,819 with 2,000
+   (exit 1, allocation assertion only). After the lookup change, the same
+   command passed (exit 0): 822 versus 830 allocations, an increase of 8
+   against the limit of 64. Every measured call returned exactly the last
+   removed path on Makefile line 1.
+2. Citation preservation: that command passed all eight descendant-table
+   cases before and after the change. `rtk proxy go test -count=1 -timeout
+   3m ./internal/spec ./internal/speccheck -run
+   'TestHistory(Rewrite|Citations|Retained)'` passed both packages (exit 0),
+   exercising existing History Citation, rewrite and SC-HISTORY-RETAINED
+   tests unchanged. `rtk proxy go test -count=1 -timeout 3m ./internal/cli
+   -run '^TestBaselineUpdate(HistoryCitationBoundaries|ReportsStaleHistoryCitationsTranscript|ListsHistoryCitationsTranscript)$'`
+   passed (exit 0), covering the selected downstream citation consumers.
+3. Sequential ceiling and Windows: `rtk proxy go test -count=1 -timeout 2m
+   -v ./internal/testfixture -run
+   '^TestEveryTestInAParallelTestPackageRunsInParallel$/repository$'` passed
+   (exit 0), reporting `internal/spec: 2 Sequential Tests, ceiling 2`.
+   `GOOS=windows rtk proxy go test -c -o
+   /private/tmp/roundfix-0305-task01-spec.test.exe ./internal/spec` passed
+   (exit 0), compiling production and test code for Windows.
+
+Scope inspection: only the lookup in `internal/spec/citation_sources.go`,
+the new test file and this Result were edited. The pre-existing Daemon-owned
+`status: in_progress` change was preserved. `rtk proxy git diff --check`
+passed (exit 0). No existing test, fixture, golden, finding text, Makefile,
+workflow, other Task or Task Graph was changed.
+
+Environment: the configured writable root contains a symlink, so the sandbox
+refused process creation; focused commands used the approved execution path.
+No repository configuration was changed for this environment issue.
+
+The Daemon owns declared Task Verification, repository Verification and
+terminal Task settlement. No commit, push or pull request was made.
+
+
+### Verification feedback — attempt 1
+
+Inspected the supplied artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261023T230327Z_48bea4b01c18b895/verification/batch-001-attempt-1.log`
+and the failing test in `internal/agent/acpx_runner_test.go`, together with
+capability acquisition in `internal/agent/selection_capabilities.go`.
+The Daemon's `make verify-changed` exited 2 because
+`TestDisposableProofAppliesRequestedAccessMode` received a selection rejection
+during session capability inspection instead of the access-policy rejection
+it expects at the access-mode predicate. The artifact reports passing package
+results for `internal/spec`, `internal/speccheck` and `internal/testfixture`.
+The underlying reason the adapter command failed is not established by this
+artifact; no claim of flakiness or environment failure is made.
+
+This failure concerns the agent adapter and its existing test, outside the
+assigned citation-lookup slice. No implementation repair is supported by the
+reported diagnostic, so production code and tests were left unchanged during
+this feedback turn. Follow-up: investigate the agent capability-inspection
+failure under separately scoped work if it persists.
+
+Fresh focused check: `rtk proxy go test -count=1 -timeout 2m -v
+./internal/spec -run '^TestHistoryCitationsInSource'` passed (exit 0), including
+all eight boundary cases and 822 versus 830 allocations (increase 8, limit 64).
+The declared Verification and `make verify-changed` were not rerun by this
+Agent; the Daemon retains the full verification rerun and settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261023T230327Z_48bea4b01c18b895`
+- Source commit: `da93f83260d19bbcab4ef22dbe9644b282a20ff8`
