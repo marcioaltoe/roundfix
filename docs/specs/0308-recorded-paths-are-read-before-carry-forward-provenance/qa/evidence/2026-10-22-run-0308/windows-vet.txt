@@ -1,0 +1,6 @@
+command: go vet ./internal/spec ./internal/cli ./internal/worktree
+stdout:
+
+stderr:
+
+exit: 0

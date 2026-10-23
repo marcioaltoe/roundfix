@@ -1,0 +1,13 @@
+command: ./bin/roundfix spec check 0308-recorded-paths-are-read-before-carry-forward-provenance --strict
+stdout:
+Spec 0308-recorded-paths-are-read-before-carry-forward-provenance
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0308-recorded-paths-are-read-before-carry-forward-provenance/_techspec.md Vocabulary Contract
+
+stderr:
+
+exit: 0

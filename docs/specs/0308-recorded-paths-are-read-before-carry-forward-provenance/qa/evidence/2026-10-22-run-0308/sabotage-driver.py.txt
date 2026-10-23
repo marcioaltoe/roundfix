@@ -1,0 +1,24 @@
+import importlib.util
+spec=importlib.util.spec_from_file_location('q','/tmp/roundfix-0308-qa-driver.py')
+q=importlib.util.module_from_spec(spec); spec.loader.exec_module(q)
+import tarfile,io,subprocess,pathlib,re
+blob=subprocess.check_output(['git','archive','HEAD'],cwd=q.root)
+original=(q.root/'internal/spec/recorded_paths.go').read_text()
+reader='TestRecordedPathsAreReadBeforeTrailingSettlementSections'; writer='TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance'; correction='TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared'
+mutations=[
+('S01','settlement-stop',original.replace('case RecordedPathsHeading, "## Result", "## Carry-forward provenance":','case RecordedPathsHeading:'),'./internal/spec ./internal/cli',reader+'|'+correction,[reader+'/carry-forward-provenance',correction]),
+('S02','authored-crossing',original.replace('break settlementRun','first--; continue settlementRun'),'./internal/spec',reader+'|TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections',[reader+'/authored-section-between','TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections']),
+('S03','fence-crossing',original.replace('} else if !inFence {','}; {'),'./internal/spec',reader+'|TestRecordedPathsKeepAFencedHeadingInAuthoredText',[reader+'/fenced-heading-before-provenance','TestRecordedPathsKeepAFencedHeadingInAuthoredText']),
+('S04','drop-suffix',original.replace('updated = append(updated, content[cursor:]...)','_ = cursor'),'./internal/spec',writer,[writer+'/new-paths']),
+('S05','always-append',original.replace('sections := recordedPathsSections(content)','var sections []taskFileSection',1),'./internal/spec',writer+'|TestRecordedPathsReplaceTheTrailingDaemonSection',[writer+'/same-paths','TestRecordedPathsReplaceTheTrailingDaemonSection'])]
+for row,name,source,packages,pattern,expected in mutations:
+ assert source!=original
+ dest=q.tmp/('final-'+name); dest.mkdir()
+ with tarfile.open(fileobj=io.BytesIO(blob)) as tar: tar.extractall(dest,filter='data')
+ (dest/'internal/spec/recorded_paths.go').write_text(source)
+ (q.ev/(name+'-mutation.txt')).write_text('Temporary git archive HEAD copy; only internal/spec/recorded_paths.go changed.\n'+''.join(__import__('difflib').unified_diff(original.splitlines(True),source.splitlines(True),fromfile='audited-head',tofile=name)))
+ p=q.run(name,['go','test','-timeout','10m','-count=1','-v','-run','^('+pattern+')$']+packages.split(),cwd=dest)
+ missing=[n for n in expected if not re.search(r'--- FAIL: '+re.escape(n)+r' ',p.stdout)]
+ good=p.returncode!=0 and not missing and '[build failed]' not in p.stdout
+ q.finish([row],'pass' if good else 'fail','One sabotage in a fresh `git archive HEAD` copy, never the audited checkout. Evidence: '+name+'.txt and '+name+'-mutation.txt. Expected test failure observed: '+', '.join(expected)+'. Missing expected failures: '+repr(missing)+'. Exit '+str(p.returncode)+'; the sabotage is detected by behavioral assertions, not a compilation failure.')
+ print(row,'detected' if good else 'NOT DETECTED',flush=True)

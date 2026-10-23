@@ -1,0 +1,3 @@
+package main
+import("fmt"; "os"; "roundfix/internal/speccheck")
+func main(){for _,p:=range os.Args[1:] {fmt.Printf("%s governed=%t\n",p,speccheck.GovernedPath(p)); if speccheck.GovernedPath(p){os.Exit(1)}}}

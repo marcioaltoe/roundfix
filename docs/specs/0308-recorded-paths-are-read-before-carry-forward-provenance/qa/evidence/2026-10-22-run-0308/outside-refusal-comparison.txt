@@ -1,0 +1,4 @@
+External source: adopted Inbox Entry, origin oraculum, created 2026-10-22, before Spec authoring.
+Normalized refusal before semicolon: changed path other.txt is outside the named archived Specs and the paths their Tasks declared
+Current executed test assertion: changed path other.txt is outside the named archived Specs and the paths their Tasks declared
+Equal: True

@@ -1,0 +1,3 @@
+package main
+import("fmt"; "os"; "roundfix/internal/spec")
+func main(){r,e:=spec.ReadQAReport(os.Args[1]);if e!=nil{panic(e)};if e=spec.QAReportEligibility(os.Args[1],r);e!=nil{panic(e)};fmt.Println("QAReportEligibility: accepted partial")}

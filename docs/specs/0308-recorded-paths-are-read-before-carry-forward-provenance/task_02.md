@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0308-recorded-paths-are-read-before-carry-forward-provenance
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

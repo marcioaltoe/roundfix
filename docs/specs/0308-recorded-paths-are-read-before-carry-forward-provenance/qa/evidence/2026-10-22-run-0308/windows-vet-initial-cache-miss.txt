@@ -1,0 +1,19 @@
+command: go vet ./internal/spec ./internal/cli ./internal/worktree
+stdout:
+
+stderr:
+go: downloading golang.org/x/sys v0.47.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading modernc.org/sqlite v1.57.0
+go: downloading charm.land/lipgloss/v2 v2.0.6
+go: downloading charm.land/bubbletea/v2 v2.0.9
+go: downloading golang.org/x/text v0.41.0
+internal/spec/archive.go:17:2: module lookup disabled by GOPROXY=off
+internal/cli/review_dispose_lock_windows.go:12:2: module lookup disabled by GOPROXY=off
+internal/skillhash/hash.go:9:2: module lookup disabled by GOPROXY=off
+internal/skillhash/hash.go:10:2: module lookup disabled by GOPROXY=off
+internal/store/store.go:20:2: module lookup disabled by GOPROXY=off
+internal/tui/cockpit.go:18:2: module lookup disabled by GOPROXY=off
+internal/tui/cockpit.go:19:2: module lookup disabled by GOPROXY=off
+
+exit: 1

@@ -1,0 +1,319 @@
+command: go test -timeout 10m -count=1 -v -run ^(TestRecordedPathsAreReadBeforeTrailingSettlementSections|TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance|TestRecordedPathsKeepAFencedHeadingInAuthoredText|TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections|TestRecordedPathsReplaceTheTrailingDaemonSection|TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte|TestRecordTaskPathsWithNoPathsRemovesTheSection|TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths|TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared|TestARecordedPathCountsAsDeclared|TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath|TestDeclaredPathsAreReadAtTheRecordedRevision|TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit|TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance|TestArchivedSpecLeftoverScopeKinds|TestTaskCommitRecordsAnUndeclaredTestFile|TestTaskCommitRecordsNothingWhenEveryPathIsDeclared|TestVerificationPathUndeclaredIgnoresWhatThePlanProvides)$ ./internal/spec ./internal/cli ./internal/worktree ./internal/daemon ./internal/speccheck
+stdout:
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths
+=== RUN   TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== PAUSE TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== RUN   TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections
+=== PAUSE TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections
+=== RUN   TestRecordedPathsReplaceTheTrailingDaemonSection
+=== PAUSE TestRecordedPathsReplaceTheTrailingDaemonSection
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections
+=== RUN   TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance
+=== PAUSE TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance
+=== RUN   TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte
+=== PAUSE TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte
+=== RUN   TestRecordTaskPathsWithNoPathsRemovesTheSection
+=== PAUSE TestRecordTaskPathsWithNoPathsRemovesTheSection
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections
+=== CONT  TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance
+=== CONT  TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance
+=== CONT  TestRecordTaskPathsWithNoPathsRemovesTheSection
+=== RUN   TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/same-paths
+=== PAUSE TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/same-paths
+=== RUN   TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/new-paths
+=== PAUSE TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/new-paths
+=== RUN   TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/no-paths
+=== PAUSE TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/no-paths
+=== RUN   TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/duplicate-sections
+=== PAUSE TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/duplicate-sections
+=== CONT  TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/same-paths
+=== CONT  TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections
+=== CONT  TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== CONT  TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/duplicate-sections
+=== CONT  TestRecordedPathsReplaceTheTrailingDaemonSection
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter
+=== CONT  TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/no-paths
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context
+=== RUN   TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path
+=== PAUSE TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance
+=== CONT  TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/new-paths
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path
+=== CONT  TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context
+--- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths (0.00s)
+    --- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-frontmatter (0.00s)
+    --- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-recorded-path (0.00s)
+    --- PASS: TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths/invalid-context (0.00s)
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance
+--- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance (0.00s)
+--- PASS: TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte (0.00s)
+--- PASS: TestRecordedPathsReplaceTheTrailingDaemonSection (0.00s)
+--- PASS: TestRecordedPathsKeepAFencedHeadingInAuthoredText (0.00s)
+--- PASS: TestRecordTaskPathsWithNoPathsRemovesTheSection (0.00s)
+--- PASS: TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections (0.00s)
+--- PASS: TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance (0.00s)
+    --- PASS: TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/same-paths (0.00s)
+    --- PASS: TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/duplicate-sections (0.00s)
+    --- PASS: TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/new-paths (0.00s)
+    --- PASS: TestRecordTaskPathsReplacesTheSectionBeforeCarryForwardProvenance/no-paths (0.00s)
+PASS
+suiteguard: guard cost: measured 2702 paths; fingerprint took 84.534834ms before and 74.17425ms after
+ok  	roundfix/internal/spec	0.263s
+=== RUN   TestARecordedPathCountsAsDeclared
+=== PAUSE TestARecordedPathCountsAsDeclared
+=== RUN   TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath
+=== PAUSE TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision
+=== RUN   TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared
+=== PAUSE TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared
+=== RUN   TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit
+=== PAUSE TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit
+=== CONT  TestARecordedPathCountsAsDeclared
+=== CONT  TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision
+=== RUN   TestARecordedPathCountsAsDeclared/archive-record
+=== CONT  TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit
+=== PAUSE TestARecordedPathCountsAsDeclared/archive-record
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record
+=== RUN   TestARecordedPathCountsAsDeclared/legacy-folder
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record
+=== CONT  TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath
+=== PAUSE TestARecordedPathCountsAsDeclared/legacy-folder
+=== CONT  TestARecordedPathCountsAsDeclared/archive-record
+=== CONT  TestARecordedPathCountsAsDeclared/legacy-folder
+=== RUN   TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/archive-record
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit
+=== PAUSE TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/archive-record
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit
+=== RUN   TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/legacy-folder
+=== PAUSE TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/legacy-folder
+=== CONT  TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/archive-record
+=== RUN   TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree
+=== PAUSE TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree
+=== CONT  TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/legacy-folder
+=== CONT  TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree
+--- PASS: TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit (0.56s)
+--- PASS: TestARecordedPathCountsAsDeclared (0.00s)
+    --- PASS: TestARecordedPathCountsAsDeclared/legacy-folder (0.99s)
+    --- PASS: TestARecordedPathCountsAsDeclared/archive-record (1.13s)
+--- PASS: TestACodeCorrectionOutsideTheDeclaredPathsNamesTheFirstPath (1.16s)
+--- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision (0.00s)
+    --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder (0.00s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/working-tree (1.01s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/legacy-folder/correction-commit (1.03s)
+    --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record (0.00s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/working-tree (1.14s)
+        --- PASS: TestDeclaredPathsAreReadAtTheRecordedRevision/archive-record/correction-commit (1.19s)
+--- PASS: TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared (0.00s)
+    --- PASS: TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/legacy-folder (1.11s)
+    --- PASS: TestARecordedPathBeforeCarryForwardProvenanceCountsAsDeclared/archive-record (1.22s)
+PASS
+suiteguard: guard cost: measured 2702 paths; fingerprint took 201.451958ms before and 76.962375ms after
+ok  	roundfix/internal/cli	1.825s
+=== RUN   TestArchivedSpecLeftoverScopeKinds
+=== PAUSE TestArchivedSpecLeftoverScopeKinds
+=== RUN   TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance
+=== PAUSE TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance
+=== CONT  TestArchivedSpecLeftoverScopeKinds
+=== CONT  TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance
+=== RUN   TestArchivedSpecLeftoverScopeKinds/created.txt
+=== RUN   TestArchivedSpecLeftoverScopeKinds/deleted.txt
+--- PASS: TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance (0.81s)
+=== RUN   TestArchivedSpecLeftoverScopeKinds/recorded.txt
+--- PASS: TestArchivedSpecLeftoverScopeKinds (1.76s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/created.txt (0.76s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/deleted.txt (0.65s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/recorded.txt (0.34s)
+PASS
+suiteguard: guard cost: measured 2702 paths; fingerprint took 102.904417ms before and 73.387417ms after
+ok  	roundfix/internal/worktree	2.080s
+=== RUN   TestTaskCommitRecordsAnUndeclaredTestFile
+=== PAUSE TestTaskCommitRecordsAnUndeclaredTestFile
+=== RUN   TestTaskCommitRecordsNothingWhenEveryPathIsDeclared
+=== PAUSE TestTaskCommitRecordsNothingWhenEveryPathIsDeclared
+=== CONT  TestTaskCommitRecordsAnUndeclaredTestFile
+=== CONT  TestTaskCommitRecordsNothingWhenEveryPathIsDeclared
+--- PASS: TestTaskCommitRecordsAnUndeclaredTestFile (0.46s)
+--- PASS: TestTaskCommitRecordsNothingWhenEveryPathIsDeclared (0.53s)
+PASS
+suiteguard: guard cost: measured 2702 paths; fingerprint took 133.805875ms before and 325.599084ms after
+ok  	roundfix/internal/daemon	1.178s
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/creates
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/creates
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/interface
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/interface
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/deletes
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/deletes
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/instruction
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/instruction
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/recorded
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/recorded
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/transitive_dependency
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/transitive_dependency
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency_directory
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency_directory
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/directory_prefix
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/directory_prefix
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing_directory
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing_directory
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_pattern
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_pattern
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_explicit_pattern
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_explicit_pattern
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern_file
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern_file
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/printf
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/printf
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/echo
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/echo
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_test
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_test
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_bracket
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_bracket
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_test
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_test
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_bracket
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_bracket
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/spec_root
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/spec_root
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/custom_spec_root
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/custom_spec_root
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/completed
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/completed
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/in_progress
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/in_progress
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/failed
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/failed
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/QA_Task
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/QA_Task
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/no_graph
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/no_graph
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/variable
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/variable
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/glob
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/glob
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/ellipsis
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/ellipsis
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/unknown_root
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/unknown_root
+=== RUN   TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/single_segment
+=== PAUSE TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/single_segment
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/creates
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_test
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/echo
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/printf
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern_file
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_explicit_pattern
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_pattern
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing_directory
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/failed
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/glob
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/variable
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/no_graph
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/single_segment
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/QA_Task
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/unknown_root
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/spec_root
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/in_progress
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/completed
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/custom_spec_root
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_test
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_bracket
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/directory_prefix
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency_directory
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/transitive_dependency
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/instruction
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/recorded
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/deletes
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/interface
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_bracket
+=== CONT  TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/ellipsis
+--- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides (0.00s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_test (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/printf (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern_file (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_pattern (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/creates (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/echo (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/existing_directory (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/grep_explicit_pattern (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/rg_pattern (0.06s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/no_graph (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/single_segment (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/glob (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/variable (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/failed (0.06s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/unknown_root (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/spec_root (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/in_progress (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/completed (0.06s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/QA_Task (0.07s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/custom_spec_root (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_test (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/shell-negated_bracket (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/directory_prefix (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/dependency_directory (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/instruction (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/transitive_dependency (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/deletes (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/recorded (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/interface (0.05s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/negated_bracket (0.04s)
+    --- PASS: TestVerificationPathUndeclaredIgnoresWhatThePlanProvides/ellipsis (0.04s)
+PASS
+suiteguard: guard cost: measured 2702 paths; fingerprint took 90.905292ms before and 160.877791ms after
+ok  	roundfix/internal/speccheck	0.595s
+
+stderr:
+
+exit: 0

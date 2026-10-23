@@ -1,0 +1,11 @@
+PRD Glossary: None.
+Known terms in CONTEXT.md:
+**Recorded Path**:
+A path the Daemon records under a Task file's `## Recorded paths` section when
+The terminal Run outcome a Stop Request or a Force Stop produces: the Run ended before another outcome, its local work preserved and any kept Run Worktree available to Task Carry-Forward. It exits `0`.
+The terminal Run outcome (`BudgetExceeded`) of a Run whose Run Budget passed: a watch Run settles it from its deadline, and a Spec Run settles it with the configured maximum and the elapsed time, cancels the Agent Sessions it owns and keeps its Run Worktree and Run Branch for Task Carry-Forward ([ADR-0158](docs/adr/0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)).
+The support command that inspects the Run Worktrees and Run Branches of terminal Spec Runs and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.
+**Task Carry-Forward**:
+The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started Queue Owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
+_Avoid_: Skipped row, Task Carry-Forward
+No new named domain object, schema or term is introduced by the implementation.

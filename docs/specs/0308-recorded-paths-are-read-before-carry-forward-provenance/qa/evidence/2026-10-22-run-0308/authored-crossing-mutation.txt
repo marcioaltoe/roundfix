@@ -1,0 +1,12 @@
+Temporary git archive HEAD copy; only internal/spec/recorded_paths.go changed.
+--- audited-head
++++ authored-crossing
+@@ -170,7 +170,7 @@
+ 		case RecordedPathsHeading, "## Result", "## Carry-forward provenance":
+ 			first--
+ 		default:
+-			break settlementRun
++			first--; continue settlementRun
+ 		}
+ 	}
+ 	var recorded []taskFileSection

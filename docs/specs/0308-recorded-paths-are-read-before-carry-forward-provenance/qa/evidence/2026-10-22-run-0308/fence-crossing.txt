@@ -1,0 +1,41 @@
+command: go test -timeout 10m -count=1 -v -run ^(TestRecordedPathsAreReadBeforeTrailingSettlementSections|TestRecordedPathsKeepAFencedHeadingInAuthoredText)$ ./internal/spec
+stdout:
+=== RUN   TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== PAUSE TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections
+=== CONT  TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance
+=== NAME  TestRecordedPathsKeepAFencedHeadingInAuthoredText
+    recorded_paths_section_test.go:20: RecordedTaskPaths() = [authored.go], want no paths from a fenced heading
+--- FAIL: TestRecordedPathsKeepAFencedHeadingInAuthoredText (0.00s)
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between
+=== RUN   TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance
+=== PAUSE TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance
+    recorded_paths_section_test.go:120: RecordedTaskPaths() = [z.go], want []
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections
+=== CONT  TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance
+--- FAIL: TestRecordedPathsAreReadBeforeTrailingSettlementSections (0.00s)
+    --- FAIL: TestRecordedPathsAreReadBeforeTrailingSettlementSections/fenced-heading-before-provenance (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/carry-forward-provenance (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/duplicate-sections (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/authored-section-between (0.00s)
+    --- PASS: TestRecordedPathsAreReadBeforeTrailingSettlementSections/result-then-provenance (0.00s)
+FAIL
+suiteguard: guard cost: measured 2674 paths; fingerprint took 104.385167ms before and 64.913709ms after
+FAIL	roundfix/internal/spec	0.439s
+FAIL
+
+stderr:
+
+exit: 1

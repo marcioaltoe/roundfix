@@ -1,0 +1,12 @@
+Temporary git archive HEAD copy; only internal/spec/recorded_paths.go changed.
+--- audited-head
++++ drop-suffix
+@@ -82,7 +82,7 @@
+ 			updated = append(updated, content[cursor:section.start]...)
+ 			cursor = section.end
+ 		}
+-		updated = append(updated, content[cursor:]...)
++		_ = cursor
+ 	}
+ 	if bytes.Equal(updated, content) {
+ 		return nil

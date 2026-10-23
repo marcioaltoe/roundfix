@@ -1,0 +1,7 @@
+command: go run ./cmd/qa-report /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0308-recorded-paths-are-read-before-carry-forward-provenance-b180459af79610f0-77a4585f-8e5e14e2/run_20261022T233445Z_6a2b8a3e2313014b/docs/specs/0308-recorded-paths-are-read-before-carry-forward-provenance
+stdout:
+QAReportEligibility: accepted partial
+
+stderr:
+
+exit: 0

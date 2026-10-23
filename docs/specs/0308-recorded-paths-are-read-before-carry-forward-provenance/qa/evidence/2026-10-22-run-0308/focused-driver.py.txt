@@ -1,0 +1,37 @@
+import os,re,json,subprocess,pathlib,tarfile,io
+root=pathlib.Path.cwd(); tmp=pathlib.Path('/tmp/roundfix-0308-qa-root').read_text(); tmp=pathlib.Path(tmp)
+slug='0308-recorded-paths-are-read-before-carry-forward-provenance'; s=root/'docs/specs'/slug; report=s/'qa/qa-report-2026-10-22.md'; ev=s/'qa/evidence/2026-10-22-run-0308'
+e=dict(os.environ)
+for k in list(e):
+ if 'API_KEY' in k or k.startswith('GIT_CONFIG_'): e.pop(k,None)
+e['GOPATH']=subprocess.check_output(['go','env','GOPATH'],text=True).strip()
+e.update(HOME=str(tmp/'home'),XDG_CONFIG_HOME=str(tmp/'config'),GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1',GOPROXY='off',GOTOOLCHAIN='local')
+def finish(ids,status,body):
+ text=report.read_text()
+ for row in ids:
+  text=re.sub(r'\| '+row+r' \| (?:pending|pass|fail) \|', '| '+row+' | '+status+' |',text)
+  a=text.index('### '+row+'\n'); b=text.find('\n### ',a+5)
+  if b<0:b=len(text)
+  part=text[a:b].replace('Observation pending.',body); text=text[:a]+part+text[b:]
+ report.write_text(text)
+def run(name,args,cwd=root,extra=None):
+ env=e.copy(); env.update(extra or {})
+ p=subprocess.run(args,cwd=cwd,env=env,text=True,capture_output=True)
+ (ev/(name+'.txt')).write_text('command: '+' '.join(args)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n')
+ print(name,'exit',p.returncode,flush=True); return p
+if __name__=='__main__':
+ finish(['R01'],'pass','`make build` exited 0. `./bin/roundfix --version` identifies the Run-built binary (version.txt). The dirty build suffix reflects the seeded untracked QA directory; production sources match the audited head. Static gate: Daemon-supplied `make verify-changed`, exit 0, diagnostics removed on success; not rerun. Strict precondition: precondition.txt, exit 0.')
+ task=(s/'task_01.md').read_text(); shell=re.search(r'- `(out=.*?)` — expected:',task,re.S).group(1)
+ regex=re.search(r"-run '([^']+)'",shell).group(1)
+ names=regex[2:-2].split('|')
+ p=run('named-tests',['go','test','-timeout','10m','-count=1','-v','-run',regex,'./internal/spec','./internal/cli','./internal/worktree','./internal/daemon','./internal/speccheck'])
+ missing=[n for n in names if not re.search(r'--- PASS: '+re.escape(n)+r' ',p.stdout)]
+ ok=p.returncode==0 and not missing
+ (ev/'named-test-check.txt').write_text('Expected top-level tests: '+str(len(names))+'\nMissing pass markers: '+repr(missing)+'\nSKIP lines: '+repr([l for l in p.stdout.splitlines() if '--- SKIP:' in l])+'\n')
+ status='pass' if ok else 'fail'
+ finish(['R02'],status,'`named-tests.txt` records archive-record and legacy-folder, each accepting review.txt and rejecting other.txt at the unchanged exact refusal assertion. Unchanged recorded-path, outside-scope and recorded-revision tests also pass; see the named assertion code and verbose pass markers.')
+ finish(['R03'],status,'`named-tests.txt`: all five reader rows pass (carry-forward-provenance, result-then-provenance, duplicate-sections, authored-section-between, fenced-heading-before-provenance); all four writer rows pass (same-paths including unchanged file identity, new-paths, no-paths, duplicate-sections). Exact output bytes preserve provenance. All five required existing boundary tests pass.')
+ finish(['R04'],status,'`named-tests.txt`: carried recorded.txt is superseded. Existing scope-kind subtests each remain superseded (declared-file, declared-directory/child.txt, recorded.txt); assertions inspect reconcile state in a temporary Git repository.')
+ finish(['R05'],status,'`named-tests.txt`: Task commit and settle writers record undeclared paths; Verification provision ignores paths the plan provides. All named tests pass without skipped rows.')
+ p=run('windows-vet',['go','vet','./internal/spec','./internal/cli','./internal/worktree'],extra={'GOOS':'windows'})
+ finish(['R06'],'pass' if ok and p.returncode==0 else 'fail','Executed every one of the 18 tests named by Task 01 Verification, each with an explicit PASS marker (`named-test-check.txt`), plus `GOOS=windows go vet ./internal/spec ./internal/cli ./internal/worktree` (windows-vet.txt). This runs the same test selection and Windows analysis as authored; repository Verification remains daemon-owned.')

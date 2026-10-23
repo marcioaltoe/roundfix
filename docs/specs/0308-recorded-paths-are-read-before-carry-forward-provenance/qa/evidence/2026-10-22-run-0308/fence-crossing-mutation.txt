@@ -1,0 +1,12 @@
+Temporary git archive HEAD copy; only internal/spec/recorded_paths.go changed.
+--- audited-head
++++ fence-crossing
+@@ -146,7 +146,7 @@
+ 				inFence = false
+ 				fence = ""
+ 			}
+-		} else if !inFence {
++		}; {
+ 			if depth, _, ok := markdownHeading(trimmed); ok && depth == 2 {
+ 				start := lineStart
+ 				if start > 0 && content[start-1] == '\n' {

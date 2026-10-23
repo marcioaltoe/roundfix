@@ -1,0 +1,20 @@
+Task commit b7e94afbd8b189e43e683f22d4a6af2404bd0388
+docs/specs/0308-recorded-paths-are-read-before-carry-forward-provenance/task_01.md
+internal/cli/review_declared_correction_test.go
+internal/spec/recorded_paths.go
+internal/spec/recorded_paths_section_test.go
+internal/worktree/merged_spec_leftovers_test.go
+
+Range ae93850530fe8d5402dd076f3e8cb94a0b859f12..b7e94afbd8b189e43e683f22d4a6af2404bd0388
+
+Undeclared ordinary paths: []
+
+Protected paths changed at head: []
+
+Protected worktree changes: []
+
+QA settlement changes: False
+
+Authorization paths: [] (approved record present at Delivery Base; unchanged in Task commit).
+
+Scope mapping: four interface paths plus task_01.md; no Recorded paths section needed.
