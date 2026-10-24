@@ -289,26 +289,22 @@ func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir s
 		}
 	}
 	var specItems []followUpItem
-	specsRoot, specErr := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	_, active, specErr := readFollowUpSpecs(loaded)
 	if specErr == nil {
-		active, _, listErr := spec.ListActiveDetailed(specsRoot.Path)
-		specErr = listErr
-		if specErr == nil {
-			for _, activeSpec := range active {
-				fields, err := readFollowUpMarkdown(filepath.Join(activeSpec.Dir, "_prd.md"))
-				if err != nil {
-					specErr = err
-					break
-				}
-				text := fields.text
-				// The judge receives only the PRD's first paragraph, not its full body.
-				lines := strings.Split(text, "\n")
-				for len(lines) > 0 && (strings.TrimSpace(lines[0]) == "" || strings.HasPrefix(lines[0], "#")) {
-					lines = lines[1:]
-				}
-				text, _, _ = strings.Cut(strings.Join(lines, "\n"), "\n\n")
-				specItems = append(specItems, followUpItem{Kind: "spec", Ref: deliverPlanRelativePath(loaded.GitRoot, activeSpec.Dir), Type: "spec", Date: fields.Created, Title: fields.title, text: text, origin: namespace})
+		for _, activeSpec := range active {
+			fields, err := readFollowUpMarkdown(filepath.Join(activeSpec.Dir, "_prd.md"))
+			if err != nil {
+				specErr = err
+				break
 			}
+			text := fields.text
+			// The judge receives only the PRD's first paragraph, not its full body.
+			lines := strings.Split(text, "\n")
+			for len(lines) > 0 && (strings.TrimSpace(lines[0]) == "" || strings.HasPrefix(lines[0], "#")) {
+				lines = lines[1:]
+			}
+			text, _, _ = strings.Cut(strings.Join(lines, "\n"), "\n\n")
+			specItems = append(specItems, followUpItem{Kind: "spec", Ref: deliverPlanRelativePath(loaded.GitRoot, activeSpec.Dir), Type: "spec", Date: fields.Created, Title: fields.title, text: text, origin: namespace})
 		}
 	}
 	sources = append(sources, followUpSourceResult("specs", len(specItems), specErr))
@@ -316,6 +312,15 @@ func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir s
 		items = append(items, specItems...)
 	}
 	return items, sources, nil
+}
+
+func readFollowUpSpecs(loaded roundconfig.Loaded) (string, []spec.Spec, error) {
+	root, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	if err != nil {
+		return "", nil, err
+	}
+	active, _, err := spec.ListActiveDetailed(root.Path)
+	return root.Path, active, err
 }
 
 type followUpRun struct {
@@ -357,6 +362,7 @@ type followUpGit struct {
 func (git followUpGit) hasChanges() bool { return len(git.ChangedPaths) > 0 || git.UnpushedCommits > 0 }
 
 type followUpProgress struct {
+	queue         store.DeliveryQueue
 	Runs          []followUpRun         `json:"runs"`
 	DeliveryQueue []followUpQueueItem   `json:"delivery_queue"`
 	PullRequests  []followUpPullRequest `json:"pull_requests"`
@@ -395,6 +401,7 @@ func readFollowUpProgress(ctx context.Context, loaded roundconfig.Loaded, enviro
 		if err != nil {
 			return progress, nil, err
 		}
+		progress.queue = queue
 		for _, item := range queue.Items {
 			if item.Stage == store.DeliveryStageMerged {
 				continue

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -116,3 +116,82 @@ Surface Transcripts 1 and 3.
 - `_techspec.md` → API Contracts 1 and 8; Surface Transcripts 1 and 3; Invariants 1-3 and 6; Testing Approach; Build Order 4
 - ADR-0143
 - ADR-0319
+
+
+## Result
+
+Implemented the `--status` text and JSON views without changing the list
+report. Status branches before the list inventory, reuses the in-progress
+readers and active-Spec discovery, loads Task counts with `spec.Load`, and
+builds the Release Plan with an empty request over the existing Git adapter
+and its command dependency. The queue snapshot supplies the same
+`PendingQuestionFor` answer as `deliver status`; parked rows retain
+`ClassifyPark`'s Park Class and next action.
+
+Acceptance evidence from focused implementation checks:
+
+- Pending Specs, release, parks and question:
+  `TestFollowUpStatusListsPendingSpecsInDeliveryOrder` checks position order
+  (`0009-second`, `0003-first`) before `0005-unqueued`, stages, null queue
+  fields, Task counts and text. Merged items are excluded.
+  `TestFollowUpStatusListsBlockersAndTheMaintainersQuestion` checks both
+  parks, the lowest-position question and the public `deliver status`
+  answer. Release subtests cover no unreleased changes, feature approval,
+  patch readiness, maintenance-only `no_release`, manual classification,
+  dirty worktree and absent release tag, including both stop states.
+- Release errors: dirty-worktree and missing-tag subtests check
+  `unavailable`, its reason and exit 0; `errors.Is` recognizes the wrapped
+  invalid-range error as `no_unreleased_changes`.
+- Judge-free and read-only: `TestFollowUpStatusNeverAsksTheJudge` supplies a
+  Judge Key Variable through the command environment, pending source items,
+  a malformed Secondbrain entry and the existing rejecting fake transport;
+  neither format sends a request or lists a Secondbrain source.
+  `TestFollowUpStatusWritesNothing` compares repository, Roundfix Home and
+  Secondbrain file bytes and Git porcelain output before and after both
+  formats, with absent database, closed database, live WAL, clean release
+  and dirty worktree cases.
+- Help and refusals: `TestFollowUpHelpTranscript` checks Surface Transcript
+  1 in full and the root usage line. `TestFollowUpStatusRefusesMessages`
+  checks Surface Transcript 3, both flag orders and an explicitly empty
+  messages flag against invalid configuration and no messages file.
+  The existing unknown-format transcript and list-help test also pass;
+  the latter expectation now follows the intentionally changed help.
+
+Focused checks:
+
+- Initial `go test ./internal/cli -run '^TestFollowUpHelpTranscript$'
+  -count=1`: failed against the old help, establishing the pre-change gap.
+- `go test ./internal/cli -run '^TestFollowUp' -count=1`: passed after the
+  implementation and final test additions; includes the existing list
+  behavior and all seven required status/help/refusal tests.
+- `go test -race ./internal/cli -run '^TestFollowUp(Status|Help)' -count=1`:
+  passed after the final test additions.
+- Windows CLI test compilation through `go test -c ./internal/cli` with
+  `GOOS=windows`, writing only a temporary executable: passed after the
+  final test additions.
+- `git diff --check`: passed after Behavior Surface Record regeneration.
+- Added `internal/cli/follow_up_status.go` to the command's Skill Coverage
+  Map sources. Ran the required generator last:
+  `go test -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  passed. The generated Behavior Surface Record changed only the
+  `command follow-up` digest and was never hand-edited.
+
+The only pre-existing changed path was this Task file, whose daemon-owned
+`status: in_progress` is preserved. No changes were made to `internal/store`,
+`internal/delivery`, `internal/releaseplan`, other Task files or `_tasks.md`.
+Declared Task Verification and repository Verification were not run; the
+Daemon owns those checks and Task settlement. No commit, push or Pull
+Request was performed.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/follow_up_inventory.go`
+- `internal/cli/follow_up_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261024T004042Z_a30dec8c359819a6`
+- Source commit: `f6dba5dc257d8dee69b71be34031afa4bb73d575`

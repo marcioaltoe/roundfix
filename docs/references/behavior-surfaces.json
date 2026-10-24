@@ -24,7 +24,7 @@
     "command doctor": "sha256:531c424eb1ce892a64b3ba2fec9765a4737acb2bfd798619db48789edf83579f",
     "command events": "sha256:a8f2fd8be63c1eadebcf68ece649d9e64d05b308702b8bbd0c06a2011ef97825",
     "command fetch": "sha256:45ac44e53396a594df1009145e158e603abf42fddc24da3bb92ea36a36db55d2",
-    "command follow-up": "sha256:651bd2f5738b990953f46a58f1ac39a7c8ccef15ecc3bf4f8d98c80496facc4b",
+    "command follow-up": "sha256:89fffbbece3eeb720a248de4c6848547885fe104362f1c8bfb9e7d50356ae1f3",
     "command gc": "sha256:feefaf5113111fb49efb6952e5bd95eb9317f585a1f8334f42cd61e4f3bc1cd1",
     "command history sanitize": "sha256:36db20ead14bfb1e0e4e0e5e0c0bd57d95a7b45b12cc0ebd3bf8717227a3371d",
     "command implement": "sha256:e60a777a0fa88064a2fa8609d0cd8b02d3c6a59451c211e10459905a19413cbe",

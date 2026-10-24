@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"sort"
@@ -13,11 +14,12 @@ import (
 )
 
 const followUpUsage = `Usage:
-  roundfix follow-up [--messages <path>] [--format <text|json>]
+  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
 
-List this repository's pending work in Follow-up Priority order.
+List this repository's pending work in Follow-up Priority order, or show its status.
 It is read-only: it never writes a file, commits, pushes or prompts.
 Options:
+  --status    Show work in progress, pending Specs, the next release and blockers
   --messages  JSON file of ai-memory messages to list with the pending work
   --format    text (default) or json
 
@@ -74,11 +76,15 @@ type followUpDocument struct {
 	InProgress followUpProgress   `json:"in_progress"`
 }
 
-type followUpRequest struct{ messages, format string }
+type followUpRequest struct {
+	messages, format string
+	status           bool
+}
 
 func parseFollowUpCommand(args []string) (followUpRequest, error) {
 	req := followUpRequest{format: "text"}
 	fs := flagSet("follow-up")
+	fs.BoolVar(&req.status, "status", false, "Show status")
 	fs.StringVar(&req.messages, "messages", "", "Messages file")
 	fs.StringVar(&req.format, "format", "text", "Output format")
 	if err := fs.Parse(args); err != nil {
@@ -89,6 +95,15 @@ func parseFollowUpCommand(args []string) (followUpRequest, error) {
 	}
 	if req.format != "text" && req.format != "json" {
 		return req, fmt.Errorf("unknown --format %q; use text or json", req.format)
+	}
+	messagesSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "messages" {
+			messagesSet = true
+		}
+	})
+	if req.status && messagesSet {
+		return req, fmt.Errorf("--messages applies only to the follow-up list; drop it with --status")
 	}
 	return req, nil
 }
@@ -112,6 +127,9 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	if loaded.GitRoot == "" {
 		return fail(fmt.Errorf("follow-up requires a git repository working tree"), exitPreflight)
+	}
+	if req.status {
+		return runFollowUpStatus(ctx, req, stdout, stderr, loaded, environment)
 	}
 	namespace := followUpNamespace(ctx, loaded)
 	doc := followUpDocument{Schema: "roundfix/follow-up/v1", View: "follow-up", State: "work_found", Repository: followUpRepository{loaded.GitRoot, namespace}, Items: []followUpItem{}, Sources: []followUpSource{}}

@@ -361,7 +361,8 @@
       "sources": [
         "docs/user-guide/commands/follow-up.md",
         "internal/cli/follow_up.go",
-        "internal/cli/follow_up_inventory.go"
+        "internal/cli/follow_up_inventory.go",
+        "internal/cli/follow_up_status.go"
       ]
     },
     {
