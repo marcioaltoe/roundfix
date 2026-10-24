@@ -72,7 +72,7 @@
     "guide docs/user-guide/commands/doctor.md": "sha256:63d04969f3b59ab6020950a272b87fe7d7fc88a1c67e8c9a3aec7486498c5c70",
     "guide docs/user-guide/commands/events.md": "sha256:cf3c8060b695c2aadc498e171e7350da36f57a1f5c2997424a4f9c5112eb0959",
     "guide docs/user-guide/commands/fetch.md": "sha256:84e4ce6acbbb1d912f759b60840e66e24498db0048a07a8a778b2851ba526170",
-    "guide docs/user-guide/commands/follow-up.md": "sha256:2bfe10317fdde8f85593b69784b6e47b3f5f3bf84607aaec4cc91978cd1022bc",
+    "guide docs/user-guide/commands/follow-up.md": "sha256:8ceea31e0779e9ccb144cbe0b1b21f3be844dde12689a2435a0a139413d8177c",
     "guide docs/user-guide/commands/gc.md": "sha256:829af5a8cf3f7c61f2f9d60d787d1664d59d6f404433d85887b6ec960dede13c",
     "guide docs/user-guide/commands/history.md": "sha256:b7812e89755b18f63026833a2a927c438ade7850eb90d41caceec987be486789",
     "guide docs/user-guide/commands/implement.md": "sha256:ad513b8a690b392da9a8e58111b4be500623c33d2b3ea5fe38d39cb63522ba49",

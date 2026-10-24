@@ -105,7 +105,7 @@ report has schema `roundfix/follow-up/v1` and contains `view: "follow-up"`,
 For example:
 
 ```json
-{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"backlog","state":"checked","count":1}],"judge":{"state":"not_asked","reason":null,"model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":2,"priority_name":"health","kind":"backlog","ref":"docs/backlog/fix.md","type":"fix","date":"2026-10-21","title":"Fix export","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"judge unavailable: no key"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}}}
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"backlog","state":"checked","count":1}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":2,"priority_name":"health","kind":"backlog","ref":"docs/backlog/fix.md","type":"fix","date":"2026-10-21","title":"Fix export","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}}}
 ```
 
 The status view reads only `runs`, `delivery-queue`, `pull-requests`, `git`,
@@ -122,5 +122,5 @@ Its JSON adds `view: "status"`, `pending_specs`, `release`, `blockers` and
 `maintainer` to the shared report fields. For example:
 
 ```json
-{"schema":"roundfix/follow-up/v1","view":"status","state":"nothing_to_do","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"runs","state":"checked","count":0}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}},"pending_specs":[],"release":{"state":"no_unreleased_changes","base":"main","proposed_version":null,"changes":[],"reason":null},"blockers":[],"maintainer":[]}
+{"schema":"roundfix/follow-up/v1","view":"status","state":"nothing_to_do","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"runs","state":"checked","count":0}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}},"pending_specs":[],"release":{"state":"no_unreleased_changes","base":"","proposed_version":"","changes":[],"reason":null},"blockers":[],"maintainer":[]}
 ```
