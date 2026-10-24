@@ -77,8 +77,10 @@ temporary directory, because the CLI loads `$HOME/.roundfix/config.yml`.
     - these are byte-identical to the Delivery Base: `go.mod`, `go.sum`,
       `.roundfixrc.yml`, every workflow other than `ci-verify.yml`, every
       non-test `.go` file, every file under `internal/docscontract/`,
-      `.agents/`, `skills/`, `docs/agents/` and `docs/user-guide/`, and
-      `CONTEXT.md`;
+      `.agents/`, `skills/`, `docs/agents/` other than
+      `docs/agents/setup-context.json` (which changed only through the
+      sanctioned regeneration task_01 Requirement 7 names), and
+      `docs/user-guide/`, and `CONTEXT.md`;
     - no `### QA settlement` section changed.
 
     This row reads Task commits, so it declares a `commit_range` input.
