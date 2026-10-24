@@ -38,7 +38,10 @@ loads `$HOME/.roundfix/config.yml`.
    `TestSpawnedFixtureDeathFailsFast`, `TestFixtureBinarySurvivesConcurrentExec`,
    `TestCheckAdapterProvesOfficialClaudePackageAndVersion` and every test of
    `./internal/agent` with `-count=1 -timeout 15m`, and record that each
-   passes; record that `grep -rn 'os[.]Link(' internal` prints nothing.
+   passes; record that `grep -rn 'os[.]Link(' internal` prints only lines of
+   `internal/testfixture/hard_link_rule_test.go`, the rule's own test, whose
+   seeded source strings (the forbidden call and the shadowed receiver) must
+   contain the pattern for the rule to be tested.
 3. MUST verify Success Metric 1 with the load harness, on a macOS host
    only (record `blocked (environment: not macOS)` otherwise, never a pass):
    - in two temporary copies made outside the checkout, one of the
