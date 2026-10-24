@@ -1,2 +1,0 @@
-command: grep -n os[.]Link( internal/agent/*_test.go
-exit: 1 (expected: no matches)

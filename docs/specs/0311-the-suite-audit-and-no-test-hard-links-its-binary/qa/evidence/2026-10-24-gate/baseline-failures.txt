@@ -1,8 +1,0 @@
-Baseline round 2; window 2026-10-24 10:11:28 BRT to 2026-10-24 10:12:15 BRT
-run 5: --- FAIL: TestACPXRunCodexLeavesNonDarwinSpawnUnchanged (0.90s)
-run 5:     acpx_runner_test.go:2873: run acpx on non-darwin: agent selection unavailable for runtime "codex" with model "gpt-test" and reasoning "xhigh" during apply advertised selection: apply Agent Selection "codex"/"gpt-test"/"xhigh" during inspect Agent Session capabilities: adapter rejected selection: acquire Agent Selection capabilities through acpx: command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection
-2026-10-24 10:11:36.411 E  syspolicyd[249:17e211c] [com.apple.syspolicy.exec:default] Terminating process due to Malware rejection: 77025, <private>
-Baseline round 4; window 2026-10-24 10:13:05 BRT to 2026-10-24 10:13:52 BRT
-run 1: --- FAIL: TestFullAccessWithoutAnAdvertisedModeIsDegraded (4.91s)
-run 1:     --- FAIL: TestFullAccessWithoutAnAdvertisedModeIsDegraded/unmatched (1.56s)
-2026-10-24 10:13:42.649 E  syspolicyd[249:184bf08] [com.apple.syspolicy.exec:default] Terminating process due to Malware rejection: 53744,

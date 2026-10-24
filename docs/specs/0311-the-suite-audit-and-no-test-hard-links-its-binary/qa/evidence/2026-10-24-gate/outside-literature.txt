@@ -1,5 +1,0 @@
-QA-11: blocked (environment: network prohibited by Spec authorization)
-Source: Apple Developer Forums thread 663456, https://developer.apple.com/forums/thread/663456
-The PRD cites these two passages: "in case of 'File not found' macOS kills some other running process sharing the inode with the already removed file"; "was able to avoid inode sharing in my build process by using clonefile(2) instead of hardlink".
-No live source retrieval, verification of current availability, or external request occurred.
-Authority: _authorization.md Limits says no test, Verification command or QA row reaches the network.

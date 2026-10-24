@@ -1,4 +1,0 @@
-internal/testfixture/hard_link_rule_test.go:99:		{"os Link names its site", "package seeded\nimport \"os\"\nfunc fixture() { os.Link(\"source\", \"target\") }\n", []string{"internal/seeded/fixture_test.go:3: os.Link"}},
-internal/testfixture/hard_link_rule_test.go:124: os.Link("source", "target")
-
-exit: 0

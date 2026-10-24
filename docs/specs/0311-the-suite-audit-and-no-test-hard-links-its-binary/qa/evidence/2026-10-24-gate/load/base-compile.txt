@@ -1,3 +1,0 @@
-revision: 76391a000ac18d95ec504337688fac584125b163
-command: go test -c -o /private/tmp/roundfix-0311-qa-q8m848xh/load/base.test ./internal/agent
-exit: 0
