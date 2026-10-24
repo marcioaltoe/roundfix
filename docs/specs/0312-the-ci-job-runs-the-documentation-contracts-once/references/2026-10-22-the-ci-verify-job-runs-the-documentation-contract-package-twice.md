@@ -1,8 +1,8 @@
 ---
 type: perf
-status: open
+status: promoted
 created: 2026-10-22
-spec: null
+spec: 0312-the-ci-job-runs-the-documentation-contracts-once
 reason: null
 ---
 
@@ -12,7 +12,7 @@ reason: null
 
 Roundfix's own `ci-verify` job runs `internal/docscontract` twice for every
 pull request: once through the Make target `verify-changed-contracts`, which
-selects it because its tests are `//verify:always` (ADR-0252), in the step
+selects it because its tests are `//verify:always` (its Contract Relevance), in the step
 "Verify changed", and once through `docs-test` in the step "Verify docs". The
 second run repeats every corpus Check of the first on the same tree, and the
 maintainer and the Delivery Queue wait for both.
