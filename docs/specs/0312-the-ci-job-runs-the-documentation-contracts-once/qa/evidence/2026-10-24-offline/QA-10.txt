@@ -1,0 +1,6 @@
+Pull Request fact: none open (Daemon prompt).
+Approval: approved _authorization.md, operative revision 5eea9682d99d074ea9dd1872a276ca36786f277e, ancestor of candidate.
+Checks: Daemon make verify-changed pass exit 0 at 4cb27bc4de71a930d8acdf410362c47973be8bdb.
+Threads: none because no Pull Request.
+Merge-Ready acceptance: none yet; no reviewer/provider called.
+Review-artifact ancestry: no review artifact exists. QA evidence claims candidate 4cb27bc4de71a930d8acdf410362c47973be8bdb only.

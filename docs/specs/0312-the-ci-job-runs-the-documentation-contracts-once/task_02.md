@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0312-the-ci-job-runs-the-documentation-contracts-once
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

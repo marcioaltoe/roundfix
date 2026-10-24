@@ -1,0 +1,3 @@
+Source requested: https://docs.github.com/en/actions/reference/workflows-and-actions/expressions
+PRD quotation: falsy values (`false`, `0`, `-0`, `""`, '', `null`) are coerced to `false`.
+This quotation is unverified external evidence. No network attempted. Both target names are non-empty, as independently tested in QA-02.

@@ -1,0 +1,104 @@
+COMMAND: git diff-tree --no-commit-id --name-only -r 4cb27bc4de71a930d8acdf410362c47973be8bdb
+EXIT: 0
+.github/workflows/ci-verify.yml
+Makefile
+docs/agents/setup-context.json
+docs/specs/0312-the-ci-job-runs-the-documentation-contracts-once/task_01.md
+internal/verifyselect/verify_docs_makefile_test.go
+
+COMMAND: git merge-base --is-ancestor 5eea9682d99d074ea9dd1872a276ca36786f277e c5e3a66a3d0131f91951a3cc27e431086a097d59
+EXIT: 0
+
+COMMAND: git merge-base --is-ancestor 2ade9f97fe8c5314ac019ce24b534aa17b814416 c5e3a66a3d0131f91951a3cc27e431086a097d59
+EXIT: 0
+
+COMMAND: git diff --name-only c5e3a66a3d0131f91951a3cc27e431086a097d59 4cb27bc4de71a930d8acdf410362c47973be8bdb
+EXIT: 0
+.github/workflows/ci-verify.yml
+Makefile
+docs/agents/setup-context.json
+docs/specs/0312-the-ci-job-runs-the-documentation-contracts-once/task_01.md
+internal/verifyselect/verify_docs_makefile_test.go
+
+COMMAND: git diff --exit-code HEAD -- .
+EXIT: 0
+
+COMMAND: git status --short
+EXIT: 0
+?? docs/specs/0312-the-ci-job-runs-the-documentation-contracts-once/qa/
+
+COMMAND: git diff c5e3a66a3d0131f91951a3cc27e431086a097d59 4cb27bc4de71a930d8acdf410362c47973be8bdb -- Makefile .github/workflows/ci-verify.yml docs/agents/setup-context.json
+EXIT: 0
+diff --git a/.github/workflows/ci-verify.yml b/.github/workflows/ci-verify.yml
+index d4a72d7c..cc3d9ccb 100644
+--- a/.github/workflows/ci-verify.yml
++++ b/.github/workflows/ci-verify.yml
+@@ -78,6 +78,8 @@ jobs:
+       # that boundary's fail-closed enforcement: a PR whose prose lies about
+       # the binary, or whose Spec corpus is inconsistent, fails here.
+       - name: Verify docs
++        env:
++          VERIFY_DOCS_TEST: ${{ github.event_name == 'pull_request' && 'docs-test-skipped' || 'docs-test' }}
+         run: make verify-docs
+ 
+       # The Full Contract Run runs on every push to main (ADR-0253).
+diff --git a/Makefile b/Makefile
+index 3d074b44..8c2cfffb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -36,7 +36,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
+ 
+ .DEFAULT_GOAL := help
+ 
+-.PHONY: help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
++.PHONY: docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+ 
+ help: ## Show this help
+ 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
+@@ -118,11 +118,17 @@ verify-changed-baseline:
+ 
+ verify-incremental: fmt-check vet test skills-sync-check skills-check build ## Run fast local verification with reusable caches
+ 
+-verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
++# Pull request CI already ran every internal/docscontract test in make
++# verify-changed because each of their files is //verify:always.
++VERIFY_DOCS_TEST ?= docs-test
++verify-docs: build $(VERIFY_DOCS_TEST) repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
+ 
+ docs-test: ## Run the repository-markdown contract tests
+ 	$(GO) test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+ 
++docs-test-skipped:
++	@echo "docs-test: skipped; make verify-changed ran internal/docscontract earlier in this job"
++
+ # The regeneration gates copy the whole repository, so every file under
+ # internal/ is one of their inputs and any code change re-runs them. They are
+ # repository-consistency gates rather than code tests, so they run here at the
+diff --git a/docs/agents/setup-context.json b/docs/agents/setup-context.json
+index c16b2394..3603eb51 100644
+--- a/docs/agents/setup-context.json
++++ b/docs/agents/setup-context.json
+@@ -258,7 +258,7 @@
+       "classification": "repository-command",
+       "repositoryExecutable": true,
+       "declarationPath": "Makefile",
+-      "declarationDigest": "sha256:79ce04927c7781b44cb6fec80728f22b6abe79b87da436f5a66a1ad1181d3987"
++      "declarationDigest": "sha256:b73abf588b3b2da6a1dd357915011a56dc1b020f5b93708c2d79e989804f3c17"
+     },
+     {
+       "id": "verification.incremental",
+@@ -267,7 +267,7 @@
+       "classification": "repository-command",
+       "repositoryExecutable": true,
+       "declarationPath": "Makefile",
+-      "declarationDigest": "sha256:79ce04927c7781b44cb6fec80728f22b6abe79b87da436f5a66a1ad1181d3987"
++      "declarationDigest": "sha256:b73abf588b3b2da6a1dd357915011a56dc1b020f5b93708c2d79e989804f3c17"
+     }
+   ]
+ }
+
+PASS: exact allowed path set; exact permitted Makefile/workflow edits; no other target/step changed.
+PASS: setup manifest changes only the two Makefile digest fields, matching SHA-256 of each revision. Task Result records sanctioned regeneration and second-run idempotence; mechanical audit grants this path.
+PASS: go.mod, go.sum, .roundfixrc.yml, other workflows, all non-test Go, internal/docscontract, .agents, skills, other docs/agents, docs/user-guide, CONTEXT.md all byte-identical (absent from complete Git changed-path set). No QA settlement text changed.
+Glossary: PRD and TechSpec declare None; no introduced domain term requires an entry. CONTEXT.md byte-identical to Delivery Base.
+Authorization: operative grant 5eea9682 precedes Delivery Base and Task; Task 4cb27bc4 is already named in mechanical audit. No additional Task commit to audit. Recorded paths: no additional paths.
