@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0311-the-suite-audit-and-no-test-hard-links-its-binary
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -93,3 +93,50 @@ None. The Task changes test code and documents only; no production contract or s
 
 - `_prd.md` → Goals; Core Feature 2; Success Metric 3; Glossary
 - `_techspec.md` → API Contract 2; Invariant 3; Testing Approach; Glossary; Build Order 2
+
+## Result
+
+Implemented API Contract 2 of the TechSpec and ADR-0324 in this Task's slice.
+
+- Acceptance criterion 1: added `internal/testfixture/hard_link_rule_test.go`
+  with the Suite/Invariant/Boundary header and `TestNoTestCreatesAHardLink`.
+  The AST scan walks every `_test.go` under `internal/`, resolves imports and
+  aliases for `os`, `syscall` and `golang.org/x/sys/unix`, and reports each
+  forbidden `Link`/`Linkat` call with its repository-relative file and line.
+  The repository subtest found no violation. Ten seeded subtests passed,
+  covering all five package/API combinations, aliases, multiple findings,
+  the exact `internal/seeded/fixture_test.go:3` location, other receivers,
+  a local `Link`, a shadowed `os` import, `Symlink` and `Readlink`.
+- Acceptance criterion 2: inserted the exact requested repository-rule
+  bullet immediately after the Signal rule and the Single-Name Test Binary
+  glossary entry between Parallel Test Package and Real-Time Budget, with
+  the ADR-0324 link and requested `_Avoid_` terms. A byte-level comparison
+  against `HEAD` confirmed that removing those exact insertions reproduces
+  each original document; the ADR link target exists.
+
+Focused checks:
+
+- Before editing, a Python assertion confirmed the guard file and both
+  Single-Name Test Binary document entries were absent.
+- `go test -race -count=1 -timeout 3m -v -run '^(TestNoTestCreatesAHardLink|TestNoTestWritesAnExecutableOutsideTheResidue)$' ./internal/testfixture`
+  exited 0: both rules and every subtest passed, including the new
+  repository scan and ten seeded cases.
+- `GOOS=windows go test -c -o "$artifact_dir/testfixture.test.exe" ./internal/testfixture`
+  exited 0, with `artifact_dir` created by `mktemp` under `/private/tmp`;
+  the compiled artifact and its temporary directory were removed.
+- `gofmt -l internal/testfixture/hard_link_rule_test.go` returned no paths;
+  `git diff --check` exited 0.
+
+The checkout's symlinked writable root prevented sandbox process startup;
+checks and edits used its resolved `/Volumes/Brain-SSD/...` checkout with
+approved escalation. No host configuration changed.
+
+Declared Task Verification and repository Verification were not run; the
+Daemon owns those checks and settlement. Task status was left untouched.
+No other Task, Task Graph, production file, existing test, skill, Makefile
+or CI workflow was changed. No follow-up was needed within this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261024T115610Z_1c57415017fc7072`
+- Source commit: `27a1d6181937cffd75e1a05a234e14be5f77ffdf`
