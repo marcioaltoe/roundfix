@@ -16,7 +16,9 @@ baseline-digests` and this repository's Managed Refresh regenerate the derived
 files, and a new test file in `internal/baseline` holds the text, the
 rendering and the `retained` disposition. The Roundfix skill gains a `##
 Modes` section, OpenCode slash metadata and a topic reference
-`references/modes.md`; a new test file in `skills` holds the mode detection,
+`references/modes.md`, and the mode is the first word after the skill's
+name, `follow-up`, `status` or `unattended`, with or without a leading `--`;
+a new test file in `skills` holds the mode detection,
 the absence of argument placeholders, the follow-up step order, the
 unattended answer rules, and the link between the reference's question limit
 and the clause. No Go production code changes.
@@ -112,6 +114,16 @@ other Specs merge; identifiers do not.
    Specs answer and delivers the read-only follow-up command with its command
    guide, its Roundfix reference `references/follow-up.md` and its index row,
    which raise the reference count to 19; this Spec's Tasks do not touch them.
+7. Amendment characterization, 2026-10-24, at v0.118.0 (`beb6b66b`), after
+   Spec 0306 merged: `roundfix --help` lists `roundfix follow-up [--status]
+   [--messages <path>] [--format <text|json>]` and no top-level `status` or
+   `unattended` command (`roundfix status` and `roundfix unattended` both
+   print `unknown command`); `deliver status` exists as a subcommand. The
+   Roundfix skill is at version 0.1.135 with 19 references, its entry file is
+   16,395 bytes and holds no `$` character, and no Roundfix skill file
+   mentions a first word or a bare mode word. So the bare word `follow-up`
+   after the skill's name is the one word that also names a CLI command, and
+   the skill text has to say which one it selects.
 
 ## System Architecture
 
@@ -187,11 +199,16 @@ writes. The Roundfix skill's frontmatter `metadata` gains the string key
    description clause "and run its `--follow-up`, `--status` and
    `--unattended` Skill Modes"; in its body, a `## Modes` section right before
    `## Archive Relink and History Citations` whose first paragraph is exactly
-   "A request can name one Skill Mode after the skill's name: `/roundfix
-   --follow-up` in Claude Code, `$roundfix --follow-up` in Codex, and
-   `@roundfix --follow-up` or `/roundfix --follow-up` in OpenCode. Read the
-   mode from the request text; a request that names no mode uses the skill as
-   the rest of this file describes.", one bullet per mode, and a line that links the
+   "A request names a Skill Mode with the first word after the skill's name:
+   `follow-up`, `status` or `unattended`, with or without a leading `--`, in
+   every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude
+   Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix
+   unattended`, `@roundfix --unattended` or `/roundfix unattended` in
+   OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which
+   the follow-up mode runs as one of its steps. Read the mode from the request
+   text; a request whose first word after the skill's name is anything else,
+   such as `/roundfix watch 123`, uses the skill as the rest of this file
+   describes.", one bullet per mode, and a line that links the
    modes reference and says to read it before running a mode; and the
    index row `| [modes](references/modes.md) | — (the `--follow-up`,
    `--status` and `--unattended` Skill Modes; each command they run lives in its
@@ -200,7 +217,10 @@ writes. The Roundfix skill's frontmatter `metadata` gains the string key
    a digit or by `ARGUMENTS`.
 4. API Contract: the modes reference, first half. `references/modes.md` starts
    `# Skill Modes` and has `## How a mode is chosen`, `## Optional sources` and
-   `## --status` sections with the content Build Order 2 lists.
+   `## --status` sections with the content Build Order 2 lists; on
+   whitespace-normalized text its `## How a mode is chosen` section contains
+   "first word after the skill's name", "with or without a leading `--`" and
+   `` `roundfix follow-up` ``.
 5. API Contract: the modes reference, second half. It adds `## --follow-up`,
    an ordered list of eight steps, and `## --unattended`, which contains these
    three sentences verbatim: "Ask at most three questions per call, never more
@@ -234,7 +254,7 @@ None. No command, flag, exit code or output line changes.
 1. The clause keeps its id, its stop-and-ask enforcement and its rule; only its guidance, the rule version and the module version change.
 2. A refreshed adopter records the clause retained; no clause becomes unaccounted.
 3. Every derived file changes only through the sanctioned commands; none is hand-edited.
-4. A request without a mode uses the Roundfix skill exactly as before; the existing sections keep their bytes apart from the version fields and the index.
+4. A request whose first word after the skill's name is not `follow-up`, `status` or `unattended`, with or without a leading `--`, uses the Roundfix skill exactly as before; the existing sections keep their bytes apart from the version fields and the index.
 5. The modes reference's question limit is the one the Baseline clause carries.
 6. No authorization is recorded outside a Spec's _authorization.md.
 7. No product text names a personal assistant or announcement channel.
@@ -255,6 +275,7 @@ Deviations from the PRD: None.
 1. The three-question clause — command: `grep -rn "at most three questions" internal docs .agents skills`; result: no match at v0.109.0; the clause says "Ask exactly one question per call or message".
 2. `references/modes.md` and the modes section — command: `grep -rn -e "## Modes" -e "references/modes.md" -e "opencode/slash" .agents/skills/roundfix skills/roundfix`; result: no match at v0.109.0.
 3. `question_batch_clause_test.go` and `roundfix_modes_test.go` — command: `grep -rln -e askUserClauseLimit -e roundfixSection internal skills`; result: no match at v0.109.0.
+4. The bare mode word — command: `grep -rn -e "with or without a leading" -e "first word after" .agents/skills/roundfix skills/roundfix`; result: no match at v0.118.0.
 
 ## ADR Alternatives
 
@@ -289,12 +310,18 @@ real-time duration; both new files compile for Windows (no platform API).
   (canonical and embedded), one subtest each:
   - `TestTheRoundfixSkillReadsItsModeFromTheRequest` (Build Order 2): the
     frontmatter `metadata` `opencode/slash` is `"true"`; the body after the
-    frontmatter has no match of `\$(ARGUMENTS|[0-9])`; the `## Modes` section
-    contains `` `--follow-up` ``, `` `--status` ``, `` `--unattended` ``,
-    `` `/roundfix --follow-up` ``, `` `$roundfix --follow-up` ``,
-    `` `@roundfix --follow-up` `` and `(references/modes.md)`; the reference
-    has non-empty `## How a mode is chosen`, `## Optional sources` and `##
-    --status` sections.
+    frontmatter has no match of `\$(ARGUMENTS|[0-9])`; on
+    whitespace-normalized text the `## Modes` section contains
+    `` `--follow-up` ``, `` `--status` ``, `` `--unattended` ``,
+    `` `/roundfix follow-up` ``, `` `/roundfix --follow-up` ``,
+    `` `$roundfix status` ``, `` `$roundfix --status` ``,
+    `` `@roundfix unattended` ``, `` `@roundfix --unattended` ``,
+    `` `roundfix follow-up` ``, `` `/roundfix watch 123` ``,
+    "with or without a leading `--`" and `(references/modes.md)`; the
+    reference has non-empty `## How a mode is chosen`, `## Optional sources`
+    and `## --status` sections, and its `## How a mode is chosen` section
+    holds the three phrases of API Contract 4 on whitespace-normalized text.
+    Each missing string is named in the failure.
   - `TestTheFollowUpModeRunsItsStepsInOrder` (Build Order 3): the `##
     --follow-up` section holds one ordered list whose items start with `1. `
     to `8. ` in order at the start of a line, an item running to the next
@@ -310,8 +337,8 @@ real-time duration; both new files compile for Windows (no platform API).
     under `roundfix/` contains `jarvis` or `gt3` once lower-cased.
 - Declared break: `TestRoundfixSkillIndexNamesEveryReference` in
   `skills/roundfix_layout_test.go` expects one more reference file than the
-  value the tree holds when Build Order 2 starts (18 at v0.109.0, one more if
-  Spec 0306 merged first); no other existing test changes.
+  value the tree holds when Build Order 2 starts (18 at v0.109.0, 19 at
+  v0.118.0 after Spec 0306, so 20); no other existing test changes.
 - Prototype record: on 2026-10-22, in a scratch worktree, the three Baseline
   tests and the first skill test, with a minimal skill edit, passed after the
   change and failed before it. These sabotages each failed the named case:
@@ -332,6 +359,15 @@ real-time duration; both new files compile for Windows (no platform API).
   the same change in `core.json` only → the same test before its subtests;
   "and never an authorization" removed → its `canonical` subtest; `GT3`
   added to the embedded reference → `TestTheRoundfixSkillNamesNoPersonalAssistant/embedded`.
+- Amendment of 2026-10-24: the prototype predates the bare mode words, and
+  the amendment was not prototyped. The `@roundfix --follow-up` sabotage
+  becomes `@roundfix unattended` removed from the embedded Modes section only
+  (→ its `embedded` subtest), and two sabotages are added for the QA and the
+  implementing Agent to prove: the sentence naming `roundfix follow-up`
+  removed from the canonical Modes section, and "with or without a leading
+  `--`" removed from the canonical reference's `## How a mode is chosen`
+  section, each → the `canonical` subtest of
+  `TestTheRoundfixSkillReadsItsModeFromTheRequest`.
 
 ## Build Order
 
@@ -340,9 +376,13 @@ real-time duration; both new files compile for Windows (no platform API).
    `question_batch_clause_test.go` (no dependency).
 2. The skill entry and the first half of the modes reference: the `## Modes`
    section, the metadata and description, the index row, `## How a mode is
-   chosen` (how each harness passes the request text; a whole-word mode token;
-   no token means ordinary use; several tokens mean one question naming them;
-   a mode stops and names `roundfix upgrade` when the tree's Roundfix lacks the
+   chosen` (how each harness passes the request text; the mode is the first
+   word after the skill's name when it is `follow-up`, `status` or
+   `unattended`, with or without a leading `--`; it is the Skill Mode, not the
+   CLI command `roundfix follow-up`, which the follow-up mode runs; any other
+   first word, or none, means ordinary use, as in `/roundfix watch 123`;
+   when the words after the mode word name another mode, one question names
+   them; a mode stops and names `roundfix upgrade` when the tree's Roundfix lacks the
    follow-up command), `## Optional sources` (the Secondbrain through
    `docs/agents/secondbrain.md` and the follow-up command's configured root,
    ai-memory when its MCP tools are exposed,
@@ -370,6 +410,10 @@ reference; Build Orders 2 and 3 raise both over what the tree holds.
 
 - An Agent may join dependent questions in one call; the clause names the
   independence condition, and the dependent case waits.
+- A user who types `/roundfix follow-up` to run only the CLI command gets
+  the whole follow-up mode, whose first step runs that command; the modes
+  paragraph and the reference say so, and the read-only `status` mode, or the
+  command typed in a shell, gives the bare listing.
 - The modes are prose; a harness that changes how it passes the request text
   would break detection silently. The unproven step records the first live
   use, and the skill reads the whole request text rather than one variable.
@@ -390,3 +434,9 @@ reference; Build Orders 2 and 3 raise both over what the tree holds.
   own reference from Spec 0306.
 - The tests hold structure and agreement with the Baseline, and the live
   harness behavior is declared unreachable.
+- Amendment of 2026-10-24, the maintainer's answer "Aceitar as duas formas
+  (Recomendado)": the first word after the skill's name selects the mode
+  with or without a leading `--`, in all three harnesses; only that word
+  counts, so a mode word later in an ordinary request selects nothing; the
+  bare `follow-up` is the Skill Mode, not the CLI command; the version raise
+  stays one patch per skill Task, with no extra release cost.

@@ -16,7 +16,11 @@ covers and settles the Spec on evidence. The Spec rewords the Baseline clause
 questions per call, keeping its identity so an adopter's refresh records it
 `retained`, and gives the Roundfix skill its `--follow-up`, `--status` and
 `--unattended` Skill Modes in a new topic reference, with OpenCode slash
-metadata, answer placement rules and no personal assistant names.
+metadata, answer placement rules and no personal assistant names. The first
+word after the skill's name selects the mode with or without a leading `--`
+(`/roundfix follow-up`, `$roundfix status`, `@roundfix --unattended`); the
+Skill Mode is not the CLI command `roundfix follow-up`, and any other first
+word keeps today's behavior.
 
 Every row runs on temporary copies of the audited head and temporary homes
 and repositories under the Run's temporary directory. No row reads or writes
@@ -24,7 +28,10 @@ the real `~/.roundfix`, reads or writes the Secondbrain, calls ai-memory,
 starts an agent harness, reaches the network, sends a request to a provider,
 the judge or a reviewer, reads a credential, or reads another repository. The
 gate never runs `roundfix spec judge` and never runs an archive plan without
-`--offline`.
+`--offline`. Every row that runs `bin/roundfix` or `go run ./cmd/roundfix`
+sets `HOME` and `TMPDIR` to fresh empty temporary directories created for
+that row, so no row reads `~/.roundfix` or the machine's shared temporary
+directory.
 
 ## Requirements
 
@@ -41,8 +48,9 @@ gate never runs `roundfix spec judge` and never runs an archive plan without
      `TestBaselinePlanCharacterization`, and record that they pass.
    - In a temporary copy of the audited head made with `git archive`, run
      `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
-     with `HOME` set to a temporary directory, after `git init` and one commit
-     of the copy, and record that it reports no file change.
+     with `HOME` and `TMPDIR` set to fresh temporary directories, after `git
+     init` and one commit of the copy, and record that it reports no file
+     change.
    - On temporary copies of the audited head, apply one sabotage per copy and
      record that the named case fails:
      - set the clause's `enforcement` to `mandatory` in
@@ -64,17 +72,25 @@ gate never runs `roundfix spec judge` and never runs an archive plan without
      `TestRoundfixSkillIndexLinksResolve`,
      `TestRoundfixSkillEntryFileStaysWithinItsBudget` and
      `TestInstallWritesEveryRoundfixReference` in `./skills`, and record the
-     metadata value, the invocation forms found, the reference count and the
-     entry file's size.
+     metadata value, the invocation forms found, each mode word bare and with
+     `--`, the sentence that names the CLI command `roundfix follow-up` as not
+     the Skill Mode, the example whose other first word keeps today's
+     behavior, the reference count and the entry file's size.
    - On temporary copies, one sabotage per copy, record that the named case
      fails:
      - append a line holding `$ARGUMENTS` to the canonical `SKILL.md` body:
        the `canonical` subtest fails naming the placeholder;
      - delete the `opencode/slash` line from the canonical `SKILL.md`: the
        `canonical` subtest fails naming the metadata;
-     - delete `@roundfix --follow-up` from the Modes section of the embedded
+     - delete `@roundfix unattended` from the Modes section of the embedded
        `skills/roundfix/SKILL.md` only: the `embedded` subtest fails and the
        `canonical` one passes;
+     - delete the sentence naming the CLI command `roundfix follow-up` from
+       the Modes section of the canonical `SKILL.md`: the `canonical` subtest
+       fails naming the missing string;
+     - delete "with or without a leading `--`" from the `## How a mode is
+       chosen` section of the canonical modes reference: the `canonical`
+       subtest fails naming the phrase;
      - delete the `## --status` heading from the canonical modes reference:
        the `canonical` subtest fails naming the section.
 4. MUST verify Success Metrics 4 and 5:
@@ -110,9 +126,15 @@ gate never runs `roundfix spec judge` and never runs an archive plan without
    the read-only `--status` report and what it never does; each `--follow-up`
    step; the `--unattended` authorizations list, option rules, chat fallback
    and answer placement; each optional source's detection and the missing
-   source report. Record every command and flag the reference names and that
-   `bin/roundfix --help` and that command's own `--help` list each one. A
-   named command or flag the binary lacks is a finding.
+   source report, and the sentences that make the first word select the
+   mode with or without `--`, separate it from the CLI command `roundfix
+   follow-up` and keep today's behavior for any other first word. Record
+   every command and flag the reference names and that `bin/roundfix --help`
+   and that command's own `--help`, each run with `HOME` and `TMPDIR` set to
+   fresh temporary directories, list each one. A skill invocation form
+   (`/roundfix status`, `$roundfix --status`, `@roundfix unattended` and the
+   like) is a Skill Mode, not a command, and is not checked against the
+   help; any other named command or flag the binary lacks is a finding.
 7. MUST record, as evidence this Spec did not author, each source of
    `_prd.md` → Acceptance evidence:
    - read
@@ -170,7 +192,8 @@ gate never runs `roundfix spec judge` and never runs an archive plan without
 12. MUST, for the Outcome for the Archive Record, run only
     `bin/roundfix archive 0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call --plan --offline`
     with every Judge Key Variable and `TYPESAFE_API_KEY` unset and with `HOME`
-    set to a fresh empty temporary directory created for this row (the CLI
+    and `TMPDIR` each set to a fresh empty temporary directory created for
+    this row (the CLI
     loads User Config from `$HOME/.roundfix/config.yml`, so the default home
     would read `~/.roundfix`), and write the
     report's `## Outcome` as one paragraph that does not end with a colon. It
@@ -191,7 +214,7 @@ gate never runs `roundfix spec judge` and never runs an archive plan without
 ## Acceptance Criteria
 
 - [ ] The clause allows three independent questions per call in the catalog and both guides, an adopter keeps it `retained`, and each sabotage makes its named case fail.
-- [ ] The skill reads its mode in the three invocation forms, its modes reference delivers every Core Feature with commands the binary has, and each sabotage makes its named case fail.
+- [ ] The skill reads its mode in the three invocation forms, bare and with `--`, its modes reference delivers every Core Feature with commands the binary has, and each sabotage makes its named case fail.
 - [ ] The scope audit finds no undeclared Governed Path change and no change to the files row 10 names.
 
 ## Verification

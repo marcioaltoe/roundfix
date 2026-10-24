@@ -12,7 +12,11 @@ complexity: medium
 
 The Roundfix skill has no modes. This Task gives its entry file a modes
 section that names `--follow-up`, `--status` and `--unattended` and the way
-Claude Code, Codex and OpenCode pass them, exposes the skill as an OpenCode
+Claude Code, Codex and OpenCode pass them: the first word after the skill's
+name selects the mode with or without a leading `--` (`/roundfix follow-up`,
+`$roundfix status`, `@roundfix --unattended`), which is not the CLI command
+`roundfix follow-up`, and any other first word keeps today's behavior. It
+exposes the skill as an OpenCode
 slash command, and writes the first half of a new topic reference: how a mode
 is chosen, how each optional source is detected, and the read-only `--status`
 mode. It adds **Skill Mode** to the glossary and a test that holds the
@@ -22,7 +26,10 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
 
 1. MUST answer the Backlog Entry Spec 0306 adopted,
    [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../../references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
-   of 2026-10-22, decisions 1 and 2 and the harness table.
+   of 2026-10-22, decisions 1 and 2 and the harness table, and the
+   maintainer's decision of 2026-10-24 that `_authorization.md` quotes: the
+   first word after the skill's name selects the mode with or without a
+   leading `--` in all three harnesses.
 2. MUST change the canonical `.agents/skills/roundfix/SKILL.md` exactly as
    `_techspec.md` → API Contract 3 says: the `opencode/slash: "true"` line
    under `metadata`, the description clause, the `## Modes` section with its
@@ -40,11 +47,20 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
    - `## How a mode is chosen`: Claude Code appends the text typed after the
      skill's name to the skill as an `ARGUMENTS:` line, while Codex and
      OpenCode keep it in the message, so the skill reads the mode from the
-     request text in all three; a mode is the whole-word token
-     `--follow-up`, `--status` or `--unattended`; a request with no token uses
-     the skill as before; a request with more than one asks one question that
-     names them, recommending `--follow-up` when it is named and `--status`
-     otherwise; each mode runs Roundfix's read-only follow-up command, and
+     request text in all three; the mode is the first word after the skill's
+     name when that word is `follow-up`, `status` or `unattended`, with or
+     without a leading `--`, so `/roundfix follow-up`, `/roundfix
+     --follow-up`, `$roundfix status` and `@roundfix --unattended` each select
+     a mode; this is the Skill Mode, not the CLI command `roundfix follow-up`,
+     which the follow-up mode runs as one of its steps; a request whose first
+     word is anything else, or that has none, uses the skill as before (for
+     example `/roundfix watch 123`), and a mode word later in such a request
+     selects nothing; when the words after the mode word name another mode,
+     with or without `--`, the skill asks one question that names them,
+     recommending `follow-up` when it is named and `status` otherwise; the
+     section contains, on whitespace-normalized text, the phrases "first word
+     after the skill's name" and "with or without a leading `--`" and the
+     code span `` `roundfix follow-up` ``; each mode runs Roundfix's read-only follow-up command, and
      when the installed Roundfix lacks it the mode says so, names `roundfix
      upgrade` and stops.
    - `## Optional sources`: the Secondbrain is a source when the repository
@@ -90,9 +106,11 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
 7. MUST add **Skill Mode** to `CONTEXT.md` through `domain-modeling`, right
    after the **Supervisor** entry, as "**Skill Mode**:" followed on the next
    line by "A way of running the Roundfix skill that the user's request
-   selects by naming `--follow-up`, `--status` or `--unattended` after the
-   skill's name; the skill reads it from the request text in every harness,
-   and a request that names none uses the skill as before." with a link to
+   selects with the first word after the skill's name, `follow-up`,
+   `status` or `unattended`, with or without a leading `--`; the skill reads
+   it from the request text in every harness, it is not the CLI command
+   `roundfix follow-up`, and a request whose first word names no mode uses
+   the skill as before." with a link to
    ADR-0320 in the glossary's link form, and the line "_Avoid_: Command flag,
    CLI mode, Follow Mode".
 8. MUST run these commands, because this Task edits an owned skill. Before
@@ -118,7 +136,7 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
 
 ## Acceptance Criteria
 
-- [ ] The canonical and embedded skill name the three modes and invocation forms, link the modes reference, set the OpenCode slash metadata and carry no argument placeholder.
+- [ ] The canonical and embedded skill name the three modes and invocation forms, each mode word bare and with `--`, say the mode is not the CLI command `roundfix follow-up` and that any other first word keeps today's behavior, link the modes reference, set the OpenCode slash metadata and carry no argument placeholder.
 - [ ] The modes reference explains how a mode is chosen, how each optional source is detected and what `--status` reports, with the tree's command names.
 - [ ] `CONTEXT.md` defines **Skill Mode**; the skill version is recorded and the mirrors are in sync.
 
