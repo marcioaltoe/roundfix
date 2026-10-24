@@ -1,16 +1,16 @@
 ---
 task: task_02
-spec: 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff
+spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 status: pending
 type: backend
 complexity: high
 ---
 
-# Task 02: The python-cli profile governs uv, ruff and pytest on the common setup of Go and Rust
+# Task 02: The python profile governs uv, ruff and pytest on the common setup of Go and Rust
 
 ## Overview
 
-This Task ships the `python-cli` Baseline Profile: the `python` common setup
+This Task ships the `python` Baseline Profile: the `python` common setup
 of `go` and `rust`, the `python` module with its guide and root block, the
 templates, the coverage entry, the core module's hierarchy and semantic-owner
 entries and the profile itself. The sanctioned commands regenerate every
@@ -38,8 +38,11 @@ and the rendered guide (`_prd.md` → Core Features 2-4; ADR-0322).
    the coverage entry to `internal/baseline/assets/coverage.json` (Data Model
    4), the two core entries to `internal/baseline/assets/modules/core.json`
    (Data Model 5; no clause, rule or other entry of the core module changes by
-   hand), and `internal/baseline/assets/profiles/python-cli.json` (Data Model
-   6).
+   hand), and `internal/baseline/assets/profiles/python.json` (Data Model
+   6: the profile id is `python`, its title "Python repository (CLI, backend
+   or worker)", and it selects neither the `cli-surface` module nor the
+   `rule.cli.*` rules, because it serves a command-line tool, a backend
+   service or a worker alike).
 4. MUST then run, in this order, and hand-edit none of their outputs:
    - `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`,
      which records the new `python` module and writes the next version into
@@ -64,10 +67,10 @@ and the rendered guide (`_prd.md` → Core Features 2-4; ADR-0322).
    (`TestBaselineHumanProfileAdaptation`'s menu answer) and
    `internal/cli/baseline_release_gate_test.go`
    (`TestGuidanceCompositionJourney`'s list and its two fixture switches; the
-   `python-cli` formatter case runs nothing and says so in a comment).
+   `python` formatter case runs nothing and says so in a comment).
 6. MUST create `internal/baseline/python_profile_test.go` with
    `TestThePythonSetupIsTheCommonPartOfGoAndRust` and
-   `TestThePythonCliProfileRendersThePythonGuide` as `_techspec.md` → Testing
+   `TestThePythonProfileRendersThePythonGuide` as `_techspec.md` → Testing
    Approach describes them, comparing guide text on whitespace-normalized
    content. Each top-level test calls `t.Parallel()` first.
 7. MUST keep `skills/baseline_skill_contract_test.go`
@@ -88,12 +91,13 @@ and the rendered guide (`_prd.md` → Core Features 2-4; ADR-0322).
 ## Acceptance Criteria
 
 - [ ] The catalog lists five profiles and five setups, and the `python` setup equals the common part of `go` and `rust`.
-- [ ] A greenfield `python-cli` plan is ready and renders the Python guide and root pointer, and the release journey passes for `python-cli`.
+- [ ] A greenfield `python` plan is ready and renders the Python guide and root pointer and no CLI guide, and the release journey passes for `python`.
+- [ ] The `python` profile selects no `cli-surface` module and no `rule.cli.*` rule.
 - [ ] A second Managed Refresh of this repository reports no file change.
 
 ## Consumers
 
-- the `python-cli` profile and `python` module — consumers: `./internal/baseline`, `./internal/cli`
+- the `python` profile and `python` module — consumers: `./internal/baseline`, `./internal/cli`
 
 ## Context
 
@@ -105,7 +109,7 @@ and the rendered guide (`_prd.md` → Core Features 2-4; ADR-0322).
 - creates: `internal/baseline/assets/modules/python.json`
 - creates: `internal/baseline/assets/templates/root/python.md`
 - creates: `internal/baseline/assets/templates/guides/python.md`
-- creates: `internal/baseline/assets/profiles/python-cli.json`
+- creates: `internal/baseline/assets/profiles/python.json`
 - interface: `internal/baseline/assets/templates/index.json`
 - interface: `internal/baseline/assets/coverage.json`
 - interface: `internal/baseline/assets/modules/core.json`
@@ -128,8 +132,8 @@ and the rendered guide (`_prd.md` → Core Features 2-4; ADR-0322).
 
 ## Verification
 
-- `for name in TestThePythonSetupIsTheCommonPartOfGoAndRust TestThePythonCliProfileRendersThePythonGuide; do go test -list "^${name}\$" ./internal/baseline | grep -qx "$name" || { printf 'missing test %s\n' "$name" >&2; exit 1; }; done; go test -count=1 ./internal/baseline` — expected: exit 0. Before this Task neither test exists, so the command fails at its first check. Afterwards both exist and the whole package passes: the catalog, the module record, the derived-file characterizations, the clause force characterization, the asset sync and the derived-output enumeration.
-- `test -f internal/baseline/assets/profiles/python-cli.json || { echo 'missing python-cli profile' >&2; exit 1; }; grep -qF -- '"python-cli",' internal/cli/baseline_release_gate_test.go || { echo 'release journey lacks python-cli' >&2; exit 1; }; go test -count=1 -run '^(TestGuidanceCompositionJourney|TestBaselineHumanProfileAdaptation)$' ./internal/cli && go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills && GOOS=windows go vet ./internal/baseline ./internal/cli` — expected: exit 0. Before this Task the profile does not exist, so the command fails at its first check. Afterwards the release journey plans, applies and re-plans every built-in profile including `python-cli`, the human menu selects the right profile, the retired-runtime guard still passes, and both packages' tests compile for Windows.
+- `for name in TestThePythonSetupIsTheCommonPartOfGoAndRust TestThePythonProfileRendersThePythonGuide; do go test -list "^${name}\$" ./internal/baseline | grep -qx "$name" || { printf 'missing test %s\n' "$name" >&2; exit 1; }; done; go test -count=1 ./internal/baseline` — expected: exit 0. Before this Task neither test exists, so the command fails at its first check. Afterwards both exist and the whole package passes: the catalog, the module record, the derived-file characterizations, the clause force characterization, the asset sync and the derived-output enumeration.
+- `test -f internal/baseline/assets/profiles/python.json || { echo 'missing python profile' >&2; exit 1; }; if grep -qE -- 'cli-surface|rule[.]cli[.]' internal/baseline/assets/profiles/python.json; then echo 'python profile selects the CLI surface' >&2; exit 1; fi; grep -qF -- '"python",' internal/cli/baseline_release_gate_test.go || { echo 'release journey lacks python' >&2; exit 1; }; go test -count=1 -run '^(TestGuidanceCompositionJourney|TestBaselineHumanProfileAdaptation)$' ./internal/cli && go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills && GOOS=windows go vet ./internal/baseline ./internal/cli` — expected: exit 0. Before this Task the profile does not exist, so the command fails at its first check. Afterwards the profile exists without the CLI surface, the release journey plans, applies and re-plans every built-in profile including `python`, the human menu selects the right profile, the retired-runtime guard still passes, and both packages' tests compile for Windows.
 
 ## References
 

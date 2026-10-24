@@ -1,6 +1,6 @@
 ---
 task: task_01
-spec: 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff
+spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 status: pending
 type: backend
 complexity: medium
