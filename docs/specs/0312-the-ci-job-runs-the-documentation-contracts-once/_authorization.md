@@ -6,6 +6,7 @@ consuming: 0312-the-ci-job-runs-the-documentation-contracts-once
 paths:
   - .github/workflows/ci-verify.yml
   - Makefile
+  - docs/agents/setup-context.json
 operations:
   - implement
   - commit
@@ -82,15 +83,30 @@ on `56dd1a76`, with `speccheck.GovernedPath`.
 
 ## Sanctioned regeneration
 
-None. No skill, guide under `docs/user-guide/`, Baseline module, record or
-derived file changes, so no regeneration command runs.
+This repository's Setup Manifest records the whole-file Makefile digest in
+its verification entries, so the Makefile edit makes it stale
+(`TestTheSetupManifestIsCurrent`; Run
+`run_20261024T144541Z_3394a6f8404eb679`). After the Makefile edit, task_01
+regenerates it only through the owning command:
+
+`go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+
+and a second run reports no file change. Only
+`docs/agents/setup-context.json` may change; no digest is hand-edited.
+
+Amendment of 2026-10-24 (operator, plan defect found by the Run above): the
+original plan forbade this manifest although the required Makefile edit
+necessarily changes its digest. The maintainer's batch-4 authorization covers
+the Makefile; regenerating its derived manifest through the sanctioned
+command adds no source path.
 
 ## Limits
 
 - No change to `go.mod`, `go.sum`, the lint, formatter or test-runner
   configuration, any workflow other than `ci-verify.yml`, any Makefile
-  target other than those task_01 names, `docs/agents/`, any Baseline module,
-  `.roundfixrc.yml`, `docs/agents/setup-context.json`, any skill, any
+  target other than those task_01 names, any file under `docs/agents/` other
+  than `docs/agents/setup-context.json` through the sanctioned regeneration,
+  any Baseline module, `.roundfixrc.yml`, any skill, any
   production `.go` file, `CONTEXT.md`, or the `### QA settlement` section of
   any skill.
 - No test, Verification command or QA row:
