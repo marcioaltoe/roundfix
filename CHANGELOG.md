@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.116.0] - 2026-10-23
+
+### The documentation contracts cost seconds per active Spec
+
+- **The removed-history citation pass looks each token up in a set.** It compared every cited token against every removed-history path, so each active Spec added about a minute to the documentation contract suite. The lookup is now a set membership test, and the corpus tests share one Spec Consistency Check per active Spec per test process instead of re-running it in every test. Every contract keeps its assertions. On this repository's CI, with two to three active Specs, the "Verify changed" step went from 14m39s to 4m31s and "Verify docs" from 12m38s to 2m53s.
+
 ## [0.115.0] - 2026-10-23
 
 ### The pre-PR review drops a Result Status Note, and a stale fingerprint names its command
