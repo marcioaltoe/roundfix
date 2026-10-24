@@ -17,6 +17,8 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 
 - A test signals a process only through the `*os.Process` of an unreaped child it started or a Proven Signal, and a helper that waits has a Helper Lifeline; the Signal rule and the suite guard enforce both.
 
+- A test never creates a hard link: a test that needs an executable at another path copies it or links it symbolically, so every executable a test may start stays a **Single-Name Test Binary**; the Hard Link rule in `internal/testfixture` enforces it.
+
 - A top-level test in a Parallel Test Package calls `t.Parallel()` as its first statement or carries a `// Sequential: <reason>` comment naming the process-wide state it changes; the Parallel Test Package rule in `internal/testfixture` enforces it.
 - Keep the project KISS: prefer the smallest behavior that satisfies the
   documented product contract.

@@ -578,6 +578,10 @@ _Avoid_: Unmarked test, serial test, parallel exception
 A package whose top-level tests each call `t.Parallel()` as their first statement or are Sequential Tests, with a repository rule enforcing both the declaration and a ceiling on Sequential Tests that may only fall; files under a `docscontract` or `repocontract` build constraint are excluded ([ADR-0259](docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md)).
 _Avoid_: Parallel suite, concurrent package, fast package
 
+**Single-Name Test Binary**:
+An executable a test may start that keeps one directory entry while any process may start it; a test that needs it at another path copies it or links it symbolically, because macOS kills a new process whose executable path names an entry that has disappeared ([ADR-0324](docs/adr/0324-a-test-never-gives-a-running-executable-a-second-name.md)).
+_Avoid_: hard-linked fixture, shared inode, binary alias
+
 **Real-Time Budget**:
 A wall-clock allowance below ten seconds that a test gives work it does not control: a child process, a goroutine or Git; an asserted allowance races work that blocks until cancellation or the test binary's exit ([ADR-0271](docs/adr/0271-a-test-bounds-by-real-time-only-what-it-asserts.md)).
 _Avoid_: Run Budget, test deadline, arbitrary timeout
