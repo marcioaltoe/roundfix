@@ -258,7 +258,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:79ce04927c7781b44cb6fec80728f22b6abe79b87da436f5a66a1ad1181d3987"
+      "declarationDigest": "sha256:b73abf588b3b2da6a1dd357915011a56dc1b020f5b93708c2d79e989804f3c17"
     },
     {
       "id": "verification.incremental",
@@ -267,7 +267,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:79ce04927c7781b44cb6fec80728f22b6abe79b87da436f5a66a1ad1181d3987"
+      "declarationDigest": "sha256:b73abf588b3b2da6a1dd357915011a56dc1b020f5b93708c2d79e989804f3c17"
     }
   ]
 }
