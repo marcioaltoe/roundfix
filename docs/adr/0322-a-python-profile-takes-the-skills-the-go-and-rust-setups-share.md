@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-23T12:00:00Z
-updated_at: 2026-10-23T12:00:00Z
+updated_at: 2026-10-24T12:15:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -31,15 +31,19 @@ names an unknown or derived component. The first one is `python`, the common
 part of `go` and `rust`: the thirty language-neutral skills both lists carry,
 the same set Quaestor installed by hand.
 
-**The `python-cli` profile.** A built-in profile selects the universal,
+**The `python` profile.** A built-in profile selects the universal,
 context, Spec, autonomous-work, external-triage, Secondbrain and
-repository-extension modules, the CLI surface and a new `python` module, on the
-`python` setup. The module's guide, `docs/agents/python.md`, states with force
+repository-extension modules and a new `python` module, on the `python` setup.
+It selects no application-surface module: on 2026-10-24 the maintainer named
+it `python`, not `python-cli`, because it serves a command-line tool, a
+backend service or a worker alike, and a repository states the rules of its
+own surface in its repository-owned extension. The module's guide, `docs/agents/python.md`, states with force
 that uv owns dependencies and the project environment, that ruff's findings
 fail the gate and are never hidden, that a Task Verification selects a new test
 by its pytest node id alone, that tests stay hermetic and data from outside the
 repository skips by name, that every operating-system branch is exercised, and
-that a console script stays thin and is tested through its entry point. The
+that every entry point, whether a console script, a web application or a
+worker, stays thin and is tested through its observable contract. The
 module requires and dispatches no skill until the upstream repository
 publishes Python skills; the curation request for them is filed outside this
 repository.
@@ -55,6 +59,10 @@ repository.
   eleven Go and TUI skills a Python repository cannot use.
 - Waiting for an upstream Python list was rejected by the maintainer's
   decision to ship the profile in cycle AP.
+- A `python-cli` profile with the CLI surface was rejected by the maintainer
+  on 2026-10-24 ("Nenhuma superfície fixa"): one profile serves command-line
+  tools, backend services and workers, and a surface's rules belong to the
+  repository's extension.
 
 ## Consequences
 

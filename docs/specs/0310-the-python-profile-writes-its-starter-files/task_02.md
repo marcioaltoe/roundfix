@@ -1,6 +1,6 @@
 ---
 task: task_02
-spec: 0310-the-python-cli-profile-writes-its-starter-files
+spec: 0310-the-python-profile-writes-its-starter-files
 status: pending
 type: backend
 complexity: high
@@ -21,7 +21,7 @@ ADR-0323; ADR-0068).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0309 adopted,
-   [`../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
+   [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
    of 2026-10-22, its expected item 4.
 2. MUST create `internal/baseline/starters.go` with `StartersSchemaVersion`,
    `StartersRequest`, `StarterEntry`, `StartersPayload`, `ErrStartersStale`
@@ -59,7 +59,7 @@ ADR-0323; ADR-0068).
 
 - [ ] A preview writes nothing; a confirmed apply creates only absent paths and leaves existing files byte-identical.
 - [ ] A stale digest writes nothing, and a failed write leaves none of the files the call created.
-- [ ] The next action names the command for `python-cli` and keeps its text for `rust-cli`.
+- [ ] The next action names the command for the `python` profile and keeps its text for `rust-cli`.
 
 ## Consumers
 

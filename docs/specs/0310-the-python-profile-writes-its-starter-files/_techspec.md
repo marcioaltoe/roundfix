@@ -1,10 +1,10 @@
 ---
-spec: 0310-the-python-cli-profile-writes-its-starter-files
+spec: 0310-the-python-profile-writes-its-starter-files
 prd: _prd.md
 created: 2026-10-23
 ---
 
-# The Python CLI profile writes its Starter Files — Technical Spec
+# The Python profile writes its Starter Files — Technical Spec
 
 ## Executive Summary
 
@@ -45,7 +45,7 @@ file yet.
   as cycle AO", carrying the cycle AJ grant "Mexer em Governed Paths
   declarados"). Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`; Spec-contained authorization record:
-  `docs/specs/0310-the-python-cli-profile-writes-its-starter-files/_authorization.md`;
+  `docs/specs/0310-the-python-profile-writes-its-starter-files/_authorization.md`;
   bounded files: `.agents/skills/roundfix/SKILL.md`,
   `.agents/skills/roundfix/references/baseline.md`,
   `docs/agents/setup-context.json`,
@@ -243,15 +243,15 @@ exits 0.
 1. Surface Transcript: the preview writes nothing and asks for confirmation.
 
    ```transcript
-   $ roundfix baseline starters --profile python-cli --repo <repo>
+   $ roundfix baseline starters --profile python --repo <repo>
    stdout:
-   Baseline starters: python-cli
+   Baseline starters: python
    - create Makefile
    - create .roundfixrc.yml
    - create .github/workflows/verify.yml
    State: preview
    Plan Digest: <digest>
-   Next: roundfix baseline starters --profile python-cli --confirm-plan <digest>
+   Next: roundfix baseline starters --profile python --confirm-plan <digest>
    stderr:
    exit: 3
    ```
@@ -259,9 +259,9 @@ exits 0.
 2. Surface Transcript: the confirmed preview creates the absent files.
 
    ```transcript
-   $ roundfix baseline starters --profile python-cli --repo <repo> --confirm-plan <digest>
+   $ roundfix baseline starters --profile python --repo <repo> --confirm-plan <digest>
    stdout:
-   Baseline starters: python-cli
+   Baseline starters: python
    - create Makefile
    - create .roundfixrc.yml
    - create .github/workflows/verify.yml
@@ -302,7 +302,7 @@ Deviations from the PRD: None.
 - ADR-0323: none of its rejected alternatives is taken; the files are not written by `baseline apply`, not managed with markers, and not left as documentation-only examples.
 - ADR-0068: its rejected alternative, separate human audit and apply journeys exposing engine phases, is not taken; the command previews and applies in one confirmation-gated workflow with an exact digest.
 - ADR-0075: its rejected alternatives are not taken; profile divergence still resolves through a confirmed repository-owned adaptation, and the new next action only adds a pointer to the Starter Files for a profile that has them.
-- ADR-0219: no rejected alternative is taken; a repository-owned draft adapted from `python-cli` binds to it and, keeping the `python` module, keeps its Starter Files.
+- ADR-0219: no rejected alternative is taken; a repository-owned draft adapted from the `python` profile binds to it and, keeping the `python` module, keeps its Starter Files.
 - ADR-0241: no rejected alternative is taken; Starter Files come from the embedded module, as a repository profile's skill contracts come from the embedded snapshots.
 - ADR-0322: none of its rejected alternatives is taken; the `python` module and its common setup stay as Spec 0309 delivers them, and this Spec only adds Starter Files to the module.
 
@@ -322,7 +322,7 @@ real-time duration and uses temporary directories; the new files use no
 platform API and compile for Windows.
 
 - `internal/baseline/starter_files_test.go` (new, Build Order 1):
-  - `TestThePythonModuleDeclaresItsStarterFiles`: for `python-cli`'s ordered
+  - `TestThePythonModuleDeclaresItsStarterFiles`: for the `python` profile's ordered
     modules the three paths in order with `sha256:` identities, each template
     holding API Contract 2's lines (`verify: fmt-check lint test`,
     `verify-incremental: verify`, the four `uv run --frozen` recipes; the five
@@ -347,7 +347,7 @@ platform API and compile for Windows.
   - `TestTheUndeclaredGateNamesTheStartersCommand`: through
     `ResolveProfileAlignment` in a repository without a Makefile, the
     `verification.gate` divergence's next action is API Contract 5's text with
-    `python-cli`, and for `rust-cli` it is the unchanged text.
+    `python`, and for `rust-cli` it is the unchanged text.
 - `internal/cli/baseline_starters_test.go` (new, Build Order 3):
   - `TestBaselineStartersPreviewTranscript` and
     `TestBaselineStartersApplyTranscript`: each Surface Transcript asserted
@@ -397,7 +397,7 @@ platform API and compile for Windows.
    Behavior Surface Record re-recorded last (depends on 2).
 4. QA gate (depends on: 1, 2, 3).
 
-`requires: [0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff]`: Build
+`requires: [0309-a-python-baseline-profile-for-uv-pytest-and-ruff]`: Build
 Order 1 extends the module Spec 0309 creates.
 
 ## Risks & Considerations
@@ -419,3 +419,8 @@ Order 1 extends the module Spec 0309 creates.
 - A separate command writes Starter Files only where absent; see ADR-0323.
 - The Makefile and bootstrap use `--frozen`; CI uses `--locked`.
 - The command's exit codes follow `baseline skills restore`.
+- The profile is `python` and fixes no application surface (maintainer
+  decisions of 2026-10-24, quoted in `_prd.md` → Decisions); the Starter
+  Files carry nothing specific to a command-line tool, so only the profile
+  identifier in the command, the transcripts and the next action follows the
+  rename.

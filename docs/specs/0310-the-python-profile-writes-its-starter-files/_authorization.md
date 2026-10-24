@@ -2,7 +2,7 @@
 status: approved
 granted: 2026-10-22
 action: let a Baseline module declare Starter Files, give the python module its Makefile, Project Config and CI workflow starters, add the confirmation-gated roundfix baseline starters command that writes them only where absent, name it in the profile alignment, regenerate the derived Baseline files and this repository's Setup Manifest through the sanctioned commands, and document the command in the guides, the Roundfix skill and the glossary
-consuming: 0310-the-python-cli-profile-writes-its-starter-files
+consuming: 0310-the-python-profile-writes-its-starter-files
 paths:
   - .agents/skills/roundfix/SKILL.md
   - .agents/skills/roundfix/references/baseline.md
@@ -62,6 +62,24 @@ authoring report raised:
 - Python skills: "Entregar agora (Recomendado)" (option text: "Ship now with
   the rules in the Python guide, and adopt the Python skills in a later Spec
   once the curation request in the skills repository is answered.").
+
+Two further cycle AP decisions were taken by the maintainer on 2026-10-24,
+after the plans of Specs 0309 and 0310 merged and before either started
+delivery:
+
+- at about 09:10 BRT, in the maintainer's own words: "mude o nome do profile
+  de python-cli para python (vai ser para cli, backend e workers)";
+- through AskUserQuestion at about 09:15 BRT: "Nenhuma superfície fixa
+  (Recomendado)" (option text: "O perfil traz só a linguagem (uv, pytest,
+  ruff) e os módulos de fluxo (core, specs, autônomo, secondbrain, extensão).
+  Serve igual para CLI, backend e workers; regras de uma superfície
+  específica entram pela extensão do repositório. Muda pouco o plano e mantém
+  0309/0310 na v0.123/v0.124.").
+
+The profile identifier is therefore `python`, the Spec folders no longer say
+`python-cli`, and the profile selects no `cli-surface` module and no
+`rule.cli.*` rule. These decisions add no Governed Path and grant nothing
+beyond the operations below.
 
 The cycle AO rules carried by the authorization answer were approved on
 2026-10-22, at about 00:55 BRT ("the same rules as cycle AN"), which carry the

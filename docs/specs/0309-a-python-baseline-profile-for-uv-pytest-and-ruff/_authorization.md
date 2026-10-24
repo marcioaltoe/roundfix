@@ -1,14 +1,14 @@
 ---
 status: approved
 granted: 2026-10-22
-action: add a Common Setup Snapshot kind to the Baseline, ship the python common setup of the go and rust setups, the python module with its uv, ruff and pytest guide and the python-cli Baseline Profile, regenerate the derived Baseline files and this repository's Setup Manifest through the sanctioned commands, adjust the tests that enumerate the catalog, and document the profile with its glossary term
-consuming: 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff
+action: add a Common Setup Snapshot kind to the Baseline, ship the python common setup of the go and rust setups, the python module with its uv, ruff and pytest guide and the python Baseline Profile, which fixes no application surface, regenerate the derived Baseline files and this repository's Setup Manifest through the sanctioned commands, adjust the tests that enumerate the catalog, and document the profile with its glossary term
+consuming: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 paths:
   - docs/agents/setup-context.json
   - internal/baseline/assets/coverage.json
   - internal/baseline/assets/modules/core.json
   - internal/baseline/assets/modules/python.json
-  - internal/baseline/assets/profiles/python-cli.json
+  - internal/baseline/assets/profiles/python.json
   - internal/baseline/assets/setups/python.json
   - internal/baseline/assets/templates/guides/python.md
   - internal/baseline/assets/templates/index.json
@@ -62,6 +62,24 @@ authoring report raised:
   the rules in the Python guide, and adopt the Python skills in a later Spec
   once the curation request in the skills repository is answered.").
 
+Two further cycle AP decisions were taken by the maintainer on 2026-10-24,
+after the plans of Specs 0309 and 0310 merged and before either started
+delivery:
+
+- at about 09:10 BRT, in the maintainer's own words: "mude o nome do profile
+  de python-cli para python (vai ser para cli, backend e workers)";
+- through AskUserQuestion at about 09:15 BRT: "Nenhuma superfície fixa
+  (Recomendado)" (option text: "O perfil traz só a linguagem (uv, pytest,
+  ruff) e os módulos de fluxo (core, specs, autônomo, secondbrain, extensão).
+  Serve igual para CLI, backend e workers; regras de uma superfície
+  específica entram pela extensão do repositório. Muda pouco o plano e mantém
+  0309/0310 na v0.123/v0.124.").
+
+The profile identifier is therefore `python`, the Spec folders no longer say
+`python-cli`, and the profile selects no `cli-surface` module and no
+`rule.cli.*` rule. These decisions add no Governed Path and grant nothing
+beyond the operations below.
+
 The cycle AO rules carried by the authorization answer were approved on
 2026-10-22, at about 00:55 BRT ("the same rules as cycle AN"), which carry the
 cycle AN approval of 2026-10-21, at about 01:00 BRT, the cycle AM, AL and AK
@@ -86,7 +104,12 @@ Secondbrain, reads the upstream skills checkout, runs a Python tool, or reads
 another repository.
 
 The governed set was measured on the authoring branch `docs/plan-0309`, based
-on `dde9d5f5` (2026-10-23), with `speccheck.GovernedPath`.
+on `dde9d5f5` (2026-10-23), with `speccheck.GovernedPath`, and the renamed
+profile path `internal/baseline/assets/profiles/python.json` was measured
+again on 2026-10-24 on the branch `docs/plan-0309-python-profile`, based on
+`87094aa9`, by the same kind of `go test -overlay` probe (governed; the
+planning files and ADR-0322 are not; `git status --porcelain` identical
+before and after).
 
 - The probe was a `go test -overlay` probe in `internal/speccheck` that wrote
   nothing to the repository: `git status --porcelain` was identical before
@@ -106,7 +129,7 @@ on `dde9d5f5` (2026-10-23), with `speccheck.GovernedPath`.
   `internal/baseline/assets/modules/python.json`,
   `internal/baseline/assets/templates/root/python.md`,
   `internal/baseline/assets/templates/guides/python.md` and
-  `internal/baseline/assets/profiles/python-cli.json` are the new setup,
+  `internal/baseline/assets/profiles/python.json` are the new setup,
   module, templates and profile (task_02).
 - `internal/baseline/assets/templates/index.json` and
   `internal/baseline/assets/coverage.json` register the templates and the

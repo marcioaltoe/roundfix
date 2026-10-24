@@ -1,10 +1,10 @@
 ---
-spec: 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff
+spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 prd: _prd.md
 created: 2026-10-23
 ---
 
-# A Python CLI Baseline Profile for uv, pytest and ruff — Technical Spec
+# A Python Baseline Profile for uv, pytest and ruff — Technical Spec
 
 ## Executive Summary
 
@@ -15,7 +15,7 @@ with equal entries; the catalog validates it beside the composed kind and the
 asset sync writes it after its components. Second, the catalog gains the
 `python` common snapshot of `go` and `rust`, a `python` module with its guide,
 root block, templates and coverage entry, the core module's hierarchy and
-semantic-owner entries for them, and the `python-cli` profile; the sanctioned
+semantic-owner entries for them, and the `python` profile; the sanctioned
 commands regenerate the derived files and this repository's Setup Manifest,
 and the existing tests that enumerate profiles, setups, clauses or the
 profile menu learn the new entries. Third, the user guide lists the profile
@@ -45,12 +45,12 @@ the curation request is already filed outside this repository.
   as cycle AO", carrying the cycle AJ grant "Mexer em Governed Paths
   declarados"). Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`; Spec-contained authorization record:
-  `docs/specs/0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/_authorization.md`;
+  `docs/specs/0309-a-python-baseline-profile-for-uv-pytest-and-ruff/_authorization.md`;
   bounded files: `docs/agents/setup-context.json`,
   `internal/baseline/assets/coverage.json`,
   `internal/baseline/assets/modules/core.json`,
   `internal/baseline/assets/modules/python.json`,
-  `internal/baseline/assets/profiles/python-cli.json`,
+  `internal/baseline/assets/profiles/python.json`,
   `internal/baseline/assets/setups/python.json`,
   `internal/baseline/assets/templates/guides/python.md`,
   `internal/baseline/assets/templates/index.json`,
@@ -113,7 +113,7 @@ other Specs merge; identifiers do not.
   `assets/modules/python.json` (new), `assets/templates/root/python.md` and
   `assets/templates/guides/python.md` (new), `assets/templates/index.json`,
   `assets/coverage.json`, `assets/modules/core.json`,
-  `assets/profiles/python-cli.json` (new).
+  `assets/profiles/python.json` (new).
 - Derived files, the module version record and this repository's Setup
   Manifest: regenerated only by the sanctioned commands.
 - Tests: `internal/baseline/common_setup_test.go` and
@@ -160,7 +160,7 @@ func commonSetupSnapshot(id string, components []document) (document, error)
    {{reference.python}}."; `template.guide.python` (version 1, kind `guide`,
    path `guides/python.md`, tokens `["artifact.rules"]`) whose content is the
    heading "# Python", a blank line, the paragraph "These rules govern the
-   repository's Python project: its package, console scripts and tests,
+   repository's Python project: its package, its entry points and its tests,
    managed with uv. Code in another language follows its own guide.", a blank
    line and `{{artifact.rules}}`. Each is inserted in `templates/index.json`
    right before the matching Rust entry.
@@ -172,11 +172,20 @@ func commonSetupSnapshot(id string, components []document) (document, error)
    level, and `{"managedId": "guide.python", "title": "Python guidance",
    "classifications": ["python"]}` between the Go and Rust semantic owners. No
    clause of the core module changes.
-6. `profiles/python-cli.json`: `rust-cli.json` with `id` `python-cli`, `title`
-   "Python CLI repository", `setup` `python`, `modules` with `python` in place
-   of `rust`, and `requiredRules` with `rule.python.uv-environment`,
-   `rule.python.ruff-and-pytest-gates` and `rule.python.hermetic-tests` in
-   place of the three Rust rules; every other field equal.
+6. `profiles/python.json`: `rust-cli.json` with `id` `python`, `title`
+   "Python repository (CLI, backend or worker)", `setup` `python`, `modules`
+   `["core", "context-workflow", "python", "autonomous-work",
+   "spec-workflow", "external-triage", "secondbrain",
+   "repository-extension"]` (the `rust-cli` list with `python` in place of
+   `rust` and without `cli-surface`), and `requiredRules` with
+   `rule.python.uv-environment`, `rule.python.ruff-and-pytest-gates` and
+   `rule.python.hermetic-tests` in place of the three Rust rules and without
+   `rule.cli.output-contract` and `rule.cli.non-interactive`; every other
+   field equal. The profile selects no application-surface module: it serves
+   a command-line tool, a backend service or a worker alike, and a
+   repository adds the rules of its own surface in its repository-owned
+   `docs/agents/specific-repository.md`, the `repository-extension` module's
+   carrier (maintainer decision of 2026-10-24).
 
 ### API Contracts
 
@@ -233,7 +242,8 @@ func commonSetupSnapshot(id string, components []document) (document, error)
        exists, so the command could never fail before the work; a missing node
        id alone exits 4 and an empty selection exits 5. `roundfix spec check`
        reports a command that names a test both ways."
-   - `rule.python.hermetic-tests`, coverage `coverage.python`, `coverage.cli`:
+   - `rule.python.hermetic-tests`, coverage `coverage.python`,
+     `coverage.verification`:
      - `clause.python.keep-tests-hermetic`, mandatory: "Keep tests hermetic:
        set or clear with `monkeypatch` every environment variable the code
        under test reads, write only under `tmp_path`, and never read the
@@ -251,19 +261,22 @@ func commonSetupSnapshot(id string, components []document) (document, error)
        reads, or run the repository's type checker for each platform with its
        platform option, because a test run on the host executes only the
        host's branch."
-     - `clause.python.test-the-command-through-its-entry-point`, mandatory:
-       "Keep each console-script entry point thin: it parses arguments and
-       calls behavior that lives in the package. Test command behavior through
-       that entry point: standard output, standard error and the exit code it
-       raises with `SystemExit`."
-4. API Contract: rendering. A greenfield plan for `python-cli` with the usual
+     - `clause.python.keep-entry-points-thin`, mandatory: "Keep each entry
+       point thin, whether a console script, a web application factory or a
+       worker's start-up: it reads its input and calls behavior that lives in
+       the package. Test behavior through the package and the entry point's
+       observable contract: for a console script, standard output, standard
+       error and the exit code it raises with `SystemExit`; for a web
+       application or a worker, the responses or messages it produces."
+4. API Contract: rendering. A greenfield plan for the `python` profile with the usual
    decisions in a repository whose Makefile declares `verify` and
    `verify-incremental` is `ready`, renders `docs/agents/python.md` with the
    ten clauses and the root pointer "Python implementation rules are
-   mandatory", renders no `docs/agents/go.md`, `docs/agents/rust.md` or
-   `docs/agents/tui.md`, records `python-cli` in its Setup Manifest, applies,
+   mandatory", renders no `docs/agents/go.md`, `docs/agents/rust.md`,
+   `docs/agents/tui.md` or `docs/agents/cli.md`, records `python` in its Setup Manifest, applies,
    and re-plans with no file change. Profile alignment, decisions and
-   capabilities behave as for `rust-cli`.
+   capabilities behave as for `rust-cli`, without the CLI surface's
+   `agentic-cli-design` dispatch.
 
 ### Surface Transcripts
 
@@ -276,7 +289,7 @@ gains one entry.
 1. A derived Setup Snapshot holds no list of its own choosing; the catalog refuses one that differs from its derivation.
 2. No derived snapshot is a component of another.
 3. Existing setups, profiles and clauses keep their bytes; only derived files, the module record and this repository's Setup Manifest change through the sanctioned commands.
-4. The python-cli profile restores no skill outside the python setup, and the python setup holds no Go, TUI or Rust skill.
+4. The python profile restores no skill outside the python setup, the python setup holds no Go, TUI or Rust skill, and the profile selects no application-surface module.
 5. No Roundfix code or test runs a Python tool.
 ```
 
@@ -301,7 +314,7 @@ Deviations from the PRD: None.
 - ADR-0204: its rejected alternatives (a profile naming several setups; deriving at load time) are not taken; the common snapshot is a file the sync writes, read by the existing readers.
 - ADR-0191: its rule stands; the sync remains the only writer, and the Task writes the `python` snapshot with the sync's own derivation bytes, which the catalog checks.
 - ADR-0206: no rejected alternative is taken; the `python` snapshot names its components by their upstream setup names, and a skill dropped upstream leaves it with its components.
-- ADR-0219: no rejected alternative is taken; a repository-owned draft adapted from `python-cli` binds to it like to any built-in profile.
+- ADR-0219: no rejected alternative is taken; a repository-owned draft adapted from the `python` profile binds to it like to any built-in profile.
 - ADR-0241: no rejected alternative is taken; a repository-owned profile that selects the `python` module takes its skill contracts from the embedded snapshots, of which `python` is one.
 - ADR-0246: no rejected alternative is taken; a retired skill leaves the common part when it leaves its components, and no module requires it.
 
@@ -340,31 +353,34 @@ real-time duration; the new files use no platform API and compile for Windows.
     setup has source type `common` with `go`, `rust`, equals the derivation,
     holds none of the toolchain skills of Success Metric 2 and holds the three
     language-neutral ones.
-  - `TestThePythonCliProfileRendersThePythonGuide`: through
+  - `TestThePythonProfileRendersThePythonGuide`: through
     `newPlanRepository` and `planTestDecisions` with greenfield preservation,
     API Contract 4's plan, guide phrases (on whitespace-normalized text),
-    absent guides, root pointer and manifest profile.
+    absent guides (including `docs/agents/cli.md`), root pointer and
+    manifest profile.
 - Declared breaks (Build Order 1): the three `composed` skips in
   `assets_sync_test.go` (the template check, the maintained parity row and
   `buildAssetsSyncSource`) skip both derived kinds; their assertions keep
   their meaning.
 - Declared breaks (Build Order 2), each moving to the five-profile, five-setup
-  catalog: `TestEmbeddedCatalog` lists `python-cli`; `TestOutputsForCommand`
+  catalog: `TestEmbeddedCatalog` lists `python`; `TestOutputsForCommand`
   adds `internal/baseline/assets/setups/python.json` and
-  `internal/baseline/assets/profiles/python-cli.json` to its enumeration;
+  `internal/baseline/assets/profiles/python.json` to its enumeration;
   `characterizedBaselineForce` lists the ten Python clauses with API Contract
   3's force; `TestAssetsSyncCheckIsReadOnlyAndReportsDrift`,
   `TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent` and
   `TestAssetsSyncCompatibilityMatchesMaintainedPythonContract` count five
   setups and findings; `TestBaselineHumanProfileAdaptation` answers `5` for
   `standard-typescript-monorepo`; `TestGuidanceCompositionJourney` lists
-  `python-cli` and its two fixture switches gain a `python-cli` case (a
+  `python` and its two fixture switches gain a `python` case (a
   `pyproject.toml` and an empty `src/example/__init__.py`; no formatter run).
   No other existing test changes; the prototype passed every other test of
   `internal/baseline`, `internal/cli`, `skills`, `internal/spec` and
   `internal/speccheck` with these changes.
-- Prototype record (2026-10-23, scratch worktree at `dde9d5f5`): the five new
-  tests failed to exist before and passed after. These sabotages each failed
+- Prototype record (2026-10-23, scratch worktree at `dde9d5f5`, with the
+  earlier profile shape `python-cli` and its `cli-surface` module; the
+  2026-10-24 amendment was checked by reading, `_prd.md` → Validation): the
+  five new tests failed to exist before and passed after. These sabotages each failed
   the named test: the common derivation keeping a same-named entry without
   comparing it → `TestACommonSetupKeepsOnlyTheSkillsEveryComponentCarries`;
   the common drift detail replaced by the composed one →
@@ -372,7 +388,7 @@ real-time duration; the new files use no platform API and compile for Windows.
   asset sync's upstream loop skipping only `composed` →
   `TestTheAssetSyncWritesACommonSetupAfterItsComponents`; the node-id clause's
   "selects a new test by its pytest node id" reworded →
-  `TestThePythonCliProfileRendersThePythonGuide`; the first skill removed from
+  `TestThePythonProfileRendersThePythonGuide`; the first skill removed from
   `setups/python.json` → catalog validation, failing
   `TestThePythonSetupIsTheCommonPartOfGoAndRust`.
 
@@ -402,7 +418,7 @@ starts on and names no version or digest value.
   `go` and `rust` keeps leaves the `python` setup at the next asset sync. The
   sync's diff shows it; a skill a module requires would fail the catalog
   check, and the `python` module requires none.
-- The Managed Refresh of an adopter with `python-cli` writes
+- The Managed Refresh of an adopter with the `python` profile writes
   `docs/agents/python.md`; an existing repository-owned Python guide at that
   path follows the Baseline's ordinary carrier and preservation rules.
 - Rebasing over Spec 0307 conflicts in `core.json`'s version line, the module
@@ -420,3 +436,13 @@ starts on and names no version or digest value.
 - The guide's node-id clause names `roundfix spec check`'s existing finding by
   behavior, not by code.
 - The starter files are Spec 0310's.
+- The profile is named `python` and fixes no application surface: no
+  `cli-surface` module and no `rule.cli.*` rules, the hermetic-tests rule
+  covers `coverage.verification`, and the entry-point clause speaks of every
+  kind of entry point (maintainer decisions of 2026-10-24, quoted in
+  `_prd.md` → Decisions and `_authorization.md`).
+- `agentic-cli-design` stays in the `python` setup, because the setup is the
+  derived common part of `go` and `rust`, but no module of the profile
+  requires or dispatches it; a command-line adopter names it, with its own
+  surface rules, in its repository-owned `docs/agents/specific-repository.md`
+  (the `repository-extension` module).

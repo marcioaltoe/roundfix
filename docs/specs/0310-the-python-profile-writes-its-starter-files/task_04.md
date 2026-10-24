@@ -1,6 +1,6 @@
 ---
 task: task_04
-spec: 0310-the-python-cli-profile-writes-its-starter-files
+spec: 0310-the-python-profile-writes-its-starter-files
 status: pending
 type: qa
 complexity: high
@@ -24,7 +24,10 @@ the real `~/.roundfix`, reads or writes the Secondbrain, reads another
 repository, runs uv, pytest, ruff, a starter Makefile target or a workflow,
 reaches the network, sends a request to a provider, the judge or a reviewer,
 or reads a credential. The gate never runs `roundfix spec judge` and never
-runs an archive plan without `--offline`.
+runs an archive plan without `--offline`. Every command that runs
+`bin/roundfix` or `go run ./cmd/roundfix` sets `HOME` and `TMPDIR` to fresh
+empty directories created for that row under the Run's temporary directory
+(the CLI loads User Config from `$HOME/.roundfix/config.yml`).
 
 ## Requirements
 
@@ -56,8 +59,9 @@ runs an archive plan without `--offline`.
        `TestStartersPreviewsAndCreatesOnlyAbsentFiles` fails on the Makefile
        entry.
 4. MUST verify Success Metric 5 (the command), with `bin/roundfix` and `HOME`
-   set to a temporary directory, in a temporary Git repository with one commit:
-   - run `bin/roundfix baseline starters --profile python-cli --repo <repo>`
+   and `TMPDIR` set to fresh temporary directories, in a temporary Git
+   repository with one commit:
+   - run `bin/roundfix baseline starters --profile python --repo <repo>`
      and record the exit code, every stdout line and an empty stderr against
      Surface Transcript 1, and that no file was written;
    - run it with `--confirm-plan <digest>` and record the result against
@@ -70,7 +74,7 @@ runs an archive plan without `--offline`.
      stale line on stderr, and that nothing was written;
    - run `bin/roundfix baseline starters --help` and `bin/roundfix --help` and
      record the synopsis and help sentences;
-   - run `bin/roundfix baseline plan --profile python-cli` with the release
+   - run `bin/roundfix baseline plan --profile python` with the release
      journey's decisions in a repository without a Makefile and record the
      `verification.command.undeclared` next action;
    - run the five tests of `internal/cli/baseline_starters_test.go`,
@@ -95,7 +99,8 @@ runs an archive plan without `--offline`.
      link, that the glossary contract tests pass, and whether any other term
      the Spec introduced needs an entry (`docs/agents/domain.md`);
    - record every command and flag the guide and the Roundfix reference name
-     for `baseline starters`, and that the binary's help lists each; a named
+     for `baseline starters`, and that the binary's help, run with `HOME` and
+     `TMPDIR` set to fresh temporary directories, lists each; a named
      command or flag the binary lacks is a finding;
    - record that `make skills-sync-check` passes, the Roundfix skill's version
      at the Delivery Base and at the audited head, and that
@@ -127,9 +132,9 @@ runs an archive plan without `--offline`.
     - no Merge-Ready acceptance yet;
     - the audited head named as the claimed candidate.
 11. MUST, for the Outcome for the Archive Record, run only
-    `bin/roundfix archive 0310-the-python-cli-profile-writes-its-starter-files --plan --offline`
+    `bin/roundfix archive 0310-the-python-profile-writes-its-starter-files --plan --offline`
     with every Judge Key Variable and `TYPESAFE_API_KEY` unset and with `HOME`
-    set to a fresh empty temporary directory created for this row (the CLI
+    and `TMPDIR` each set to a fresh empty temporary directory created for this row (the CLI
     loads User Config from `$HOME/.roundfix/config.yml`, so the default home
     would read `~/.roundfix`), and write the
     report's `## Outcome` as one paragraph that does not end with a colon. It
@@ -149,7 +154,7 @@ runs an archive plan without `--offline`.
 
 ## Acceptance Criteria
 
-- [ ] The `python-cli` Starter Files resolve and validate, and each sabotage makes its named case fail.
+- [ ] The `python` Starter Files resolve and validate, and each sabotage makes its named case fail.
 - [ ] The command previews, applies only absent paths, keeps existing files, refuses a stale digest and matches both transcripts.
 - [ ] The scope audit finds no undeclared Governed Path change and no change to the files row 9 names.
 
@@ -159,7 +164,7 @@ The following command is rendered unchanged from Roundfix's derived QA contract.
 It proves a newest report exists and its verdict is readable; eligibility is
 applied in process by whoever settles the Task.
 
-- `newest="$(find 'docs/specs/0310-the-python-cli-profile-writes-its-starter-files/qa' -type f -name "qa-report-*.md" -print 2>/dev/null | awk "{ report=\$0; name=\$0; parts=split(name, path, \"/\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \"-\" && substr(date, 8, 1) == \"-\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\"0123456789\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\"\"; if (suffix == \"\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \"-\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\"0123456789\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", dated, date, sequenced, sequence, report }" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)"; test -n "$newest" || exit 1; awk "BEGIN { whitespace=\" \t\r\n\f\v\" } NR == 1 && \$0 == \"---\" { frontmatter=1; next } frontmatter && \$0 == \"---\" { closed=1; exit } frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }" "$newest"`
+- `newest="$(find 'docs/specs/0310-the-python-profile-writes-its-starter-files/qa' -type f -name "qa-report-*.md" -print 2>/dev/null | awk "{ report=\$0; name=\$0; parts=split(name, path, \"/\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \"-\" && substr(date, 8, 1) == \"-\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\"0123456789\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\"\"; if (suffix == \"\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \"-\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\"0123456789\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", dated, date, sequenced, sequence, report }" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)"; test -n "$newest" || exit 1; awk "BEGIN { whitespace=\" \t\r\n\f\v\" } NR == 1 && \$0 == \"---\" { frontmatter=1; next } frontmatter && \$0 == \"---\" { closed=1; exit } frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }" "$newest"`
 
 ## References
 

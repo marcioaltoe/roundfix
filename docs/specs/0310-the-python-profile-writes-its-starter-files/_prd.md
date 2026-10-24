@@ -1,13 +1,13 @@
 ---
-spec: 0310-the-python-cli-profile-writes-its-starter-files
+spec: 0310-the-python-profile-writes-its-starter-files
 status: active
 created: 2026-10-23
 surfaces: [backend, cli, docs]
 ---
 
-# The Python CLI profile writes its Starter Files
+# The Python profile writes its Starter Files
 
-A maintainer starting a Python repository on the `python-cli` Baseline Profile
+A maintainer starting a Python repository on the `python` Baseline Profile
 still writes by hand the Makefile that declares `make verify`, the Project
 Config that bootstraps each worktree with uv, and the CI workflow, and the
 profile's alignment refuses to plan until the Makefile exists. After this Spec
@@ -19,10 +19,10 @@ never touching a file the repository already has.
 ## Sources
 
 This Spec is a secondary Spec of one source. Spec 0309, which delivers the
-`python-cli` profile, owns the source and adopted it as a promoted Backlog
+`python` profile, owns the source and adopted it as a promoted Backlog
 Entry; this Spec links the owner's copy and adopts nothing:
 
-- [`../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md),
+- [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md),
   type `feat`: Quaestor's request of 2026-10-21 and the maintainer's
   decisions of 2026-10-22. This Spec delivers its expected item 4: generating
   the Makefile, the Project Config and the CI workflow.
@@ -32,9 +32,9 @@ entry; nothing else shares this context.
 
 ## Prerequisites
 
-`requires: [0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff]`: this
+`requires: [0309-a-python-baseline-profile-for-uv-pytest-and-ruff]`: this
 Spec's Starter Files belong to the `python` module that Spec 0309 creates, and
-its Verification commands run tests over that module and the `python-cli`
+its Verification commands run tests over that module and the `python`
 profile. The operator delivers it right after Spec 0309. Spec 0307 changes the
 Roundfix skill's version and the Baseline digests before it; this Spec's
 Tasks raise the skill version over what the tree holds and regenerate every
@@ -59,7 +59,7 @@ value.
   Spec extends for a profile with Starter Files; ADR-0219, "A profile draft
   binds to the closest built-in profile it adapts", and ADR-0241, "A
   repository profile takes its skill contracts from the embedded Setup
-  Snapshots", under which a repository-owned draft of `python-cli` keeps the
+  Snapshots", under which a repository-owned draft of the `python` profile keeps the
   module's Starter Files; and ADR-0322, "A Python profile takes the
   skills the Go and Rust setups share", whose module this Spec extends.
   Source: `docs/agents/domain.md`.
@@ -74,7 +74,7 @@ value.
   rendered into adopters, not this repository's own tooling. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`;
   Spec-contained authorization record:
-  `docs/specs/0310-the-python-cli-profile-writes-its-starter-files/_authorization.md`;
+  `docs/specs/0310-the-python-profile-writes-its-starter-files/_authorization.md`;
   bounded files: `.agents/skills/roundfix/SKILL.md`,
   `.agents/skills/roundfix/references/baseline.md`,
   `docs/agents/setup-context.json`,
@@ -93,7 +93,7 @@ value.
 - A maintainer previews, for a profile, which Starter Files would be created
   and which kept, and creates the absent ones only by confirming that exact
   preview.
-- The `python-cli` profile offers a Makefile whose `verify` runs ruff's format
+- The `python` profile offers a Makefile whose `verify` runs ruff's format
   check, ruff's linter and pytest through uv, a Project Config that bootstraps
   each worktree with a frozen uv sync, and a CI workflow that refuses a stale
   lockfile and runs `make verify`.
@@ -134,14 +134,14 @@ value.
 ## User Experience
 
 ```text
-$ roundfix baseline starters --profile python-cli
-Baseline starters: python-cli
+$ roundfix baseline starters --profile python
+Baseline starters: python
 - create Makefile
 - create .roundfixrc.yml
 - create .github/workflows/verify.yml
 State: preview
 Plan Digest: sha256:<digest>
-Next: roundfix baseline starters --profile python-cli --confirm-plan sha256:<digest>
+Next: roundfix baseline starters --profile python --confirm-plan sha256:<digest>
 ```
 
 The preview exits 3. Running the printed next command writes the three files,
@@ -150,7 +150,7 @@ A later preview lists each as `keep`, prints `State: current` and exits 0.
 
 ## Non-Goals / Out of Scope
 
-- Starter Files for any profile other than `python-cli`.
+- Starter Files for any profile other than `python`.
 - Managing, refreshing, comparing or removing a Starter File after it is
   written.
 - A `pyproject.toml`, `uv.lock` or source tree starter: the repository's
@@ -160,7 +160,7 @@ A later preview lists each as `keep`, prints `State: current` and exits 0.
 
 ## Success Metrics
 
-1. Success Metric: the embedded catalog returns, for `python-cli`, the Starter
+1. Success Metric: the embedded catalog returns, for the `python` profile, the Starter
    Files `Makefile`, `.roundfixrc.yml` and `.github/workflows/verify.yml` in
    that order with `sha256:` content identities, and none for the other four
    profiles; a declaration with an unsafe or duplicate path, an unknown
@@ -176,9 +176,9 @@ A later preview lists each as `keep`, prints `State: current` and exits 0.
    absent paths and leaves an existing file byte-identical; a digest that no
    longer matches is refused with nothing written; a write failure removes
    every file the run created; a second preview is `current` and exits 0.
-4. Success Metric: for `python-cli` without a declared gate, the
+4. Success Metric: for the `python` profile without a declared gate, the
    `verification.command.undeclared` next action names `roundfix baseline
-   starters --profile python-cli`; for `rust-cli` it keeps its bytes.
+   starters --profile python`; for `rust-cli` it keeps its bytes.
 5. Success Metric: the command's preview and applied transcripts match line by
    line, its help, guide and Roundfix reference describe it, the skill's
    version is raised and recorded, and the glossary defines **Starter File**.
@@ -253,6 +253,20 @@ The decisions were checked on 2026-10-23 against these sources.
   solicitar ou requerer novas skills recomendadas ao repo skills para que
   tenhamos a curadoria e ter o melhor resultado no uso do python, uv e linters
   e outros toolings especificos do setup." (the maintainer's own answer).
+- 2026-10-24, about 09:10 BRT: the profile's name — "mude o nome do profile
+  de python-cli para python (vai ser para cli, backend e workers)" (the
+  maintainer's own words).
+- 2026-10-24, about 09:15 BRT (AskUserQuestion): the profile's surface —
+  "Nenhuma superfície fixa (Recomendado)" (option text: "O perfil traz só a
+  linguagem (uv, pytest, ruff) e os módulos de fluxo (core, specs, autônomo,
+  secondbrain, extensão). Serve igual para CLI, backend e workers; regras de
+  uma superfície específica entram pela extensão do repositório. Muda pouco o
+  plano e mantém 0309/0310 na v0.123/v0.124."). The Starter Files were
+  already free of any surface: the Makefile formats, lints and tests `src`
+  and `tests`, the Project Config bootstraps uv, and the workflow runs
+  `make verify`, so a command-line tool, a backend service or a worker takes
+  them alike; only the profile identifier in the command, the transcripts and
+  the next action changes.
 
 Autonomous route: no person present; decisions taken from the operator's
 cycle AP batch 3 briefing and the characterization above, with no further

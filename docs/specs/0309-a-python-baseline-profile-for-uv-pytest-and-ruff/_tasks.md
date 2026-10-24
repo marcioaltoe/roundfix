@@ -1,6 +1,6 @@
 ---
 schema: spec-tasks/v1
-spec: 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff
+spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 qa: task_04
 graph:
   nodes:
@@ -18,13 +18,13 @@ graph:
       needs: [task_01, task_02, task_03]
 ---
 
-# Tasks — A Python CLI Baseline Profile for uv, pytest and ruff
+# Tasks — A Python Baseline Profile for uv, pytest and ruff
 
 | id      | title                                                                                          | type    | complexity | needs                     |
 | ------- | ---------------------------------------------------------------------------------------------- | ------- | ---------- | ------------------------- |
 | task_01 | A Common Setup Snapshot keeps only the skills its components share                             | backend | medium     | —                         |
-| task_02 | The python-cli profile governs uv, ruff and pytest on the common setup of Go and Rust          | backend | high       | task_01                   |
-| task_03 | The user guide lists the Python CLI profile and the glossary defines the Common Setup Snapshot | docs    | low        | task_02                   |
+| task_02 | The python profile governs uv, ruff and pytest on the common setup of Go and Rust          | backend | high       | task_01                   |
+| task_03 | The user guide lists the Python profile and the glossary defines the Common Setup Snapshot | docs    | low        | task_02                   |
 | task_04 | Run the final QA gate                                                                          | qa      | high       | task_01, task_02, task_03 |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04

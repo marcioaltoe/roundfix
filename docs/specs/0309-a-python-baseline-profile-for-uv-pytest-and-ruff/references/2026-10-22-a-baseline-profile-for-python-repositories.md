@@ -2,7 +2,7 @@
 type: feat
 status: promoted
 created: 2026-10-22
-spec: 0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff
+spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 reason: null
 ---
 
@@ -52,7 +52,7 @@ recomendadas ao repo skills para que tenhamos a curadoria e ter o melhor
 resultado no uso do python, uv e linters e outros toolings especificos do
 setup."):
 
-1. A built-in `python-cli` Baseline Profile with a `python` module whose guide,
+1. A built-in `python` Baseline Profile with a `python` module whose guide,
    `docs/agents/python.md`, states the uv and pytest commands and rules.
 2. The Python equivalent of the Go guide's cross-platform build rule: how a
    change that branches on the operating system is exercised.
@@ -64,3 +64,10 @@ setup."):
 5. The profile works with the skills that exist today; the recommended Python
    skills the upstream skills repository lacks are requested through a
    Secondbrain Inbox Entry under `inbox/skills/`, filed by the operator.
+
+On 2026-10-24 the maintainer named the profile `python` instead of
+`python-cli` ("mude o nome do profile de python-cli para python (vai ser para
+cli, backend e workers)") and chose "Nenhuma superfície fixa (Recomendado)":
+the profile carries the language and the workflow modules only, serves a
+command-line tool, a backend service or a worker alike, and leaves the rules
+of a specific surface to the repository's own extension.

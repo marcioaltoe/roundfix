@@ -1,6 +1,6 @@
 ---
 task: task_03
-spec: 0310-the-python-cli-profile-writes-its-starter-files
+spec: 0310-the-python-profile-writes-its-starter-files
 status: pending
 type: backend
 complexity: high
@@ -20,7 +20,7 @@ ADR-0323).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0309 adopted,
-   [`../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
+   [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
    of 2026-10-22, its expected item 4.
 2. MUST create `internal/cli/baseline_starters.go` with the command of
    `_techspec.md` → API Contract 6: a `parseBaselineStartersCommand` for
@@ -54,11 +54,11 @@ ADR-0323).
    `--confirm-plan`, `keep` for an existing path, the stale refusal, the
    removal on failure, that the repository owns the file afterwards and that
    confirming the preview is the maintainer's express authorization for
-   exactly those paths, and the three `python-cli` Starter Files; in
+   exactly those paths, and the three `python` Starter Files; in
    `.agents/skills/roundfix/references/baseline.md`, a short `### Starter
    Files` part with the same rules and the commands
-   `roundfix baseline starters --profile python-cli` and
-   `roundfix baseline starters --profile python-cli --confirm-plan <digest>`,
+   `roundfix baseline starters --profile python` and
+   `roundfix baseline starters --profile python --confirm-plan <digest>`,
    and the line that an Agent runs the confirmation only with the
    maintainer's express authorization; name `baseline starters` in
    `.agents/skills/roundfix/SKILL.md` where the other Baseline commands are

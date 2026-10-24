@@ -1,6 +1,6 @@
 ---
 task: task_01
-spec: 0310-the-python-cli-profile-writes-its-starter-files
+spec: 0310-the-python-profile-writes-its-starter-files
 status: pending
 type: backend
 complexity: high
@@ -20,7 +20,7 @@ Features 1-2; ADR-0323).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0309 adopted,
-   [`../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
+   [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
    of 2026-10-22, its expected item 4.
 2. MUST let a module declare `starterFiles` (`internal/baseline/catalog_load.go`
    allowed fields) and validate each declaration in
@@ -74,7 +74,7 @@ Features 1-2; ADR-0323).
 
 ## Acceptance Criteria
 
-- [ ] `python-cli` resolves the three Starter Files in order, and no other profile resolves any.
+- [ ] `python` resolves the three Starter Files in order, and no other profile resolves any.
 - [ ] Each invalid declaration is refused with its own code.
 - [ ] A second Managed Refresh of this repository reports no file change.
 

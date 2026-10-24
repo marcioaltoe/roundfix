@@ -1,7 +1,7 @@
 ---
 schema: spec-tasks/v1
-spec: 0310-the-python-cli-profile-writes-its-starter-files
-requires: [0309-a-python-cli-baseline-profile-for-uv-pytest-and-ruff]
+spec: 0310-the-python-profile-writes-its-starter-files
+requires: [0309-a-python-baseline-profile-for-uv-pytest-and-ruff]
 qa: task_04
 graph:
   nodes:
@@ -19,7 +19,7 @@ graph:
       needs: [task_01, task_02, task_03]
 ---
 
-# Tasks — The Python CLI profile writes its Starter Files
+# Tasks — The Python profile writes its Starter Files
 
 | id      | title                                                                           | type    | complexity | needs                     |
 | ------- | ------------------------------------------------------------------------------- | ------- | ---------- | ------------------------- |
@@ -35,5 +35,5 @@ builds the preview and the confirmed write over task_01's `StarterFiles`.
 task_03 exposes task_02's operation as a command and documents it, and is the
 integration checkpoint for task_02's payload. The chain is serial because each
 Task consumes the previous one's code. The Spec requires Spec 0309, whose
-`python` module and `python-cli` profile task_01 extends and every
+`python` module and `python` profile task_01 extends and every
 Verification command exercises.
