@@ -36,7 +36,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -118,10 +118,16 @@ verify-changed-baseline:
 
 verify-incremental: fmt-check vet test skills-sync-check skills-check build ## Run fast local verification with reusable caches
 
-verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
+# Pull request CI already ran every internal/docscontract test in make
+# verify-changed because each of their files is //verify:always.
+VERIFY_DOCS_TEST ?= docs-test
+verify-docs: build $(VERIFY_DOCS_TEST) repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 
 docs-test: ## Run the repository-markdown contract tests
 	$(GO) test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+
+docs-test-skipped:
+	@echo "docs-test: skipped; make verify-changed ran internal/docscontract earlier in this job"
 
 # The regeneration gates copy the whole repository, so every file under
 # internal/ is one of their inputs and any code change re-runs them. They are

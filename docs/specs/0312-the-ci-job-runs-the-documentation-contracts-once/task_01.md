@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0312-the-ci-job-runs-the-documentation-contracts-once
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -111,3 +111,62 @@ None. The change is confined to the Makefile, one workflow step and new tests; n
 
 - `_prd.md` → Sources; Goals; Core Feature 1; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior; API Contract 1; Invariants 1-2; Testing Approach; Build Order 1
+
+
+## Result
+
+Implemented API Contract 1 for the adopted duplicate documentation-contract
+Backlog Entry. `verify-docs` defaults to `docs-test` through
+`VERIFY_DOCS_TEST`; `docs-test-skipped` prints the required explanation.
+Only the CI "Verify docs" step selects the skip for pull requests. Added
+three parallel tests in `internal/verifyselect/verify_docs_makefile_test.go`.
+Task status and all other Task artifacts remain Daemon-owned.
+
+### Focused evidence
+
+- Acceptance criterion 1: the new Makefile test passes both default and
+  skipped cases. Recorded invocation counts are respectively 1 and 0 for
+  the full documentation-contract package, and 1 each for build,
+  `repocontract`, `TestCheckCorpusBudget`, and `spec check` in both cases.
+  The skip message appears only in the skipped case.
+- Acceptance criterion 2: the YAML test finds exactly one "Verify docs"
+  step, retains `make verify-docs`, and requires the exact event expression
+  selecting `docs-test-skipped` only for pull requests.
+- Acceptance criterion 3: the repository declaration sweep passes. A compiled
+  test binary run against a disposable fixture with the corpus file's marker
+  replaced by `//verify:never` exits nonzero and names
+  `corpus_test.go must declare //verify:always`. No repository file under
+  `internal/docscontract` was modified.
+- Before the Makefile/workflow edits, the new focused check exited 1:
+  the skipped case still recorded one full documentation-contract run,
+  and the workflow lacked the required environment entry. The default
+  case and declaration sweep passed.
+
+Commands and outcomes:
+
+- `go test -count=1 -timeout 3m -v -run '^(TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped|TestTheCIPullRequestSkipsOnlyTheRepeatedDocumentationContracts|TestEveryDocumentationContractFileIsAlwaysSelected)$' ./internal/verifyselect`
+  — exit 0 after implementation; all three new tests and both Makefile cases pass.
+- `go test -count=1 -timeout 3m -run '^(TestMainAndReleaseRunEveryContract|TestMakeSharesOneGoBuildCache|TestVerifyContractsRunsEveryContract)$' ./internal/verifyselect`
+  — exit 0; these existing tests are unchanged.
+- `go test -count=1 -timeout 3m -run '^TestEveryRepositoryContractTestRunsInTheRepositoryGate$' ./internal/suiteguardcontract`
+  — exit 0; existing gate tests are unchanged.
+- `go test -c -o /tmp/roundfix-0312-verifyselect.test ./internal/verifyselect`,
+  followed by the declaration test against a temporary repository fixture
+  — compilation exited 0; the negative probe confirmed the expected failure.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  — first run exit 0, one file changed: `docs/agents/setup-context.json`.
+  Second run exit 0, `File changes: 0`, `Idempotence: verified`.
+  Only the two Makefile declaration digests changed. Both runs reported
+  nested-carrier warnings for two existing Baseline fixture AGENTS.md files;
+  those files remained unchanged.
+- Exact replacement comparison against `HEAD` confirmed every other Makefile
+  target and workflow step retained its bytes. `git diff --check` exited 0.
+
+The starting worktree contained only the Daemon's `status: in_progress`
+change in this Task file. Changed-file postflight contains only `Makefile`,
+`.github/workflows/ci-verify.yml`, the new verifyselect test, the regenerated
+Setup Manifest, and this Task's Result. No production code, skills, other
+workflows, other Tasks, or Task Graph manifest changed.
+
+Declared Verification and repository Verification were not run; they remain
+for the Daemon. No commit, push, or pull request was made.
