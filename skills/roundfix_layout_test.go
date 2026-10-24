@@ -55,8 +55,8 @@ func TestRoundfixSkillIndexNamesEveryReference(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(entries) != 18 {
-				t.Fatalf("reference files = %d, want 18 command families", len(entries))
+			if len(entries) != 19 {
+				t.Fatalf("reference files = %d, want 19 command families", len(entries))
 			}
 			counts := make(map[string]int)
 			for _, link := range roundfixReferenceIndexLinks(t, source) {

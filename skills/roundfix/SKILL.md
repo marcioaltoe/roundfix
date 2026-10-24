@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.134
+  version: 0.1.135
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.134
+version: 0.1.135
 ---
 
 # Roundfix
@@ -46,6 +46,7 @@ covers a topic that spans commands and owns none.
 | [baseline](references/baseline.md) | `baseline` | Adopting or updating the Context-Driven Baseline. |
 | [deliver](references/deliver.md) | `deliver`, `window` | Starting or monitoring delivery, or setting a Run Window. |
 | [events](references/events.md) | `events` | Reading JSONL progress for a Run. |
+| [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |
 | [implement](references/implement.md) | `implement` | Starting a Spec Run. |
 | [profiles](references/profiles.md) | `profiles` | Selecting an Agent or managing Agent Selection Profiles. |
 | [reconcile](references/reconcile.md) | `reconcile` | Reconciling Run Worktrees. |

@@ -26,7 +26,7 @@ This Spec is a secondary Spec of one source. Spec 0306, which delivers the
 read-only follow-up command, owns the source and adopted it as a promoted
 Backlog Entry; this Spec links the owner's copy and adopts nothing:
 
-- [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md),
+- [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../../references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md),
   type `feat`: the maintainer's request of 2026-10-22 and the design settled
   with him, the operator's proposal for both follow-up Specs. This Spec
   delivers its skill and Baseline half (Spec B): the modes, decision 3 on

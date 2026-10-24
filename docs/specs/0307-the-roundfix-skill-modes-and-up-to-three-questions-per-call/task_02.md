@@ -21,7 +21,7 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0306 adopted,
-   [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
+   [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../../references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
    of 2026-10-22, decisions 1 and 2 and the harness table.
 2. MUST change the canonical `.agents/skills/roundfix/SKILL.md` exactly as
    `_techspec.md` → API Contract 3 says: the `opencode/slash: "true"` line

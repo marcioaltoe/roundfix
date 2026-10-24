@@ -23,7 +23,7 @@ ADR-0095).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0306 adopted,
-   [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
+   [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../../references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
    of 2026-10-22, decision 4 and the `--follow-up` and `--unattended` steps.
 2. MUST append to `.agents/skills/roundfix/references/modes.md`, after the
    `## --status` section, a `## --follow-up` section whose steps are one

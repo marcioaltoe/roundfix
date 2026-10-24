@@ -20,6 +20,7 @@ installing, substitute `go run ./cmd/roundfix`.
 | `doctor` | [command guide](commands/doctor.md) |
 | `events` | [command guide](commands/events.md) |
 | `fetch` | [command guide](commands/fetch.md) |
+| `follow-up` | [command guide](commands/follow-up.md) |
 | `gc` | [command guide](commands/gc.md) |
 | `history` | [command guide](commands/history.md) |
 | `implement` | [command guide](commands/implement.md) |

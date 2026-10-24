@@ -24,6 +24,7 @@
     "command doctor": "sha256:531c424eb1ce892a64b3ba2fec9765a4737acb2bfd798619db48789edf83579f",
     "command events": "sha256:a8f2fd8be63c1eadebcf68ece649d9e64d05b308702b8bbd0c06a2011ef97825",
     "command fetch": "sha256:45ac44e53396a594df1009145e158e603abf42fddc24da3bb92ea36a36db55d2",
+    "command follow-up": "sha256:89fffbbece3eeb720a248de4c6848547885fe104362f1c8bfb9e7d50356ae1f3",
     "command gc": "sha256:feefaf5113111fb49efb6952e5bd95eb9317f585a1f8334f42cd61e4f3bc1cd1",
     "command history sanitize": "sha256:36db20ead14bfb1e0e4e0e5e0c0bd57d95a7b45b12cc0ebd3bf8717227a3371d",
     "command implement": "sha256:e60a777a0fa88064a2fa8609d0cd8b02d3c6a59451c211e10459905a19413cbe",
@@ -59,9 +60,9 @@
     "command window clear": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
     "command window set": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
     "command window show": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
-    "config keys": "sha256:dee4d146d435797b22d53a5dea9b7c17d684250a86c66c626a27a4a6855bcdb5",
+    "config keys": "sha256:310fe33c76f118f4af635b11b4b8764a8e9ca46eddcdf3271370eb9c6a1c4c0d",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
-    "guide docs/user-guide/commands.md": "sha256:546d0c320ebcc3e8c4ba2851bd1568625761dad2d87d5034c02187d3075288f4",
+    "guide docs/user-guide/commands.md": "sha256:662eee7721d6e23889211f0f1600c4bc9af89e0fdffdefbbe107a38f482ff3fb",
     "guide docs/user-guide/commands/archive.md": "sha256:51cfd68636a6e1357b152ed39aca51ac90055689ac569656076cabb7b0f6aba3",
     "guide docs/user-guide/commands/attach.md": "sha256:9439b3d9af405b2891440462b7947c94a41d3e34e31569a0e0d1ff2dcd2ea1a2",
     "guide docs/user-guide/commands/baseline.md": "sha256:200f81fcc6332612a6883ef18c40f2bb8f126fd2f17e7970507d1c77ef43192f",
@@ -71,6 +72,7 @@
     "guide docs/user-guide/commands/doctor.md": "sha256:63d04969f3b59ab6020950a272b87fe7d7fc88a1c67e8c9a3aec7486498c5c70",
     "guide docs/user-guide/commands/events.md": "sha256:cf3c8060b695c2aadc498e171e7350da36f57a1f5c2997424a4f9c5112eb0959",
     "guide docs/user-guide/commands/fetch.md": "sha256:84e4ce6acbbb1d912f759b60840e66e24498db0048a07a8a778b2851ba526170",
+    "guide docs/user-guide/commands/follow-up.md": "sha256:8ceea31e0779e9ccb144cbe0b1b21f3be844dde12689a2435a0a139413d8177c",
     "guide docs/user-guide/commands/gc.md": "sha256:829af5a8cf3f7c61f2f9d60d787d1664d59d6f404433d85887b6ec960dede13c",
     "guide docs/user-guide/commands/history.md": "sha256:b7812e89755b18f63026833a2a927c438ade7850eb90d41caceec987be486789",
     "guide docs/user-guide/commands/implement.md": "sha256:ad513b8a690b392da9a8e58111b4be500623c33d2b3ea5fe38d39cb63522ba49",
@@ -95,10 +97,10 @@
     "guide docs/user-guide/commands/upgrade.md": "sha256:03745dd97843513014b79fb4193a1e9883ecf41d56a04500f22516568d9abad7",
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
-    "guide docs/user-guide/configuration.md": "sha256:f98b5c828a846b1f4f9073ca54db602dd7c421241f9f445da15c9ef99f1b61fc",
+    "guide docs/user-guide/configuration.md": "sha256:ce78ebfa422fe7438faea22f4428ba66fb10f65a46a993fdc4634234d2645dc8",
     "guide docs/user-guide/context-driven-development.md": "sha256:96c70e7d06f48eb144c29a84762cfcd6c1fc69a8a5e7267ef0a4f19a9b6417c0",
     "guide docs/user-guide/release-runbook.md": "sha256:81b4fab4871437122e93b05bd771f4660a660159b2b5756f30c7334156df6bee",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:f1525e00f9be7aad470bc3f1d635f65c07ce1aae230c01a836a55d10215a4f14",
-    "guide docs/user-guide/usage.md": "sha256:0aa7a37b35ba60d1701f0cc26037cb0bf6bf3ca2a2969c37ae0daf4d82483d91"
+    "guide docs/user-guide/usage.md": "sha256:426e2e71bdb310fb8af2410339fcd4b168473276993a3d6523180e7896aa898b"
   }
 }
