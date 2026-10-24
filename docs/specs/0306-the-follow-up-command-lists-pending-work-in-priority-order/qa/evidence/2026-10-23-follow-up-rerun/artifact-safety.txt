@@ -1,3 +1,0 @@
-Command: audited secretscan.ScanContent on every regular file in the final Spec qa tree. Matches report path, line and kind only.
-QA artifact secret scan: 102 files, 0 matches
-exit: 0

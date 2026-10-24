@@ -21,7 +21,7 @@ Core Feature 1; ADR-0320).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0306 adopted,
-   [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
+   [`../0306-the-follow-up-command-lists-pending-work-in-priority-order/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md`](../../references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md)
    of 2026-10-22, decision 3 ("Questions").
 2. MUST set the `guidance` of `clause.core.ask-user-answerable-decisions` in
    `internal/baseline/assets/modules/core.json` to exactly the text of

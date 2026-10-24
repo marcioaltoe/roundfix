@@ -1,3 +1,0 @@
-package main
-import ("fmt"; "os"; "path/filepath"; "roundfix/internal/secretscan")
-func main(){ count, matches := 0, 0; err := filepath.WalkDir(os.Args[1],func(path string,d os.DirEntry,err error)error{ if err!=nil{return err};if !d.Type().IsRegular(){return nil}; b,err:=os.ReadFile(path);if err!=nil{return err};count++;for _,m:=range secretscan.ScanContent(path,b){fmt.Printf("%s:%d: %s\n",m.Path,m.Line,m.Kind);matches++};return nil});if err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)};fmt.Printf("QA artifact secret scan: %d files, %d matches\n",count,matches);if matches>0{os.Exit(1)}}

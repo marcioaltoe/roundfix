@@ -1,5 +1,0 @@
-Blocked lookup: network prohibited by Spec authorization.
-No test, Verification command or QA row: reaches the network or runs the real gh; sends any request to a provider, the judge or a reviewer (authorization Limits).
-https://rexblack.com/resources/writing/bug-triage-framework
-PRD-cited passage, not independently retrieved here: “Fix immediately. ... This action is reserved for defects that block other important work”.
-No network request attempted; quoted planning claims do not satisfy outside evidence.

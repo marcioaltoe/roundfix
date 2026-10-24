@@ -1,8 +1,0 @@
-Command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0306-the-follow-up-command-lists-pending-work-in-priority-order-73a5fd6f4e32ebd7-485860c2-cd20ab8b/run_20261024T004042Z_a30dec8c359819a6/bin/roundfix follow-up --status --messages messages.json
-stdout:
-
-stderr:
-roundfix: follow-up failed: --messages applies only to the follow-up list; drop it with --status
-Run 'roundfix follow-up --help' for usage.
-
-exit: 2

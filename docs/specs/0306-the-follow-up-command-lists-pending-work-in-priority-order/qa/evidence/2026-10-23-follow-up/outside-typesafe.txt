@@ -1,7 +1,0 @@
-Blocked lookup: network prohibited by Spec authorization.
-No test, Verification command or QA row: reaches the network or runs the real gh; sends any request to a provider, the judge or a reviewer (authorization Limits).
-https://docs.typesafe.ai/primitives/noul
-PRD-cited passages, not independently retrieved here: “Ask one yes/no question per Noul.”; “A good starting point is 0.7 for yes and 0.3 for no.”
-https://docs.typesafe.ai/primitives
-PRD-cited passage: “If the judgment you want depends on several independent factors, ask about each factor separately and combine the answers with your own logic.”
-No network request attempted; quoted planning claims do not satisfy outside evidence.

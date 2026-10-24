@@ -1,4 +1,0 @@
-Source: docs/agents/secondbrain.md at f6dba5dc257d8dee69b71be34031afa4bb73d575; Baseline-owned, byte-identical to Delivery Base.
-Quote 1: pending entries live at the destination namespace root under `inbox/<destination>/`, and resolved entries live under `inbox/<destination>/_triaged/`
-Quote 2: Triage works pending entries `oldest first`, ordered by `created_at`
-Observed public CLI: Old inbox (created_at 2026-10-20, filename z-old.md) precedes New inbox (created_at 2026-10-22, filename a-new.md). The _triaged/done.md entry, despite pending frontmatter, was excluded. Five items only. The independent named inventory test also excludes terminal records and symlinks; the recursive and filename-date sabotages each failed that test. See operator-flow.txt, cli-cases.txt, sabotage-06.txt, sabotage-07.txt.
