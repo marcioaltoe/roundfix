@@ -1,0 +1,28 @@
+command: go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink$ ./internal/testfixture
+exit: 0
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/repository
+=== RUN   TestNoTestCreatesAHardLink/os_Link_names_its_site
+=== RUN   TestNoTestCreatesAHardLink/aliased_os_import
+=== RUN   TestNoTestCreatesAHardLink/syscall_Link
+=== RUN   TestNoTestCreatesAHardLink/aliased_syscall_Linkat
+=== RUN   TestNoTestCreatesAHardLink/unix_Link
+=== RUN   TestNoTestCreatesAHardLink/unix_Linkat
+=== RUN   TestNoTestCreatesAHardLink/aliased_unix_import
+=== RUN   TestNoTestCreatesAHardLink/other_receiver_and_local_Link
+=== RUN   TestNoTestCreatesAHardLink/shadowed_os_import
+=== RUN   TestNoTestCreatesAHardLink/symbolic_links_and_reads
+--- PASS: TestNoTestCreatesAHardLink (0.19s)
+    --- PASS: TestNoTestCreatesAHardLink/repository (0.19s)
+    --- PASS: TestNoTestCreatesAHardLink/os_Link_names_its_site (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/aliased_os_import (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/syscall_Link (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/aliased_syscall_Linkat (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/unix_Link (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/unix_Linkat (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/aliased_unix_import (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/other_receiver_and_local_Link (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/shadowed_os_import (0.00s)
+    --- PASS: TestNoTestCreatesAHardLink/symbolic_links_and_reads (0.00s)
+PASS
+ok  	roundfix/internal/testfixture	0.274s

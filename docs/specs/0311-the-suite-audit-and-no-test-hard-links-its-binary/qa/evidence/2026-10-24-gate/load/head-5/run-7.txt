@@ -1,0 +1,26 @@
+2026/10/24 10:07:30 codex full-access sandbox preset unavailable for Agent Session "roundfix-run-1": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.
+2026/10/24 10:07:35 codex full-access sandbox preset unavailable for Agent Session "roundfix-preflight-22d0df676e4511ff": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session does not advertise config option 'sandbox_mode'
+2026/10/24 10:07:38 full-access mode not advertised for Agent Session roundfix-preflight-2a9592b674a646c4; advertised modes: read-only, workspace-write, agent
+2026/10/24 10:07:40 full-access mode not advertised for Agent Session roundfix-preflight-d0ad9e3e36f0d1a0; advertised modes: none
+2026/10/24 10:07:45 codex full-access sandbox preset unavailable for Agent Session "roundfix-run-1": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.
+2026/10/24 10:07:49 codex full-access sandbox preset unavailable for Agent Session "roundfix-preflight-009b8f5804cc4d2c": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session does not advertise config option 'sandbox_mode'
+2026/10/24 10:07:54 full-access mode not advertised for Agent Session roundfix-preflight-c62819310ad3fc55; advertised modes: read-only, workspace-write, agent
+2026/10/24 10:07:56 full-access mode not advertised for Agent Session roundfix-preflight-080afd6a4d8298a5; advertised modes: none
+2026/10/24 10:08:01 codex full-access sandbox preset unavailable for Agent Session "roundfix-preflight-2ef195a2c81a56c2": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session does not advertise config option 'sandbox_mode'
+2026/10/24 10:08:06 full-access mode not advertised for Agent Session roundfix-preflight-48788abfbc777a66; advertised modes: read-only, workspace-write, agent
+2026/10/24 10:08:08 codex full-access sandbox preset unavailable for Agent Session "roundfix-run-1": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.
+2026/10/24 10:08:08 full-access mode not advertised for Agent Session roundfix-preflight-a1209db7dab53fef; advertised modes: none
+PASS
+suiteguard: guard cost: measured 2770 paths; fingerprint took 452.221584ms before and 197.058375ms after

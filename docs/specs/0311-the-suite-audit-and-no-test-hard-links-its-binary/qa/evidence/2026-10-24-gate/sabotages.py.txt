@@ -1,0 +1,24 @@
+from pathlib import Path
+import subprocess,os,json
+scratch=Path(Path('/private/tmp/roundfix-0311-qa-location').read_text()); plan=json.loads((scratch/'plan.json').read_text()); work=scratch/'sabotage'; work.mkdir(); e=os.environ.copy(); e.update(GOPROXY='off',GOSUMDB='off')
+results=[]
+for label in ['copy','fixture','syscall','alias']:
+ root=work/label; root.mkdir()
+ with (work/(label+'.tar')).open('wb') as out: subprocess.run(['git','archive',plan['head']],stdout=out,check=True)
+ subprocess.run(['tar','-xf',str(work/(label+'.tar')),'-C',str(root)],check=True)
+ p=root/'internal/agent/acpx_runner_test.go'; text=p.read_text()
+ if label=='copy':
+  old='if err := copyExecutable(os.Args[0], target); err != nil {'; assert text.count(old)==1; p.write_text(text.replace(old,'if err := os.Link(os.Args[0], target); err != nil {')); checks=[('./internal/agent','^TestPackageAdaptersAreCopiesOfTheTestBinary$',"shares the compiled test binary's file"),('./internal/testfixture','^TestNoTestCreatesAHardLink$/^repository$','internal/agent/acpx_runner_test.go:')]
+ elif label=='fixture':
+  old='\tif os.Getenv(spawnedFixtureDeathTestEnv) == "" {\n\t\tremovePackageAdapterLinks = provisionPackageAdapterLinks()\n\t}'; assert text.count(old)==1; p.write_text(text.replace(old,'\tremovePackageAdapterLinks = provisionPackageAdapterLinks()')); checks=[('./internal/agent','^TestASpawnedFixtureChildLeavesNoPackageAdapter$','fixture child left package adapter tree "roundfix-agent-package-adapters-')]
+ elif label=='syscall':
+  p=root/'internal/testfixture/qa_sabotage_test.go'; p.write_text('package testfixture\nimport "syscall"\nfunc qaHardLinkSabotage() { _ = syscall.Link("a", "b") }\n'); checks=[('./internal/testfixture','^TestNoTestCreatesAHardLink$/^repository$','internal/testfixture/qa_sabotage_test.go:3: syscall.Link creates a hard link')]
+ else:
+  p=root/'internal/testfixture/hard_link_rule_test.go'; text=p.read_text(); old='\t\t\t\tif imp.Name != nil {\n\t\t\t\t\tname = imp.Name.Name\n\t\t\t\t}'; assert text.count(old)==1; p.write_text(text.replace(old,'')); checks=[('./internal/testfixture','^TestNoTestCreatesAHardLink$/^aliased_os_import$','violations = [], want ["internal/seeded/fixture_test.go:3: os.Link"]')]
+ for index,(package,pattern,want) in enumerate(checks,1):
+  cmd=['go','test','-count=1','-timeout','15m','-v','-run',pattern,package]; result=subprocess.run(cmd,cwd=root,env=e,text=True,capture_output=True); output=result.stdout+result.stderr
+  file=work/(label+'-'+str(index)+'.txt'); file.write_text('command: '+' '.join(cmd)+'\nmutation: '+label+'\nexit: '+str(result.returncode)+'\n'+output)
+  observed=result.returncode!=0 and want in output; print(label,index,'exit',result.returncode,'expected failure observed:',observed,flush=True); print('\n'.join(line for line in output.splitlines() if want in line or '--- FAIL' in line),flush=True)
+  results.append({'case':label,'check':index,'exit':result.returncode,'expected_failure':observed,'evidence':file.name}); (work/'summary.json').write_text(json.dumps(results,indent=2))
+  assert observed,(label,output[-5000:])
+print('All four sabotages rejected; five expected failing commands confirmed.',flush=True)

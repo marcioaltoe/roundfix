@@ -1,0 +1,8 @@
+PASS: guide has exactly the required insertion; all other bytes equal Delivery Base.
+- A test never creates a hard link: a test that needs an executable at another path copies it or links it symbolically, so every executable a test may start stays a **Single-Name Test Binary**; the Hard Link rule in `internal/testfixture` enforces it.
+
+PASS: glossary carries required definition, existing ADR-0324 target and Avoid terms; other bytes equal Delivery Base (history-scope.txt).
+**Single-Name Test Binary**:
+An executable a test may start that keeps one directory entry while any process may start it; a test that needs it at another path copies it or links it symbolically, because macOS kills a new process whose executable path names an entry that has disappeared ([ADR-0324](docs/adr/0324-a-test-never-gives-a-running-executable-a-second-name.md)).
+_Avoid_: hard-linked fixture, shared inode, binary alias
+

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0311-the-suite-audit-and-no-test-hard-links-its-binary
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,6 @@
+command: ['/usr/bin/log', 'show', '--start', '2026-10-24 10:09:02', '--end', '2026-10-24 10:09:49', '--style', 'compact', '--predicate', 'process == "syspolicyd" AND eventMessage CONTAINS "Terminating process due to Malware rejection"']
+exit: 0
+stdout:
+Timestamp               Ty Process[PID:TID]
+
+stderr:

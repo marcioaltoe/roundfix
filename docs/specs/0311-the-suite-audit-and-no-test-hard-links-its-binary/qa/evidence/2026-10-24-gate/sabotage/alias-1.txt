@@ -1,0 +1,11 @@
+command: go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink$/^aliased_os_import$ ./internal/testfixture
+mutation: alias
+exit: 1
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/aliased_os_import
+    hard_link_rule_test.go:141: violations = [], want ["internal/seeded/fixture_test.go:3: os.Link"]
+--- FAIL: TestNoTestCreatesAHardLink (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/aliased_os_import (0.00s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.209s
+FAIL

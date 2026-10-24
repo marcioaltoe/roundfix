@@ -1,0 +1,35 @@
+from pathlib import Path
+from zoneinfo import ZoneInfo
+from datetime import datetime
+import os,subprocess,json,tarfile,time,platform
+scratch=Path(Path('/private/tmp/roundfix-0311-qa-location').read_text()); plan=json.loads((scratch/'plan.json').read_text()); brt=ZoneInfo('America/Sao_Paulo'); work=scratch/'load'; work.mkdir()
+assert platform.system()=='Darwin'
+e=os.environ.copy(); e.update(GOPROXY='off',GOSUMDB='off'); results=[]
+def now(): return datetime.now(brt)
+for label,sha in [('head',plan['head']),('base',plan['base'])]:
+ root=work/label; root.mkdir(); archive=work/(label+'.tar')
+ with archive.open('wb') as out: subprocess.run(['git','archive',sha],stdout=out,check=True)
+ subprocess.run(['tar','-xf',str(archive),'-C',str(root)],check=True)
+ binary=work/(label+'.test'); cmd=['go','test','-c','-o',str(binary),'./internal/agent']
+ with (work/(label+'-compile.txt')).open('w') as out:
+  out.write('revision: '+sha+'\ncommand: '+' '.join(cmd)+'\n'); out.flush(); result=subprocess.run(cmd,cwd=root,env=e,stdout=out,stderr=subprocess.STDOUT); out.write('exit: '+str(result.returncode)+'\n')
+ assert result.returncode==0,(label,'compile failed'); print(label,'compiled',flush=True)
+for label,sha in [('head',plan['head']),('base',plan['base'])]:
+ root=work/label; binary=work/(label+'.test')
+ for round_no in range(1,9):
+  start=now(); children=[]; handles=[]; rounddir=work/(label+'-'+str(round_no)); rounddir.mkdir()
+  for index in range(1,13):
+   tmp=rounddir/('tmp-'+str(index)); tmp.mkdir(); child=e.copy(); child.update(TMPDIR=str(tmp),TMP=str(tmp),TEMP=str(tmp))
+   out=(rounddir/('run-'+str(index)+'.txt')).open('w'); handles.append(out)
+   cmd=[str(binary),'-test.count=3','-test.parallel','16','-test.timeout','8m']
+   process=subprocess.Popen(cmd,cwd=root/'internal/agent',env=child,stdout=out,stderr=subprocess.STDOUT); children.append(process)
+  codes=[p.wait() for p in children]
+  for handle in handles: handle.close()
+  end=now(); load=os.getloadavg()[0]
+  cmd=['/usr/bin/log','show','--start',start.strftime('%Y-%m-%d %H:%M:%S'),'--end',end.strftime('%Y-%m-%d %H:%M:%S'),'--style','compact','--predicate','process == "syspolicyd" AND eventMessage CONTAINS "Terminating process due to Malware rejection"']
+  logs=subprocess.run(cmd,text=True,capture_output=True)
+  logtext='command: '+repr(cmd)+'\nexit: '+str(logs.returncode)+'\nstdout:\n'+logs.stdout+'\nstderr:\n'+logs.stderr; (rounddir/'syspolicyd.txt').write_text(logtext)
+  rejections=sum('Terminating process due to Malware rejection' in line for line in logs.stdout.splitlines()) if logs.returncode==0 else None
+  row={'revision':label,'sha':sha,'round':round_no,'start_brt':start.strftime('%Y-%m-%d %H:%M:%S BRT'),'end_brt':end.strftime('%Y-%m-%d %H:%M:%S BRT'),'failed_runs':sum(code!=0 for code in codes),'exit_codes':codes,'load_1m':load,'rejection_lines':rejections,'log_exit':logs.returncode}
+  results.append(row); (work/'rounds.json').write_text(json.dumps(results,indent=2)); print(json.dumps(row),flush=True)
+summary={'head_runs':96,'head_failed':sum(r['failed_runs'] for r in results if r['revision']=='head'),'base_runs':96,'base_failed':sum(r['failed_runs'] for r in results if r['revision']=='base')}; (work/'summary.json').write_text(json.dumps(summary,indent=2)); print('SUMMARY',json.dumps(summary),flush=True)

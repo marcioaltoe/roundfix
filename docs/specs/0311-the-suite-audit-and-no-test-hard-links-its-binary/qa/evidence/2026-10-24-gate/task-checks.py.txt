@@ -1,0 +1,18 @@
+from pathlib import Path
+import subprocess,os,json
+scratch=Path(Path('/private/tmp/roundfix-0311-qa-location').read_text()); e=os.environ.copy(); e.update(GOPROXY='off',GOSUMDB='off')
+checks=[('task01-tests',['go','test','-count=1','-timeout','15m','-v','-run','^(TestPackageAdaptersAreCopiesOfTheTestBinary|TestASpawnedFixtureChildLeavesNoPackageAdapter|TestSpawnedFixtureDeathFailsFast|TestCheckAdapterProvesOfficialClaudePackageAndVersion|TestFixtureBinarySurvivesConcurrentExec|TestACPXExitCodeMapping|TestRunPromptIgnoresAMalformedUsagePayload|TestNoTestWritesAnExecutableOutsideTheResidue)$','./internal/agent','./internal/testfixture']),('hard-link-rule',['go','test','-count=1','-timeout','15m','-v','-run','^TestNoTestCreatesAHardLink$','./internal/testfixture'])]
+for label,cmd in checks:
+ result=subprocess.run(cmd,env=e,text=True,capture_output=True); output=result.stdout+result.stderr; (scratch/(label+'.txt')).write_text('command: '+' '.join(cmd)+'\nexit: '+str(result.returncode)+'\n'+output); print(label,'exit',result.returncode,flush=True)
+ assert result.returncode==0,output[-5000:]
+ if label=='task01-tests':
+  for name in ['TestPackageAdaptersAreCopiesOfTheTestBinary','TestASpawnedFixtureChildLeavesNoPackageAdapter','TestSpawnedFixtureDeathFailsFast','TestACPXExitCodeMapping','TestNoTestWritesAnExecutableOutsideTheResidue']: assert '--- PASS: '+name+' ' in output,name
+ else:
+  assert '--- PASS: TestNoTestCreatesAHardLink/repository ' in output
+  print('\n'.join(line for line in output.splitlines() if '--- PASS:' in line),flush=True)
+ for_report='Task named tests passed with all required pass markers.\n'
+scan=subprocess.run(['grep','-n','os[.]Link(',*map(str,Path('internal/agent').glob('*_test.go'))],text=True,capture_output=True); assert scan.returncode==1 and not scan.stdout
+(scratch/'task01-link-absence.txt').write_text('command: grep -n os[.]Link( internal/agent/*_test.go\nexit: 1 (expected: no matches)\n')
+for package in ['agent','testfixture']:
+ target=e.copy(); target['GOOS']='windows'; cmd=['go','vet','./internal/'+package]; r=subprocess.run(cmd,env=target,text=True,capture_output=True); (scratch/('windows-'+package+'.txt')).write_text('Windows-target test compilation/vet; GOOS set.\ncommand: '+' '.join(cmd)+'\nexit: '+str(r.returncode)+'\n'+r.stdout+r.stderr); print('Windows',package,'exit',r.returncode,flush=True); assert r.returncode==0
+print('All declared Task test selections and Windows checks passed.',flush=True)

@@ -1,0 +1,11 @@
+command: go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink$/^repository$ ./internal/testfixture
+mutation: syscall
+exit: 1
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/repository
+    hard_link_rule_test.go:92: internal/testfixture/qa_sabotage_test.go:3: syscall.Link creates a hard link; copy or use a symbolic link
+--- FAIL: TestNoTestCreatesAHardLink (0.18s)
+    --- FAIL: TestNoTestCreatesAHardLink/repository (0.18s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.379s
+FAIL

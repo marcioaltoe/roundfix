@@ -1,0 +1,11 @@
+command: go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink$/^repository$ ./internal/testfixture
+mutation: copy
+exit: 1
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/repository
+    hard_link_rule_test.go:92: internal/agent/acpx_runner_test.go:4130: os.Link creates a hard link; copy or use a symbolic link
+--- FAIL: TestNoTestCreatesAHardLink (0.18s)
+    --- FAIL: TestNoTestCreatesAHardLink/repository (0.18s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.381s
+FAIL

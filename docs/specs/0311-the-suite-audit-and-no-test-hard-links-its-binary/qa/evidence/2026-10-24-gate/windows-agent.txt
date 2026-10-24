@@ -1,0 +1,3 @@
+Windows-target test compilation/vet; GOOS set.
+command: go vet ./internal/agent
+exit: 0

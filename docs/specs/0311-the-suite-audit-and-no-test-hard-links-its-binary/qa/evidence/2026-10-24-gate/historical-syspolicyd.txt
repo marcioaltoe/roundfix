@@ -1,0 +1,7 @@
+command: ['/usr/bin/log', 'show', '--start', '2026-10-23 23:10:00', '--end', '2026-10-23 23:10:20', '--style', 'compact', '--predicate', 'process == "syspolicyd" AND eventMessage CONTAINS "Malware rejection"']
+exit: 0
+stdout:
+Timestamp               Ty Process[PID:TID]
+2026-10-23 23:10:10.974 E  syspolicyd[249:82a7fe] [com.apple.syspolicy.exec:default] Terminating process due to Malware rejection: 14242, <private>
+
+stderr:

@@ -1,0 +1,12 @@
+command: go test -count=1 -timeout 15m -v -run ^TestASpawnedFixtureChildLeavesNoPackageAdapter$ ./internal/agent
+mutation: fixture
+exit: 1
+=== RUN   TestASpawnedFixtureChildLeavesNoPackageAdapter
+=== PAUSE TestASpawnedFixtureChildLeavesNoPackageAdapter
+=== CONT  TestASpawnedFixtureChildLeavesNoPackageAdapter
+    package_adapter_test.go:64: fixture child left package adapter tree "roundfix-agent-package-adapters-3632880182"
+--- FAIL: TestASpawnedFixtureChildLeavesNoPackageAdapter (0.09s)
+FAIL
+suiteguard: guard cost: measured 2770 paths; fingerprint took 90.818375ms before and 79.194542ms after
+FAIL	roundfix/internal/agent	0.499s
+FAIL

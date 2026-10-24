@@ -1,0 +1,6 @@
+command: ./bin/roundfix --version
+exit: 0
+stdout:
+roundfix 0.117.0 (407e2bd7-dirty, built 2026-10-24 09:59:59 -0300)
+
+stderr:

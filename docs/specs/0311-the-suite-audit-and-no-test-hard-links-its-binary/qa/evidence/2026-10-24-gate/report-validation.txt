@@ -1,0 +1,7 @@
+Report validation: PASS
+15 unique Results rows: 11 pass, 2 environment-blocked, 2 declared-blocked.
+All rows have fixed nonempty typed inputs; Task-history rows declare commit_range.
+All relative report evidence links resolve; evidence files are UTF-8 text without NUL.
+One frontmatter block; original auditor identity and mechanical skips preserved.
+Outcome is one paragraph and does not end in a colon.
+No pending, failed, finding-blocked or skipped QA row.
