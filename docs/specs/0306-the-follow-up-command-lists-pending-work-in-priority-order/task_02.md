@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -127,3 +127,67 @@ package's fake transports.
 - `_techspec.md` → Interfaces; Data Models; API Contract 5; Invariants 3-4; Testing Approach; Build Order 2
 - ADR-0209
 - ADR-0319
+
+## Result
+
+Implemented the Task 02 judge slice. `Questions.FollowUp` decodes the new
+`follow-up-priority` catalog entry with the four verbatim instructions,
+inclusive 0.7/0.3 thresholds, 4,000-rune excerpt and 100-item cap.
+`PrioritizeFollowUp` returns one answer per input in order, sends four Nouls
+in one request per eligible item, scans the unencoded title, origin, excerpt,
+type and kind, and uses the existing keys, transports, pin and private Judge
+Log. No live judge request or real credential was used.
+
+Acceptance evidence from focused fake-transport checks:
+
+- Four questions and verdicts: `TestFollowUpAsksFourQuestionsInOneRequest`
+  asserts the exact question map and item state, including Portuguese text;
+  `TestFollowUpVerdictsUseTheThresholds` asserts yes/unsure/unsure/no for
+  0.7/0.69/0.31/0.3. `TestFollowUpCutsTextOnARuneBoundary` checks 4,000
+  runes ending with `ç`, without U+FFFD. `TestFollowUpRejectsUnreadableNouls`
+  covers missing, null, negative, above-one and wrong-type Nouls and broken
+  JSON.
+- No-send and stop behavior: `TestFollowUpNeverSendsASecretShapedItem`
+  checks text, title, origin, kind and type independently, verifies the
+  scanner recognizes the runtime-built fake, and checks the value never
+  appears in requests, reports or log rows while the next item is answered.
+  `TestFollowUpFailsOpen` covers missing keys, a Run Marker, exhausted
+  monthly budget, malformed Judge Log, HTTP 503 and a model outside the pin.
+  `TestFollowUpStopsAtTheItemLimit` asserts 100 requests and the 101st
+  answer's exact limit reason. `TestFollowUpRetriesAndChecksEachAttempt`
+  covers 429/529 recovery, retry exhaustion, budget consumption before a
+  retry or the next item, a refused key and error-message key redaction.
+- Judge Log: `TestFollowUpLogsTheModelOfEachAnswer` asserts distinct reported
+  versioned models, requested model, judgment, question id, reference, kind,
+  empty Spec, null Noul and all four probabilities, plus accumulated cost.
+  Retry tests assert a separate row and attempt number for each call.
+
+Focused checks run:
+
+- `go test ./internal/judge -run '^TestFollowUp' -count=1`: exit 0 after
+  correcting a fake-token fixture length to match the scanner's exact
+  GitHub-token pattern. The initial check caught the nonmatching fixture.
+- `go test ./internal/judge -run '^(TestFollowUp|TestAsk|TestModelPin|TestRunNever)' -count=1 -v`:
+  exit 0; all nine new follow-up tests and the selected existing transport,
+  model-pin and redirect checks passed after the final code edit.
+- `git diff --check`: exit 0.
+- Parsed the current and HEAD question catalogs, removed only the new
+  judgment from the current copy, and compared them: identical. The new
+  entry follows `archive-value`; all existing judgments, model settings,
+  transports, price and ceiling are unchanged.
+
+Environment: the sandbox could not initialize with the symlinked writable
+root; commands used authorized escalation in the resolved assigned checkout.
+The only pre-existing changed path was this Task file's daemon-owned
+`pending` to `in_progress` status change, which was preserved.
+
+Declared Task Verification, Windows vet and repository Verification were not
+run; they remain daemon-owned. Task status and checkboxes are unchanged.
+No other Task file, Task Graph manifest, CLI implementation, archive advice,
+key-variable contract or `WithoutKeyVariables` was changed. No follow-up
+outside this slice was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261024T004042Z_a30dec8c359819a6`
+- Source commit: `b9c62a1ad390fa50b0dfdceb24f43050b9379deb`

@@ -68,6 +68,10 @@ func (c client) ask(ctx context.Context, pending PendingJudgment, attempt int) c
 	if pending.Kind == "archive-value" {
 		id, question = c.q.Archive.QuestionID, c.q.Archive.Question
 	}
+	questions := map[string]Question{id: question}
+	if pending.Kind == "follow-up-priority" {
+		questions = c.q.FollowUp.Questions
+	}
 	var body bytes.Buffer
 	encoder := json.NewEncoder(&body)
 	encoder.SetEscapeHTML(false)
@@ -75,7 +79,7 @@ func (c client) ask(ctx context.Context, pending PendingJudgment, attempt int) c
 		State     json.RawMessage     `json:"state"`
 		Model     string              `json:"model"`
 		Questions map[string]Question `json:"questions"`
-	}{pending.state, c.transport.RequestModel, map[string]Question{id: question}}); err != nil {
+	}{pending.state, c.transport.RequestModel, questions}); err != nil {
 		result.Error = err.Error()
 		return result
 	}
@@ -173,10 +177,27 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
 	if p.Kind == "source-grouping" {
 		a = answer{Type: a.Type, Noul: a.Noul}
 	}
+	validProbability := func(v *float64) bool { return v != nil && *v >= 0 && *v <= 1 }
+	if p.Kind == "follow-up-priority" {
+		values := make(map[string]float64, len(q.FollowUp.Questions))
+		for id := range q.FollowUp.Questions {
+			value := c.Answers[id]
+			if value.Type != "noul" || !validProbability(value.Noul) {
+				if !q.pinned(c.Model) {
+					return answer{}, "skipped", fmt.Sprintf("answered by %s, thresholds belong to %s", c.Model, q.PinnedModel), false
+				}
+				return answer{}, "skipped", "unreadable answer", false
+			}
+			values[id] = *value.Noul
+		}
+		if !q.pinned(c.Model) {
+			return answer{Probabilities: values}, "skipped", fmt.Sprintf("answered by %s, thresholds belong to %s", c.Model, q.PinnedModel), false
+		}
+		return answer{Probabilities: values}, "answered", "", false
+	}
 	if !q.pinned(c.Model) {
 		return a, "skipped", fmt.Sprintf("answered by %s, thresholds belong to %s", c.Model, q.PinnedModel), false
 	}
-	validProbability := func(v *float64) bool { return v != nil && *v >= 0 && *v <= 1 }
 	advisory := false
 	if p.Kind == "citation-support" || p.Kind == "model-tier" || p.Kind == "archive-value" {
 		criteria := q.Citation.Question.Criteria

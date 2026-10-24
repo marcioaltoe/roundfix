@@ -87,6 +87,31 @@
           "transient_evidence": "The file is transient evidence, generated output or an intermediate artifact whose contents need not remain in the live tree"
         }
       }
+    },
+    "follow-up-priority": {
+      "question_id": "follow_up_priority",
+      "questions": {
+        "is_fix": {
+          "type": "noul",
+          "instructions": "`item` is one pending work item addressed to the software project `project`. Does `item` ask to correct a defect in behavior that already exists, rather than to add new behavior?"
+        },
+        "blocks_other_project": {
+          "type": "noul",
+          "instructions": "`item` is one pending work item addressed to the software project `project`. Does `item` say that another project cannot proceed, or is working around a failure, until `project` changes?"
+        },
+        "is_small": {
+          "type": "noul",
+          "instructions": "`item` is one pending work item addressed to the software project `project`. Could `item` be resolved by one small, local change, such as one bounded fix or one document edit?"
+        },
+        "affects_production": {
+          "type": "noul",
+          "instructions": "`item` is one pending work item addressed to the software project `project`. Does `item` concern behavior that the released product's users or adopters meet, rather than only this project's own development process, documentation or tests?"
+        }
+      },
+      "yes_at_least": 0.7,
+      "no_at_most": 0.3,
+      "item_max_chars": 4000,
+      "max_items": 100
     }
   }
 }

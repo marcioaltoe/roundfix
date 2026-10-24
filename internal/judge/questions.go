@@ -79,7 +79,17 @@ type ArchiveJudgment struct {
 	Question   Question `json:"question"`
 }
 
+type FollowUpJudgment struct {
+	QuestionID   string              `json:"question_id"`
+	Questions    map[string]Question `json:"questions"`
+	YesAtLeast   float64             `json:"yes_at_least"`
+	NoAtMost     float64             `json:"no_at_most"`
+	ItemMaxChars int                 `json:"item_max_chars"`
+	MaxItems     int                 `json:"max_items"`
+}
+
 type Questions struct {
+	FollowUp                                    FollowUpJudgment
 	ModelTier                                   ModelTierJudgment
 	Archive                                     ArchiveJudgment
 	PinnedModel                                 string
@@ -107,12 +117,13 @@ func Load() (Questions, error) {
 			Grouping  GroupingJudgment  `json:"source-grouping"`
 			ModelTier ModelTierJudgment `json:"model-tier"`
 			Archive   ArchiveJudgment   `json:"archive-value"`
+			FollowUp  FollowUpJudgment  `json:"follow-up-priority"`
 		} `json:"judgments"`
 	}
 	if err := json.Unmarshal(questionFile, &file); err != nil {
 		return Questions{}, fmt.Errorf("load judge questions: %w", err)
 	}
-	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier, Archive: file.Judgments.Archive}
+	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier, Archive: file.Judgments.Archive, FollowUp: file.Judgments.FollowUp}
 	for _, pattern := range []struct {
 		name, text string
 		dst        **regexp.Regexp
