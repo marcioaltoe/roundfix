@@ -152,16 +152,25 @@ func HistoryCitationsInSource(content []byte, path string, targets []string) ([]
 	// Probe with the writer's bounded path pass, discarding its output.
 	// Consuming matched tokens also avoids counting their internal dots
 	// as the start of a second, unrelated relative path.
+	targetSet := make(map[string]bool, len(targets))
+	for _, target := range targets {
+		targetSet[target] = true
+	}
 	rw := CitationRewrite{}
 	for i, line := range strings.Split(string(content), "\n") {
 		rw.Locate = func(candidate string) (GitLocator, bool, error) {
 			candidate = citationProseTarget(candidate, path)
 			matched := false
-			for _, target := range targets {
-				if candidate == target || strings.HasPrefix(candidate, target+"/") {
+			for target := candidate; ; {
+				if targetSet[target] {
 					found[HistoryCitation{Path: path, Line: i + 1, Target: target}] = true
 					matched = true
 				}
+				slash := strings.LastIndexByte(target, '/')
+				if slash < 0 {
+					break
+				}
+				target = target[:slash]
 			}
 			return GitLocator{Path: candidate}, matched, nil
 		}
