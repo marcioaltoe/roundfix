@@ -18,6 +18,7 @@ sources:
   - 2026-10-22-the-ci-verify-job-runs-the-documentation-contract-package-twice.md
 regeneration: []
 promoted: []
+pull_request: "665"
 ---
 
 # The CI job runs the documentation contracts once
