@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.118.0] - 2026-10-24
+
+### The test-suite audit, and no test hard-links its binary
+
+- **Root cause of the intermittent `internal/agent` test failures.** On macOS, `syspolicyd` killed a re-executed fake adapter child when the test binary had been hard-linked to extra names that a parallel test was deleting; the child never ran, so its `args.json` was missing. The agent package adapters are now copies of the test binary, a fixture child creates none, and a missing `args.json` now reports the `RunPrompt` error beside the path. Under a load harness of 96 runs, every run passed.
+- **A repository rule refuses a hard link in any test.** `TestNoTestCreatesAHardLink` parses every `_test.go` under `internal/` and reports each call of `os.Link`, `syscall.Link`, `unix.Link` or `Linkat`.
+- **The test-suite audit** (`docs/references/2026-10-24-test-suite-audit.md`) records the measured wall time, test counts, git spawns, cache behavior and hidden inputs per package, and orders the follow-up Specs 0312–0314.
+- No product behavior changes.
+
 ## [0.117.0] - 2026-10-24
 
 ### `roundfix follow-up` lists pending work in priority order
