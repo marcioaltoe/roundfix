@@ -77,7 +77,10 @@ func TestMain(m *testing.M) {
 	if os.Getenv(fakeACPXEnv) == "1" {
 		os.Exit(runFakeACPXProcess())
 	}
-	removePackageAdapterLinks := provisionPackageAdapterLinks()
+	removePackageAdapterLinks := func() error { return nil }
+	if os.Getenv(spawnedFixtureDeathTestEnv) == "" {
+		removePackageAdapterLinks = provisionPackageAdapterLinks()
+	}
 	code := suiteguard.Main(m, filepath.Join("..", ".."))
 	if err := removePackageAdapterLinks(); err != nil {
 		fmt.Fprintf(os.Stderr, "remove package adapter links: %v\n", err)
@@ -4097,12 +4100,36 @@ func installFakeNamedVersionAdapter(t *testing.T, name string, output string) st
 	return path
 }
 
+const packageAdapterMode = 0o755
+
+func copyExecutable(source, target string) (err error) {
+	input, err := os.Open(source)
+	if err != nil {
+		return fmt.Errorf("open executable source: %w", err)
+	}
+	defer func() {
+		if closeErr := input.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close executable source: %w", closeErr))
+		}
+	}()
+	output, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, packageAdapterMode)
+	if err != nil {
+		return fmt.Errorf("create executable copy: %w", err)
+	}
+	_, copyErr := io.Copy(output, input)
+	closeErr := output.Close()
+	if err := errors.Join(copyErr, closeErr); err != nil {
+		return fmt.Errorf("write and close executable copy: %w", err)
+	}
+	return nil
+}
+
 func provisionPackageAdapterLinks() func() error {
 	root, links := mustPreparePackageAdapterLinkTargets()
 	for packageName, target := range links {
-		if err := os.Link(os.Args[0], target); err != nil {
+		if err := copyExecutable(os.Args[0], target); err != nil {
 			_ = os.RemoveAll(root)
-			panic(fmt.Errorf("link compiled test binary for package %s: %w", packageName, err))
+			panic(fmt.Errorf("copy compiled test binary for package %s: %w", packageName, err))
 		}
 	}
 	packageAdapterLinks = links
@@ -4567,6 +4594,9 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 		Session: "roundfix-run-1",
 		Inert:   prompt.inert,
 	}, sink)
+	if _, statErr := os.Stat(argsPath); errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("fake acpx did not write %s; RunPrompt returned %T: %v", argsPath, err, err)
+	}
 	return fakeACPXRun{
 		result:  result,
 		err:     err,

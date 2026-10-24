@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0311-the-suite-audit-and-no-test-hard-links-its-binary
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -100,3 +100,64 @@ None. The Task changes test code and documents only; no production contract or s
 
 - `_prd.md` → Sources; Goals; Core Feature 1; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior; API Contract 1; Invariants 1-2; Testing Approach; Build Order 1
+
+
+## Result
+
+Implemented API Contract 1 and ADR-0324 in this Task's test-only slice.
+The three package adapters now use exclusive executable copies, with mode
+held in `packageAdapterMode`; each copy closes its writer before the suite
+starts. The existing cleanup still removes the adapter root after the suite.
+`TestMain` skips provisioning whenever `spawnedFixtureDeathTestEnv` is set,
+leaving `packageAdapterLinks` nil in both fixture modes.
+
+`runFakeACPXPrompt` now checks for a missing arguments file immediately after
+`RunPrompt` returns and reports its path plus the returned error's type and
+value before attempting to read it. Other helper paths are unchanged.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Adapters are separate files; no `os.Link` remains | `TestPackageAdaptersAreCopiesOfTheTestBinary` passed for all three targets, checking file identity, size and executable mode. A source scan found no `os.Link` call in `internal/agent`. |
+| Fixture child leaves no adapter tree | `TestASpawnedFixtureChildLeavesNoPackageAdapter` passed with all three temporary-directory variables isolated, exit status 23, the `fixture started` line and no adapter root. The existing nested `wait`/`fixture` death test also passed. |
+| Existing tests and Windows compilation | The focused adapter, fake acpx and prompt selections below passed; Windows test compilation exited 0. Existing test bodies remain unchanged and both new tests call `t.Parallel()` first. The complete package verdict remains pending Daemon Verification. |
+
+Focused checks (not the declared Verification):
+
+- Before changing provisioning, `go test ./internal/agent -count=1 -run
+  '^(TestPackageAdaptersAreCopiesOfTheTestBinary|TestASpawnedFixtureChildLeavesNoPackageAdapter)$'
+  -v` exited 1: all three adapter subtests found the same file, and the
+  fixture test found a leaked `roundfix-agent-package-adapters-` tree.
+- After implementation, `go test ./internal/agent -count=1 -run
+  '^(TestPackageAdaptersAreCopiesOfTheTestBinary|TestASpawnedFixtureChildLeavesNoPackageAdapter|TestSpawnedFixtureDeathFailsFast|TestCheckAdapterProvesOfficialClaudePackageAndVersion|TestACPXExitCodeMapping|TestRunPromptIgnoresAMalformedUsagePayload)$'
+  -v` exited 0; all six selected tests and their subtests passed.
+- `go test ./internal/agent -count=1 -run
+  '^(TestFixtureBinarySurvivesConcurrentExec|TestFakeAdapterRunsFrom.*|TestACPX.*|TestRunPrompt.*)$'`
+  exited 0, exercising additional existing adapter and prompt paths.
+- `GOOS=windows go test -c -o "$windows_binary_dir/agent.test.exe"
+  ./internal/agent`, with `windows_binary_dir` allocated by `mktemp` under
+  `/tmp`, exited 0.
+- A disposable `go test -overlay` probe called `runFakeACPXPrompt` with a
+  locally refused model selection, causing no child to write arguments.
+  Its expected test failure named `args.json`,
+  `RunPrompt returned *agent.SelectionFailureError` and `subscription_only`;
+  the probe's output assertions passed. No probe source was added to the
+  repository. An initial probe-output assertion used `subscription-only`
+  rather than the actual `subscription_only`; correcting that assertion
+  required no repository change.
+- `git diff --check` exited 0. Source comparison against HEAD confirmed every
+  existing test body in `acpx_runner_test.go` is byte-identical. The only
+  new tests are the two required parallel tests, so the Sequential Test
+  count does not increase.
+
+The executor rejected the symlinked writable root; focused checks used the
+same checkout's resolved SSD path with authorized escalation. No production
+file, testfixture file, golden, fixture, Makefile, CI workflow, other Task or
+Task Graph was changed. Task status and declared Verification remain
+Daemon-owned; no terminal Task verdict is claimed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261024T115610Z_1c57415017fc7072`
+- Source commit: `2746782fca0c99670111541fbace29abfd46b709`
