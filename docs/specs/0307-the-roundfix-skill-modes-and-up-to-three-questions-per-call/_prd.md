@@ -11,7 +11,9 @@ A maintainer who wants a repository's agent to pick up everything pending,
 ask him every decision at once and then keep working alone has no way to say
 so today: the Roundfix skill has no modes, and the Baseline forbids asking
 more than one question per call. After this Spec the Roundfix skill reads a
-Skill Mode from the request in Claude Code, Codex and OpenCode alike.
+Skill Mode from the first word after its name, `follow-up`, `status` or
+`unattended`, with or without a leading `--`, in Claude Code, Codex and
+OpenCode alike; any other first word keeps today's behavior.
 `--follow-up` inventories the pending work through Roundfix's read-only
 follow-up command, plans it, gathers every decision, triages, authors and
 queues the Specs, and arms its own continuation. `--status` gives a short
@@ -91,9 +93,13 @@ reference count over what the tree holds when they start.
 - Every adopter's agent may ask up to three independent questions in one call,
   never more than the tool accepts, with every other safeguard of the clause
   kept, and an adopter's refresh records the clause `retained`.
-- The Roundfix skill reads `--follow-up`, `--status` or `--unattended` from
-  the request in all three harnesses, and a request without one behaves as
-  today.
+- The Roundfix skill reads its Skill Mode from the first word after its name
+  when that word is `follow-up`, `status` or `unattended`, with or without a
+  leading `--`, in all three harnesses (`/roundfix follow-up`, `$roundfix
+  status`, `@roundfix --unattended`), and a request whose first word is
+  anything else, such as `/roundfix watch 123`, behaves as today. The Skill
+  Mode is not the CLI command `roundfix follow-up`, which the follow-up mode
+  runs as one of its steps.
 - `--status` reports the repository's state without writing, asking or
   consuming anything.
 - `--follow-up` runs its steps in a fixed order, uses each optional source
@@ -105,9 +111,10 @@ reference count over what the tree holds when they start.
 
 ## User Stories
 
-1. As a maintainer, I want to type `/roundfix --follow-up`, `$roundfix
-   --follow-up` or `@roundfix --follow-up` and have the agent pick up all
-   pending work of the repository, so that I do not have to list it myself.
+1. As a maintainer, I want to type `/roundfix follow-up`, `$roundfix
+   follow-up` or `@roundfix follow-up`, with or without the `--`, and have
+   the agent pick up all pending work of the repository, so that I do not
+   have to list it myself or remember the dashes.
 2. As a maintainer, I want every decision the pending work needs asked in as
    few calls as possible, so that I answer once and the agent then works alone.
 3. As a maintainer, I want `--status` to tell me what is running, what is
@@ -129,7 +136,10 @@ reference count over what the tree holds when they start.
    the questions in the chat fallback, and forbids merging two decisions into
    one question. It keeps its identity and stop-and-ask enforcement.
 2. Mode detection. The skill's entry file gains a modes section naming the
-   three modes and the three invocation forms, its metadata exposes the skill
+   three modes and the three invocation forms, stating that the first word
+   after the skill's name selects the mode with or without a leading `--`,
+   that this is not the CLI command `roundfix follow-up`, and that any other
+   first word keeps today's behavior; its metadata exposes the skill
    as an OpenCode slash command, its body carries no argument placeholder that
    Claude Code would substitute, and a new reference describes how a mode is
    chosen and how each optional source is detected.
@@ -182,7 +192,9 @@ come numbered in the chat and the agent waits.
    catalog records the clause `retained` with itself as target, and no clause
    is unaccounted.
 3. Success Metric: the canonical and embedded Roundfix skill name the three
-   modes and the three invocation forms in a modes section, link the modes
+   modes and the three invocation forms, each mode word bare and with `--`,
+   the CLI command `roundfix follow-up` they are not, and an example whose
+   other first word keeps today's behavior, in a modes section, link the modes
    reference, set the OpenCode slash metadata, carry no argument placeholder,
    and their modes reference holds the sections on choosing a mode, optional
    sources and `--status`.
@@ -216,7 +228,7 @@ The outside-evidence rows rest on sources this Spec did not write.
 
 ## Unreachable Acceptance
 
-- criterion: a live session in each harness reads the mode from `/roundfix --follow-up` in Claude Code, `$roundfix --follow-up` in Codex and `@roundfix --follow-up` in OpenCode, and runs the mode the skill describes
+- criterion: a live session in each harness reads the mode from `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex and `@roundfix unattended` or `@roundfix --unattended` in OpenCode, and runs the mode the skill describes
   reason: it needs interactive sessions of three external agent harnesses and a person to answer their questions, which a Run sandbox has neither of
   satisfied-by: the maintainer's first follow-up session after the release, the use he asked for on 2026-10-22, recorded as this Spec's unproven step
 
@@ -272,8 +284,9 @@ The decisions were checked on 2026-10-22 against these sources.
 - 2026-10-22: How many questions per call? — "Até 3 no geral".
 - 2026-10-22: Where do answers go? — "As respostas e autorizacoes devem ser parte da spec que será implementada, como o _autorizations.md e se não for virar uma spec deve virar um backlog ou finding e armazenado com as informaçoes e decisoes (sem autorizacoes) para virar uma spec no futuro."
 - 2026-10-22: Wait for the assistant's reply? — "Sim, suas decisões bastam (Recomendado)".
+- 2026-10-24: A skill deve aceitar o modo sem os traços (`/roundfix follow-up`, `/roundfix status`, `/roundfix unattended`) além de `--follow-up`? — "Aceitar as duas formas (Recomendado)" (option text: "Emendo a 0307 antes de ela entrar na fila: a primeira palavra depois do nome da skill, com ou sem `--`, escolhe o modo nos três harnesses. Sem custo de versão.")
 
-Autonomous route: no person present; decisions taken from the operator's cycle AP batch 2 briefing for Spec 0307 of 2026-10-22 and the characterization recorded in the TechSpec.
+Autonomous route: no person present; decisions taken from the operator's cycle AP batch 2 briefing for Spec 0307 of 2026-10-22 and the characterization recorded in the TechSpec; the amendment of 2026-10-24 rests on the maintainer's AskUserQuestion answer of about 11:35 BRT quoted above.
 
 Taken from those sources, with no further interview:
 
@@ -283,6 +296,11 @@ Taken from those sources, with no further interview:
   share detection, sources and the answer rule, and it is indexed as a topic
   row, not a command family.
 - The skill exposes itself as an OpenCode slash command through metadata.
+- From the 2026-10-24 answer: only the first word after the skill's name
+  selects a mode, so a mode word later in an ordinary request, such as a
+  question about `deliver status`, never selects one; the bare word
+  `follow-up` selects the Skill Mode, never a direct run of the CLI command of
+  the same name, which the mode itself runs.
 - The interview skills keep one question per message.
 
 ## Open Questions

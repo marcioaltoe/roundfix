@@ -63,6 +63,17 @@ AskUserQuestion at about 15:20 BRT, after his request relayed at 15:09 and
 - "Sim, suas decisões bastam (Recomendado)": the operator does not wait for
   the assistant's reply.
 
+On 2026-10-24, at about 11:35 BRT, before this Spec entered the Delivery
+Queue, the maintainer amended it through AskUserQuestion. The question was "A
+skill deve aceitar o modo sem os traços (`/roundfix follow-up`, `/roundfix
+status`, `/roundfix unattended`) além de `--follow-up`?", and the answer was
+"Aceitar as duas formas (Recomendado)" (option text: "Emendo a 0307 antes de
+ela entrar na fila: a primeira palavra depois do nome da skill, com ou sem
+`--`, escolhe o modo nos três harnesses. Sem custo de versão."). The
+amendment changes the skill text, the modes reference, the contracts, the
+tests and the QA rows that describe how a mode is chosen; it adds no Governed
+Path, operation or grant, so the governed set and the operations below stand.
+
 The cycle AO rules carried by the authorization answer were approved on
 2026-10-22, at about 00:55 BRT ("the same rules as cycle AN"), which carry the
 cycle AN approval of 2026-10-21, at about 01:00 BRT, the cycle AM, AL and AK
