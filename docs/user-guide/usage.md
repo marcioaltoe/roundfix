@@ -861,6 +861,7 @@ Roundfix has no gateway transport setting.
 | `archive` | Archive a completed, QA-passed Spec |
 | `cancel` | Cancel an active Spec with an Archive Record |
 | `release plan` | Classify committed release changes without mutating release state |
+| `follow-up` | List pending work in priority order, or show status (read-only) |
 | `profiles` | Show, configure, and validate Agent Selection Profiles |
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |

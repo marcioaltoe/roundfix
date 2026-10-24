@@ -756,13 +756,14 @@
         ".agents/skills/roundfix/references/implement.md",
         ".agents/skills/roundfix/references/stop.md",
         ".agents/skills/roundfix/references/baseline.md",
-        ".agents/skills/roundfix/references/review-runs.md"
+        ".agents/skills/roundfix/references/review-runs.md",
+        ".agents/skills/roundfix/references/follow-up.md"
       ],
       "sources": [
         "internal/config/*.go",
         "docs/user-guide/configuration.md"
       ],
-      "review": "2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
+      "review": "2026-10-22 — the two new secondbrain keys are described by the new follow-up reference, which task_01 adds to this surface's covering files; no existing reference described them."
     },
     {
       "id": "exit codes",
@@ -797,12 +798,13 @@
         ".agents/skills/roundfix/references/setup.md",
         ".agents/skills/roundfix/references/spec.md",
         ".agents/skills/roundfix/references/stop.md",
-        ".agents/skills/roundfix/references/storage.md"
+        ".agents/skills/roundfix/references/storage.md",
+        ".agents/skills/roundfix/references/follow-up.md"
       ],
       "sources": [
         "docs/user-guide/commands.md"
       ],
-      "review": "2026-10-14 — the exit-code line lists Max Rounds Reached, Budget Exceeded, Timed Out and Review Skipped exactly as exitForWatchOutcome already maps them; no command behavior, flag, output or exit code changes."
+      "review": "2026-10-22 — the only change is the follow-up index row, covered by the new follow-up reference that task_01 adds to this guide's covering files."
     },
     {
       "id": "guide docs/user-guide/commands/archive.md",
@@ -888,6 +890,15 @@
       ],
       "sources": [
         "docs/user-guide/commands/fetch.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/follow-up.md",
+      "skills": [
+        ".agents/skills/roundfix/references/follow-up.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/follow-up.md"
       ]
     },
     {
@@ -1120,12 +1131,13 @@
         ".agents/skills/roundfix/references/implement.md",
         ".agents/skills/roundfix/references/stop.md",
         ".agents/skills/roundfix/references/baseline.md",
-        ".agents/skills/roundfix/references/review-runs.md"
+        ".agents/skills/roundfix/references/review-runs.md",
+        ".agents/skills/roundfix/references/follow-up.md"
       ],
       "sources": [
         "docs/user-guide/configuration.md"
       ],
-      "review": "2026-10-14 — the ADR link now cites ADR-0140 instead of the retired ADR-0055, with no behavior change. Earlier in this range, Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
+      "review": "2026-10-22 — the new section describes only the secondbrain keys, covered by the new follow-up reference that task_01 adds to this guide's covering files."
     },
     {
       "id": "guide docs/user-guide/context-driven-development.md",
@@ -1177,12 +1189,13 @@
         ".agents/skills/roundfix/references/setup.md",
         ".agents/skills/roundfix/references/spec.md",
         ".agents/skills/roundfix/references/stop.md",
-        ".agents/skills/roundfix/references/storage.md"
+        ".agents/skills/roundfix/references/storage.md",
+        ".agents/skills/roundfix/references/follow-up.md"
       ],
       "sources": [
         "docs/user-guide/usage.md"
       ],
-      "review": "2026-10-14 — the ADR link now cites ADR-0142 instead of the retired ADR-0054, and the exit-code line lists Max Rounds Reached, Budget Exceeded, Timed Out and Review Skipped exactly as exitForWatchOutcome already maps them; no command behavior, flag, output or exit code changes."
+      "review": "2026-10-22 — the only change is the follow-up command table row, covered by the new follow-up reference that task_01 adds to this guide's covering files."
     }
   ]
 }

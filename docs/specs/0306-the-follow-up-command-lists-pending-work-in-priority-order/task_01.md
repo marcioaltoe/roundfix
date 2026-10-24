@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -183,3 +183,28 @@ Surface Record; the suites that read them run in its own Verification.
 - `_techspec.md` → API Contracts 1-9; Build Order 1
 - ADR-0256
 - ADR-0319
+
+## Result
+
+- Added the Follow-up Command guide and both Roundfix skill reference copies.
+  They document the read-only boundary, exit codes, all ten source names and
+  states, messages schema, four-question priority classes and fallback, stop
+  state, list/status text and JSON schemas, judge refusal cases, and the two
+  Secondbrain keys.
+- Added the command/configuration/usage index rows, the `Secondbrain inbox`
+  section and key-reference rows, the Skill Coverage Map surfaces/reviews, and
+  the four CONTEXT glossary terms linked to ADR-0319.
+- Raised the canonical Roundfix skill from `0.1.134` to `0.1.135`, ran
+  `make skills-sync`, and recorded the owned-skill version. The canonical and
+  mirrored skill/reference files compare byte-for-byte.
+- Focused checks: `go test ./skills -run
+  '^TestRoundfixSkillIndexNamesEveryReference$' -count=1` passed; mirror
+  comparison and `git diff --check` passed; the authorized coverage recorder
+  passed and regenerated the Behavior Surface Record.
+- The Task's declared Verification commands were not run; they remain for the
+  Daemon. Task status remains Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261024T004042Z_a30dec8c359819a6`
+- Source commit: `4db3dcd9a984c71ad55ec524bee60554403abb64`
