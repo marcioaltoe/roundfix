@@ -67,6 +67,13 @@ skip safe.
    tests passing unchanged.
 6. MUST NOT change `internal/docscontract`, any production file, any skill
    or any other workflow.
+7. MUST, as the last step after the Makefile edit, regenerate this
+   repository's Setup Manifest, whose verification entries record the
+   Makefile digest, only with
+   `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`,
+   confirm that a second run reports no file change, and change no file
+   under `docs/agents/` other than `docs/agents/setup-context.json`
+   (`_authorization.md` → Sanctioned regeneration).
 
 ## Subtasks
 
