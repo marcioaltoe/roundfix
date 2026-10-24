@@ -1,0 +1,57 @@
+Audited head: a527e2a22c6cc7405c2c3439a89b47254e380419
+Fresh git archive copy; one isolated sabotage.
+Path: internal/cli/follow_up_status.go
+Mutation: release-tag invalid-range mapping disabled
+Command: go test -count=1 -v -run ^TestFollowUpStatusReportsTheNextRelease$ ./internal/cli
+=== RUN   TestFollowUpStatusReportsTheNextRelease
+=== PAUSE TestFollowUpStatusReportsTheNextRelease
+=== CONT  TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== RUN   TestFollowUpStatusReportsTheNextRelease/feature
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/feature
+=== RUN   TestFollowUpStatusReportsTheNextRelease/dirty
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/dirty
+=== RUN   TestFollowUpStatusReportsTheNextRelease/patch
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/patch
+=== RUN   TestFollowUpStatusReportsTheNextRelease/maintenance
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/maintenance
+=== RUN   TestFollowUpStatusReportsTheNextRelease/manual
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/manual
+=== RUN   TestFollowUpStatusReportsTheNextRelease/no_tag
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== CONT  TestFollowUpStatusReportsTheNextRelease/maintenance
+=== CONT  TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/manual
+=== CONT  TestFollowUpStatusReportsTheNextRelease/dirty
+=== CONT  TestFollowUpStatusReportsTheNextRelease/patch
+=== CONT  TestFollowUpStatusReportsTheNextRelease/feature
+=== NAME  TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+    follow_up_status_test.go:186: doc={Schema:roundfix/follow-up/v1 View:status State:work_found Repository:{Root:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpStatusReportsTheNextReleaseHEAD_at_release1227567017/001 Namespace:widget} Sources:[{Name:runs State:checked Count:0 Detail:} {Name:delivery-queue State:checked Count:0 Detail:} {Name:pull-requests State:checked Count:0 Detail:} {Name:git State:checked Count:0 Detail:} {Name:specs State:checked Count:0 Detail:} {Name:release-plan State:unavailable Count:0 Detail:resolve release range: validate release plan range: invalid release range; choose a target commit after the base release tag}] InProgress:{queue:{GitRoot: OwnerPID:0 OwnerIdentity: Limits:{Deadline:{wall:0 ext:0 loc:<nil>} MaxRetries:0 MaxTokens:0} Items:[]} Runs:[] DeliveryQueue:[] PullRequests:[] Git:{Branch:main Head:74ee697 Upstream: UnpushedCommits:0 ChangedPaths:[]}} PendingSpecs:[] Release:{State:unavailable Base: ProposedVersion: Changes:[] Reason:0x2da8adb222f0} Blockers:[] Maintainer:[]} text=Status for widget in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpStatusReportsTheNextReleaseHEAD_at_release1227567017/001
+        In progress: 0
+        Pending Specs: 0
+        Next release: unavailable: resolve release range: validate release plan range: invalid release range; choose a target commit after the base release tag
+        Blockers: 0
+        Waiting on the maintainer: 0
+        Sources:
+          runs: checked 0
+          delivery-queue: checked 0
+          pull-requests: checked 0
+          git: checked 0
+          specs: checked 0
+          release-plan: unavailable: resolve release range: validate release plan range: invalid release range; choose a target commit after the base release tag
+--- FAIL: TestFollowUpStatusReportsTheNextRelease (0.00s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/dirty (0.15s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/no_tag (0.19s)
+    --- FAIL: TestFollowUpStatusReportsTheNextRelease/HEAD_at_release (0.20s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/manual (0.27s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/maintenance (0.28s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/feature (0.28s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/patch (0.28s)
+FAIL
+suiteguard: guard cost: measured 2738 paths; fingerprint took 88.352833ms before and 67.461125ms after
+FAIL	roundfix/internal/cli	0.874s
+FAIL
+
+exit: 1

@@ -1,0 +1,86 @@
+task_01 4db3dcd9a984c71ad55ec524bee60554403abb64
+docs: the command guide, the follow-up reference, the configuration guide and the glossary describe the Follow-up Command
+
+Roundfix-Spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
+Roundfix-Task: task_01
+
+changed paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/follow-up.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0306-the-follow-up-command-lists-pending-work-in-priority-order/task_01.md
+docs/user-guide/commands.md
+docs/user-guide/commands/follow-up.md
+docs/user-guide/configuration.md
+docs/user-guide/usage.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/follow-up.md
+skills/roundfix_layout_test.go
+skills/testdata/owned-skill-versions.json
+undeclared: []
+
+task_02 b9c62a1ad390fa50b0dfdceb24f43050b9379deb
+feat: the judge answers four yes/no questions per Follow-up Item, after a secret scan
+
+Roundfix-Spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
+Roundfix-Task: task_02
+
+changed paths:
+docs/specs/0306-the-follow-up-command-lists-pending-work-in-priority-order/task_02.md
+internal/judge/client.go
+internal/judge/follow_up.go
+internal/judge/follow_up_test.go
+internal/judge/questions.go
+internal/judge/questions.json
+undeclared: []
+
+task_03 11766bb2b0d8189648d2f9c3e1c7f2e72dc555a6
+feat: roundfix follow-up lists every pending item in Follow-up Priority order beside the work in progress
+
+Roundfix-Spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
+Roundfix-Task: task_03
+
+changed paths:
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0306-the-follow-up-command-lists-pending-work-in-priority-order/task_03.md
+internal/cli/cli.go
+internal/cli/follow_up.go
+internal/cli/follow_up_inventory.go
+internal/cli/follow_up_test.go
+internal/config/config.go
+internal/config/secondbrain_test.go
+undeclared: []
+
+task_04 f6dba5dc257d8dee69b71be34031afa4bb73d575
+feat: roundfix follow-up --status shows the work in progress, the pending Specs, the next release and what waits on the maintainer
+
+Roundfix-Spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
+Roundfix-Task: task_04
+
+changed paths:
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0306-the-follow-up-command-lists-pending-work-in-priority-order/task_04.md
+internal/cli/cli.go
+internal/cli/follow_up.go
+internal/cli/follow_up_inventory.go
+internal/cli/follow_up_status.go
+internal/cli/follow_up_status_test.go
+internal/cli/follow_up_test.go
+undeclared: []
+
+Preserved paths comparison exit 0
+
+
+questions.json: removing follow-up-priority yields an identical parsed catalog; no existing kind, transport, pin or threshold changed.
+
+Governed mutations exactly bounded: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/follow-up.md', 'skills/roundfix/SKILL.md']. Mechanical authorization audit lists task_01. Grant is at the Delivery Base, ancestor of task_01; no grant or prerequisite/consequent declaration folded into that commit.
+
+.agents/skills/roundfix/SKILL.md: version 0.1.134 -> 0.1.135
+
+skills/roundfix/SKILL.md: version 0.1.134 -> 0.1.135
+
+Both QA settlement sections byte-identical. Task 04 Recorded paths explicitly cover follow_up_inventory.go and follow_up_test.go. Earlier Task scope lists each remaining changed file.

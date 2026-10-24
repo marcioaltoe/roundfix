@@ -1,0 +1,33 @@
+import sys;sys.path.insert(0,'/private/tmp');from qa0306rerunlib import *
+archive=W/'audited-head.tar';p=command(['git','archive','--format=tar','--output='+str(archive),S['head']]);assert p.returncode==0,p.stderr
+mutations=[
+('internal/judge/follow_up.go','value >= q.FollowUp.YesAtLeast','value > q.FollowUp.YesAtLeast','./internal/judge','TestFollowUpVerdictsUseTheThresholds','exact 0.7 became unsure'),
+('internal/cli/follow_up.go','return answer.Verdicts[key] == "yes"','return answer.Verdicts[key] == "yes" || (key == "blocks_other_project" && answer.Verdicts[key] == "unsure")','./internal/cli','TestFollowUpOrdersItemsByTheFourAnswers','0.5 unsure blocks answer incorrectly unblocks'),
+('internal/judge/follow_up.go','len(matches) > 0','len(matches) > 1000','./internal/judge','TestFollowUpNeverSendsASecretShapedItem','scanner result ignored before a fake request'),
+('internal/judge/follow_up.go','text := []rune(item.Text)','text := []byte(item.Text)','./internal/judge','TestFollowUpCutsTextOnARuneBoundary','3999 ASCII plus ção split at a byte boundary'),
+('internal/config/config.go',None,None,'./internal/config','TestProjectConfigCannotSetTheSecondbrainRoot','Project Config root allowed'),
+('internal/cli/follow_up_inventory.go',None,None,'./internal/cli','TestFollowUpListsEveryPendingItemOnce','recursive namespace includes _triaged'),
+('internal/cli/follow_up_inventory.go','date := fields.CreatedAt','date := followUpFilenameDate(entry.Name())','./internal/cli','TestFollowUpListsEveryPendingItemOnce','created_at replaced by filename dates'),
+('internal/cli/follow_up.go','len(doc.Items) == 0 && progress.count() == 0','len(doc.Items) == 0','./internal/cli','TestFollowUpSaysNothingToDo','active Run ignored by stop rule'),
+('internal/cli/follow_up_status.go','\tif err == nil {\n\t\tfor index := range rows {','\tsort.Slice(rows, func(i, j int) bool { return rows[i].Spec < rows[j].Spec })\n\tif err == nil {\n\t\tfor index := range rows {','./internal/cli','TestFollowUpStatusListsPendingSpecsInDeliveryOrder','pending specs sorted by slug only'),
+('internal/cli/follow_up_status.go','case errors.Is(planErr, releaseplan.ErrInvalidReleaseRange):','case false && errors.Is(planErr, releaseplan.ErrInvalidReleaseRange):','./internal/cli','TestFollowUpStatusReportsTheNextRelease','release-tag invalid-range mapping disabled'),
+('internal/cli/follow_up.go','if req.status {\n\t\treturn runFollowUpStatus','if req.status {\n\t\tlistReq := []string{"--format", "json"}\n\t\t_ = runFollowUpCommand(ctx, listReq, io.Discard, io.Discard, environment)\n\t\treturn runFollowUpStatus','./internal/cli','TestFollowUpStatusNeverAsksTheJudge','status calls list path and its judge')]
+for i,(file,old,new,pkg,test,case) in enumerate(mutations,10):
+ copy=W/('sabotage-'+str(i));copy.mkdir();p=command(['tar','-xf',str(archive),'-C',str(copy)]);assert p.returncode==0,p.stderr
+ path=copy/file;text=path.read_text();original=text
+ if i==14:
+  oldblock='\tif source == ProfileSourceProject && removeYAMLPath(&document, []string{"secondbrain", "root"}) {\n\t\twarnings.warnIgnoredProjectSetting("secondbrain.root")\n\t}\n';assert oldblock in text;text=text.replace(oldblock,'',1);text=text.replace('source != ProfileSourceProject && overlay.Secondbrain.Root != nil','overlay.Secondbrain.Root != nil',1)
+ elif i==15:
+  text=text.replace('entries, err := os.ReadDir(dir)','entries, err := followUpRecursiveEntries(dir)',1)
+  text+='''\n// QA sabotage: recurse into every namespace subdirectory.\ntype followUpRecursiveEntry struct { os.DirEntry; relative string }\nfunc (e followUpRecursiveEntry) Name() string { return e.relative }\nfunc followUpRecursiveEntries(root string) ([]os.DirEntry, error) {\n var entries []os.DirEntry\n err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {\n  if err != nil { return err }; if path == root || entry.IsDir() { return nil }\n  relative, err := filepath.Rel(root, path); if err != nil { return err }\n  entries = append(entries, followUpRecursiveEntry{entry, relative}); return nil\n }); return entries, err\n}\n'''
+ else:
+  assert old in text,(i,old);text=text.replace(old,new,1)
+ assert text!=original;path.write_text(text)
+ p=command(['go','test','-count=1','-v','-run','^'+test+'$',pkg],copy)
+ output=p.stdout+p.stderr
+ # Runtime-built fake secrets are never persisted; the path/line failure and surrounding test result remain.
+ output=re.sub(r'gh[pousr]_[A-Za-z0-9_]{20,}','[redacted secret-shaped fixture]',output)
+ output=re.sub(r'([A-Z][A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)\s*[=:]\s*)[^\s"\\]{20,}',r'\1[redacted fixture]',output)
+ name=f'sabotage-{i-9:02}.txt';(E/name).write_text('Audited head: '+S['head']+'\nFresh git archive copy; one isolated sabotage.\nPath: '+file+'\nMutation: '+case+'\nCommand: go test -count=1 -v -run ^'+test+'$ '+pkg+'\n'+output+'\nexit: '+str(p.returncode)+'\n')
+ ok=p.returncode!=0 and '--- FAIL: '+test in output and '[build failed]' not in output
+ finish(f'QA-{i:02}','pass' if ok else 'fail','Fresh git archive: '+case+'. '+test+' '+('failed as required' if ok else 'DID NOT prove the expected assertion failure')+'; exit '+str(p.returncode)+'.',name)

@@ -1,0 +1,11 @@
+--- a/internal/judge/follow_up.go
++++ b/internal/judge/follow_up.go
+@@ -117,7 +117,7 @@
+ 		}
+ 		excerpt := string(text)
+ 		scanText := strings.Join([]string{item.Title, item.Origin, excerpt, item.Type, item.Kind}, "\n")
+-		if matches := secretscan.ScanContent(item.Ref, []byte(scanText)); len(matches) > 0 {
++		if matches := secretscan.ScanContent(item.Ref, []byte(scanText)); len(matches) > 1000 {
+ 			itemAnswer.Reason = reasonPointer("not sent: secret pattern " + matches[0].Kind)
+ 			report.Answers = append(report.Answers, itemAnswer)
+ 			continue

@@ -1,0 +1,27 @@
+--- a/internal/cli/follow_up_inventory.go
++++ b/internal/cli/follow_up_inventory.go
+@@ -127,7 +127,7 @@
+ 	if err != nil {
+ 		return items, followUpSourceResult(source.Name, 0, err)
+ 	}
+-	entries, err := os.ReadDir(dir)
++	entries, err := followUpRecursiveEntries(dir)
+ 	if err != nil {
+ 		return items, followUpSourceResult(source.Name, 0, err)
+ 	}
+@@ -582,3 +582,15 @@
+ func (followUpGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+ 	return (preflight.ExecGitRunner{}).RunGit(ctx, workDir, append([]string{"--no-optional-locks"}, args...)...)
+ }
++
++// QA sabotage: recurse into every namespace subdirectory.
++type followUpRecursiveEntry struct { os.DirEntry; relative string }
++func (e followUpRecursiveEntry) Name() string { return e.relative }
++func followUpRecursiveEntries(root string) ([]os.DirEntry, error) {
++ var entries []os.DirEntry
++ err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
++  if err != nil { return err }; if path == root || entry.IsDir() { return nil }
++  relative, err := filepath.Rel(root, path); if err != nil { return err }
++  entries = append(entries, followUpRecursiveEntry{entry, relative}); return nil
++ }); return entries, err
++}

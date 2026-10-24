@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

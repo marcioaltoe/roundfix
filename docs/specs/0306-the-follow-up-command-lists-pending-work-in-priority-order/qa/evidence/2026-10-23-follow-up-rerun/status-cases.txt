@@ -1,0 +1,97 @@
+Command: go test -count=1 -v -run ^(TestFollowUpStatus|TestFollowUpHelpTranscript) ./internal/cli
+stdout:
+=== RUN   TestFollowUpHelpTranscript
+=== PAUSE TestFollowUpHelpTranscript
+=== RUN   TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== PAUSE TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== RUN   TestFollowUpStatusReportsTheNextRelease
+=== PAUSE TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== PAUSE TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== RUN   TestFollowUpStatusNeverAsksTheJudge
+=== PAUSE TestFollowUpStatusNeverAsksTheJudge
+=== RUN   TestFollowUpStatusWritesNothing
+=== PAUSE TestFollowUpStatusWritesNothing
+=== RUN   TestFollowUpStatusRefusesMessages
+=== PAUSE TestFollowUpStatusRefusesMessages
+=== CONT  TestFollowUpHelpTranscript
+=== CONT  TestFollowUpStatusNeverAsksTheJudge
+=== CONT  TestFollowUpStatusRefusesMessages
+=== CONT  TestFollowUpStatusWritesNothing
+=== RUN   TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== PAUSE TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== CONT  TestFollowUpStatusReportsTheNextRelease
+=== CONT  TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== CONT  TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== RUN   TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== RUN   TestFollowUpStatusWritesNothing/no_database
+=== PAUSE TestFollowUpStatusWritesNothing/no_database
+=== RUN   TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== RUN   TestFollowUpStatusWritesNothing/at_tag
+=== PAUSE TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== RUN   TestFollowUpStatusRefusesMessages/--status_--messages=
+=== RUN   TestFollowUpStatusReportsTheNextRelease/feature
+=== PAUSE TestFollowUpStatusWritesNothing/at_tag
+=== PAUSE TestFollowUpStatusRefusesMessages/--status_--messages=
+=== RUN   TestFollowUpStatusWritesNothing/release
+=== CONT  TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== PAUSE TestFollowUpStatusWritesNothing/release
+=== CONT  TestFollowUpStatusRefusesMessages/--status_--messages=
+=== RUN   TestFollowUpStatusWritesNothing/dirty
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/feature
+=== CONT  TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== RUN   TestFollowUpStatusReportsTheNextRelease/dirty
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/dirty
+=== RUN   TestFollowUpStatusReportsTheNextRelease/patch
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/patch
+=== PAUSE TestFollowUpStatusWritesNothing/dirty
+=== RUN   TestFollowUpStatusWritesNothing/live_WAL
+=== PAUSE TestFollowUpStatusWritesNothing/live_WAL
+=== CONT  TestFollowUpStatusWritesNothing/no_database
+=== CONT  TestFollowUpStatusWritesNothing/dirty
+=== RUN   TestFollowUpStatusReportsTheNextRelease/maintenance
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/maintenance
+=== RUN   TestFollowUpStatusReportsTheNextRelease/manual
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/manual
+=== RUN   TestFollowUpStatusReportsTheNextRelease/no_tag
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== CONT  TestFollowUpStatusWritesNothing/release
+--- PASS: TestFollowUpHelpTranscript (0.07s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/maintenance
+=== CONT  TestFollowUpStatusReportsTheNextRelease/no_tag
+--- PASS: TestFollowUpStatusRefusesMessages (0.00s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--messages=messages.json_--status (0.07s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--status_--messages_messages.json (0.09s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--status_--messages= (0.09s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/manual
+--- PASS: TestFollowUpStatusNeverAsksTheJudge (0.21s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/dirty
+--- PASS: TestFollowUpStatusListsPendingSpecsInDeliveryOrder (0.24s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/patch
+--- PASS: TestFollowUpStatusListsBlockersAndTheMaintainersQuestion (0.28s)
+=== CONT  TestFollowUpStatusWritesNothing/at_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/feature
+=== CONT  TestFollowUpStatusWritesNothing/live_WAL
+--- PASS: TestFollowUpStatusWritesNothing (0.00s)
+    --- PASS: TestFollowUpStatusWritesNothing/dirty (0.28s)
+    --- PASS: TestFollowUpStatusWritesNothing/no_database (0.34s)
+    --- PASS: TestFollowUpStatusWritesNothing/release (0.41s)
+    --- PASS: TestFollowUpStatusWritesNothing/at_tag (0.25s)
+    --- PASS: TestFollowUpStatusWritesNothing/live_WAL (0.24s)
+--- PASS: TestFollowUpStatusReportsTheNextRelease (0.00s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/HEAD_at_release (0.30s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/no_tag (0.25s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/dirty (0.18s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/manual (0.37s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/maintenance (0.38s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/patch (0.30s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/feature (0.27s)
+PASS
+suiteguard: guard cost: measured 2805 paths; fingerprint took 97.213292ms before and 74.3995ms after
+ok  	roundfix/internal/cli	1.035s
+
+stderr:
+
+exit: 0

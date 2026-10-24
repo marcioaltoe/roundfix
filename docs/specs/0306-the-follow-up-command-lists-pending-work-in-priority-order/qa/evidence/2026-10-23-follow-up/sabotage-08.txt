@@ -1,0 +1,17 @@
+Audited head: f6dba5dc257d8dee69b71be34031afa4bb73d575
+Fresh git archive copy; one isolated sabotage.
+Path: internal/cli/follow_up.go
+Mutation: active Run ignored by stop rule
+Command: go test -count=1 -v -run ^TestFollowUpSaysNothingToDo$ ./internal/cli
+=== RUN   TestFollowUpSaysNothingToDo
+=== PAUSE TestFollowUpSaysNothingToDo
+=== CONT  TestFollowUpSaysNothingToDo
+    follow_up_test.go:372: doc={Schema:roundfix/follow-up/v1 View:follow-up State:nothing_to_do Repository:{Root:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpSaysNothingToDo1583688190/001 Namespace:widget} Sources:[{Name:secondbrain-inbox State:checked Count:0 Detail:} {Name:ai-memory-messages State:missing Count:0 Detail:no --messages file} {Name:backlog State:checked Count:0 Detail:} {Name:findings State:checked Count:0 Detail:} {Name:repository-inbox State:checked Count:0 Detail:} {Name:specs State:checked Count:0 Detail:} {Name:runs State:checked Count:1 Detail:} {Name:delivery-queue State:checked Count:0 Detail:} {Name:pull-requests State:checked Count:0 Detail:} {Name:git State:checked Count:0 Detail:}] Judge:{State:not_asked Reason:0x52604aeb6760 Model:<nil> Calls:0 CostUSD:0} Items:[] InProgress:{queue:{GitRoot: OwnerPID:0 OwnerIdentity: Limits:{Deadline:{wall:0 ext:0 loc:<nil>} MaxRetries:0 MaxTokens:0} Items:[]} Runs:[{ID:run_20261024T015340Z_d5fd7f12bb63ff62 State:Active Spec:0001-widget}] DeliveryQueue:[] PullRequests:[] Git:{Branch:main Head:ace362d Upstream: UnpushedCommits:0 ChangedPaths:[]}}}
+--- FAIL: TestFollowUpSaysNothingToDo (0.10s)
+FAIL
+suiteguard: guard cost: measured 2738 paths; fingerprint took 84.444625ms before and 66.585333ms after
+FAIL	roundfix/internal/cli	0.711s
+FAIL
+
+exit: 1
+Exact mutation: sabotage-08.patch.txt

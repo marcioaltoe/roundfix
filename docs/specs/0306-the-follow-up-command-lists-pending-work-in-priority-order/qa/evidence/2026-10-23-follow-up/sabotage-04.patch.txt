@@ -1,0 +1,11 @@
+--- a/internal/judge/follow_up.go
++++ b/internal/judge/follow_up.go
+@@ -111,7 +111,7 @@
+ 			report.Answers = append(report.Answers, itemAnswer)
+ 			continue
+ 		}
+-		text := []rune(item.Text)
++		text := []byte(item.Text)
+ 		if len(text) > q.FollowUp.ItemMaxChars {
+ 			text = text[:q.FollowUp.ItemMaxChars]
+ 		}

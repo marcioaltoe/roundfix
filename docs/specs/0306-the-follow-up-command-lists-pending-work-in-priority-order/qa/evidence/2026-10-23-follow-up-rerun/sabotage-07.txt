@@ -1,0 +1,16 @@
+Audited head: a527e2a22c6cc7405c2c3439a89b47254e380419
+Fresh git archive copy; one isolated sabotage.
+Path: internal/cli/follow_up_inventory.go
+Mutation: created_at replaced by filename dates
+Command: go test -count=1 -v -run ^TestFollowUpListsEveryPendingItemOnce$ ./internal/cli
+=== RUN   TestFollowUpListsEveryPendingItemOnce
+=== PAUSE TestFollowUpListsEveryPendingItemOnce
+=== CONT  TestFollowUpListsEveryPendingItemOnce
+    follow_up_test.go:223: item={Rank:2 Priority:2 PriorityName:health Kind:inbox Ref:inbox/widget/a-new.md Type:fix Date: Title:New inbox RequestedBy:0x1a994eb541a0 Blocks:<nil> Basis:type Answers:map[] Reason:0x1a994eb541b0 text: origin:} want={kind:inbox typ:fix date:2026-10-22 title:New inbox requested:fluxus}
+--- FAIL: TestFollowUpListsEveryPendingItemOnce (0.05s)
+FAIL
+suiteguard: guard cost: measured 2738 paths; fingerprint took 88.341958ms before and 67.012833ms after
+FAIL	roundfix/internal/cli	0.644s
+FAIL
+
+exit: 1

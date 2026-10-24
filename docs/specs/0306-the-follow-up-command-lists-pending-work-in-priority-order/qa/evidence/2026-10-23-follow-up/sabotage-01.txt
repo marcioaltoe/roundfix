@@ -1,0 +1,16 @@
+Audited head: f6dba5dc257d8dee69b71be34031afa4bb73d575
+Fresh git archive copy; one isolated sabotage.
+Path: internal/judge/follow_up.go
+Mutation: exact 0.7 became unsure
+Command: go test -count=1 -v -run ^TestFollowUpVerdictsUseTheThresholds$ ./internal/judge
+=== RUN   TestFollowUpVerdictsUseTheThresholds
+=== PAUSE TestFollowUpVerdictsUseTheThresholds
+=== CONT  TestFollowUpVerdictsUseTheThresholds
+    follow_up_test.go:110: answer={Ref:inbox/one.md Outcome:answered Reason:<nil> Nouls:map[affects_production:0.3 blocks_other_project:0.69 is_fix:0.7 is_small:0.31] Verdicts:map[affects_production:no blocks_other_project:unsure is_fix:unsure is_small:unsure] Model:0x67b6b58eaf30}
+--- FAIL: TestFollowUpVerdictsUseTheThresholds (0.00s)
+FAIL
+FAIL	roundfix/internal/judge	0.306s
+FAIL
+
+exit: 1
+Exact mutation: sabotage-01.patch.txt

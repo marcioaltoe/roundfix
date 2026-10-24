@@ -1,0 +1,40 @@
+Command: go test -count=1 -v -run ^(TestSecondbrainRootIsReadFromUserConfig|TestProjectConfigCannotSetTheSecondbrainRoot|TestSecondbrainKeysRefuseInvalidValues|TestTheInboxNamespaceMayComeFromProjectConfig)$ ./internal/config
+stdout:
+=== RUN   TestSecondbrainRootIsReadFromUserConfig
+=== PAUSE TestSecondbrainRootIsReadFromUserConfig
+=== RUN   TestProjectConfigCannotSetTheSecondbrainRoot
+=== PAUSE TestProjectConfigCannotSetTheSecondbrainRoot
+=== RUN   TestSecondbrainKeysRefuseInvalidValues
+=== PAUSE TestSecondbrainKeysRefuseInvalidValues
+=== RUN   TestTheInboxNamespaceMayComeFromProjectConfig
+=== PAUSE TestTheInboxNamespaceMayComeFromProjectConfig
+=== CONT  TestSecondbrainRootIsReadFromUserConfig
+=== RUN   TestSecondbrainRootIsReadFromUserConfig/absolute
+=== CONT  TestSecondbrainKeysRefuseInvalidValues
+=== RUN   TestSecondbrainKeysRefuseInvalidValues/relative
+=== CONT  TestProjectConfigCannotSetTheSecondbrainRoot
+=== CONT  TestTheInboxNamespaceMayComeFromProjectConfig
+config: secondbrain.root in Project Config is ignored; set secondbrain.root in User Config
+=== RUN   TestSecondbrainKeysRefuseInvalidValues/_triaged
+=== RUN   TestSecondbrainRootIsReadFromUserConfig/~/brain
+--- PASS: TestProjectConfigCannotSetTheSecondbrainRoot (0.00s)
+--- PASS: TestTheInboxNamespaceMayComeFromProjectConfig (0.00s)
+=== RUN   TestSecondbrainKeysRefuseInvalidValues/Fluxus
+=== RUN   TestSecondbrainRootIsReadFromUserConfig/~
+=== RUN   TestSecondbrainKeysRefuseInvalidValues/a/b
+--- PASS: TestSecondbrainRootIsReadFromUserConfig (0.00s)
+    --- PASS: TestSecondbrainRootIsReadFromUserConfig/absolute (0.00s)
+    --- PASS: TestSecondbrainRootIsReadFromUserConfig/~/brain (0.00s)
+    --- PASS: TestSecondbrainRootIsReadFromUserConfig/~ (0.00s)
+--- PASS: TestSecondbrainKeysRefuseInvalidValues (0.00s)
+    --- PASS: TestSecondbrainKeysRefuseInvalidValues/relative (0.00s)
+    --- PASS: TestSecondbrainKeysRefuseInvalidValues/_triaged (0.00s)
+    --- PASS: TestSecondbrainKeysRefuseInvalidValues/Fluxus (0.00s)
+    --- PASS: TestSecondbrainKeysRefuseInvalidValues/a/b (0.00s)
+PASS
+suiteguard: guard cost: measured 2804 paths; fingerprint took 93.002708ms before and 80.450625ms after
+ok  	roundfix/internal/config	0.301s
+
+stderr:
+
+exit: 0

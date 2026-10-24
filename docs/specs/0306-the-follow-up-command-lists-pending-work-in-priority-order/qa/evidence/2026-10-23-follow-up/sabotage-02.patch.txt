@@ -1,0 +1,11 @@
+--- a/internal/cli/follow_up.go
++++ b/internal/cli/follow_up.go
+@@ -246,7 +246,7 @@
+ 			item.Basis = "judge"
+ 			item.Answers = answer.Verdicts
+ 			item.Reason = nil
+-			yes := func(key string) bool { return answer.Verdicts[key] == "yes" }
++			yes := func(key string) bool { return answer.Verdicts[key] == "yes" || (key == "blocks_other_project" && answer.Verdicts[key] == "unsure") }
+ 			switch {
+ 			case yes("blocks_other_project") && (yes("is_fix") || yes("is_small")):
+ 				item.Priority = 1

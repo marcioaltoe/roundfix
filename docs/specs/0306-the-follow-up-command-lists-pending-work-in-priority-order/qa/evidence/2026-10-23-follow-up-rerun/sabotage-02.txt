@@ -1,0 +1,16 @@
+Audited head: a527e2a22c6cc7405c2c3439a89b47254e380419
+Fresh git archive copy; one isolated sabotage.
+Path: internal/cli/follow_up.go
+Mutation: 0.5 unsure blocks answer incorrectly unblocks
+Command: go test -count=1 -v -run ^TestFollowUpOrdersItemsByTheFourAnswers$ ./internal/cli
+=== RUN   TestFollowUpOrdersItemsByTheFourAnswers
+=== PAUSE TestFollowUpOrdersItemsByTheFourAnswers
+=== CONT  TestFollowUpOrdersItemsByTheFourAnswers
+    follow_up_test.go:279: item={Rank:3 Priority:1 PriorityName:unblocking Kind:inbox Ref:inbox/widget/04.md Type:feat Date:2026-10-02 Title:unsure RequestedBy:0x4575ee852110 Blocks:0x4575ee852120 Basis:judge Answers:map[affects_production:no blocks_other_project:unsure is_fix:yes is_small:no] Reason:<nil> text: origin:}
+--- FAIL: TestFollowUpOrdersItemsByTheFourAnswers (0.05s)
+FAIL
+suiteguard: guard cost: measured 2738 paths; fingerprint took 85.214125ms before and 65.632ms after
+FAIL	roundfix/internal/cli	0.642s
+FAIL
+
+exit: 1

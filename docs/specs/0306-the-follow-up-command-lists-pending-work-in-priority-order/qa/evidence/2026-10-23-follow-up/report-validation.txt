@@ -1,0 +1,6 @@
+Results: {"pass": 23, "fail": 1, "environment": 3, "finding": 0, "declared": 1}
+28 unique terminal rows, one planned typed input block each; commit_range present on scope audit. No pending or skipped row.
+Only qa/ report and text evidence differ from initial checkout; audited HEAD and all tracked production sources unchanged.
+Daemon auditing_binary, auditor_staleness and mechanical skips retained.
+Evidence links resolve; every evidence file is text without NUL in its first 8000 bytes.
+Outcome is one paragraph and does not end with a colon.

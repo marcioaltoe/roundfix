@@ -1,0 +1,6 @@
+Declared command 1: out="$(go test -count=1 -v -run '^(TestFollowUpAsksFourQuestionsInOneRequest|TestFollowUpVerdictsUseTheThresholds|TestFollowUpLogsTheModelOfEachAnswer|TestFollowUpNeverSendsASecretShapedItem|TestFollowUpCutsTextOnARuneBoundary|TestFollowUpFailsOpen|TestFollowUpStopsAtTheItemLimit|TestQuestionFileLoads|TestArchiveAdviceJudgesOnlyCandidateFiles)$' ./internal/judge 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestFollowUpAsksFourQuestionsInOneRequest TestFollowUpVerdictsUseTheThresholds TestFollowUpLogsTheModelOfEachAnswer TestFollowUpNeverSendsASecretShapedItem TestFollowUpCutsTextOnARuneBoundary TestFollowUpFailsOpen TestFollowUpStopsAtTheItemLimit TestQuestionFileLoads TestArchiveAdviceJudgesOnlyCandidateFiles; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; grep -q '"follow-up-priority"' internal/judge/questions.json || { echo 'missing judgment' >&2; exit 1; }; GOOS=<set for Windows vet> go vet ./internal/judge
+stdout:
+
+stderr:
+
+exit: 0

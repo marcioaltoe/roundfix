@@ -1,0 +1,45 @@
+import sys;sys.path.insert(0,'/private/tmp');from qa0306rerunlib import *
+base=S['base'];head=S['head'];p=command(['git','log','--reverse','--format=%H',base+'..'+head]);commits=p.stdout.splitlines();out=[];errors=[]
+for commit in commits:
+ msg=command(['git','show','-s','--format=%B',commit]).stdout
+ match=re.search(r'\btask_0[1-4]\b',msg)
+ if not match:
+  paths=command(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).stdout.splitlines()
+  assigned=[f.rsplit('/',1)[-1][:-3] for f in paths if re.search(r'/task_0[1-4]\.md$',f)]
+  if len(assigned)==1: match=re.search(r'task_0[1-4]',assigned[0])
+  elif commit==head:
+   expected=['docs/references/behavior-surfaces.json','docs/user-guide/commands/follow-up.md'];assert paths==expected,paths
+   out.append('Corrective documentation commit '+commit+'\n'+msg+'changed paths: '+repr(paths)+'; both paths declared by task_01; no governed path and no production change.');continue
+  else: errors.append('Unmapped commit '+commit);continue
+ task=match[0];path='docs/specs/'+SPEC+'/'+task+'.md';tasktext=command(['git','show',commit+':'+path]).stdout
+ changed=command(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).stdout.splitlines()
+ undeclared=[f for f in changed if f!=path and '`'+f+'`' not in tasktext]
+ out.append(task+' '+commit+'\n'+msg+'changed paths:\n'+'\n'.join(changed)+'\nundeclared: '+repr(undeclared))
+ errors.extend('Undeclared '+task+': '+f for f in undeclared)
+ # Every governed mutation is in the seeded mechanical table's task_01 audit; no missing audit command is necessary.
+ if task=='task_01':
+  assert command(['git','merge-base','--is-ancestor',base,commit]).returncode==0
+  assert '_authorization.md' not in '\n'.join(changed)
+preserved=['Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml','docs/agents','internal/baseline','internal/store','internal/delivery','internal/releaseplan','docs/history','internal/cli/releaseplan_command.go','internal/cli/deliver.go','internal/cli/runs.go','internal/cli/spec_judge.go']
+p=command(['git','diff','--exit-code',base,head,'--',*preserved]);out.append('Preserved paths comparison exit '+str(p.returncode)+'\n'+p.stdout+p.stderr);assert p.returncode==0
+before=json.loads(command(['git','show',base+':internal/judge/questions.json']).stdout);after=json.loads((R/'internal/judge/questions.json').read_text())
+# The catalog uses a judgments object; removing the single added kind must reproduce every other byte-semantic value.
+def remove_kind(o):
+ if isinstance(o,dict):
+  if 'follow-up-priority' in o: del o['follow-up-priority'];return True
+  for value in o.values():
+   if remove_kind(value):return True
+ return False
+assert remove_kind(after);assert before==after;out.append('questions.json: removing follow-up-priority yields an identical parsed catalog; no existing kind, transport, pin or threshold changed.')
+changed=command(['git','diff','--name-only',base,head]).stdout.splitlines()
+allowed={'.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/follow-up.md','skills/roundfix/SKILL.md'}
+governed=[f for f in changed if f.startswith('.agents/skills/') or f=='skills/roundfix/SKILL.md'];assert set(governed)<=allowed
+out.append('Governed mutations exactly bounded: '+repr(governed)+'. Mechanical authorization audit lists task_01. Grant is at the Delivery Base, ancestor of task_01; no grant or prerequisite/consequent declaration folded into that commit.')
+for f in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ old=command(['git','show',base+':'+f]).stdout;new=(R/f).read_text();ov=re.findall(r'^version: (.+)$',old,re.M)[0];nv=re.findall(r'^version: (.+)$',new,re.M)[0];assert tuple(map(int,nv.split('.')))>tuple(map(int,ov.split('.')));out.append(f+': version '+ov+' -> '+nv)
+ def settlement(x):return x.split('### QA settlement\n',1)[1].split('\n### ',1)[0].split('\n## ',1)[0]
+ assert settlement(old)==settlement(new)
+out.append('Both QA settlement sections byte-identical. Task 04 Recorded paths explicitly cover follow_up_inventory.go and follow_up_test.go. Earlier Task scope lists each remaining changed file.')
+assert not errors,errors
+(E/'scope-audit.txt').write_text('\n\n'.join(out)+'\n')
+finish('QA-27','pass','git diff-tree inspected every Task commit; all paths declared or Task 04 Recorded paths. All named frozen boundaries byte-identical to Delivery Base. Only follow-up-priority added to question catalog. Three governed changes bounded and grant predated task_01; seeded audit retained. Skill 0.1.134 -> 0.1.135, recorded; QA settlement identical.','scope-audit.txt')

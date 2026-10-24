@@ -1,0 +1,24 @@
+Prior F-01 resolved at audited head a527e2a22c6cc7405c2c3439a89b47254e380419.
+Four glossary terms defined; Command and Priority definitions link ADR-0319. Item and Root make no ADR assertion; no new undefined term identified.
+Canonical and mirrored references byte-identical; exactly one follow-up index row in each skill. No --follow-up or --unattended skill mode described.
+Fresh five-item, empty and status CLI reports agree with documented sources, four classes, type fallback, stop rule, both views and config authority. Config tests verify both keys, warnings and validation.
+Status JSON release example matches actual at-tag release object exactly:
+{
+  "guide_release": {
+    "state": "no_unreleased_changes",
+    "base": "",
+    "proposed_version": "",
+    "changes": [],
+    "reason": null
+  },
+  "actual_release": {
+    "state": "no_unreleased_changes",
+    "base": "",
+    "proposed_version": "",
+    "changes": [],
+    "reason": null
+  }
+}
+List JSON example now shows unavailable with missing-key reason, null model, zero calls and health/type fallback; agrees with fresh operator no-key report.
+Both guide examples intentionally abbreviate sources and git fields as before; examples carry reachable field types and states.
+Glossary contracts, skill mirror/layout/version tests and TestTheSkillCoverageMapIsCurrent pass in task_01-verification.txt.

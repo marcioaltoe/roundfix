@@ -1,0 +1,8 @@
+Command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0306-the-follow-up-command-lists-pending-work-in-priority-order-73a5fd6f4e32ebd7-485860c2-cd20ab8b/run_20261024T021629Z_d8c8c6b842f25f2f/bin/roundfix follow-up --format yaml
+stdout:
+
+stderr:
+roundfix: follow-up failed: unknown --format "yaml"; use text or json
+Run 'roundfix follow-up --help' for usage.
+
+exit: 2

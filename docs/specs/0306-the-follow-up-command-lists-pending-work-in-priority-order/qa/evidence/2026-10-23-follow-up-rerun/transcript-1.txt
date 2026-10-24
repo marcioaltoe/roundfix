@@ -1,0 +1,18 @@
+Command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0306-the-follow-up-command-lists-pending-work-in-priority-order-73a5fd6f4e32ebd7-485860c2-cd20ab8b/run_20261024T021629Z_d8c8c6b842f25f2f/bin/roundfix follow-up --help
+stdout:
+Usage:
+  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+
+List this repository's pending work in Follow-up Priority order, or show its status.
+It is read-only: it never writes a file, commits, pushes or prompts.
+Options:
+  --status    Show work in progress, pending Specs, the next release and blockers
+  --messages  JSON file of ai-memory messages to list with the pending work
+  --format    text (default) or json
+
+Exits 0 for a report, including one with nothing to do; 2 for invalid usage,
+configuration or messages file; 1 for an unreadable Run Database.
+
+stderr:
+
+exit: 0

@@ -1,0 +1,18 @@
+from pathlib import Path
+import os,sys,json,subprocess,re,hashlib,shutil,tempfile
+W=Path(Path('/private/tmp/qa0306-rerun-location').read_text()); S=json.loads((W/'state.json').read_text()); R=Path(S['root']); E=Path(S['evidence']); REPORT=Path(S['report']); SPEC=S['spec']; BIN=R/'bin/roundfix'
+def environment(home=None):
+ e=os.environ.copy()
+ for k in ['ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY','ROUNDFIX_RUN_ID','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_TYPESAFE_JUDGE_API_KEY']: e.pop(k,None)
+ e['HOME']=str(home or W/'home'); e['GIT_CONFIG_GLOBAL']='/dev/null';e['GIT_CONFIG_NOSYSTEM']='1';e['GIT_TERMINAL_PROMPT']='0';e['GOPROXY']='off'
+ for key in ['GOCACHE','GOMODCACHE','GOPATH']:
+  e[key]=subprocess.check_output(['go','env',key],text=True,cwd=R).strip()
+ return e
+def command(args,cwd=R,env=None): return subprocess.run(args,cwd=cwd,env=env or environment(),text=True,capture_output=True)
+def finish(row,status,observation,evidence=None):
+ text=REPORT.read_text();text=re.sub(r'(\| '+re.escape(row)+r' \| )[^|]+',lambda m:m[1]+status+' ',text)
+ start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1);end=len(text) if end<0 else end
+ block=text[start:end];block=block.replace('Observation: pending.','Observation: '+observation+(f' Evidence: [text](evidence/2026-10-23-follow-up-rerun/{evidence}).' if evidence else ''))
+ REPORT.write_text(text[:start]+block+text[end:]);print(row+': '+status+' — '+observation[:230],flush=True)
+def logrun(name,args,cwd=R,env=None):
+ p=command(args,cwd,env);(E/name).write_text('Command: '+(' '.join(args) if isinstance(args,list) else args)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n');return p

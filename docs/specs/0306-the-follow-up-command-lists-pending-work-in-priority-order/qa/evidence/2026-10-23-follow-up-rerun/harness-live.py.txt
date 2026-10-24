@@ -1,0 +1,49 @@
+import sys;sys.path.insert(0,'/private/tmp');from qa0306rerunlib import *
+repo=W/'operator-repo';home=W/'operator-home';brain=W/'operator-brain';fake=W/'fake-bin'
+for p in [repo,home,brain,fake]:p.mkdir()
+(fake/'gh').write_text('#!/bin/sh\nprintf "gh unavailable in QA\\n" >&2\nexit 1\n');(fake/'gh').chmod(0o755)
+e=environment(home);e['PATH']=str(fake)+os.pathsep+e['PATH']
+def git(*args):
+ p=command(['git',*args],repo,e);assert p.returncode==0,p.stderr;return p.stdout
+
+def put(root,name,data):
+ path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(data)
+def snap(*roots):return {str(i)+'/'+str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for i,root in enumerate(roots) for p in root.rglob('*') if p.is_file() and not p.is_symlink()}
+git('init','--initial-branch=main');git('config','user.name','QA');git('config','user.email','qa@example.invalid');git('config','commit.gpgsign','false')
+put(repo,'README.md','# QA fixture\n');git('add','.');git('commit','-m','chore: seed fixture')
+put(home,'.roundfix/config.yml','secondbrain:\n  root: '+json.dumps(str(brain))+'\n  inbox_namespace: widget\n')
+put(brain,'inbox/widget/a-new.md','---\nstatus: pending\ntype-hint: fix\ncreated_at: 2026-10-22\norigin: fluxus\n---\n# New inbox\nINBOX BODY NEVER PRINTED\n')
+put(brain,'inbox/widget/z-old.md','---\nstatus: pending\ntype-hint: fix\ncreated_at: 2026-10-20\norigin: widget\n---\n# Old inbox\nINBOX BODY NEVER PRINTED\n')
+put(brain,'inbox/widget/_triaged/done.md','---\nstatus: pending\ntype-hint: fix\n---\n# Triaged\n')
+put(repo,'docs/backlog/open.md','---\nstatus: open\ntype: feat\ncreated: 2026-10-19\n---\n# Export widget\nBACKLOG BODY NEVER PRINTED\n')
+put(repo,'docs/findings/pending.md','---\nstatus: pending\ncreated_at: 2026-10-18\n---\n# Broken widget\nFINDING BODY NEVER PRINTED\n')
+put(repo,'docs/specs/0001-widget/_prd.md','---\nstatus: active\ncreated: 2026-10-17\n---\n# Widget Spec\n\nFirst paragraph.\n')
+checks=[];raw=[]
+for phase in ['seeded','empty']:
+ if phase=='empty':
+  shutil.rmtree(repo/'docs');shutil.rmtree(brain/'inbox/widget');(brain/'inbox/widget').mkdir();git('add','-A');git('commit','--allow-empty','-m','chore: remove seeds')
+ before=snap(repo,home,brain);status=git('--no-optional-locks','status','--porcelain')
+ for fmt in ['json','text']:
+  p=command([str(BIN),'follow-up','--format',fmt],repo,e);raw.append(f'{phase} ./bin/roundfix follow-up --format {fmt}\nstdout:\n{p.stdout}\nstderr:\n{p.stderr}\nexit: {p.returncode}\n');assert p.returncode==0 and p.stderr=='',raw[-1]
+  assert snap(repo,home,brain)==before,'Input bytes changed';assert git('--no-optional-locks','status','--porcelain')==status,'Git status changed'
+  if fmt=='json':
+   d=json.loads(p.stdout);sources={s['name']:s for s in d['sources']};assert sources['pull-requests']['state']=='unavailable' and 'gh unavailable in QA' in sources['pull-requests']['detail']
+   if phase=='seeded':
+    assert len(d['items'])==5 and [x['title'] for x in d['items']]==['Broken widget','Old inbox','New inbox','Export widget','Widget Spec'];assert [x['priority_name'] for x in d['items']]==['health','health','health','feature','other'];assert d['judge']['calls']==0 and 'is not set' in d['judge']['reason'];assert d['state']=='work_found'
+   else:assert d['items']==[] and d['state']=='nothing_to_do'
+  elif phase=='seeded':assert 'Judge: unavailable:' in p.stdout and 'is not set; ordered by type' in p.stdout and 'BODY NEVER PRINTED' not in p.stdout
+  else:assert 'Nothing to do: no pending item and nothing in progress.\n' in p.stdout
+ checks.append(phase+': repository including .git, temporary home and Secondbrain SHA-256 maps identical; Git porcelain identical; both views exit 0.')
+(E/'operator-flow.txt').write_text('\n'.join(raw+checks)+'\nJudge Key Variables and TYPESAFE_API_KEY unset; ROUNDFIX_RUN_ID unset. Fake gh only. No remotes.\n')
+finish('QA-05','pass','Five seeded items order Broken widget, Old inbox, New inbox, Export widget, Widget Spec; health/health/health/feature/other. No key: zero judge calls; gh unavailable in QA recorded. After seed removal and commit, text says Nothing to do and JSON nothing_to_do. Both phases independently compared every input file hash and Git porcelain before/after both formats; unchanged.','operator-flow.txt')
+# Additional fresh status reads through the public CLI at a release tag and after a feature commit.
+git('tag','v0.1.0');p=command([str(BIN),'follow-up','--status','--format','json'],repo,e);d=json.loads(p.stdout);assert d['release']['state']=='no_unreleased_changes'
+raw=['Status at release tag\n'+p.stdout+p.stderr+'exit: '+str(p.returncode)]
+put(repo,'feature.txt','Feature\n');git('add','.');git('commit','-m','feat: add widget feature')
+for fmt in ['json','text']:
+ before=snap(repo,home,brain);p=command([str(BIN),'follow-up','--status','--format',fmt],repo,e);assert p.returncode==0 and p.stderr=='';assert snap(repo,home,brain)==before
+ raw.append('Status after feature commit format '+fmt+'\n'+p.stdout+p.stderr+'exit: '+str(p.returncode))
+ if fmt=='json':
+  d=json.loads(p.stdout);assert d['release']['state']=='approval_required';assert d['release']['proposed_version']=='v0.2.0';assert d['maintainer'][0]['kind']=='release_approval'
+(E/'operator-status.txt').write_text('\n'.join(raw)+'\nAll input bytes unchanged by each status invocation.\n')
+print('Additional public status journey passed: no unreleased changes -> approval_required v0.2.0.',flush=True)

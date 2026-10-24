@@ -1,0 +1,92 @@
+Command: go test -count=1 -v -run ^TestFollowUp ./internal/judge
+stdout:
+=== RUN   TestFollowUpAsksFourQuestionsInOneRequest
+=== PAUSE TestFollowUpAsksFourQuestionsInOneRequest
+=== RUN   TestFollowUpVerdictsUseTheThresholds
+=== PAUSE TestFollowUpVerdictsUseTheThresholds
+=== RUN   TestFollowUpLogsTheModelOfEachAnswer
+=== PAUSE TestFollowUpLogsTheModelOfEachAnswer
+=== RUN   TestFollowUpNeverSendsASecretShapedItem
+=== PAUSE TestFollowUpNeverSendsASecretShapedItem
+=== RUN   TestFollowUpCutsTextOnARuneBoundary
+=== PAUSE TestFollowUpCutsTextOnARuneBoundary
+=== RUN   TestFollowUpFailsOpen
+=== PAUSE TestFollowUpFailsOpen
+=== RUN   TestFollowUpStopsAtTheItemLimit
+=== PAUSE TestFollowUpStopsAtTheItemLimit
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt
+=== PAUSE TestFollowUpRetriesAndChecksEachAttempt
+=== RUN   TestFollowUpRejectsUnreadableNouls
+=== PAUSE TestFollowUpRejectsUnreadableNouls
+=== CONT  TestFollowUpAsksFourQuestionsInOneRequest
+=== CONT  TestFollowUpFailsOpen
+=== CONT  TestFollowUpRetriesAndChecksEachAttempt
+=== RUN   TestFollowUpFailsOpen/missing_key
+=== CONT  TestFollowUpNeverSendsASecretShapedItem
+=== CONT  TestFollowUpLogsTheModelOfEachAnswer
+=== RUN   TestFollowUpNeverSendsASecretShapedItem/text
+=== CONT  TestFollowUpVerdictsUseTheThresholds
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/429
+=== CONT  TestFollowUpRejectsUnreadableNouls
+=== RUN   TestFollowUpRejectsUnreadableNouls/missing
+=== CONT  TestFollowUpStopsAtTheItemLimit
+=== CONT  TestFollowUpCutsTextOnARuneBoundary
+=== RUN   TestFollowUpFailsOpen/Run
+=== RUN   TestFollowUpNeverSendsASecretShapedItem/title
+=== RUN   TestFollowUpRejectsUnreadableNouls/null
+--- PASS: TestFollowUpCutsTextOnARuneBoundary (0.01s)
+=== RUN   TestFollowUpFailsOpen/ceiling
+--- PASS: TestFollowUpAsksFourQuestionsInOneRequest (0.01s)
+--- PASS: TestFollowUpVerdictsUseTheThresholds (0.01s)
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/529
+--- PASS: TestFollowUpLogsTheModelOfEachAnswer (0.01s)
+=== RUN   TestFollowUpNeverSendsASecretShapedItem/origin
+=== RUN   TestFollowUpRejectsUnreadableNouls/negative
+=== RUN   TestFollowUpFailsOpen/unreadable_log
+=== RUN   TestFollowUpNeverSendsASecretShapedItem/kind
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/ceiling_before_retry
+=== RUN   TestFollowUpRejectsUnreadableNouls/above_one
+=== RUN   TestFollowUpFailsOpen/503
+=== RUN   TestFollowUpNeverSendsASecretShapedItem/type
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/ceiling_before_next_item
+=== RUN   TestFollowUpFailsOpen/outside_pin
+=== RUN   TestFollowUpRejectsUnreadableNouls/wrong_type
+--- PASS: TestFollowUpNeverSendsASecretShapedItem (0.02s)
+    --- PASS: TestFollowUpNeverSendsASecretShapedItem/text (0.01s)
+    --- PASS: TestFollowUpNeverSendsASecretShapedItem/title (0.00s)
+    --- PASS: TestFollowUpNeverSendsASecretShapedItem/origin (0.00s)
+    --- PASS: TestFollowUpNeverSendsASecretShapedItem/kind (0.00s)
+    --- PASS: TestFollowUpNeverSendsASecretShapedItem/type (0.00s)
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/retry_exhausted
+--- PASS: TestFollowUpFailsOpen (0.02s)
+    --- PASS: TestFollowUpFailsOpen/missing_key (0.01s)
+    --- PASS: TestFollowUpFailsOpen/Run (0.00s)
+    --- PASS: TestFollowUpFailsOpen/ceiling (0.00s)
+    --- PASS: TestFollowUpFailsOpen/unreadable_log (0.00s)
+    --- PASS: TestFollowUpFailsOpen/503 (0.00s)
+    --- PASS: TestFollowUpFailsOpen/outside_pin (0.00s)
+=== RUN   TestFollowUpRejectsUnreadableNouls/broken_json
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/key_refused
+--- PASS: TestFollowUpRejectsUnreadableNouls (0.02s)
+    --- PASS: TestFollowUpRejectsUnreadableNouls/missing (0.01s)
+    --- PASS: TestFollowUpRejectsUnreadableNouls/null (0.00s)
+    --- PASS: TestFollowUpRejectsUnreadableNouls/negative (0.00s)
+    --- PASS: TestFollowUpRejectsUnreadableNouls/above_one (0.00s)
+    --- PASS: TestFollowUpRejectsUnreadableNouls/wrong_type (0.00s)
+    --- PASS: TestFollowUpRejectsUnreadableNouls/broken_json (0.00s)
+=== RUN   TestFollowUpRetriesAndChecksEachAttempt/key_redaction
+--- PASS: TestFollowUpRetriesAndChecksEachAttempt (0.02s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/429 (0.01s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/529 (0.00s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/ceiling_before_retry (0.00s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/ceiling_before_next_item (0.00s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/retry_exhausted (0.00s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/key_refused (0.00s)
+    --- PASS: TestFollowUpRetriesAndChecksEachAttempt/key_redaction (0.00s)
+--- PASS: TestFollowUpStopsAtTheItemLimit (0.06s)
+PASS
+ok  	roundfix/internal/judge	0.241s
+
+stderr:
+
+exit: 0

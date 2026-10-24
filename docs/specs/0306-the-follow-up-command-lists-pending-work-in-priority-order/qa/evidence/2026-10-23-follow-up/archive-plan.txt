@@ -1,0 +1,17 @@
+Command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0306-the-follow-up-command-lists-pending-work-in-priority-order-73a5fd6f4e32ebd7-485860c2-cd20ab8b/run_20261024T004042Z_a30dec8c359819a6/bin/roundfix archive 0306-the-follow-up-command-lists-pending-work-in-priority-order --plan --offline
+stdout:
+archive plan for 0306-the-follow-up-command-lists-pending-work-in-priority-order: removes 43 file(s) (277188 bytes) and writes docs/history/specs/0306-the-follow-up-command-lists-pending-work-in-priority-order.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-23.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 31 file(s) (80225 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md 11023 bytes: no advice (offline)
+promotes references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md to docs/references/2026-10-22-follow-up-status-and-unattended-modes-for-the-roundfix-skill.md
+relinks docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/_prd.md: 1 citation(s)
+relinks docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/task_01.md: 1 citation(s)
+relinks docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/task_02.md: 1 citation(s)
+relinks docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/task_03.md: 1 citation(s)
+promote with: roundfix archive 0306-the-follow-up-command-lists-pending-work-in-priority-order --promote <path>
+
+stderr:
+
+exit: 0

@@ -1,0 +1,15 @@
+Audited head: a527e2a22c6cc7405c2c3439a89b47254e380419
+Fresh git archive copy; one isolated sabotage.
+Path: internal/judge/follow_up.go
+Mutation: 3999 ASCII plus ção split at a byte boundary
+Command: go test -count=1 -v -run ^TestFollowUpCutsTextOnARuneBoundary$ ./internal/judge
+=== RUN   TestFollowUpCutsTextOnARuneBoundary
+=== PAUSE TestFollowUpCutsTextOnARuneBoundary
+=== CONT  TestFollowUpCutsTextOnARuneBoundary
+    follow_up_test.go:211: invalid excerpt: runes=4000
+--- FAIL: TestFollowUpCutsTextOnARuneBoundary (0.00s)
+FAIL
+FAIL	roundfix/internal/judge	0.307s
+FAIL
+
+exit: 1

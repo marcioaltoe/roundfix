@@ -1,0 +1,7 @@
+28 unique terminal rows: 24 pass, 3 environment-blocked, 1 declared-blocked. No pending, failed, finding-blocked or skipped row.
+One typed input block per executed row; commit_range on scope and authority/PR rows.
+Daemon auditing_binary, auditor_staleness, authorization audit and mechanical skip retained.
+Every report evidence link resolves; every evidence artifact is text without a NUL in the first 8000 bytes.
+Audited HEAD unchanged; git diff HEAD exit 0; only QA artifacts untracked.
+Outcome is a single paragraph without a trailing colon.
+Built CLI qa-report accept exit 0.

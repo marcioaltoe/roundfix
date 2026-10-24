@@ -1,0 +1,11 @@
+--- a/internal/cli/follow_up_status.go
++++ b/internal/cli/follow_up_status.go
+@@ -91,7 +91,7 @@
+ 	doc.Release = followUpRelease{Changes: []followUpReleaseChange{}}
+ 	releaseSource := followUpSourceResult("release-plan", 1, planErr)
+ 	switch {
+-	case errors.Is(planErr, releaseplan.ErrInvalidReleaseRange):
++	case false && errors.Is(planErr, releaseplan.ErrInvalidReleaseRange):
+ 		doc.Release.State = "no_unreleased_changes"
+ 		releaseSource = followUpSourceResult("release-plan", 0, nil)
+ 	case planErr != nil:

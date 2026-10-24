@@ -1,0 +1,11 @@
+--- a/internal/cli/follow_up_inventory.go
++++ b/internal/cli/follow_up_inventory.go
+@@ -142,7 +142,7 @@
+ 		if fields.Status != "" && fields.Status != "pending" {
+ 			continue
+ 		}
+-		date := fields.CreatedAt
++		date := followUpFilenameDate(entry.Name())
+ 		if date == "" {
+ 			date = followUpFilenameDate(entry.Name())
+ 		}
