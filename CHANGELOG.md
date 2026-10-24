@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.117.0] - 2026-10-24
+
+### `roundfix follow-up` lists pending work in priority order
+
+- **New read-only command `roundfix follow-up [--status] [--messages <path>] [--format <text|json>]`.** It gathers this repository's pending work into one list: pending Secondbrain Inbox Entries of the project's namespace (oldest first), messages the caller hands in as a file, open Backlog Entries and Findings, pending Specs, and the work in progress (active Runs, Delivery Queue items and parks, open Pull Requests through `gh` when available, and git state). Each item names its origin, reference, type, date and what it blocks. With nothing pending and nothing in progress it says so and lists what it checked (JSON `state: nothing_to_do`).
+- **Follow-up Priority.** When a judge key is set, the judge answers four yes/no questions per item (a fix? blocks another project? small? affects production?) after a secret scan, the versioned model id goes to the Judge Log, and code orders the items: unblocking fixes and small items first, then system health, then features, then the rest. Without a key, inside a Run or at the monthly ceiling, nothing is sent and the declared type orders the items; the report says why.
+- **`--status`** shows work in progress, pending Specs in delivery order, the next release from the Release Plan (or "no unreleased changes"), blockers and what waits on the maintainer. It never calls the judge.
+- New User Config keys `secondbrain.root` (User Config only) and `secondbrain.inbox_namespace`. Without them the Secondbrain source is reported missing; the command never fetches, writes or reaches ai-memory.
+- A new `follow-up` command guide, the configuration guide, the glossary and the Roundfix skill reference (skill version 0.1.135) describe it.
+
 ## [0.116.0] - 2026-10-23
 
 ### The documentation contracts cost seconds per active Spec
