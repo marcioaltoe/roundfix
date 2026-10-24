@@ -1,3 +1,0 @@
-PRD Unreachable Acceptance: Success Metric 3.
-Authored status wording: blocked (declared unreachable); recorded with typed declared cause.
-No open Pull Request per Daemon prompt. No CI timing queried. Operator after merge must compare the first pull request Verify docs step.
