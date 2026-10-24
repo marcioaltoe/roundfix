@@ -354,6 +354,17 @@
       ]
     },
     {
+      "id": "command follow-up",
+      "skills": [
+        ".agents/skills/roundfix/references/follow-up.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/follow-up.md",
+        "internal/cli/follow_up.go",
+        "internal/cli/follow_up_inventory.go"
+      ]
+    },
+    {
       "id": "command gc",
       "skills": [
         ".agents/skills/roundfix/references/storage.md"

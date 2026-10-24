@@ -53,6 +53,7 @@ Usage:
   roundfix review dispose <finding-id> --fixed-by <commit>
   roundfix implement --spec <slug>
   roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
+  roundfix follow-up [--messages <path>] [--format <text|json>]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
@@ -107,6 +108,7 @@ Commands:
   review     Run the configured pre-PR reviewer over the current candidate
   implement  Execute a Spec's Task Graph as one Run
   deliver    Advance an ordered queue of Specs from Run to merge
+  follow-up  List pending work in priority order, or show status
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reopen     Return a stale completed QA gate to pending
@@ -240,6 +242,7 @@ type commandEnvironment struct {
 }
 
 type commandDependencies struct {
+	followUpGHRunner                preflight.GHRunner
 	getenv                          func(string) string
 	environ                         func() []string
 	tempDir                         func() string
@@ -320,6 +323,7 @@ func defaultCommandDependencies() commandDependencies {
 		deliveryReadiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
 			return forgeReadiness(ctx, readinessDependenciesForCommand(commandDependenciesForContext(ctx)), loaded)
 		},
+		followUpGHRunner:                preflight.ExecGHRunner{},
 		judgeTransport:                  http.DefaultTransport,
 		judgeNow:                        time.Now,
 		runCommandPreflight:             runCommandPreflight,
@@ -564,6 +568,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+	case "follow-up":
+		return runFollowUpCommand(ctx, args[1:], stdout, stderr, environment)
 	case "deliver":
 		return runDeliverCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
 	case "window":
@@ -5477,6 +5483,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "follow-up":
+		return followUpUsage
 	case "deliver":
 		return deliverUsage
 	case "window":

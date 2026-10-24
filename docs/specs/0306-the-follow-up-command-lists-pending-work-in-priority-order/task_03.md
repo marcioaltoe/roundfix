@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0306-the-follow-up-command-lists-pending-work-in-priority-order
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -178,3 +178,92 @@ view and `--status` come in task_04.
 - ADR-0095
 - ADR-0209
 - ADR-0319
+
+## Result
+
+Implemented the list-view slice: User-Config-only Secondbrain Root with home
+expansion and namespace validation; root dispatch and list-only help; six pending
+item readers; Run, queue, Pull Request and Git readers; one inventory-ordered
+`PrioritizeFollowUp` invocation; ADR-0319 ordering; text and JSON reports; and the
+command's Skill Coverage Map entry. No `--status` support was added.
+
+The worktree already had this Task file modified with `status: in_progress`;
+that status was preserved. No other Task, Task Graph, store, delivery, release
+planner, skill, or existing operational command implementation was changed.
+
+### Acceptance evidence
+
+- Every pending item once: `TestFollowUpListsEveryPendingItemOnce` exercises
+  `runCLI` against temporary repository, home, Secondbrain and messages input.
+  It asserts all six records' kind, reference, type, date, title and requester,
+  created-at inbox order, and exclusion of triaged, terminal, promoted and
+  symlinked records. Additional tests cover repository notes, Unicode message
+  title truncation, queue park classification, merged-item exclusion and Pull
+  Request presentation. Text reports exclude item bodies.
+- Priority and named fallback: `TestFollowUpOrdersItemsByTheFourAnswers`
+  exercises all four classes, small-first and oldest-first ordering, the
+  `0.5` blocks / `0.9` fix case staying in health, and blocks attribution only
+  for yes. The fake asserts inventory request order, namespace, four questions,
+  command-scoped key and direct endpoint. `TestFollowUpOrdersByTypeWithoutTheJudge`
+  covers no key, Run Marker and monthly ceiling, no transport call, named
+  reasons and exit 0. Secret-skip and service-stop cases verify partial results
+  and versioned model IDs on answered Judge Log rows.
+- Stop rule and input bytes: `TestFollowUpSaysNothingToDo` asserts the complete
+  empty text report, its ten ordered sources, JSON state, and an active Run
+  changing state to work_found. `TestFollowUpWritesNothing` compares every
+  repository, Secondbrain and Roundfix Home file before/after text and JSON,
+  with a dirty tracked file and seeded Run/queue. The live-WAL regression also
+  compares all three input trees after both text and JSON reports, with no
+  exclusions. Both comparisons pass. Git inspection disables optional index
+  refresh. Idle databases use the existing immutable storage reader.
+- User Config authority: all four required config tests pass. They assert
+  absolute, `~/` and `~` roots, the exact ignored-project warning with the root
+  remaining empty, all four invalid values and exact diagnostics, and Project
+  namespace precedence while the User root remains authoritative.
+
+### Verification feedback repair
+
+Inspected the supplied `batch-003-attempt-1.log`. Its failure was the live-WAL
+byte regression: opening the operator's live database with SQLite's existing
+read-only connection changed SHM coordination bytes. The regression was
+reproduced before repair and retained with all input files in its comparison.
+
+The Follow-up reader now takes a private temporary database/WAL snapshot under
+the existing Run Database writer lock, then queries that copy through
+`openRunsListReader`. The lock file is opened without creation or write access;
+the cross-platform CLI lock primitive uses the same flock / Windows byte-range
+lock as the Store. WAL is copied before the database, SHM is never copied, and
+SQLite rebuilds its coordination state only in the private temporary directory.
+The copy checks cancellation between chunks, preserves private file permissions,
+and is removed on close or error. Cleanup errors propagate to the command.
+The repository, Secondbrain, operator's database, WAL, SHM and lock bytes remain
+unchanged. No `internal/store` change or SHM exception is required; the earlier
+clarification is no longer needed.
+
+`TestFollowUpSnapshotKeepsCommittedWALAndCleansUp` proves the snapshot contains
+committed WAL records, stays at its captured state across later source commits,
+is removed on close, and lets a fresh report observe the later commits.
+`TestFollowUpSnapshotHonorsCancellation` checks cancellation and unchanged source
+bytes. The live byte regression remains enabled and passes.
+
+### Focused checks
+
+- `go test ./internal/cli -run '^TestFollowUp' -count=1`: exit 0 after the final
+  reader/cleanup edits. Includes all required list tests, the original live-WAL
+  regression, snapshot isolation/cleanup and cancellation.
+- `go test ./internal/config -run 'Secondbrain|TheInboxNamespace' -count=1`:
+  exit 0 in the repair turn; all four required config tests are included.
+- `git diff --check`: exit 0.
+- Final source regeneration:
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  exit 0 after the repair's final source edits. The record was generated, never
+  hand-edited. The repair changed no public command or config-key fingerprint.
+
+The Agent did not rerun declared Task Verification, Windows vet, repository
+Verification or incremental Verification. The Daemon owns their next run and
+Task settlement. No commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261024T004042Z_a30dec8c359819a6`
+- Source commit: `11766bb2b0d8189648d2f9c3e1c7f2e72dc555a6`
