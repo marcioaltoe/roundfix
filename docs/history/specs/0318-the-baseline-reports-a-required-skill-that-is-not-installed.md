@@ -18,6 +18,7 @@ sources:
   - 2026-10-25-the-baseline-update-preview-reports-current-while-a-required-skill-is-missing.md
 regeneration: []
 promoted: []
+pull_request: "672"
 ---
 
 # The Baseline reports a required skill that is not installed
