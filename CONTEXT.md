@@ -821,6 +821,10 @@ _Avoid_: Merged setup, custom setup
 A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it ([ADR-0246](docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md)).
 _Avoid_: Deprecated skill, obsolete skill
 
+**Missing Required Skill**:
+An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`, or no longer matches its lock entry. The `roundfix baseline update` preview lists it under `skills.missing` with its restore command and reports `plan_ready` instead of `current`; `roundfix doctor` and `roundfix skills check` fail on it.
+_Avoid_: Uninstalled skill, absent skill, dispatched skill gap
+
 **Park Class**:
 The named reason a Delivery Queue item is parked — for example a prerequisite not yet merged, a pull request conflict, an environment-only QA partial or a check that failed twice outside the item's packages — shown with the next command that answers it ([ADR-0192](docs/adr/0192-a-conflict-confined-to-declared-derived-paths-is-resolved-by-regeneration.md), [ADR-0193](docs/adr/0193-a-spec-names-its-prerequisites-and-the-owner-waits-for-them.md)).
 _Avoid_: Blocker text, error code
