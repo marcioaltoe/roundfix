@@ -4,7 +4,7 @@ description: Work with project documentation and the central knowledge repositor
 metadata:
   category: setup
   tags: [workflow, documentation, git, repository-context, second-brain]
-  version: 0.5.0
+  version: 0.6.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -25,11 +25,11 @@ Documentation (`CONTEXT.md`, `docs/` — specs, ADRs, task files, review artifac
 
 ## The export contract
 
-| File in the code repo | Purpose |
-| --- | --- |
-| `.secondbrain-project` | Exactly the project name — the key under `projects/` and in the secondbrain registry |
-| `.secondbrain-export` | What the repo publishes: one path per line, directories recursive, `!pattern` lines are excludes (rsync/gitignore-like), `#` comments |
-| `.github/workflows/secondbrain-sync.yml` | Caller of secondbrain's reusable sync workflow (org repos) or the standalone variant (personal-account repos) |
+| File in the code repo                    | Purpose                                                                                                                                                                                               |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.secondbrain-project`                   | Exactly the project name — the key under `projects/` and in the secondbrain registry                                                                                                                  |
+| `.secondbrain-export`                    | What the repo publishes: one path per line, directories recursive, `!pattern` lines are excludes (rsync/gitignore-like), `#` comments                                                                 |
+| `.github/workflows/secondbrain-sync.yml` | Standalone sync workflow, copied from secondbrain's `templates/repo/secondbrain-sync.yml` — the same file for every repo and owner, because a private personal repo cannot expose a reusable workflow |
 
 Only committed files can be exported (the sync reads a checkout of the merged commit), and symlinks are rejected. When adding a new exported artifact (e.g. an OpenAPI file), update `.secondbrain-export` in the same PR.
 
@@ -39,18 +39,20 @@ Follow `templates/repo/` and the README in secondbrain: register in `registry/pr
 
 ## The second brain (wiki)
 
-On top of the record, secondbrain hosts a Karpathy-style LLM wiki. The authoritative contract is **secondbrain's own `AGENTS.md`** (auto-loaded by sessions in `~/dev/secondbrain`); this section covers what any other session needs:
+On top of the record, secondbrain hosts a Karpathy-style LLM wiki. The authoritative contract is **secondbrain's own `AGENTS.md`** (auto-loaded by sessions in `~/dev/secondbrain`); this section covers what any other session needs. When the `secondbrain` skill (from secondbrain's `brain/skills/`) is installed, it is the detailed operating guide for consulting, ingesting, and messaging; this skill owns the documentation and mirror contract.
 
 - **Consulting** (research for implementation or planning, from any repo): start with `~/dev/secondbrain/wiki/index.md`, or search everything — wiki, ingested sources, shared standards, and all project mirrors — with qmd:
 
   ```bash
   qmd query "pergunta em linguagem natural"          # hybrid + rerank, best
-  qmd search "keywords" -c wiki                      # scoped: wiki|raw|shared|projects
+  qmd search "keywords" -c wiki                      # scoped: wiki|raw|shared|projects|areas|fiscal
   qmd query "..." --all --files --min-score 0.3      # agent-friendly output
+  qmd query "..." -c leis                            # statutory text; opt-in, never in unscoped searches
   ```
 
-- **Feeding**: when a session produces research worth keeping (a comparison, an analysis, a decision rationale), offer to file it into the brain — in a session at `~/dev/secondbrain`, following its AGENTS.md ingest/filing rules. Web content, emails (Gmail connector) and Meet transcripts (Drive connector) are ingested into `raw/` there, never into code repos.
-- **Territories**: `wiki/` is written by the LLM; `raw/` is immutable once filed; mirrors stay read-only as always.
+- **Feeding business knowledge**: when a session outside secondbrain produces knowledge worth keeping (a comparison, an analysis, a decision rationale), capture it through the **research inbox**: run a `qmd query` duplicate check, then create `~/dev/secondbrain/inbox/secondbrain/YYYY-MM-DD-<slug>.md` from `templates/inbox-entry.md` (contract in `inbox/README.md`; `destination: secondbrain`) and follow the current session's commit and push authority. Ingestion into `raw/` and `wiki/` happens later, in a session at `~/dev/secondbrain`, following its AGENTS.md Ingest operation.
+- **Project coordination and continuity**: load `ai-memory-messaging` and use `memory_message_send` to send requests or reports to another project's inbox. Verify the recipient's existing workspace and project names, and include explicit sender scope for static MCP clients. Use `ai-memory-handoff` for same-project next-session context and `ai-memory-retrieval` for operational history. Keep cross-project requests out of the Secondbrain inbox; a durable wiki page is not a delivered message.
+- **Territories**: `inbox/` is the one create-only carve-out for outside sessions; `wiki/` is written by the LLM; `raw/` is immutable once filed; `projects/<p>/notes/`, `shared/`, and `areas/` (continuous life areas) are editorial; mirrors stay read-only as always.
 
 ## Anti-patterns
 

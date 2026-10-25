@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0317-the-baseline-sends-handoffs-and-messages-through-ai-memory
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -141,3 +141,95 @@ Feature 1; ADR-0330).
 - `_prd.md` → Goals 1-2; Core Feature 1; Success Metrics 1 and 5; User Story 1
 - `_techspec.md` → Current behavior 1-3 and 8; Data Model 1; API Contracts 1-2; Invariants 1 and 6; Testing Approach; Build Order 1
 - ADR-0330
+
+
+## Result
+
+Implemented the upstream setup migration and the core skill swap for this
+Task's slice. Task status is unchanged; declared Verification and repository
+Verification remain Daemon-owned.
+
+### Implementation and acceptance evidence
+
+1. Every upstream snapshot follows the ai-memory revision:
+   - Before any write, the local `~/dev/skills` commit check
+     `git -C /Users/marcio/dev/skills cat-file -e 65d5f365cace27c4b468db1723213723b10c870b^{commit}`
+     exited 0. The starting catalog still required/dispatched `handoff` and
+     lacked the six ai-memory entries.
+   - Fetched that commit from the local checkout into an empty temporary
+     repository, checked it out detached and added its provenance remote
+     without contacting that remote. Built the binary under the Run's
+     environment; each binary invocation used a fresh temporary `HOME`.
+   - Asset sync exited 0 and reported exactly four
+     `skills.setup-snapshot.updated` findings; the immediately following
+     `--check` exited 0 with `setup-context-driven audit: ok`.
+   - Applied the exact API Contract 1 parity transform through a temporary
+     copy, excluding composed snapshots; `make baseline-digests` exited 0
+     and reported `baseline-digests: regenerated`. No generated digest,
+     snapshot or golden was edited by hand.
+   - Added `TestEveryUpstreamSetupFollowsTheAiMemoryRevision`: every setup,
+     including the composed setup, contains the six ai-memory skills and
+     excludes `handoff`, `brand-guidelines` and `gws-*`; every GitHub setup
+     and skill pins the declared full revision. Its focused run passed.
+2. Core requires and dispatches the ai-memory skills:
+   - Applied only the Data Model 1 text substitutions to `core.json`,
+     preserving the remaining layout and bytes. Ran
+     `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`;
+     exit 0. The recorder advanced core from version 21 to 22 and wrote the
+     module record.
+   - Added `TestTheCoreModuleDispatchesTheAiMemorySkills`: no module
+     requires or dispatches `handoff`; core requires both new skills with
+     their exact trigger IDs and the MCP-availability suffix. Its focused
+     run passed. Both new top-level tests call `t.Parallel()` first.
+   - The sole existing-test edit moves the upstream rename fixture from
+     `handoff` → `handoff-next` to `ai-memory-handoff` →
+     `ai-memory-handoff-next`, including its module, directory, list and
+     messages. The focused rename/refusal cases passed.
+3. Repository skills and idempotent refresh:
+   - Rebuilt the binary after sync/regeneration and ran the prescribed
+     managed refresh twice. Both exited 0; the first changed only
+     `docs/agents/setup-context.json` and `docs/agents/skill-dispatch.md`,
+     and the second reported `File changes: 0` and `Idempotence: verified`.
+     Both retained the two reported nested instruction carriers unchanged.
+   - Reviewed the twelve-skill restoration preview (expected exit 3), then
+     confirmed plan
+     `c4ccee9bc42e0d93b0e56c7c26652c91cf060b1f6d2a15098b5e3434f9365a20`;
+     exit 0, `restore.completed`. All skill bytes and lock entries came
+     from the sanctioned restore.
+   - Reviewed the reconciliation preview (expected exit 3), which listed
+     only `remove-lock-entry skills-lock.json [handoff]`, then confirmed
+     plan `76a7e63c2c96477b10e5b8268d4b618c1f42dd390be2aca1086530e128b2d876`;
+     exit 0, `reconcile.completed`. Ran the prescribed
+     `git rm -r .agents/skills/handoff` and derived `skills/recommended.txt`
+     with `jq -r '.skills | keys[]' skills-lock.json`.
+   - Focused snapshot-agreement, installed-required-skill and recommended
+     list checks passed. A read-only postflight confirmed no retired tree
+     or lock entry and exact sorted recommended-list equality.
+
+### Focused checks
+
+- `go test ./internal/baseline -run '^(TestEveryUpstreamSetupFollowsTheAiMemoryRevision|TestTheCoreModuleDispatchesTheAiMemorySkills|TestAssetSync.*Rename.*|TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift|TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot)$' -count=1`
+  — exit 0 (`ok roundfix/internal/baseline`).
+- `go test ./skills -run '^TestRecommended(SkillsMatchLock|ListsExternallyManagedSkills)$' -count=1`
+  — exit 0 (`ok roundfix/skills`).
+- `git diff --check` — exit 0. Changed-path audit included staged,
+  unstaged and untracked files: 47 paths, zero outside this Task's exact
+  declared interfaces/creates/deletes plus this Task file.
+
+### Execution limits and follow-ups
+
+The configured sandbox refused process creation because its writable root
+contains a symlink, even with the resolved checkout as the working directory.
+Authorized commands ran through approved escalated execution. No network
+remote was fetched, no real Roundfix home or Secondbrain was read or written,
+and no ai-memory or provider call was made.
+
+No follow-up implementation was added. No other Task file or Task Graph
+manifest was edited. No commit, push or pull request was created. The two
+retired handoff files are staged deletions because the Spec explicitly
+requires `git rm`; other edits remain unstaged/untracked for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T133232Z_0a2b2319e6c91868`
+- Source commit: `e0f0bb0a49de0ffffe5156367a22373aacf21a9a`

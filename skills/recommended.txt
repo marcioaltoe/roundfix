@@ -1,4 +1,10 @@
 agentic-cli-design
+ai-memory-durable-pages
+ai-memory-handoff
+ai-memory-learning-maintenance
+ai-memory-messaging
+ai-memory-retrieval
+ai-memory-routing-install
 bubbletea
 coding-guidelines
 context7-cli
@@ -18,7 +24,6 @@ golang-structs-interfaces
 golang-testing
 grill-with-docs
 grilling
-handoff
 knowledge-workspace
 no-workarounds
 systematic-debugging

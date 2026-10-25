@@ -1,12 +1,14 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 21,
+  "version": 22,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
   "conflictsWith": [],
   "requiredSkills": [
+    "ai-memory-handoff",
+    "ai-memory-messaging",
     "coding-guidelines",
     "context7-cli",
     "conventional-commits",
@@ -14,7 +16,6 @@
     "evidence-gate",
     "exa-web-search",
     "github-pr-workflow",
-    "handoff",
     "no-workarounds",
     "systematic-debugging",
     "tech-writer",
@@ -22,6 +23,24 @@
     "typesafe-ai"
   ],
   "skillDispatch": [
+    {
+      "skill": "ai-memory-handoff",
+      "triggers": [
+        {
+          "id": "trigger.core.ai-memory-handoff",
+          "when": "Recording resumable session state for another Agent or maintainer, or resuming from one, when the session exposes the ai-memory MCP tools."
+        }
+      ]
+    },
+    {
+      "skill": "ai-memory-messaging",
+      "triggers": [
+        {
+          "id": "trigger.core.ai-memory-messaging",
+          "when": "Sending a finding or request to another project, or reading and consuming this project's messages, when the session exposes the ai-memory MCP tools."
+        }
+      ]
+    },
     {
       "skill": "coding-guidelines",
       "triggers": [
@@ -82,15 +101,6 @@
         {
           "id": "trigger.core.github-pr-workflow",
           "when": "Preparing, opening, updating, or handing off a pull request."
-        }
-      ]
-    },
-    {
-      "skill": "handoff",
-      "triggers": [
-        {
-          "id": "trigger.core.handoff",
-          "when": "Recording resumable session state for another Agent or maintainer."
         }
       ]
     },

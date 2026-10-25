@@ -31,15 +31,15 @@ func TestAssetSyncFollowsASkillRenamedUpstream(t *testing.T) {
 	for id, snapshot := range snapshots {
 		found := false
 		for _, skill := range snapshot.Skills {
-			if skill.Name == "handoff" {
-				t.Fatalf("%s retains handoff", id)
+			if skill.Name == "ai-memory-handoff" {
+				t.Fatalf("%s retains ai-memory-handoff", id)
 			}
-			if skill.Name == "handoff-next" {
+			if skill.Name == "ai-memory-handoff-next" {
 				found = true
 			}
 		}
 		if !found {
-			t.Fatalf("%s lacks handoff-next", id)
+			t.Fatalf("%s lacks ai-memory-handoff-next", id)
 		}
 	}
 }
@@ -108,10 +108,10 @@ func renameAssetsSyncTargetSkill(t *testing.T, root string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `"handoff"`) {
-		t.Fatal("core lacks handoff")
+	if !strings.Contains(string(data), `"ai-memory-handoff"`) {
+		t.Fatal("core lacks ai-memory-handoff")
 	}
-	if err := os.WriteFile(filename, []byte(strings.ReplaceAll(string(data), `"handoff"`, `"handoff-next"`)), 0o644); err != nil {
+	if err := os.WriteFile(filename, []byte(strings.ReplaceAll(string(data), `"ai-memory-handoff"`, `"ai-memory-handoff-next"`)), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -119,7 +119,7 @@ func renameAssetsSyncTargetSkill(t *testing.T, root string) {
 func renameAssetsSyncSourceSkill(t *testing.T, source string) {
 	t.Helper()
 	checkout := filepath.Dir(source)
-	if err := os.Rename(filepath.Join(checkout, "skills", "07-evidence-delivery", "handoff"), filepath.Join(checkout, "skills", "07-evidence-delivery", "handoff-next")); err != nil {
+	if err := os.Rename(filepath.Join(checkout, "skills", "07-evidence-delivery", "ai-memory-handoff"), filepath.Join(checkout, "skills", "07-evidence-delivery", "ai-memory-handoff-next")); err != nil {
 		t.Fatal(err)
 	}
 	lists, err := filepath.Glob(filepath.Join(source, "*.txt"))
@@ -131,12 +131,12 @@ func renameAssetsSyncSourceSkill(t *testing.T, source string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filename, []byte(strings.ReplaceAll(string(data), "/handoff\n", "/handoff-next\n")), 0o644); err != nil {
+		if err := os.WriteFile(filename, []byte(strings.ReplaceAll(string(data), "/ai-memory-handoff\n", "/ai-memory-handoff-next\n")), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
 	runAssetsSyncGit(t, checkout, "add", ".")
-	runAssetsSyncGit(t, checkout, "commit", "--quiet", "-m", "rename handoff upstream")
+	runAssetsSyncGit(t, checkout, "commit", "--quiet", "-m", "rename ai-memory-handoff upstream")
 }
 
 func assertAssetsSyncRenameRefusal(t *testing.T, repo, root, source string, check bool, message, action string) {
