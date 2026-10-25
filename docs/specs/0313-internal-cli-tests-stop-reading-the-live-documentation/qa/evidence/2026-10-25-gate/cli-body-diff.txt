@@ -1,0 +1,1551 @@
+COMMAND: git diff 6233ab690c9b60fd872d6141ce1974088087e63b 5807780c7cea58c41515a1e9af80b02f82175dca -- internal/cli
+diff --git a/internal/cli/baseline_documentation_contract_test.go b/internal/cli/baseline_documentation_contract_test.go
+index ec806244..2ec151a2 100644
+--- a/internal/cli/baseline_documentation_contract_test.go
++++ b/internal/cli/baseline_documentation_contract_test.go
+@@ -3,12 +3,8 @@ package cli
+ import (
+ 	"bytes"
+ 	"fmt"
+-	"os"
+-	"path/filepath"
+ 	"strings"
+ 	"testing"
+-
+-	"roundfix/internal/mdtree"
+ )
+ 
+ // Suite: Baseline public documentation contract
+@@ -16,44 +12,6 @@ import (
+ // Boundary IN: CLI help, public guides, README, and canonical public skill recipes.
+ // Boundary OUT: real repository adoption journeys and Python-runtime removal.
+ 
+-func TestBaselineExamplesParse(t *testing.T) {
+-	t.Parallel()
+-	root := baselineDocumentationRepoRoot()
+-	paths := []string{
+-		filepath.Join(root, "README.md"),
+-		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
+-		filepath.Join(root, ".agents", "skills", "setup-context-driven", "SKILL.md"),
+-		filepath.Join(root, ".agents/skills/roundfix/SKILL.md"),
+-	}
+-
+-	temporaryRepo := t.TempDir()
+-	if err := os.Mkdir(filepath.Join(temporaryRepo, ".git"), 0o755); err != nil {
+-		t.Fatalf("create documentation-test Git marker: %v", err)
+-	}
+-	exampleCount := 0
+-	profileCounter := 0
+-	for _, path := range paths {
+-		content := readBaselineDocumentation(t, path)
+-		for _, command := range baselineBashExamples(content) {
+-			exampleCount++
+-			args := strings.Fields(command)
+-			if len(args) < 2 || args[0] != "roundfix" || args[1] != "baseline" {
+-				t.Fatalf("%s: invalid Baseline command example %q", path, command)
+-			}
+-			if len(args) >= 4 && args[2] == "profile" && args[3] == "init" {
+-				profileCounter++
+-				args = normalizeBaselineProfileInitExample(args, profileCounter)
+-			}
+-			if err := parsePublishedBaselineExample(args[2:], temporaryRepo); err != nil {
+-				t.Fatalf("%s: command example %q does not parse: %v", path, command, err)
+-			}
+-		}
+-	}
+-	if exampleCount < 20 {
+-		t.Fatalf("parsed %d Baseline examples, want at least 20 public recipes", exampleCount)
+-	}
+-}
+-
+ func TestBaselineSkillsReconcileExampleParses(t *testing.T) {
+ 	t.Parallel()
+ 	err := parsePublishedBaselineExample([]string{
+@@ -108,65 +66,6 @@ func parsePublishedBaselineExample(args []string, workDir string) error {
+ 	}
+ }
+ 
+-func normalizeBaselineProfileInitExample(args []string, sequence int) []string {
+-	normalized := append([]string(nil), args...)
+-	for index := 0; index+1 < len(normalized); index++ {
+-		switch normalized[index] {
+-		case "--id":
+-			normalized[index+1] = fmt.Sprintf("documentation-profile-%d", sequence)
+-		case "--from":
+-			if strings.HasPrefix(normalized[index+1], "<") {
+-				normalized[index+1] = "go-cli-tui"
+-			}
+-		}
+-	}
+-	return normalized
+-}
+-
+-func baselineBashExamples(content string) []string {
+-	var examples []string
+-	inBash := false
+-	for _, line := range strings.Split(content, "\n") {
+-		trimmed := strings.TrimSpace(line)
+-		if trimmed == "```bash" {
+-			inBash = true
+-			continue
+-		}
+-		if trimmed == "```" {
+-			inBash = false
+-			continue
+-		}
+-		if inBash && (trimmed == "roundfix baseline" || strings.HasPrefix(trimmed, "roundfix baseline ")) {
+-			examples = append(examples, trimmed)
+-		}
+-	}
+-	return examples
+-}
+-
+-func baselineDocumentationRepoRoot() string {
+-	root, err := filepath.Abs(filepath.Join("..", ".."))
+-	if err != nil {
+-		return filepath.Clean(filepath.Join("..", ".."))
+-	}
+-	return root
+-}
+-
+-func readBaselineDocumentation(t *testing.T, path string) string {
+-	t.Helper()
+-	if filepath.Base(path) == "SKILL.md" && filepath.Base(filepath.Dir(path)) == "roundfix" {
+-		text, err := mdtree.Text(os.DirFS(filepath.Dir(path)), "SKILL.md", "references")
+-		if err != nil {
+-			t.Fatalf("read %s: %v", path, err)
+-		}
+-		return text
+-	}
+-	content, err := os.ReadFile(path)
+-	if err != nil {
+-		t.Fatalf("read %s: %v", path, err)
+-	}
+-	return string(content)
+-}
+-
+ func assertBaselineDocumentationContains(t *testing.T, label string, content string, snippets []string) {
+ 	t.Helper()
+ 	for _, snippet := range snippets {
+@@ -205,35 +104,3 @@ func markdownFenceContent(t *testing.T, content string) string {
+ 	}
+ 	return strings.TrimSpace(content[:end])
+ }
+-
+-// TestProjectConstraintPlanningExamplesParse keeps the parser-level half of
+-// the project-constraint documentation contract beside the parsers it needs:
+-// the string contracts on the same two documents live in
+-// internal/docscontract.
+-func TestProjectConstraintPlanningExamplesParse(t *testing.T) {
+-	t.Parallel()
+-	root := baselineDocumentationRepoRoot()
+-	guide := readBaselineDocumentation(t, filepath.Join(
+-		root, "docs", "user-guide", "context-driven-development.md",
+-	))
+-	skill := readBaselineDocumentation(t, filepath.Join(
+-		root, ".agents", "skills", "setup-context-driven", "SKILL.md",
+-	))
+-	parsedPlanningExamples := 0
+-	for _, content := range []string{guide, skill} {
+-		for _, command := range baselineBashExamples(content) {
+-			if !strings.Contains(command, "baseline plan") ||
+-				!strings.Contains(command, "--decision-file") {
+-				continue
+-			}
+-			args := strings.Fields(command)
+-			if err := parsePublishedBaselineExample(args[2:], ""); err != nil {
+-				t.Fatalf("project-decision command %q does not parse: %v", command, err)
+-			}
+-			parsedPlanningExamples++
+-		}
+-	}
+-	if parsedPlanningExamples < 2 {
+-		t.Fatalf("parsed project-decision planning examples = %d, want at least 2", parsedPlanningExamples)
+-	}
+-}
+diff --git a/internal/cli/baseline_http_default_statement_test.go b/internal/cli/baseline_http_default_statement_test.go
+index d08f2b87..badd9e03 100644
+--- a/internal/cli/baseline_http_default_statement_test.go
++++ b/internal/cli/baseline_http_default_statement_test.go
+@@ -6,14 +6,10 @@
+ package cli
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+-	"path/filepath"
+ 	"reflect"
+ 	"strings"
+ 	"testing"
+-
+-	"roundfix/internal/baseline"
+ )
+ 
+ type httpDefaultStatement struct{ source, text, format string }
+@@ -34,42 +30,6 @@ func httpDefaultStatementFindings(mode string, modes []string, statements []http
+ 	return findings
+ }
+ 
+-func TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault(t *testing.T) {
+-	t.Parallel()
+-	catalog, err := baseline.LoadEmbeddedCatalog()
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	entry, ok := catalog.Decision("http.contract")
+-	if !ok {
+-		t.Fatal("HTTP decision is absent")
+-	}
+-	var decision struct {
+-		Default struct {
+-			Mode string `json:"mode"`
+-		} `json:"default"`
+-		Modes []string `json:"modes"`
+-	}
+-	if err := json.Unmarshal(entry.Data, &decision); err != nil {
+-		t.Fatal(err)
+-	}
+-	if decision.Default.Mode == "" || len(decision.Modes) == 0 {
+-		t.Fatal("HTTP decision has no default or modes")
+-	}
+-	contract, ok := catalog.Asset("contract-v1.json")
+-	if !ok {
+-		t.Fatal("Baseline contract is absent")
+-	}
+-	guide := readBaselineDocumentation(t, filepath.Join(baselineDocumentationRepoRoot(), "docs/user-guide/context-driven-development.md"))
+-	statements := []httpDefaultStatement{
+-		{"contract-v1.json", string(contract.Data), "the interactive workflow suggests %s until"},
+-		{"context-driven-development.md", guide, "| HTTP contract | `%s` |"},
+-	}
+-	if findings := httpDefaultStatementFindings(decision.Default.Mode, decision.Modes, statements); len(findings) != 0 {
+-		t.Fatalf("HTTP statement findings: %v", findings)
+-	}
+-}
+-
+ func TestAStatementThatNamesAnotherHTTPDefaultIsReported(t *testing.T) {
+ 	t.Parallel()
+ 	statements := []httpDefaultStatement{
+diff --git a/internal/cli/baseline_update_repository_profile_test.go b/internal/cli/baseline_update_repository_profile_test.go
+index b7a56839..2dc8f916 100644
+--- a/internal/cli/baseline_update_repository_profile_test.go
++++ b/internal/cli/baseline_update_repository_profile_test.go
+@@ -6,151 +6,14 @@ package cli
+ 
+ import (
+ 	"bytes"
+-	"context"
+-	"encoding/json"
+-	"fmt"
+-	"os"
+ 	"path/filepath"
+-	"slices"
+-	"strings"
+ 	"testing"
+ 
+ 	"roundfix/internal/baseline"
+-	"roundfix/skills"
+ )
+ 
+ const baselineRepositoryProfileTestID = "repository-go-cli-tui"
+ 
+-func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
+-	t.Parallel()
+-	for _, copied := range []bool{true, false} {
+-		t.Run(fmt.Sprintf("copied skills=%t", copied), func(t *testing.T) {
+-			root := newBaselineRepositoryProfileFixture(t, copied)
+-			before := baselinePlanTestTree(t, root)
+-			out, stderr, code := runRepositoryProfileCommand(t, "baseline", "update", "--repo", root, "--format", "json")
+-			var result baselineUpdateResult
+-			if err := json.Unmarshal([]byte(out), &result); err != nil {
+-				t.Fatal(err)
+-			}
+-			if code != exitOK || stderr != "" || result.State != "current" {
+-				t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
+-			}
+-			out, stderr, code = runRepositoryProfileCommand(t, "baseline", "update", "--repo", root, "--format", "text")
+-			const prefix = "Baseline update: current\nResult: the repository already matches the current Baseline catalog\n"
+-			if code != exitOK || stderr != "" || !strings.HasPrefix(out, prefix) {
+-				t.Fatalf("Surface Transcript 1: exit=%d stdout=%s stderr=%s", code, out, stderr)
+-			}
+-			if before != baselinePlanTestTree(t, root) {
+-				t.Fatal("current update changed repository bytes")
+-			}
+-		})
+-	}
+-}
+-
+-func TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile(t *testing.T) {
+-	t.Parallel()
+-	root := newBaselineRepositoryProfileFixture(t, true)
+-	editRepositoryProfileTestSkill(t, root)
+-	before := baselinePlanTestTree(t, root)
+-	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "update", "--repo", root, "--format", "json")
+-	var result baselineUpdateResult
+-	if err := json.Unmarshal([]byte(out), &result); err != nil {
+-		t.Fatal(err)
+-	}
+-	if code != exitOK || stderr != "" || result.State != "current" {
+-		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
+-	}
+-	found := false
+-	for _, difference := range result.Skills.Differing {
+-		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile "+baselineRepositoryProfileTestID+" --skill testing-boss" {
+-			found = true
+-		}
+-	}
+-	if !found || len(result.Skills.Drifted) != 0 {
+-		t.Fatalf("differing skill absent from preview: %s", out)
+-	}
+-	if before != baselinePlanTestTree(t, root) {
+-		t.Fatal("preview changed repository bytes")
+-	}
+-}
+-
+-func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testing.T) {
+-	t.Parallel()
+-	root := newBaselineRepositoryProfileFixture(t, true)
+-	editRepositoryProfileTestSkill(t, root)
+-	// Force the real install to replace every owned skill, rather than just report them.
+-	for _, name := range skills.Names() {
+-		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
+-			t.Fatal(err)
+-		}
+-	}
+-	beforeSkill := mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))
+-	result, err := runBaselineUpdateSkillsStageWith(t.Context(), baselineUpdateSkillsRequest{
+-		Repository: root, ProfileID: baselineRepositoryProfileTestID,
+-	}, baselineUpdateSkillsDependencies{
+-		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
+-		install:             skills.Install,
+-		ownedNames:          skills.Names,
+-		resolveExternal:     resolveExternalSkillRequirement,
+-		checkRepository:     skills.CheckRepositoryWithExternal,
+-		snapshotDifferences: baseline.SetupSnapshotDifferences,
+-		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
+-			t.Fatalf("restore called for a lock-matching difference: %+v", request)
+-			return baseline.SkillsRestorePayload{}, nil
+-		},
+-	})
+-	wantInstalled := slices.Clone(skills.Names())
+-	slices.Sort(wantInstalled)
+-	if err != nil || result.Status != baselineUpdateSkillsVerified ||
+-		result.InstalledCount != len(wantInstalled) || !slices.Equal(result.Installed, wantInstalled) ||
+-		len(result.Restored) != 0 || len(result.Differing) != 1 || result.Differing[0].Skill != "testing-boss" || len(result.Drifted) != 0 {
+-		t.Fatalf("result=%+v err=%v", result, err)
+-	}
+-	if !bytes.Equal(beforeSkill, mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))) {
+-		t.Fatal("skills refresh changed the differing skill's bytes")
+-	}
+-	readiness, err := skills.CheckRepository(t.Context(), root)
+-	if err != nil || !readiness.Ready() {
+-		t.Fatalf("owned install readiness=%+v err=%v", readiness, err)
+-	}
+-}
+-
+-func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
+-	t.Parallel()
+-	root := newBaselineRepositoryProfileFixture(t, true)
+-	editRepositoryProfileTestSkill(t, root)
+-	before := baselinePlanTestTree(t, root)
+-	result := repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
+-	if result.Status != CheckStatusOK || result.NextAction != "" || !strings.Contains(result.Detail, "DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: testing-boss") ||
+-		strings.Contains(result.Detail, "snapshot comparison unavailable") {
+-		t.Fatalf("Doctor skills=%+v", result)
+-	}
+-	if before != baselinePlanTestTree(t, root) {
+-		t.Fatal("Doctor changed repository bytes")
+-	}
+-	path := filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath))
+-	var manifest map[string]any
+-	if err := json.Unmarshal(mustReadBytes(t, path), &manifest); err != nil {
+-		t.Fatal(err)
+-	}
+-	manifest["profile"] = "missing-profile"
+-	data, err := json.Marshal(manifest)
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	mustWrite(t, path, string(data))
+-	before = baselinePlanTestTree(t, root)
+-	result = repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
+-	if result.Status != CheckStatusOK || !strings.Contains(result.Detail, "snapshot comparison unavailable") ||
+-		!strings.Contains(result.Detail, "neither built-in nor resolvable at .roundfix/baseline/profiles/missing-profile.json") ||
+-		strings.Contains(result.Detail, "built-in Baseline Profile") {
+-		t.Fatalf("Doctor missing-profile skills=%+v", result)
+-	}
+-	if before != baselinePlanTestTree(t, root) {
+-		t.Fatal("unavailable comparison changed repository bytes")
+-	}
+-}
+-
+ func TestBaselineSkillsRestoreNamesTheProfilePath(t *testing.T) {
+ 	t.Parallel()
+ 	root := newBaselineRepositoryProfileFixture(t, false)
+@@ -241,28 +104,3 @@ func runRepositoryProfileCommand(t *testing.T, args ...string) (string, string,
+ 	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
+ 	return stdout.String(), stderr.String(), code
+ }
+-
+-func editRepositoryProfileTestSkill(t *testing.T, root string) {
+-	t.Helper()
+-	path := filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md")
+-	mustWrite(t, path, string(mustReadBytes(t, path))+"\nDifferent upstream installation fixture.\n")
+-	lockPath := filepath.Join(root, "skills-lock.json")
+-	var lock map[string]any
+-	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
+-		t.Fatal(err)
+-	}
+-	hash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	lock["skills"].(map[string]any)["testing-boss"].(map[string]any)["computedHash"] = hash
+-	data, err := json.Marshal(lock)
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	mustWrite(t, lockPath, string(data))
+-	readiness, err := skills.CheckRepositoryWithExternal(t.Context(), root, []string{"testing-boss"})
+-	if err != nil || !readiness.Ready() {
+-		t.Fatalf("edited skill must still match its lock: %+v %v", readiness, err)
+-	}
+-}
+diff --git a/internal/cli/cli_test.go b/internal/cli/cli_test.go
+index f25d4d38..ddb83f63 100644
+--- a/internal/cli/cli_test.go
++++ b/internal/cli/cli_test.go
+@@ -28,7 +28,6 @@ import (
+ 	roundconfig "roundfix/internal/config"
+ 	"roundfix/internal/daemon"
+ 	"roundfix/internal/gittest"
+-	"roundfix/internal/mdtree"
+ 	roundnotify "roundfix/internal/notify"
+ 	"roundfix/internal/preflight"
+ 	"roundfix/internal/reviewsource"
+@@ -1503,41 +1502,6 @@ func TestMigrateHelpDocumentsTheContract(t *testing.T) {
+ 	}
+ }
+ 
+-func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
+-	t.Parallel()
+-	var stdout bytes.Buffer
+-	var stderr bytes.Buffer
+-
+-	code := runCLI(t, []string{"events", "--help"}, &stdout, &stderr)
+-
+-	if code != exitOK {
+-		t.Fatalf("events help exit = %d, want 0 stderr=%q", code, stderr.String())
+-	}
+-	if stderr.String() != "" {
+-		t.Fatalf("events help stderr = %q, want empty", stderr.String())
+-	}
+-	wantCategories := "task-status,batch,verification,outcome,agent-selection"
+-	if !strings.Contains(stdout.String(), wantCategories) {
+-		t.Fatalf("events help missing filter categories %q, got %q", wantCategories, stdout.String())
+-	}
+-
+-	req, err := parseEventsCommand([]string{"run_123", "--filter", "agent-selection"})
+-	if err != nil {
+-		t.Fatalf("parse agent-selection filter: %v", err)
+-	}
+-	if !req.filter.Includes(runevent.StreamCategorySelection) {
+-		t.Fatalf("parsed filter excludes %q: %#v", runevent.StreamCategorySelection, req.filter)
+-	}
+-
+-	guide, err := mdtree.Text(os.DirFS(cliTestRepoRoot(t)), "docs/user-guide/commands.md", "docs/user-guide/commands")
+-	if err != nil {
+-		t.Fatalf("read command reference: %v", err)
+-	}
+-	if !strings.Contains(guide, wantCategories) || !strings.Contains(guide, "`agent-selection`") {
+-		t.Fatalf("user guide does not document agent-selection filter")
+-	}
+-}
+-
+ func cliTestRepoRoot(t *testing.T) string {
+ 	t.Helper()
+ 	dir, err := os.Getwd()
+diff --git a/internal/cli/doctor_trailing_skills_test.go b/internal/cli/doctor_trailing_skills_test.go
+index 03157e11..2305cb40 100644
+--- a/internal/cli/doctor_trailing_skills_test.go
++++ b/internal/cli/doctor_trailing_skills_test.go
+@@ -6,7 +6,6 @@ import (
+ 	"encoding/json"
+ 	"errors"
+ 	"fmt"
+-	"os"
+ 	"path/filepath"
+ 	"reflect"
+ 	"strings"
+@@ -110,97 +109,6 @@ func TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills(t *testing.T
+ 	}
+ }
+ 
+-func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
+-	t.Parallel()
+-	root := newBaselineUpdateRepository(t)
+-	source, err := filepath.Abs("../..")
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	for _, relative := range []string{".agents/skills", "skills-lock.json"} {
+-		copyThisRepositorySkillSetPath(t, filepath.Join(source, relative), filepath.Join(root, relative))
+-	}
+-	// Make the installed tree intentionally different while keeping its lock intact.
+-	path := filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md")
+-	if err := os.WriteFile(path, append(mustReadBytes(t, path), []byte("\nDifferent upstream installation fixture.\n")...), 0o644); err != nil {
+-		t.Fatal(err)
+-	}
+-	lockPath := filepath.Join(root, "skills-lock.json")
+-	var lock map[string]any
+-	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
+-		t.Fatal(err)
+-	}
+-	hash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	lock["skills"].(map[string]any)["testing-boss"].(map[string]any)["computedHash"] = hash
+-	data, err := json.Marshal(lock)
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	if err := os.WriteFile(lockPath, data, 0o644); err != nil {
+-		t.Fatal(err)
+-	}
+-	before := baselinePlanTestTree(t, root)
+-	result, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=json")
+-	if code != exitOK || result.State != "current" || stderr != "" {
+-		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
+-	}
+-	found := false
+-	for _, difference := range result.Skills.Differing {
+-		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss" {
+-			found = true
+-		}
+-	}
+-	if !found || len(result.Skills.Drifted) != 0 {
+-		t.Fatalf("differing skill absent from preview: %s", out)
+-	}
+-	_, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
+-	if code != exitOK || stderr != "" || !strings.Contains(out, "Skills drifted: 0\nSkills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n") {
+-		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
+-	}
+-	if baselinePlanTestTree(t, root) != before {
+-		t.Fatal("preview changed repository bytes")
+-	}
+-	result, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--no-skills", "--format=json")
+-	if code != exitOK || stderr != "" || result.Skills.Differing == nil || len(result.Skills.Differing) != 0 || !strings.Contains(out, `"differing":[]`) {
+-		t.Fatalf("--no-skills exit=%d stdout=%s stderr=%s", code, out, stderr)
+-	}
+-	beforeSkill := mustReadBytes(t, path)
+-	result, out, stderr, code = runBaselineUpdateTestCommandWithSkillsStage(t, t.Context(), runBaselineUpdateSkillsStage,
+-		"baseline", "update", "--repo", root, "--yes", "--format=json")
+-	if code != exitOK || stderr != "" || result.Skills.Status != baselineUpdateSkillsVerified || len(result.Skills.Restored) != 0 || len(result.Skills.Differing) != 1 {
+-		t.Fatalf("--yes exit=%d stdout=%s stderr=%s", code, out, stderr)
+-	}
+-	if !bytes.Equal(beforeSkill, mustReadBytes(t, path)) {
+-		t.Fatal("--yes changed the differing skill's bytes")
+-	}
+-	afterHash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
+-	if err != nil || afterHash != hash {
+-		t.Fatalf("--yes skill tree hash=%q, want %q; error=%v", afterHash, hash, err)
+-	}
+-	t.Run("difference with outdated and retired skills", func(t *testing.T) {
+-		found, required := lowerPreviewOwnedSkill(t, root, "qa-gate")
+-		retiredDir := filepath.Join(root, ".agents", "skills", "council")
+-		if err := os.MkdirAll(retiredDir, 0o755); err != nil {
+-			t.Fatal(err)
+-		}
+-		mustWrite(t, filepath.Join(retiredDir, "SKILL.md"), "retired skill fixture\n")
+-		beforePreview := baselinePlanTestTree(t, root)
+-		_, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
+-		wantOwned := fmt.Sprintf("Skills drifted: 0\nSkills outdated: 1\n- outdated qa-gate: found %s, requires %s\n", found, required)
+-		wantRetired := "Skills retired: 1\n- retired council: no longer required by the Baseline; delete .agents/skills/council\n"
+-		wantDifference := "Skills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n"
+-		if code != exitUnverified || stderr != "" || !strings.Contains(out, wantOwned+wantRetired+wantDifference) {
+-			t.Fatalf("combined preview exit=%d stdout=%s stderr=%s", code, out, stderr)
+-		}
+-		if baselinePlanTestTree(t, root) != beforePreview {
+-			t.Fatal("combined preview changed repository bytes")
+-		}
+-	})
+-}
+-
+ func TestBaselineUpdateKeepsASetupSnapshotDifference(t *testing.T) {
+ 	t.Parallel()
+ 	for _, test := range []struct {
+diff --git a/internal/cli/live_documents_docscontract_test.go b/internal/cli/live_documents_docscontract_test.go
+new file mode 100644
+index 00000000..41374508
+--- /dev/null
++++ b/internal/cli/live_documents_docscontract_test.go
+@@ -0,0 +1,430 @@
++// Suite: live repository skill, guide, help, and release-plan documentation contracts.
++// Invariant: shipped documentation and skills agree with CLI parsers, help, and read-only checks.
++// Boundary IN: live repository skills, public guides, command help, and adopted repository fixtures.
++// Boundary OUT: external services and release execution.
++// These tests read the live documentation trees and run under the docscontract tag per ADR-0326.
++//go:build docscontract
++
++//verify:always
++
++package cli
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"fmt"
++	"io/fs"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"roundfix/internal/baseline"
++	"roundfix/internal/mdtree"
++	"roundfix/internal/runevent"
++	"roundfix/skills"
++)
++
++func TestThisRepositoryHoldsEveryRequiredExternalSkill(t *testing.T) {
++	t.Parallel()
++	root, err := filepath.Abs(filepath.Join("..", ".."))
++	if err != nil {
++		t.Fatal(err)
++	}
++	readiness := checkThisRepositorySkillSet(t, root, true)
++	if !readiness.Ready() {
++		t.Fatalf("repository skill set is not ready: missing=%v outdated=%v owned=%v", readiness.MissingExternal, readiness.OutdatedExternal, readiness.MissingOwned)
++	}
++}
++
++func TestARepositoryMissingARequiredExternalSkillIsReported(t *testing.T) {
++	t.Parallel()
++	root := copyThisRepositorySkillSetFixture(t)
++	external, ok, err := resolveExternalSkillRequirement(root)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !ok || len(external) == 0 {
++		t.Fatalf("fixture external requirement = %v, manifest readable = %t", external, ok)
++	}
++	missing := external[0]
++	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", missing)); err != nil {
++		t.Fatalf("remove fixture skill %q: %v", missing, err)
++	}
++
++	readiness := checkThisRepositorySkillSet(t, root, false)
++	if readiness.Ready() {
++		t.Fatal("repository with a missing required external skill was reported ready")
++	}
++	found := false
++	for _, name := range readiness.MissingExternal {
++		if name == missing {
++			found = true
++			break
++		}
++	}
++	if !found {
++		t.Fatalf("missing external skills = %v, want %q", readiness.MissingExternal, missing)
++	}
++}
++
++func checkThisRepositorySkillSet(t *testing.T, root string, wantReady bool) skills.RepositoryReadiness {
++	t.Helper()
++	external, ok, err := resolveExternalSkillRequirement(root)
++	if err != nil {
++		t.Fatalf("resolve external skill requirement: %v", err)
++	}
++	if !ok {
++		t.Fatal("Setup Manifest did not resolve an external skill requirement")
++	}
++	readiness, err := skills.CheckRepositoryWithExternal(t.Context(), root, external)
++	if err != nil {
++		t.Fatalf("check repository skill set: %v", err)
++	}
++	for _, name := range readiness.MissingExternal {
++		t.Logf("missing external skill: %s", name)
++	}
++	for _, name := range readiness.OutdatedExternal {
++		t.Logf("outdated external skill: %s", name)
++	}
++	if wantReady && !readiness.Ready() {
++		t.Errorf("repository skill set is not ready: missing=%v outdated=%v", readiness.MissingExternal, readiness.OutdatedExternal)
++	}
++
++	lockBytes, err := os.ReadFile(filepath.Join(root, "skills-lock.json"))
++	if err != nil {
++		t.Fatalf("read skills lock: %v", err)
++	}
++	var lock struct {
++		Skills map[string]json.RawMessage `json:"skills"`
++	}
++	if err := json.Unmarshal(lockBytes, &lock); err != nil {
++		t.Fatalf("decode skills lock: %v", err)
++	}
++	for _, name := range []string{"context7", "feature-systems-pattern", "rust", "review", "triage", "the-fool", "autoresearch", "council"} {
++		if _, exists := lock.Skills[name]; exists {
++			t.Errorf("obsolete skill remains in skills-lock.json: %s", name)
++		}
++		if _, err := os.Stat(filepath.Join(root, ".agents", "skills", name)); err == nil {
++			t.Errorf("obsolete skill directory remains: %s", name)
++		} else if !os.IsNotExist(err) {
++			t.Errorf("inspect obsolete skill directory %s: %v", name, err)
++		}
++	}
++	return readiness
++}
++
++func copyThisRepositorySkillSetFixture(t *testing.T) string {
++	t.Helper()
++	source, err := filepath.Abs(filepath.Join("..", ".."))
++	if err != nil {
++		t.Fatal(err)
++	}
++	destination := t.TempDir()
++	for _, relative := range []string{
++		"docs/agents/setup-context.json",
++		"skills-lock.json",
++		".agents/skills",
++	} {
++		copyThisRepositorySkillSetPath(t, filepath.Join(source, relative), filepath.Join(destination, relative))
++	}
++	return destination
++}
++
++func TestBaselineExamplesParse(t *testing.T) {
++	t.Parallel()
++	root := baselineDocumentationRepoRoot()
++	paths := []string{
++		filepath.Join(root, "README.md"),
++		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
++		filepath.Join(root, ".agents", "skills", "setup-context-driven", "SKILL.md"),
++		filepath.Join(root, ".agents/skills/roundfix/SKILL.md"),
++	}
++
++	temporaryRepo := t.TempDir()
++	if err := os.Mkdir(filepath.Join(temporaryRepo, ".git"), 0o755); err != nil {
++		t.Fatalf("create documentation-test Git marker: %v", err)
++	}
++	exampleCount := 0
++	profileCounter := 0
++	for _, path := range paths {
++		content := readBaselineDocumentation(t, path)
++		for _, command := range baselineBashExamples(content) {
++			exampleCount++
++			args := strings.Fields(command)
++			if len(args) < 2 || args[0] != "roundfix" || args[1] != "baseline" {
++				t.Fatalf("%s: invalid Baseline command example %q", path, command)
++			}
++			if len(args) >= 4 && args[2] == "profile" && args[3] == "init" {
++				profileCounter++
++				args = normalizeBaselineProfileInitExample(args, profileCounter)
++			}
++			if err := parsePublishedBaselineExample(args[2:], temporaryRepo); err != nil {
++				t.Fatalf("%s: command example %q does not parse: %v", path, command, err)
++			}
++		}
++	}
++	if exampleCount < 20 {
++		t.Fatalf("parsed %d Baseline examples, want at least 20 public recipes", exampleCount)
++	}
++}
++
++// TestProjectConstraintPlanningExamplesParse keeps the parser-level half of
++// the project-constraint documentation contract beside the parsers it needs:
++// the string contracts on the same two documents live in
++// internal/docscontract.
++func TestProjectConstraintPlanningExamplesParse(t *testing.T) {
++	t.Parallel()
++	root := baselineDocumentationRepoRoot()
++	guide := readBaselineDocumentation(t, filepath.Join(
++		root, "docs", "user-guide", "context-driven-development.md",
++	))
++	skill := readBaselineDocumentation(t, filepath.Join(
++		root, ".agents", "skills", "setup-context-driven", "SKILL.md",
++	))
++	parsedPlanningExamples := 0
++	for _, content := range []string{guide, skill} {
++		for _, command := range baselineBashExamples(content) {
++			if !strings.Contains(command, "baseline plan") ||
++				!strings.Contains(command, "--decision-file") {
++				continue
++			}
++			args := strings.Fields(command)
++			if err := parsePublishedBaselineExample(args[2:], ""); err != nil {
++				t.Fatalf("project-decision command %q does not parse: %v", command, err)
++			}
++			parsedPlanningExamples++
++		}
++	}
++	if parsedPlanningExamples < 2 {
++		t.Fatalf("parsed project-decision planning examples = %d, want at least 2", parsedPlanningExamples)
++	}
++}
++
++func normalizeBaselineProfileInitExample(args []string, sequence int) []string {
++	normalized := append([]string(nil), args...)
++	for index := 0; index+1 < len(normalized); index++ {
++		switch normalized[index] {
++		case "--id":
++			normalized[index+1] = fmt.Sprintf("documentation-profile-%d", sequence)
++		case "--from":
++			if strings.HasPrefix(normalized[index+1], "<") {
++				normalized[index+1] = "go-cli-tui"
++			}
++		}
++	}
++	return normalized
++}
++
++func baselineBashExamples(content string) []string {
++	var examples []string
++	inBash := false
++	for _, line := range strings.Split(content, "\n") {
++		trimmed := strings.TrimSpace(line)
++		if trimmed == "```bash" {
++			inBash = true
++			continue
++		}
++		if trimmed == "```" {
++			inBash = false
++			continue
++		}
++		if inBash && (trimmed == "roundfix baseline" || strings.HasPrefix(trimmed, "roundfix baseline ")) {
++			examples = append(examples, trimmed)
++		}
++	}
++	return examples
++}
++
++func baselineDocumentationRepoRoot() string {
++	root, err := filepath.Abs(filepath.Join("..", ".."))
++	if err != nil {
++		return filepath.Clean(filepath.Join("..", ".."))
++	}
++	return root
++}
++
++func readBaselineDocumentation(t *testing.T, path string) string {
++	t.Helper()
++	if filepath.Base(path) == "SKILL.md" && filepath.Base(filepath.Dir(path)) == "roundfix" {
++		text, err := mdtree.Text(os.DirFS(filepath.Dir(path)), "SKILL.md", "references")
++		if err != nil {
++			t.Fatalf("read %s: %v", path, err)
++		}
++		return text
++	}
++	content, err := os.ReadFile(path)
++	if err != nil {
++		t.Fatalf("read %s: %v", path, err)
++	}
++	return string(content)
++}
++
++func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
++	t.Parallel()
++	var stdout bytes.Buffer
++	var stderr bytes.Buffer
++
++	code := runCLI(t, []string{"events", "--help"}, &stdout, &stderr)
++
++	if code != exitOK {
++		t.Fatalf("events help exit = %d, want 0 stderr=%q", code, stderr.String())
++	}
++	if stderr.String() != "" {
++		t.Fatalf("events help stderr = %q, want empty", stderr.String())
++	}
++	wantCategories := "task-status,batch,verification,outcome,agent-selection"
++	if !strings.Contains(stdout.String(), wantCategories) {
++		t.Fatalf("events help missing filter categories %q, got %q", wantCategories, stdout.String())
++	}
++
++	req, err := parseEventsCommand([]string{"run_123", "--filter", "agent-selection"})
++	if err != nil {
++		t.Fatalf("parse agent-selection filter: %v", err)
++	}
++	if !req.filter.Includes(runevent.StreamCategorySelection) {
++		t.Fatalf("parsed filter excludes %q: %#v", runevent.StreamCategorySelection, req.filter)
++	}
++
++	guide, err := mdtree.Text(os.DirFS(cliTestRepoRoot(t)), "docs/user-guide/commands.md", "docs/user-guide/commands")
++	if err != nil {
++		t.Fatalf("read command reference: %v", err)
++	}
++	if !strings.Contains(guide, wantCategories) || !strings.Contains(guide, "`agent-selection`") {
++		t.Fatalf("user guide does not document agent-selection filter")
++	}
++}
++
++func TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault(t *testing.T) {
++	t.Parallel()
++	catalog, err := baseline.LoadEmbeddedCatalog()
++	if err != nil {
++		t.Fatal(err)
++	}
++	entry, ok := catalog.Decision("http.contract")
++	if !ok {
++		t.Fatal("HTTP decision is absent")
++	}
++	var decision struct {
++		Default struct {
++			Mode string `json:"mode"`
++		} `json:"default"`
++		Modes []string `json:"modes"`
++	}
++	if err := json.Unmarshal(entry.Data, &decision); err != nil {
++		t.Fatal(err)
++	}
++	if decision.Default.Mode == "" || len(decision.Modes) == 0 {
++		t.Fatal("HTTP decision has no default or modes")
++	}
++	contract, ok := catalog.Asset("contract-v1.json")
++	if !ok {
++		t.Fatal("Baseline contract is absent")
++	}
++	guide := readBaselineDocumentation(t, filepath.Join(baselineDocumentationRepoRoot(), "docs/user-guide/context-driven-development.md"))
++	statements := []httpDefaultStatement{
++		{"contract-v1.json", string(contract.Data), "the interactive workflow suggests %s until"},
++		{"context-driven-development.md", guide, "| HTTP contract | `%s` |"},
++	}
++	if findings := httpDefaultStatementFindings(decision.Default.Mode, decision.Modes, statements); len(findings) != 0 {
++		t.Fatalf("HTTP statement findings: %v", findings)
++	}
++}
++
++func TestReleasePlanChecksOnAnAdoptedRepository(t *testing.T) {
++	t.Parallel()
++	for _, stale := range []bool{false, true} {
++		t.Run(fmt.Sprint(stale), func(t *testing.T) {
++			repo := newBaselineUpdateRepository(t)
++			if stale {
++				repo = staleBaselineUpdateRepository(t)
++			}
++			copyReleaseCheckSkills(t, repo)
++			commitBaselinePlanTestRepository(t, repo)
++			addReleaseCheckRange(t, repo)
++			code, output, stderr := runReleasePlanCommandInRepo(t, repo, "--format=json")
++			if code != exitOK || stderr != "" {
++				t.Fatalf("exit=%d output=%s stderr=%s", code, output, stderr)
++			}
++			checks := decodeReleaseChecks(t, output)
++			if checks.Skills.Status != "ok" || checks.Skills.NextAction != "" {
++				t.Fatalf("skills=%+v", checks.Skills)
++			}
++			if !stale {
++				if checks.Baseline.Status != "current" || checks.Baseline.NextAction != "" {
++					t.Fatalf("Surface Transcript 2: %+v", checks)
++				}
++				if strings.Contains(output, `"nextAction"`) {
++					t.Fatal("empty nextAction must be omitted")
++				}
++			} else {
++				result, _, stderr, _ := runBaselineUpdateTestCommand(t, context.Background(), "baseline", "update", "--repo", repo, "--no-skills", "--format=json")
++				want := fmt.Sprintf("%d file change(s)", len(result.FileChanges))
++				if len(result.HistoryMoves) > 0 {
++					want += fmt.Sprintf(", %d history move(s)", len(result.HistoryMoves))
++				}
++				if stderr != "" || checks.Baseline.Status != "plan_ready" || checks.Baseline.Detail != want {
++					t.Fatalf("baseline=%+v update=%+v stderr=%s", checks.Baseline, result, stderr)
++				}
++			}
++		})
++	}
++}
++
++func TestReleasePlanChecksWriteNothing(t *testing.T) {
++	t.Parallel()
++	repo := staleBaselineUpdateRepository(t)
++	copyReleaseCheckSkills(t, repo)
++	commitBaselinePlanTestRepository(t, repo)
++	addReleaseCheckRange(t, repo)
++	before := snapshotReleasePlanRepo(t, repo)
++	for _, format := range []string{"text", "json"} {
++		code, output, stderr := runReleasePlanCommandInRepo(t, repo, "--format="+format)
++		if code != exitOK || stderr != "" || !strings.Contains(output, "plan_ready") {
++			t.Fatalf("exit=%d output=%s stderr=%s", code, output, stderr)
++		}
++		assertReleasePlanRepoUnchanged(t, repo, before)
++	}
++}
++
++func addReleaseCheckRange(t *testing.T, repo string) {
++	t.Helper()
++	gitReleasePlan(t, repo, "tag", "v0.4.0")
++	writeReleasePlanFile(t, repo, "internal/output.go", "package output\n")
++	gitReleasePlan(t, repo, "add", "-A")
++	commitReleasePlan(t, repo, "fix: correct output")
++}
++
++func copyReleaseCheckSkills(t *testing.T, repo string) {
++	t.Helper()
++	lock, err := os.ReadFile(filepath.Join(baselineDocumentationRepoRoot(), "skills-lock.json"))
++	if err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(filepath.Join(repo, "skills-lock.json"), lock, 0644); err != nil {
++		t.Fatal(err)
++	}
++	source := filepath.Join(baselineDocumentationRepoRoot(), ".agents", "skills")
++	err = filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
++		if err != nil {
++			return err
++		}
++		relative, err := filepath.Rel(source, path)
++		if err != nil {
++			return err
++		}
++		target := filepath.Join(repo, ".agents", "skills", relative)
++		if entry.IsDir() {
++			return os.MkdirAll(target, 0755)
++		}
++		data, err := os.ReadFile(path)
++		if err != nil {
++			return err
++		}
++		return os.WriteFile(target, data, 0644)
++	})
++	if err != nil {
++		t.Fatal(err)
++	}
++}
+diff --git a/internal/cli/releaseplan_checks_test.go b/internal/cli/releaseplan_checks_test.go
+index 4ed2d3e3..81df9f3f 100644
+--- a/internal/cli/releaseplan_checks_test.go
++++ b/internal/cli/releaseplan_checks_test.go
+@@ -1,12 +1,7 @@
+ package cli
+ 
+ import (
+-	"context"
+ 	"encoding/json"
+-	"fmt"
+-	"io/fs"
+-	"os"
+-	"path/filepath"
+ 	"strings"
+ 	"testing"
+ 
+@@ -85,62 +80,6 @@ func TestReleasePlanChecksNeverChangeTheDecision(t *testing.T) {
+ 	}
+ }
+ 
+-func TestReleasePlanChecksOnAnAdoptedRepository(t *testing.T) {
+-	t.Parallel()
+-	for _, stale := range []bool{false, true} {
+-		t.Run(fmt.Sprint(stale), func(t *testing.T) {
+-			repo := newBaselineUpdateRepository(t)
+-			if stale {
+-				repo = staleBaselineUpdateRepository(t)
+-			}
+-			copyReleaseCheckSkills(t, repo)
+-			commitBaselinePlanTestRepository(t, repo)
+-			addReleaseCheckRange(t, repo)
+-			code, output, stderr := runReleasePlanCommandInRepo(t, repo, "--format=json")
+-			if code != exitOK || stderr != "" {
+-				t.Fatalf("exit=%d output=%s stderr=%s", code, output, stderr)
+-			}
+-			checks := decodeReleaseChecks(t, output)
+-			if checks.Skills.Status != "ok" || checks.Skills.NextAction != "" {
+-				t.Fatalf("skills=%+v", checks.Skills)
+-			}
+-			if !stale {
+-				if checks.Baseline.Status != "current" || checks.Baseline.NextAction != "" {
+-					t.Fatalf("Surface Transcript 2: %+v", checks)
+-				}
+-				if strings.Contains(output, `"nextAction"`) {
+-					t.Fatal("empty nextAction must be omitted")
+-				}
+-			} else {
+-				result, _, stderr, _ := runBaselineUpdateTestCommand(t, context.Background(), "baseline", "update", "--repo", repo, "--no-skills", "--format=json")
+-				want := fmt.Sprintf("%d file change(s)", len(result.FileChanges))
+-				if len(result.HistoryMoves) > 0 {
+-					want += fmt.Sprintf(", %d history move(s)", len(result.HistoryMoves))
+-				}
+-				if stderr != "" || checks.Baseline.Status != "plan_ready" || checks.Baseline.Detail != want {
+-					t.Fatalf("baseline=%+v update=%+v stderr=%s", checks.Baseline, result, stderr)
+-				}
+-			}
+-		})
+-	}
+-}
+-
+-func TestReleasePlanChecksWriteNothing(t *testing.T) {
+-	t.Parallel()
+-	repo := staleBaselineUpdateRepository(t)
+-	copyReleaseCheckSkills(t, repo)
+-	commitBaselinePlanTestRepository(t, repo)
+-	addReleaseCheckRange(t, repo)
+-	before := snapshotReleasePlanRepo(t, repo)
+-	for _, format := range []string{"text", "json"} {
+-		code, output, stderr := runReleasePlanCommandInRepo(t, repo, "--format="+format)
+-		if code != exitOK || stderr != "" || !strings.Contains(output, "plan_ready") {
+-			t.Fatalf("exit=%d output=%s stderr=%s", code, output, stderr)
+-		}
+-		assertReleasePlanRepoUnchanged(t, repo, before)
+-	}
+-}
+-
+ type releaseChecksTestValue struct {
+ 	Status     string
+ 	Detail     string
+@@ -162,42 +101,3 @@ func decodeReleaseChecks(t *testing.T, output string) releaseChecksTestOutput {
+ 	}
+ 	return *value.Checks
+ }
+-func addReleaseCheckRange(t *testing.T, repo string) {
+-	t.Helper()
+-	gitReleasePlan(t, repo, "tag", "v0.4.0")
+-	writeReleasePlanFile(t, repo, "internal/output.go", "package output\n")
+-	gitReleasePlan(t, repo, "add", "-A")
+-	commitReleasePlan(t, repo, "fix: correct output")
+-}
+-func copyReleaseCheckSkills(t *testing.T, repo string) {
+-	t.Helper()
+-	lock, err := os.ReadFile(filepath.Join(baselineDocumentationRepoRoot(), "skills-lock.json"))
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	if err := os.WriteFile(filepath.Join(repo, "skills-lock.json"), lock, 0644); err != nil {
+-		t.Fatal(err)
+-	}
+-	source := filepath.Join(baselineDocumentationRepoRoot(), ".agents", "skills")
+-	err = filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
+-		if err != nil {
+-			return err
+-		}
+-		relative, err := filepath.Rel(source, path)
+-		if err != nil {
+-			return err
+-		}
+-		target := filepath.Join(repo, ".agents", "skills", relative)
+-		if entry.IsDir() {
+-			return os.MkdirAll(target, 0755)
+-		}
+-		data, err := os.ReadFile(path)
+-		if err != nil {
+-			return err
+-		}
+-		return os.WriteFile(target, data, 0644)
+-	})
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-}
+diff --git a/internal/cli/repository_profile_docscontract_test.go b/internal/cli/repository_profile_docscontract_test.go
+new file mode 100644
+index 00000000..de92380a
+--- /dev/null
++++ b/internal/cli/repository_profile_docscontract_test.go
+@@ -0,0 +1,271 @@
++// Suite: repository-profile Baseline and Doctor documentation contracts.
++// Invariant: repository profiles use their modules' embedded skill contracts and Setup Snapshots.
++// Boundary IN: live repository guides, skills, profile adoption, update preview, and Doctor skills checks.
++// Boundary OUT: source acquisition during refresh is replaced by a restore fake; machine Doctor checks are not exercised.
++// These tests read the live documentation trees and run under the docscontract tag per ADR-0326.
++//go:build docscontract
++
++//verify:always
++
++package cli
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"fmt"
++	"os"
++	"path/filepath"
++	"slices"
++	"strings"
++	"testing"
++
++	"roundfix/internal/baseline"
++	"roundfix/skills"
++)
++
++func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
++	t.Parallel()
++	for _, copied := range []bool{true, false} {
++		t.Run(fmt.Sprintf("copied skills=%t", copied), func(t *testing.T) {
++			root := newBaselineRepositoryProfileFixture(t, copied)
++			before := baselinePlanTestTree(t, root)
++			out, stderr, code := runRepositoryProfileCommand(t, "baseline", "update", "--repo", root, "--format", "json")
++			var result baselineUpdateResult
++			if err := json.Unmarshal([]byte(out), &result); err != nil {
++				t.Fatal(err)
++			}
++			if code != exitOK || stderr != "" || result.State != "current" {
++				t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
++			}
++			out, stderr, code = runRepositoryProfileCommand(t, "baseline", "update", "--repo", root, "--format", "text")
++			const prefix = "Baseline update: current\nResult: the repository already matches the current Baseline catalog\n"
++			if code != exitOK || stderr != "" || !strings.HasPrefix(out, prefix) {
++				t.Fatalf("Surface Transcript 1: exit=%d stdout=%s stderr=%s", code, out, stderr)
++			}
++			if before != baselinePlanTestTree(t, root) {
++				t.Fatal("current update changed repository bytes")
++			}
++		})
++	}
++}
++
++func TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile(t *testing.T) {
++	t.Parallel()
++	root := newBaselineRepositoryProfileFixture(t, true)
++	editRepositoryProfileTestSkill(t, root)
++	before := baselinePlanTestTree(t, root)
++	out, stderr, code := runRepositoryProfileCommand(t, "baseline", "update", "--repo", root, "--format", "json")
++	var result baselineUpdateResult
++	if err := json.Unmarshal([]byte(out), &result); err != nil {
++		t.Fatal(err)
++	}
++	if code != exitOK || stderr != "" || result.State != "current" {
++		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
++	}
++	found := false
++	for _, difference := range result.Skills.Differing {
++		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile "+baselineRepositoryProfileTestID+" --skill testing-boss" {
++			found = true
++		}
++	}
++	if !found || len(result.Skills.Drifted) != 0 {
++		t.Fatalf("differing skill absent from preview: %s", out)
++	}
++	if before != baselinePlanTestTree(t, root) {
++		t.Fatal("preview changed repository bytes")
++	}
++}
++
++func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testing.T) {
++	t.Parallel()
++	root := newBaselineRepositoryProfileFixture(t, true)
++	editRepositoryProfileTestSkill(t, root)
++	// Force the real install to replace every owned skill, rather than just report them.
++	for _, name := range skills.Names() {
++		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
++			t.Fatal(err)
++		}
++	}
++	beforeSkill := mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))
++	result, err := runBaselineUpdateSkillsStageWith(t.Context(), baselineUpdateSkillsRequest{
++		Repository: root, ProfileID: baselineRepositoryProfileTestID,
++	}, baselineUpdateSkillsDependencies{
++		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
++		install:             skills.Install,
++		ownedNames:          skills.Names,
++		resolveExternal:     resolveExternalSkillRequirement,
++		checkRepository:     skills.CheckRepositoryWithExternal,
++		snapshotDifferences: baseline.SetupSnapshotDifferences,
++		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
++			t.Fatalf("restore called for a lock-matching difference: %+v", request)
++			return baseline.SkillsRestorePayload{}, nil
++		},
++	})
++	wantInstalled := slices.Clone(skills.Names())
++	slices.Sort(wantInstalled)
++	if err != nil || result.Status != baselineUpdateSkillsVerified ||
++		result.InstalledCount != len(wantInstalled) || !slices.Equal(result.Installed, wantInstalled) ||
++		len(result.Restored) != 0 || len(result.Differing) != 1 || result.Differing[0].Skill != "testing-boss" || len(result.Drifted) != 0 {
++		t.Fatalf("result=%+v err=%v", result, err)
++	}
++	if !bytes.Equal(beforeSkill, mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))) {
++		t.Fatal("skills refresh changed the differing skill's bytes")
++	}
++	readiness, err := skills.CheckRepository(t.Context(), root)
++	if err != nil || !readiness.Ready() {
++		t.Fatalf("owned install readiness=%+v err=%v", readiness, err)
++	}
++}
++
++func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
++	t.Parallel()
++	root := newBaselineRepositoryProfileFixture(t, true)
++	editRepositoryProfileTestSkill(t, root)
++	before := baselinePlanTestTree(t, root)
++	result := repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
++	if result.Status != CheckStatusOK || result.NextAction != "" || !strings.Contains(result.Detail, "DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: testing-boss") ||
++		strings.Contains(result.Detail, "snapshot comparison unavailable") {
++		t.Fatalf("Doctor skills=%+v", result)
++	}
++	if before != baselinePlanTestTree(t, root) {
++		t.Fatal("Doctor changed repository bytes")
++	}
++	path := filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath))
++	var manifest map[string]any
++	if err := json.Unmarshal(mustReadBytes(t, path), &manifest); err != nil {
++		t.Fatal(err)
++	}
++	manifest["profile"] = "missing-profile"
++	data, err := json.Marshal(manifest)
++	if err != nil {
++		t.Fatal(err)
++	}
++	mustWrite(t, path, string(data))
++	before = baselinePlanTestTree(t, root)
++	result = repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
++	if result.Status != CheckStatusOK || !strings.Contains(result.Detail, "snapshot comparison unavailable") ||
++		!strings.Contains(result.Detail, "neither built-in nor resolvable at .roundfix/baseline/profiles/missing-profile.json") ||
++		strings.Contains(result.Detail, "built-in Baseline Profile") {
++		t.Fatalf("Doctor missing-profile skills=%+v", result)
++	}
++	if before != baselinePlanTestTree(t, root) {
++		t.Fatal("unavailable comparison changed repository bytes")
++	}
++}
++
++func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
++	t.Parallel()
++	root := newBaselineUpdateRepository(t)
++	source, err := filepath.Abs("../..")
++	if err != nil {
++		t.Fatal(err)
++	}
++	for _, relative := range []string{".agents/skills", "skills-lock.json"} {
++		copyThisRepositorySkillSetPath(t, filepath.Join(source, relative), filepath.Join(root, relative))
++	}
++	// Make the installed tree intentionally different while keeping its lock intact.
++	path := filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md")
++	if err := os.WriteFile(path, append(mustReadBytes(t, path), []byte("\nDifferent upstream installation fixture.\n")...), 0o644); err != nil {
++		t.Fatal(err)
++	}
++	lockPath := filepath.Join(root, "skills-lock.json")
++	var lock map[string]any
++	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
++		t.Fatal(err)
++	}
++	hash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
++	if err != nil {
++		t.Fatal(err)
++	}
++	lock["skills"].(map[string]any)["testing-boss"].(map[string]any)["computedHash"] = hash
++	data, err := json.Marshal(lock)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(lockPath, data, 0o644); err != nil {
++		t.Fatal(err)
++	}
++	before := baselinePlanTestTree(t, root)
++	result, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=json")
++	if code != exitOK || result.State != "current" || stderr != "" {
++		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
++	}
++	found := false
++	for _, difference := range result.Skills.Differing {
++		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss" {
++			found = true
++		}
++	}
++	if !found || len(result.Skills.Drifted) != 0 {
++		t.Fatalf("differing skill absent from preview: %s", out)
++	}
++	_, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
++	if code != exitOK || stderr != "" || !strings.Contains(out, "Skills drifted: 0\nSkills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n") {
++		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
++	}
++	if baselinePlanTestTree(t, root) != before {
++		t.Fatal("preview changed repository bytes")
++	}
++	result, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--no-skills", "--format=json")
++	if code != exitOK || stderr != "" || result.Skills.Differing == nil || len(result.Skills.Differing) != 0 || !strings.Contains(out, `"differing":[]`) {
++		t.Fatalf("--no-skills exit=%d stdout=%s stderr=%s", code, out, stderr)
++	}
++	beforeSkill := mustReadBytes(t, path)
++	result, out, stderr, code = runBaselineUpdateTestCommandWithSkillsStage(t, t.Context(), runBaselineUpdateSkillsStage,
++		"baseline", "update", "--repo", root, "--yes", "--format=json")
++	if code != exitOK || stderr != "" || result.Skills.Status != baselineUpdateSkillsVerified || len(result.Skills.Restored) != 0 || len(result.Skills.Differing) != 1 {
++		t.Fatalf("--yes exit=%d stdout=%s stderr=%s", code, out, stderr)
++	}
++	if !bytes.Equal(beforeSkill, mustReadBytes(t, path)) {
++		t.Fatal("--yes changed the differing skill's bytes")
++	}
++	afterHash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
++	if err != nil || afterHash != hash {
++		t.Fatalf("--yes skill tree hash=%q, want %q; error=%v", afterHash, hash, err)
++	}
++	t.Run("difference with outdated and retired skills", func(t *testing.T) {
++		found, required := lowerPreviewOwnedSkill(t, root, "qa-gate")
++		retiredDir := filepath.Join(root, ".agents", "skills", "council")
++		if err := os.MkdirAll(retiredDir, 0o755); err != nil {
++			t.Fatal(err)
++		}
++		mustWrite(t, filepath.Join(retiredDir, "SKILL.md"), "retired skill fixture\n")
++		beforePreview := baselinePlanTestTree(t, root)
++		_, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
++		wantOwned := fmt.Sprintf("Skills drifted: 0\nSkills outdated: 1\n- outdated qa-gate: found %s, requires %s\n", found, required)
++		wantRetired := "Skills retired: 1\n- retired council: no longer required by the Baseline; delete .agents/skills/council\n"
++		wantDifference := "Skills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n"
++		if code != exitUnverified || stderr != "" || !strings.Contains(out, wantOwned+wantRetired+wantDifference) {
++			t.Fatalf("combined preview exit=%d stdout=%s stderr=%s", code, out, stderr)
++		}
++		if baselinePlanTestTree(t, root) != beforePreview {
++			t.Fatal("combined preview changed repository bytes")
++		}
++	})
++}
++
++func editRepositoryProfileTestSkill(t *testing.T, root string) {
++	t.Helper()
++	path := filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md")
++	mustWrite(t, path, string(mustReadBytes(t, path))+"\nDifferent upstream installation fixture.\n")
++	lockPath := filepath.Join(root, "skills-lock.json")
++	var lock map[string]any
++	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
++		t.Fatal(err)
++	}
++	hash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
++	if err != nil {
++		t.Fatal(err)
++	}
++	lock["skills"].(map[string]any)["testing-boss"].(map[string]any)["computedHash"] = hash
++	data, err := json.Marshal(lock)
++	if err != nil {
++		t.Fatal(err)
++	}
++	mustWrite(t, lockPath, string(data))
++	readiness, err := skills.CheckRepositoryWithExternal(t.Context(), root, []string{"testing-boss"})
++	if err != nil || !readiness.Ready() {
++		t.Fatalf("edited skill must still match its lock: %+v %v", readiness, err)
++	}
++}
+diff --git a/internal/cli/this_repository_skill_set_test.go b/internal/cli/this_repository_skill_set_test.go
+index abc0a015..dc021745 100644
+--- a/internal/cli/this_repository_skill_set_test.go
++++ b/internal/cli/this_repository_skill_set_test.go
+@@ -1,120 +1,11 @@
+ package cli
+ 
+ import (
+-	"encoding/json"
+ 	"os"
+ 	"path/filepath"
+ 	"testing"
+-
+-	"roundfix/skills"
+ )
+ 
+-func TestThisRepositoryHoldsEveryRequiredExternalSkill(t *testing.T) {
+-	t.Parallel()
+-	root, err := filepath.Abs(filepath.Join("..", ".."))
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	readiness := checkThisRepositorySkillSet(t, root, true)
+-	if !readiness.Ready() {
+-		t.Fatalf("repository skill set is not ready: missing=%v outdated=%v owned=%v", readiness.MissingExternal, readiness.OutdatedExternal, readiness.MissingOwned)
+-	}
+-}
+-
+-func TestARepositoryMissingARequiredExternalSkillIsReported(t *testing.T) {
+-	t.Parallel()
+-	root := copyThisRepositorySkillSetFixture(t)
+-	external, ok, err := resolveExternalSkillRequirement(root)
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	if !ok || len(external) == 0 {
+-		t.Fatalf("fixture external requirement = %v, manifest readable = %t", external, ok)
+-	}
+-	missing := external[0]
+-	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", missing)); err != nil {
+-		t.Fatalf("remove fixture skill %q: %v", missing, err)
+-	}
+-
+-	readiness := checkThisRepositorySkillSet(t, root, false)
+-	if readiness.Ready() {
+-		t.Fatal("repository with a missing required external skill was reported ready")
+-	}
+-	found := false
+-	for _, name := range readiness.MissingExternal {
+-		if name == missing {
+-			found = true
+-			break
+-		}
+-	}
+-	if !found {
+-		t.Fatalf("missing external skills = %v, want %q", readiness.MissingExternal, missing)
+-	}
+-}
+-
+-func checkThisRepositorySkillSet(t *testing.T, root string, wantReady bool) skills.RepositoryReadiness {
+-	t.Helper()
+-	external, ok, err := resolveExternalSkillRequirement(root)
+-	if err != nil {
+-		t.Fatalf("resolve external skill requirement: %v", err)
+-	}
+-	if !ok {
+-		t.Fatal("Setup Manifest did not resolve an external skill requirement")
+-	}
+-	readiness, err := skills.CheckRepositoryWithExternal(t.Context(), root, external)
+-	if err != nil {
+-		t.Fatalf("check repository skill set: %v", err)
+-	}
+-	for _, name := range readiness.MissingExternal {
+-		t.Logf("missing external skill: %s", name)
+-	}
+-	for _, name := range readiness.OutdatedExternal {
+-		t.Logf("outdated external skill: %s", name)
+-	}
+-	if wantReady && !readiness.Ready() {
+-		t.Errorf("repository skill set is not ready: missing=%v outdated=%v", readiness.MissingExternal, readiness.OutdatedExternal)
+-	}
+-
+-	lockBytes, err := os.ReadFile(filepath.Join(root, "skills-lock.json"))
+-	if err != nil {
+-		t.Fatalf("read skills lock: %v", err)
+-	}
+-	var lock struct {
+-		Skills map[string]json.RawMessage `json:"skills"`
+-	}
+-	if err := json.Unmarshal(lockBytes, &lock); err != nil {
+-		t.Fatalf("decode skills lock: %v", err)
+-	}
+-	for _, name := range []string{"context7", "feature-systems-pattern", "rust", "review", "triage", "the-fool", "autoresearch", "council"} {
+-		if _, exists := lock.Skills[name]; exists {
+-			t.Errorf("obsolete skill remains in skills-lock.json: %s", name)
+-		}
+-		if _, err := os.Stat(filepath.Join(root, ".agents", "skills", name)); err == nil {
+-			t.Errorf("obsolete skill directory remains: %s", name)
+-		} else if !os.IsNotExist(err) {
+-			t.Errorf("inspect obsolete skill directory %s: %v", name, err)
+-		}
+-	}
+-	return readiness
+-}
+-
+-func copyThisRepositorySkillSetFixture(t *testing.T) string {
+-	t.Helper()
+-	source, err := filepath.Abs(filepath.Join("..", ".."))
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	destination := t.TempDir()
+-	for _, relative := range []string{
+-		"docs/agents/setup-context.json",
+-		"skills-lock.json",
+-		".agents/skills",
+-	} {
+-		copyThisRepositorySkillSetPath(t, filepath.Join(source, relative), filepath.Join(destination, relative))
+-	}
+-	return destination
+-}
+-
+ func copyThisRepositorySkillSetPath(t *testing.T, source, destination string) {
+ 	t.Helper()
+ 	info, err := os.Stat(source)
+diff --git a/internal/cli/upgrade_characterization_test.go b/internal/cli/upgrade_characterization_test.go
+index 4bb9bbeb..7d6d564e 100644
+--- a/internal/cli/upgrade_characterization_test.go
++++ b/internal/cli/upgrade_characterization_test.go
+@@ -8,6 +8,7 @@ import (
+ 
+ func TestUpgradeStdoutAndExitCodesAreCharacterized(t *testing.T) {
+ 	t.Parallel()
++	withCLIWorkspace(t)
+ 	for _, test := range []struct {
+ 		name                       string
+ 		args                       []string
+
+EXIT: 0; elapsed seconds: 0.011

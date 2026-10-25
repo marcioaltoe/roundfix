@@ -1,0 +1,6 @@
+Sabotage 12: 7 expected leak-case failures: untracked_deletion, beside_tracked_file, untracked_edit, negated_ignore, untracked_creation, new_directory_file, untracked_executable
+Sabotage 13: 3 expected leak-case failures: directory_with_ignored_files, empty_directory_removal, empty_directory_creation
+Sabotage 14: 2 expected leak-case failures: directory_permission_narrowed, file_permission_narrowed
+Sabotage 15: 1 expected leak-case failures: tracked_deletion
+Every suiteguard.Main caller function is byte-identical to current Delivery Base: 17 functions.
+Final structure: 19 terminal coverage rows, 23 typed input declarations, all evidence links resolve; no evidence_snapshots authored; repository secret-pattern scan: zero matches.

@@ -1,0 +1,114 @@
+import os,sys,subprocess,tempfile,pathlib,re,json,shutil,time
+R=pathlib.Path.cwd().resolve(); S=R/'docs/specs/0313-internal-cli-tests-stop-reading-the-live-documentation'; REPORT=S/'qa/qa-report-2026-10-25-01.md'; E=S/'qa/evidence/2026-10-25-rerun'; E.mkdir(parents=True,exist_ok=True)
+T=pathlib.Path(tempfile.mkdtemp(prefix='qa0313-')); (T/'home').mkdir(); (T/'logs').mkdir()
+env=os.environ.copy()
+for k in list(env):
+ if k.startswith('GIT_') or 'API_KEY' in k or 'JUDGE_KEY' in k: env.pop(k)
+# Resolve toolchain locations before replacing HOME, without printing values.
+for key,args in [('GOMODCACHE',['go','env','GOMODCACHE']),('GOPATH',['go','env','GOPATH'])]:env[key]=subprocess.check_output(args,text=True).strip()
+for key,folder in [('RUSTUP_HOME','.rustup'),('CARGO_HOME','.cargo')]:env.setdefault(key,str(pathlib.Path.home()/folder))
+env.update(HOME=str(T/'home'),GOPROXY='off',GOTOOLCHAIN='local',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL=os.devnull)
+HEAD=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(); BASE='6233ab690c9b60fd872d6141ce1974088087e63b'
+names=re.findall(r'`(Test\w+)`',(S/'task_03.md').read_text().split('3. MUST')[0]);names=list(dict.fromkeys(names)); assert len(names)==13
+rows={}
+plans=[('01','Requirement 1; repository Verification','Build and daemon static gate'),('02','Requirement 2','Thirteen tagged tests and unchanged bodies'),('03','Requirement 3','Selector and relevance declarations'),('04','Requirement 4','Audited-head cache series'),('05','Requirement 4','Delivery Base cache context'),('06','Requirement 5','Full-binary input log'),('07','Requirement 5','Removed documentation trees')]
+for n,title in enumerate(['remove docscontract tag','replace always relevance','move release test back','remove upgrade fixture','drop others listing','drop directory listing','remove mode pass','drop remove flag','restore old walk'],8):plans.append((f'{n:02}', 'Requirement 6',title))
+plans += [('17','Requirement 7','Task Verification tests and 22 leak cases'),('18','Requirement 7','Every guarded spawning package'),('19','Requirement 8; outside-evidence row','Go documentation and pre-Spec audit'),('20','Requirement 9','Glossary'),('21','Requirement 10','Task scope and protected-path history'),('22','Requirement 11; Pull Request row','Pre-PR controls'),('23','Requirement 12','Offline archive plan and Outcome')]
+seed=REPORT.read_text(); before,after=seed.split('## Results\n',1); skips='## Mechanical skips'+after.split('## Mechanical skips',1)[1]
+for i,p,t in plans:rows[i]={'status':'pending','provenance':p,'title':t,'detail':''}
+def write():
+ b=before.replace('verdict: pending','verdict: pending\nstatus: in-progress\nbuild: "'+HEAD+'"\nuser_flow_binary: "'+VERSION+'"')
+ out=b+'## Scope and environment\n\nFull authored gate, backend test-suite surface. Strict precondition: `./bin/roundfix spec check 0313-internal-cli-tests-stop-reading-the-live-documentation --strict` exited 0; no findings. Skipped detectors name missing artifacts, not measured rules; no introduced vocabulary or lifecycle change. All implementation dependencies completed. Tests run serially in temporary worktrees or committed archive copies; every Go test has a timeout. HOME is temporary; GOMODCACHE, GOPATH, RUSTUP_HOME and CARGO_HOME preserve installed tools. GOPROXY and GOSUMDB disable downloads. No provider, reviewer or judge calls. Executor rejected symlinked writable roots; authorized elevated execution accesses the resolved Run checkout.\n\n## Static gate\n\n`make build`: exit 0. Daemon supplied `make verify-changed`: pass, exit 0 at audited head; not rerun.\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n'
+ for i,d in rows.items():out+=f"| {i} | {d['status']} | {d['provenance']} |\n"
+ out+='\n'+skips+'\n## Row evidence\n'
+ for i,d in rows.items():
+  out+=f"\n### {i}\n\n{d['title']}. Actor: repository maintainer; entry point: foreground commands recorded in evidence; surface: backend test tooling. Expected: named checks produce the authored observable; independent confirmation and persistence use fresh commands or negative mutations described below.\n\n```yaml\ninputs:\n  - kind: repository_path\n    ref: '**'\n"
+  if i in ['02','04','05','20','21','22']:out+=f"  - kind: commit_range\n    ref: '{BASE}..{HEAD}'\n"
+  out+='```\n\n'+(d['detail'] or 'Pending execution.')+'\n'
+ REPORT.write_text(out)
+def finish(i,status,detail,logs=[]):
+ for log in logs:
+  p=T/'logs'/log
+  if p.exists():shutil.copyfile(p,E/log)
+ rows[i].update(status=status,detail=detail+'\n\n'+ ' '.join(f'[Evidence {x}](evidence/2026-10-25-rerun/{x})' for x in logs));write();print('ROW',i,status,flush=True)
+def run(label,args,cwd=R,expect=0,extra=None):
+ e=env.copy();e.update(extra or {});p=T/'logs'/f'{label}.txt';start=time.monotonic()
+ with p.open('w') as f:
+  f.write('COMMAND: '+(args if isinstance(args,str) else ' '.join(args))+'\n');f.flush()
+  z=subprocess.run(args,cwd=cwd,env=e,stdout=f,stderr=subprocess.STDOUT,shell=isinstance(args,str),executable='/bin/bash' if isinstance(args,str) else None)
+  f.write(f'\nEXIT: {z.returncode}; elapsed seconds: {time.monotonic()-start:.3f}\n')
+ text=p.read_text(); print(label,'exit',z.returncode,flush=True)
+ return z.returncode,text,p.name
+
+def worktree(name,rev):
+ p=T/name
+ subprocess.run(['git','-c','core.hooksPath=/dev/null','worktree','add','--detach',str(p),rev],cwd=R,env=env,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);return p
+
+def archive(name):
+ p=T/name;p.mkdir()
+ with tempfile.TemporaryFile() as f:
+  subprocess.run(['git','archive',HEAD],cwd=R,stdout=f,check=True);f.seek(0);subprocess.run(['tar','-x','-C',str(p)],stdin=f,check=True)
+ for args in [['init','-q'],['add','.'],['-c','user.name=QA Fixture','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','commit','-qm','fixture']]:subprocess.run(['git',*args],cwd=p,env=env,check=True)
+ return p
+
+def body(src,name):
+ m=re.search(r'^func '+name+r'\([^\n]*\{\n.*?^}',src,re.M|re.S);assert m,name
+ # Last brace before subsequent comments ends this function (all are top-level).
+ v=m.group(0); return v[:v.rfind('}')+1]
+def inputs(log,root):
+ found=[];allpaths=set();roots={str(root),str(root.resolve())}
+ for line in pathlib.Path(log).read_text().splitlines():
+  op,_,p=line.partition(' ')
+  if op not in ['open','stat']:continue
+  candidate=pathlib.Path(p)
+  if not candidate.is_absolute():candidate=root/'internal/cli'/candidate
+  pp=os.path.normpath(str(candidate))
+  if not any(pp.startswith(rr+'/') for rr in roots):continue
+  pp=str(candidate.resolve())
+  for rr in roots:
+   if pp.startswith(rr+'/'):
+    rel=pp[len(rr)+1:];allpaths.add(rel)
+    if any(rel==a or rel.startswith(a+'/') for a in ['docs','.agents','skills','CONTEXT.md','.roundfixrc.yml']):found.append(line)
+ return sorted(set(found)),sorted(allpaths)
+
+c,o,l=run('binary-version',['./bin/roundfix','--version']); assert c==0; VERSION=o.splitlines()[1]
+c,o,l=run('strict-precondition',['./bin/roundfix','spec','check',S.name,'--strict']); assert c==0,o
+write();(T/'state.json').write_text(json.dumps({'root':str(R),'tmp':str(T),'head':HEAD,'base':BASE}));pathlib.Path('/tmp/qa0313-rerun-location').write_text(str(T))
+finish('01','pass','Build exited 0; binary version recorded above. Repository Verification is the supplied Daemon pass (exit 0), not a second Agent run.')
+h=worktree('head',HEAD); b=worktree('base',BASE)
+# Ordinary/tagged listing and exact function preservation.
+regex='^('+'|'.join(names)+')$'
+c,o,l=run('untagged-list',['go','test','-timeout','20m','-list',regex,'./internal/cli'],h);ok=c==0 and not re.search(r'^Test',o,re.M)
+c,o,l2=run('tagged-thirteen',['go','test','-count=1','-timeout','20m','-tags','docscontract','-v','-run',regex,'./internal/cli'],h);ok &= c==0 and all('--- PASS: '+n+' ' in o for n in names)
+proof=[]
+for n in names:
+ old=[p for p in (b/'internal/cli').glob('*_test.go') if 'func '+n+'(' in p.read_text()];new=[p for p in (h/'internal/cli').glob('*_test.go') if 'func '+n+'(' in p.read_text()]; same=len(old)==len(new)==1 and body(old[0].read_text(),n)==body(new[0].read_text(),n);ok &= same;proof.append(n+': byte-identical='+str(same))
+(T/'logs/bodies.txt').write_text('\n'.join(proof));finish('02','pass' if ok else 'fail','Untagged list excluded all 13; tagged run must show each PASS; source comparison uses Delivery Base function bytes.',[l,l2,'bodies.txt'])
+c,o,l=run('selector',['go','run','./cmd/verify-select','-contracts','-all'],h);ok=c==0 and all(n in o for n in names)
+c,o,l2=run('declarations',['go','test','-count=1','-timeout','15m','-run','^(TestRepositoryContractTestsDeclareTheirRelevance|TestNoContractNameCrossesABuildTagClass)$','./internal/verifyselect'],h);ok &= c==0
+finish('03','pass' if ok else 'fail','Selector lists all thirteen with internal/cli; independent relevance and name-class declarations pass.',[l,l2])
+# Each cache series uses the same environment and exact command.
+for rid,root in [('04',h),('05',b)]:
+ logs=[];lines=[];codes=[]
+ for k in range(3):
+  if k==2:
+   for rel in ['docs/user-guide/commands/gc.md','.agents/skills/roundfix/SKILL.md']:
+    with (root/rel).open('a') as f:f.write('\nQA cache probe\n')
+  c,o,l=run('cache-'+rid+'-'+str(k+1),['go','test','-parallel','16','-timeout','20m','./internal/cli'],root);logs.append(l);codes.append(c);lines.extend(re.findall(r'^(?:ok|FAIL)\s+.*',o,re.M))
+ ok=all(c==0 for c in codes) and len(lines)==3 and '(cached)' in lines[1] and (( '(cached)' in lines[2]) if rid=='04' else True)
+ finish(rid,'pass' if ok else 'fail','Three unchanged-environment results:\n\n```text\n'+'\n'.join(lines)+'\n```\nThe Delivery Base third run is context; audited head must stay cached.',logs)
+ # Restore probe documents before another test.
+ subprocess.run(['git','restore','docs/user-guide/commands/gc.md','.agents/skills/roundfix/SKILL.md'],cwd=root,env=env,check=True)
+# Input-log binary and isolated runtime home.
+c,o,l=run('binary-build',['go','test','-buildvcs=false','-c','-o',str(T/'cli.test'),'./internal/cli'],h)
+c2,o2,l2=run('binary-log',[str(T/'cli.test'),'-test.parallel','16','-test.timeout','20m','-test.testlogfile',str(T/'inputs.log')],h/'internal/cli') if c==0 else (1,'','binary-log.txt')
+bad,paths=inputs(T/'inputs.log',h) if (T/'inputs.log').exists() else (['missing log'],[])
+(T/'logs/input-paths.txt').write_text('Forbidden open/stat entries: '+str(len(bad))+'\n'+'\n'.join(bad)+'\nDistinct in-module paths grouped by top level:\n'+'\n'.join(paths))
+finish('06','pass' if c==c2==0 and not bad else 'fail','Full untagged binary ran once with temporary HOME; checked both worktree and resolved paths. Distinct module paths captured separately.',[l,l2,'input-paths.txt'])
+a=archive('removed');dirs=['docs/history','docs/adr','docs/specs','docs/user-guide','.agents/skills']
+for rel in dirs: shutil.rmtree(a/rel)
+c,o,l=run('removed-trees',['go','test','-count=1','-parallel','16','-timeout','20m','./internal/cli'],a)
+finish('07','pass' if c==0 else 'fail','Committed archive copy; removed all five trees without committing; Git retains tracked deletions. Full uncached suite measured independently of the input log.',[l])
+shutil.rmtree(a)
+# Persist resumable context; later stages reuse these utilities without executing stage one.
+(T/'rows.json').write_text(json.dumps(rows));print('STAGE ONE DONE',str(T),flush=True)

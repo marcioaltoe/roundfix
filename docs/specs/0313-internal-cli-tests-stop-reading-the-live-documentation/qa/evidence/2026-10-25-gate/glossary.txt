@@ -1,0 +1,3 @@
+PRD and TechSpec Glossary declarations: None
+CONTEXT.md byte-identical to Delivery Base: True
+Introduced identifiers are test/fixture helpers, not new domain concepts. Existing suite guard, Task, Spec and documentation contract concepts retain their meaning.

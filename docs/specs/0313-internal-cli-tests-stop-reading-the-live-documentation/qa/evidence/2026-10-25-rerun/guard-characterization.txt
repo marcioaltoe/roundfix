@@ -1,0 +1,173 @@
+COMMAND: go test -count=1 -timeout 15m -v -run ^(TestGuardReportsEveryLeakClass|TestGuardLeavesNoRepositoryPathInTheTestInputLog|TestGuardRefusesARootOutsideAGitWorkTree|TestGuardNamesTheViolatingPath|TestGuardPassesOnAnIsolatedWrite|TestGuardIgnoresRepositoryRules|TestSanctionedRegenerationIsDeclaredInProcess|TestGuardReportsAndKillsHelperResidue|TestGuardPassesWhenEveryHelperEnded|TestGuardMarksItsTestBinary|TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning)$ ./internal/suiteguard
+=== RUN   TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning
+=== PAUSE TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning
+=== RUN   TestGuardReportsEveryLeakClass
+=== PAUSE TestGuardReportsEveryLeakClass
+=== RUN   TestGuardLeavesNoRepositoryPathInTheTestInputLog
+=== PAUSE TestGuardLeavesNoRepositoryPathInTheTestInputLog
+=== RUN   TestGuardRefusesARootOutsideAGitWorkTree
+=== PAUSE TestGuardRefusesARootOutsideAGitWorkTree
+=== RUN   TestGuardNamesTheViolatingPath
+    suiteguard_test.go:47: === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 2 paths; fingerprint took 26.587167ms before and 18.768125ms after
+        suiteguard: repository boundary violated:
+        suiteguard: created: created.txt
+        suiteguard: modified: modified.txt
+        suiteguard: removed: removed.txt
+        
+--- PASS: TestGuardNamesTheViolatingPath (0.06s)
+=== RUN   TestGuardPassesOnAnIsolatedWrite
+    suiteguard_test.go:66: === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 2803 paths; fingerprint took 134.939875ms before and 137.054ms after
+        
+--- PASS: TestGuardPassesOnAnIsolatedWrite (0.28s)
+=== RUN   TestGuardIgnoresRepositoryRules
+    suiteguard_test.go:80: === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 1 paths; fingerprint took 20.338583ms before and 19.999083ms after
+        
+--- PASS: TestGuardIgnoresRepositoryRules (0.06s)
+=== RUN   TestSanctionedRegenerationIsDeclaredInProcess
+    suiteguard_test.go:95: === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 4 paths; fingerprint took 19.043208ms before and 19.78175ms after
+        
+--- PASS: TestSanctionedRegenerationIsDeclaredInProcess (0.06s)
+=== RUN   TestGuardReportsAndKillsHelperResidue
+=== PAUSE TestGuardReportsAndKillsHelperResidue
+=== RUN   TestGuardPassesWhenEveryHelperEnded
+=== PAUSE TestGuardPassesWhenEveryHelperEnded
+=== RUN   TestGuardMarksItsTestBinary
+=== PAUSE TestGuardMarksItsTestBinary
+=== CONT  TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning
+=== CONT  TestGuardReportsAndKillsHelperResidue
+=== CONT  TestGuardLeavesNoRepositoryPathInTheTestInputLog
+=== CONT  TestGuardRefusesARootOutsideAGitWorkTree
+=== CONT  TestGuardMarksItsTestBinary
+=== CONT  TestGuardPassesWhenEveryHelperEnded
+=== CONT  TestGuardReportsEveryLeakClass
+=== RUN   TestGuardReportsEveryLeakClass/tracked_edit
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_edit
+=== RUN   TestGuardReportsEveryLeakClass/tracked_deletion
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_deletion
+=== RUN   TestGuardReportsEveryLeakClass/tracked_empty_file
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_empty_file
+=== RUN   TestGuardReportsEveryLeakClass/dirty_tracked_edit
+=== PAUSE TestGuardReportsEveryLeakClass/dirty_tracked_edit
+=== RUN   TestGuardReportsEveryLeakClass/untracked_creation
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_creation
+=== RUN   TestGuardReportsEveryLeakClass/new_directory_file
+=== PAUSE TestGuardReportsEveryLeakClass/new_directory_file
+=== RUN   TestGuardReportsEveryLeakClass/beside_tracked_file
+=== PAUSE TestGuardReportsEveryLeakClass/beside_tracked_file
+=== RUN   TestGuardReportsEveryLeakClass/untracked_edit
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_edit
+=== RUN   TestGuardReportsEveryLeakClass/untracked_deletion
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_deletion
+=== RUN   TestGuardReportsEveryLeakClass/empty_directory_creation
+=== PAUSE TestGuardReportsEveryLeakClass/empty_directory_creation
+=== RUN   TestGuardReportsEveryLeakClass/empty_directory_removal
+=== PAUSE TestGuardReportsEveryLeakClass/empty_directory_removal
+=== RUN   TestGuardReportsEveryLeakClass/tracked_executable
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_executable
+=== RUN   TestGuardReportsEveryLeakClass/untracked_executable
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_executable
+=== RUN   TestGuardReportsEveryLeakClass/symlink_retarget
+=== PAUSE TestGuardReportsEveryLeakClass/symlink_retarget
+=== RUN   TestGuardReportsEveryLeakClass/file_becomes_symlink
+=== PAUSE TestGuardReportsEveryLeakClass/file_becomes_symlink
+=== RUN   TestGuardReportsEveryLeakClass/file_permission_narrowed
+=== PAUSE TestGuardReportsEveryLeakClass/file_permission_narrowed
+=== RUN   TestGuardReportsEveryLeakClass/directory_permission_narrowed
+=== PAUSE TestGuardReportsEveryLeakClass/directory_permission_narrowed
+=== RUN   TestGuardReportsEveryLeakClass/directory_with_ignored_files
+=== PAUSE TestGuardReportsEveryLeakClass/directory_with_ignored_files
+=== RUN   TestGuardReportsEveryLeakClass/negated_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/negated_ignore
+=== RUN   TestGuardReportsEveryLeakClass/directory_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/directory_ignore
+=== RUN   TestGuardReportsEveryLeakClass/root_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/root_ignore
+=== RUN   TestGuardReportsEveryLeakClass/nested_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/nested_ignore
+=== CONT  TestGuardReportsEveryLeakClass/tracked_edit
+=== CONT  TestGuardReportsEveryLeakClass/tracked_executable
+=== CONT  TestGuardReportsEveryLeakClass/beside_tracked_file
+=== CONT  TestGuardReportsEveryLeakClass/empty_directory_removal
+--- PASS: TestGuardRefusesARootOutsideAGitWorkTree (0.02s)
+=== CONT  TestGuardReportsEveryLeakClass/empty_directory_creation
+--- PASS: TestGuardMarksItsTestBinary (0.11s)
+=== CONT  TestGuardReportsEveryLeakClass/untracked_deletion
+=== CONT  TestGuardReportsEveryLeakClass/untracked_edit
+=== NAME  TestGuardPassesWhenEveryHelperEnded
+    suiteguard_test.go:340: === RUN   TestGuardFixture
+        fixture helper pid: 49080
+        --- PASS: TestGuardFixture (0.04s)
+        PASS
+        suiteguard: guard cost: measured 0 paths; fingerprint took 39.394042ms before and 30.950292ms after
+        
+--- PASS: TestGuardPassesWhenEveryHelperEnded (0.16s)
+=== CONT  TestGuardReportsEveryLeakClass/dirty_tracked_edit
+=== CONT  TestGuardReportsEveryLeakClass/new_directory_file
+--- PASS: TestGuardLeavesNoRepositoryPathInTheTestInputLog (0.16s)
+=== CONT  TestGuardReportsEveryLeakClass/untracked_creation
+=== CONT  TestGuardReportsEveryLeakClass/directory_with_ignored_files
+=== CONT  TestGuardReportsEveryLeakClass/nested_ignore
+=== CONT  TestGuardReportsEveryLeakClass/root_ignore
+=== CONT  TestGuardReportsEveryLeakClass/directory_ignore
+=== CONT  TestGuardReportsEveryLeakClass/negated_ignore
+=== CONT  TestGuardReportsEveryLeakClass/file_becomes_symlink
+=== CONT  TestGuardReportsEveryLeakClass/directory_permission_narrowed
+=== CONT  TestGuardReportsEveryLeakClass/file_permission_narrowed
+=== CONT  TestGuardReportsEveryLeakClass/tracked_deletion
+=== CONT  TestGuardReportsEveryLeakClass/symlink_retarget
+=== CONT  TestGuardReportsEveryLeakClass/untracked_executable
+=== CONT  TestGuardReportsEveryLeakClass/tracked_empty_file
+--- PASS: TestGuardReportsEveryLeakClass (0.00s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_edit (0.14s)
+    --- PASS: TestGuardReportsEveryLeakClass/beside_tracked_file (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/empty_directory_removal (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/empty_directory_creation (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_executable (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/untracked_deletion (0.17s)
+    --- PASS: TestGuardReportsEveryLeakClass/untracked_edit (0.15s)
+    --- PASS: TestGuardReportsEveryLeakClass/dirty_tracked_edit (0.14s)
+    --- PASS: TestGuardReportsEveryLeakClass/new_directory_file (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/untracked_creation (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/root_ignore (0.15s)
+    --- PASS: TestGuardReportsEveryLeakClass/directory_with_ignored_files (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/nested_ignore (0.17s)
+    --- PASS: TestGuardReportsEveryLeakClass/negated_ignore (0.14s)
+    --- PASS: TestGuardReportsEveryLeakClass/directory_ignore (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/file_becomes_symlink (0.15s)
+    --- PASS: TestGuardReportsEveryLeakClass/directory_permission_narrowed (0.15s)
+    --- PASS: TestGuardReportsEveryLeakClass/file_permission_narrowed (0.14s)
+    --- PASS: TestGuardReportsEveryLeakClass/symlink_retarget (0.13s)
+    --- PASS: TestGuardReportsEveryLeakClass/untracked_executable (0.13s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_deletion (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_empty_file (0.10s)
+=== NAME  TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning
+    residue_test.go:130: suiteguard: helper residue check skipped an unreadable process: pid 48915: process argument memory changed during read: short argument list for pid 48915
+        suiteguard: helper residue: pid 49024: marked fixture
+        
+--- PASS: TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning (10.08s)
+=== NAME  TestGuardReportsAndKillsHelperResidue
+    suiteguard_test.go:300: === RUN   TestGuardFixture
+        fixture helper pid: 49049
+        --- PASS: TestGuardFixture (0.04s)
+        PASS
+        suiteguard: helper residue: pid 49049: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/go-build1905581770/b001/suiteguard.test -test.run=^TestGuardFixture$
+        suiteguard: guard cost: measured 0 paths; fingerprint took 39.415292ms before and 28.054833ms after
+        
+--- PASS: TestGuardReportsAndKillsHelperResidue (10.14s)
+PASS
+suiteguard: guard cost: measured 2803 paths; fingerprint took 312.571041ms before and 137.84475ms after
+ok  	roundfix/internal/suiteguard	11.344s
+
+EXIT: 0; elapsed seconds: 11.569

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0313-internal-cli-tests-stop-reading-the-live-documentation
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

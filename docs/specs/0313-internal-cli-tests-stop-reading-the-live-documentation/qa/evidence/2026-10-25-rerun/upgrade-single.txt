@@ -1,0 +1,5 @@
+COMMAND: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-ulo3etol/cli.test -test.run ^TestUpgradeStdoutAndExitCodesAreCharacterized$ -test.count 1 -test.timeout 10m -test.testlogfile /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-ulo3etol/upgrade-single.log
+PASS
+suiteguard: guard cost: measured 2803 paths; fingerprint took 133.570542ms before and 131.811666ms after
+
+EXIT: 0; elapsed seconds: 0.330

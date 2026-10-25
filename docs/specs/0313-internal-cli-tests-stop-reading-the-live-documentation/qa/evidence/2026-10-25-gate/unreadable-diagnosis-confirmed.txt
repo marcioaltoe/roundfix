@@ -1,0 +1,6 @@
+Diagnostic command: go test -run ^$ -timeout 1m ./internal/cli; HOME temporary; GOMODCACHE, GOPATH and Rust toolchain preserved; downloads disabled.
+suiteguard: fingerprint repository before tests: git update-index: exit status 128: error: lstat(".agents/skills/agentic-cli-design/SKILL.md"): Permission denied
+fatal: Unable to process path .agents/skills/agentic-cli-design/SKILL.md
+FAIL	roundfix/internal/cli	0.558s
+FAIL
+EXIT: 1

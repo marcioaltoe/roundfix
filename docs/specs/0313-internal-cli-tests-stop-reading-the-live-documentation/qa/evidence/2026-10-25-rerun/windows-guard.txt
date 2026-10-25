@@ -1,0 +1,3 @@
+COMMAND: go build -buildvcs=false ./internal/suiteguard
+
+EXIT: 0; elapsed seconds: 0.114

@@ -1,0 +1,8 @@
+COMMAND: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-uz_bj6qp/cli.test -test.parallel 16 -test.timeout 20m -test.testlogfile /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-uz_bj6qp/inputs.log
+suiteguard: guard cost: measured 2806 paths; fingerprint took 226.845167ms before and 183.353834ms after
+suiteguard: guard cost: measured 2806 paths; fingerprint took 186.831917ms before and 233.74725ms after
+roundfix: Delivery Queue item widget: implement runs the item binary /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSpecReturnsARunSlotRefusalWithItsHolders1447733802/002/artifacts/delivery/widget/item-binary/a1dd23f1de29b78e/roundfix
+PASS
+suiteguard: guard cost: measured 2806 paths; fingerprint took 304.6695ms before and 132.960167ms after
+
+EXIT: 0; elapsed seconds: 152.099

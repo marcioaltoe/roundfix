@@ -1,0 +1,6 @@
+COMMAND: git ls-files --error-unmatch .agents/skills/agentic-cli-design/SKILL.md
+.agents/skills/agentic-cli-design/SKILL.md
+EXIT: 0
+COMMAND: git check-ignore --no-index .agents/skills/agentic-cli-design/SKILL.md
+.agents/skills/agentic-cli-design/SKILL.md
+EXIT: 0

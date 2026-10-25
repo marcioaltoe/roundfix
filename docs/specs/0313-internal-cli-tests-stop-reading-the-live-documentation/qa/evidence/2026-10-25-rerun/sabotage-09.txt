@@ -1,0 +1,9 @@
+COMMAND: go test -count=1 -timeout 15m -run ^TestRepositoryContractTestsDeclareTheirRelevance$ ./internal/verifyselect
+--- FAIL: TestRepositoryContractTestsDeclareTheirRelevance (0.01s)
+    contracts_repository_test.go:33: internal/cli/live_documents_docscontract_test.go: relevant needs at least one path
+FAIL
+suiteguard: guard cost: measured 2803 paths; fingerprint took 158.198709ms before and 130.703334ms after
+FAIL	roundfix/internal/verifyselect	0.552s
+FAIL
+
+EXIT: 1; elapsed seconds: 0.906

@@ -1,0 +1,13 @@
+Independent audit history:
+87094aa97625bae3ebe272fa014401b31c5b65b6 docs: plan 0311 to 0314 (cycle AP batch 4) (#658)
+Precedes Delivery Base: True
+Measurement excerpts:
+110: | uncached, 2026-10-24 00:30 | 284 s | about 45 |
+111: | uncached, 00:40 | 299 s | 16.6 |
+117: ### Slowest packages (uncached, 00:30 run)
+137: ### Slowest tests (uncached, 00:30 run)
+187: | case | packages cached | wall |
+197: | one Task file's `status:` line | cached | cached |
+198: | one line appended to `docs/user-guide/commands/gc.md` | ran again, 162.6 s and 237.0 s | cached |
+272: | `internal/cli` after a guide or skill edit | runs again, 160 to 240 s | cached | Spec 0313 |
+Go help quote matched: True

@@ -1,0 +1,16 @@
+COMMAND: go test -count=1 -timeout 15m -v -run ^TestGuardRefusesARootOutsideAGitWorkTree$ ./internal/suiteguard
+=== RUN   TestGuardRefusesARootOutsideAGitWorkTree
+=== PAUSE TestGuardRefusesARootOutsideAGitWorkTree
+=== CONT  TestGuardRefusesARootOutsideAGitWorkTree
+    leak_cases_test.go:196: non-Git root exit = 0, want refusal before tests:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 0 paths; fingerprint took 52.791µs before and 49µs after
+--- FAIL: TestGuardRefusesARootOutsideAGitWorkTree (0.01s)
+FAIL
+suiteguard: guard cost: measured 2803 paths; fingerprint took 124.100083ms before and 80.62075ms after
+FAIL	roundfix/internal/suiteguard	0.456s
+FAIL
+
+EXIT: 1; elapsed seconds: 0.758

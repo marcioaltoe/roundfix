@@ -1,0 +1,8 @@
+COMMAND: git diff-tree --no-commit-id --name-only -r e924e71362d8b27b201e0942670dcc1f05b4ede0
+docs/specs/0313-internal-cli-tests-stop-reading-the-live-documentation/task_01.md
+internal/cli/baseline_update_repository_profile_test.go
+internal/cli/doctor_trailing_skills_test.go
+internal/cli/repository_profile_docscontract_test.go
+internal/verifyselect/contracts_repository_test.go
+
+EXIT: 0; elapsed seconds: 0.008

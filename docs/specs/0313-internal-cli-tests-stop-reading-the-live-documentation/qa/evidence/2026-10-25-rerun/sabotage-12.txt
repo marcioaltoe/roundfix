@@ -1,0 +1,142 @@
+COMMAND: go test -count=1 -timeout 15m -v -run ^TestGuardReportsEveryLeakClass$ ./internal/suiteguard
+=== RUN   TestGuardReportsEveryLeakClass
+=== PAUSE TestGuardReportsEveryLeakClass
+=== CONT  TestGuardReportsEveryLeakClass
+=== RUN   TestGuardReportsEveryLeakClass/tracked_edit
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_edit
+=== RUN   TestGuardReportsEveryLeakClass/tracked_deletion
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_deletion
+=== RUN   TestGuardReportsEveryLeakClass/tracked_empty_file
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_empty_file
+=== RUN   TestGuardReportsEveryLeakClass/dirty_tracked_edit
+=== PAUSE TestGuardReportsEveryLeakClass/dirty_tracked_edit
+=== RUN   TestGuardReportsEveryLeakClass/untracked_creation
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_creation
+=== RUN   TestGuardReportsEveryLeakClass/new_directory_file
+=== PAUSE TestGuardReportsEveryLeakClass/new_directory_file
+=== RUN   TestGuardReportsEveryLeakClass/beside_tracked_file
+=== PAUSE TestGuardReportsEveryLeakClass/beside_tracked_file
+=== RUN   TestGuardReportsEveryLeakClass/untracked_edit
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_edit
+=== RUN   TestGuardReportsEveryLeakClass/untracked_deletion
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_deletion
+=== RUN   TestGuardReportsEveryLeakClass/empty_directory_creation
+=== PAUSE TestGuardReportsEveryLeakClass/empty_directory_creation
+=== RUN   TestGuardReportsEveryLeakClass/empty_directory_removal
+=== PAUSE TestGuardReportsEveryLeakClass/empty_directory_removal
+=== RUN   TestGuardReportsEveryLeakClass/tracked_executable
+=== PAUSE TestGuardReportsEveryLeakClass/tracked_executable
+=== RUN   TestGuardReportsEveryLeakClass/untracked_executable
+=== PAUSE TestGuardReportsEveryLeakClass/untracked_executable
+=== RUN   TestGuardReportsEveryLeakClass/symlink_retarget
+=== PAUSE TestGuardReportsEveryLeakClass/symlink_retarget
+=== RUN   TestGuardReportsEveryLeakClass/file_becomes_symlink
+=== PAUSE TestGuardReportsEveryLeakClass/file_becomes_symlink
+=== RUN   TestGuardReportsEveryLeakClass/file_permission_narrowed
+=== PAUSE TestGuardReportsEveryLeakClass/file_permission_narrowed
+=== RUN   TestGuardReportsEveryLeakClass/directory_permission_narrowed
+=== PAUSE TestGuardReportsEveryLeakClass/directory_permission_narrowed
+=== RUN   TestGuardReportsEveryLeakClass/directory_with_ignored_files
+=== PAUSE TestGuardReportsEveryLeakClass/directory_with_ignored_files
+=== RUN   TestGuardReportsEveryLeakClass/negated_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/negated_ignore
+=== RUN   TestGuardReportsEveryLeakClass/directory_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/directory_ignore
+=== RUN   TestGuardReportsEveryLeakClass/root_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/root_ignore
+=== RUN   TestGuardReportsEveryLeakClass/nested_ignore
+=== PAUSE TestGuardReportsEveryLeakClass/nested_ignore
+=== CONT  TestGuardReportsEveryLeakClass/tracked_edit
+=== CONT  TestGuardReportsEveryLeakClass/tracked_executable
+=== CONT  TestGuardReportsEveryLeakClass/untracked_edit
+=== CONT  TestGuardReportsEveryLeakClass/directory_with_ignored_files
+=== CONT  TestGuardReportsEveryLeakClass/root_ignore
+=== CONT  TestGuardReportsEveryLeakClass/directory_permission_narrowed
+=== CONT  TestGuardReportsEveryLeakClass/beside_tracked_file
+=== CONT  TestGuardReportsEveryLeakClass/empty_directory_removal
+=== CONT  TestGuardReportsEveryLeakClass/empty_directory_creation
+=== CONT  TestGuardReportsEveryLeakClass/untracked_deletion
+    leak_cases_test.go:149: leak exit = 0, want failure:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 28.477ms before and 32.667583ms after
+=== NAME  TestGuardReportsEveryLeakClass/beside_tracked_file
+    leak_cases_test.go:149: leak exit = 0, want failure:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 36.035084ms before and 31.21475ms after
+=== CONT  TestGuardReportsEveryLeakClass/directory_ignore
+=== CONT  TestGuardReportsEveryLeakClass/negated_ignore
+=== CONT  TestGuardReportsEveryLeakClass/file_becomes_symlink
+=== CONT  TestGuardReportsEveryLeakClass/file_permission_narrowed
+=== NAME  TestGuardReportsEveryLeakClass/untracked_edit
+    leak_cases_test.go:149: leak exit = 0, want failure:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 37.669209ms before and 38.845417ms after
+=== CONT  TestGuardReportsEveryLeakClass/symlink_retarget
+=== CONT  TestGuardReportsEveryLeakClass/dirty_tracked_edit
+=== CONT  TestGuardReportsEveryLeakClass/new_directory_file
+=== CONT  TestGuardReportsEveryLeakClass/untracked_creation
+=== CONT  TestGuardReportsEveryLeakClass/untracked_executable
+=== CONT  TestGuardReportsEveryLeakClass/tracked_empty_file
+=== CONT  TestGuardReportsEveryLeakClass/tracked_deletion
+=== CONT  TestGuardReportsEveryLeakClass/nested_ignore
+=== NAME  TestGuardReportsEveryLeakClass/negated_ignore
+    leak_cases_test.go:149: leak exit = 0, want failure:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 42.332084ms before and 40.001ms after
+=== NAME  TestGuardReportsEveryLeakClass/untracked_creation
+    leak_cases_test.go:149: leak exit = 0, want failure:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 38.349084ms before and 35.136125ms after
+=== NAME  TestGuardReportsEveryLeakClass/new_directory_file
+    leak_cases_test.go:153: missing diagnostic "created: newdir/deep/created.txt":
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 33.293833ms before and 39.028375ms after
+        suiteguard: repository boundary violated:
+        suiteguard: created: newdir
+=== NAME  TestGuardReportsEveryLeakClass/untracked_executable
+    leak_cases_test.go:149: leak exit = 0, want failure:
+        === RUN   TestGuardFixture
+        --- PASS: TestGuardFixture (0.00s)
+        PASS
+        suiteguard: guard cost: measured 8 paths; fingerprint took 33.223875ms before and 20.062708ms after
+--- FAIL: TestGuardReportsEveryLeakClass (0.00s)
+    --- PASS: TestGuardReportsEveryLeakClass/directory_permission_narrowed (0.16s)
+    --- FAIL: TestGuardReportsEveryLeakClass/untracked_deletion (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/directory_with_ignored_files (0.16s)
+    --- FAIL: TestGuardReportsEveryLeakClass/beside_tracked_file (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_edit (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_executable (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/empty_directory_removal (0.19s)
+    --- PASS: TestGuardReportsEveryLeakClass/root_ignore (0.19s)
+    --- PASS: TestGuardReportsEveryLeakClass/empty_directory_creation (0.19s)
+    --- FAIL: TestGuardReportsEveryLeakClass/untracked_edit (0.20s)
+    --- PASS: TestGuardReportsEveryLeakClass/file_permission_narrowed (0.16s)
+    --- PASS: TestGuardReportsEveryLeakClass/directory_ignore (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/file_becomes_symlink (0.18s)
+    --- PASS: TestGuardReportsEveryLeakClass/dirty_tracked_edit (0.17s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_empty_file (0.16s)
+    --- FAIL: TestGuardReportsEveryLeakClass/negated_ignore (0.20s)
+    --- PASS: TestGuardReportsEveryLeakClass/symlink_retarget (0.18s)
+    --- FAIL: TestGuardReportsEveryLeakClass/untracked_creation (0.17s)
+    --- FAIL: TestGuardReportsEveryLeakClass/new_directory_file (0.17s)
+    --- FAIL: TestGuardReportsEveryLeakClass/untracked_executable (0.20s)
+    --- PASS: TestGuardReportsEveryLeakClass/tracked_deletion (0.11s)
+    --- PASS: TestGuardReportsEveryLeakClass/nested_ignore (0.10s)
+FAIL
+suiteguard: guard cost: measured 2803 paths; fingerprint took 151.883625ms before and 130.627625ms after
+FAIL	roundfix/internal/suiteguard	0.987s
+FAIL
+
+EXIT: 1; elapsed seconds: 1.285

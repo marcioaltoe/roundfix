@@ -1,0 +1,4 @@
+COMMAND: go test -count=1 -timeout 15m -run ^(TestRepositoryContractTestsDeclareTheirRelevance|TestNoContractNameCrossesABuildTagClass)$ ./internal/verifyselect
+ok  	roundfix/internal/verifyselect	0.754s
+
+EXIT: 0; elapsed seconds: 0.987

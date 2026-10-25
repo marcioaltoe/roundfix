@@ -1,0 +1,34 @@
+suiteguard: guard cost: measured 2803 paths; fingerprint took 147.482125ms before and 131.784625ms after
+ok  	roundfix/internal/agent	2.572s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 169.858375ms before and 132.050459ms after
+ok  	roundfix/internal/authorization	0.570s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 160.535292ms before and 134.688583ms after
+ok  	roundfix/internal/baseline	71.387s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 510.377042ms before and 405.459291ms after
+suiteguard: guard cost: measured 2803 paths; fingerprint took 648.100625ms before and 589.71375ms after
+suiteguard: guard cost: measured 2803 paths; fingerprint took 146.075334ms before and 139.657792ms after
+ok  	roundfix/internal/cli	152.025s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 161.04875ms before and 130.650208ms after
+ok  	roundfix/internal/config	1.284s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 148.23ms before and 131.716667ms after
+ok  	roundfix/internal/daemon	21.413s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 159.846083ms before and 134.619042ms after
+ok  	roundfix/internal/delivery	2.138s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 169.82825ms before and 130.786625ms after
+ok  	roundfix/internal/gittest	0.880s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 169.391291ms before and 133.280958ms after
+ok  	roundfix/internal/preflight	0.684s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 151.192458ms before and 141.5615ms after
+ok  	roundfix/internal/spec	21.156s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 159.991542ms before and 129.779958ms after
+ok  	roundfix/internal/specaudit	1.992s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 139.656417ms before and 139.116792ms after
+ok  	roundfix/internal/speccheck	10.833s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 164.779166ms before and 134.993041ms after
+ok  	roundfix/internal/store	6.739s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 154.248084ms before and 135.484166ms after
+ok  	roundfix/internal/suiteguard	11.282s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 150.071542ms before and 131.634375ms after
+ok  	roundfix/internal/verifyselect	5.245s
+suiteguard: guard cost: measured 2803 paths; fingerprint took 158.173167ms before and 132.133708ms after
+ok  	roundfix/internal/worktree	19.779s
