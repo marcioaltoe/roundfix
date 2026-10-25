@@ -45,4 +45,4 @@ produced. task_05 is the second and last corrective Task, from the
 maintainer's answer of 2026-10-25 (about 11:00 BRT): the suite guard
 fingerprints through Git. It shares no file with the earlier Tasks and
 follows task_04, so it runs alone in Wave 4. The gate follows it and runs the
-cache, test input log, unreadable-trees and guard sabotage measurements. No other Spec is required.
+cache, test input log, removed-trees and guard sabotage measurements. No other Spec is required.

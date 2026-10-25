@@ -73,11 +73,13 @@ to a `rustfmt` shim without a toolchain.
    in-module paths the log names, grouped by top-level directory. For
    Success Metric 4, in a temporary copy of the
    audited head made with `git archive`, initialized as a Git repository and
-   committed, append `/docs/history/`, `/docs/adr/`, `/docs/specs/`,
-   `/docs/user-guide/` and `/.agents/skills/` to `.gitignore` without
-   committing, make those five directories unreadable with `chmod 000`, run
-   `go test -count=1 -parallel 16 -timeout 20m ./internal/cli`, record that
-   it passes, and restore the permissions before removing the copy.
+   committed, remove the five directories `docs/history/`, `docs/adr/`,
+   `docs/specs/`, `docs/user-guide/` and `.agents/skills/` from disk without
+   committing (Git keeps them tracked and reports them deleted; the suite
+   guard accepts a tracked path that is missing from disk but cannot inspect
+   a tracked unreadable one, Run run_20261025T193403Z_ade2bddbacb762cf F-02),
+   run `go test -count=1 -parallel 16 -timeout 20m ./internal/cli`, record
+   that it passes, and remove the copy.
 6. MUST run each sabotage on its own temporary copy of the audited head made
    with `git archive`, initialized as a Git repository and committed before
    the mutation (the suite guard refuses a root outside a Git work tree),
@@ -174,7 +176,7 @@ to a `rustfmt` shim without a toolchain.
 ## Subtasks
 
 - [ ] Build the binary and run the repository Verification.
-- [ ] Run the list, tag, selector, cache, test input log and unreadable-trees rows and each sabotage on temporary copies.
+- [ ] Run the list, tag, selector, cache, test input log and removed-trees rows and each sabotage on temporary copies.
 - [ ] Record the outside sources, the glossary check and the scope audit, and write the QA report.
 
 ## Acceptance Criteria
