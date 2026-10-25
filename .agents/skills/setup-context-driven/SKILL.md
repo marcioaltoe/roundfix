@@ -1,14 +1,13 @@
 ---
 name: setup-context-driven
 description: Adopt, update, or verify a repository's Context-Driven Baseline through the public Roundfix Baseline Command. Use when preparing a repository for the write-prd/write-tasks/implement pipeline, changing its Baseline Profile, preserving existing instructions, restoring its Repository Skill Set, or confirming that Baseline-owned content is current.
-disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Setup Context-Driven
@@ -21,6 +20,14 @@ setup engine or behavioral fallback.
 
 Read the durable operating contract before the first adoption or a recovery:
 `docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
+
+## Who starts this skill
+
+An Agent may start this skill itself when its dispatch trigger matches; its
+metadata does not turn off model invocation. Starting it authorizes no write.
+Present the Plan and its Plan Digest first, and pass `--confirm-plan <digest>`
+or `--yes` only after the person approves that Plan Digest or the
+repository's own instructions already authorize it.
 
 ## Boundaries
 

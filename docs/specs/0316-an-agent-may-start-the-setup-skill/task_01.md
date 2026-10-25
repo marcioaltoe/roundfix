@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0316-an-agent-may-start-the-setup-skill
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -95,3 +95,10 @@ None. The skill text, its metadata and one guide paragraph change; no Go package
 
 - `_prd.md` → Sources; Goals; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 1-4; Invariants 1-3; Testing Approach; Build Order 1
+
+## Result
+
+- Neither canonical nor shipped `setup-context-driven` skill disables model invocation; both are version 0.0.6 and contain the Plan Digest approval section. Added `skills/setup_skill_invocation_test.go`, including the unchanged `implement-spec` person-only lock contract.
+- Ran `make skills-sync` and recorded the owned-skill version entry with `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; the mirror and version record were updated.
+- Added the Context-Driven Baseline guide paragraph and re-recorded `docs/references/behavior-surfaces.json` last with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (pass).
+- Focused check: `go test ./skills -run '^TestAnAgentMayStartTheSetupSkill$' -count=1` (4 passed).
