@@ -18,6 +18,7 @@ sources:
   - 2026-10-24-internal-cli-tests-read-the-live-documentation-trees.md
 regeneration: []
 promoted: []
+pull_request: "675"
 ---
 
 # internal/cli tests stop reading the live documentation
