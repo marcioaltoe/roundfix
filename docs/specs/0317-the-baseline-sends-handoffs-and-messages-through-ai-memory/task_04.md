@@ -68,7 +68,7 @@ the glossary and reworded **Triage**, and retires ADR-0095 by deletion
      pending Cross-project Message into its contract-true artifact,
      committed by the destination alone.", keeping its `_Avoid_` line;
    - leave no link to ADR-0095.
-5. MUST delete `docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md`
+5. MUST delete, with `git rm` so the deletion is staged in the index (the Spec Consistency and documentation contract readers list files from the Git index and refuse a tracked path missing from disk until Spec 0315 ships; Run run_20261025T133232Z_0a2b2319e6c91868 failed on an unstaged deletion), `docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md`
    and edit no other ADR; ADR-0330 already names it as superseded with its
    date.
 6. MUST replace, in `docs/user-guide/commands/history.md`, the sentence
