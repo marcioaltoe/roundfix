@@ -1,0 +1,3 @@
+command: go vet ./internal/sharedcache
+
+exit: 0

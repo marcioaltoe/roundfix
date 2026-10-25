@@ -1,0 +1,21 @@
+command: go test -count=1 -timeout 10m -v ./internal/sharedcache
+=== RUN   TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== PAUSE TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== RUN   TestMeasureKeepsEveryEntryWithinTheLimitOrInUse
+=== PAUSE TestMeasureKeepsEveryEntryWithinTheLimitOrInUse
+=== RUN   TestMeasureRefusesWhatIsNotAGoBuildCache
+=== PAUSE TestMeasureRefusesWhatIsNotAGoBuildCache
+=== RUN   TestApplySkipsAnEntryUsedSinceItWasPlanned
+=== PAUSE TestApplySkipsAnEntryUsedSinceItWasPlanned
+=== CONT  TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== CONT  TestApplySkipsAnEntryUsedSinceItWasPlanned
+=== CONT  TestMeasureKeepsEveryEntryWithinTheLimitOrInUse
+=== CONT  TestMeasureRefusesWhatIsNotAGoBuildCache
+--- PASS: TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit (0.01s)
+--- PASS: TestApplySkipsAnEntryUsedSinceItWasPlanned (0.01s)
+--- PASS: TestMeasureRefusesWhatIsNotAGoBuildCache (0.01s)
+--- PASS: TestMeasureKeepsEveryEntryWithinTheLimitOrInUse (0.01s)
+PASS
+ok  	roundfix/internal/sharedcache	0.252s
+
+exit: 0

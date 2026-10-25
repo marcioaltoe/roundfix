@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0314-gc-trims-the-shared-build-cache
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

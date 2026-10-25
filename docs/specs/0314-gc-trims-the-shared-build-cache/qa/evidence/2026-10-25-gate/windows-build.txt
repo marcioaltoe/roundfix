@@ -1,0 +1,3 @@
+command: go build ./internal/config ./internal/cli
+
+exit: 0

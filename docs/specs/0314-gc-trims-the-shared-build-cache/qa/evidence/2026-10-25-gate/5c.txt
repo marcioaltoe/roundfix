@@ -1,0 +1,16 @@
+git archive HEAD: bd7cdfa0edebdfacd5c9b72de79951bc793fa367
+mutation: internal/sharedcache/sharedcache.go
+replace: entryName.MatchString(path)
+with: path != ""
+command: go test -count=1 -timeout 10m -v -run ^TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit$ ./internal/sharedcache
+exit: 1
+=== RUN   TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== PAUSE TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== CONT  TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+    sharedcache_test.go:60: planned [/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit1756039018/001/README /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit1756039018/001/aa/notes.txt /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit1756039018/001/trim.txt /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit1756039018/001/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-d], want [/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit1756039018/001/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-d /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit1756039018/001/aa/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-a]
+--- FAIL: TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit (0.01s)
+FAIL
+FAIL	roundfix/internal/sharedcache	0.249s
+FAIL
+
+mutation detected: True

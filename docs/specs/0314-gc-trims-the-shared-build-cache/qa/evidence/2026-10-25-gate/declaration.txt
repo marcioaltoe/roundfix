@@ -1,0 +1,26 @@
+
+command: ./bin/roundfix gc --dry-run
+Fresh HOME and TMPDIR; Judge Key Variables and TYPESAFE_API_KEY unset.
+exit: 0
+stdout:
+GC dry-run
+  Journal Retention: 168h
+  Cutoff: 2026-10-18T23:15:26.83447Z
+  Runs eligible: 0
+  Journal rows eligible: 0
+  Artifact bytes reclaimable: 0
+  Orphan artifact dirs eligible: 0
+  Run Retention: 30 days
+  Run Retention cutoff: 2026-09-25T23:15:26.834488Z
+  Runs removable: 0
+  Runs kept past the cutoff: 0 (queue-referenced 0, worktree present 0, artifact root unproven 0)
+  Rows removable: runs=0 run_events=0 run_agent_selections=0 run_token_usage=0 active_run_locks=0
+  Database bytes reclaimable (estimated): 0
+  Worktree Build Caches declared: .gocache
+  Worktree Build Caches reclaimable: 0
+  Worktree Build Cache bytes reclaimable: 0
+  Worktree Build Caches kept: 0
+  Shared Build Cache: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0314-tmp-xops6csg/roundfix-go-build-501
+    Kept: not a Go build cache: inspect "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0314-tmp-xops6csg/roundfix-go-build-501": lstat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0314-tmp-xops6csg/roundfix-go-build-501: no such file or directory
+
+stderr:

@@ -1,0 +1,18 @@
+git archive HEAD: bd7cdfa0edebdfacd5c9b72de79951bc793fa367
+mutation: internal/sharedcache/sharedcache.go
+replace: 	info, err = root.Lstat("README")
+with: 	return root, nil
+	info, err = root.Lstat("README")
+command: go test -count=1 -timeout 10m -v -run ^TestMeasureRefusesWhatIsNotAGoBuildCache$ ./internal/sharedcache
+exit: 1
+=== RUN   TestMeasureRefusesWhatIsNotAGoBuildCache
+=== PAUSE TestMeasureRefusesWhatIsNotAGoBuildCache
+=== CONT  TestMeasureRefusesWhatIsNotAGoBuildCache
+    sharedcache_test.go:136: Measure("/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasureRefusesWhatIsNotAGoBuildCache1139359669/004",2h0m0s): <nil>
+    sharedcache_test.go:136: Measure("/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestMeasureRefusesWhatIsNotAGoBuildCache1139359669/003",2h0m0s): <nil>
+--- FAIL: TestMeasureRefusesWhatIsNotAGoBuildCache (0.01s)
+FAIL
+FAIL	roundfix/internal/sharedcache	0.232s
+FAIL
+
+mutation detected: True

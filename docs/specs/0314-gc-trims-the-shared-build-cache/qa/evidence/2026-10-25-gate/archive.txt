@@ -1,0 +1,30 @@
+command: HOME="$(mktemp -d)" ./bin/roundfix archive 0314-gc-trims-the-shared-build-cache --plan --offline
+Fresh TMPDIR. All Judge Key Variables and TYPESAFE_API_KEY unset.
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  error: missing config key GIT_CONFIG_KEY_0
+fatal: unable to parse command-line config: exit status 128
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+
+Harness correction: retain Git configuration variable names; unset only credential variables.
+command: ./bin/roundfix archive 0314-gc-trims-the-shared-build-cache --plan --offline
+Fresh HOME and TMPDIR; Judge Key Variables and TYPESAFE_API_KEY unset.
+exit: 0
+stdout:
+archive plan for 0314-gc-trims-the-shared-build-cache: removes 30 file(s) (104816 bytes) and writes docs/history/specs/0314-gc-trims-the-shared-build-cache.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-25.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 21 file(s) (41560 bytes) under qa/evidence/
+judge: skipped (offline)
+promote with: roundfix archive 0314-gc-trims-the-shared-build-cache --promote <path>
+
+stderr:

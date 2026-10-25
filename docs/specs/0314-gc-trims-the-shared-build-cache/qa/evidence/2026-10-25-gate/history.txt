@@ -1,0 +1,31 @@
+2f092ba3186370a1a013dbf41bbbdfbeced9bbf0 task_01 changed paths within declarations:
+docs/specs/0314-gc-trims-the-shared-build-cache/task_01.md
+internal/sharedcache/sharedcache.go
+internal/sharedcache/sharedcache_test.go
+
+f5d5b6cb2660d7573ebec8b00c0e6cc989885460 task_02 changed paths within declarations:
+docs/references/behavior-surfaces.json
+docs/specs/0314-gc-trims-the-shared-build-cache/task_02.md
+docs/user-guide/commands/gc.md
+docs/user-guide/configuration.md
+internal/cli/gc.go
+internal/cli/gc_shared_cache.go
+internal/cli/gc_shared_cache_test.go
+internal/config/config.go
+internal/config/worktree_shared_caches_test.go
+
+bd7cdfa0edebdfacd5c9b72de79951bc793fa367 task_03 changed paths within declarations:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/storage.md
+.roundfixrc.yml
+CONTEXT.md
+docs/specs/0314-gc-trims-the-shared-build-cache/task_03.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/storage.md
+skills/testdata/owned-skill-versions.json
+
+.agents/skills/roundfix/SKILL.md: only version fields differ; QA settlement identical
+
+skills/roundfix/SKILL.md: only version fields differ; QA settlement identical
+
+Governed paths exactly match operative grant at Delivery Base; task_03 authorization audit already granted by mechanical stage. No prerequisite/consequent fix declared. All other production Go, skills, Makefile, CI and module files byte-identical to base. Generated skill version ledger is explicitly declared sanctioned fallout. Current worktree delta: ?? docs/specs/0314-gc-trims-the-shared-build-cache/qa/

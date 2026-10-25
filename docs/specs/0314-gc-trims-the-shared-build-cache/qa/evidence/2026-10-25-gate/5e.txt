@@ -1,0 +1,30 @@
+git archive HEAD: bd7cdfa0edebdfacd5c9b72de79951bc793fa367
+mutation: internal/config/config.go
+replace: if entry.Idle < SharedCacheMinimumIdle {
+with: if false {
+command: go test -count=1 -timeout 10m -v -run ^TestWorktreeSharedCachesRejectsAnUnsafeEntry/short_idle$ ./internal/config
+exit: 1
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/config	0.282s
+FAIL
+
+mutation detected: False
+
+Harness correction: git init -q; git add . in disposable git-archive copy (no commit).
+command: go test -count=1 -timeout 10m -v -run ^TestWorktreeSharedCachesRejectsAnUnsafeEntry/short_idle$ ./internal/config
+exit: 1
+=== RUN   TestWorktreeSharedCachesRejectsAnUnsafeEntry
+=== PAUSE TestWorktreeSharedCachesRejectsAnUnsafeEntry
+=== CONT  TestWorktreeSharedCachesRejectsAnUnsafeEntry
+=== RUN   TestWorktreeSharedCachesRejectsAnUnsafeEntry/short_idle
+=== PAUSE TestWorktreeSharedCachesRejectsAnUnsafeEntry/short_idle
+=== CONT  TestWorktreeSharedCachesRejectsAnUnsafeEntry/short_idle
+    worktree_shared_caches_test.go:69: error = <nil>
+--- FAIL: TestWorktreeSharedCachesRejectsAnUnsafeEntry (0.00s)
+    --- FAIL: TestWorktreeSharedCachesRejectsAnUnsafeEntry/short_idle (0.00s)
+FAIL
+suiteguard: guard cost: measured 2797 paths; fingerprint took 126.851208ms before and 132.635167ms after
+FAIL	roundfix/internal/config	0.387s
+FAIL
+
+mutation detected after harness correction: True
