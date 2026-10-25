@@ -12,8 +12,8 @@ caller, and is valid only for the list view.
 
 It is read-only: it never writes a file, commits, pushes or prompts. It reads
 the repository and its local Run Database, but never opens that database for
-writing. It never writes to the Secondbrain or ai-memory, fetches or pulls a
-Secondbrain, or reads another checkout.
+writing. It never reads or writes the Secondbrain, calls ai-memory, or reads
+another checkout.
 
 Exit codes:
 
@@ -34,10 +34,6 @@ with a count, `missing` when it was not configured or provided, or
 `unavailable` with a detail when reading failed. An optional missing or
 unavailable source does not fail the command.
 
-- `secondbrain-inbox` reads regular Markdown files directly under
-  `<secondbrain.root>/inbox/<namespace>/`, excluding `_triaged/` and symbolic
-  links. Unset `secondbrain.root` is `missing`; a missing namespace directory
-  is `checked` with count zero.
 - `ai-memory-messages` reads the optional `--messages` file. Without the flag
   it is `missing` with `no --messages file`.
 - `backlog` reads open Backlog Entries.

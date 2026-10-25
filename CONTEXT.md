@@ -165,16 +165,12 @@ The read-only `roundfix follow-up` command that lists a repository's Follow-up I
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
-One pending unit the Follow-up Command lists: a pending Inbox Entry of the repository's inbox namespace, a message the caller hands in, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:
 The order of Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
 _Avoid_: Jev ranking, severity, score
-
-**Secondbrain Root**:
-The local Secondbrain directory that User Config `secondbrain.root` names; the Follow-up Command reads the pending Inbox Entries under its `inbox/<namespace>/` and never writes, fetches or pulls it.
-_Avoid_: Brain path, knowledge workspace
 
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.

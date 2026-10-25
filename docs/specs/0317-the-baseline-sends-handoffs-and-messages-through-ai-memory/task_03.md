@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0317-the-baseline-sends-handoffs-and-messages-through-ai-memory
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -122,3 +122,84 @@ Feature 3; ADR-0330).
 - `_prd.md` → Goal 5; Core Feature 3; User Experience; Success Metrics 4 and 5; User Story 4; Glossary
 - `_techspec.md` → Current behavior 9-10; Interfaces; Data Model 7; API Contracts 5-6; Surface Transcript 1; Invariants 4-5; Testing Approach; Build Order 3
 - ADR-0330
+
+## Result
+
+Implemented only this Task's slice for Backlog expected outcome 4. Task status
+and checkboxes remain Daemon-owned; no declared Verification command, selected
+repository Verification, commit, push or Pull Request was run.
+
+### Starting-tree characterization
+
+- `go test -timeout 10m ./internal/config -run 'Secondbrain|InboxNamespace' -count=1 -v`:
+  passed. `TestSecondbrainRootIsReadFromUserConfig` pinned absolute/home-expanded
+  roots; `TestProjectConfigCannotSetTheSecondbrainRoot` pinned the special
+  Project Config warning; `TestSecondbrainKeysRefuseInvalidValues` pinned
+  rejected relative roots and namespace values; and
+  `TestTheInboxNamespaceMayComeFromProjectConfig` pinned namespace precedence.
+  Those four tests were replaced with tests of the intentionally retired contract.
+- `go test -timeout 15m ./internal/cli -run FollowUp -count=1`: passed before
+  implementation. `followUpJSON` pinned the source list; inventory, four-answer
+  ordering, fallback ordering and partial/secret judge tests consumed Inbox
+  Entries. The empty report pinned the inbox source line, the missing-root test
+  pinned its missing state, and the namespace test pinned the configured override.
+  Status's no-inventory test used malformed inbox content.
+- Initial working-tree inspection showed only this Task file changed; its
+  existing `in_progress` status was retained. Shell execution required the
+  resolved `/Volumes/Brain-SSD/cache/.roundfix/worktrees/` checkout because
+  sandbox initialization rejected the symlinked configured writable root.
+
+### Acceptance evidence
+
+1. No Secondbrain source or directory reads: removed `followUpInbox` and its
+   inventory source, and removed the namespace config override. Project names
+   now come from `origin`, else the checkout directory. Inventory starts with
+   a non-nil empty slice. `TestFollowUpReadsNoSecondbrainInbox` exercises the
+   public CLI entry point with both retired keys, pending and malformed inbox
+   files, and a namespace different from `origin`. It asserts exit 0, exact
+   warning bytes, the exact remaining source list, the origin project name,
+   `nothing_to_do`, `"items":[]`, and unchanged fixture bytes.
+2. Backward-compatible config: removed the Secondbrain type, field, overlay,
+   validation, expansion, constants and Project Config exception. Both keys
+   use the existing deprecation registry. Only an empty Secondbrain mapping is
+   removed before strict decoding. The two new config tests cover User and
+   Project Config, formerly invalid values, ignored non-scalar values, an empty
+   mapping, warning deduplication across both layers, and unknown-key refusal
+   in either layer. New tests and subtests start with `t.Parallel()`.
+3. Documentation: updated only the two declared guides and the canonical
+   Roundfix follow-up reference; replaced Follow-up Item's definition and
+   removed Secondbrain Root. The Roundfix version rose from 0.1.135 to
+   0.1.136 in both fields. Mirrors and records were generated, not hand-edited;
+   no QA settlement section changed. Message fixtures retain the former inbox
+   titles, dates, types, bodies and ordering/judge assertions. Status now proves
+   it ignores malformed repository notes, preserving its no-inventory boundary.
+
+### Focused checks and generated records
+
+- `go test -timeout 10m ./internal/config -run 'RetiredSecondbrain|UnknownSecondbrain' -count=1`:
+  passed after the final config edits.
+- `go test -timeout 15m ./internal/cli -run FollowUp -count=1`:
+  passed after the final code edits, including list/status, ordering, secret
+  handling, read-only and live-WAL checks. One intervening run printed PASS
+  but was rejected by suiteguard because I overlapped it with the Behavior
+  Surface recorder's repository write. After that recorder finished, the
+  focused CLI run above passed with no concurrent writes.
+- `make skills-sync`, then
+  `go test -timeout 10m ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  passed; only the declared Roundfix mirrors and its version record changed.
+- `go test -timeout 15m -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+  passed after the last guide edit. Re-run as the last implementation step
+  after recording this Result. It changes only the configuration and two
+  guide fingerprints in the declared Behavior Surface Record.
+- `git diff --check`: passed. Exact mirror comparison, retired-source absence
+  inspection and changed-path allowlist inspection passed; no other Task,
+  Task Graph, Baseline asset, unrelated skill/guide, Makefile, repository config
+  or dependency file changed.
+
+Declared Verification and terminal settlement remain for the Daemon. No
+follow-up outside this Task's scope was implemented.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T133232Z_0a2b2319e6c91868`
+- Source commit: `8ca1eabdd1074d1a9a1c1bebc9a492b14f188a77`
