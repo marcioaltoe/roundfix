@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0317-the-baseline-sends-handoffs-and-messages-through-ai-memory
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -112,3 +112,85 @@ retired clause `replaced` (`_prd.md` → Core Feature 2; ADR-0330).
 - `_prd.md` → Goals 3-4; Core Feature 2; Success Metrics 2, 3 and 5; User Stories 2-3
 - `_techspec.md` → Current behavior 3-7; Data Models 2-6; API Contracts 3-4; Invariants 2, 3 and 6; Testing Approach; Build Order 2
 - ADR-0330
+
+
+## Result
+
+Implemented this Task's catalog and guidance slice; status and declared
+Verification remain Daemon-owned.
+
+### Implementation
+
+- Added `coverage.continuity` and the four mandatory clauses of
+  `rule.core.cross-project-continuity`, with exactly the specified replacement
+  lists and response fallback when ai-memory or its receiving project is missing.
+- Removed the eight retired Secondbrain clauses. The research replacement lives
+  in `rule.secondbrain.research-digests`; the kept prohibition now covers every
+  Secondbrain file, including `inbox/`. Baseline guidance proposals are messages.
+- Reworded the four workflow clauses without changing their identities or force.
+  Raised each affected existing rule and guide version once; module versions
+  were written by the Module Version Record command.
+- Made only the three declared existing-test breaks and added the two specified
+  parallel regression tests. Their boundary is the embedded catalog, actual
+  Source Baseline transition, and rendered Plan postimages; no live service,
+  Secondbrain filesystem, provider or network is exercised.
+- Generated every derived artifact and rendered guide through the sanctioned
+  commands. No skill, Setup Snapshot, Source Baseline, profile required rule,
+  production Go file, other Task, Task Graph, user guide or glossary was changed.
+
+### Acceptance evidence
+
+1. `TestEveryInboxClauseAnAdopterHoldsIsReplaced` passed: all eight retired
+   clauses have `replaced` disposition, one evidence entry and exactly their
+   specified successor with mandatory force; no managed source clause is
+   `unaccounted`. The kept prohibition, baseline-ownership clause and all four
+   reworded workflow clauses are `retained`.
+2. `TestTheGuidesSendCrossProjectWorkThroughAiMemory` passed: Plan postimages
+   contain the optional-at-runtime rule, missing-server/project explanation,
+   response fallback, owning-project message delivery and consume-after-recording
+   contract, and dispatch both ai-memory skills. A separate inspection of the
+   repository's refreshed guides confirmed the fallback, consumption contract
+   and complete Secondbrain write prohibition.
+3. The same guide test sweeps all five rendered Plan guides for `Inbox Entr`,
+   `inbox/<destination>`, `_triaged` and the quoted `handoff` skill. A separate
+   sweep of this repository's five actual guides found none of those strings.
+
+### Commands and outcomes
+
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+  — exit 0; recorded the four changed modules.
+- `make baseline-digests` — exit 0; regenerated the four formatter guides,
+  profile golden digest, catalog records and four plan characterization goldens.
+- `go build -o "$task0317_tmp/roundfix" ./cmd/roundfix` — exit 0, built under
+  the Run environment in a private temporary directory.
+- `HOME="$task0317_tmp/home-first" "$task0317_tmp/roundfix" baseline update --repo . --no-skills --no-history --yes --format text`
+  — exit 0; approved postimages verified, `File changes: 5`.
+- The identical update with a distinct fresh `HOME="$task0317_tmp/home-second"`
+  — exit 0; approved postimages and idempotence verified, `File changes: 0`.
+  Both refreshes reported the existing nested-carrier warnings for the formatter
+  fixture and Source Baseline corpus; neither nested carrier was changed.
+- `rtk proxy go test ./internal/baseline -run '^(TestEveryInboxClauseAnAdopterHoldsIsReplaced|TestTheGuidesSendCrossProjectWorkThroughAiMemory|TestTheGroupingClausesHaveSourceBaselineRows|TestAnAdopterRetainsTheGroupingClauses)$' -count=1`
+  — exit 0 after regeneration.
+- `rtk proxy go test ./internal/baseline -run '(BaselineClauseForceIsCharacterized|GroupingClausesCarryTheirForceAndText|GroupingClausesRenderInTheGuides|CaptureTriggerAsksForAConditionalLesson)' -count=1`
+  — exit 0.
+- Python scope/render audit — passed: all 28 staged/unstaged/untracked changed
+  paths belong to this Task; Source Baseline paths and profile `requiredRules`
+  are unchanged; the actual rendered guides satisfy the wording sweep.
+- `rtk proxy git diff --check` — exit 0.
+
+An earlier focused check overlapped formatter-golden regeneration and failed
+compilation because embedded files changed length while the compiler read them.
+After the generator exited successfully, the focused check above passed. The
+initial new-test compilation also exposed that decisions are `[]DecisionValue`,
+not a map; the tests now update the existing decision by ID.
+
+### Remaining authority
+
+The declared Verification commands, docscontract gate and repository Verification
+were not run; the Daemon owns them. No terminal Task verdict, commit, push or
+pull request is claimed. No follow-up outside this slice was implemented.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T133232Z_0a2b2319e6c91868`
+- Source commit: `d9704cb8cce31f291c7641a565fb760f65c2e8c5`
