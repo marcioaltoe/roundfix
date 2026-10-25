@@ -7,10 +7,6 @@ paths:
   - docs/agents/specific-repository.md
   - internal/cli/baseline_documentation_contract_test.go
   - internal/cli/cli_test.go
-  - internal/suiteguard/suiteguard.go
-  - internal/suiteguard/suiteguard_test.go
-  - internal/suiteguard/residue_test.go
-  - internal/suiteguard/leak_cases_test.go
 operations:
   - implement
   - commit
@@ -124,10 +120,11 @@ The loss of permission detection that the option text accepts does not
 happen. task_05 keeps a mode-only `os.Lstat` pass over the watched paths.
 That pass runs before and after `m.Run`, outside Go's test input log, so it
 is not a cache input, and the permission cases of its leak table pass
-before and after the change. The four `internal/suiteguard` files in
-`paths` are the ones task_05 changes or creates. They are not Governed
-Paths, and they are listed because the maintainer granted them by name
-("autoriza internal/suiteguard").
+before and after the change. The four `internal/suiteguard` files task_05
+changes or creates are not Governed Paths, so `paths` does not list them (a
+repository contract refuses a bounded path that is not governed); the
+maintainer's grant ("autoriza internal/suiteguard") is recorded here and in
+the Limits exception below.
 
 ## What is not governed
 
