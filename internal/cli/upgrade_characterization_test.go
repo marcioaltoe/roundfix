@@ -8,6 +8,7 @@ import (
 
 func TestUpgradeStdoutAndExitCodesAreCharacterized(t *testing.T) {
 	t.Parallel()
+	withCLIWorkspace(t)
 	for _, test := range []struct {
 		name                       string
 		args                       []string

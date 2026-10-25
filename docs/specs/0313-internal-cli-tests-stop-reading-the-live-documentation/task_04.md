@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0313-internal-cli-tests-stop-reading-the-live-documentation
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -62,3 +62,33 @@ None. One test gains a fixture workspace; no production contract changes.
 
 - `_prd.md` → Sources; Goals; Success Metric 3; Success Metric 5
 - `_techspec.md` → Current behavior; Invariant 1; Testing Approach; Build Order 3
+
+## Result
+
+Implementation: added `withCLIWorkspace(t)` directly after `t.Parallel()` at
+the top of `TestUpgradeStdoutAndExitCodesAreCharacterized` in
+`internal/cli/upgrade_characterization_test.go`. The test file diff is exactly
+one added line; the test name, its case table and every assertion keep their
+bytes, and no other test or helper changed. No production file, Makefile, CI
+workflow, `internal/suiteguard` or `internal/docscontract` file was touched.
+
+Focused checks (not the Daemon-owned `## Verification` command):
+- Confirmed the source diff: `git diff internal/cli/upgrade_characterization_test.go`
+  shows a single `+	withCLIWorkspace(t)` line and nothing else.
+- Ran the task's verification command locally as a focused check:
+  compiled `./internal/cli` to a temp binary, ran the single test with
+  `-test.testlogfile`, then grepped the input log for repository paths under
+  `docs`, `.agents`, `skills/`, `CONTEXT.md` and `.roundfixrc.yml`. Result:
+  `FOCUSED CHECK PASSED` (exit 0) — the test passes and its input log names
+  none of the forbidden live-documentation paths.
+
+Acceptance criteria evidence:
+- [x] Go's test input log of the upgrade characterization test names no path
+      under the repository's documentation trees, `.agents`, `skills`,
+      `CONTEXT.md` or `.roundfixrc.yml`, and the test passes — verified by the
+      focused check above (non-empty input log, no forbidden matches, exit 0).
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T193403Z_ade2bddbacb762cf`
+- Source commit: `5bf0be6119df16da2700702bacbcda7a4022f1b6`
