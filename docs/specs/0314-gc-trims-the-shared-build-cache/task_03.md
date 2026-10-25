@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0314-gc-trims-the-shared-build-cache
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -86,3 +86,18 @@ None. Documents and this repository's configuration change; no code contract cha
 
 - `_prd.md` → Core Feature 4; User Experience; Glossary
 - `_techspec.md` → Current behavior; Data Models; API Contract 4; Glossary; Build Order 3
+
+## Result
+
+- Declared the Makefile's shared Go build cache in `.roundfixrc.yml` with the
+  required path template, kind, size limit and idle window.
+- Added the `Shared Build Caches` storage-reference section and updated the
+  prior shared-cache wording; `make skills-sync` completed successfully.
+- Raised both owned Roundfix skill copies to `0.1.139`; recorded the generated
+  digest with `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` (1 passed in 1 package).
+- Added the `Shared Build Cache` glossary term with ADR-0327 and the required
+  avoidance line.
+- The Task's final behavior-surface recording command was not run because the
+  Daemon-assigned execution invariant prohibits running commands from this
+  Task's `## Verification` section; the Daemon must run it after handoff.

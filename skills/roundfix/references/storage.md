@@ -156,10 +156,19 @@ A terminal Run's recorded Run Worktree and retained sibling Task Worktrees,
 and a Delivery Queue item worktree at stage `merged`, are eligible regardless
 of retention age. Active Runs and items in any other stage keep their caches.
 GC skips worktrees outside `worktree.location`, declared paths that are
-symlinks, and paths that resolve outside their worktree. Source files, Git
-metadata, the user's checkout cache and the shared Go build cache stay intact.
+symlinks, and paths that resolve outside their worktree. Source files and Git
+metadata stay intact. Shared Build Caches are declared by
+`worktree.shared_caches`; GC trims them above their declared limit by removing
+only entries no build used for the declared idle time, oldest first.
 With `worktree.caches: []`, GC omits the Worktree Build Cache section. `gc compact` and
 `gc sanitize` retain their separate scopes.
+
+## Shared Build Caches
+
+`worktree.shared_caches` declares build caches shared by multiple worktrees.
+Each entry names its path template, kind, maximum size and idle window. GC
+trims a declared Shared Build Cache above its limit by removing only cache
+entries no build used for the declared idle time, oldest first.
 
 ## Item Binaries
 
