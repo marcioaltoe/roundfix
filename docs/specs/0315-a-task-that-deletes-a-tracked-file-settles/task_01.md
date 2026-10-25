@@ -53,7 +53,21 @@ path in `internal/daemon`.
      the tracked directory `notes` by a file, each reader returns an error
      naming `notes/a.md`.
 7. MUST NOT change any other production file, existing test, golden,
-   fixture, guide, skill or glossary entry.
+   fixture, guide, skill or glossary entry, except Requirement 8.
+8. MUST change how two existing tests of
+   `internal/cli/baseline_update_citations_test.go` inject a detector
+   failure, keeping every assertion: `TestBaselineUpdateHistoryCitationDetectorFailureIsLocal`
+   and `TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome` call
+   `os.Remove` on `baselineCitationHandoff`, which this Task makes a skipped
+   missing path instead of a failure. Replace both calls with one helper
+   `breakBaselineCitationHandoff(t, repo)` that removes the handoff's folder
+   (`filepath.Dir` of the handoff path) and writes a regular file in its
+   place, so the detectors fail inspecting a tracked path behind a file,
+   which Requirement 5 keeps an error. Making the file unreadable does not
+   work: the tests' own working-tree snapshot reads it. (Amended 2026-10-25
+   by the operator after Run run_20261025T231938Z_727a0c81b3bea09d failed
+   both tests; prototyped: the `TestBaselineUpdateHistory` and `TestCancel`
+   tests pass.)
 
 ## Subtasks
 
@@ -78,7 +92,7 @@ path in `internal/daemon`.
 - instruction: `internal/spec/live_citations.go`
 - instruction: `internal/speccheck/history_retained_test.go`
 - instruction: `internal/cli/cancel_test.go`
-- instruction: `internal/cli/baseline_update_citations_test.go`
+- interface: `internal/cli/baseline_update_citations_test.go`
 - instruction: `internal/cli/cancel.go`
 - instruction: `internal/cli/baseline_update_history.go`
 - interface: `internal/spec/citation_sources.go`
