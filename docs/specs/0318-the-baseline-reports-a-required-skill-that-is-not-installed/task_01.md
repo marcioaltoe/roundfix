@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0318-the-baseline-reports-a-required-skill-that-is-not-installed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -116,3 +116,67 @@ that result, and task_02 calls the helper.
 
 - `_prd.md` → Sources; Goals; Core Features 1, 3 and 4; Success Metrics 1, 2, 4, 5 and 6; Glossary
 - `_techspec.md` → Current behavior; Interfaces; Data Models; API Contracts 1-4 and 6; Invariants 1-4; Testing Approach; Build Order 1
+
+## Result
+
+Implemented only task_01's slice. Status and declared Verification remain
+Daemon-owned; no commit, push, Task Graph edit or other Task edit was made.
+The Task status was already `in_progress` on entry and was preserved.
+
+- Added `missingRequiredSkills`, merging readiness missing names, wrapped
+  readiness-error names and lock mismatches in that priority, deduplicated and
+  sorted, with the exact restore reasons. Added the Setup Manifest profile
+  reader for task_02's consumer.
+- The preview reuses its external inspection to emit `skills.missing` and
+  status `missing`; unchanged guidance returns `plan_ready`, approval, exit
+  `3`, the named message and restore action before the outdated-owned branch.
+  Text adds the conditional missing block. Doctor, the applied path and
+  `skills.differing` were not changed.
+- Added hermetic temporary-repository helpers and the specified preview and
+  Doctor subtests. The removed skill comes from the manifest-derived required
+  list. The retired fixture's only change installs those required externals
+  while retaining its existing retired entries.
+- Added the exact guide/reference paragraph and the Missing Required Skill
+  glossary entry before Park Class. The Roundfix skill was synced, recorded
+  as `0.1.137` by the sanctioned recorder, and synced again. No QA settlement
+  section was edited.
+
+Focused evidence by acceptance criterion:
+
+1. Before implementation, the focused folder-and-lock removal subtest failed:
+   the preview returned exit `0`, `ok:true`, `current`, with no missing list.
+   After implementation, all three removal-shape subtests passed assertions
+   for JSON exit `3`, `ok:false`, approval, exact list/reasons/message/action,
+   text output, and unchanged repository bytes.
+2. The complete-set subtest passed `current`, exit `0`, and no missing key.
+   Each removal-shape subtest also passed its `--no-skills` current/exit-0
+   assertion and unchanged-tree check.
+3. Both Doctor removal subtests passed with exit `1`, the failed skills line,
+   skill name and existing `bunx skills add` action. Focused retired-skill and
+   owned-skill preview compatibility tests passed as part of the same run.
+   Additional helper tests passed sorted/deduplicated precedence, a wrapped
+   readiness error, an unnamed inspection error, and manifest parsing/errors.
+
+Commands and outcomes:
+
+- `go test -timeout 5m ./internal/cli -run '^TestBaselineUpdatePreviewNamesAMissingRequiredSkill$/folder_and_lock_entry_removed$' -count=1`:
+  failed before implementation with the reproduced current/exit-0 bug.
+- Initial focused run exposed a redundant fixture commit in the complete-set
+  case; corrected by committing only removal/mismatch mutations.
+- A subsequent run's assertions passed, but suiteguard rejected an overlapping
+  skill-sync write. This was an execution sequencing error; generation and
+  tests were then run sequentially, without weakening the guard.
+- `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then `make skills-sync`: all exit `0`.
+- `go test -timeout 5m -count=1 ./internal/cli -run '^(TestBaselineUpdatePreviewNamesAMissingRequiredSkill|TestDoctorNamesAMissingRequiredSkill|TestMissingRequiredSkillsCollectsNamedEvidence|TestRequiredSkillsManifestProfileReadsOnlyProfile|TestBaselineUpdate.*Retired.*|TestBaselineUpdatePreview.*OwnedSkill.*)$'`:
+  exit `0`, `ok roundfix/internal/cli`, after the final skill sync, with no
+  concurrent mutation.
+- `git diff --check`: exit `0`. Diff review confirms only declared task_01
+  paths changed, plus its own Result; the pre-existing Task status diff was
+  preserved. Canonical and embedded Roundfix content are synced.
+
+The sanctioned Behavior Surface recorder runs after this Result as the last
+implementation step, after every guide and skill edit; its outcome is reported
+in the Agent handback. The declared Verification and full repository checks
+were not run, as required by the Daemon-assigned execution contract.
