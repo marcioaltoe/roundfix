@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.119.0] - 2026-10-25
+
+### The CI job runs the documentation contracts once
+
+- **This repository's CI only.** A pull request's `make verify-changed` already runs every `internal/docscontract` test, so the "Verify docs" step now skips its second run of that package (`VERIFY_DOCS_TEST=docs-test-skipped` on pull requests; push and release builds still run it). On the first pull request after the change the step went from 173 s to 112 s. A new `internal/verifyselect` test guards the Makefile target, the workflow selection and the `//verify:always` marking of every documentation contract file.
+- No product behavior changes.
+
 ## [0.118.0] - 2026-10-24
 
 ### The test-suite audit, and no test hard-links its binary
