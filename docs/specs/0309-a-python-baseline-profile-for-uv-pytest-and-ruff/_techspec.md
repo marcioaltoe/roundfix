@@ -8,22 +8,24 @@ created: 2026-10-23
 
 ## Executive Summary
 
-Three changes. First, the Baseline learns a second kind of derived Setup
-Snapshot: a source `{"type": "common", "setups": [...]}` holds, in the first
-component's order, the skills and activation bundles every component carries
-with equal entries; the catalog validates it beside the composed kind and the
-asset sync writes it after its components. Second, the catalog gains the
-`python` common snapshot of `go` and `rust`, a `python` module with its guide,
-root block, templates and coverage entry, the core module's hierarchy and
-semantic-owner entries for them, and the `python` profile; the sanctioned
-commands regenerate the derived files and this repository's Setup Manifest,
-and the existing tests that enumerate profiles, setups, clauses or the
-profile menu learn the new entries. Third, the user guide lists the profile
-and the glossary defines **Common Setup Snapshot**.
+Three changes, and no production Go code. First, the asset sync imports the
+published upstream `python` preset at
+`65d5f365cace27c4b468db1723213723b10c870b`, fetched from the local
+`~/dev/skills` checkout and seeded the way Spec 0208 seeded its renamed
+snapshots. Spec 0317, delivered first, has already moved `go`, `rust`,
+`typescript` and the composed `go-cli-typescript-bun` to that commit, so the
+sync writes only `python.json`, and a repository-owned profile never meets
+two contracts for one skill (ADR-0241). The maintained asset-sync parity row
+follows through its sanctioned transform; no skill of this repository is
+restored. Second, the
+catalog gains the `python` module with its guide, root block, templates,
+coverage entry and nine dispatched skills, the core module's hierarchy and
+semantic-owner entries for it, and the `python` profile; the sanctioned
+commands regenerate the derived files. Third, the user guide lists the
+profile.
 
-The trade-off accepted: the profile carries no Python-specific skill until the
-upstream repository publishes one; its guide carries the rules instead, and
-the curation request is already filed outside this repository.
+The trade-off accepted: this Spec cannot be queued before Spec 0317 merges,
+because its import relies on the other snapshots already naming the commit.
 
 ## Project Constraints
 
@@ -31,22 +33,24 @@ the curation request is already filed outside this repository.
   schema is minted; catalog identifiers follow the existing dotted naming.
   Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no request path or credential;
-  tests read the embedded catalog, temporary repositories and a synthetic
-  asset-sync source. Source: `docs/agents/agent-instructions.md`.
-- Active ADR obligations: applicable — Build Order 1 follows ADR-0322 and
-  ADR-0204 for the common snapshot and ADR-0191 for its single writer, with
-  ADR-0206 and ADR-0246 standing through its components; Build Order 2
-  follows ADR-0322 for the module, setup and profile, with ADR-0219 and
-  ADR-0241 standing for repository-owned drafts of it; Build Order 3
-  documents ADR-0322's term. All are named with their titles in `_prd.md` →
-  Project Constraints. Source: `docs/agents/domain.md`.
+  the sync reads a repository fetched from a local checkout, and tests read
+  the embedded catalog, temporary repositories and a synthetic asset-sync
+  source. Source: `docs/agents/agent-instructions.md`.
+- Active ADR obligations: applicable — Build Order 1 follows ADR-0322,
+  ADR-0191, ADR-0206, ADR-0204, ADR-0241, ADR-0246 and ADR-0072; Build Order 2
+  follows ADR-0322 for the module and profile, with ADR-0219 and ADR-0241
+  standing for repository-owned drafts of it; Build Order 3 documents
+  ADR-0322. All are named with their titles in `_prd.md` → Project
+  Constraints. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: the cycle
   AP approval of 2026-10-22 ("Preset de baseline Python"; authorization "same
   as cycle AO", carrying the cycle AJ grant "Mexer em Governed Paths
-  declarados"). Source: `docs/agents/agent-instructions.md`,
+  declarados") and the decision of 2026-10-24 "Emendar a 0309 agora
+  (Recomendado)". Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`; Spec-contained authorization record:
   `docs/specs/0309-a-python-baseline-profile-for-uv-pytest-and-ruff/_authorization.md`;
-  bounded files: `docs/agents/setup-context.json`,
+  bounded files:
+  `docs/agents/setup-context.json`,
   `internal/baseline/assets/coverage.json`,
   `internal/baseline/assets/modules/core.json`,
   `internal/baseline/assets/modules/python.json`,
@@ -61,102 +65,123 @@ the curation request is already filed outside this repository.
 
 ## Current behavior
 
-Read and characterized on 2026-10-23 at `dde9d5f5`. Line numbers move when
+Read and characterized on 2026-10-24 at `64c56d7f`. Line numbers move when
 other Specs merge; identifiers do not.
 
-1. `internal/baseline/setup_composition.go`: `composeSetupSnapshot` builds the
-   ordered union of components and `setupCompositionComponents` refuses fewer
-   than two distinct identifiers, an unknown component and a component whose
-   source type is `composed`.
-2. `internal/baseline/catalog_validate.go` `validateSetups`: only a source of
-   type `composed` is derived and checked, reporting
-   `catalog.setup.composition.invalid`, `.conflict` and `.drift` (detail
-   "skills or activation bundles differ from the component union").
-3. `internal/baseline/assets_sync.go` `syncAssets`: setups of type `composed`
-   are skipped in the upstream refresh loop and recomposed after it; any other
-   type is refreshed from an upstream `setups/<id>.txt`.
-4. Setup Snapshots: `go` (41 skills), `rust` (34), `typescript`, and the
-   composed `go-cli-typescript-bun`. `go` and `rust` share thirty skills with
-   deeply equal entries and both bundles `bundle.delivery` and `bundle.qa`.
-5. Profiles: `go-cli-tui`, `go-cli-typescript-monorepo`, `rust-cli`,
+1. `internal/baseline/assets_sync.go` `syncAssets` lists every
+   `assets/setups/*.json`, rebuilds each non-composed snapshot from the
+   upstream `setups/<id>.txt` of one clean checkout (one `source.ref` for all),
+   keeping Roundfix-owned entries with their minimum versions and the
+   activation bundles from the current file, recomposes the composed ones, and
+   validates the catalog before writing through its transaction. A snapshot
+   that has no file is never created, so a new one starts as a seed (Spec
+   0208: "Each new snapshot is seeded as a byte copy of its predecessor with
+   only `"id"` and `"source.path"` changed").
+2. After Spec 0317 the snapshots `go`, `rust`, `typescript` and the composed
+   `go-cli-typescript-bun` name `marcioaltoe/skills` at
+   `65d5f365cace27c4b468db1723213723b10c870b`, hold the six `ai-memory-*`
+   skills and no `handoff`, and `council` and `the-fool` stay out
+   (ADR-0246). Upstream added `python.txt` at `32e4143e` (47 entries) and, at
+   `65d5f36`, replaced its `handoff` with the six ai-memory skills (52
+   entries).
+3. `internal/baseline/skills_restore.go` `repositorySnapshotContracts` refuses
+   a skill whose contracts (source, ref, tree digest) differ between embedded
+   snapshots (`restore.snapshot-conflict`);
+   `TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill` holds it for the
+   whole catalog.
+4. `internal/baseline/repository_skills_snapshot_test.go`
+   `TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot` and the two
+   `SetupSnapshotDifferences` tests compare this repository's
+   `.agents/skills/` with the `go` snapshot.
+5. `internal/baseline/assets_sync_test.go`
+   `TestAssetsSyncCompatibilityMatchesMaintainedPythonContract` compares every
+   upstream snapshot with `testdata/parity-corpus/v1/fixtures/asset-sync.json`
+   (rows `go`, `rust`, `typescript`); Spec 0208's jq transform rebuilds that
+   row from the snapshots, and `make baseline-digests` fills its digests.
+6. Profiles `go-cli-tui`, `go-cli-typescript-monorepo`, `rust-cli`,
    `standard-typescript-monorepo`. `rust-cli` selects `core`,
    `context-workflow`, `rust`, `cli-surface`, `autonomous-work`,
-   `spec-workflow`, `external-triage`, `secondbrain`, `repository-extension`,
-   declares formatter kind `none` and has no formatter fixture.
-6. `internal/baseline/assets/modules/core.json`: the instruction hierarchy's
-   `stack` level lists `root.typescript` … `root.go`, `root.rust`; the
-   semantic owners list `guide.go` then `guide.rust`.
-7. Tests that enumerate the catalog: `TestEmbeddedCatalog`
-   (`catalog_test.go`, the four profile IDs), `TestOutputsForCommand`
-   (`derived_ownership_test.go`, the `make baseline-digests` outputs),
-   `characterizedBaselineForce` (`clause_characterization_test.go`, every
-   clause's force), three asset-sync tests in `assets_sync_test.go` (four
-   findings, four setups) and three `composed` skips in its helpers,
+   `spec-workflow`, `external-triage`, `secondbrain`, `repository-extension`
+   and declares formatter kind `none`.
+7. `catalog_validate.go`: one module per dispatched skill
+   (`catalog.skill.dispatch.id.duplicate`); a profile's required and
+   dispatched skills must be in its setup.
+   `TestEveryModuleRequiresEverySkillItDispatches` requires every dispatched
+   skill to be required. The `backend` module dispatches `backend-docs`,
+   `external-api-adapters`, `integration-contract-testing` and
+   `security-best-practices`; `cli-surface` dispatches `agentic-cli-design`.
+8. `internal/baseline/assets/modules/core.json`: the instruction hierarchy's
+   `stack` level lists `root.go`, `root.rust`; the semantic owners list
+   `guide.go` then `guide.rust`.
+9. Tests that enumerate the catalog: `TestEmbeddedCatalog` (`catalog_test.go`,
+   four profiles), `TestOutputsForCommand` (`derived_ownership_test.go`),
+   `characterizedBaselineForce` (`clause_characterization_test.go`), four
+   counts of four in `assets_sync_test.go`,
    `TestBaselineHumanProfileAdaptation` (`internal/cli/baseline_human_test.go`,
-   menu answer `4` selects `standard-typescript-monorepo`) and
-   `TestGuidanceCompositionJourney`
-   (`internal/cli/baseline_release_gate_test.go`, the four profiles and two
+   the menu answer `4` in its `answers` script selects
+   `standard-typescript-monorepo`) and `TestGuidanceCompositionJourney`
+   (`internal/cli/baseline_release_gate_test.go`, four profiles and two
    per-profile fixture switches that fail on an unknown profile).
-8. `skills/baseline_skill_contract_test.go` `TestNoPythonBaselineRuntime`
-   refuses `python3` and `Python fallback` in the user guide's
-   `context-driven-development.md`, `commands.md`, the README and the
-   `setup-context-driven` and `roundfix` skills: it guards Roundfix's own
-   retired Python runtime, not an adopter's stack, and stays unchanged.
-9. `docs/user-guide/context-driven-development.md` `### Profiles` names the
-   four profiles.
+10. `skills/baseline_skill_contract_test.go` `TestNoPythonBaselineRuntime`
+    refuses `python3` and `Python fallback` in Roundfix's own documents and
+    skills: it guards Roundfix's retired Python runtime, not an adopter's
+    stack, and stays unchanged. The upstream Streamlit skill mentions
+    `python3`, but it is never copied into this repository.
+11. `docs/user-guide/context-driven-development.md` `### Profiles` names the
+    four profiles.
 
 ## System Architecture
 
-- `internal/baseline/setup_composition.go`, `catalog_validate.go`,
-  `assets_sync.go`: the common kind.
-- `internal/baseline/assets/setups/python.json` (new),
-  `assets/modules/python.json` (new), `assets/templates/root/python.md` and
-  `assets/templates/guides/python.md` (new), `assets/templates/index.json`,
-  `assets/coverage.json`, `assets/modules/core.json`,
-  `assets/profiles/python.json` (new).
+- `internal/baseline/assets/setups/*.json`: the five snapshots, written by the
+  asset sync (`python.json` seeded first).
+- `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`: the
+  sanctioned transform.
+- `internal/baseline/assets/modules/python.json`, `templates/root/python.md`,
+  `templates/guides/python.md`, `profiles/python.json` (new);
+  `templates/index.json`, `coverage.json`, `modules/core.json`.
 - Derived files, the module version record and this repository's Setup
   Manifest: regenerated only by the sanctioned commands.
-- Tests: `internal/baseline/common_setup_test.go` and
+- Tests: `internal/baseline/python_setup_test.go` and
   `internal/baseline/python_profile_test.go` (new), and the existing tests of
-  Current behavior 7.
-- `docs/user-guide/context-driven-development.md`, `CONTEXT.md`,
+  Current behavior 5 and 9.
+- `docs/user-guide/context-driven-development.md`,
   `docs/references/skill-coverage.json`, `docs/references/behavior-surfaces.json`.
 
-No package, import edge or exported symbol changes.
+No Go production file, package, import edge or exported symbol changes.
 
 ## Implementation Design
 
 ### Interfaces
 
-```go
-// internal/baseline/setup_composition.go (unexported)
-func derivedSetupSource(setup document) (kind string, derived bool) // "composed" or "common"
-func deriveSetupSnapshot(id, kind string, components []document) (document, error)
-func commonSetupSnapshot(id string, components []document) (document, error)
-```
+None. The Spec changes assets, generated records, tests and documentation.
 
 ### Data Models
 
-1. A common Setup Snapshot is a Setup Snapshot document whose `source` is
-   `{"setups": ["<first>", "<second>", ...], "type": "common"}`, serialized by
-   the asset sync's snapshot struct (field order `schemaVersion`, `id`,
-   `version`, `source`, `digest`, `skills`, `activationBundles`), with
-   `version` `0.0.1` and `digest` the canonical SHA-256 of `{"skills": ...,
-   "activationBundles": ...}` (of the skills alone when no bundle is shared),
-   as the composed kind computes it.
-2. The `python` module: `schemaVersion` `setup-context-driven/module-v3`,
+1. The seed: `internal/baseline/assets/setups/python.json` starts as the
+   bytes of `rust.json` with exactly two replacements, `"id": "rust"` →
+   `"id": "python"` and `"path": "setups/rust.txt"` → `"path":
+   "setups/python.txt"`; the sync rewrites everything else and keeps the
+   seed's Roundfix-owned minimum versions and its bundles `bundle.delivery`
+   and `bundle.qa`.
+2. The parity transform: Spec 0208's jq program, unchanged except that it
+   skips composed snapshots (`.manifest.setups = [$s[] | select(.source.type
+   != "composed") | row(.)]`), so the row holds `go`, `python`, `rust` and
+   `typescript`, as it held the upstream snapshots before. The program text is
+   API Contract 1's.
+3. The `python` module: `schemaVersion` `setup-context-driven/module-v3`,
    `kind` `language-runtime`, `title` "Python repository guidance",
-   `dependsOn` `["core"]`, empty `requiredSkills`, `skillDispatch`,
-   `requiredDecisions` and `repositoryExtensions`; root block `root.python`
-   (version 1, template `template.root.python`, reference
-   `reference.root.python` with token `reference.python`, ownership `setup`,
-   managed id `guide.python`); supporting guide `guide.python` (version 1,
-   path `docs/agents/python.md`, template `template.guide.python`, rules in
-   API Contract 3's order); its own `version` is the one the record command
-   writes.
-3. Templates: `template.root.python` (version 1, kind `root-block`, path
-   `root/python.md`, tokens `["reference.python"]`) whose content is "### Python",
-   a blank line, and "- Python implementation rules are mandatory:
+   `dependsOn` `["core"]`, `requiredSkills` the nine skills of API Contract 3
+   in its order, `skillDispatch` one entry per skill with one trigger
+   `trigger.python.<skill>`, empty `requiredDecisions` and
+   `repositoryExtensions`; root block `root.python` (version 1, template
+   `template.root.python`, reference `reference.root.python` with token
+   `reference.python`, ownership `setup`, managed id `guide.python`);
+   supporting guide `guide.python` (version 1, path `docs/agents/python.md`,
+   template `template.guide.python`, rules in API Contract 4's order); module
+   `version` 1 before the record command writes its own.
+4. Templates: `template.root.python` (version 1, kind `root-block`, path
+   `root/python.md`, tokens `["reference.python"]`) whose content is "###
+   Python", a blank line, and "- Python implementation rules are mandatory:
    {{reference.python}}."; `template.guide.python` (version 1, kind `guide`,
    path `guides/python.md`, tokens `["artifact.rules"]`) whose content is the
    heading "# Python", a blank line, the paragraph "These rules govern the
@@ -164,52 +189,124 @@ func commonSetupSnapshot(id string, components []document) (document, error)
    managed with uv. Code in another language follows its own guide.", a blank
    line and `{{artifact.rules}}`. Each is inserted in `templates/index.json`
    right before the matching Rust entry.
-4. `coverage.json`: `{"id": "coverage.python", "version": 1, "description":
+5. `coverage.json`: `{"id": "coverage.python", "version": 1, "description":
    "Python work runs through uv, keeps ruff and pytest gates honest, and keeps
    tests hermetic.", "delegationAliases": ["python", "python guidance"]}` right
    before `coverage.rust`.
-5. `core.json`: `root.python` between `root.go` and `root.rust` in the `stack`
+6. `core.json`: `root.python` between `root.go` and `root.rust` in the `stack`
    level, and `{"managedId": "guide.python", "title": "Python guidance",
    "classifications": ["python"]}` between the Go and Rust semantic owners. No
    clause of the core module changes.
-6. `profiles/python.json`: `rust-cli.json` with `id` `python`, `title`
+7. `profiles/python.json`: `rust-cli.json` with `id` `python`, `title`
    "Python repository (CLI, backend or worker)", `setup` `python`, `modules`
    `["core", "context-workflow", "python", "autonomous-work",
    "spec-workflow", "external-triage", "secondbrain",
-   "repository-extension"]` (the `rust-cli` list with `python` in place of
-   `rust` and without `cli-surface`), and `requiredRules` with
-   `rule.python.uv-environment`, `rule.python.ruff-and-pytest-gates` and
+   "repository-extension"]`, and `requiredRules` with
+   `rule.python.uv-environment`, `rule.python.verification-gates` and
    `rule.python.hermetic-tests` in place of the three Rust rules and without
    `rule.cli.output-contract` and `rule.cli.non-interactive`; every other
-   field equal. The profile selects no application-surface module: it serves
-   a command-line tool, a backend service or a worker alike, and a
-   repository adds the rules of its own surface in its repository-owned
-   `docs/agents/specific-repository.md`, the `repository-extension` module's
-   carrier (maintainer decision of 2026-10-24).
+   field equal.
 
 ### API Contracts
 
-1. API Contract: the common derivation. `commonSetupSnapshot` keeps each skill
-   of the first component, in its order, whose name every other component
-   carries with a deeply equal entry, likewise each activation bundle by `id`;
-   a name another component carries with a different entry is dropped, not a
-   conflict. Components without a shared skill are an error.
-   `setupCompositionComponents` refuses a component of either derived kind
-   (message "component %q is <kind>") and keeps its other refusals.
-   `validateSetups` checks every derived snapshot through `derivedSetupSource`
-   and `deriveSetupSnapshot` with the existing codes; the drift detail for a
-   common snapshot is exactly "skills or activation bundles differ from the
-   components' common part", and the composed detail keeps its bytes. The
-   asset sync skips both derived kinds in its upstream loop and derives each
-   after it, writing the result through the existing transaction.
-2. API Contract: the `python` setup is the asset sync's derivation of the
-   common part of `go` then `rust`, written with the sync's serialization;
-   the Task creates it with those bytes (the Run cannot reach an upstream
-   skills checkout), and the catalog's drift and digest checks hold it.
-3. API Contract: the Python guide's rules and clauses, in this order, each
+1. API Contract: the import (task_01), run from the repository root in this
+   order, each command verbatim, stopping on the first failure:
+
+   ```bash
+   sha=65d5f365cace27c4b468db1723213723b10c870b
+   src="$HOME/dev/skills"
+   git -C "$src" cat-file -e "$sha^{commit}" || { echo "stop: $src lacks $sha" >&2; exit 1; }
+   grep -qF -- "\"ref\": \"$sha\"" internal/baseline/assets/setups/go.json || { echo "stop: Spec 0317 has not moved the setups to $sha" >&2; exit 1; }
+   tmp="$(mktemp -d)"
+   git init --quiet "$tmp/skills"
+   git -C "$tmp/skills" fetch --quiet "$src" "$sha"
+   git -C "$tmp/skills" checkout --quiet --detach "$sha"
+   git -C "$tmp/skills" remote add origin https://github.com/marcioaltoe/skills.git
+   go build -buildvcs=false -o "$tmp/roundfix" ./cmd/roundfix
+   HOME="$(mktemp -d)" "$tmp/roundfix" baseline assets sync --source-dir "$tmp/skills/setups" --format text
+   HOME="$(mktemp -d)" "$tmp/roundfix" baseline assets sync --source-dir "$tmp/skills/setups" --check --format text
+   ```
+
+   The first sync reports `skills.setup-snapshot.updated` for the five
+   snapshots; the check exits `0`. Then the parity transform, with this
+   program in a temporary file and the fixture rewritten through a temporary
+   copy:
+
+   ```jq
+   .input.sourceRevision as $rev
+   | def row($s): {activationBundles: $s.activationBundles, digest: "", id: $s.id,
+       schemaVersion: $s.schemaVersion, version: $s.version,
+       source: {path: $s.source.path, ref: $rev, repository: "example/skills", type: "github"},
+       skills: [$s.skills[] | if .source.type == "github"
+         then {name, path, source: {path: .source.path, ref: $rev, repository: "example/skills", type: "github"}, treeDigest: ""}
+         else {minimumVersion, name, path, source: {name: .source.name, type: "repo"}} end]}
+       | if .activationBundles == null then del(.activationBundles) else . end;
+     .manifest.setups = [$s[] | select(.source.type != "composed") | row(.)]
+   | .managedEntryLedger = [.manifest.setups[] | {digest: "", id}]
+   | .normalizedOutput.result.findings = [.manifest.setups[] | {
+       action: "Review the snapshot diff and run asset validation.",
+       code: "skills.setup-snapshot.updated", managedId: ("setup." + .id),
+       message: "Setup snapshot was synchronized from the canonical source.",
+       path: ("assets/setups/" + .id + ".json"), severity: "info"}]
+   | .normalizedOutput.result.summary.info = (.manifest.setups | length)
+   ```
+
+   run as `jq --slurpfile s <(jq -s 'sort_by(.id)[]'
+   internal/baseline/assets/setups/*.json) -f <program> <fixture>`. Then
+   `make baseline-digests`; then, with a fresh `HOME` each time and the
+   binary rebuilt from the tree, the managed refresh `"$tmp/roundfix"
+   baseline update --repo . --no-skills --no-history --yes --format text`
+   twice (the second reports `File changes: 0`). No skill is restored: the
+   `python` setup adds no skill this repository's `go-cli-tui` profile
+   requires, and the other snapshots keep their bytes, so
+   `TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot` holds without
+   a restore (re-amendment probe, `_prd.md` → Validation).
+2. API Contract: the `python` snapshot's source is `{"type": "github",
+   "repository": "marcioaltoe/skills", "ref":
+   "65d5f365cace27c4b468db1723213723b10c870b", "path": "setups/python.txt"}`
+   and its 52 skill names, in order, are `find-skills`, `knowledge-workspace`,
+   `setup-context-driven`, `brainstorming`, `business-analyst`,
+   `context7-cli`, `exa-web-search`, `grill-with-docs`, `grilling`,
+   `write-idea`, `write-prd`, `agentic-cli-design`, `domain-modeling`,
+   `write-techspec`, `write-tasks`, `coding-guidelines`, `implement-spec`,
+   `implement-task`, `no-workarounds`, `testing-boss`, `typesafe-ai`,
+   `evidence-gate`, `qa-gate`, `systematic-debugging`, `roundfix`,
+   `archive-spec`, `conventional-commits`, `crafting-effective-readmes`,
+   `github-pr-workflow`, `ai-memory-durable-pages`, `ai-memory-handoff`,
+   `ai-memory-learning-maintenance`, `ai-memory-messaging`,
+   `ai-memory-retrieval`, `ai-memory-routing-install`, `tech-writer`, `uv`,
+   `ruff`, `ty`, `pytest`, `typer`, `fastapi`, `python-services`,
+   `python-file-pipelines`, `backend-docs`, `external-api-adapters`,
+   `integration-contract-testing`, `security-best-practices`, `pdf`,
+   `pdftk-server`, `docker`, `developing-with-streamlit`. Every upstream snapshot and each of its
+   `github` skills names the same `ref`.
+3. API Contract: the module's dispatch, each skill required and dispatched
+   by exactly one trigger, in this order:
+   - `uv`: "Changing the Python project's dependencies, lockfile, Python
+     version or environment, or running a project tool through uv."
+   - `ruff`: "Formatting or linting Python code, fixing a ruff finding, or
+     changing the ruff configuration."
+   - `ty`: "Type checking Python code with ty, fixing a ty diagnostic, or
+     changing the ty configuration."
+   - `pytest`: "Writing, selecting, or reviewing Python tests, fixtures,
+     parametrization, or pytest configuration."
+   - `python-services`: "Structuring a Python command-line tool, HTTP
+     backend, or worker around shared application services: its entry
+     points, configuration, retries, cancellation, or durable work."
+   - `typer`: "Only when the repository's command-line interface already
+     uses Typer: adding or changing its commands, options, or their tests."
+   - `fastapi`: "Only when the repository's HTTP service already uses
+     FastAPI: adding or changing its routes, dependencies, Pydantic models,
+     or their tests."
+   - `python-file-pipelines`: "Only when the repository ingests or
+     reconciles files or generates reports in a Python pipeline, such as
+     CSV, XML, ZIP, SQLite, XLSX, or DOCX processing."
+   - `developing-with-streamlit`: "Only when the repository ships a
+     Streamlit internal tool or prototype the maintainer asked for: creating
+     or changing that Streamlit app."
+4. API Contract: the Python guide's rules and clauses, in this order, each
    rule at version 1:
-   - `rule.python.uv-environment`, coverage `coverage.python`,
-     `coverage.dependencies`:
+   - `rule.python.uv-environment`, coverage `coverage.python`, `coverage.dependencies`:
      - `clause.python.change-dependencies-through-uv`, mandatory: "Change
        dependencies only through uv: `uv add`, `uv add --group dev`, `uv
        remove` and `uv lock --upgrade-package`. Commit `pyproject.toml` and
@@ -224,16 +321,27 @@ func commonSetupSnapshot(id string, components []document) (document, error)
        development group the gate needs, so it installs exactly what `uv.lock`
        records; a step that must also refuse a lockfile that no longer matches
        `pyproject.toml` uses `--locked` instead."
-   - `rule.python.ruff-and-pytest-gates`, coverage `coverage.python`,
-     `coverage.verification-integrity`:
+     - `clause.python.check-the-lock-offline`, mandatory: "The repository
+       Verification checks the lockfile with `uv lock --check --offline`: it
+       compares `uv.lock` with `pyproject.toml` from local files alone, fails
+       when they no longer match, and needs no network or cache, so it runs
+       inside a Run as in CI."
+   - `rule.python.verification-gates`, coverage `coverage.python`, `coverage.verification-integrity`:
      - `clause.python.iterate-with-focused-commands`, mandatory: "Use focused
-       commands such as `uv run pytest <node id>` and `uv run ruff check
-       <path>` while iterating, then run the selected repository
-       Verification."
+       commands such as `uv run pytest <node id>`, `uv run ruff check <path>`
+       and `uv run ty check <path>` while iterating, then run the selected
+       repository Verification."
      - `clause.python.ruff-findings-fail-the-gate`, prohibited: "Do not hide a
        ruff finding: never pass `--exit-zero`, add a blanket `# noqa`, or
        widen the ruff configuration to make a finding disappear. A `# noqa`
        names the rule code it silences and the reason."
+     - `clause.python.type-check-with-ty`, mandatory: "The repository
+       Verification type-checks the package and its tests with `uv run ty
+       check --error-on-warning`, ty being a development dependency. Do not
+       hide a ty diagnostic: never pass `--exit-zero` or
+       `--exit-zero-on-warning`, add a blanket `# ty: ignore` or `# type:
+       ignore`, or widen the ty configuration to make a diagnostic disappear.
+       A suppression names the rule it silences and the reason."
      - `clause.python.select-a-new-test-by-its-node-id`, mandatory: "A Task
        Verification selects a new test by its pytest node id, such as
        `tests/test_report.py::test_totals`, and never passes that test's file
@@ -242,8 +350,7 @@ func commonSetupSnapshot(id string, components []document) (document, error)
        exists, so the command could never fail before the work; a missing node
        id alone exits 4 and an empty selection exits 5. `roundfix spec check`
        reports a command that names a test both ways."
-   - `rule.python.hermetic-tests`, coverage `coverage.python`,
-     `coverage.verification`:
+   - `rule.python.hermetic-tests`, coverage `coverage.python`, `coverage.verification`:
      - `clause.python.keep-tests-hermetic`, mandatory: "Keep tests hermetic:
        set or clear with `monkeypatch` every environment variable the code
        under test reads, write only under `tmp_path`, and never read the
@@ -258,8 +365,8 @@ func commonSetupSnapshot(id string, components []document) (document, error)
        change touches code that branches on the operating system, such as on
        `sys.platform`, `os.name` or `platform.system()`, exercise every branch
        it names: test each one with `monkeypatch` over the value the code
-       reads, or run the repository's type checker for each platform with its
-       platform option, because a test run on the host executes only the
+       reads, or run `uv run ty check --python-platform <platform>` for each
+       platform it names, because a test run on the host executes only the
        host's branch."
      - `clause.python.keep-entry-points-thin`, mandatory: "Keep each entry
        point thin, whether a console script, a web application factory or a
@@ -268,15 +375,14 @@ func commonSetupSnapshot(id string, components []document) (document, error)
        observable contract: for a console script, standard output, standard
        error and the exit code it raises with `SystemExit`; for a web
        application or a worker, the responses or messages it produces."
-4. API Contract: rendering. A greenfield plan for the `python` profile with the usual
-   decisions in a repository whose Makefile declares `verify` and
+5. API Contract: rendering. A greenfield plan for the `python` profile with
+   the usual decisions in a repository whose Makefile declares `verify` and
    `verify-incremental` is `ready`, renders `docs/agents/python.md` with the
-   ten clauses and the root pointer "Python implementation rules are
-   mandatory", renders no `docs/agents/go.md`, `docs/agents/rust.md`,
-   `docs/agents/tui.md` or `docs/agents/cli.md`, records `python` in its Setup Manifest, applies,
-   and re-plans with no file change. Profile alignment, decisions and
-   capabilities behave as for `rust-cli`, without the CLI surface's
-   `agentic-cli-design` dispatch.
+   twelve clauses, `docs/agents/skill-dispatch.md` naming the nine skills and the
+   root pointer "Python implementation rules are mandatory", renders no
+   `docs/agents/go.md`, `docs/agents/rust.md`, `docs/agents/tui.md` or
+   `docs/agents/cli.md`, records `python` in its Setup Manifest, applies, and
+   re-plans with no file change.
 
 ### Surface Transcripts
 
@@ -286,10 +392,10 @@ gains one entry.
 ### Invariants
 
 ```text
-1. A derived Setup Snapshot holds no list of its own choosing; the catalog refuses one that differs from its derivation.
-2. No derived snapshot is a component of another.
-3. Existing setups, profiles and clauses keep their bytes; only derived files, the module record and this repository's Setup Manifest change through the sanctioned commands.
-4. The python profile restores no skill outside the python setup, the python setup holds no Go, TUI or Rust skill, and the profile selects no application-surface module.
+1. A Setup Snapshot holds no list of its own choosing; only the asset sync writes it, from one upstream commit for every upstream snapshot; this Spec's sync changes only python.json.
+2. The embedded snapshots agree on every external skill's contract.
+3. Existing profiles and clauses keep their bytes; only setups, derived files, the module record, this repository's skill copies and lock, and its Setup Manifest change, through the sanctioned commands.
+4. The python profile selects no application-surface module and renders no Go, Rust, TUI or CLI guide.
 5. No Roundfix code or test runs a Python tool.
 ```
 
@@ -297,152 +403,148 @@ gains one entry.
 
 Deviations from the PRD: None.
 
-- Goal 3, Core Features 1 and 2, Success Metrics 2 and 3, User Story 4, Invariants 1, 2 and 4 → API Contracts 1 and 2
-- Goals 1 and 2, Core Features 3 and 4, Success Metrics 1 and 4, User Stories 1-3, Invariant 5 → API Contracts 3 and 4
-- Goal 4, Success Metric 1, Invariant 3 → Data Models 5 and 6, Testing Approach (declared breaks)
-- Core Feature 5, Success Metric 5 → Build Order 3
+- Goals 1 and 2, Core Feature 1, Success Metrics 1, 2 and 5, User Story 4, Invariants 1-3 → API Contracts 1 and 2
+- Goals 3-5, Core Features 2 and 3, Success Metrics 3 and 4, User Stories 1-3, Invariants 4-5 → API Contracts 3-5
+- Core Feature 4, Success Metric 6 → Build Order 3
 
 ## Absence Evidence
 
-1. The common kind — command: `grep -rn '"common"' internal/baseline/*.go`; result: no match at `dde9d5f5`.
-2. The Python profile, module and setup — command: `ls internal/baseline/assets/profiles internal/baseline/assets/modules internal/baseline/assets/setups | grep -i python`; result: no match at `dde9d5f5`.
-3. The glossary term — command: `grep -n "Common Setup Snapshot" CONTEXT.md`; result: no match at `dde9d5f5`.
+1. The Python profile, module and setup — command: `ls internal/baseline/assets/profiles internal/baseline/assets/modules internal/baseline/assets/setups | grep -i python`; result: no match at `64c56d7f`.
+2. The python setup file — command: `test -e internal/baseline/assets/setups/python.json`; result: exit 1 at `b5e45c63`.
 
 ## ADR Alternatives
 
-- ADR-0322: none of its rejected alternatives is taken; the setup is neither a union of `go` and `rust`, nor hand-written, nor the `go` list.
-- ADR-0204: its rejected alternatives (a profile naming several setups; deriving at load time) are not taken; the common snapshot is a file the sync writes, read by the existing readers.
-- ADR-0191: its rule stands; the sync remains the only writer, and the Task writes the `python` snapshot with the sync's own derivation bytes, which the catalog checks.
-- ADR-0206: no rejected alternative is taken; the `python` snapshot names its components by their upstream setup names, and a skill dropped upstream leaves it with its components.
+- ADR-0322: none of its rejected alternatives is taken: no common or composed derivation, no single-snapshot import at a second commit, no per-tool decision.
+- ADR-0191: its rule stands; the sync writes every snapshot, and the only hand edit is the seed's two values, which the sync overwrites.
+- ADR-0206: no rejected alternative is taken; the snapshot takes the upstream list's name `python`, seeded as that ADR's Spec seeded renamed snapshots.
+- ADR-0204: no rejected alternative is taken; the composed snapshot keeps the bytes Spec 0317's sync gave it.
+- ADR-0241: no rejected alternative is taken; its agreement rule is why the python snapshot takes the commit the others already name.
 - ADR-0219: no rejected alternative is taken; a repository-owned draft adapted from the `python` profile binds to it like to any built-in profile.
-- ADR-0241: no rejected alternative is taken; a repository-owned profile that selects the `python` module takes its skill contracts from the embedded snapshots, of which `python` is one.
-- ADR-0246: no rejected alternative is taken; a retired skill leaves the common part when it leaves its components, and no module requires it.
+- ADR-0246: no rejected alternative is taken; `council` and `the-fool` stay out of every snapshot.
+- ADR-0072: no rejected alternative is taken; the frozen parity row changes only through the sanctioned transform, and the other frozen fixtures keep their bytes.
 
 ## Integration Points
 
 The embedded Baseline catalog and its derived files; the asset sync over a
-synthetic source; the repository's Managed Refresh. No test, Verification
-command or QA row reads the upstream skills checkout, runs a Python tool,
-reaches the network, reads the real `~/.roundfix`, reads the Secondbrain or
-reads another repository.
+repository fetched from `~/dev/skills`; the repository's Managed Refresh. No
+test, Verification command or QA row reaches the network, reads the real
+`~/.roundfix`, reads the Secondbrain, reads another repository or runs a
+Python tool. Only task_01's import reads `~/dev/skills`, fetching one commit
+into an empty local repository.
 
 ## Testing Approach
 
-Every new top-level test and subtest calls `t.Parallel()` first and passes no
-real-time duration; the new files use no platform API and compile for Windows.
+Every new top-level test calls `t.Parallel()` first and passes no real-time
+duration; the new files use no platform API and compile for Windows.
 
-- `internal/baseline/common_setup_test.go` (new, Build Order 1):
-  - `TestACommonSetupKeepsOnlyTheSkillsEveryComponentCarries`: explicit
-    components `first` (skills `a`, `c`, `differs`, `b`; bundles `shared`,
-    `only-first`) and `second` (skills `b`, `differs` with another path, `c`,
-    `d`; bundles `last`, `shared` equal) give skills `c`, `b` and bundle
-    `shared`, source type `common` with setups `first`, `second`, and the
-    canonical digest; components without a shared skill return an error.
-  - `TestACommonSetupThatDiffersFromItsComponentsIsReported`: on
-    `cloneEmbeddedAssets`, a fixture `setups/common-example.json` built by the
-    derivation from `go` and `rust` loads; with its first skill dropped it
-    reports `catalog.setup.composition.drift` whose detail contains
-    "components' common part"; with components `["go"]` or `["go",
-    "go-cli-typescript-bun"]` it reports `catalog.setup.composition.invalid`.
-  - `TestTheAssetSyncWritesACommonSetupAfterItsComponents`: in an asset-sync
-    target and synthetic source, a stale `common-example` snapshot (first
-    skill dropped) is rewritten by a refresh to the common part of the
-    refreshed `go` and `rust`, with source type `common`.
+- `internal/baseline/python_setup_test.go` (new, Build Order 1):
+  - `TestThePythonSetupIsThePublishedUpstreamPreset`: the embedded `python`
+    setup has API Contract 2's source and its 52 names in order.
+  - `TestEveryUpstreamSetupFollowsThePythonPresetRevision`: `go`, `rust`,
+    `typescript` and `python` and each of their `github` skills name
+    `65d5f365cace27c4b468db1723213723b10c870b`, and `python` holds
+    `ai-memory-handoff` and no `handoff`.
 - `internal/baseline/python_profile_test.go` (new, Build Order 2):
-  - `TestThePythonSetupIsTheCommonPartOfGoAndRust`: the embedded `python`
-    setup has source type `common` with `go`, `rust`, equals the derivation,
-    holds none of the toolchain skills of Success Metric 2 and holds the three
-    language-neutral ones.
-  - `TestThePythonProfileRendersThePythonGuide`: through
-    `newPlanRepository` and `planTestDecisions` with greenfield preservation,
-    API Contract 4's plan, guide phrases (on whitespace-normalized text),
-    absent guides (including `docs/agents/cli.md`), root pointer and
-    manifest profile.
-- Declared breaks (Build Order 1): the three `composed` skips in
-  `assets_sync_test.go` (the template check, the maintained parity row and
-  `buildAssetsSyncSource`) skip both derived kinds; their assertions keep
-  their meaning.
-- Declared breaks (Build Order 2), each moving to the five-profile, five-setup
-  catalog: `TestEmbeddedCatalog` lists `python`; `TestOutputsForCommand`
-  adds `internal/baseline/assets/setups/python.json` and
-  `internal/baseline/assets/profiles/python.json` to its enumeration;
+  - `TestThePythonModuleDispatchesItsSkills`: the module's `requiredSkills`
+    equal API Contract 3's nine in order; each dispatch has one trigger, and
+    a trigger begins "Only when the repository" exactly for `typer`,
+    `fastapi`, `python-file-pipelines` and `developing-with-streamlit`.
+  - `TestThePythonProfileRendersThePythonGuide`: through `newPlanRepository`
+    and `planTestDecisions` with greenfield preservation, API Contract 5's
+    ready plan, eight guide clauses with their force, the lock-check and ty clauses among them (on whitespace-normalized
+    text), the nine skills in the skill-dispatch guide, the root pointer, and
+    no Go, Rust, TUI or CLI guide among the postimages.
+- Declared breaks (Build Order 1): `assets_sync_test.go` counts five setups
+  and findings in `TestAssetsSyncCheckIsReadOnlyAndReportsDrift`,
+  `TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent` (two
+  counts) and `TestAssetsSyncCompatibilityMatchesMaintainedPythonContract`;
+  `TestOutputsForCommand` adds `internal/baseline/assets/setups/python.json`.
+- Declared breaks (Build Order 2): `TestEmbeddedCatalog` lists `python`;
+  `TestOutputsForCommand` adds `internal/baseline/assets/profiles/python.json`;
   `characterizedBaselineForce` lists the ten Python clauses with API Contract
-  3's force; `TestAssetsSyncCheckIsReadOnlyAndReportsDrift`,
-  `TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent` and
-  `TestAssetsSyncCompatibilityMatchesMaintainedPythonContract` count five
-  setups and findings; `TestBaselineHumanProfileAdaptation` answers `5` for
-  `standard-typescript-monorepo`; `TestGuidanceCompositionJourney` lists
-  `python` and its two fixture switches gain a `python` case (a
-  `pyproject.toml` and an empty `src/example/__init__.py`; no formatter run).
-  No other existing test changes; the prototype passed every other test of
-  `internal/baseline`, `internal/cli`, `skills`, `internal/spec` and
-  `internal/speccheck` with these changes.
-- Prototype record (2026-10-23, scratch worktree at `dde9d5f5`, with the
-  earlier profile shape `python-cli` and its `cli-surface` module; the
-  2026-10-24 amendment was checked by reading, `_prd.md` → Validation): the
-  five new tests failed to exist before and passed after. These sabotages each failed
-  the named test: the common derivation keeping a same-named entry without
-  comparing it → `TestACommonSetupKeepsOnlyTheSkillsEveryComponentCarries`;
-  the common drift detail replaced by the composed one →
-  `TestACommonSetupThatDiffersFromItsComponentsIsReported/skill_dropped`; the
-  asset sync's upstream loop skipping only `composed` →
-  `TestTheAssetSyncWritesACommonSetupAfterItsComponents`; the node-id clause's
-  "selects a new test by its pytest node id" reworded →
-  `TestThePythonProfileRendersThePythonGuide`; the first skill removed from
-  `setups/python.json` → catalog validation, failing
-  `TestThePythonSetupIsTheCommonPartOfGoAndRust`.
+  4's force; `TestBaselineHumanProfileAdaptation` answers `5` in its
+  `answers` script; `TestGuidanceCompositionJourney` lists `python` and its
+  two fixture switches gain a `python` case (a `pyproject.toml` and an empty
+  `src/example/__init__.py`; no formatter run).
+- Prototype record (2026-10-24, scratch worktrees of `64c56d7f`): after Build
+  Order 1 alone, `./internal/baseline` and `./skills` passed; after Build
+  Orders 1 and 2, every package of `_prd.md` → Validation passed. These
+  sabotages each failed the named test:
+  - the first skill removed from `setups/python.json` →
+    `TestThePythonSetupIsThePublishedUpstreamPreset`;
+  - "Only when the repository's command-line interface already uses Typer: "
+    removed from the `typer` trigger, or "Only when the repository has chosen
+    ty: " prefixed to the `ty` trigger →
+    `TestThePythonModuleDispatchesItsSkills`;
+  - `ty` removed from `requiredSkills` →
+    `TestEveryModuleRequiresEverySkillItDispatches` ("python dispatches
+    unrequired skill ty");
+  - `--offline` removed from the lock-check clause, or `--error-on-warning`
+    from the ty clause → `TestThePythonProfileRendersThePythonGuide`;
+  - "selects a new test by its pytest node id" reworded →
+    `TestThePythonProfileRendersThePythonGuide`;
+  - `cli-surface` added after `python` in the profile's modules →
+    `TestThePythonProfileRendersThePythonGuide` ("python plan renders
+    docs/agents/cli.md").
 
 ## Build Order
 
-1. The common kind: `derivedSetupSource`, `deriveSetupSnapshot`,
-   `commonSetupSnapshot`, the refusal of derived components, the validator,
-   the asset sync, the helper skips and `common_setup_test.go` (no
-   dependency).
-2. The Python profile: the `python` setup, module, templates and index
-   entries, coverage entry, core entries and profile; the module record
-   command, `make baseline-digests` and the Managed Refresh twice; the
-   declared breaks and `python_profile_test.go` (depends on 1, whose validator
-   accepts the common kind and whose helper skips the sync tests need).
-3. Documentation: the user guide's profile list and paragraph, **Common Setup
-   Snapshot** in the glossary, the Coverage Review and the Behavior Surface
-   re-record last (depends on 2, which ships what it describes).
+1. The import: the seed, the sync and its check, the parity transform,
+   `make baseline-digests`, the managed refresh twice, the Build Order 1
+   declared breaks and `python_setup_test.go`. It depends on Spec 0317
+   having merged, which moves the other upstream snapshots to the same
+   commit; the import's first commands stop when it has not.
+2. The Python profile: module, templates and index entries, coverage entry,
+   core entries and profile; the module record command, `make
+   baseline-digests` and the managed refresh twice; the Build Order 2 declared
+   breaks and `python_profile_test.go` (depends on 1, whose `python` setup the
+   profile names and whose derived files it regenerates).
+3. Documentation: the user guide's profile list and paragraph, the Coverage
+   Review and the Behavior Surface re-record last (depends on 2).
 4. QA gate (depends on: 1, 2, 3).
 
-No Spec is listed in `requires`. Spec 0307 delivers first and changes the
-core module and the derived digests; Build Order 2 regenerates on the tree it
-starts on and names no version or digest value.
+No Spec is listed in `requires`; the operator queues this Spec after Spec
+0317 merges (cycle AP batch 6 order).
 
 ## Risks & Considerations
 
-- A later upstream change can shrink the common part: a skill only one of
-  `go` and `rust` keeps leaves the `python` setup at the next asset sync. The
-  sync's diff shows it; a skill a module requires would fail the catalog
-  check, and the `python` module requires none.
-- The Managed Refresh of an adopter with the `python` profile writes
-  `docs/agents/python.md`; an existing repository-owned Python guide at that
-  path follows the Baseline's ordinary carrier and preservation rules.
-- Rebasing over Spec 0307 conflicts in `core.json`'s version line, the module
+- Fleet effect: none beyond the new profile; Spec 0317 already moved the
+  other snapshots and its release note covers the changed skills.
+- The local checkout may lack the commit; task_01 stops before any write.
+- Building `bin/roundfix` or running `go run` under a fresh `HOME` moves the
+  Go module cache into that home and downloads modules; API Contract 1
+  builds the binary once under the Run's environment and gives only the
+  binary a fresh `HOME`.
+- Rebasing over Specs 0317 and 0307 conflicts in `core.json`'s version line, the module
   record and the derived goldens; the Task resolves them by rerunning the
-  sanctioned commands on the rebased tree, never by hand.
+  sanctioned commands, never by hand.
 
 ## Glossary
 
-- adds: **Common Setup Snapshot**
+None.
 
 ## Decisions
 
-- The setup is a common snapshot of `go` and `rust`; see ADR-0322.
-- The module dispatches no skill until upstream publishes Python skills.
+- The `python` setup is the imported upstream preset, at the commit Spec 0317
+  moved every other upstream snapshot to; see ADR-0322.
+- Optional skills are required and dispatched with a trigger beginning "Only
+  when the repository"; see ADR-0322.
+- Every Python gate runs ty and the lock check (maintainer, 2026-10-24 about
+  12:30 BRT, "ty e lock check sempre"). The guide's
+  `clause.python.type-check-with-ty` names `uv run ty check
+  --error-on-warning` over the package and its tests and forbids hiding a
+  diagnostic, as the ruff clause does; the platform clause names ty's
+  `--python-platform`; `ty` is dispatched always.
+- The lock check is `uv lock --check --offline`
+  (`clause.python.check-the-lock-offline`). uv decides whether a lock is
+  current by comparing it with the project metadata, and the probe in
+  `_prd.md` → Validation shows a current lock passes with no network and an
+  empty cache, while a stale one fails with or without a cache. So the gate
+  runs it inside a Run without the network, and CI keeps `uv sync --locked`,
+  which names the cause with the network. Spec 0310's Starter Makefile carries
+  both targets.
 - The guide's node-id clause names `roundfix spec check`'s existing finding by
   behavior, not by code.
 - The starter files are Spec 0310's.
-- The profile is named `python` and fixes no application surface: no
-  `cli-surface` module and no `rule.cli.*` rules, the hermetic-tests rule
-  covers `coverage.verification`, and the entry-point clause speaks of every
-  kind of entry point (maintainer decisions of 2026-10-24, quoted in
-  `_prd.md` → Decisions and `_authorization.md`).
-- `agentic-cli-design` stays in the `python` setup, because the setup is the
-  derived common part of `go` and `rust`, but no module of the profile
-  requires or dispatches it; a command-line adopter names it, with its own
-  surface rules, in its repository-owned `docs/agents/specific-repository.md`
-  (the `repository-extension` module).
+- The profile is named `python` and fixes no application surface (maintainer
+  decisions of 2026-10-24).

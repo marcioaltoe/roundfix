@@ -177,12 +177,15 @@ func Starters(ctx context.Context, request StartersRequest, catalog *Catalog) (S
    and `starter.python.verify-workflow` → `.github/workflows/verify.yml`
    (`template.starter.python.verify-workflow`, `starters/python/verify.yml`).
    - The Makefile starts with `SHELL := /bin/bash`, declares `.PHONY: help
-     sync fmt fmt-check lint test verify verify-incremental`, a `help` target
-     that prints the targets, `sync: uv sync --group dev`, and the recipes
-     `uv run --frozen ruff format src tests` (fmt), `uv run --frozen ruff
-     format --check src tests` (fmt-check), `uv run --frozen ruff check src
-     tests` (lint), `uv run --frozen pytest -q` (test), then the lines
-     `verify: fmt-check lint test` and `verify-incremental: verify`.
+     sync lock-check fmt fmt-check lint typecheck test verify
+     verify-incremental`, a `help` target that prints the targets, `sync: uv
+     sync --group dev`, and the recipes `uv lock --check --offline`
+     (lock-check), `uv run --frozen ruff format src tests` (fmt), `uv run
+     --frozen ruff format --check src tests` (fmt-check), `uv run --frozen
+     ruff check src tests` (lint), `uv run --frozen ty check
+     --error-on-warning src tests` (typecheck), `uv run --frozen pytest -q`
+     (test), then the lines `verify: lock-check fmt-check lint typecheck
+     test` and `verify-incremental: verify`.
    - The Project Config holds, with English comments, `defaults.verification:
      make verify`, `worktree.bootstrap: uv sync --group dev --frozen`,
      `worktree.bootstrap_timeout: 5m`, `worktree.caches: [.venv,
@@ -304,7 +307,7 @@ Deviations from the PRD: None.
 - ADR-0075: its rejected alternatives are not taken; profile divergence still resolves through a confirmed repository-owned adaptation, and the new next action only adds a pointer to the Starter Files for a profile that has them.
 - ADR-0219: no rejected alternative is taken; a repository-owned draft adapted from the `python` profile binds to it and, keeping the `python` module, keeps its Starter Files.
 - ADR-0241: no rejected alternative is taken; Starter Files come from the embedded module, as a repository profile's skill contracts come from the embedded snapshots.
-- ADR-0322: none of its rejected alternatives is taken; the `python` module and its common setup stay as Spec 0309 delivers them, and this Spec only adds Starter Files to the module.
+- ADR-0322: none of its rejected alternatives is taken; the `python` module and its imported setup stay as Spec 0309 delivers them, and this Spec only adds Starter Files to the module.
 
 ## Integration Points
 
@@ -324,8 +327,9 @@ platform API and compile for Windows.
 - `internal/baseline/starter_files_test.go` (new, Build Order 1):
   - `TestThePythonModuleDeclaresItsStarterFiles`: for the `python` profile's ordered
     modules the three paths in order with `sha256:` identities, each template
-    holding API Contract 2's lines (`verify: fmt-check lint test`,
-    `verify-incremental: verify`, the four `uv run --frozen` recipes; the five
+    holding API Contract 2's lines (`verify: lock-check fmt-check lint
+    typecheck test`, `verify-incremental: verify`, `uv lock --check
+    --offline`, the five `uv run --frozen` recipes; the five
     Project Config values; `pull_request:`, `run: uv sync --group dev
     --locked`, `run: make verify`, `python-version: "3.12"`), and no Starter
     File for the other four profiles.
@@ -405,8 +409,14 @@ Order 1 extends the module Spec 0309 creates.
 - The action versions in the workflow (`actions/checkout@v7`,
   `astral-sh/setup-uv@v10.3.0`) age; the repository owns the file once
   written, and a later Spec can raise the template's version.
-- `uv run --frozen` in the gate does not notice a stale lockfile; CI's
-  `uv sync --locked` does, and the Python guide (Spec 0309) states both.
+- `uv run --frozen` does not notice a stale lockfile; the gate's `lock-check`
+  (`uv lock --check --offline`) does without the network, and CI's `uv sync
+  --locked` does with it. A repository whose lock references a `git+ssh`
+  source may still see uv try to reach it offline (uv issue #13056, reported
+  and not reproduced upstream); the Python guide of Spec 0309 states the rule.
+- `typecheck` needs ty in the repository's development group; the starter
+  does not edit `pyproject.toml`, so a repository without ty fails the gate
+  until it runs `uv add --group dev ty`, as the Python guide requires.
 - A repository with its own Makefile that lacks `verify` keeps it; the preview
   says `keep`, and alignment still reports the undeclared gate.
 
@@ -417,7 +427,8 @@ Order 1 extends the module Spec 0309 creates.
 ## Decisions
 
 - A separate command writes Starter Files only where absent; see ADR-0323.
-- The Makefile and bootstrap use `--frozen`; CI uses `--locked`.
+- The Makefile and bootstrap use `--frozen`; CI uses `--locked`; `verify`
+  runs the offline lock check and ty (maintainer, 2026-10-24).
 - The command's exit codes follow `baseline skills restore`.
 - The profile is `python` and fixes no application surface (maintainer
   decisions of 2026-10-24, quoted in `_prd.md` → Decisions); the Starter

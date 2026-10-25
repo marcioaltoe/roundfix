@@ -6,17 +6,16 @@ type: docs
 complexity: low
 ---
 
-# Task 03: The user guide lists the Python profile and the glossary defines the Common Setup Snapshot
+# Task 03: The user guide lists the Python profile and the skills it dispatches
 
 ## Overview
 
 The user guide's profile list names four built-in profiles. This Task adds
 `python` with a paragraph on what it governs, that it fixes no application
-surface, which skills it takes and
-why no Python skill is dispatched yet, defines **Common Setup Snapshot** in the
-glossary, records the Coverage Review the PRD's Skills section plans, and
-re-records the Behavior Surface Record last (`_prd.md` → Core Feature 5;
-ADR-0322).
+surface, where its skills come from and which it dispatches only when the
+repository has chosen them, records the Coverage Review the PRD's Skills
+section plans, and re-records the Behavior Surface Record last (`_prd.md` →
+Core Feature 4; ADR-0322).
 
 ## Requirements
 
@@ -32,70 +31,57 @@ ADR-0322).
    `docs/agents/python.md`, whether the project is a command-line tool, a
    backend service or a worker. It fixes no application surface: rules for
    one surface belong in the repository's own
-   `docs/agents/specific-repository.md`. It takes the `python` setup, a Common Setup
-   Snapshot of the `go` and `rust` setups that holds only the skills both
-   carry, so no Go, TUI or Rust skill is restored. It dispatches no
-   Python-specific skill because the upstream skills repository has none yet.
-   Like every profile, its alignment needs the repository's declared `make`
-   Verification targets before a plan is ready." The section MUST name no
-   command the binary lacks, and the guide MUST NOT contain `python3` or
-   `Python fallback`.
-3. MUST add **Common Setup Snapshot** to `CONTEXT.md` through
-   `domain-modeling`, right after the **Composed Setup Snapshot** entry, as
-   "**Common Setup Snapshot**:" followed on the next line by "A setup snapshot
-   derived by name from two or more setups that keeps, in the first one's
-   order, only the skills and activation bundles every one of them carries
-   with equal entries, so a built-in profile can take the language-neutral
-   skills of toolchains without its own upstream list", followed by a space
-   and a link to ADR-0322 written as the neighbouring entries write theirs
-   (link text `ADR-0322`, target
-   `docs/adr/0322-a-python-profile-takes-the-skills-the-go-and-rust-setups-share.md`,
-   in parentheses) and a closing period,
-   and the line "_Avoid_: Intersection setup, shared setup".
-4. MUST record the Coverage Review of `_prd.md` → Skills by adding to the
+   `docs/agents/specific-repository.md`. Its `python` setup is the Python
+   preset the upstream skills repository publishes, imported by the asset
+   sync like every other setup. Its guide makes the gate check the lockfile
+   offline and type-check with ty besides ruff and pytest. It dispatches the
+   uv, ruff, ty, pytest and Python-services skills whenever their work
+   arises, and the Typer, FastAPI, file-pipeline and Streamlit skills only
+   when the repository has chosen that tool. Like every profile, its alignment needs the repository's
+   declared `make` Verification targets before a plan is ready." The section
+   MUST name no command the binary lacks, and the guide MUST NOT contain
+   `python3` or `Python fallback`.
+3. MUST record the Coverage Review of `_prd.md` → Skills by adding to the
    `guide docs/user-guide/context-driven-development.md` entry of
    `docs/references/skill-coverage.json` the key `review` with the value
-   "2026-10-23 — " followed by that surface's reason in `_prd.md` → Skills,
+   "2026-10-24 — " followed by that surface's reason in `_prd.md` → Skills,
    changing no other entry.
-5. MUST, as its LAST step and after the last edit of the user guide,
+4. MUST, as its LAST step and after the last edit of the user guide,
    re-record the Behavior Surface Record with
    `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`,
    which rewrites `docs/references/behavior-surfaces.json`; re-record again if
    the guide changes after it.
-6. MUST NOT change any skill, any other user guide page, `README.md`, any Go
-   file or any Baseline asset.
+5. MUST NOT change any skill, any other user guide page, `README.md`,
+   `CONTEXT.md`, any Go file or any Baseline asset.
 
 ## Subtasks
 
 - [ ] Update the profile list and add the paragraph.
-- [ ] Add the glossary entry.
 - [ ] Record the Coverage Review, then re-record the Behavior Surface Record last.
 
 ## Acceptance Criteria
 
-- [ ] The user guide names `python`, says it fixes no application surface, and describes its setup and skills without a retired runtime marker.
-- [ ] The glossary defines **Common Setup Snapshot** with its ADR link.
+- [ ] The user guide names `python`, says it fixes no application surface, where its setup comes from, that its gate runs the offline lock check and ty, and which skills it dispatches only when chosen, without a retired runtime marker.
 - [ ] The Skill Coverage Map records the review and the Behavior Surface Record is current.
 
 ## Consumers
 
-- the user guide and glossary — consumers: `./internal/docscontract`
+- the user guide — consumers: `./internal/docscontract`
 
 ## Context
 
-- instruction: `docs/adr/0322-a-python-profile-takes-the-skills-the-go-and-rust-setups-share.md`
+- instruction: `docs/adr/0322-a-python-profile-imports-the-published-upstream-python-preset.md`
 - instruction: `skills/baseline_skill_contract_test.go`
 - interface: `docs/user-guide/context-driven-development.md`
-- interface: `CONTEXT.md`
 - interface: `docs/references/skill-coverage.json`
 - interface: `docs/references/behavior-surfaces.json`
 
 ## Verification
 
-- `g="$(tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md)"; printf '%s\n' "$g" | grep -qE -- 'Roundfix ships .go-cli-tui., .go-cli-typescript-monorepo., .python., .rust-cli., and .standard-typescript-monorepo.[.]' || { echo 'profile list lacks python' >&2; exit 1; }; for p in 'Profile governs a Python project run with uv, ruff and pytest through' 'whether the project is a command-line tool, a backend service or a worker. It fixes no application surface' 'setups that holds only the skills both carry, so no Go, TUI or Rust skill is restored.' 'It dispatches no Python-specific skill because the upstream skills repository has none yet.'; do printf '%s\n' "$g" | grep -qF -- "$p" || { printf 'missing in guide: %s\n' "$p" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Common Setup Snapshot**:' || { echo 'missing glossary term' >&2; exit 1; }; grep -qF -- '"review": "2026-10-23 — the only change names the new built-in' docs/references/skill-coverage.json || { echo 'missing coverage review' >&2; exit 1; }; go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent)$' ./internal/docscontract && go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills` — expected: exit 0. Before this Task the guide names four profiles, so the command fails at its first check. Afterwards the guide, the glossary and the review are present, the Behavior Surface Record is current and the retired-runtime guard passes.
+- `g="$(tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md)"; printf '%s\n' "$g" | grep -qE -- 'Roundfix ships .go-cli-tui., .go-cli-typescript-monorepo., .python., .rust-cli., and .standard-typescript-monorepo.[.]' || { echo 'profile list lacks python' >&2; exit 1; }; for p in 'Profile governs a Python project run with uv, ruff and pytest through' 'whether the project is a command-line tool, a backend service or a worker. It fixes no application surface' 'preset the upstream skills repository publishes, imported by the asset sync like every other setup.' 'FastAPI, file-pipeline and Streamlit skills only when the repository has chosen that tool.' 'Its guide makes the gate check the lockfile offline and type-check with ty besides ruff and pytest.'; do printf '%s\n' "$g" | grep -qF -- "$p" || { printf 'missing in guide: %s\n' "$p" >&2; exit 1; }; done; grep -qF -- '"review": "2026-10-24 — the only change names the new built-in' docs/references/skill-coverage.json || { echo 'missing coverage review' >&2; exit 1; }; go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent)$' ./internal/docscontract && go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills` — expected: exit 0. Before this Task the guide names four profiles, so the command fails at its first check. Afterwards the guide and the review are present, the Behavior Surface Record is current and the retired-runtime guard passes.
 
 ## References
 
-- `_prd.md` → Core Feature 5; Success Metric 5; Skills; Glossary; User Story 1
-- `_techspec.md` → Current behavior 8-9; Build Order 3
+- `_prd.md` → Core Feature 4; Success Metric 6; Skills; User Story 1
+- `_techspec.md` → Current behavior 10-11; Build Order 3
 - ADR-0322

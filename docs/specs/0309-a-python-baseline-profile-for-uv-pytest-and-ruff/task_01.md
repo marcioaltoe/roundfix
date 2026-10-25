@@ -3,90 +3,112 @@ task: task_01
 spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
 status: pending
 type: backend
-complexity: medium
+complexity: high
 ---
 
-# Task 01: A Common Setup Snapshot keeps only the skills its components share
+# Task 01: The asset sync imports the upstream python preset at the commit every setup names
 
 ## Overview
 
-A Setup Snapshot today mirrors one upstream list or is the union of several
-(the composed kind). A toolchain without an upstream list, such as Python,
-needs the skills its sibling lists share. This Task adds the common kind: the
-catalog validates it beside the composed kind and the asset sync writes it
-after its components. No embedded snapshot uses it yet; task_02 adds the
-`python` one (`_prd.md` → Core Feature 1; ADR-0322).
+Upstream published the curated `python` preset and, at
+`65d5f365cace27c4b468db1723213723b10c870b`, replaced its `handoff` skill with
+six ai-memory skills. Spec 0317, delivered first, has moved every other
+upstream Setup Snapshot to that commit. This Task imports `python` at the same
+commit through the asset sync, the only writer of a Setup Snapshot
+(ADR-0191), seeding the new snapshot as Spec 0208 seeded its renamed ones;
+the sync leaves the other snapshots unchanged, so the embedded snapshots keep
+agreeing on every external skill (ADR-0241). The parity row, the derived
+files and this repository's Setup Manifest follow through their sanctioned
+commands; no skill is restored (`_prd.md` → Core Feature 1; ADR-0322).
 
 ## Requirements
 
 1. MUST answer the Backlog Entry
    [`references/2026-10-22-a-baseline-profile-for-python-repositories.md`](references/2026-10-22-a-baseline-profile-for-python-repositories.md)
-   of 2026-10-22, its expected item 5 (the profile works with the skills that
-   exist today).
-2. MUST add to `internal/baseline/setup_composition.go` the functions
-   `derivedSetupSource`, `deriveSetupSnapshot` and `commonSetupSnapshot` of
-   `_techspec.md` → Interfaces, with the semantics of API Contract 1 and the
-   document shape of Data Model 1; `setupCompositionComponents` MUST refuse a
-   component of either derived kind and keep its other refusals, and
-   `composeSetupSnapshot` MUST keep its behavior.
-3. MUST make `validateSetups` in `internal/baseline/catalog_validate.go` check
-   every derived snapshot through `derivedSetupSource` and
-   `deriveSetupSnapshot`, reporting the existing codes; the drift detail for a
-   common snapshot MUST be exactly "skills or activation bundles differ from
-   the components' common part", and the composed detail MUST keep its bytes.
-4. MUST make `syncAssets` in `internal/baseline/assets_sync.go` skip both
-   derived kinds in its upstream refresh loop and derive each one after it
-   through `deriveSetupSnapshot`, keeping its findings and transaction.
-5. MUST make the three helpers of `internal/baseline/assets_sync_test.go` that
-   skip a `composed` snapshot (the template source check, the maintained
-   parity row and `buildAssetsSyncSource`) skip a `common` one too, and change
-   nothing else in that file.
-6. MUST create `internal/baseline/common_setup_test.go` with the three tests
-   of `_techspec.md` → Testing Approach (Build Order 1), using the existing
-   helpers `cloneEmbeddedAssets`, `writeCompositionFixture`,
-   `requireCatalogDiagnostic`, `catalogDiagnosticByCode`,
-   `newAssetsSyncTarget`, `newAssetsSyncSource`, `readAssetsSyncJSON` and
-   `writeAssetsSyncJSON`; a fixture written through `writeCompositionFixture`
-   first creates its map entry. Each top-level test and subtest calls
-   `t.Parallel()` first.
-7. MUST keep every existing test of `internal/baseline` passing without other
-   edits, including the composed setup tests of `setup_composition_test.go`.
-8. MUST NOT add any embedded Setup Snapshot, module, profile or template, nor
-   change any asset under `internal/baseline/assets/`.
+   of 2026-10-22, its expected item 5 (the profile takes the curated Python
+   skills).
+2. MUST first check that the local checkout `~/dev/skills` holds commit
+   `65d5f365cace27c4b468db1723213723b10c870b` and that
+   `internal/baseline/assets/setups/go.json` already names it (Spec 0317 has
+   merged); when either fails, MUST stop and report before writing anything.
+   MUST NOT fetch from or otherwise reach a network remote.
+3. MUST create `internal/baseline/assets/setups/python.json` as the bytes of
+   `internal/baseline/assets/setups/rust.json` with exactly the two
+   replacements of `_techspec.md` → Data Model 1, and then run, verbatim and
+   in order, the commands of `_techspec.md` → API Contract 1: the fetch into
+   an empty repository, the binary build, the sync, the `--check` (exit
+   `0`), the parity transform of
+   `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`,
+   `make baseline-digests`, and the managed refresh twice (the second
+   reports `File changes: 0`). Every command that runs the binary gets a
+   fresh temporary `HOME`; the binary is built under the Run's own
+   environment and rebuilt after the sync so the refresh reads the new
+   snapshot.
+4. MUST hand-edit no snapshot beyond the seed's two values, no derived file
+   and no parity digest, and MUST restore no skill. The sync must leave
+   `go.json`, `rust.json`, `typescript.json` and `go-cli-typescript-bun.json`
+   byte-identical; a change to them, or any file these commands change that
+   this Task does not declare, is a stop-and-report condition.
+5. MUST make the declared breaks of `_techspec.md` → Testing Approach (Build
+   Order 1) and no other change to existing tests:
+   `internal/baseline/assets_sync_test.go` (the four counts of four become
+   five) and `internal/baseline/derived_ownership_test.go`
+   (`TestOutputsForCommand` adds
+   `internal/baseline/assets/setups/python.json`).
+6. MUST create `internal/baseline/python_setup_test.go` with
+   `TestThePythonSetupIsThePublishedUpstreamPreset` and
+   `TestEveryUpstreamSetupFollowsThePythonPresetRevision` as `_techspec.md` →
+   Testing Approach describes them, with API Contract 2's 52 names as a
+   literal list. Each top-level test calls `t.Parallel()` first.
+7. MUST NOT change any Baseline module, profile, template, coverage entry,
+   other Setup Snapshot, Go production file, skill, `skills-lock.json`, user
+   guide page, `.roundfixrc.yml`, the Makefile or `go.mod`/`go.sum`.
 
 ## Subtasks
 
-- [ ] Add the derivation functions and the derived-component refusal.
-- [ ] Validate and sync both derived kinds.
-- [ ] Extend the helper skips and add the three tests.
+- [ ] Check the commit and Spec 0317's snapshots, seed `python.json`, sync and check.
+- [ ] Transform the parity row, regenerate the digests and refresh twice.
+- [ ] Make the declared test changes and add the two tests.
 
 ## Acceptance Criteria
 
-- [ ] The common derivation keeps only equal shared entries in the first component's order, with a `common` source and the canonical digest.
-- [ ] A drifted common snapshot is reported with the common detail; one component or a derived component is invalid.
-- [ ] The asset sync rewrites a stale common snapshot from its refreshed components.
+- [ ] The `python` snapshot is the 52-skill upstream preset at `65d5f36`, and every upstream snapshot names that commit.
+- [ ] The sync's `--check` exits `0`, the other snapshots keep their bytes, and the embedded snapshots agree on every external skill.
+- [ ] This repository's skills and lock are unchanged, it still holds every required skill at the `go` snapshot, and a second managed refresh reports no file change.
 
 ## Consumers
 
-- `commonSetupSnapshot`, `deriveSetupSnapshot` — consumers: `./internal/baseline`
+- the `python` Setup Snapshot — consumers: `./internal/baseline`, `./skills`
 
 ## Context
 
-- instruction: `docs/adr/0322-a-python-profile-takes-the-skills-the-go-and-rust-setups-share.md`
-- instruction: `docs/adr/0204-a-composed-profile-takes-a-setup-composed-from-upstream-setups-by-name.md`
-- instruction: `internal/baseline/setup_composition_test.go`
-- interface: `internal/baseline/setup_composition.go`
-- interface: `internal/baseline/catalog_validate.go`
-- interface: `internal/baseline/assets_sync.go`
+- instruction: `docs/adr/0322-a-python-profile-imports-the-published-upstream-python-preset.md`
+- instruction: `docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md`
+- instruction: `docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md`
+- instruction: `internal/baseline/assets_sync.go`
+- instruction: `internal/baseline/assets/setups/go.json`
+- creates: `internal/baseline/assets/setups/python.json`
+- creates: `internal/baseline/python_setup_test.go`
+- interface: `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`
+- interface: `internal/baseline/testdata/parity-corpus/v1/manifest.json`
+- interface: `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- interface: `internal/baseline/testdata/catalog.digest`
+- interface: `internal/baseline/testdata/catalog.normalized.json`
+- interface: `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- interface: `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- interface: `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- interface: `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+- interface: `docs/agents/setup-context.json`
 - interface: `internal/baseline/assets_sync_test.go`
-- creates: `internal/baseline/common_setup_test.go`
+- interface: `internal/baseline/derived_ownership_test.go`
 
 ## Verification
 
-- `for name in TestACommonSetupKeepsOnlyTheSkillsEveryComponentCarries TestACommonSetupThatDiffersFromItsComponentsIsReported TestTheAssetSyncWritesACommonSetupAfterItsComponents; do go test -list "^${name}\$" ./internal/baseline | grep -qx "$name" || { printf 'missing test %s\n' "$name" >&2; exit 1; }; done; go test -count=1 -run '^(TestACommonSetupKeepsOnlyTheSkillsEveryComponentCarries|TestACommonSetupThatDiffersFromItsComponentsIsReported|TestTheAssetSyncWritesACommonSetupAfterItsComponents|TestTheComposedSetupIsTheUnionOfItsComponents|TestAComposedSetupThatDriftsFromItsComponentsIsRefused|TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused|TestComponentsThatDisagreeOnASkillAreAConflict|TestAnAssetSyncRewritesTheComposedSetupWithItsComponents|TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract|TestCatalogCompatibility)$' ./internal/baseline && GOOS=windows go vet ./internal/baseline` — expected: exit 0. Before this Task none of the three tests exists, so the command fails at its first check. Afterwards they exist and pass with the composed setup tests, the asset-sync tests and the catalog, and the package's tests compile for Windows.
+- `for name in TestThePythonSetupIsThePublishedUpstreamPreset TestEveryUpstreamSetupFollowsThePythonPresetRevision; do go test -list "^${name}\$" ./internal/baseline | grep -qx "$name" || { printf 'missing test %s\n' "$name" >&2; exit 1; }; done; go test -count=1 ./internal/baseline && go test -count=1 ./skills` — expected: exit 0. Before this Task neither test exists, so the command fails at its first check. Afterwards both exist and the whole package passes: the snapshots agree on every external skill, this repository holds its required skills at the `go` snapshot, the asset-sync parity row matches, and the derived-file characterizations are current; the skills package passes unchanged.
+- `test -f internal/baseline/assets/setups/python.json || { echo 'missing python setup' >&2; exit 1; }; for f in go rust typescript python; do grep -qF -- '"ref": "65d5f365cace27c4b468db1723213723b10c870b"' "internal/baseline/assets/setups/$f.json" || { printf '%s not at the preset commit\n' "$f" >&2; exit 1; }; done; grep -qF -- '"name": "ai-memory-handoff"' internal/baseline/assets/setups/python.json || { echo 'python setup lacks the ai-memory skills' >&2; exit 1; }; go test -count=1 -run '^(TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract)$' ./internal/baseline` — expected: exit 0. Before this Task the `python` snapshot does not exist, so the command fails at its first check. Afterwards every upstream snapshot names the preset commit, the `python` snapshot holds the ai-memory skills, and the agreement, required-skill and parity tests pass.
 
 ## References
 
-- `_prd.md` → Goals; Core Feature 1; Success Metric 3; User Story 4
-- `_techspec.md` → Current behavior 1-3; Interfaces; Data Model 1; API Contract 1; Invariants 1-2; Testing Approach; Build Order 1
-- ADR-0322; ADR-0204; ADR-0191
+- `_prd.md` → Goals 1-2; Core Feature 1; Success Metrics 1, 2 and 5; User Story 4
+- `_techspec.md` → Current behavior 1-5; Data Models 1-2; API Contracts 1-2; Invariants 1-3; Testing Approach; Build Order 1
+- ADR-0322; ADR-0191; ADR-0241; ADR-0206; ADR-0072

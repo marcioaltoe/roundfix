@@ -18,7 +18,7 @@ independent questions, as the clause task_01 reworded allows, and records
 each answer where the work reads it. Three tests hold the step order, the
 agreement with the Baseline clause, the answer placement and the absence of
 personal assistant names (`_prd.md` → Core Features 4 and 5; ADR-0320,
-ADR-0095).
+ADR-0330).
 
 ## Requirements
 
@@ -36,9 +36,15 @@ ADR-0095).
       priority order;
    3. run `--unattended` to gather every decision and authorization the plan
       needs;
-   4. triage, after the answers: resolve each pending Inbox Entry of this
-      project's namespace with `resolved_to` or `discarded_reason` and move it
-      to `_triaged/`, as `docs/agents/secondbrain.md` and ADR-0095 describe;
+   4. triage, after the answers: only ai-memory messages are triaged, as the
+      cross-project continuity rule of `docs/agents/agent-instructions.md`
+      and ADR-0330 describe, because the Secondbrain holds no inbox to
+      triage. When the ai-memory source exists, consume each
+      message the mode handed in (`memory_message_pop`) only after its
+      content is recorded in a
+      Spec, a Backlog Entry or a Finding, or when it is informational and
+      the report names it, answering the sender with `memory_message_send`
+      when a reply is due, so no handled message is listed again;
    5. author each Spec through the repository's Spec routing, consulting the
       Secondbrain and Exa before the PRD and TechSpec, with the answers in its
       `_authorization.md` and PRD;
@@ -48,9 +54,12 @@ ADR-0095).
       them to merge, and to release only when the user granted release;
    8. before the turn ends: arm a detached Run, the Delivery Queue or a
       scheduled wake-up, or say plainly that work stops and what remains;
-      capture each finding that belongs to another project as an Inbox Entry
-      in that project's namespace; and report what was done, what is queued or
-      armed, which sources were missing and what still waits on the user.
+      send each finding that belongs to another project as one
+      self-contained ai-memory message to that project
+      (`memory_message_send`), or, when the session exposes no ai-memory
+      tools, put its text in the report for the user to deliver; and report
+      what was done, what is queued or armed, which sources were missing and
+      what still waits on the user.
 3. MUST append a `## --unattended` section that:
    - lists what to gather: missing information, decisions, and explicit
      authorizations for push, merge and release, and for a
@@ -102,6 +111,8 @@ ADR-0095).
 ## Acceptance Criteria
 
 - [ ] The `--follow-up` steps run inventory, `--unattended`, triage, authoring, the strict check and the queue in that order, and end with an armed continuation and a report.
+- [ ] The triage step triages only ai-memory messages and consumes a handed-in message only after its content is recorded or, when informational, named in the report.
+- [ ] Step 8 sends another project's finding as an ai-memory message, and the modes reference names none of `resolved_to`, `_triaged`, `Inbox Entr` or `secondbrain.root`.
 - [ ] The `--unattended` section states the Baseline clause's three-question limit and places each answer in the consuming Spec's `_authorization.md` and PRD, or in a Backlog Entry or Finding without authorizations.
 - [ ] No Roundfix skill file names a personal assistant or announcement channel; the version is recorded and the mirrors are in sync.
 
@@ -115,8 +126,8 @@ task_02 creates the modes reference, its mirror and the modes test; this Task
 extends them, so it declares them as files it writes and runs after task_02.
 
 - instruction: `docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md`
-- instruction: `docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md`
-- instruction: `docs/agents/secondbrain.md`
+- instruction: `docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md`
+- instruction: `docs/agents/agent-instructions.md`
 - instruction: `docs/agents/spec-routing.md`
 - instruction: `internal/baseline/assets/modules/core.json`
 - creates: `.agents/skills/roundfix/references/modes.md`
@@ -135,4 +146,4 @@ extends them, so it declares them as files it writes and runs after task_02.
 - `_prd.md` → Goals; User Stories 1, 2, 4 and 5; Core Features 4 and 5; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contracts 5-7; Invariants 5-7; Testing Approach; Build Order 3
 - ADR-0320
-- ADR-0095
+- ADR-0330
