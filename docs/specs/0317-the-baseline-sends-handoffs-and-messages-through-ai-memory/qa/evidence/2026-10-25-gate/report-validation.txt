@@ -1,8 +1,0 @@
-=== RUN   TestQA0317ReportValidation
-    qa0317_validation_test.go:6: report reader: verdict=partial environment=3 declared=1 prePR=1 networkProhibited=1 needingOverride=1
-    qa0317_validation_test.go:7: eligibility: rows_blocked_environment is 3, 1 outside the pre-PR Pull Request row and the network-denied and network-prohibited outside-evidence rows; expected 0 outside them
-    qa0317_validation_test.go:12: QA files scanned with repository Secret Patterns: 17
---- PASS: TestQA0317ReportValidation (0.02s)
-PASS
-suiteguard: guard cost: measured 2836 paths; fingerprint took 575.643375ms before and 66.189541ms after
-ok  	roundfix/internal/spec	0.790s

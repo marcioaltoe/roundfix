@@ -1,4 +1,0 @@
-Outside source: https://github.com/akitaonrails/ai-memory/blob/main/docs/ARCHITECTURE.md, MCP tool surface. PRD quote: memory_message_send: "Send a directed cross-project message into another project's inbox … the recipient must already exist (fail-closed, never created)"; memory_message_pop: "Claim ONE inbox message exactly once".
-Audited clause.core.ai-memory-is-optional explicitly covers a refused send: receiving project does not exist; tell the user what is missing, return message text for delivery and continue, never write another checkout or Secondbrain.
-No external lookup attempted: authorization prohibits network. Unblock with authorized retrieval of the architecture source.
-Outside-evidence row; PRD quotation and refused-send fallback compared, upstream architecture page remains independently unverified.

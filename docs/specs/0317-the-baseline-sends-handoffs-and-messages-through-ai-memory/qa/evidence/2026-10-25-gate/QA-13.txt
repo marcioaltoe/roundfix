@@ -1,8 +1,0 @@
-Pull Request row: no open Pull Request (authoritative gate prompt).
-Approval: approved _authorization.md, grant 2026-10-24, operative revision 1cdd5b5590f25fd70ea4d36ed51ee51b7911e14e, four granted Task commits in preserved mechanical table. This is delivery authority, not a new review approval.
-Checks/status: Daemon make verify-changed exit 0 for 9cd2cd6c9163e38d683b38d7485184673c2b2bd6.
-Unresolved review threads: none exists because there is no Pull Request.
-Merge-Ready acceptance: none yet.
-Review-artifact ancestry: no acceptance artifact claimed; candidate 9cd2cd6c9163e38d683b38d7485184673c2b2bd6 is the audited head.
-Unblock by opening PR on the Spec target branch after this gate and configured review, outside this Agent authorization.
-Pull Request row; all five pre-PR controls explicitly accounted for; Merge-Ready acceptance remains absent, so no live PR approval or readiness is claimed.
