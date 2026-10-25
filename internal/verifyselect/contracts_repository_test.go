@@ -88,8 +88,8 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 			foundPackage = true
 		}
 	}
-	if len(cliDocsFiles) != 1 {
-		t.Fatalf("CLI documentation contract files = %d, want 1: %v", len(cliDocsFiles), cliDocsFiles)
+	if len(cliDocsFiles) != 2 {
+		t.Fatalf("CLI documentation contract files = %d, want 2: %v", len(cliDocsFiles), cliDocsFiles)
 	}
 	if !foundInstallation || !foundPackage || len(docsFiles) != 9 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
 		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)

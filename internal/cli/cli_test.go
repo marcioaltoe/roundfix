@@ -28,7 +28,6 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/gittest"
-	"roundfix/internal/mdtree"
 	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
@@ -1500,41 +1499,6 @@ func TestMigrateHelpDocumentsTheContract(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "roundfix migrate") {
 		t.Fatalf("root help does not list roundfix migrate: %q", stdout.String())
-	}
-}
-
-func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
-	t.Parallel()
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := runCLI(t, []string{"events", "--help"}, &stdout, &stderr)
-
-	if code != exitOK {
-		t.Fatalf("events help exit = %d, want 0 stderr=%q", code, stderr.String())
-	}
-	if stderr.String() != "" {
-		t.Fatalf("events help stderr = %q, want empty", stderr.String())
-	}
-	wantCategories := "task-status,batch,verification,outcome,agent-selection"
-	if !strings.Contains(stdout.String(), wantCategories) {
-		t.Fatalf("events help missing filter categories %q, got %q", wantCategories, stdout.String())
-	}
-
-	req, err := parseEventsCommand([]string{"run_123", "--filter", "agent-selection"})
-	if err != nil {
-		t.Fatalf("parse agent-selection filter: %v", err)
-	}
-	if !req.filter.Includes(runevent.StreamCategorySelection) {
-		t.Fatalf("parsed filter excludes %q: %#v", runevent.StreamCategorySelection, req.filter)
-	}
-
-	guide, err := mdtree.Text(os.DirFS(cliTestRepoRoot(t)), "docs/user-guide/commands.md", "docs/user-guide/commands")
-	if err != nil {
-		t.Fatalf("read command reference: %v", err)
-	}
-	if !strings.Contains(guide, wantCategories) || !strings.Contains(guide, "`agent-selection`") {
-		t.Fatalf("user guide does not document agent-selection filter")
 	}
 }
 

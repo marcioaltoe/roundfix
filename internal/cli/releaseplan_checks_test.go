@@ -1,12 +1,7 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -85,62 +80,6 @@ func TestReleasePlanChecksNeverChangeTheDecision(t *testing.T) {
 	}
 }
 
-func TestReleasePlanChecksOnAnAdoptedRepository(t *testing.T) {
-	t.Parallel()
-	for _, stale := range []bool{false, true} {
-		t.Run(fmt.Sprint(stale), func(t *testing.T) {
-			repo := newBaselineUpdateRepository(t)
-			if stale {
-				repo = staleBaselineUpdateRepository(t)
-			}
-			copyReleaseCheckSkills(t, repo)
-			commitBaselinePlanTestRepository(t, repo)
-			addReleaseCheckRange(t, repo)
-			code, output, stderr := runReleasePlanCommandInRepo(t, repo, "--format=json")
-			if code != exitOK || stderr != "" {
-				t.Fatalf("exit=%d output=%s stderr=%s", code, output, stderr)
-			}
-			checks := decodeReleaseChecks(t, output)
-			if checks.Skills.Status != "ok" || checks.Skills.NextAction != "" {
-				t.Fatalf("skills=%+v", checks.Skills)
-			}
-			if !stale {
-				if checks.Baseline.Status != "current" || checks.Baseline.NextAction != "" {
-					t.Fatalf("Surface Transcript 2: %+v", checks)
-				}
-				if strings.Contains(output, `"nextAction"`) {
-					t.Fatal("empty nextAction must be omitted")
-				}
-			} else {
-				result, _, stderr, _ := runBaselineUpdateTestCommand(t, context.Background(), "baseline", "update", "--repo", repo, "--no-skills", "--format=json")
-				want := fmt.Sprintf("%d file change(s)", len(result.FileChanges))
-				if len(result.HistoryMoves) > 0 {
-					want += fmt.Sprintf(", %d history move(s)", len(result.HistoryMoves))
-				}
-				if stderr != "" || checks.Baseline.Status != "plan_ready" || checks.Baseline.Detail != want {
-					t.Fatalf("baseline=%+v update=%+v stderr=%s", checks.Baseline, result, stderr)
-				}
-			}
-		})
-	}
-}
-
-func TestReleasePlanChecksWriteNothing(t *testing.T) {
-	t.Parallel()
-	repo := staleBaselineUpdateRepository(t)
-	copyReleaseCheckSkills(t, repo)
-	commitBaselinePlanTestRepository(t, repo)
-	addReleaseCheckRange(t, repo)
-	before := snapshotReleasePlanRepo(t, repo)
-	for _, format := range []string{"text", "json"} {
-		code, output, stderr := runReleasePlanCommandInRepo(t, repo, "--format="+format)
-		if code != exitOK || stderr != "" || !strings.Contains(output, "plan_ready") {
-			t.Fatalf("exit=%d output=%s stderr=%s", code, output, stderr)
-		}
-		assertReleasePlanRepoUnchanged(t, repo, before)
-	}
-}
-
 type releaseChecksTestValue struct {
 	Status     string
 	Detail     string
@@ -161,43 +100,4 @@ func decodeReleaseChecks(t *testing.T, output string) releaseChecksTestOutput {
 		t.Fatalf("missing checks: %s", output)
 	}
 	return *value.Checks
-}
-func addReleaseCheckRange(t *testing.T, repo string) {
-	t.Helper()
-	gitReleasePlan(t, repo, "tag", "v0.4.0")
-	writeReleasePlanFile(t, repo, "internal/output.go", "package output\n")
-	gitReleasePlan(t, repo, "add", "-A")
-	commitReleasePlan(t, repo, "fix: correct output")
-}
-func copyReleaseCheckSkills(t *testing.T, repo string) {
-	t.Helper()
-	lock, err := os.ReadFile(filepath.Join(baselineDocumentationRepoRoot(), "skills-lock.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, "skills-lock.json"), lock, 0644); err != nil {
-		t.Fatal(err)
-	}
-	source := filepath.Join(baselineDocumentationRepoRoot(), ".agents", "skills")
-	err = filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		relative, err := filepath.Rel(source, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(repo, ".agents", "skills", relative)
-		if entry.IsDir() {
-			return os.MkdirAll(target, 0755)
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, 0644)
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 }

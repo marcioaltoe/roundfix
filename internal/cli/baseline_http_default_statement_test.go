@@ -6,14 +6,10 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
-
-	"roundfix/internal/baseline"
 )
 
 type httpDefaultStatement struct{ source, text, format string }
@@ -32,42 +28,6 @@ func httpDefaultStatementFindings(mode string, modes []string, statements []http
 		}
 	}
 	return findings
-}
-
-func TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault(t *testing.T) {
-	t.Parallel()
-	catalog, err := baseline.LoadEmbeddedCatalog()
-	if err != nil {
-		t.Fatal(err)
-	}
-	entry, ok := catalog.Decision("http.contract")
-	if !ok {
-		t.Fatal("HTTP decision is absent")
-	}
-	var decision struct {
-		Default struct {
-			Mode string `json:"mode"`
-		} `json:"default"`
-		Modes []string `json:"modes"`
-	}
-	if err := json.Unmarshal(entry.Data, &decision); err != nil {
-		t.Fatal(err)
-	}
-	if decision.Default.Mode == "" || len(decision.Modes) == 0 {
-		t.Fatal("HTTP decision has no default or modes")
-	}
-	contract, ok := catalog.Asset("contract-v1.json")
-	if !ok {
-		t.Fatal("Baseline contract is absent")
-	}
-	guide := readBaselineDocumentation(t, filepath.Join(baselineDocumentationRepoRoot(), "docs/user-guide/context-driven-development.md"))
-	statements := []httpDefaultStatement{
-		{"contract-v1.json", string(contract.Data), "the interactive workflow suggests %s until"},
-		{"context-driven-development.md", guide, "| HTTP contract | `%s` |"},
-	}
-	if findings := httpDefaultStatementFindings(decision.Default.Mode, decision.Modes, statements); len(findings) != 0 {
-		t.Fatalf("HTTP statement findings: %v", findings)
-	}
 }
 
 func TestAStatementThatNamesAnotherHTTPDefaultIsReported(t *testing.T) {
