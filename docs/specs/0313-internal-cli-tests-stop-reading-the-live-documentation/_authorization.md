@@ -7,6 +7,10 @@ paths:
   - docs/agents/specific-repository.md
   - internal/cli/baseline_documentation_contract_test.go
   - internal/cli/cli_test.go
+  - internal/suiteguard/suiteguard.go
+  - internal/suiteguard/suiteguard_test.go
+  - internal/suiteguard/residue_test.go
+  - internal/suiteguard/leak_cases_test.go
 operations:
   - implement
   - commit
@@ -77,6 +81,54 @@ on `56dd1a76`, with `speccheck.GovernedPath`.
   task_02 adds one rule bullet to the first and moves tests out of the other
   two without changing any other byte.
 
+## Corrective amendment of 2026-10-25
+
+The first Run, `run_20261025T122115Z_fe88d4e7bd75bcb2`, completed task_01
+and task_02, and its QA gate failed on F-01: a guide or skill edit still
+re-ran `internal/cli`. On 2026-10-25, at about 10:30 BRT, the maintainer
+answered through AskUserQuestion:
+
+- order: "0317 e 0318 agora (Recomendado)" (option text: "A 0313 fica
+  estacionada; a 0317 entra já na fila (v0.120.0) e a 0318 em seguida. A
+  0313 volta depois, com a correção.");
+- fix: "Fingerprint pelo git (Recomendado)" (option text: "O suiteguard
+  passa a calcular a impressão do repositório por `git` (índice, diff e
+  arquivos não rastreados) num subprocesso, sem abrir os arquivos pelo
+  processo de teste. O guarda continua igual e o cache deixa de depender
+  dos docs. Emenda da 0313 (autoriza internal/suiteguard) no main + Task
+  corretiva.").
+
+Both answers rest on F-01's attribution of the read to `internal/suiteguard`.
+The corrective measurement (`_techspec.md` → Current behavior 6 and 7)
+disproved it. The guard walks the repository outside `m.Run`, where Go's
+test input log records nothing. The reader was
+`TestUpgradeStdoutAndExitCodesAreCharacterized`, and one
+`withCLIWorkspace(t)` line made the cache row print `(cached)`.
+
+On 2026-10-25, at about 11:00 BRT, the maintainer was asked through
+AskUserQuestion: "Para a 0313, seguimos com a causa real (uma linha no
+teste de upgrade) em vez do fingerprint pelo git que você tinha escolhido
+com base no diagnóstico da QA?" The answer was "As duas coisas" (option
+text: "A linha no teste e também o fingerprint pelo git no suiteguard
+(segunda corretiva, última permitida). O guarda perde a detecção de mudança
+de permissão, exceto o bit de execução.").
+
+So this Spec has two corrective Tasks, the limit:
+
+- task_04 adds the `withCLIWorkspace(t)` line;
+- task_05 makes the guard fingerprint through `git` subprocesses (listing,
+  untracked directories, and object IDs through a temporary index), so the
+  test process opens no repository file.
+
+The loss of permission detection that the option text accepts does not
+happen. task_05 keeps a mode-only `os.Lstat` pass over the watched paths.
+That pass runs before and after `m.Run`, outside Go's test input log, so it
+is not a cache input, and the permission cases of its leak table pass
+before and after the change. The four `internal/suiteguard` files in
+`paths` are the ones task_05 changes or creates. They are not Governed
+Paths, and they are listed because the maintainer granted them by name
+("autoriza internal/suiteguard").
+
 ## What is not governed
 
 - The two new `internal/cli/*_docscontract_test.go` files, the five other
@@ -85,6 +137,14 @@ on `56dd1a76`, with `speccheck.GovernedPath`.
 - `docs/adr/0326-a-code-test-never-reads-the-live-documentation-trees.md`,
   every file the Tasks read as an instruction, every planning file of this
   Spec and its adopted reference.
+- `internal/cli/upgrade_characterization_test.go`, the one file task_04
+  changes, and `task_04.md`. These were measured on 2026-10-25 with the same
+  `go test -overlay` probe, on the branch `docs/0313-corrective-suiteguard`
+  based on `1cdd5b55`. `git status --porcelain` was identical before and
+  after.
+- The four `internal/suiteguard` files task_05 changes or creates, and
+  `task_05.md`. The same probe reported them as not governed; they are in
+  `paths` by the maintainer's grant.
 
 ## Sanctioned regeneration
 
@@ -96,8 +156,11 @@ derived file changes, so no regeneration command runs.
 - No change to the Makefile, the CI workflows, `go.mod`, `go.sum`, the lint,
   formatter or test-runner configuration, any Baseline module,
   `.roundfixrc.yml`, `docs/agents/setup-context.json`, any skill, any
-  production `.go` file, any moved test's body, `CONTEXT.md`, or the
-  `### QA settlement` section of any skill.
+  production `.go` file other than `internal/suiteguard/suiteguard.go`, any
+  file under `internal/suiteguard/` other than the four in `paths`,
+  `internal/suiteguardcontract/`, any caller of `suiteguard.Main`, any moved
+  test's body, `CONTEXT.md`, or the `### QA settlement` section of any
+  skill.
 - No test, Verification command or QA row:
   - reads or writes `~/.roundfix`;
   - reaches the network;
