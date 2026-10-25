@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.121.0] - 2026-10-25
+
+### The Baseline reports a required skill that is not installed
+
+- **`baseline update` no longer answers `current` with a required skill missing.** When a skill the rendered dispatch or a module requires is not installed (its directory or lock entry is gone, for example after a skills tool removed a skill the catalog retired), the preview now lists it under `skills.missing` with the restore command and reports `plan_ready` (exit 3), the same way it already reports an owned skill older than the binary's. Before, the preview compared the installed skills only with the Setup Snapshot and fell through to `current`, while `--yes` would have restored exactly those skills.
+- **`roundfix skills check`** run inside an adopted repository adds one diagnostic per missing required skill to its failure list and exits 1; elsewhere its output is unchanged. `roundfix doctor` already failed on this case and keeps doing so.
+- The `baseline` guide, the Roundfix skill reference and the glossary (**Missing Required Skill**) describe it.
+
 ## [0.120.0] - 2026-10-25
 
 ### The Baseline sends handoffs and messages through ai-memory; the Secondbrain inbox is retired
