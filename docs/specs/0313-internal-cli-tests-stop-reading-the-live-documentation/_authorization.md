@@ -126,6 +126,18 @@ repository contract refuses a bounded path that is not governed); the
 maintainer's grant ("autoriza internal/suiteguard") is recorded here and in
 the Limits exception below.
 
+On 2026-10-25, at about 17:40 BRT, after Run
+run_20261025T193403Z_ade2bddbacb762cf failed its QA on F-02 (the Git
+fingerprint guard cannot inspect tracked unreadable paths, which only the
+QA's `chmod 000` probe creates), the maintainer answered through
+AskUserQuestion "Trocar a prova por remoção (Recomendado)" (option text:
+"Emendo a linha da QA e a Success Metric 4: em vez de chmod 000, as cinco
+pastas são removidas da cópia (o git aceita arquivo rastreado ausente).
+Continua provando que o internal/cli não lê os docs. Emenda no main (PR) +
+carry manual das 4 Tasks + retry só da QA. Sem nova corretiva."). The
+amendment changes only Success Metric 4 and its QA row; it adds no Governed
+Path, operation or grant.
+
 ## What is not governed
 
 - The two new `internal/cli/*_docscontract_test.go` files, the five other
