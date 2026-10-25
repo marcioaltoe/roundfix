@@ -1,3 +1,0 @@
-command: git diff --name-only ed8e22f43489782a4132e60be5b83f373de9d63f 532ff85e301016f14eea8950059e5086c3f5074d -- Makefile .github/workflows go.mod go.sum .roundfixrc.yml internal/baseline docs/agents CONTEXT.md
-
-exit: 0

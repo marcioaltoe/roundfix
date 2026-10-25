@@ -1,2 +1,0 @@
-Installed skill: both version fields 0.0.6; no disable-model-invocation key; Who starts this skill present.
-  setup-context-driven

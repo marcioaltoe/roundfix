@@ -1,6 +1,0 @@
-Exact current planDigest approval retained. Every 4 original confirm-plan line retained:
-Use `--confirm-plan <digest>` instead of `--yes` for a previously reviewed Plan
-roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --confirm-plan <digest> --format json
-roundfix baseline apply --repo . --plan <plan-file> --confirm-plan <plan-digest> --format json
-roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --confirm-plan <plan-digest> --format json
-No other skill-body changes after removing new section and normalizing version/lock.
