@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0313-internal-cli-tests-stop-reading-the-live-documentation
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -141,3 +141,66 @@ None. `suiteguard.Main` keeps its signature and messages; every package whose `T
 
 - `_prd.md` → Sources; Goals; Core Feature 5; Success Metric 6
 - `_techspec.md` → Current behavior; API Contract 3; Invariant 4; Testing Approach; Build Order 4
+
+## Result
+
+### Characterization before the fingerprint change
+
+- Added the 22-case leak table, the input-log check and the non-Git-root
+  refusal check, and initialized the existing guarded fixture roots with Git.
+- Ran `go test -count=1 -timeout 3m -v -run 'TestGuardReportsEveryLeakClass|TestGuardLeavesNoRepositoryPathInTheTestInputLog|TestGuardRefusesARootOutsideAGitWorkTree' ./internal/suiteguard`
+  with `suiteguard.go` unchanged (`git diff` for that file was empty).
+  All 22 leak subtests and the input-log test passed. Only
+  `TestGuardRefusesARootOutsideAGitWorkTree` failed: the original guard
+  accepted the plain directory with exit 0. Overall exit 1, as expected.
+
+### Implementation and focused evidence
+
+- `fingerprint(root)` now lists files and untracked directories with Git's
+  per-directory `.gitignore` handling. Git hashes working-tree content into
+  a disposable external index with `--info-only --remove`; stage records
+  supply the Git mode and object ID. Parent directories and untracked
+  directories receive entries, and one `os.Lstat` per entry records its full
+  mode. The hand-written ignore parser and `digestFile` were removed.
+- Each Git subprocess clears inherited `GIT_` variables, sets
+  `GIT_OPTIONAL_LOCKS=0`, and applies all five required core settings.
+  Git errors name the subcommand and include stderr. The temporary index
+  directory is removed on return.
+- Existing fixture assertions remain unchanged. Their guarded roots are
+  initialized Git repositories. The new fixture commits the required files
+  and symbolic link, then leaves dirty, untracked and empty-directory state.
+- Acceptance criterion 1: the same focused characterization command recorded
+  above exited 0 after the implementation. All 22 leak subtests, the input-log
+  test and the non-Git refusal test passed. Both before/after logs were
+  counted explicitly: 22 passing leak subtests each. The empty-file case
+  also asserts zero size inside the guarded child.
+- Existing behavior check:
+  `go test -count=1 -timeout 3m -run 'TestGuardNames|TestGuardPasses|TestGuardIgnores|TestSanctioned|TestGuardReportsAndKills|TestGuardMarks|TestHelperResidue' ./internal/suiteguard`
+  exited 0. This covers diagnostics, ignored writes, isolated writes,
+  sanctioned and refused regeneration, binary marks and helper residue.
+  After isolating the residue fixture's Git initialization from inherited
+  Git settings, `go test -count=1 -timeout 2m -run '^TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning$' ./internal/suiteguard`
+  also exited 0.
+- Acceptance criterion 2, portability evidence:
+  `GOOS=windows go test -c -o /tmp/0313-suiteguard-windows.test.exe ./internal/suiteguard`
+  exited 0, compiling both the package and its tests for Windows. Execution
+  of every guarded package and repository-contract Verification remains
+  Daemon-owned and was not run in this child turn.
+- Compared `Main`, `compare`, and the sanctioned-regeneration functions with
+  `HEAD`: their function text is unchanged. Helper-residue production code
+  was untouched. `git diff --check` exited 0.
+- Scope: only the four authorized `internal/suiteguard` files and this
+  Task's Result were edited. The pre-existing Daemon status change is
+  preserved. No manifest, other Task, caller, CLI, contract package, build
+  configuration or workflow was changed; no commit, push or PR was made.
+- Environment: the executor rejected the symlinked writable root, so shell
+  commands used the authorized worktree's resolved physical path with
+  sandbox escalation. No executor configuration was changed.
+
+Declared Verification and repository-wide acceptance remain for the Daemon;
+this Result records focused implementation evidence, not Task settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T193403Z_ade2bddbacb762cf`
+- Source commit: `5807780c7cea58c41515a1e9af80b02f82175dca`
