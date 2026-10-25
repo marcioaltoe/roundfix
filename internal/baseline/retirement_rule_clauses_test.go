@@ -99,9 +99,9 @@ func TestTheRetirementClauseReplacesTheClausesItAbsorbs(t *testing.T) {
 func TestTheCaptureTriggerAsksForAConditionalLesson(t *testing.T) {
 	t.Parallel()
 	catalog := mustEmbeddedCatalog(t)
-	asset, ok := catalog.Module("secondbrain")
+	asset, ok := catalog.Module("core")
 	if !ok {
-		t.Fatal("missing secondbrain module")
+		t.Fatal("missing core module")
 	}
 	var module document
 	if err := json.Unmarshal(asset.Data, &module); err != nil {
@@ -109,14 +109,14 @@ func TestTheCaptureTriggerAsksForAConditionalLesson(t *testing.T) {
 	}
 	for _, rule := range objectsOrEmpty(module["rules"]) {
 		for _, clause := range objectsOrEmpty(rule["clauses"]) {
-			if clause["id"] != "clause.secondbrain.capture-trigger" {
+			if clause["id"] != "clause.core.message-the-owning-project" {
 				continue
 			}
 			guidance := clause["guidance"].(string)
 			for _, phrase := range []string{
 				"When a Finding closes",
 				"ADR, Archive Record or reference",
-				"Only then capture one pending Inbox Entry",
+				"Only then send one message",
 				"<repository>@<commit>:<path>",
 			} {
 				if !strings.Contains(guidance, phrase) {

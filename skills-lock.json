@@ -52,10 +52,10 @@
     },
     "golang-cli": {
       "source": "marcioaltoe/skills",
-      "ref": "main",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-cli/SKILL.md",
-      "computedHash": "96b9f4023920ad11434d2e75895371bd583baf7e149fe1a02d45a083013313e1"
+      "computedHash": "24db08f64df0fba352d24ebd23188ce6a697cd22387081f618bf170f67931808"
     },
     "golang-concurrency": {
       "source": "marcioaltoe/skills",
@@ -101,23 +101,17 @@
     },
     "grilling": {
       "source": "marcioaltoe/skills",
-      "ref": "main",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
       "sourceType": "github",
       "skillPath": "skills/01-discovery/grilling/SKILL.md",
-      "computedHash": "4dd886b0196bf43729d954ae326016f2bd9f5f79d892500b407c33a753362f14"
-    },
-    "handoff": {
-      "source": "marcioaltoe/skills",
-      "ref": "main",
-      "sourceType": "github",
-      "skillPath": "skills/07-evidence-delivery/handoff/SKILL.md",
-      "computedHash": "20e5f4afdef502637510bc5c64d27645d3c85c88df9cb006824bbb0980166319"
+      "computedHash": "ef1641a2047b71b60f1942cd35efb47d3afc9d584dff5a0b01f8c7db923aaa08"
     },
     "knowledge-workspace": {
       "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
       "sourceType": "github",
       "skillPath": "skills/00-setup/knowledge-workspace/SKILL.md",
-      "computedHash": "48eef897fcea751602f6f9eb5c57e76b2f021b08ba9ecaaa2dca104d89613000"
+      "computedHash": "d108432a172da894de0270d4124417782bee4d72f7ab5a6ba0ef95e38857592a"
     },
     "no-workarounds": {
       "source": "marcioaltoe/skills",
@@ -128,10 +122,10 @@
     },
     "systematic-debugging": {
       "source": "marcioaltoe/skills",
-      "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
       "sourceType": "github",
       "skillPath": "skills/06-review-repair/systematic-debugging/SKILL.md",
-      "computedHash": "3589907ee34dc8b1b7223a33fac98ab841a9e42f9960ab4433a832f0c6f00be0"
+      "computedHash": "276fb0aadb002ab930cc2a56de89e16995a2e3e70b33587652bf0a5fb123148d"
     },
     "tech-writer": {
       "source": "marcioaltoe/skills",
@@ -156,10 +150,10 @@
     },
     "context7-cli": {
       "source": "marcioaltoe/skills",
-      "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
       "sourceType": "github",
       "skillPath": "skills/01-discovery/context7-cli/SKILL.md",
-      "computedHash": "f22d21491528a0aaaf21a2a7c546428ffd208852473d6afbaf5e2d4845388639"
+      "computedHash": "93a9bd051b94a55b0e69054ab30bdc4343102872f69158bf8334fde578e7cf99"
     },
     "golang-dependency-management": {
       "source": "marcioaltoe/skills",
@@ -191,10 +185,52 @@
     },
     "typesafe-ai": {
       "source": "marcioaltoe/skills",
-      "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/typesafe-ai/SKILL.md",
-      "computedHash": "9cd84c5e535dec8dec59917c110f9c00b4a61faadb86b432ec7e41051170af12"
+      "computedHash": "15e077333436b1e63e526c7c7559202816f4848dabefd3aa3d4c91988fd181b5"
+    },
+    "ai-memory-durable-pages": {
+      "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/ai-memory-durable-pages/SKILL.md",
+      "computedHash": "f62c6b260230fc6249ac0b4cd2dee426627d886ee6bbe1cc7c7ea582b95bd71e"
+    },
+    "ai-memory-handoff": {
+      "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/ai-memory-handoff/SKILL.md",
+      "computedHash": "94423b64ecb2a1c60950154b92a9260b634d35e0b2f45cf484daa3ae746ffc35"
+    },
+    "ai-memory-learning-maintenance": {
+      "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/ai-memory-learning-maintenance/SKILL.md",
+      "computedHash": "648045cf4ecc2b25745ea58a13f6640868c03e99de1f164bf2bdbcacffd30d2c"
+    },
+    "ai-memory-messaging": {
+      "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/ai-memory-messaging/SKILL.md",
+      "computedHash": "7a3540d052be4f0839fb6f9927581c326524d381306992682693b2ffd2832be7"
+    },
+    "ai-memory-retrieval": {
+      "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/ai-memory-retrieval/SKILL.md",
+      "computedHash": "8db0e9eb808ca928e441d3c4b72fe01fd0e6b6f01f4c62611739b72355e23deb"
+    },
+    "ai-memory-routing-install": {
+      "source": "marcioaltoe/skills",
+      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/ai-memory-routing-install/SKILL.md",
+      "computedHash": "8a4a7a6df2e2191fac0d0b8720c26030e3a082c8925a50639ddb7121ff6b2f36"
     }
   }
 }

@@ -27,6 +27,10 @@ Individual skill triggers:
 
 - `agentic-cli-design`:
   - `trigger.cli-surface.agentic-cli-design`: Changing CLI flags, streams, exit codes, JSON, dry-run, non-interactive, or introspection behavior.
+- `ai-memory-handoff`:
+  - `trigger.core.ai-memory-handoff`: Recording resumable session state for another Agent or maintainer, or resuming from one, when the session exposes the ai-memory MCP tools.
+- `ai-memory-messaging`:
+  - `trigger.core.ai-memory-messaging`: Sending a finding or request to another project, or reading and consuming this project's messages, when the session exposes the ai-memory MCP tools.
 - `archive-spec`:
   - `trigger.context-workflow.archive-spec`: Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed.
 - `brainstorming`:
@@ -73,8 +77,6 @@ Individual skill triggers:
   - `trigger.context-workflow.grill-with-docs`: Stress-testing a plan or decision against repository documents.
 - `grilling`:
   - `trigger.context-workflow.grilling`: Stress-testing an idea or plan through direct questions.
-- `handoff`:
-  - `trigger.core.handoff`: Recording resumable session state for another Agent or maintainer.
 - `implement-spec`:
   - `trigger.autonomous-work.implement-spec`: Delegating a complete autonomous Spec Task Graph.
   - `trigger.context-workflow.implement-spec`: Executing every pending Task in a Spec Task Graph.

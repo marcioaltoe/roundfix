@@ -74,13 +74,7 @@ type Jev struct {
 	MonthlyCeilingUSD float64
 }
 
-type Secondbrain struct {
-	Root           string
-	InboxNamespace string
-}
-
 type Config struct {
-	Secondbrain  Secondbrain
 	OpenRouter   OpenRouter
 	Jev          Jev
 	Defaults     Defaults
@@ -315,13 +309,7 @@ type jevOverlay struct {
 	MonthlyCeilingUSD *float64 `yaml:"monthly_ceiling_usd"`
 }
 
-type secondbrainOverlay struct {
-	Root           *string `yaml:"root"`
-	InboxNamespace *string `yaml:"inbox_namespace"`
-}
-
 type configOverlay struct {
-	Secondbrain  *secondbrainOverlay  `yaml:"secondbrain"`
 	OpenRouter   *openRouterOverlay   `yaml:"openrouter"`
 	Jev          *jevOverlay          `yaml:"jev"`
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
@@ -721,6 +709,16 @@ var deprecatedConfigKeys = []deprecatedConfigKey{
 		name:        "resolve.concurrent",
 		replacement: "worktree.concurrency",
 	},
+	{
+		path:    []string{"secondbrain", "root"},
+		name:    "secondbrain.root",
+		removal: "the Secondbrain inbox source was retired, so remove it",
+	},
+	{
+		path:    []string{"secondbrain", "inbox_namespace"},
+		name:    "secondbrain.inbox_namespace",
+		removal: "the Secondbrain inbox source was retired, so remove it",
+	},
 }
 
 type configWarnings struct {
@@ -871,13 +869,6 @@ func Load(opts LoadOptions) (Loaded, error) {
 
 	if err := Validate(loaded.Config); err != nil {
 		return Loaded{}, err
-	}
-	if loaded.Config.Secondbrain.Root != "" {
-		root, err := expandHomeForKey("secondbrain.root", loaded.Config.Secondbrain.Root, homeDir)
-		if err != nil {
-			return Loaded{}, err
-		}
-		loaded.Config.Secondbrain.Root = filepath.Clean(root)
 	}
 	worktreeLocation, err := ResolveWorktreeLocation(loaded.Config.Worktree.Location, loaded.GitRoot, loaded.HomeDir)
 	if err != nil {
@@ -1108,9 +1099,6 @@ resolve:
 }
 
 func Validate(config Config) error {
-	if err := validateSecondbrain(config.Secondbrain); err != nil {
-		return err
-	}
 	if config.Delivery.CheckTimeout <= 0 || config.Delivery.CheckTimeout > MaxDeliveryCheckTimeout {
 		return errors.New("delivery.check_timeout must be greater than 0 and at most 24h")
 	}
@@ -1674,9 +1662,6 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_active"}) {
 		warnings.warnIgnoredProjectSetting("runs.max_active")
 	}
-	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"secondbrain", "root"}) {
-		warnings.warnIgnoredProjectSetting("secondbrain.root")
-	}
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"jev", "monthly_ceiling_usd"}) {
 		warnings.warnIgnoredProjectSetting("jev.monthly_ceiling_usd")
 	}
@@ -1696,6 +1681,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	if value, found := yamlValueAtPath(&document, []string{"secondbrain"}); found && value.Kind == yaml.MappingNode && len(value.Content) == 0 {
+		removeYAMLPath(&document, []string{"secondbrain"})
+	}
 	if node, found := yamlValueAtPath(&document, []string{"delivery", "linux_lane"}); found && (node.Kind != yaml.ScalarNode || node.Tag != "!!bool") {
 		return fmt.Errorf("parse config %q: delivery.linux_lane must be boolean: cannot unmarshal non-boolean value", label)
 	}
@@ -1824,14 +1812,6 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 }
 
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
-	if overlay.Secondbrain != nil {
-		if source != ProfileSourceProject && overlay.Secondbrain.Root != nil {
-			config.Secondbrain.Root = *overlay.Secondbrain.Root
-		}
-		if overlay.Secondbrain.InboxNamespace != nil {
-			config.Secondbrain.InboxNamespace = *overlay.Secondbrain.InboxNamespace
-		}
-	}
 	if source != ProfileSourceProject && overlay.OpenRouter != nil {
 		if overlay.OpenRouter.LightModels != nil {
 			config.OpenRouter.LightModels = append([]string{}, (*overlay.OpenRouter.LightModels)...)
@@ -2159,21 +2139,6 @@ func validateWorktreeCachePath(entry string) error {
 	if !fs.ValidPath(entry) || entry == "." || strings.Contains(entry, `\`) || (len(entry) > 1 && entry[1] == ':') ||
 		entry == ".git" || strings.HasPrefix(entry, ".git/") {
 		return fmt.Errorf("worktree.caches entry %q must be a clean repository-relative directory outside .git with no .. segment", entry)
-	}
-	return nil
-}
-
-const SecondbrainRootKey = "secondbrain.root"
-const SecondbrainInboxNamespaceKey = "secondbrain.inbox_namespace"
-
-var inboxNamespacePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
-
-func validateSecondbrain(value Secondbrain) error {
-	if root := value.Root; root != "" && !filepath.IsAbs(root) && root != "~" && !strings.HasPrefix(root, "~/") {
-		return errors.New("secondbrain.root must be an absolute path or start with ~/")
-	}
-	if ns := value.InboxNamespace; ns != "" && (ns == "_triaged" || !inboxNamespacePattern.MatchString(ns)) {
-		return errors.New("secondbrain.inbox_namespace must be one lowercase path segment of letters, digits, '.', '_' or '-', and not _triaged")
 	}
 	return nil
 }

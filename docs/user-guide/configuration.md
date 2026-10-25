@@ -18,12 +18,17 @@ Create config with `roundfix init` (Project Config) or
 `roundfix init --scope user`; `--force` overwrites an existing file.
 
 Removed keys that Roundfix registers as deprecated never break an existing
-config — they are ignored with one stderr warning naming the replacement:
+config — they are ignored with one stderr warning per key naming its
+replacement or retirement:
 
 - `resolve.concurrent` → `worktree.concurrency`
 - `defaults.model` → `profiles.<category>.preferred.model`
 - `jev.router_min_credit_usd` — removed with the Jev Router; it is ignored
   with this warning: `config: jev.router_min_credit_usd is deprecated and ignored; the Jev Router was retired, so remove it`.
+- `secondbrain.root` — the Secondbrain inbox source was retired; it is ignored
+  with this warning: `config: secondbrain.root is deprecated and ignored; the Secondbrain inbox source was retired, so remove it`.
+- `secondbrain.inbox_namespace` — the Secondbrain inbox source was retired; it is ignored
+  with this warning: `config: secondbrain.inbox_namespace is deprecated and ignored; the Secondbrain inbox source was retired, so remove it`.
 
 Unknown keys that are not registered as deprecated fail strict validation.
 
@@ -175,36 +180,6 @@ this change.
 
 Past `router-prompt` lines written before the retirement stay in the Judge Log
 and count toward their month's ceiling.
-
-## Secondbrain inbox
-
-The Follow-up Command reads pending Inbox Entries from a local Secondbrain.
-Set `secondbrain.root` only in User Config and set the repository's inbox
-namespace with `secondbrain.inbox_namespace` in either User Config or Project
-Config:
-
-```yaml
-secondbrain:
-  root: ~/dev/secondbrain
-  inbox_namespace: my-repository
-```
-
-`secondbrain.root` must be an absolute path or start with `~/`; the latter is
-expanded against the user's home directory. An unset root leaves the
-`secondbrain-inbox` source `missing`. A Project Config root is ignored with
-this warning:
-`config: secondbrain.root in Project Config is ignored; set secondbrain.root in User Config`.
-
-`secondbrain.inbox_namespace` must be one lowercase path segment containing
-only letters, digits, `.`, `_` or `-`, and it cannot be `_triaged`. Invalid
-values fail with:
-`secondbrain.root must be an absolute path or start with ~/` or
-`secondbrain.inbox_namespace must be one lowercase path segment of letters, digits, '.', '_' or '-', and not _triaged`.
-When the namespace is unset, Roundfix uses the repository name from the
-`origin` remote, or the main checkout directory name when no usable `origin`
-exists.
-
-An older Roundfix binary refuses a User Config containing these keys as unknown keys.
 
 ## OpenRouter keys per stage
 
@@ -479,8 +454,6 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `runs.slot_wait` | `2h` | How long the Delivery Queue waits for a Run slot, capped by the queue deadline. Go duration; `0` parks at once. User Config only; Project Config is ignored with a warning. |
 | `delivery.check_timeout` | `60m` | Bounds each Delivery Queue Check Wait for current-head checks. Go duration greater than 0 and at most 24h. User Config only; Project Config is ignored with a warning. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
-| `secondbrain.root` | unset | Local Secondbrain directory read by the Follow-up Command; User Config only. |
-| `secondbrain.inbox_namespace` | repository's name | Secondbrain inbox namespace; Project Config overrides User Config. |
 | `openrouter.light_models` | `[deepseek/deepseek-v4.1-flash]` | User Config list of `<author>/<slug>` OpenRouter models for light Tasks. An empty list turns the tier off; subscription-rule refusals fail validation. Project Config is ignored with a warning. |
 | `openrouter.implement_monthly_ceiling_usd` | `10` | Finite positive User Config ceiling in US dollars for light implementation spend. Project Config is ignored with a warning. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |

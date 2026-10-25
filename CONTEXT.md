@@ -148,16 +148,16 @@ _Avoid_: Ticket, job, to-do
 Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status (`declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled`); a terminal entry is deleted and Git keeps its text, while `declined` and `deferred` carry a reason ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)). Its types express intent through the Conventional Commits vocabulary — `feat`, `fix`, `perf`, `refactor` — and it is never evidence; a `feat` entry is upstream raw material, never the `write-idea` artifact.
 _Avoid_: Finding, idea artifact, untyped suggestion
 
-**Inbox Entry**:
-A fleeting capture written as a file in the Secondbrain's inbox under its destination's namespace and committed there by its publication owner — the capturing session or an installed scheduler — never in a project checkout ([ADR-0095](docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md)). It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
-_Avoid_: Project inbox item, uncommitted note, draft artifact
+**Cross-project Message**:
+A self-contained message a session sends to another project's ai-memory inbox with `memory_message_send` when it observes work that project owns. The receiving project reads its messages oldest first, records each in a Spec, a Backlog Entry or a Finding, or names it when it only informs, and only then consumes it with `memory_message_pop`; without ai-memory the sender gives the text to the user ([ADR-0330](docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md)).
+_Avoid_: Inbox Entry, capture, note
 
 **Rollup**:
 A Finding of `rollup` kind that consolidates related Findings as declared members and retires by deletion when its work is resolved. Its members resolve as unresolved Findings or through Git, which keeps their retired text ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Summary, digest, archive manifest
 
 **Triage**:
-The destination-project act that converts one pending Inbox Entry into its contract-true artifact, committed by the destination alone.
+The destination-project act that converts one pending Cross-project Message into its contract-true artifact, committed by the destination alone.
 _Avoid_: Capture, import, synchronization
 
 **Follow-up Command**:
@@ -165,16 +165,12 @@ The read-only `roundfix follow-up` command that lists a repository's Follow-up I
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
-One pending unit the Follow-up Command lists: a pending Inbox Entry of the repository's inbox namespace, a message the caller hands in, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:
 The order of Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
 _Avoid_: Jev ranking, severity, score
-
-**Secondbrain Root**:
-The local Secondbrain directory that User Config `secondbrain.root` names; the Follow-up Command reads the pending Inbox Entries under its `inbox/<namespace>/` and never writes, fetches or pulls it.
-_Avoid_: Brain path, knowledge workspace
 
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.

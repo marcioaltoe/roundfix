@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -118,7 +119,7 @@ func newFollowUpFixture(t *testing.T) followUpFixture {
 	}
 	gitImplement(t, repo, "add", ".")
 	gitImplement(t, repo, "commit", "-m", "feat: seed widget")
-	followUpWrite(t, home, ".roundfix/config.yml", fmt.Sprintf("secondbrain:\n  root: %q\n  inbox_namespace: widget\n", brain))
+	gitImplement(t, repo, "remote", "add", "origin", "git@github.com:owner/widget.git")
 	if err := os.MkdirAll(filepath.Join(brain, "inbox/widget"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +161,7 @@ func followUpJSON(t *testing.T, args ...string) followUpDocument {
 	if doc.Schema != "roundfix/follow-up/v1" || doc.View != "follow-up" {
 		t.Fatalf("document=%+v", doc)
 	}
-	want := []string{"secondbrain-inbox", "ai-memory-messages", "backlog", "findings", "repository-inbox", "specs", "runs", "delivery-queue", "pull-requests", "git"}
+	want := []string{"ai-memory-messages", "backlog", "findings", "repository-inbox", "specs", "runs", "delivery-queue", "pull-requests", "git"}
 	names := []string{}
 	for _, source := range doc.Sources {
 		names = append(names, source.Name)
@@ -172,15 +173,6 @@ func followUpJSON(t *testing.T, args ...string) followUpDocument {
 }
 func followUpSeedPending(t *testing.T, f followUpFixture) string {
 	t.Helper()
-	followUpWrite(t, f.brain, "inbox/widget/a-new.md", "---\nstatus: pending\ntype-hint: fix\ncreated_at: 2026-10-22\norigin: fluxus\n---\n# New inbox\nINBOX BODY NEVER PRINTED\n")
-	followUpWrite(t, f.brain, "inbox/widget/z-old.md", "---\nstatus: pending\ntype-hint: fix\ncreated_at: 2026-10-20\norigin: widget\n---\n# Old inbox\nINBOX BODY NEVER PRINTED\n")
-	followUpWrite(t, f.brain, "inbox/widget/_triaged/old.md", "# Triaged\n")
-	followUpWrite(t, f.brain, "inbox/widget/done.md", "---\nstatus: done\n---\n# Already done\n")
-	target := filepath.Join(f.brain, "outside.md")
-	mustWrite(t, target, "# Linked content\n")
-	if err := os.Symlink(target, filepath.Join(f.brain, "inbox/widget/link.md")); err != nil {
-		t.Fatal(err)
-	}
 	followUpWrite(t, f.repo, "docs/backlog/open.md", "---\nstatus: open\ntype: feat\ncreated: 2026-10-19\n---\n# Export widget\nBACKLOG BODY NEVER PRINTED\n")
 	followUpWrite(t, f.repo, "docs/backlog/promoted.md", "---\nstatus: promoted\ntype: fix\n---\n# Promoted\n")
 	followUpWrite(t, f.repo, "docs/findings/pending.md", "---\nstatus: pending\ncreated_at: 2026-10-18\n---\n# Broken widget\nFINDING BODY NEVER PRINTED\n")
@@ -188,7 +180,7 @@ func followUpSeedPending(t *testing.T, f followUpFixture) string {
 	followUpWrite(t, f.repo, "docs/specs/0001-widget/_prd.md", "---\nstatus: active\ncreated: 2026-10-17\n---\n# Widget Spec\n\nFirst paragraph.\n\nPrivate second paragraph.\n")
 	followUpWrite(t, f.repo, "docs/specs/0002-old/_prd.md", "---\nstatus: completed\n---\n# Old Spec\n")
 	path := filepath.Join(t.TempDir(), "messages.json")
-	mustWrite(t, path, `{"schema":"roundfix/follow-up-messages/v1","messages":[{"id":"one","from":"other","created_at":"2026-10-16","subject":"Message subject","text":"MESSAGE BODY NEVER PRINTED","type":"refactor"}]}`)
+	mustWrite(t, path, `{"schema":"roundfix/follow-up-messages/v1","messages":[{"id":"old","from":"","created_at":"2026-10-20","subject":"Old inbox","text":"INBOX BODY NEVER PRINTED","type":"fix"},{"id":"new","from":"fluxus","created_at":"2026-10-22","subject":"New inbox","text":"INBOX BODY NEVER PRINTED","type":"fix"},{"id":"one","from":"other","created_at":"2026-10-16","subject":"Message subject","text":"MESSAGE BODY NEVER PRINTED","type":"refactor"}]}`)
 	return path
 }
 
@@ -201,14 +193,14 @@ func TestFollowUpListsEveryPendingItemOnce(t *testing.T) {
 		t.Fatalf("items=%+v", doc.Items)
 	}
 	want := map[string]struct{ kind, typ, date, title, requested string }{
-		"inbox/widget/z-old.md":    {"inbox", "fix", "2026-10-20", "Old inbox", ""},
-		"inbox/widget/a-new.md":    {"inbox", "fix", "2026-10-22", "New inbox", "fluxus"},
+		"message:old":              {"message", "fix", "2026-10-20", "Old inbox", ""},
+		"message:new":              {"message", "fix", "2026-10-22", "New inbox", "fluxus"},
 		"docs/backlog/open.md":     {"backlog", "feat", "2026-10-19", "Export widget", ""},
 		"docs/findings/pending.md": {"finding", "finding", "2026-10-18", "Broken widget", ""},
 		"docs/specs/0001-widget":   {"spec", "spec", "2026-10-17", "Widget Spec", ""},
 		"message:one":              {"message", "refactor", "2026-10-16", "Message subject", "other"},
 	}
-	inbox := []string{}
+	fixes := []string{}
 	for _, item := range doc.Items {
 		expected, ok := want[item.Ref]
 		if !ok {
@@ -222,12 +214,12 @@ func TestFollowUpListsEveryPendingItemOnce(t *testing.T) {
 		if item.Kind != expected.kind || item.Type != expected.typ || item.Date != expected.date || item.Title != expected.title || requested != expected.requested {
 			t.Fatalf("item=%+v want=%+v", item, expected)
 		}
-		if item.Kind == "inbox" {
-			inbox = append(inbox, item.Ref)
+		if item.Type == "fix" {
+			fixes = append(fixes, item.Ref)
 		}
 	}
-	if len(want) != 0 || !reflect.DeepEqual(inbox, []string{"inbox/widget/z-old.md", "inbox/widget/a-new.md"}) {
-		t.Fatalf("missing=%v inbox=%v", want, inbox)
+	if len(want) != 0 || !reflect.DeepEqual(fixes, []string{"message:old", "message:new"}) {
+		t.Fatalf("missing=%v fixes=%v", want, fixes)
 	}
 	out, stderr, code := followUpRunCLI(t, "--messages", messages)
 	if code != 0 || stderr != "" {
@@ -258,11 +250,15 @@ func TestFollowUpOrdersItemsByTheFourAnswers(t *testing.T) {
 		{"other", "2026-10-01"}, {"feature", "2026-10-01"}, {"health", "2026-10-01"}, {"unblocking", "2026-10-01"},
 		{"unsure", "2026-10-02"}, {"small health new", "2026-10-20"}, {"small health old", "2026-10-10"}, {"small unblocking", "2026-10-20"},
 	}
+	messages := []map[string]string{}
 	for index, entry := range entries {
-		followUpWrite(t, f.brain, fmt.Sprintf("inbox/widget/%02d.md", index), fmt.Sprintf("---\ntype-hint: feat\ncreated_at: %s\norigin: fluxus\n---\n# %s\n\nWork description.\n", entry.date, entry.title))
+		messages = append(messages, map[string]string{"id": fmt.Sprint(index), "from": "fluxus", "created_at": entry.date, "subject": entry.title, "text": "Work description.", "type": "feat"})
 	}
+	// The caller supplies messages oldest first, as the retired inbox did.
+	sort.SliceStable(messages, func(i, j int) bool { return messages[i]["created_at"] < messages[j]["created_at"] })
+	path := followUpWriteMessages(t, messages)
 	setCommandEnvForTest(t, "ROUNDFIX_TYPESAFE_API_KEY", "fixture-key")
-	doc := followUpJSON(t)
+	doc := followUpJSON(t, "--messages", path)
 	titles := []string{}
 	for _, item := range doc.Items {
 		titles = append(titles, item.Title)
@@ -287,7 +283,7 @@ func TestFollowUpOrdersItemsByTheFourAnswers(t *testing.T) {
 	if !reflect.DeepEqual(titles, want) || f.judge.calls != len(entries) || doc.Judge.State != "answered" {
 		t.Fatalf("titles=%v calls=%d judge=%+v", titles, f.judge.calls, doc.Judge)
 	}
-	// Inventory order, before judgment, follows inbox created_at then reference.
+	// Inventory order, before judgment, follows the caller-supplied message order.
 	wantCalls := []string{"other", "feature", "health", "unblocking", "unsure", "small health old", "small health new", "small unblocking"}
 	if !reflect.DeepEqual(f.judge.titles, wantCalls) {
 		t.Fatalf("judge order=%v", f.judge.titles)
@@ -298,6 +294,7 @@ func TestFollowUpOrdersByTypeWithoutTheJudge(t *testing.T) {
 	t.Parallel()
 	for _, mode := range []string{"no key", "Run", "ceiling"} {
 		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
 			f := newFollowUpFixture(t)
 			messages := followUpSeedPending(t, f)
 			reason := "ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"
@@ -308,7 +305,7 @@ func TestFollowUpOrdersByTypeWithoutTheJudge(t *testing.T) {
 				reason = "inside Run fixture-run"
 			case "ceiling":
 				setCommandEnvForTest(t, "ROUNDFIX_TYPESAFE_API_KEY", "fixture-key")
-				followUpWrite(t, f.home, ".roundfix/config.yml", fmt.Sprintf("secondbrain:\n  root: %q\n  inbox_namespace: widget\njev:\n  monthly_ceiling_usd: 0.01\n", f.brain))
+				followUpWrite(t, f.home, ".roundfix/config.yml", "jev:\n  monthly_ceiling_usd: 0.01\n")
 				followUpWrite(t, f.home, ".roundfix/judge/2026-10.jsonl", "{\"cost_usd\":0.02}\n")
 				reason = "monthly ceiling reached"
 			}
@@ -359,7 +356,7 @@ func TestFollowUpSaysNothingToDo(t *testing.T) {
 	t.Parallel()
 	f := newFollowUpFixture(t)
 	out, stderr, code := followUpRunCLI(t)
-	want := fmt.Sprintf("Follow-up for widget in %s\nNothing to do: no pending item and nothing in progress.\nSources:\n  secondbrain-inbox: checked 0\n  ai-memory-messages: missing: no --messages file\n  backlog: checked 0\n  findings: checked 0\n  repository-inbox: checked 0\n  specs: checked 0\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: checked 0\n  git: checked 0\n", f.repo)
+	want := fmt.Sprintf("Follow-up for widget in %s\nNothing to do: no pending item and nothing in progress.\nSources:\n  ai-memory-messages: missing: no --messages file\n  backlog: checked 0\n  findings: checked 0\n  repository-inbox: checked 0\n  specs: checked 0\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: checked 0\n  git: checked 0\n", f.repo)
 	if code != 0 || stderr != "" || out != want {
 		t.Fatalf("exit=%d stderr=%q stdout=%q want=%q", code, stderr, out, want)
 	}
@@ -377,31 +374,17 @@ func TestFollowUpSaysNothingToDo(t *testing.T) {
 	}
 }
 
-func TestFollowUpReportsAMissingSecondbrainRoot(t *testing.T) {
-	t.Parallel()
-	f := newFollowUpFixture(t)
-	followUpWrite(t, f.home, ".roundfix/config.yml", "secondbrain:\n  inbox_namespace: widget\n")
-	followUpWrite(t, f.repo, "docs/backlog/item.md", "---\nstatus: open\ntype: fix\n---\n# Repair\n")
-	doc := followUpJSON(t)
-	if len(doc.Items) != 1 || doc.Sources[0].State != "missing" || doc.Sources[0].Detail != "secondbrain.root is not set in User Config" {
-		t.Fatalf("doc=%+v", doc)
-	}
-}
-
 func TestFollowUpNamespaceDefaultsToTheRepositoryName(t *testing.T) {
 	t.Parallel()
-	for _, mode := range []string{"origin", "directory", "configured"} {
+	for _, mode := range []string{"origin", "directory"} {
 		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
 			f := newFollowUpFixture(t)
-			followUpWrite(t, f.home, ".roundfix/config.yml", "")
+			gitImplement(t, f.repo, "remote", "remove", "origin")
 			want := filepath.Base(f.repo)
 			if mode != "directory" {
 				gitImplement(t, f.repo, "remote", "add", "origin", "git@github.com:owner/widget.git")
 				want = "widget"
-			}
-			if mode == "configured" {
-				followUpWrite(t, f.repo, ".roundfixrc.yml", "secondbrain:\n  inbox_namespace: configured\n")
-				want = "configured"
 			}
 			doc := followUpJSON(t)
 			if doc.Repository.Namespace != want {
@@ -418,7 +401,7 @@ func TestFollowUpReadsNoUnavailableSourceAsAFailure(t *testing.T) {
 		deps.followUpGHRunner = followUpFakeGH{t: t, root: f.repo, err: fmt.Errorf("authentication unavailable\nsecond private line")}
 	})
 	doc := followUpJSON(t)
-	source := doc.Sources[8]
+	source := doc.Sources[7]
 	if source.State != "unavailable" || source.Detail != "authentication unavailable" || source.Count != 0 {
 		t.Fatalf("source=%+v", source)
 	}
@@ -508,6 +491,7 @@ func TestFollowUpRefusesAnInvalidMessagesFile(t *testing.T) {
 		{"type", `{"schema":"roundfix/follow-up-messages/v1","messages":[{"id":"one","text":"hello","created_at":"2026-10-01","type":"bug"}]}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			newFollowUpFixture(t)
 			path := filepath.Join(t.TempDir(), "messages.json")
 			if tc.name != "missing" {
@@ -629,20 +613,22 @@ func TestFollowUpReportsSkippedItemsAndAStoppedJudge(t *testing.T) {
 	t.Parallel()
 	for _, mode := range []string{"secret", "service"} {
 		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
 			f := newFollowUpFixture(t)
 			f.judge.probabilities = map[string][4]float64{"First": {.9, .1, .1, .1}, "Second": {.1, .1, .1, .9}, "Third": {.1, .1, .1, .9}}
 			if mode == "service" {
 				f.judge.failAt = 2
 			}
+			messages := []map[string]string{}
 			for index, title := range []string{"First", "Second", "Third"} {
 				body := "Work description."
 				if mode == "secret" && index == 1 {
 					body = "EXAMPLE_" + "API_KEY=" + strings.Repeat("a", 24) + "9"
 				}
-				followUpWrite(t, f.brain, fmt.Sprintf("inbox/widget/%d.md", index), fmt.Sprintf("---\ntype-hint: feat\n---\n# %s\n\n%s\n", title, body))
+				messages = append(messages, map[string]string{"id": fmt.Sprint(index), "created_at": "2026-10-01", "subject": title, "text": body, "type": "feat"})
 			}
 			setCommandEnvForTest(t, "ROUNDFIX_TYPESAFE_API_KEY", "fixture-key")
-			doc := followUpJSON(t)
+			doc := followUpJSON(t, "--messages", followUpWriteMessages(t, messages))
 			if doc.Judge.State != "partial" || doc.Judge.Calls != 2 || f.judge.calls != 2 || doc.Items[0].Basis != "judge" {
 				t.Fatalf("doc=%+v calls=%d", doc, f.judge.calls)
 			}
@@ -680,7 +666,7 @@ func TestFollowUpListsRepositoryNotesAndMessageTitleFallback(t *testing.T) {
 	}
 	mustWrite(t, messages, string(content))
 	doc := followUpJSON(t, "--messages", messages)
-	if len(doc.Items) != 3 || doc.Sources[4].Count != 2 {
+	if len(doc.Items) != 3 || doc.Sources[3].Count != 2 {
 		t.Fatalf("doc=%+v", doc)
 	}
 	if doc.Items[0].Kind != "note" || doc.Items[0].Date != "2026-10-01" || doc.Items[1].Title != strings.Repeat("é", 80) || doc.Items[2].Title != "undated" || doc.Items[2].Date != "" {
@@ -774,5 +760,48 @@ func TestFollowUpSnapshotHonorsCancellation(t *testing.T) {
 	}
 	if after := followUpSnapshot(t, f.home); !reflect.DeepEqual(before, after) {
 		t.Fatal("canceled snapshot modified its source")
+	}
+}
+
+func followUpWriteMessages(t *testing.T, messages []map[string]string) string {
+	t.Helper()
+	content, err := json.Marshal(map[string]any{"schema": "roundfix/follow-up-messages/v1", "messages": messages})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "messages.json")
+	mustWrite(t, path, string(content))
+	return path
+}
+
+func TestFollowUpReadsNoSecondbrainInbox(t *testing.T) {
+	t.Parallel()
+	f := newFollowUpFixture(t)
+	followUpWrite(t, f.home, ".roundfix/config.yml", fmt.Sprintf("secondbrain:\n  root: %q\n  inbox_namespace: retired-choice\n", f.brain))
+	followUpWrite(t, f.brain, "inbox/retired-choice/pending.md", "---\nstatus: pending\ntype-hint: fix\n---\n# Retired entry\n")
+	// Malformed content would make a traversing reader report an unavailable source.
+	followUpWrite(t, f.brain, "inbox/retired-choice/unreadable.md", "---\nbroken: [\n---\n")
+	before := followUpSnapshot(t, f.brain)
+	out, stderr, code := followUpRunCLI(t, "--format", "json")
+	want := "config: secondbrain.root is deprecated and ignored; the Secondbrain inbox source was retired, so remove it\nconfig: secondbrain.inbox_namespace is deprecated and ignored; the Secondbrain inbox source was retired, so remove it\n"
+	if code != 0 || stderr != want {
+		t.Fatalf("exit=%d stderr=%q stdout=%s", code, stderr, out)
+	}
+	var doc followUpDocument
+	if err := json.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Items == nil || len(doc.Items) != 0 || !strings.Contains(out, `"items":[]`) || doc.State != "nothing_to_do" || doc.Repository.Namespace != "widget" {
+		t.Fatalf("doc=%+v stdout=%s", doc, out)
+	}
+	names := []string{}
+	for _, source := range doc.Sources {
+		names = append(names, source.Name)
+	}
+	if !reflect.DeepEqual(names, []string{"ai-memory-messages", "backlog", "findings", "repository-inbox", "specs", "runs", "delivery-queue", "pull-requests", "git"}) {
+		t.Fatalf("sources=%v", names)
+	}
+	if after := followUpSnapshot(t, f.brain); !reflect.DeepEqual(before, after) {
+		t.Fatal("Secondbrain fixture changed")
 	}
 }

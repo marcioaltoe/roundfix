@@ -272,15 +272,15 @@ func TestFollowUpStatusNeverAsksTheJudge(t *testing.T) {
 	f := newFollowUpFixture(t)
 	setCommandEnvForTest(t, "ROUNDFIX_TYPESAFE_API_KEY", "fixture-key")
 	followUpSeedPending(t, f)
-	// If status traversed the inbox, this malformed entry would mark it unavailable.
-	followUpWrite(t, f.brain, "inbox/widget/unreadable.md", "---\nbroken: [\n---\n")
+	// If status traversed repository notes, this malformed entry would mark them unavailable.
+	followUpWrite(t, f.repo, "docs/_inbox/unreadable.md", "---\nbroken: [\n---\n")
 	doc := followUpStatusJSON(t)
 	out, stderr, code := followUpRunCLI(t, "--status")
 	if f.judge.calls != 0 || code != 0 || stderr != "" || strings.Contains(out, "Judge:") {
 		t.Fatalf("calls=%d exit=%d stderr=%s stdout=%s", f.judge.calls, code, stderr, out)
 	}
 	for _, source := range doc.Sources {
-		if source.Name == "secondbrain-inbox" || source.Name == "ai-memory-messages" {
+		if source.Name == "repository-inbox" || source.Name == "ai-memory-messages" {
 			t.Fatalf("forbidden source=%+v", source)
 		}
 	}

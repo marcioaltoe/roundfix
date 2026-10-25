@@ -384,7 +384,8 @@
       "sources": [
         "docs/user-guide/commands/history.md",
         "internal/cli/history.go"
-      ]
+      ],
+      "review": "2026-10-24 — the edit replaces one sentence of the history guide that sent cross-project lessons to the Secondbrain inbox; `roundfix history sanitize` and the archive reference that covers it do not change."
     },
     {
       "id": "command implement",
@@ -929,7 +930,8 @@
       ],
       "sources": [
         "docs/user-guide/commands/history.md"
-      ]
+      ],
+      "review": "2026-10-24 — the same one-sentence edit; the archive reference describes the history commands, which do not change."
     },
     {
       "id": "guide docs/user-guide/commands/implement.md",
