@@ -229,7 +229,10 @@ func fingerprintGit(root, index string, input []byte, args ...string) ([]byte, e
 			command.Env = append(command.Env, entry)
 		}
 	}
-	command.Env = append(command.Env, "GIT_OPTIONAL_LOCKS=0")
+	// System and global Git configuration (for example a global excludesFile)
+	// must not change what the guard lists, so only the repository's own
+	// configuration and the options above apply.
+	command.Env = append(command.Env, "GIT_OPTIONAL_LOCKS=0", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+os.DevNull)
 	if index != "" {
 		command.Env = append(command.Env, "GIT_INDEX_FILE="+index)
 	}
