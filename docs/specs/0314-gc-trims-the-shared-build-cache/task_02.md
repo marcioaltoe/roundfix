@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0314-gc-trims-the-shared-build-cache
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -127,3 +127,57 @@ new key changes a Behavior Surface, so the Task re-records its fingerprint.
 
 - `_prd.md` → Goals; Core Feature 2; Core Feature 3; User Experience; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior; Data Models; API Contracts 3-4; Invariants 4-5; Testing Approach; Build Order 2
+
+
+## Result
+
+Implemented this Task's configuration, GC section, tests and two guide updates.
+The existing `status: in_progress` was left unchanged. At entry, only this
+Task file was already modified (the Daemon-owned status); no other pre-existing
+changes were present. Initial inspection found no shared-cache configuration
+key or GC integration, while task_01's engine was available.
+
+### Acceptance evidence
+
+- **Declared cache trimming and dry run:** GC resolves declarations and measures
+  with the configured MiB limit, calls Apply only for live GC, and prints each
+  block after Item Binaries. The new command tests assert the complete block,
+  two idle entries totaling 2,097,152 bytes removed or reclaimable, preservation
+  of fresh entries and README, unchanged dry-run contents, and no removal below
+  the limit. An additional command test proves a missing README produces
+  `Kept:` with exit 0 and no deletion. Removal errors join the GC error and the
+  report is printed before exit 1.
+- **Unsafe declarations:** the configuration tests cover unsupported kind,
+  relative and unclean paths, parent segments, missing/nonpositive limit,
+  short idle, unknown placeholder, malformed duration and byte-count overflow;
+  every error names `worktree.shared_caches`. Tests also cover template
+  resolution, the empty built-in default, the unchanged generated Project
+  Config template, and replacement across scopes (including an empty list).
+- **No declaration and current fingerprint:** existing GC and Worktree Build
+  Cache transcript tests ran unchanged in the focused regression selection.
+  No declaration adds no report block. The two guides describe the key,
+  validation and reclamation rules. The sanctioned recorder ran after all
+  source and guide edits and updated only the configuration-key fingerprint
+  and those two guide fingerprints.
+
+### Focused checks
+
+- `go test ./internal/config ./internal/cli -run 'Shared(Build)?Cache|SharedCaches' -count=1 -timeout=5m`
+  — exit 0; both packages passed the new shared-cache checks.
+- `go test ./internal/config -count=1 -timeout=5m`
+  — exit 0; configuration regression tests passed after the final source edit.
+- `go test ./internal/cli -run '^Test(GC|WorktreeBuildCache)' -count=1 -timeout=5m`
+  — exit 0; focused GC, Item Binary and Worktree Build Cache regressions passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  — exit 0; required artifact generation after the last source and guide edits.
+- `git diff --check` — exit 0 before recording this Result.
+
+The shell commands used `rtk proxy` for unfiltered output. The executor rejected
+its symlinked writable-root configuration; approved execution accessed the same
+assigned checkout at its resolved `/Volumes/Brain-SSD/cache/.roundfix/worktrees/`
+location. No sandbox configuration was changed.
+
+Declared Verification, the Windows cross-build and repository Verification were
+not run; they remain Daemon-owned. No Task status, Task Graph, other Task file,
+repository declaration, skill or glossary was changed. No commit, push or pull
+request was made. No follow-up implementation was added.

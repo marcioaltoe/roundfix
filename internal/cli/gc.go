@@ -66,6 +66,7 @@ type gcReport struct {
 	BuildCaches   worktreeBuildCacheScan
 	cacheReport   bool
 	ItemBinaries  itemBinaryReport
+	SharedCaches  []sharedCacheReport
 }
 
 type gcArtifactDir struct {
@@ -240,7 +241,7 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 
 	report, err := runGC(ctx, opts, loaded)
 	if err != nil {
-		if report.cacheReport || report.ItemBinaries.present {
+		if report.cacheReport || report.ItemBinaries.present || len(report.SharedCaches) > 0 {
 			printGCReport(stdout, report)
 		}
 		fmt.Fprintf(stderr, "%s: gc failed: %v\n", app.Name, err)
@@ -815,10 +816,12 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (repo
 	}
 	var itemErr error
 	report.ItemBinaries, itemErr = sweepItemBinaries(ctx, runStore, loaded, opts.dryRun)
+	var sharedErr error
+	report.SharedCaches, sharedErr = sweepSharedCaches(ctx, loaded, opts.dryRun)
 	if runStore != nil {
 		report.RunRetention, err = sweepRunDatabase(ctx, runStore, loaded, runRetentionOptions{dryRun: opts.dryRun})
 	}
-	return report, errors.Join(cacheErr, itemErr, err)
+	return report, errors.Join(cacheErr, itemErr, sharedErr, err)
 }
 
 func runGCJournal(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
@@ -1157,6 +1160,7 @@ func printGCReport(stdout io.Writer, report gcReport) {
 		printRunRetentionReport(stdout, report.RunRetention, report.DryRun)
 		printWorktreeBuildCacheReport(stdout, report.CacheDeclared, report.BuildCaches, report.DryRun)
 		printItemBinaryReport(stdout, report.ItemBinaries, report.DryRun)
+		printSharedCacheReport(stdout, report.SharedCaches, report.DryRun)
 	}()
 	if report.Skipped {
 		if report.DryRun {

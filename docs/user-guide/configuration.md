@@ -473,6 +473,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
 | `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
 | `worktree.caches` | `[]` | Declares rebuildable directories of ended worktrees for Doctor and GC. |
+| `worktree.shared_caches` | `[]` | Declares shared build caches for GC to trim above their size limits. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
@@ -1004,7 +1005,47 @@ files. Ended worktrees belong to terminal Runs (including retained sibling
 Task Worktrees) or merged Delivery Queue items. Active Runs and every other
 item stage keep their caches. Paths outside `worktree.location`, symlink
 cache entries and resolved escapes are skipped. The cache in your own checkout
-and the shared Go build cache are outside this reclamation.
+is outside this reclamation. Shared caches are reclaimed only when declared
+under [Shared Build Caches](#shared-build-caches).
 
 See [Doctor](commands/doctor.md) for its bounded storage measurement and
 [GC](commands/gc.md) for the reclamation report.
+
+## Shared Build Caches
+
+`worktree.shared_caches` declares caches shared across worktrees in User
+Config or Project Config. It defaults to `[]`; a later scope's list replaces
+the earlier list, including when the later list is empty. Each entry has:
+
+| Field | Required value |
+| --- | --- |
+| `path` | A clean absolute path after expanding the supported placeholders, with no `..` segment or remaining brace. |
+| `kind` | `go-build`, the only supported kind. |
+| `max_size_mb` | A positive integer limit in MiB (1,048,576 bytes), representable as a byte count. |
+| `idle` | A Go duration of at least `2h`. |
+
+`{tmpdir}` expands to the operating system's temporary directory, `{home}`
+to the loaded home directory and `{uid}` to the user ID (`-1` on Windows).
+Unknown placeholders, relative or unclean paths, parent segments, unsupported
+kinds, missing or nonpositive limits, and idle times below two hours fail
+configuration loading with an error naming `worktree.shared_caches`.
+
+```yaml
+worktree:
+  shared_caches:
+    - path: "{tmpdir}/roundfix-go-build-{uid}"
+      kind: go-build
+      max_size_mb: 20480
+      idle: 4h
+```
+
+GC measures every declared cache and, only above its limit, trims idle
+entries oldest first. The minimum idle time covers twice the go command's
+hourly refresh interval for a used entry; GC rereads each entry's time before
+removal. It refuses a symlinked cache or one without the go command's README,
+and keeps files outside the Go cache entry naming rules. A cache can remain
+above its limit when too few entries are idle.
+
+Use `roundfix gc --dry-run` to preview without writing; `roundfix gc` applies
+the trim. See [GC](commands/gc.md#shared-build-caches) for the report and
+refusal behavior.
