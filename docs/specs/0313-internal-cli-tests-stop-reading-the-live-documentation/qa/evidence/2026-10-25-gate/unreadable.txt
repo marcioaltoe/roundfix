@@ -1,7 +1,0 @@
-COMMAND: go test -count=1 -parallel 16 -timeout 20m ./internal/cli
-suiteguard: fingerprint repository before tests: git update-index: exit status 128: error: lstat(".agents/skills/agentic-cli-design/SKILL.md"): Permission denied
-fatal: Unable to process path .agents/skills/agentic-cli-design/SKILL.md
-FAIL	roundfix/internal/cli	0.472s
-FAIL
-
-EXIT: 1; elapsed seconds: 5.684

@@ -1,9 +1,0 @@
-COMMAND: ./bin/roundfix archive 0313-internal-cli-tests-stop-reading-the-live-documentation --plan --offline
-archive plan for 0313-internal-cli-tests-stop-reading-the-live-documentation: removes 119 file(s) (6406954 bytes) and writes docs/history/specs/0313-internal-cli-tests-stop-reading-the-live-documentation.md
-core 12 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-25-01.md, qa/qa-report-2026-10-25.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 106 file(s) (6265587 bytes) under qa/evidence/
-judge: skipped (offline)
-candidate references/2026-10-24-internal-cli-tests-read-the-live-documentation-trees.md 1491 bytes: no advice (offline)
-promote with: roundfix archive 0313-internal-cli-tests-stop-reading-the-live-documentation --promote <path>
-
-EXIT: 0; elapsed seconds: 1.749

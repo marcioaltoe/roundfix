@@ -1,4 +1,0 @@
-COMMAND: go test -parallel 16 -timeout 20m ./internal/cli
-ok  	roundfix/internal/cli	162.166s
-
-EXIT: 0; elapsed seconds: 193.459

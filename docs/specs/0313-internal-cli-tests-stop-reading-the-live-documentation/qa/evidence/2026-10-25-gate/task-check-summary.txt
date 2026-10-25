@@ -1,3 +1,0 @@
-22 leak cases: 22
-Upgrade single-test forbidden inputs: 0
-Task 01/02 named tests and declarations executed in rows 02/03; Windows vet here. Guarded-input-log and non-Git-root refusal asserted by named tests.

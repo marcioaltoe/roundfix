@@ -1,5 +1,0 @@
-COMMAND: go test -count=1 -timeout 15m -tags repocontract ./internal/suiteguard ./internal/suiteguardcontract
-ok  	roundfix/internal/suiteguard	11.422s
-ok  	roundfix/internal/suiteguardcontract	0.306s
-
-EXIT: 0; elapsed seconds: 11.707

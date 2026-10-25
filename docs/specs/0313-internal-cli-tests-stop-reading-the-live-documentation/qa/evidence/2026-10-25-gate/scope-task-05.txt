@@ -1,8 +1,0 @@
-COMMAND: git diff-tree --no-commit-id --name-only -r 5807780c7cea58c41515a1e9af80b02f82175dca
-docs/specs/0313-internal-cli-tests-stop-reading-the-live-documentation/task_05.md
-internal/suiteguard/leak_cases_test.go
-internal/suiteguard/residue_test.go
-internal/suiteguard/suiteguard.go
-internal/suiteguard/suiteguard_test.go
-
-EXIT: 0; elapsed seconds: 0.007

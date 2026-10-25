@@ -1,5 +1,0 @@
-COMMAND: git diff-tree --no-commit-id --name-only -r 5bf0be6119df16da2700702bacbcda7a4022f1b6
-docs/specs/0313-internal-cli-tests-stop-reading-the-live-documentation/task_04.md
-internal/cli/upgrade_characterization_test.go
-
-EXIT: 0; elapsed seconds: 0.007

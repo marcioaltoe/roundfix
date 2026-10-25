@@ -1,6 +1,0 @@
-COMMAND: go test -timeout 20m -list ^TestReleasePlanChecksWriteNothing$ ./internal/cli
-TestReleasePlanChecksWriteNothing
-suiteguard: guard cost: measured 2806 paths; fingerprint took 146.835333ms before and 133.206291ms after
-ok  	roundfix/internal/cli	0.740s
-
-EXIT: 0; elapsed seconds: 5.953

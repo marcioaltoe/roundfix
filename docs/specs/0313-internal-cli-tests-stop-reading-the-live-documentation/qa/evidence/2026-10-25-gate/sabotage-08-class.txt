@@ -1,9 +1,0 @@
-COMMAND: go test -count=1 -timeout 15m -run ^TestRepositoryContractTestsDeclareTheirRelevance$ ./internal/verifyselect
---- FAIL: TestRepositoryContractTestsDeclareTheirRelevance (0.03s)
-    contracts_repository_test.go:92: CLI documentation contract files = 1, want 2: map[internal/cli/live_documents_docscontract_test.go:true]
-FAIL
-suiteguard: guard cost: measured 2806 paths; fingerprint took 163.814375ms before and 126.273833ms after
-FAIL	roundfix/internal/verifyselect	0.592s
-FAIL
-
-EXIT: 1; elapsed seconds: 0.855

@@ -1,8 +1,0 @@
-COMMAND: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-ulo3etol/sabotage11.test -test.parallel 16 -test.timeout 20m -test.testlogfile /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-ulo3etol/sabotage11-full.log
-roundfix: Delivery Queue item widget: implement runs the item binary /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSpecReturnsARunSlotRefusalWithItsHolders4089941052/002/artifacts/delivery/widget/item-binary/5b973ebb686125af/roundfix
-suiteguard: guard cost: measured 2803 paths; fingerprint took 322.64625ms before and 438.388375ms after
-suiteguard: guard cost: measured 2803 paths; fingerprint took 462.018917ms before and 334.754917ms after
-PASS
-suiteguard: guard cost: measured 2803 paths; fingerprint took 132.706417ms before and 130.694542ms after
-
-EXIT: 0; elapsed seconds: 141.417

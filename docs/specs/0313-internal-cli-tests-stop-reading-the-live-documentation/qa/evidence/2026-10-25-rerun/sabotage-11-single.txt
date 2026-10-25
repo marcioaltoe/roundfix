@@ -1,5 +1,0 @@
-COMMAND: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-ulo3etol/sabotage11.test -test.run ^TestUpgradeStdoutAndExitCodesAreCharacterized$ -test.count 1 -test.timeout 10m -test.testlogfile /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0313-ulo3etol/sabotage11-single.log
-PASS
-suiteguard: guard cost: measured 2803 paths; fingerprint took 146.165125ms before and 132.029375ms after
-
-EXIT: 0; elapsed seconds: 1.275
