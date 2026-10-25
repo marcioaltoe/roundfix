@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.120.0] - 2026-10-25
+
+### The Baseline sends handoffs and messages through ai-memory; the Secondbrain inbox is retired
+
+- **Setups follow marcioaltoe/skills `65d5f36`.** Every upstream setup (go, rust, typescript and the composed go-cli-typescript-bun) is synced to that commit: the retired `handoff` skill is replaced by the six `ai-memory-*` skills (`ai-memory-handoff`, `ai-memory-messaging`, `ai-memory-retrieval`, `ai-memory-durable-pages`, `ai-memory-learning-maintenance`, `ai-memory-routing-install`). The core module dispatches `ai-memory-handoff` and `ai-memory-messaging` instead of `handoff`, so a refreshed Baseline no longer requires a skill the catalog removed.
+- **Cross-project continuity through ai-memory.** A new core rule (`rule.core.cross-project-continuity`) replaces the eight Secondbrain inbox clauses: requests and findings for another project go by `memory_message_send` to that project, a received message is consumed only after its content is recorded, and when ai-memory or the receiving project is missing the agent tells the user and keeps the text in its response. The Secondbrain stays the read-only knowledge base. An adopter's refresh records each retired inbox clause as `replaced`.
+- **`roundfix follow-up` reads no Secondbrain inbox.** The `secondbrain-inbox` source is gone. `secondbrain.root` and `secondbrain.inbox_namespace` are deprecated: a config that still holds them loads, with one warning per key.
+- The `write-idea`, `write-prd` and `write-techspec` skills read ai-memory messages instead of the inbox. The glossary drops Inbox Entry and adds **Cross-project Message**; ADR-0330 supersedes ADR-0095, which is removed. Roundfix skill version 0.1.136.
+
+**Adopters:** after upgrading run `roundfix baseline update` (review and apply the plan), then `roundfix baseline skills restore` for the skills it reports, and remove the `handoff` skill directory and lock entry if your skills tool kept them.
+
 ## [0.119.0] - 2026-10-25
 
 ### The CI job runs the documentation contracts once
