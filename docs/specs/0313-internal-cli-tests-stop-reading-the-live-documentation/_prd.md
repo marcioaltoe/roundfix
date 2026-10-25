@@ -16,7 +16,11 @@ two `internal/cli` files under the `docscontract` build tag, declared
 `//verify:always`, as ADR-0326 decides: the selective gate still runs them
 on every change and the Full Contract Run on main and before a release,
 while the package's cached result survives a documentation edit. Every
-assertion they make stays as it is.
+assertion they make stays as it is. The first Run's QA gate found a
+fourteenth reader the audit had missed, the upgrade characterization test,
+and a corrective Task gives it a fixture workspace. A second corrective
+Task, at the maintainer's request, makes the suite guard fingerprint the
+repository through Git with every detection it has today.
 
 ## Sources
 
@@ -27,6 +31,18 @@ assertion they make stays as it is.
    with the documentation trees removed or unreadable exactly thirteen
    `internal/cli` tests fail; a guide edit re-ran the package (162.6 s and
    237.0 s) unless those thirteen were skipped.
+2. F-01 of the QA report of Run `run_20261025T122115Z_fe88d4e7bd75bcb2`
+   (2026-10-25), at audited head `5299fcf6`, with task_01 and task_02
+   completed: a line appended to `docs/user-guide/commands/gc.md` and to
+   `.agents/skills/roundfix/SKILL.md` still re-ran `internal/cli` (148.3 s),
+   and the head's Go test input log named `docs/user-guide/commands/gc.md`.
+   The report attributed the read to `internal/suiteguard`. The corrective
+   measurement in `_techspec.md` → Current behavior 6 and 7 shows that the
+   reader is a test: `TestUpgradeStdoutAndExitCodesAreCharacterized`.
+3. The maintainer's answer of 2026-10-25, at about 11:00 BRT, which
+   `_authorization.md` quotes in full. It asks for both changes: the line in
+   the test, and also the Git fingerprint in the suite guard as the second
+   and last corrective Task.
 
 ## Prerequisites
 
@@ -63,6 +79,10 @@ test to its new file.
 ## Goals
 
 - A guide or skill edit leaves the `internal/cli` test result cached.
+- No untagged `internal/cli` test reads the documentation trees, including
+  through a command that inspects its working directory's repository.
+- The suite guard reads the repository through Git subprocesses and still
+  reports every leak class it reports today.
 - The thirteen tests keep every assertion and still run in
   `make verify-changed` and `make verify-contracts`.
 - A new `internal/cli` documentation contract file cannot land without
@@ -81,6 +101,11 @@ test to its new file.
 3. The repository contract declarations test classifies every
    `internal/cli` `docscontract` file as always selected and pins their
    number.
+4. The upgrade characterization test runs `roundfix upgrade` in a fixture
+   home and working directory, as the other upgrade tests do.
+5. The suite guard lists and hashes the watched paths with `git` and keeps
+   their permission bits with a mode-only pass; it refuses a root outside a
+   Git work tree.
 
 ## Non-Goals / Out of Scope
 
@@ -107,6 +132,18 @@ test to its new file.
    it run again.
 4. Success Metric: the untagged `internal/cli` package passes with the five
    documentation trees unreadable.
+5. Success Metric: Go's test input log of one run of the untagged
+   `internal/cli` test binary names no path under the five documentation
+   trees, `docs/references`, `skills/`, `CONTEXT.md` or `.roundfixrc.yml`
+   of the checkout. On 2026-10-25 the head with task_01 and task_02 logged
+   them; with the corrective Task it logged only `go.mod`, `internal/go.mod`
+   and `internal/speccheck/testdata`.
+6. Success Metric: the 22 leak cases of the suite guard's characterization
+   table pass on the guard before task_05 and after it, and a guarded
+   package's test input log names no path of its repository. On 2026-10-25
+   the prototype passed all 22 before and after. Every guarded package
+   passed on this repository, and the guard measured 2,793 paths in about
+   0.13 s per fingerprint, as before.
 
 ## Acceptance evidence
 
@@ -136,6 +173,25 @@ The decisions were checked on 2026-10-24 against these sources.
   was written.
 - Exa: none needed beyond the Go command's own documentation, which the QA
   reads offline.
+- The corrective prototype, 2026-10-25, about 11:00 to 12:30 BRT, in a
+  scratch clone of the first Run's head `5299fcf6`:
+  - a run of the untagged `internal/cli` test binary with
+    `-test.testlogfile` logged open and stat entries under `docs/history`,
+    `docs/adr`, `docs/specs`, `docs/user-guide` and `docs/references`, and
+    none under `.agents`;
+  - running chunks of the test list narrowed the reader to
+    `TestUpgradeStdoutAndExitCodesAreCharacterized`;
+  - with `withCLIWorkspace(t)` added to it, the same full-binary log named
+    none of those paths, and the Success Metric 3 cache row printed
+    `(cached)` after the guide and skill edit (`ok` 168.4 s, then
+    `(cached)`, then `(cached)`);
+  - a fixture test of `internal/suiteguard` showed that Go's test input log
+    has no entry for the guard's repository walk, because the guard
+    fingerprints before and after `m.Run`, outside the window in which the
+    testing package logs;
+  - the Git fingerprint of task_05 passed all 22 leak cases and every
+    guarded package, and the cache row still printed `(cached)` with both
+    corrective Tasks (`ok` 244.7 s, then `(cached)`, then `(cached)`).
 
 ## Glossary
 
@@ -146,6 +202,14 @@ None.
 - 2026-10-24 (about 00:05 BRT): the cycle AP batch 4 answers quoted in
   `_authorization.md`.
 - 2026-10-24 (about 01:50 BRT): "Escrever agora (Recomendado)" for this Spec.
+- 2026-10-25 (about 10:30 BRT): the corrective decisions quoted in
+  `_authorization.md`. The corrective Task keeps their purpose, a cache
+  that no longer depends on the documents, and changes the test that the
+  measurement found.
+- 2026-10-25 (about 11:00 BRT): "As duas coisas", quoted in
+  `_authorization.md`: task_04 and also task_05, the Git fingerprint. The
+  permission loss the option text accepts does not happen; a mode-only pass
+  keeps it.
 
 Autonomous route: no person present; decisions taken from the operator's cycle AP batch 4 briefing of 2026-10-24, the maintainer's answers of 01:50 BRT and the audit.
 

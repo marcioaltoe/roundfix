@@ -15,7 +15,13 @@ covers and settles the Spec on evidence. The Spec moves thirteen
 `internal/cli` tests that read this repository's guides, skills and records
 into two `docscontract` files declared `//verify:always` (ADR-0326), so a
 documentation edit no longer re-runs the whole package, and classifies those
-files in the repository contract declarations test.
+files in the repository contract declarations test. Its corrective Task,
+task_04, answers F-01 of the first Run's gate: the upgrade characterization
+test, a fourteenth reader, now runs in a fixture workspace. task_05, the
+second corrective Task, makes the suite guard fingerprint the repository
+through Git and keeps every leak class it reported. This gate runs after
+task_05, so the cache, test input log and sabotage rows measure the tree
+with all four implementation Tasks.
 
 Every row runs on temporary worktrees or copies of the audited head and of
 the Delivery Base and this repository's own documents. No row reads or
@@ -23,7 +29,11 @@ writes `~/.roundfix`, reaches the network, sends a request to a provider, the
 judge or a reviewer, reads a credential, or reads another repository. Every
 `go test` it runs carries an explicit `-timeout`, and every row that runs
 `bin/roundfix` sets `HOME` to a fresh temporary directory, because the CLI
-loads `$HOME/.roundfix/config.yml`.
+loads `$HOME/.roundfix/config.yml`. A row that runs `go test` with a fresh
+temporary `HOME` keeps the existing Go module cache and Rust toolchain
+reachable through `GOMODCACHE`, `GOPATH`, `RUSTUP_HOME` and `CARGO_HOME`,
+and records none of their values; the first Run's gate lost a cache series
+to a `rustfmt` shim without a toolchain.
 
 ## Requirements
 
@@ -49,7 +59,19 @@ loads `$HOME/.roundfix/config.yml`.
    passes when the audited head's third run prints `(cached)`; record the
    Delivery Base's re-run as context. Every run of a pair uses the same
    environment: `GODEBUG` and the other variables are part of Go's cache key.
-5. MUST verify Success Metric 4 and Invariant 1: in a temporary copy of the
+   The row runs on the head that includes task_04 and task_05; the first
+   Run's head without them re-ran the package (F-01).
+5. MUST verify Success Metrics 4 and 5 and Invariant 1. For Success Metric 5,
+   in a temporary worktree of the audited head, build the untagged test
+   binary with `go test -buildvcs=false -c -o <temporary path>
+   ./internal/cli`, run it once from the worktree's `internal/cli` with a
+   fresh temporary `HOME`, `-test.parallel 16`, `-test.timeout 20m` and
+   `-test.testlogfile <temporary path>`, and record that it passes and that
+   no `open` or `stat` line of the log names a path under the worktree's
+   `docs/`, `.agents/`, `skills/`, `CONTEXT.md` or `.roundfixrc.yml`, with
+   both the worktree path and its resolved form. Record the distinct
+   in-module paths the log names, grouped by top-level directory. For
+   Success Metric 4, in a temporary copy of the
    audited head made with `git archive`, initialized as a Git repository and
    committed, append `/docs/history/`, `/docs/adr/`, `/docs/specs/`,
    `/docs/user-guide/` and `/.agents/skills/` to `.gitignore` without
@@ -57,7 +79,9 @@ loads `$HOME/.roundfix/config.yml`.
    `go test -count=1 -parallel 16 -timeout 20m ./internal/cli`, record that
    it passes, and restore the permissions before removing the copy.
 6. MUST run each sabotage on its own temporary copy of the audited head made
-   with `git archive`, and record that the named check fails, with the case
+   with `git archive`, initialized as a Git repository and committed before
+   the mutation (the suite guard refuses a root outside a Git work tree),
+   and record that the named check fails, with the case
    whose input makes the mutation observable:
    - delete the `//go:build docscontract` line of
      `internal/cli/repository_profile_docscontract_test.go`: task_01's
@@ -71,8 +95,35 @@ loads `$HOME/.roundfix/config.yml`.
    - move `TestReleasePlanChecksWriteNothing` back to
      `internal/cli/releaseplan_checks_test.go`: task_02's untagged list check
      prints it, and the Success Metric 3 row run on that copy re-runs the
-     package after the guide edit.
-7. MUST execute the tests task_01 and task_02 name in their Verification.
+     package after the guide edit;
+   - delete the `withCLIWorkspace(t)` line that task_04 added to
+     `TestUpgradeStdoutAndExitCodesAreCharacterized` in
+     `internal/cli/upgrade_characterization_test.go`: task_04's Verification
+     fails and names paths under `docs/`, and the Success Metric 5 row run on
+     that copy names them too. The test's cases reach `roundfix upgrade`'s
+     history notice, which inventories the copy's own `docs/history` and
+     `docs/specs`, so the mutation is observable;
+   - in `internal/suiteguard/suiteguard.go`, each of these four, on its own
+     copy, makes task_05's Verification fail on the named leak cases of
+     `TestGuardReportsEveryLeakClass`, whose fixture holds an untracked file,
+     an empty untracked directory and tracked files with distinct content:
+     drop `--others` from the first `git ls-files` call (the seven untracked
+     cases, among them "untracked file created"); drop `--directory` from the
+     second (the "empty directory created", "pre-existing empty directory
+     removed" and "new directory holding only ignored files" cases); leave
+     the mode of each state unset in the `os.Lstat` pass (the "tracked file
+     permission narrowed" and "tracked directory permission narrowed"
+     cases); drop `--remove` from `git update-index` (the "tracked file
+     deleted" case);
+   - restore the hand-written walk, so that `fingerprint` digests files with
+     `os.Open` and accepts any directory:
+     `TestGuardRefusesARootOutsideAGitWorkTree` fails.
+7. MUST execute the tests task_01, task_02, task_04 and task_05 name in
+   their Verification, record that the 22 leak cases pass at the audited
+   head, and run every package that installs `suiteguard.Main` (the
+   `guardedSpawningPackages` list of `internal/suiteguardcontract`) once at
+   the audited head with `-count=1` and an explicit `-timeout`, recording
+   that each passes and one `guard cost: measured` line.
 8. MUST record, as evidence this Spec did not author, each source of
    `_prd.md` → Acceptance evidence:
    - run `go help test` in the audited checkout and record the sentence the
@@ -89,8 +140,14 @@ loads `$HOME/.roundfix/config.yml`.
     - every changed Governed Path is listed in `_authorization.md` `paths`;
     - these are byte-identical to the Delivery Base: the Makefile, the CI
       workflows, `go.mod`, `go.sum`, `.roundfixrc.yml`, every non-test `.go`
-      file, every file under `internal/docscontract/`, `.agents/`, `skills/`
-      and `docs/user-guide/`, and `CONTEXT.md`;
+      file except `internal/suiteguard/suiteguard.go`, every file under
+      `internal/docscontract/`, `internal/suiteguardcontract/`, `.agents/`,
+      `skills/` and `docs/user-guide/`, every caller of `suiteguard.Main`,
+      and `CONTEXT.md`;
+    - task_05 changed only the four `internal/suiteguard` files in
+      `_authorization.md` `paths`, besides its Task file;
+    - task_04 changed only `internal/cli/upgrade_characterization_test.go`
+      besides its Task file, by one added line;
     - no `### QA settlement` section changed.
 
     This row reads Task commits, so it declares a `commit_range` input.
@@ -117,14 +174,14 @@ loads `$HOME/.roundfix/config.yml`.
 ## Subtasks
 
 - [ ] Build the binary and run the repository Verification.
-- [ ] Run the list, tag, selector, cache and unreadable-trees rows and each sabotage on temporary copies.
+- [ ] Run the list, tag, selector, cache, test input log and unreadable-trees rows and each sabotage on temporary copies.
 - [ ] Record the outside sources, the glossary check and the scope audit, and write the QA report.
 
 ## Acceptance Criteria
 
 - [ ] The thirteen tests run only under the tag, unchanged, and the selector lists them.
-- [ ] A guide and skill edit leaves the `internal/cli` result cached at the audited head, and the untagged package passes with the trees unreadable.
-- [ ] Each sabotage makes its named check fail, and the scope audit finds no change outside the declared files.
+- [ ] A guide and skill edit leaves the `internal/cli` result cached at the audited head, the untagged test binary's input log names no documentation path, and the untagged package passes with the trees unreadable.
+- [ ] Each sabotage makes its named check fail, every guarded package passes with the Git fingerprint, and the scope audit finds no change outside the declared files.
 
 ## Verification
 
@@ -138,5 +195,5 @@ applied in process by whoever settles the Task.
 
 ## References
 
-- `_prd.md` → Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Acceptance evidence; Glossary
-- `_techspec.md` → Current behavior; API Contracts 1-2; Invariants 1-3; Testing Approach; Build Order 3
+- `_prd.md` → Sources; Goals; Core Features 1-5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Success Metric 6; Acceptance evidence; Glossary
+- `_techspec.md` → Current behavior; API Contracts 1-3; Invariants 1-4; Testing Approach; Build Order 5
