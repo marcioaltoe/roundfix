@@ -1,0 +1,5 @@
+command: /bin/zsh -c out="$(go test -timeout 10m -count=1 -v ./skills 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestAnAgentMayStartTheSetupSkill/canonical TestAnAgentMayStartTheSetupSkill/shipped TestAnAgentMayStartTheSetupSkill/person-only-skills-keep-the-lock TestEveryOwnedSkillVersionIsRecorded TestAuthorialSkillSync/setup-context-driven TestBaselineSkillContract/setup-context-driven; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; go test -timeout 10m -count=1 -run '^(TestEveryBuiltInProfileTellsTheAgentToAskForAPersonOnlySkill|TestTheSkillGuidesStateThePersonOnlySkillClause)$' ./internal/baseline && go test -timeout 15m -count=1 -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' ./internal/docscontract && tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- 'Starting it writes nothing: the Baseline Command still writes only after the person approves the exact Plan Digest'
+ok  	roundfix/internal/baseline	0.606s
+ok  	roundfix/internal/docscontract	0.352s
+
+exit: 0

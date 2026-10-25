@@ -1,0 +1,9 @@
+command: ./bin/roundfix archive 0316-an-agent-may-start-the-setup-skill --plan --offline
+archive plan for 0316-an-agent-may-start-the-setup-skill: removes 29 file(s) (128709 bytes) and writes docs/history/specs/0316-an-agent-may-start-the-setup-skill.md
+core 8 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-25.md, references/_index.md, task_01.md, task_02.md
+evidence 20 file(s) (73799 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-24-an-agent-may-start-the-setup-skill.md 2024 bytes: no advice (offline)
+promote with: roundfix archive 0316-an-agent-may-start-the-setup-skill --promote <path>
+
+exit: 0

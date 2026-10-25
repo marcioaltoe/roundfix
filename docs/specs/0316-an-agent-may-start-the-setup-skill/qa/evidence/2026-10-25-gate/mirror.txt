@@ -1,0 +1,3 @@
+command: cmp .agents/skills/setup-context-driven/SKILL.md skills/setup-context-driven/SKILL.md
+
+exit: 0

@@ -1,0 +1,10 @@
+command: git diff-tree --no-commit-id --name-only -r 532ff85e301016f14eea8950059e5086c3f5074d
+.agents/skills/setup-context-driven/SKILL.md
+docs/references/behavior-surfaces.json
+docs/specs/0316-an-agent-may-start-the-setup-skill/task_01.md
+docs/user-guide/context-driven-development.md
+skills/setup-context-driven/SKILL.md
+skills/setup_skill_invocation_test.go
+skills/testdata/owned-skill-versions.json
+
+exit: 0

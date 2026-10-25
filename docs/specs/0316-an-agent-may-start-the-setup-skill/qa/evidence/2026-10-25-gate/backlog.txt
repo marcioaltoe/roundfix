@@ -1,0 +1,4 @@
+Source: references/2026-10-24-an-agent-may-start-the-setup-skill.md
+Markdown blockquote markers removed before whitespace normalization.
+Matched exact passage: preservando as confirmações do próprio comando para planos e operações quando aplicáveis
+Initial assertion retained a continuation > marker; corrected observation passes without source change.

@@ -1,0 +1,3 @@
+command: git init -q
+
+exit: 0

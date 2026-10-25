@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0316-an-agent-may-start-the-setup-skill
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

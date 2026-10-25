@@ -1,0 +1,3 @@
+command: git diff --exit-code ed8e22f43489782a4132e60be5b83f373de9d63f 532ff85e301016f14eea8950059e5086c3f5074d -- CONTEXT.md
+
+exit: 0
