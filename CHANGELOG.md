@@ -2,6 +2,25 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.121.0] - 2026-10-25
+
+### The Baseline reports a required skill that is not installed
+
+- **`baseline update` no longer answers `current` with a required skill missing.** When a skill the rendered dispatch or a module requires is not installed (its directory or lock entry is gone, for example after a skills tool removed a skill the catalog retired), the preview now lists it under `skills.missing` with the restore command and reports `plan_ready` (exit 3), the same way it already reports an owned skill older than the binary's. Before, the preview compared the installed skills only with the Setup Snapshot and fell through to `current`, while `--yes` would have restored exactly those skills.
+- **`roundfix skills check`** run inside an adopted repository adds one diagnostic per missing required skill to its failure list and exits 1; elsewhere its output is unchanged. `roundfix doctor` already failed on this case and keeps doing so.
+- The `baseline` guide, the Roundfix skill reference and the glossary (**Missing Required Skill**) describe it.
+
+## [0.120.0] - 2026-10-25
+
+### The Baseline sends handoffs and messages through ai-memory; the Secondbrain inbox is retired
+
+- **Setups follow marcioaltoe/skills `65d5f36`.** Every upstream setup (go, rust, typescript and the composed go-cli-typescript-bun) is synced to that commit: the retired `handoff` skill is replaced by the six `ai-memory-*` skills (`ai-memory-handoff`, `ai-memory-messaging`, `ai-memory-retrieval`, `ai-memory-durable-pages`, `ai-memory-learning-maintenance`, `ai-memory-routing-install`). The core module dispatches `ai-memory-handoff` and `ai-memory-messaging` instead of `handoff`, so a refreshed Baseline no longer requires a skill the catalog removed.
+- **Cross-project continuity through ai-memory.** A new core rule (`rule.core.cross-project-continuity`) replaces the eight Secondbrain inbox clauses: requests and findings for another project go by `memory_message_send` to that project, a received message is consumed only after its content is recorded, and when ai-memory or the receiving project is missing the agent tells the user and keeps the text in its response. The Secondbrain stays the read-only knowledge base. An adopter's refresh records each retired inbox clause as `replaced`.
+- **`roundfix follow-up` reads no Secondbrain inbox.** The `secondbrain-inbox` source is gone. `secondbrain.root` and `secondbrain.inbox_namespace` are deprecated: a config that still holds them loads, with one warning per key.
+- The `write-idea`, `write-prd` and `write-techspec` skills read ai-memory messages instead of the inbox. The glossary drops Inbox Entry and adds **Cross-project Message**; ADR-0330 supersedes ADR-0095, which is removed. Roundfix skill version 0.1.136.
+
+**Adopters:** after upgrading run `roundfix baseline update` (review and apply the plan), then `roundfix baseline skills restore` for the skills it reports, and remove the `handoff` skill directory and lock entry if your skills tool kept them.
+
 ## [0.119.0] - 2026-10-25
 
 ### The CI job runs the documentation contracts once

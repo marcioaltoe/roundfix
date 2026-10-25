@@ -1267,6 +1267,7 @@ func TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			setCommandWorkDirForTest(t, t.TempDir())
 			readiness := skills.OwnedSkillReadiness{
 				Skill:   skill,
 				Minimum: minimum,

@@ -25,6 +25,7 @@ const (
 	baselineUpdateSkillsSkipped  = "skipped"
 	baselineUpdateSkillsFailed   = "failed"
 	baselineUpdateSkillsOutdated = "outdated"
+	baselineUpdateSkillsMissing  = "missing"
 )
 
 type baselineUpdateRequest struct {
@@ -60,6 +61,7 @@ type baselineUpdateSkillOutdated struct {
 type baselineUpdateSkillsResult struct {
 	Retired        []baseline.InstalledRetiredSkill `json:"retired,omitempty"`
 	Outdated       []baselineUpdateSkillOutdated    `json:"outdated,omitempty"`
+	Missing        []baselineUpdateSkillDrift       `json:"missing,omitempty"`
 	Status         string                           `json:"status"`
 	InstalledCount int                              `json:"installedCount"`
 	Installed      []string                         `json:"installed"`
@@ -308,6 +310,11 @@ func runBaselineUpdateCommandWithSkillsStage(
 			}
 			if manifestOK && len(external) != 0 {
 				readiness, checkErr := roundskills.CheckRepositoryWithExternal(ctx, request.repo, external)
+				result.Skills.Missing = missingRequiredSkills(input.Manifest.Profile, readiness, checkErr)
+				if len(result.Skills.Missing) != 0 {
+					result.Skills.Status = baselineUpdateSkillsMissing
+				}
+
 				differing, err := baseline.SetupSnapshotDifferences(request.repo, input.Manifest.Profile, snapshotComparableSkills(external, readiness, checkErr))
 				if err != nil {
 					return writeBaselineUpdateFailure(result, err, "execution", "repair snapshot comparison and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
@@ -325,6 +332,17 @@ func runBaselineUpdateCommandWithSkillsStage(
 				result.Category = "approval"
 				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d history unit(s) pending sanitize", len(historyPlan.selected))
 				result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
+				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
+			}
+			if len(result.Skills.Missing) != 0 {
+				names := make([]string, 0, len(result.Skills.Missing))
+				for _, missing := range result.Skills.Missing {
+					names = append(names, missing.Skill)
+				}
+				result.State = "plan_ready"
+				result.Category = "approval"
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d required skill(s) are missing or no longer match skills-lock.json: %s", len(names), strings.Join(names, ", "))
+				result.NextAction = "rerun with --yes to restore them from the Setup Snapshot, or restore one with roundfix baseline skills restore --profile " + input.Manifest.Profile + " --skill " + names[0]
 				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
 			}
 			if len(result.Skills.Outdated) != 0 {
@@ -882,6 +900,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 		fmt.Fprintf(stdout, "Skills outdated: %d\n", len(result.Skills.Outdated))
 		for _, outdated := range result.Skills.Outdated {
 			fmt.Fprintf(stdout, "- outdated %s: found %s, requires %s\n", outdated.Skill, outdated.Found, outdated.Required)
+		}
+	}
+	if len(result.Skills.Missing) != 0 {
+		fmt.Fprintf(stdout, "Skills missing: %d\n", len(result.Skills.Missing))
+		for _, missing := range result.Skills.Missing {
+			fmt.Fprintf(stdout, "- missing %s: %s\n", missing.Skill, missing.Reason)
 		}
 	}
 	if len(result.Skills.Retired) != 0 {

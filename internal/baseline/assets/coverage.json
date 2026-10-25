@@ -11,6 +11,7 @@
     {"id": "coverage.research", "version": 2, "description": "Agents use repository sources and authoritative external documentation.", "delegationAliases": ["research guidance", "research protocol"]},
     {"id": "coverage.dependencies", "version": 2, "description": "Dependency changes use the repository package manager and remain intentional.", "delegationAliases": ["dependencies", "dependency guidance"]},
     {"id": "coverage.git-delivery", "version": 2, "description": "Git and delivery actions preserve unrelated work and require explicit authority.", "delegationAliases": ["delivery guidance", "git guidance"]},
+    {"id": "coverage.continuity", "version": 1, "description": "Session handoffs and cross-project messages use ai-memory when the session exposes it and name what is missing when it does not.", "delegationAliases": ["continuity guidance", "cross-project messages"]},
     {"id": "coverage.security-configuration", "version": 2, "description": "Secrets and environment-specific configuration stay out of generated guidance and source control.", "delegationAliases": ["security configuration", "security guidance"]},
     {"id": "coverage.context-workflow", "version": 2, "description": "Agents use the repository domain vocabulary and documentation layout.", "delegationAliases": ["context workflow", "domain guidance"]},
     {"id": "coverage.spec-workflow", "version": 2, "description": "Local Specs and Tasks retain their canonical ownership boundaries.", "delegationAliases": ["spec workflow", "task workflow"]},

@@ -4889,6 +4889,7 @@ func (fake fakeCodexInspector) Inspect(context.Context) codex.Result {
 
 func TestRunSkillsCheck(t *testing.T) {
 	t.Parallel()
+	setCommandWorkDirForTest(t, t.TempDir())
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

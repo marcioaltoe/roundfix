@@ -162,6 +162,7 @@ func adoptedRepositoryWithRetiredSkills(t *testing.T) string {
 		t.Fatalf("adopt retired skills fixture: %v", err)
 	}
 	commitBaselinePlanTestRepository(t, repo)
+	installRequiredExternalSkills(t, repo)
 	return repo
 }
 

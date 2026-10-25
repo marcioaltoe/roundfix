@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "15f848d3d1eccdda3c783d1911145455a439ea0809677786d729e7a0e60c09bd",
+      "digest": "220756054333453843da95aab5655563d0e2e0a29e5378eb89afcf2e180fe118",
       "id": "go"
     },
     {
-      "digest": "705586b5978712bcf0b09bdbcec9e107ea5f135d5c92c28bc2c1124afed71499",
+      "digest": "1532f30a67757fe6117e93582044eee592cda2cdc6236194aba7eb0d1a992772",
       "id": "rust"
     },
     {
-      "digest": "06a1f05fdf139acc5d4c258ba722ddc972a852535af48beae366711ccd3e1ae4",
+      "digest": "5a807caaab2ad3ced10e7ff6477f48aded00aec7f2bb268938ad4e8e6e5e2d26",
       "id": "typescript"
     }
   ],
@@ -53,10 +53,21 @@
             ]
           }
         ],
-        "digest": "15f848d3d1eccdda3c783d1911145455a439ea0809677786d729e7a0e60c09bd",
+        "digest": "220756054333453843da95aab5655563d0e2e0a29e5378eb89afcf2e180fe118",
         "id": "go",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
+          {
+            "name": "find-skills",
+            "path": "skills/00-setup/find-skills",
+            "source": {
+              "path": "skills/00-setup/find-skills",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "60365b67532d85d07d80de06256c2854f920d7f9b2c691373d47684d6a8a0563"
+          },
           {
             "name": "knowledge-workspace",
             "path": "skills/00-setup/knowledge-workspace",
@@ -461,15 +472,70 @@
             "treeDigest": "e28949f5140f9d58c78b7c0c134412470dbd1f9b31ec42fe0277c47fcb7566b6"
           },
           {
-            "name": "handoff",
-            "path": "skills/07-evidence-delivery/handoff",
+            "name": "ai-memory-durable-pages",
+            "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
             "source": {
-              "path": "skills/07-evidence-delivery/handoff",
+              "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "c861864560d15be4462375740429ddfd7a755e5834c81c7097a5041495dd8730"
+            "treeDigest": "3c0279a65df8969377733887def8d34f4a43a07e61fee2763234a50e01422b16"
+          },
+          {
+            "name": "ai-memory-handoff",
+            "path": "skills/07-evidence-delivery/ai-memory-handoff",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-handoff",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "532dcb27d9f58a4faef6e75820ccebaaa6ab23bc600e2e075606a3975946683b"
+          },
+          {
+            "name": "ai-memory-learning-maintenance",
+            "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4682061d37186313ef2ff05fcf47297d83bd8051bad1fe4e71052664fa39daa0"
+          },
+          {
+            "name": "ai-memory-messaging",
+            "path": "skills/07-evidence-delivery/ai-memory-messaging",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-messaging",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c0d333ee32a5062df88bbe14b660be196c49184361e6b865d150bb2b6832d350"
+          },
+          {
+            "name": "ai-memory-retrieval",
+            "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a2cad906131c5dcf03428a3d8c2f2fba90dd4ce05083adc68334d0483a4f59e9"
+          },
+          {
+            "name": "ai-memory-routing-install",
+            "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c41c84b4645047c1e37766699c82cac260b4f097858201cda4a121866b952a53"
           },
           {
             "name": "tech-writer",
@@ -508,10 +574,21 @@
             ]
           }
         ],
-        "digest": "705586b5978712bcf0b09bdbcec9e107ea5f135d5c92c28bc2c1124afed71499",
+        "digest": "1532f30a67757fe6117e93582044eee592cda2cdc6236194aba7eb0d1a992772",
         "id": "rust",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
+          {
+            "name": "find-skills",
+            "path": "skills/00-setup/find-skills",
+            "source": {
+              "path": "skills/00-setup/find-skills",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "60365b67532d85d07d80de06256c2854f920d7f9b2c691373d47684d6a8a0563"
+          },
           {
             "name": "knowledge-workspace",
             "path": "skills/00-setup/knowledge-workspace",
@@ -828,15 +905,70 @@
             "treeDigest": "e28949f5140f9d58c78b7c0c134412470dbd1f9b31ec42fe0277c47fcb7566b6"
           },
           {
-            "name": "handoff",
-            "path": "skills/07-evidence-delivery/handoff",
+            "name": "ai-memory-durable-pages",
+            "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
             "source": {
-              "path": "skills/07-evidence-delivery/handoff",
+              "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "c861864560d15be4462375740429ddfd7a755e5834c81c7097a5041495dd8730"
+            "treeDigest": "3c0279a65df8969377733887def8d34f4a43a07e61fee2763234a50e01422b16"
+          },
+          {
+            "name": "ai-memory-handoff",
+            "path": "skills/07-evidence-delivery/ai-memory-handoff",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-handoff",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "532dcb27d9f58a4faef6e75820ccebaaa6ab23bc600e2e075606a3975946683b"
+          },
+          {
+            "name": "ai-memory-learning-maintenance",
+            "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4682061d37186313ef2ff05fcf47297d83bd8051bad1fe4e71052664fa39daa0"
+          },
+          {
+            "name": "ai-memory-messaging",
+            "path": "skills/07-evidence-delivery/ai-memory-messaging",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-messaging",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c0d333ee32a5062df88bbe14b660be196c49184361e6b865d150bb2b6832d350"
+          },
+          {
+            "name": "ai-memory-retrieval",
+            "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a2cad906131c5dcf03428a3d8c2f2fba90dd4ce05083adc68334d0483a4f59e9"
+          },
+          {
+            "name": "ai-memory-routing-install",
+            "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c41c84b4645047c1e37766699c82cac260b4f097858201cda4a121866b952a53"
           },
           {
             "name": "tech-writer",
@@ -953,7 +1085,7 @@
             ]
           }
         ],
-        "digest": "06a1f05fdf139acc5d4c258ba722ddc972a852535af48beae366711ccd3e1ae4",
+        "digest": "5a807caaab2ad3ced10e7ff6477f48aded00aec7f2bb268938ad4e8e6e5e2d26",
         "id": "typescript",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1842,15 +1974,70 @@
             "treeDigest": "e28949f5140f9d58c78b7c0c134412470dbd1f9b31ec42fe0277c47fcb7566b6"
           },
           {
-            "name": "handoff",
-            "path": "skills/07-evidence-delivery/handoff",
+            "name": "ai-memory-durable-pages",
+            "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
             "source": {
-              "path": "skills/07-evidence-delivery/handoff",
+              "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "c861864560d15be4462375740429ddfd7a755e5834c81c7097a5041495dd8730"
+            "treeDigest": "3c0279a65df8969377733887def8d34f4a43a07e61fee2763234a50e01422b16"
+          },
+          {
+            "name": "ai-memory-handoff",
+            "path": "skills/07-evidence-delivery/ai-memory-handoff",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-handoff",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "532dcb27d9f58a4faef6e75820ccebaaa6ab23bc600e2e075606a3975946683b"
+          },
+          {
+            "name": "ai-memory-learning-maintenance",
+            "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4682061d37186313ef2ff05fcf47297d83bd8051bad1fe4e71052664fa39daa0"
+          },
+          {
+            "name": "ai-memory-messaging",
+            "path": "skills/07-evidence-delivery/ai-memory-messaging",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-messaging",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c0d333ee32a5062df88bbe14b660be196c49184361e6b865d150bb2b6832d350"
+          },
+          {
+            "name": "ai-memory-retrieval",
+            "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a2cad906131c5dcf03428a3d8c2f2fba90dd4ce05083adc68334d0483a4f59e9"
+          },
+          {
+            "name": "ai-memory-routing-install",
+            "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c41c84b4645047c1e37766699c82cac260b4f097858201cda4a121866b952a53"
           },
           {
             "name": "tech-writer",

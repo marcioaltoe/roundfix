@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -20,9 +19,6 @@ import (
 )
 
 func followUpNamespace(ctx context.Context, loaded roundconfig.Loaded) string {
-	if ns := loaded.Config.Secondbrain.InboxNamespace; ns != "" {
-		return ns
-	}
 	root, err := roundconfig.RepositoryRoot(loaded.GitRoot)
 	if err != nil {
 		root = loaded.GitRoot
@@ -99,73 +95,6 @@ func followUpFilenameDate(path string) string {
 	return ""
 }
 
-func followUpInbox(root, namespace string) ([]followUpItem, followUpSource) {
-	items := []followUpItem{}
-	source := followUpSourceResult("secondbrain-inbox", 0, nil)
-	if root == "" {
-		source.State = "missing"
-		source.Detail = "secondbrain.root is not set in User Config"
-		return items, source
-	}
-	inbox := filepath.Join(root, "inbox")
-	info, err := os.Stat(inbox)
-	if err == nil && !info.IsDir() {
-		err = fmt.Errorf("%s is not a directory", inbox)
-	}
-	if err != nil {
-		return items, followUpSourceResult(source.Name, 0, err)
-	}
-	dir := filepath.Join(inbox, namespace)
-	// Do not traverse a symlink standing in for the namespace either.
-	info, err = os.Lstat(dir)
-	if os.IsNotExist(err) {
-		return items, source
-	}
-	if err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
-		err = fmt.Errorf("%s is not a regular directory", dir)
-	}
-	if err != nil {
-		return items, followUpSourceResult(source.Name, 0, err)
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return items, followUpSourceResult(source.Name, 0, err)
-	}
-	for _, entry := range entries {
-		if !entry.Type().IsRegular() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-		fields, err := readFollowUpMarkdown(filepath.Join(dir, entry.Name()))
-		if err != nil {
-			return []followUpItem{}, followUpSourceResult(source.Name, 0, err)
-		}
-		if fields.Status != "" && fields.Status != "pending" {
-			continue
-		}
-		date := fields.CreatedAt
-		if date == "" {
-			date = followUpFilenameDate(entry.Name())
-		}
-		item := followUpItem{Kind: "inbox", Ref: filepath.ToSlash(filepath.Join("inbox", namespace, entry.Name())), Type: fields.TypeHint, Date: date, Title: fields.title, text: fields.text, origin: fields.Origin}
-		if fields.Origin != namespace {
-			item.RequestedBy = followUpString(fields.Origin)
-		}
-		items = append(items, item)
-	}
-	sort.Slice(items, func(i, j int) bool {
-		a, b := followUpDate(items[i].Date), followUpDate(items[j].Date)
-		if a.IsZero() != b.IsZero() {
-			return !a.IsZero()
-		}
-		if !a.Equal(b) {
-			return a.Before(b)
-		}
-		return items[i].Ref < items[j].Ref
-	})
-	source.Count = len(items)
-	return items, source
-}
-
 func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 	items := []followUpItem{}
 	source := followUpSourceResult("ai-memory-messages", 0, nil)
@@ -239,7 +168,7 @@ func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 }
 
 func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir string) ([]followUpItem, []followUpSource, error) {
-	items, inbox := followUpInbox(loaded.Config.Secondbrain.Root, namespace)
+	items := []followUpItem{}
 	messagePath := messages
 	if messagePath != "" && !filepath.IsAbs(messagePath) {
 		messagePath = filepath.Join(workDir, messagePath)
@@ -249,7 +178,7 @@ func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir s
 		return nil, nil, err
 	}
 	items = append(items, messageItems...)
-	sources := []followUpSource{inbox, messageSource}
+	sources := []followUpSource{messageSource}
 	intents, intentErr := deliveryPlanIntent(loaded.GitRoot)
 	repositoryItems := map[string][]followUpItem{"backlog": {}, "findings": {}, "repository-inbox": {}}
 	if intentErr == nil {

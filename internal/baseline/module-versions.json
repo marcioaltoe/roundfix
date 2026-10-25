@@ -57,6 +57,10 @@
       {
         "version": 26,
         "digest": "sha256:0bf1d7c694a2d17c7a493357e64e84c19c7d4105893f672a412aa3d82065122d"
+      },
+      {
+        "version": 27,
+        "digest": "sha256:9d61e2348e611318ab8c178c5e3ecac8357326418ac4be706b9a21eec258df6b"
       }
     ],
     "core": [
@@ -75,6 +79,14 @@
       {
         "version": 21,
         "digest": "sha256:8a91dc5f4c81ff85c0ee68fde4c590c5c9bf4b936c52a929eec07b17baf4c75d"
+      },
+      {
+        "version": 22,
+        "digest": "sha256:6f7306d5da49c3cbd8c3f4ce455fc52ae1d67c9ff1bb80286f33163d62d8b570"
+      },
+      {
+        "version": 23,
+        "digest": "sha256:019a910757d36a9930e15c64a40ecf62c0743453048b9fe42f5f202f5db25501"
       }
     ],
     "external-triage": [
@@ -137,6 +149,10 @@
       {
         "version": 13,
         "digest": "sha256:afd2fb32724c921ff59b34517d7face9644ee8ce3b8ca299a3cfcbddbb2f6ed9"
+      },
+      {
+        "version": 14,
+        "digest": "sha256:4af37411c42596a680ee8584a7e5b455477057509de3172ec849658545101b4a"
       }
     ],
     "spec-workflow": [
@@ -163,6 +179,10 @@
       {
         "version": 20,
         "digest": "sha256:45a397fc9f8b9a21ab58cb71a1b143f30fe844d29c9cbe9c393cf9f0d506cae0"
+      },
+      {
+        "version": 21,
+        "digest": "sha256:dfc21e276bc9a144caab733750a912088217aae807ef2193582d011b7d622c85"
       }
     ],
     "tui-surface": [

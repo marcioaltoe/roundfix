@@ -131,7 +131,10 @@ test to its new file.
    leaves the next run `(cached)`; at the Delivery Base the same edit makes
    it run again.
 4. Success Metric: the untagged `internal/cli` package passes with the five
-   documentation trees unreadable.
+   documentation trees removed from a committed copy (amended 2026-10-25:
+   the Git-fingerprint suite guard cannot inspect tracked unreadable paths,
+   so the probe removes the trees instead; Git accepts a tracked path that
+   is missing from disk).
 5. Success Metric: Go's test input log of one run of the untagged
    `internal/cli` test binary names no path under the five documentation
    trees, `docs/references`, `skills/`, `CONTEXT.md` or `.roundfixrc.yml`

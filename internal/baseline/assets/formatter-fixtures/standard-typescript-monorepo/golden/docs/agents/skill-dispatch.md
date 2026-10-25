@@ -43,6 +43,10 @@ Individual skill triggers:
 
 - `agent-browser`:
   - `trigger.frontend.agent-browser`: Exercising frontend behavior in a real browser.
+- `ai-memory-handoff`:
+  - `trigger.core.ai-memory-handoff`: Recording resumable session state for another Agent or maintainer, or resuming from one, when the session exposes the ai-memory MCP tools.
+- `ai-memory-messaging`:
+  - `trigger.core.ai-memory-messaging`: Sending a finding or request to another project, or reading and consuming this project's messages, when the session exposes the ai-memory MCP tools.
 - `ai-sdk`:
   - `trigger.backend.ai-sdk`: Building backend AI flows with the selected AI SDK.
 - `app-renderer-systems`:
@@ -125,8 +129,6 @@ Individual skill triggers:
   - `trigger.context-workflow.grill-with-docs`: Stress-testing a plan or decision against repository documents.
 - `grilling`:
   - `trigger.context-workflow.grilling`: Stress-testing an idea or plan through direct questions.
-- `handoff`:
-  - `trigger.core.handoff`: Recording resumable session state for another Agent or maintainer.
 - `hono`:
   - `trigger.backend.hono`: Building or changing Hono routes, middleware, or handlers.
 - `hono-api-best-practices`:

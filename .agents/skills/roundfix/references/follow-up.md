@@ -6,7 +6,7 @@ pending work in Follow-up Priority order. Use `roundfix follow-up --status
 release and maintainer blockers. Both commands are read-only and exit `0` for
 an advisory report, including a report with no work.
 
-The list command reads the sources `secondbrain-inbox`, `ai-memory-messages`,
+The list command reads the sources `ai-memory-messages`,
 `backlog`, `findings`, `repository-inbox`, `specs`, `runs`, `delivery-queue`,
 `pull-requests` and `git`. Each source reports `checked`, `missing` or
 `unavailable`, with a count or detail. The status command reads only
@@ -33,10 +33,8 @@ the rest are `other`.
 
 The judge sends nothing inside a Run, without a key, at the monthly ceiling,
 with an unreadable Judge Log, or for a secret-pattern match. The command never
-writes to the Secondbrain, ai-memory or the repository. It also never fetches
-or pulls the Secondbrain.
+reads or writes the Secondbrain, calls ai-memory, or writes to the repository.
 
-The Secondbrain inbox is configured with `secondbrain.root` in User Config and
-`secondbrain.inbox_namespace` in User or Project Config. The namespace defaults
-to the repository name. An unset root makes `secondbrain-inbox` `missing`;
-the command reads, but never writes, `inbox/<namespace>/`.
+The Secondbrain inbox source was retired. The keys `secondbrain.root` and
+`secondbrain.inbox_namespace` are deprecated and ignored with a warning. The
+project name comes from the `origin` remote or the checkout directory.

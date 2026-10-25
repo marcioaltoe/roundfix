@@ -237,9 +237,10 @@ Run this after the implementation merges, outside a Task.
    `docs/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md`
    and `docs/references/2026-10-05-a-pull-request-check-ran-on-a-stale-merge.md`.
 
-   Send cross-project lessons to the Secondbrain inbox following
-   [Secondbrain guidance](../../agents/secondbrain.md). The 0035 skill analysis
-   and 0079 pilot report are already there.
+   Send cross-project lessons as ai-memory messages to the project that owns
+   them, following the cross-project continuity rule of the
+   [agent instructions](../../agents/agent-instructions.md). The 0035 skill
+   analysis and 0079 pilot report are already in the Secondbrain.
 5. Six batches of 40 cover the measured 223 folders; the sixth includes the
    four kind units. In that last batch the operator also drops the
    `docs/history` exclusions from `.secondbrain-export`, as required by the
