@@ -52,6 +52,7 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 	foundGoverned := make(map[string]bool)
 	var foundInstallation, foundPackage bool
 	docsFiles := make(map[string]bool)
+	cliDocsFiles := make(map[string]bool)
 	for _, contract := range contracts {
 		seen[contract.Name] = true
 		want := verifyselect.ContractPackage
@@ -59,6 +60,10 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 		case contract.Package == "internal/docscontract" && contract.Tag == "docscontract":
 			want = verifyselect.ContractAlways
 			docsFiles[contract.File] = true
+		case contract.Package == "internal/cli" && contract.Tag == "docscontract":
+			// ADR-0326: tests reading the live documentation trees are always selected.
+			want = verifyselect.ContractAlways
+			cliDocsFiles[contract.File] = true
 		case contract.Package == "internal/suiteguard" && contract.Name == "TestEverySpawningPackageInstallsTheSuiteGuard":
 			want = verifyselect.ContractAlways
 			foundInstallation = true
@@ -82,6 +87,9 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 		if contract.Package == "internal/config" && contract.Name == "TestEverySpawningPackageInstallsTheSuiteGuard" {
 			foundPackage = true
 		}
+	}
+	if len(cliDocsFiles) != 1 {
+		t.Fatalf("CLI documentation contract files = %d, want 1: %v", len(cliDocsFiles), cliDocsFiles)
 	}
 	if !foundInstallation || !foundPackage || len(docsFiles) != 9 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
 		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)

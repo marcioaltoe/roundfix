@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0313-internal-cli-tests-stop-reading-the-live-documentation
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -80,3 +80,43 @@ None. Test code moves inside one package and one repository test learns its clas
 
 - `_prd.md` → Sources; Goals; Core Feature 1; Core Feature 3; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior; API Contracts 1-2; Invariants 1-3; Testing Approach; Build Order 1
+
+## Result
+
+Moved the five named tests and their exclusive `editRepositoryProfileTestSkill`
+helper into `internal/cli/repository_profile_docscontract_test.go`, with the
+Suite/Invariant/Boundary header, ADR-0326 explanation, `docscontract` build tag
+and `//verify:always`. Shared helpers remain untagged. Removed only unused
+imports from the source files. A function-by-function comparison against
+`HEAD` confirms every original test and helper retains its exact bytes.
+
+The declarations test now classifies `internal/cli` contracts tagged
+`docscontract` as `ContractAlways`, records their files, and independently
+requires exactly one file; all other expectations are unchanged.
+
+Focused evidence for the acceptance criteria:
+
+- Untagged exclusion: `go list -json ./internal/cli` puts the new file in
+  `IgnoredGoFiles`, outside `TestGoFiles`; a source check found none of the
+  five function declarations in the selected test files.
+  `go test -run '^$' ./internal/cli` passed compilation with no tests run.
+- Tagged execution: `go test -json -count=1 -timeout 10m -tags docscontract
+  -run 'Test.*(WithARepositoryProfile|ComparesARepositoryProfile|PreviewListsASetupSnapshot)'
+  ./internal/cli` passed all five named tests with no failures or skips.
+- Always-selected classification: `go test -json -count=1 -timeout 5m
+  -run '^TestRepositoryContractTestsDeclare' ./internal/verifyselect` passed
+  `TestRepositoryContractTestsDeclareTheirRelevance`, including the class
+  and file-count assertions.
+- `git diff --check` passed. The initial compilation attempt identified
+  leftover unused imports; those were removed before the successful checks.
+
+Environment: the executor rejected the configured symlinked writable root;
+commands used approved escalated execution against the assigned checkout.
+No production code, Makefile, CI workflow, `internal/docscontract`, Task Graph,
+other Task file, or Task status was edited. Declared Verification and terminal
+settlement remain Daemon-owned. No follow-up work identified in this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T122115Z_fe88d4e7bd75bcb2`
+- Source commit: `532c5900b5c0dd53469906ebaa75fa1dd134bd20`

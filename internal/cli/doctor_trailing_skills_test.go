@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -108,97 +107,6 @@ func TestDoctorSnapshotComparisonPreservesReadinessAndFiltersSkills(t *testing.T
 			}
 		})
 	}
-}
-
-func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
-	t.Parallel()
-	root := newBaselineUpdateRepository(t)
-	source, err := filepath.Abs("../..")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, relative := range []string{".agents/skills", "skills-lock.json"} {
-		copyThisRepositorySkillSetPath(t, filepath.Join(source, relative), filepath.Join(root, relative))
-	}
-	// Make the installed tree intentionally different while keeping its lock intact.
-	path := filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md")
-	if err := os.WriteFile(path, append(mustReadBytes(t, path), []byte("\nDifferent upstream installation fixture.\n")...), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	lockPath := filepath.Join(root, "skills-lock.json")
-	var lock map[string]any
-	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
-		t.Fatal(err)
-	}
-	hash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
-	if err != nil {
-		t.Fatal(err)
-	}
-	lock["skills"].(map[string]any)["testing-boss"].(map[string]any)["computedHash"] = hash
-	data, err := json.Marshal(lock)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(lockPath, data, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	before := baselinePlanTestTree(t, root)
-	result, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=json")
-	if code != exitOK || result.State != "current" || stderr != "" {
-		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
-	}
-	found := false
-	for _, difference := range result.Skills.Differing {
-		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss" {
-			found = true
-		}
-	}
-	if !found || len(result.Skills.Drifted) != 0 {
-		t.Fatalf("differing skill absent from preview: %s", out)
-	}
-	_, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
-	if code != exitOK || stderr != "" || !strings.Contains(out, "Skills drifted: 0\nSkills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n") {
-		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
-	}
-	if baselinePlanTestTree(t, root) != before {
-		t.Fatal("preview changed repository bytes")
-	}
-	result, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--no-skills", "--format=json")
-	if code != exitOK || stderr != "" || result.Skills.Differing == nil || len(result.Skills.Differing) != 0 || !strings.Contains(out, `"differing":[]`) {
-		t.Fatalf("--no-skills exit=%d stdout=%s stderr=%s", code, out, stderr)
-	}
-	beforeSkill := mustReadBytes(t, path)
-	result, out, stderr, code = runBaselineUpdateTestCommandWithSkillsStage(t, t.Context(), runBaselineUpdateSkillsStage,
-		"baseline", "update", "--repo", root, "--yes", "--format=json")
-	if code != exitOK || stderr != "" || result.Skills.Status != baselineUpdateSkillsVerified || len(result.Skills.Restored) != 0 || len(result.Skills.Differing) != 1 {
-		t.Fatalf("--yes exit=%d stdout=%s stderr=%s", code, out, stderr)
-	}
-	if !bytes.Equal(beforeSkill, mustReadBytes(t, path)) {
-		t.Fatal("--yes changed the differing skill's bytes")
-	}
-	afterHash, err := skills.SkillFolderHash(t.Context(), filepath.Dir(path))
-	if err != nil || afterHash != hash {
-		t.Fatalf("--yes skill tree hash=%q, want %q; error=%v", afterHash, hash, err)
-	}
-	t.Run("difference with outdated and retired skills", func(t *testing.T) {
-		found, required := lowerPreviewOwnedSkill(t, root, "qa-gate")
-		retiredDir := filepath.Join(root, ".agents", "skills", "council")
-		if err := os.MkdirAll(retiredDir, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		mustWrite(t, filepath.Join(retiredDir, "SKILL.md"), "retired skill fixture\n")
-		beforePreview := baselinePlanTestTree(t, root)
-		_, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
-		wantOwned := fmt.Sprintf("Skills drifted: 0\nSkills outdated: 1\n- outdated qa-gate: found %s, requires %s\n", found, required)
-		wantRetired := "Skills retired: 1\n- retired council: no longer required by the Baseline; delete .agents/skills/council\n"
-		wantDifference := "Skills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n"
-		if code != exitUnverified || stderr != "" || !strings.Contains(out, wantOwned+wantRetired+wantDifference) {
-			t.Fatalf("combined preview exit=%d stdout=%s stderr=%s", code, out, stderr)
-		}
-		if baselinePlanTestTree(t, root) != beforePreview {
-			t.Fatal("combined preview changed repository bytes")
-		}
-	})
 }
 
 func TestBaselineUpdateKeepsASetupSnapshotDifference(t *testing.T) {
