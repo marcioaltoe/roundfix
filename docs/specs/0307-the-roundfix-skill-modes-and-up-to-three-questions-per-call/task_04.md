@@ -104,6 +104,11 @@ directory.
      - swap the third and fourth `--follow-up` items of the canonical modes
        reference: `TestTheFollowUpModeRunsItsStepsInOrder` fails in its
        `canonical` subtest, `--unattended` now first appearing in item 4;
+     - remove `memory_message_send` from item 8 of the canonical modes
+       reference: `TestTheFollowUpModeRunsItsStepsInOrder` fails in its
+       `canonical` subtest, the term found in no item 8;
+     - append the word `resolved_to` to item 4 of the canonical modes
+       reference: the same subtest fails naming the retired word;
      - change "at most three questions per call" to "at most four questions
        per call" in the canonical modes reference only:
        `TestTheUnattendedModeAsksWithinTheBaselineLimit` fails in its
@@ -230,4 +235,4 @@ applied in process by whoever settles the Task.
 - `_prd.md` → Goals; Core Features 1-6; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Acceptance evidence; Unreachable Acceptance; Glossary
 - `_techspec.md` → Current behavior; API Contracts 1-7; Invariants 1-7; Testing Approach; Build Order 4
 - ADR-0320
-- ADR-0095
+- ADR-0330

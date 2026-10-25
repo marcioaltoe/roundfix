@@ -74,6 +74,36 @@ amendment changes the skill text, the modes reference, the contracts, the
 tests and the QA rows that describe how a mode is chosen; it adds no Governed
 Path, operation or grant, so the governed set and the operations below stand.
 
+On 2026-10-24, at about 13:00 BRT, after a live `$roundfix --follow-up` in
+Codex left two ai-memory messages unconsumed, the maintainer amended it again
+through AskUserQuestion. The question was "O modo --follow-up (Spec 0307)
+deve consumir as mensagens do ai-memory depois de tratá-las?", and the answer
+was "Consumir após registrar (Recomendado)" (option text: "Emendo a 0307 (sem
+custo de versão): no passo de triagem, cada mensagem só é consumida
+(memory_message_pop) depois que o conteúdo dela foi registrado numa Spec,
+Backlog Entry ou Finding, ou quando é só informativa e o relatório a cita. Se
+a resposta tiver de ir ao remetente, o modo responde por
+memory_message_send."). The amendment changes only the follow-up step 4 text
+and its acceptance; it adds no Governed Path, operation or grant.
+
+On 2026-10-24, at about 13:05 BRT, the maintainer wrote, in his own words:
+"Lembrando que solicitei em algum momento para matar o inbox de secondbrain
+e usar somente as mensagens do ai-memory". Through AskUserQuestion at about
+13:10 BRT (cycle AP batch 6) he then chose the order "Antes da 0307
+(Recomendado)" (option text: "A 0317 entra logo após a 0316. A 0307 é
+emendada para usar só o ai-memory (sem triagem de inbox), e a 0317 também
+tira a fonte secondbrain-inbox do comando follow-up. O setup Python vai uma
+versão para frente (v0.127).") and, for the adopters, "Via ai-memory já
+(Recomendado)". Spec 0317 therefore delivers before this Spec: it retires the
+Secondbrain inbox, records ADR-0330 in place of the inbox decision, removes the follow-up
+command's `secondbrain-inbox` source and deprecates `secondbrain.root` and
+`secondbrain.inbox_namespace`. This amendment makes the `--follow-up` mode
+triage only ai-memory messages, with no Inbox Entry triage and no
+`_triaged/` move, and capture another project's finding as an ai-memory
+message to that project; it keeps the bare and dashed mode words and the
+consume-after-recording rule, and it adds no Governed Path, operation or
+grant.
+
 The cycle AO rules carried by the authorization answer were approved on
 2026-10-22, at about 00:55 BRT ("the same rules as cycle AN"), which carry the
 cycle AN approval of 2026-10-21, at about 01:00 BRT, the cycle AM, AL and AK

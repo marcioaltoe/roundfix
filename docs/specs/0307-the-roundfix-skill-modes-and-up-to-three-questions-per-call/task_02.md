@@ -63,11 +63,13 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
      code span `` `roundfix follow-up` ``; each mode runs Roundfix's read-only follow-up command, and
      when the installed Roundfix lacks it the mode says so, names `roundfix
      upgrade` and stops.
-   - `## Optional sources`: the Secondbrain is a source when the repository
-     has `docs/agents/secondbrain.md` and the follow-up command can read the
-     Secondbrain its configuration names (Spec 0306 plans the User Config key
-     `secondbrain.root` and the inbox namespace key
-     `secondbrain.inbox_namespace`); ai-memory is a source when the session
+   - `## Optional sources`: the Secondbrain is a read-only knowledge source
+     when the repository has `docs/agents/secondbrain.md`, consulted while
+     authoring as that guide says; it holds no inbox, and the follow-up
+     command reads no Secondbrain (Spec 0317, delivered before this Spec,
+     removed that source and deprecated its keys, so the section names
+     neither `secondbrain.root` nor `secondbrain.inbox_namespace`); ai-memory
+     is a source when the session
      exposes its MCP tools, and the skill lists this project's messages
      without consuming them, writes them to a JSON file in a temporary
      directory in the message-file schema the command documents (Spec 0306

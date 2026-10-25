@@ -43,7 +43,10 @@ empty directories created for that row under the Run's temporary directory
        `TestAStarterFileDeclarationIsValidated/guide_template` fails;
      - delete the line `verify-incremental: verify` from
        `internal/baseline/assets/templates/starters/python/Makefile`:
-       `TestThePythonModuleDeclaresItsStarterFiles` fails naming it.
+       `TestThePythonModuleDeclaresItsStarterFiles` fails naming it;
+     - remove ` typecheck` from the `verify:` line, or `--offline` from the
+       `lock-check` recipe, of the same file:
+       `TestThePythonModuleDeclaresItsStarterFiles` fails naming the line.
 3. MUST verify Success Metrics 3 and 4 (the operation):
    - Run `TestStartersPreviewsAndCreatesOnlyAbsentFiles`,
      `TestStartersRefuseADigestThatNoLongerMatches`,
@@ -86,7 +89,8 @@ empty directories created for that row under the Run's temporary directory
 6. MUST compare the written files with `_prd.md` → Acceptance evidence and
    record, line by line, each quoted Quaestor line the starters reproduce and
    each deliberate difference the PRD's Validation names (`--frozen` in the
-   Makefile, `--locked` in CI, no `rtk` in `verification.tools`). Because
+   Makefile, `lock-check` and `typecheck` in `verify`, `--offline` on the lock
+   check, `--locked` in CI, no `rtk` in `verification.tools`). Because
    this Spec's authorization forbids network access, record the uv
    documentation as `blocked (environment: network prohibited by Spec
    authorization)`, quoting the passages the PRD cites; such a row never

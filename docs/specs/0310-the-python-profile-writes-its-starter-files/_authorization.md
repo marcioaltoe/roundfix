@@ -81,6 +81,52 @@ The profile identifier is therefore `python`, the Spec folders no longer say
 `rule.cli.*` rule. These decisions add no Governed Path and grant nothing
 beyond the operations below.
 
+Through AskUserQuestion at about 11:15 BRT the same day (cycle AP batch 5)
+the maintainer amended Spec 0309: "Emendar a 0309 agora (Recomendado)" —
+"Antes de a 0309 entrar na fila: importa o preset publicado (commit
+32e4143e) e o módulo python passa a despachar uv, ruff e pytest para as
+skills novas; ty, typer, fastapi, pipelines e streamlit ficam só quando
+escolhidos. Mantém a v0.123." This Spec cites ADR-0322 by its new title.
+
+Three further answers were given by the maintainer through AskUserQuestion on
+2026-10-24 at about 12:30 BRT, on the questions of the amendment report:
+
+- Go/Rust: "Manter na 0309 (Recomendado)" — "A 0309 importa o python e
+  atualiza Go e Rust juntos, pelo comando de sincronização já usado (Spec
+  0208). A nota de release explica o `baseline skills restore --skill` para
+  os adotantes.";
+- ty / lock: "ty e lock check sempre" — "Todo repositório Python recebe ty no
+  verify e `uv lock --check`, igual ao Quaestor." This supersedes "ty ... só
+  quando escolhidos" for ty only: the `python` module dispatches ty always,
+  the guide names ty and `uv lock --check --offline` as part of the gate,
+  Spec 0310's Starter Makefile carries `lock-check` and `typecheck` in `make
+  verify`, and CI keeps `uv sync --locked`; Typer, FastAPI, file pipelines
+  and Streamlit stay conditional;
+- optional skills: the report's recommended option (a), the conditional
+  triggers (relayed by the coordinator by its letter, without the option
+  label).
+
+For this Spec the second answer changes the Starter Makefile: its `verify`
+runs `lock-check` (`uv lock --check --offline`), `fmt-check`, `lint`,
+`typecheck` (`uv run --frozen ty check --error-on-warning src tests`) and
+`test`; the workflow keeps `uv sync --group dev --locked`. It overrides the
+lockfile answer of 2026-10-23 only by adding the offline lock check to the
+gate. These answers add no Governed Path and grant nothing beyond the operations
+below.
+
+On 2026-10-24, at about 13:05 BRT, the maintainer wrote, in his own words:
+"Lembrando que solicitei em algum momento para matar o inbox de secondbrain
+e usar somente as mensagens do ai-memory". Through AskUserQuestion at about
+13:10 BRT (cycle AP batch 6) he chose the order "Antes da 0307
+(Recomendado)" (option text: "A 0317 entra logo após a 0316. A 0307 é
+emendada para usar só o ai-memory (sem triagem de inbox), e a 0317 também
+tira a fonte secondbrain-inbox do comando follow-up. O setup Python vai uma
+versão para frente (v0.127)."). Spec 0317 therefore delivers before Spec
+0309, which imports the `python` setup at upstream commit
+`65d5f365cace27c4b468db1723213723b10c870b` instead of `32e4143e`; this
+Spec's Starter Files do not depend on that commit, and the answer adds no
+Governed Path and grants nothing beyond the operations below.
+
 The cycle AO rules carried by the authorization answer were approved on
 2026-10-22, at about 00:55 BRT ("the same rules as cycle AN"), which carry the
 cycle AN approval of 2026-10-21, at about 01:00 BRT, the cycle AM, AL and AK

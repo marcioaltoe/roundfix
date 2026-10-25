@@ -38,7 +38,7 @@ Unreachable Acceptance.
   Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — Build Order 1 follows ADR-0320 for the
   clause, and Build Orders 2 and 3 follow ADR-0320 for the modes and the answer
-  placement and ADR-0095 for capture and triage. Both are named with their
+  placement and ADR-0330 for message triage and capture. Both are named with their
   titles in `_prd.md` → Project Constraints. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: the cycle
   AP approval of 2026-10-22 ("same as cycle AO"), carrying the cycle AJ grant
@@ -239,10 +239,11 @@ writes. The Roundfix skill's frontmatter `metadata` gains the string key
    configuration keys exactly as the tree's `roundfix --help`, the command's
    `--help` and its Roundfix reference state when the Task starts, and names
    no command or flag the tree lacks. Spec 0306 plans them as `roundfix
-   follow-up [--status] [--messages <path>] [--format <text|json>]`, the
-   schema `roundfix/follow-up-messages/v1`, the User Config key
-   `secondbrain.root` and the key `secondbrain.inbox_namespace`; the tree,
-   not this plan, is authoritative.
+   follow-up [--status] [--messages <path>] [--format <text|json>]` and the
+   schema `roundfix/follow-up-messages/v1`; Spec 0317, delivered before this
+   Spec, removes the command's Secondbrain source and deprecates
+   `secondbrain.root` and `secondbrain.inbox_namespace`, so the modes
+   reference names neither key; the tree, not this plan, is authoritative.
 
 ### Surface Transcripts
 
@@ -280,7 +281,7 @@ Deviations from the PRD: None.
 ## ADR Alternatives
 
 - ADR-0320: no rejected alternative is taken; the clause neither keeps one question per call nor adopts four or each tool's own limit, and no authorization is written into a Backlog Entry or Finding.
-- ADR-0095: its rejected alternative, capture inside project repositories, is not taken; the `--follow-up` mode reads pending Inbox Entries in the Secondbrain, triages them there with `resolved_to` or `discarded_reason`, and captures other projects' findings in their own inbox namespace.
+- ADR-0330: none of its rejected alternatives is taken; the `--follow-up` mode triages only ai-memory messages, consumes each after recording it, sends another project's finding as an ai-memory message to that project, and says what is missing when the session exposes no ai-memory tools; it never writes the Secondbrain.
 
 ## Integration Points
 
@@ -326,8 +327,10 @@ real-time duration; both new files compile for Windows (no platform API).
     --follow-up` section holds one ordered list whose items start with `1. `
     to `8. ` in order at the start of a line, an item running to the next
     item or the section's end; the first item that contains `--unattended`
-    is item 3, `resolved_to` item 4, `--strict` item 6 and `roundfix deliver`
-    item 7.
+    is item 3, `memory_message_pop` item 4, `--strict` item 6, `roundfix
+    deliver` item 7 and `memory_message_send` item 8; and the reference
+    contains none of `resolved_to`, `_triaged`, `Inbox Entr` and
+    `secondbrain.root`.
   - `TestTheUnattendedModeAsksWithinTheBaselineLimit` (Build Order 3): the
     core module source (`../internal/baseline/assets/modules/core.json`)
     contains `at most three questions per call`; the `## --unattended`
@@ -368,6 +371,13 @@ real-time duration; both new files compile for Windows (no platform API).
   `--`" removed from the canonical reference's `## How a mode is chosen`
   section, each → the `canonical` subtest of
   `TestTheRoundfixSkillReadsItsModeFromTheRequest`.
+- Amendment of 2026-10-24 (cycle AP batch 6): `TestTheFollowUpModeRunsItsStepsInOrder`
+  now locates `memory_message_pop` in item 4 and `memory_message_send` in
+  item 8 and refuses `resolved_to`, `_triaged`, `Inbox Entr` and
+  `secondbrain.root` anywhere in the reference. Not prototyped; two
+  sabotages are added for the QA and the implementing Agent to prove, each
+  on the canonical reference: `memory_message_send` removed from item 8, and
+  `resolved_to` appended to item 4, each → the `canonical` subtest.
 
 ## Build Order
 
@@ -384,8 +394,8 @@ real-time duration; both new files compile for Windows (no platform API).
    when the words after the mode word name another mode, one question names
    them; a mode stops and names `roundfix upgrade` when the tree's Roundfix lacks the
    follow-up command), `## Optional sources` (the Secondbrain through
-   `docs/agents/secondbrain.md` and the follow-up command's configured root,
-   ai-memory when its MCP tools are exposed,
+   `docs/agents/secondbrain.md`, read-only, as the knowledge base authoring
+   consults; ai-memory when its MCP tools are exposed, its messages
    listed without consuming and handed to the follow-up command as a file,
    Jev through the command's own report, a release announcement only when the
    user's own instructions define one; a missing source is named in the report

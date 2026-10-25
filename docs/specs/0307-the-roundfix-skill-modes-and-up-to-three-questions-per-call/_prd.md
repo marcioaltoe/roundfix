@@ -51,7 +51,12 @@ the tree lacks; Spec 0306 plans it as `roundfix follow-up [--status]
 [--messages <path>] [--format <text|json>]`. The Sources link resolves to
 Spec 0306's planning change, which merges with or before this one. Several earlier Specs raise the Roundfix skill's version and
 add a reference to it, so this Spec's skill Tasks raise the version and the
-reference count over what the tree holds when they start.
+reference count over what the tree holds when they start. Spec 0317
+(ADR-0330) delivers before this Spec: it retires the Secondbrain inbox,
+removes the follow-up command's `secondbrain-inbox` source and deprecates its
+two keys, and also edits `internal/baseline/assets/modules/core.json` and the
+derived Baseline files, which task_01 regenerates on its own delivery base.
+No Verification command of this Spec runs Spec 0317's code.
 
 ## Project Constraints
 
@@ -66,9 +71,11 @@ reference count over what the tree holds when they start.
   `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0320, "A question call carries up
   to three independent questions", which this Spec records and which also
-  places each gathered answer; and ADR-0095, "The secondbrain inbox is the
-  single capture door", whose capture and triage contract the `--follow-up`
-  mode follows. ADR-0095: "committed there at the moment of capture".
+  places each gathered answer; and ADR-0330, "The Secondbrain is read-only
+  and ai-memory carries handoffs and messages", whose message triage and
+  capture the `--follow-up` mode follows (recorded by the Spec that retires
+  the Secondbrain inbox and delivers before this one). ADR-0330: "ai-memory is optional and detected at run
+  time".
   Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: the cycle
   AP approval of 2026-10-22 through AskUserQuestion, authorization "same as
@@ -147,8 +154,9 @@ reference count over what the tree holds when they start.
    delivery order, the next release and what it brings, blockers, and what
    depends on the user.
 4. The follow-up mode. Inventory, plan, gather decisions, triage, author,
-   check, queue and arm, in that order, with other projects' findings
-   captured in their own inbox and a closing report.
+   check, queue and arm, in that order, with only ai-memory messages
+   triaged, other projects' findings sent to them as ai-memory messages, and
+   a closing report.
 5. The unattended mode. Gather information, decisions and authorizations;
    ask in calls of up to three independent questions with the recommended
    option first, or numbered in text when no tool exists; record each answer
@@ -259,10 +267,10 @@ The decisions were checked on 2026-10-22 against these sources.
   mirrors of agent instructions and the brainstorming skill, and `qmd query
   "supervisor follow-up triage inbox authorizations unattended session
   continuation wake-up" --all --files --min-score 0.3`, which returned the
-  Roundfix mirror's ADR-0095 and Spec 0187's record of a queue that recovers
+  Roundfix mirror's capture-door decision and Spec 0187's record of a queue that recovers
   without a supervisor; both confirmed the capture door and the armed
-  continuation the follow-up mode follows. No Inbox Entry was written,
-  because the briefing forbids writing there.
+  continuation the follow-up mode follows; Spec 0317 later retired that
+  capture door for ai-memory messages. No Secondbrain file was written.
 - Exa: the Codex pull request and the Claude Code skills page above, OpenCode's
   skills page (https://opencode.ai/docs/skills/: "`opencode/slash`: set to
   `"true"` to expose the skill as a `/name` command in the TUI") and tools page
@@ -284,6 +292,8 @@ The decisions were checked on 2026-10-22 against these sources.
 - 2026-10-22: How many questions per call? — "Até 3 no geral".
 - 2026-10-22: Where do answers go? — "As respostas e autorizacoes devem ser parte da spec que será implementada, como o _autorizations.md e se não for virar uma spec deve virar um backlog ou finding e armazenado com as informaçoes e decisoes (sem autorizacoes) para virar uma spec no futuro."
 - 2026-10-22: Wait for the assistant's reply? — "Sim, suas decisões bastam (Recomendado)".
+- 2026-10-24: O modo --follow-up (Spec 0307) deve consumir as mensagens do ai-memory depois de tratá-las? — "Consumir após registrar (Recomendado)" (option text: "Emendo a 0307 (sem custo de versão): no passo de triagem, cada mensagem só é consumida (memory_message_pop) depois que o conteúdo dela foi registrado numa Spec, Backlog Entry ou Finding, ou quando é só informativa e o relatório a cita. Se a resposta tiver de ir ao remetente, o modo responde por memory_message_send.")
+- 2026-10-24 (about 13:10 BRT, cycle AP batch 6): order "Antes da 0307 (Recomendado)" (option text: "A 0317 entra logo após a 0316. A 0307 é emendada para usar só o ai-memory (sem triagem de inbox), e a 0317 também tira a fonte secondbrain-inbox do comando follow-up. O setup Python vai uma versão para frente (v0.127)."), after the maintainer's "Lembrando que solicitei em algum momento para matar o inbox de secondbrain e usar somente as mensagens do ai-memory".
 - 2026-10-24: A skill deve aceitar o modo sem os traços (`/roundfix follow-up`, `/roundfix status`, `/roundfix unattended`) além de `--follow-up`? — "Aceitar as duas formas (Recomendado)" (option text: "Emendo a 0307 antes de ela entrar na fila: a primeira palavra depois do nome da skill, com ou sem `--`, escolhe o modo nos três harnesses. Sem custo de versão.")
 
 Autonomous route: no person present; decisions taken from the operator's cycle AP batch 2 briefing for Spec 0307 of 2026-10-22 and the characterization recorded in the TechSpec; the amendment of 2026-10-24 rests on the maintainer's AskUserQuestion answer of about 11:35 BRT quoted above.

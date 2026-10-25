@@ -60,8 +60,8 @@ value.
   binds to the closest built-in profile it adapts", and ADR-0241, "A
   repository profile takes its skill contracts from the embedded Setup
   Snapshots", under which a repository-owned draft of the `python` profile keeps the
-  module's Starter Files; and ADR-0322, "A Python profile takes the
-  skills the Go and Rust setups share", whose module this Spec extends.
+  module's Starter Files; and ADR-0322, "A Python profile imports the
+  published upstream Python preset", whose module this Spec extends.
   Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: the cycle
   AP approval of 2026-10-22 through AskUserQuestion, scope "Preset de baseline
@@ -93,8 +93,9 @@ value.
 - A maintainer previews, for a profile, which Starter Files would be created
   and which kept, and creates the absent ones only by confirming that exact
   preview.
-- The `python` profile offers a Makefile whose `verify` runs ruff's format
-  check, ruff's linter and pytest through uv, a Project Config that bootstraps
+- The `python` profile offers a Makefile whose `verify` checks the lockfile
+  offline and runs ruff's format check, ruff's linter, ty and pytest through
+  uv, a Project Config that bootstraps
   each worktree with a frozen uv sync, and a CI workflow that refuses a stale
   lockfile and runs `make verify`.
 - A file that exists is never overwritten, compared or removed, and a failed
@@ -165,8 +166,10 @@ A later preview lists each as `keep`, prints `State: current` and exits 0.
    that order with `sha256:` content identities, and none for the other four
    profiles; a declaration with an unsafe or duplicate path, an unknown
    template or a template of another kind is refused with its own code.
-2. Success Metric: the Makefile's `verify` runs `fmt-check`, `lint` and `test`
-   through `uv run --frozen` and `verify-incremental` runs `verify`; the
+2. Success Metric: the Makefile's `verify` runs `lock-check` (`uv lock
+   --check --offline`), then `fmt-check`, `lint`, `typecheck` (`ty check
+   --error-on-warning src tests`) and `test` through `uv run --frozen`, and
+   `verify-incremental` runs `verify`; the
    Project Config written by the command loads through Roundfix's Project
    Config loader with `make verify`, the frozen bootstrap, a five-minute
    bootstrap timeout, the three caches and the tools `uv`, `make` and `git`;
@@ -232,6 +235,23 @@ The decisions were checked on 2026-10-23 against these sources.
   `.ruff_cache` são caches descartáveis. O CI (`.github/workflows/verify.yml`)
   roda `make verify` numa execução limpa a cada pull request e push na
   `main`." — the shape the starters reproduce.
+- Amendment of 2026-10-24 (maintainer, "ty e lock check sempre"): the
+  Makefile gains `lock-check` and `typecheck`. `uv lock --check` "is
+  equivalent to the `--locked` flag" and uv "will check if it matches the
+  project metadata" (uv's "Checking the lockfile", read through Context7,
+  `astral-sh/uv` `docs/concepts/projects/sync.md`); `--offline` makes uv use
+  "only the cache and local sources". A probe with uv 0.13.5 in a scratch
+  project, each run with a fresh empty `UV_CACHE_DIR`, recorded in Spec
+  0309's `_prd.md` → Validation: `uv lock --check --offline` exits `0` on a
+  current lock with no cache (also with a `hatchling` backend and a dynamic
+  version) and `1` on a stale one, so the gate runs it inside a Run without
+  the network; CI keeps `uv sync --group dev --locked`. ty's reference
+  (Context7, `astral-sh/ty` `docs/reference/exit-codes.md`):
+  "`--error-on-warning`: ty will exit with `1` if it finds any violations with
+  severity `warning` or higher". Quaestor's `Makefile` at `d17c98a`, read
+  through `gh api`, runs `lock-check` (`uv lock --check`) first in `verify`.
+  The starter does not add ty to the adopter's `pyproject.toml`; the Python
+  guide requires it as a development dependency.
 - Exa: uv's CLI reference (https://docs.astral.sh/uv/reference/cli/) and
   locking page above. Challenging: Quaestor runs `uv run` without a flag in
   its Makefile, which may update `uv.lock` during the gate and may need the
@@ -276,6 +296,9 @@ interview:
   absent, and the repository owns them afterwards; see ADR-0323.
 - The Makefile uses `uv run --frozen`, the Project Config bootstraps with
   `--frozen`, and CI syncs with `--locked`.
+- The Makefile's `verify` runs `lock-check` with `uv lock --check --offline`
+  and `typecheck` with `uv run --frozen ty check --error-on-warning src tests`
+  (maintainer, 2026-10-24 about 12:30 BRT, "ty e lock check sempre").
 - The command's exit codes follow the Baseline commands: 0 for a current or
   applied result, 3 for a preview or a stale confirmation, 2 for invalid
   input, 1 for a write failure.
