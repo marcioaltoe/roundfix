@@ -674,7 +674,7 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			return exitPreflight
 		}
 		readiness := environment.dependencies.checkOwnedSkills()
-		diagnostics := readiness.Diagnostics
+		diagnostics := append(readiness.Diagnostics, repositorySkillDiagnostics(ctx, environment)...)
 		if len(diagnostics) > 0 {
 			fmt.Fprintf(stderr, "%s: Roundfix skill check failed:\n", app.Name)
 			for _, diagnostic := range diagnostics {
@@ -6012,7 +6012,8 @@ preserved. Cleanup failures are secondary warnings after the primary failure.
 
 Commands:
   list       List the bundled Roundfix skills and recommended external skills
-  check      Validate shipped Roundfix skill artifacts
+  check      Validate shipped Roundfix skill artifacts and, inside an adopted
+             repository, the skills its Baseline requires
   install    Install the bundled Roundfix skills into this project or compatible Agent skill directories
 
 Options:

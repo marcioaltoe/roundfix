@@ -14,3 +14,10 @@ plus the authorial workflow skills (`write-idea`, `write-prd`,
 recommended external skills, which install through your own tooling and are
 never shipped. By default `skills install` writes to `<repo>/.agents/skills`;
 `--target` selects user-scoped Agent skill directories instead.
+
+Inside an adopted Git repository, `skills check` also inspects the skills the
+repository's Baseline requires and fails with exit `1` for each Missing
+Required Skill, printing
+`.agents/skills/<name>: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile <id> --skill <name>`
+on stderr. Outside a Git repository, or without a Setup Manifest, it checks
+only the shipped bundle.

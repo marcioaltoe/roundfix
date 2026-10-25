@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0318-the-baseline-reports-a-required-skill-that-is-not-installed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -105,3 +105,44 @@ None. The `skills check` output and exit code change only inside an adopted repo
 
 - `_prd.md` → Sources; Goals; Core Features 2 and 4; Success Metrics 3 and 6
 - `_techspec.md` → Current behavior; Interfaces; API Contract 5; Invariants 2 and 3; Testing Approach; Build Order 2
+
+## Result
+
+Implemented the repository section of `skills check` using the existing work-directory,
+repository-root and Doctor dependency seams and task_01's missing-skill helper.
+Named missing or lock-mismatched external skills append diagnostics after bundle
+findings. Resolution failures, unreadable or absent manifests, and empty external
+requirements preserve the bundle-only result. Pass and unversioned output bytes
+are unchanged. Added the exact authored usage and documentation paragraphs.
+
+Acceptance evidence from focused implementation checks:
+
+- Missing required skill: the new regression first reproduced exit `0` and the
+  bundle pass line. After implementation, its missing-skill subtest passed with
+  exact stderr, empty stdout and exit `1`.
+- Complete adopted repository, repository without a Setup Manifest, and outside
+  Git: all three subtests passed, asserting the exact bundle pass line, empty
+  stderr and exit `0`. Every new test and subtest calls `t.Parallel()` first.
+- Existing checks: `TestRunSkillsCheck` and the three shared-readiness subtests
+  now set a fresh temporary command work directory; no other edits were made
+  in those two test files. Their focused run passed.
+
+Focused command:
+`go test ./internal/cli -count=1 -run '^(TestSkillsCheckNamesAMissingRequiredSkill|TestRunSkillsCheck|TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness)$'`
+returned exit `0` (10 tests passed).
+
+Required regeneration sequence ran successfully: `make skills-sync`,
+`go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+then `make skills-sync`. The final implementation step is the required
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+recorder, after every usage, guide and skill edit.
+
+`git diff --check` returned exit `0`. The initial worktree contained only the
+Daemon-owned task status change; it was preserved. Commands used the resolved
+`/Volumes/Brain-SSD/cache/.roundfix/worktrees/` checkout because the sandbox
+rejected the configured symlinked writable root.
+
+Declared Verification and repository Verification remain Daemon-owned and were
+not run. No Task status, Task Graph, other Task, Doctor implementation, Baseline
+module, derived Baseline guide, Makefile, CI workflow or QA settlement section
+was changed. No commit, push or PR was made. No follow-up work identified.

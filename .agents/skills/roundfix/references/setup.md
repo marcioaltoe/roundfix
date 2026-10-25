@@ -134,6 +134,10 @@ Snapshot, the `skills` line keeps its status and appends
 `DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>`;
 nothing is restored.
 
+`roundfix skills check` validates the shipped bundle and, inside an adopted
+Git repository, fails with exit `1` for each Missing Required Skill, naming it
+with `roundfix baseline skills restore --profile <id> --skill <name>`.
+
 ## Migration check
 
 The synopsis is `roundfix migrate [--check]`. With `--check`, the migration
