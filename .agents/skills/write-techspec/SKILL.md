@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.13
+  version: 0.0.14
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.13
+version: 0.0.14
 ---
 
 # Write TechSpec
@@ -38,7 +38,7 @@ Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's 
 
 ## Sources that share a context
 
-A Spec may adopt several Inbox Entries, Backlog Entries and Findings whose
+A Spec may adopt several Backlog Entries and Findings whose
 context is similar or complementary; one Spec per source is neither required
 nor preferred. Before minting a Spec, look among the open Backlog Entries and
 unresolved Findings for sources that share the context. Group only while the

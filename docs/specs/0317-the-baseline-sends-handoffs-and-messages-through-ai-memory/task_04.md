@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0317-the-baseline-sends-handoffs-and-messages-through-ai-memory
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -135,3 +135,28 @@ the glossary and reworded **Triage**, and retires ADR-0095 by deletion
 - `_prd.md` → Goal 6; Core Feature 4; Skills; Glossary
 - `_techspec.md` → Current behavior 11-12; API Contract 7; Build Order 4
 - ADR-0330; ADR-0095
+
+## Result
+
+- Reworded the three canonical authoring skills to use pending ai-memory
+  messages without consuming them, added the missing-tool fallback, removed
+  Inbox Entry wording, and changed the write-idea research digest to one
+  cross-project ai-memory message. Raised each skill's metadata and document
+  version by one patch; `make skills-sync` and the owned-version recorder ran
+  successfully (`1 passed`), updating the mirrors and version record.
+- Replaced the glossary's Inbox Entry with Cross-project Message, reworded
+  Triage, removed the ADR-0095 link, and staged ADR-0095 deletion with `git rm`.
+- Updated the history guide and its two Coverage Review entries, then ran the
+  required behavior-surface recorder successfully, updating the generated
+  record.
+- Focused evidence after the edits: `git status --short` shows only the three
+  skill pairs, glossary, history guide, coverage/behavior records, version
+  record, staged ADR deletion, and this Task Result; targeted searches show no
+  owned-skill Inbox Entry or pending-inbox wording and show the new message and
+  glossary terms. The Daemon must run the declared Verification and settle the
+  Task.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261025T143420Z_c1664469a7b4b38b`
+- Source commit: `f463cdfec7b7e2d1d9fd51c1385fb34047ad4d75`

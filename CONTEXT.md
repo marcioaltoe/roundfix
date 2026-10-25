@@ -148,16 +148,16 @@ _Avoid_: Ticket, job, to-do
 Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or a terminal status (`declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed` or `cancelled`); a terminal entry is deleted and Git keeps its text, while `declined` and `deferred` carry a reason ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)). Its types express intent through the Conventional Commits vocabulary — `feat`, `fix`, `perf`, `refactor` — and it is never evidence; a `feat` entry is upstream raw material, never the `write-idea` artifact.
 _Avoid_: Finding, idea artifact, untyped suggestion
 
-**Inbox Entry**:
-A fleeting capture written as a file in the Secondbrain's inbox under its destination's namespace and committed there by its publication owner — the capturing session or an installed scheduler — never in a project checkout ([ADR-0095](docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md)). It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
-_Avoid_: Project inbox item, uncommitted note, draft artifact
+**Cross-project Message**:
+A self-contained message a session sends to another project's ai-memory inbox with `memory_message_send` when it observes work that project owns. The receiving project reads its messages oldest first, records each in a Spec, a Backlog Entry or a Finding, or names it when it only informs, and only then consumes it with `memory_message_pop`; without ai-memory the sender gives the text to the user ([ADR-0330](docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md)).
+_Avoid_: Inbox Entry, capture, note
 
 **Rollup**:
 A Finding of `rollup` kind that consolidates related Findings as declared members and retires by deletion when its work is resolved. Its members resolve as unresolved Findings or through Git, which keeps their retired text ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Summary, digest, archive manifest
 
 **Triage**:
-The destination-project act that converts one pending Inbox Entry into its contract-true artifact, committed by the destination alone.
+The destination-project act that converts one pending Cross-project Message into its contract-true artifact, committed by the destination alone.
 _Avoid_: Capture, import, synchronization
 
 **Follow-up Command**:
