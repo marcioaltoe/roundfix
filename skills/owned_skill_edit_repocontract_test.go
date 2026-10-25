@@ -22,12 +22,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 )
 
 func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	verificationRoot := copyTrackedRepository(t, repoRoot)
+	// The nested guarded run's suite guard fingerprints through Git and refuses
+	// a root outside a Git work tree, so this copy is committed.
+	gittest.InitRepo(t, verificationRoot)
+	gittest.Run(t, verificationRoot, "add", "-A")
+	gittest.Run(t, verificationRoot, "commit", "-q", "-m", "tracked repository copy")
 	derivedPaths := derivedDigestPaths(t, verificationRoot)
 	characterizationPaths := []string{
 		"internal/baseline/testdata/catalog.diagnostics.golden.json",

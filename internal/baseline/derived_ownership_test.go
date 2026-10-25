@@ -22,6 +22,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/suiteguardcontract"
 )
 
@@ -1023,6 +1024,11 @@ func newDerivedRegenerationFixture(t *testing.T) string {
 			t.Fatalf("copy regeneration fixture file %s: %v", fileName, err)
 		}
 	}
+	// The suite guard of a nested guarded test run fingerprints through Git and
+	// refuses a root outside a Git work tree, so the copy is committed.
+	gittest.InitRepo(t, fixtureRoot)
+	gittest.Run(t, fixtureRoot, "add", "-A")
+	gittest.Run(t, fixtureRoot, "commit", "-q", "-m", "regeneration fixture")
 	return fixtureRoot
 }
 

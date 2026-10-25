@@ -59,9 +59,20 @@ func TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning(t *testing.T) {
 		}
 		command.Env = append(command.Env, entry)
 	}
+	repository := t.TempDir()
+	git := exec.CommandContext(t.Context(), "git", "-C", repository, "init")
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(strings.ToUpper(entry), "GIT_") {
+			git.Env = append(git.Env, entry)
+		}
+	}
+	git.Env = append(git.Env, "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+os.DevNull)
+	if output, err := git.CombinedOutput(); err != nil {
+		t.Fatalf("initialize helper repository: %v: %s", err, output)
+	}
 	command.Env = append(command.Env, testBinaryMarkEnv+"="+mark,
 		"ROUNDFIX_SUITEGUARD_FIXTURE_MODE=helper",
-		"ROUNDFIX_SUITEGUARD_FIXTURE_ROOT="+t.TempDir())
+		"ROUNDFIX_SUITEGUARD_FIXTURE_ROOT="+repository)
 	command.Stdin = reader
 	var helperErrors bytes.Buffer
 	command.Stderr = &helperErrors

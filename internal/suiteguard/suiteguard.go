@@ -2,13 +2,12 @@
 package suiteguard
 
 import (
-	"bufio"
-	"crypto/sha256"
-	"errors"
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -48,15 +47,7 @@ func Main(m *testing.M, repoRoot string) int {
 
 type fileState struct {
 	mode   fs.FileMode
-	digest [sha256.Size]byte
-}
-
-type ignoreRule struct {
-	base      string
-	pattern   string
-	negated   bool
-	directory bool
-	anchored  bool
+	digest string
 }
 
 func run(runTests func() int, repoRoot string, output io.Writer) int {
@@ -67,12 +58,7 @@ func run(runTests func() int, repoRoot string, output io.Writer) int {
 	}
 
 	beforeStarted := time.Now()
-	rules, err := loadIgnoreRules(root)
-	if err != nil {
-		fmt.Fprintf(output, "suiteguard: load repository ignore rules: %v\n", err)
-		return 1
-	}
-	before, err := fingerprint(root, rules)
+	before, err := fingerprint(root)
 	beforeDuration := time.Since(beforeStarted)
 	if err != nil {
 		fmt.Fprintf(output, "suiteguard: fingerprint repository before tests: %v\n", err)
@@ -89,7 +75,7 @@ func run(runTests func() int, repoRoot string, output io.Writer) int {
 	}
 
 	afterStarted := time.Now()
-	after, err := fingerprint(root, rules)
+	after, err := fingerprint(root)
 	afterDuration := time.Since(afterStarted)
 	if err != nil {
 		fmt.Fprintf(output, "suiteguard: fingerprint repository after tests: %v\n", err)
@@ -171,69 +157,93 @@ func normalizeCommand(command string) string {
 	return strings.Join(fields, " ")
 }
 
-func fingerprint(root string, rules []ignoreRule) (map[string]fileState, error) {
-	result := make(map[string]fileState)
-	err := filepath.WalkDir(root, func(current string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if current == root {
-			return nil
-		}
-
-		relative, err := filepath.Rel(root, current)
-		if err != nil {
-			return fmt.Errorf("make %s relative to %s: %w", current, root, err)
-		}
-		relative = filepath.ToSlash(relative)
-		if relative == ".git" || ignored(rules, relative, entry.IsDir()) {
-			if entry.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		info, err := entry.Info()
-		if err != nil {
-			return fmt.Errorf("stat %s: %w", relative, err)
-		}
-		state := fileState{mode: info.Mode()}
-		switch {
-		case info.Mode().IsRegular():
-			state.digest, err = digestFile(current)
-		case info.Mode()&fs.ModeSymlink != 0:
-			var target string
-			target, err = os.Readlink(current)
-			state.digest = sha256.Sum256([]byte(target))
-		}
-		if err != nil {
-			return fmt.Errorf("fingerprint %s: %w", relative, err)
-		}
-		result[relative] = state
-		return nil
-	})
+func fingerprint(root string) (map[string]fileState, error) {
+	files, err := fingerprintGit(root, "", nil, "ls-files", "-z", "--cached", "--others", "--exclude-per-directory=.gitignore")
 	if err != nil {
 		return nil, err
+	}
+	directories, err := fingerprintGit(root, "", nil, "ls-files", "-z", "--others", "--directory", "--exclude-per-directory=.gitignore")
+	if err != nil {
+		return nil, err
+	}
+	indexDirectory, err := os.MkdirTemp("", "roundfix-suiteguard-index-")
+	if err != nil {
+		return nil, fmt.Errorf("create temporary Git index directory: %w", err)
+	}
+	defer os.RemoveAll(indexDirectory)
+	index := filepath.Join(indexDirectory, "index")
+	if _, err := fingerprintGit(root, index, files, "update-index", "--add", "--remove", "--info-only", "-z", "--stdin"); err != nil {
+		return nil, err
+	}
+	staged, err := fingerprintGit(root, index, nil, "ls-files", "-z", "--stage")
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]fileState)
+	addParents := func(relative string) {
+		for parent := path.Dir(relative); parent != "."; parent = path.Dir(parent) {
+			result[parent] = fileState{}
+		}
+	}
+	for _, record := range strings.Split(string(staged), "\x00") {
+		if record == "" {
+			continue
+		}
+		metadata, relative, ok := strings.Cut(record, "\t")
+		fields := strings.Fields(metadata)
+		if !ok || len(fields) != 3 {
+			return nil, fmt.Errorf("parse git ls-files --stage record %q", record)
+		}
+		result[relative] = fileState{digest: fields[0] + " " + fields[1]}
+		addParents(relative)
+	}
+	for _, directory := range strings.Split(string(directories), "\x00") {
+		if !strings.HasSuffix(directory, "/") {
+			continue
+		}
+		relative := strings.TrimSuffix(directory, "/")
+		result[relative] = fileState{}
+		addParents(relative)
+	}
+	for relative, state := range result {
+		info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(relative)))
+		if err != nil {
+			return nil, fmt.Errorf("stat %s: %w", relative, err)
+		}
+		state.mode = info.Mode()
+		result[relative] = state
 	}
 	return result, nil
 }
 
-func digestFile(filePath string) ([sha256.Size]byte, error) {
-	file, err := os.Open(filePath)
+// Git reads repository contents in a subprocess; only the mode pass above
+// touches repository paths in this process, outside m.Run's input-log window.
+func fingerprintGit(root, index string, input []byte, args ...string) ([]byte, error) {
+	options := []string{"-C", root,
+		"-c", "core.fileMode=true", "-c", "core.symlinks=true",
+		"-c", "core.autocrlf=false", "-c", "core.safecrlf=false", "-c", "core.fsmonitor=false"}
+	command := exec.Command("git", append(options, args...)...)
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(strings.ToUpper(entry), "GIT_") {
+			command.Env = append(command.Env, entry)
+		}
+	}
+	// System and global Git configuration (for example a global excludesFile)
+	// must not change what the guard lists, so only the repository's own
+	// configuration and the options above apply.
+	command.Env = append(command.Env, "GIT_OPTIONAL_LOCKS=0", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+os.DevNull)
+	if index != "" {
+		command.Env = append(command.Env, "GIT_INDEX_FILE="+index)
+	}
+	command.Stdin = bytes.NewReader(input)
+	var stderr bytes.Buffer
+	command.Stderr = &stderr
+	output, err := command.Output()
 	if err != nil {
-		return [sha256.Size]byte{}, err
+		return nil, fmt.Errorf("git %s: %w: %s", args[0], err, strings.TrimSpace(stderr.String()))
 	}
-
-	hash := sha256.New()
-	if _, copyErr := io.Copy(hash, file); copyErr != nil {
-		return [sha256.Size]byte{}, errors.Join(copyErr, file.Close())
-	}
-	if err := file.Close(); err != nil {
-		return [sha256.Size]byte{}, err
-	}
-	var digest [sha256.Size]byte
-	copy(digest[:], hash.Sum(nil))
-	return digest, nil
+	return output, nil
 }
 
 func compare(before, after map[string]fileState) []Violation {
@@ -259,159 +269,4 @@ func compare(before, after map[string]fileState) []Violation {
 		return violations[i].Path < violations[j].Path
 	})
 	return violations
-}
-
-func loadIgnoreRules(root string) ([]ignoreRule, error) {
-	var rules []ignoreRule
-	err := filepath.WalkDir(root, func(current string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		relative, err := filepath.Rel(root, current)
-		if err != nil {
-			return err
-		}
-		relative = filepath.ToSlash(relative)
-		if relative == ".git" || (relative != "." && ignored(rules, relative, entry.IsDir())) {
-			if entry.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if !entry.IsDir() {
-			return nil
-		}
-
-		ignoreFile := filepath.Join(current, ".gitignore")
-		file, err := os.Open(ignoreFile)
-		if os.IsNotExist(err) {
-			return nil
-		}
-		if err != nil {
-			return fmt.Errorf("open %s: %w", ignoreFile, err)
-		}
-		base := relative
-		if base == "." {
-			base = ""
-		}
-		parsed, parseErr := parseIgnoreRules(file, base)
-		closeErr := file.Close()
-		if parseErr != nil {
-			return fmt.Errorf("parse %s: %w", ignoreFile, parseErr)
-		}
-		if closeErr != nil {
-			return fmt.Errorf("close %s: %w", ignoreFile, closeErr)
-		}
-		rules = append(rules, parsed...)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return rules, nil
-}
-
-func parseIgnoreRules(reader io.Reader, base string) ([]ignoreRule, error) {
-	var rules []ignoreRule
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		line := strings.TrimSuffix(scanner.Text(), "\r")
-		line = trimUnescapedTrailingSpaces(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if strings.HasPrefix(line, `\#`) || strings.HasPrefix(line, `\!`) {
-			line = line[1:]
-		}
-		rule := ignoreRule{base: base}
-		if strings.HasPrefix(line, "!") {
-			rule.negated = true
-			line = line[1:]
-		}
-		if line == "" {
-			continue
-		}
-		rule.directory = strings.HasSuffix(line, "/")
-		line = strings.TrimSuffix(line, "/")
-		rule.anchored = strings.HasPrefix(line, "/") || strings.Contains(line, "/")
-		rule.pattern = strings.TrimPrefix(line, "/")
-		if rule.pattern != "" {
-			rules = append(rules, rule)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return rules, nil
-}
-
-func trimUnescapedTrailingSpaces(value string) string {
-	for strings.HasSuffix(value, " ") {
-		backslashes := 0
-		for index := len(value) - 2; index >= 0 && value[index] == '\\'; index-- {
-			backslashes++
-		}
-		if backslashes%2 == 1 {
-			return value[:len(value)-2] + " "
-		}
-		value = value[:len(value)-1]
-	}
-	return value
-}
-
-func ignored(rules []ignoreRule, relative string, directory bool) bool {
-	isIgnored := false
-	for _, rule := range rules {
-		candidate, applies := relativeToBase(relative, rule.base)
-		if !applies || (rule.directory && !directory) {
-			continue
-		}
-		matched := false
-		if rule.anchored {
-			matched = matchPath(rule.pattern, candidate)
-		} else {
-			matched = matchSegment(rule.pattern, path.Base(candidate))
-		}
-		if matched {
-			isIgnored = !rule.negated
-		}
-	}
-	return isIgnored
-}
-
-func relativeToBase(relative, base string) (string, bool) {
-	if base == "" {
-		return relative, true
-	}
-	prefix := base + "/"
-	if !strings.HasPrefix(relative, prefix) {
-		return "", false
-	}
-	return strings.TrimPrefix(relative, prefix), true
-}
-
-func matchPath(pattern, candidate string) bool {
-	patternParts := strings.Split(pattern, "/")
-	candidateParts := strings.Split(candidate, "/")
-	return matchParts(patternParts, candidateParts)
-}
-
-func matchParts(pattern, candidate []string) bool {
-	if len(pattern) == 0 {
-		return len(candidate) == 0
-	}
-	if pattern[0] == "**" {
-		return matchParts(pattern[1:], candidate) ||
-			(len(candidate) > 0 && matchParts(pattern, candidate[1:]))
-	}
-	return len(candidate) > 0 && matchSegment(pattern[0], candidate[0]) &&
-		matchParts(pattern[1:], candidate[1:])
-}
-
-func matchSegment(pattern, candidate string) bool {
-	matched, err := path.Match(pattern, candidate)
-	if err != nil {
-		return pattern == candidate
-	}
-	return matched
 }

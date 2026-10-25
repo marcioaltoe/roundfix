@@ -39,6 +39,7 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   Relevance, and CI runs it on every push to main and before every release (ADR-0253).
   Platform-only failures stay a known limit because CI is the
   Linux gate. Nothing under `docs/history/` is ever validated as live work.
+- A test in a code package that reads this repository's `docs/history`, `docs/adr`, `docs/specs`, `docs/user-guide` or `.agents/skills` lives in a `docscontract` file declared `//verify:always`, so a documentation edit never invalidates the package's cached test result (ADR-0326).
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may be
   adapted locally; every other skill is upstream-managed and **MUST NOT** be
   modified here.

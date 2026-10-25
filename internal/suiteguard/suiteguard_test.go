@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	fixtureCaseEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_CASE"
 	fixtureModeEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_MODE"
 	fixtureRootEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_ROOT"
 	fixturePathEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_PATH"
@@ -38,7 +39,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGuardNamesTheViolatingPath(t *testing.T) {
-	repository := t.TempDir()
+	repository := newGitRepository(t)
 	mustWrite(t, filepath.Join(repository, "modified.txt"), "before")
 	mustWrite(t, filepath.Join(repository, "removed.txt"), "before")
 
@@ -72,7 +73,7 @@ func TestGuardPassesOnAnIsolatedWrite(t *testing.T) {
 }
 
 func TestGuardIgnoresRepositoryRules(t *testing.T) {
-	repository := t.TempDir()
+	repository := newGitRepository(t)
 	mustWrite(t, filepath.Join(repository, ".gitignore"), "/ignored/\n")
 
 	output, exitCode := runGuardedFixture(t, repository, "ignored", "")
@@ -86,7 +87,7 @@ func TestGuardIgnoresRepositoryRules(t *testing.T) {
 }
 
 func TestSanctionedRegenerationIsDeclaredInProcess(t *testing.T) {
-	repository := t.TempDir()
+	repository := newGitRepository(t)
 	const declaredCommand = "roundfix-fixture-regeneration"
 	writeSanctionedAuthorization(t, repository, declaredCommand, "declared.txt")
 
@@ -98,7 +99,7 @@ func TestSanctionedRegenerationIsDeclaredInProcess(t *testing.T) {
 }
 
 func TestSanctionedRegenerationIsNotAViolationWrongCommandIsRefused(t *testing.T) {
-	repository := t.TempDir()
+	repository := newGitRepository(t)
 	writeSanctionedAuthorization(t, repository, "roundfix-fixture-regeneration", "declared.txt")
 
 	output, exitCode := runGuardedFixture(t, repository, "regeneration", "roundfix-wrong-regeneration", "declared.txt")
@@ -112,7 +113,7 @@ func TestSanctionedRegenerationIsNotAViolationWrongCommandIsRefused(t *testing.T
 }
 
 func TestSanctionedRegenerationIsNotAViolationUndeclaredCommandIsRefused(t *testing.T) {
-	repository := t.TempDir()
+	repository := newGitRepository(t)
 	writeSanctionedAuthorization(t, repository, "roundfix-fixture-regeneration", "declared.txt")
 
 	output, exitCode := runGuardedFixture(t, repository, "regeneration", "", "declared.txt")
@@ -179,6 +180,8 @@ func TestGuardFixture(t *testing.T) {
 		if err := os.Remove(filepath.Join(root, "removed.txt")); err != nil {
 			t.Fatal(err)
 		}
+	case "leak":
+		mutateLeak(t, root, os.Getenv(fixtureCaseEnv))
 	case "isolated":
 		mustWrite(t, filepath.Join(t.TempDir(), "isolated.txt"), "isolated")
 	case "ignored":
@@ -200,8 +203,12 @@ func TestGuardFixture(t *testing.T) {
 func runGuardedFixture(t *testing.T, repository, mode, sanctionedCommand string, filePath ...string) (string, int) {
 	t.Helper()
 	command := exec.Command(os.Args[0], "-test.run=^TestGuardFixture$", "-test.v=true")
+	if len(filePath) > 1 {
+		command.Args = append(command.Args, filePath[1:]...)
+	}
 	command.Env = append(environmentWithout(
 		os.Environ(),
+		fixtureCaseEnv,
 		fixtureModeEnv,
 		fixtureRootEnv,
 		fixturePathEnv,
@@ -215,6 +222,9 @@ func runGuardedFixture(t *testing.T, repository, mode, sanctionedCommand string,
 	}
 	if len(filePath) != 0 {
 		command.Env = append(command.Env, fixturePathEnv+"="+filePath[0])
+		if mode == "leak" {
+			command.Env = append(command.Env, fixtureCaseEnv+"="+filePath[0])
+		}
 	}
 	output, err := command.CombinedOutput()
 	if err == nil {
@@ -286,7 +296,7 @@ func TestGuardReportsAndKillsHelperResidue(t *testing.T) {
 	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
 		t.Skip("process table unavailable on this platform")
 	}
-	output, exitCode := runGuardedFixture(t, t.TempDir(), "residue", "")
+	output, exitCode := runGuardedFixture(t, newGitRepository(t), "residue", "")
 	t.Log(output)
 	if exitCode != 1 {
 		t.Fatalf("guard exit = %d, want 1; output:\n%s", exitCode, output)
@@ -323,7 +333,7 @@ func TestGuardReportsAndKillsHelperResidue(t *testing.T) {
 
 func TestGuardPassesWhenEveryHelperEnded(t *testing.T) {
 	t.Parallel()
-	output, exitCode := runGuardedFixture(t, t.TempDir(), "ended", "")
+	output, exitCode := runGuardedFixture(t, newGitRepository(t), "ended", "")
 	if exitCode != 0 || strings.Contains(output, "suiteguard: helper residue:") {
 		t.Fatalf("guard exit = %d, output:\n%s", exitCode, output)
 	}
@@ -332,7 +342,7 @@ func TestGuardPassesWhenEveryHelperEnded(t *testing.T) {
 
 func TestGuardMarksItsTestBinary(t *testing.T) {
 	t.Parallel()
-	output, exitCode := runGuardedFixture(t, t.TempDir(), "mark", "")
+	output, exitCode := runGuardedFixture(t, newGitRepository(t), "mark", "")
 	match := regexp.MustCompile(`fixture mark: ([0-9]+):([0-9]+)\.([0-9a-f]{16})\n`).FindStringSubmatch(output)
 	if exitCode != 0 || len(match) != 4 || match[1] != match[2] {
 		t.Fatalf("invalid binary mark, exit %d:\n%s", exitCode, output)
