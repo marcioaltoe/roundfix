@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0318-the-baseline-reports-a-required-skill-that-is-not-installed
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,20 @@
+Mutation: internal/cli/baseline_update.go
+if !request.skipSkills {
+			external,
+=>
+if true {
+			external,
+$ go test -timeout 15m -count=1 -v -run ^TestBaselineUpdatePreviewNamesAMissingRequiredSkill$/^folder_and_lock_entry_removed$ ./internal/cli
+exit: 1
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== PAUSE TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== CONT  TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+    baseline_update_missing_skills_test.go:124: skipped exit=3 stdout={"history":{"status":"skipped","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":false,"state":"plan_ready","category":"approval","message":"guidance matches the current Baseline catalog; 1 required skill(s) are missing or no longer match skills-lock.json: agentic-cli-design","nextAction":"rerun with --yes to restore them from the Setup Snapshot, or restore one with roundfix baseline skills restore --profile go-cli-tui --skill agentic-cli-design","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:acf9578341be64b4127451694947cec0293e2e10a5cedcfef4d53b67360e5c25"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:acf9578341be64b4127451694947cec0293e2e10a5cedcfef4d53b67360e5c25"},"fileChanges":[],"retention":[],"warnings":[],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:b61713e0f6d6ac5ed5dfc6d8e49e5b5f02408a40112f5a20e90be164aa5a6eed","skills":{"missing":[{"skill":"agentic-cli-design","reason":"required by the Baseline and not installed; restore with roundfix baseline skills restore --profile go-cli-tui --skill agentic-cli-design"}],"status":"missing","installedCount":0,"installed":[],"restored":[],"drifted":[],"differing":[]}}
+         stderr=
+--- FAIL: TestBaselineUpdatePreviewNamesAMissingRequiredSkill (2.33s)
+    --- FAIL: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed (2.33s)
+FAIL
+suiteguard: guard cost: measured 2810 paths; fingerprint took 90.671709ms before and 80.836667ms after
+FAIL	roundfix/internal/cli	2.967s
+FAIL

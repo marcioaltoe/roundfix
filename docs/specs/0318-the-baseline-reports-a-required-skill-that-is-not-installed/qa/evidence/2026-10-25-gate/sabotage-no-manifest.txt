@@ -1,0 +1,21 @@
+Mutation: internal/cli/skills_check_repository.go
+if err != nil || !manifestOK || len(external) == 0 {
+		return nil
+=>
+if err != nil || !manifestOK || len(external) == 0 {
+		return []roundskills.Diagnostic{{Path: "repository", Message: "Setup Manifest absent"}}
+$ go test -timeout 15m -count=1 -v -run ^TestSkillsCheckNamesAMissingRequiredSkill$/^repository_without_a_Setup_Manifest$ ./internal/cli
+exit: 1
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest
+    skills_check_repository_test.go:46: exit=1 stdout="" stderr="roundfix: Roundfix skill check failed:\n  repository: Setup Manifest absent\n"; want exit 0, stdout="Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate\n", empty stderr
+--- FAIL: TestSkillsCheckNamesAMissingRequiredSkill (0.00s)
+    --- FAIL: TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest (0.02s)
+FAIL
+suiteguard: guard cost: measured 2810 paths; fingerprint took 93.210958ms before and 80.1845ms after
+FAIL	roundfix/internal/cli	0.806s
+FAIL

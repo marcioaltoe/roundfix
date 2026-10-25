@@ -1,0 +1,53 @@
+import subprocess,os,tempfile,pathlib,json,re,tarfile,io,shutil,hashlib
+root=pathlib.Path.cwd(); spec=root/'docs/specs/0318-the-baseline-reports-a-required-skill-that-is-not-installed';ev=spec/'qa/evidence/2026-10-25-gate';work=pathlib.Path(tempfile.mkdtemp(prefix='qa0318-'));home=work/'home';home.mkdir();tmp=work/'tmp';tmp.mkdir();env=os.environ.copy();env.update(HOME=str(home),TMPDIR=str(tmp),GOPROXY='off',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1');env.pop('GIT_CONFIG_GLOBAL',None)
+for key in list(env):
+ if 'API_KEY' in key or 'TOKEN' in key:env.pop(key)
+env['GOMODCACHE']=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip()
+logs=[]
+def run(args,cwd=root,expected=None,record=True):
+ p=subprocess.run(list(map(str,args)),cwd=cwd,env=env,capture_output=True,text=True)
+ if record:logs.append('$ '+' '.join(map(str,args))+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr)
+ if expected is not None:assert p.returncode==expected,logs[-1]
+ return p
+run(['git','config','--global','user.name','QA Fixture'],expected=0);run(['git','config','--global','user.email','qa@example.invalid'],expected=0)
+scratch=work/'head';scratch.mkdir();tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive','HEAD'])),mode='r:').extractall(scratch,filter='data')
+helper=scratch/'_qa_hash';helper.mkdir();(helper/'main.go').write_text('package main\nimport("context";"os";"fmt";"roundfix/skills")\nfunc main(){ h,e:=skills.SkillFolderHash(context.Background(),os.Args[1]); if e!=nil{panic(e)};fmt.Println(h)}\n');run(['go','build','-o',work/'hash','./_qa_hash'],cwd=scratch,expected=0)
+repo=work/'repo';repo.mkdir();run(['git','init','-q'],cwd=repo,expected=0)
+(repo/'Makefile').write_text('verify:\n\t@true\nverify-incremental:\n\t@true\n')
+for name in ['context7','exa-web-search']:
+ d=repo/'.agents/skills'/name;d.mkdir(parents=True);(d/'SKILL.md').write_text('# '+name+'\n')
+def commit():
+ run(['git','add','.'],cwd=repo,expected=0);run(['git','commit','-qm','fixture'],cwd=repo,expected=0)
+commit();binary=root/'bin/roundfix'
+# ./bin/roundfix at the Run root, or an absolute path to that same binary from the fixture cwd.
+def cli(args,expected=None,cwd=repo):return run([binary]+args,cwd=cwd,expected=expected)
+decisions=['preservation.mode=greenfield','language.generated=English','verification.gate=make verify','verification.incremental=make verify-incremental','branch.prefix=ma/','spec.scaffold=true','domain.layout=single-context','triage.external=false','autonomous.enabled=true','runtime.backend=codex gpt-5.5 xhigh','runtime.design=claude opus xhigh','secondbrain.enabled=false','repository.extension.enabled=false']
+args=['baseline','plan','--repo','.','--profile','go-cli-tui','--format=json']
+for d in decisions:args+=['--decision',d]
+p=cli(args,0);plan=json.loads(p.stdout);planfile=work/'plan.json';planfile.write_text(p.stdout);cli(['baseline','apply','--repo','.','--plan',str(planfile),'--confirm-plan',plan['planDigest'],'--format=json'],0);cli(['skills','install'],0)
+manifest=json.loads((repo/'docs/agents/setup-context.json').read_text());owned={p.name for p in (scratch/'skills').iterdir() if p.is_dir() and (p/'SKILL.md').exists()};required=set()
+for module in manifest['modules']:required.update(json.loads((scratch/'internal/baseline/assets/modules'/f'{module}.json').read_text()).get('requiredSkills',[]))
+required=sorted(required-owned);lock={'version':1,'skills':{}}
+for name in required:
+ d=repo/'.agents/skills'/name;d.mkdir(parents=True,exist_ok=True);(d/'SKILL.md').write_text('---\nname: '+name+'\ndescription: fixture\n---\n# Fixture\n');h=run([work/'hash',d],expected=0,record=False).stdout.strip();lock['skills'][name]={'computedHash':h}
+lockpath=repo/'skills-lock.json';lockpath.write_text(json.dumps(lock));commit();name=required[0];folder=repo/'.agents/skills'/name;saved=(folder/'SKILL.md').read_text();entry=lock['skills'][name]
+logs.append('Required external set: '+', '.join(required)+'\nSelected: '+name)
+def snapshot():return {str(p.relative_to(repo)):hashlib.sha256(p.read_bytes()).hexdigest() for p in repo.rglob('*') if p.is_file() and '.git' not in p.relative_to(repo).parts}
+def preview(expected,state,missing=False,extra=[]):
+ p=cli(['baseline','update','--repo','.','--no-history','--format','json']+extra,expected);j=json.loads(p.stdout);assert j['state']==state,j
+ if missing:assert j['skills']['status']=='missing' and [x['skill'] for x in j['skills']['missing']]==[name],j
+ else:assert 'missing' not in j.get('skills',{}),j
+ return j
+before=snapshot();preview(0,'current');d=cli(['doctor']);assert 'skills: ok' in d.stdout;cli(['skills','check'],0);assert snapshot()==before
+outside=work/'outside';outside.mkdir();p=cli(['skills','check'],0,cwd=outside);assert p.stdout.startswith('Roundfix skill check passed:')
+for shape in ['folder and lock removed','lock removed only','folder removed stale lock','hash mismatch']:
+ folder.mkdir(parents=True,exist_ok=True);(folder/'SKILL.md').write_text(saved);lock['skills'][name]=entry
+ if shape in ['folder and lock removed','folder removed stale lock']:shutil.rmtree(folder)
+ if shape in ['folder and lock removed','lock removed only']:del lock['skills'][name]
+ if shape=='hash mismatch':(folder/'SKILL.md').write_text('changed fixture\n')
+ lockpath.write_text(json.dumps(lock));commit();before=snapshot();logs.append('SHAPE: '+shape);preview(3,'plan_ready',True);t=cli(['baseline','update','--repo','.','--no-history','--format','text'],3);assert 'Skills missing: 1' in t.stdout and '- missing '+name+':' in t.stdout
+ d=cli(['doctor'],1);assert any('skills: failed' in line and name in line for line in d.stdout.splitlines());c=cli(['skills','check'],1);assert '.agents/skills/'+name+':' in c.stderr;preview(0,'current',extra=['--no-skills']);assert snapshot()==before
+# Record baseline regression on an independently built Delivery Base archive.
+base=work/'base';base.mkdir();tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive','aa7ba4cbb6a0626ed1c484d7495c427a79d91323'])),mode='r:').extractall(base,filter='data');run(['make','build'],cwd=base,expected=0)
+shutil.rmtree(folder);del lock['skills'][name];lockpath.write_text(json.dumps(lock));commit();p=run([base/'bin/roundfix','baseline','update','--repo','.','--no-history','--format','json'],cwd=repo,expected=0);assert json.loads(p.stdout)['state']=='current'
+(ev/'public-flows.txt').write_text('\n\n'.join(logs)+'\n');(work/'paths.json').write_text(json.dumps({'root':str(root),'work':str(work)}));pathlib.Path('/tmp/qa0318-work-path').write_text(str(work));print('PASS public flows and Delivery Base regression',flush=True)

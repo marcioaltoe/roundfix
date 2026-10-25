@@ -1,0 +1,19 @@
+Mutation: internal/cli/cli.go
+diagnostics := append(readiness.Diagnostics, repositorySkillDiagnostics(ctx, environment)...)
+=>
+diagnostics := readiness.Diagnostics
+$ go test -timeout 15m -count=1 -v -run ^TestSkillsCheckNamesAMissingRequiredSkill$/^adopted_repository_with_a_missing_required_skill$ ./internal/cli
+exit: 1
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill
+    skills_check_repository_test.go:41: exit=0 stdout="Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate\n" stderr=""; want exit 1, empty stdout, stderr="roundfix: Roundfix skill check failed:\n  .agents/skills/agentic-cli-design: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile go-cli-tui --skill agentic-cli-design\n"
+--- FAIL: TestSkillsCheckNamesAMissingRequiredSkill (0.00s)
+    --- FAIL: TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill (0.66s)
+FAIL
+suiteguard: guard cost: measured 2810 paths; fingerprint took 97.144625ms before and 80.488083ms after
+FAIL	roundfix/internal/cli	1.444s
+FAIL
