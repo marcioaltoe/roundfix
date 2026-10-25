@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0317-the-baseline-sends-handoffs-and-messages-through-ai-memory
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

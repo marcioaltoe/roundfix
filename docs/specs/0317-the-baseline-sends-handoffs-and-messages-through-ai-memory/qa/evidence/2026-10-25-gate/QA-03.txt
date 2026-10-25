@@ -1,0 +1,19 @@
+$ go test -timeout 20m -count=1 -v -run ^(TestEveryInboxClauseAnAdopterHoldsIsReplaced|TestTheGuidesSendCrossProjectWorkThroughAiMemory)$ ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== PAUSE TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== RUN   TestTheGuidesSendCrossProjectWorkThroughAiMemory
+=== PAUSE TestTheGuidesSendCrossProjectWorkThroughAiMemory
+=== CONT  TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== CONT  TestTheGuidesSendCrossProjectWorkThroughAiMemory
+--- PASS: TestEveryInboxClauseAnAdopterHoldsIsReplaced (0.02s)
+--- PASS: TestTheGuidesSendCrossProjectWorkThroughAiMemory (0.08s)
+PASS
+suiteguard: guard cost: measured 2823 paths; fingerprint took 87.230209ms before and 79.943667ms after
+ok  	roundfix/internal/baseline	0.415s
+
+stderr:
+
+Rendered docs/agents/*.md: zero retired-contract matches.
+Eight retired clauses are replaced, none unaccounted; retained clauses preserve force; regenerated-guide assertions and the independent text sweep pass.

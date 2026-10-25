@@ -1,0 +1,4 @@
+make build: exit 0
+./bin/roundfix --version (fresh HOME/TMPDIR): roundfix 0.119.0 (9cd2cd6c-dirty, built 2026-10-25 12:14:05 -0300)
+./bin/roundfix spec check 0317-the-baseline-sends-handoffs-and-messages-through-ai-memory --strict: exit 0, no findings
+Daemon repository Verification: make verify-changed exit 0; not rerun.

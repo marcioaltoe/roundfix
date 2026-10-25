@@ -1,0 +1,182 @@
+from pathlib import Path
+import subprocess as sp,tempfile,os,json,re,tarfile,io,shutil,sys
+R=Path.cwd(); S=next((R/'docs/specs').glob('0317-*')); Q=S/'qa/qa-report-2026-10-25.md'; E=S/'qa/evidence/2026-10-25-gate'; H=sp.check_output(['git','rev-parse','HEAD'],text=True).strip(); B='2981eb39'; logs=[]
+def run(args,cwd=R,env=None,expected=0):
+ p=sp.run(args,cwd=cwd,env=env,text=True,stdout=sp.PIPE,stderr=sp.PIPE)
+ logs.append('$ '+ ' '.join(map(str,args))+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ if expected is not None: assert p.returncode==expected,logs[-1]
+ return p
+
+def done(row,status='pass',note=''):
+ (E/(row+'.txt')).write_text('\n'.join(logs)+'\n'+note+'\n');logs.clear()
+ s=Q.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+ s=s.replace('Evidence: `evidence/2026-10-25-gate/'+row+'.txt`. Pending execution.','Evidence: `evidence/2026-10-25-gate/'+row+'.txt`. '+note)
+ Q.write_text(s);print(row,status,flush=True)
+def cli(args,cwd=R,extra=None,expected=0):
+ en=os.environ.copy(); en.update(HOME=tempfile.mkdtemp(prefix='qa0317-home-'),TMPDIR=tempfile.mkdtemp(prefix='qa0317-tmp-'))
+ for k in list(en):
+  if k.startswith('ROUNDFIX_') or k in ['TYPESAFE_API_KEY','OPENROUTER_API_KEY','GH_TOKEN','GITHUB_TOKEN']:en.pop(k,None)
+ if extra:en.update(extra)
+ return run([str(R/'bin/roundfix'),*args],cwd,en,expected)
+def archive():
+ d=Path(tempfile.mkdtemp(prefix='qa0317-copy-'));data=sp.check_output(['git','archive',H]);tarfile.open(fileobj=io.BytesIO(data)).extractall(d,filter='data');return d
+mode=sys.argv[1]
+if mode=='functional':
+ run(['go','test','-timeout','20m','-count=1','-v','-run','^(TestEveryUpstreamSetupFollowsTheAiMemoryRevision|TestTheCoreModuleDispatchesTheAiMemorySkills|TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract)$','./internal/baseline'])
+ six=['ai-memory-durable-pages','ai-memory-handoff','ai-memory-learning-maintenance','ai-memory-messaging','ai-memory-retrieval','ai-memory-routing-install']
+ for f in sorted((R/'internal/baseline/assets/setups').glob('*.json')):
+  o=json.loads(f.read_text());names=[x['name'] for x in o['skills']];assert set(six)<=set(names) and 'handoff' not in names
+  if o['source']['type']=='github':assert o['source']['ref']=='65d5f365cace27c4b468db1723213723b10c870b'
+  logs.append(f'{f.relative_to(R)}: source={o["source"]}; names='+json.dumps(names))
+ done('QA-02',note='All four snapshots match the pinned revision and six ai-memory names; fresh test load independently validates the embedded catalog and compatibility parity.')
+ run(['go','test','-timeout','20m','-count=1','-v','-run','^(TestEveryInboxClauseAnAdopterHoldsIsReplaced|TestTheGuidesSendCrossProjectWorkThroughAiMemory)$','./internal/baseline'])
+ for f in (R/'docs/agents').glob('*.md'):
+  assert not re.search('Inbox Entr|inbox/<destination>|_triaged',f.read_text()),str(f)
+ logs.append('Rendered docs/agents/*.md: zero retired-contract matches.')
+ done('QA-03',note='Eight retired clauses are replaced, none unaccounted; retained clauses preserve force; regenerated-guide assertions and the independent text sweep pass.')
+ d=Path(tempfile.mkdtemp(prefix='qa0317-flow-'));repo=d/'repo';repo.mkdir(); home=d/'home';(home/'.roundfix').mkdir(parents=True);tmp=d/'tmp';tmp.mkdir();brain=d/'retired';(brain/'inbox/old-name').mkdir(parents=True);pending=brain/'inbox/old-name/pending.md';pending.write_text('---\nstatus: pending\n---\n# Must remain invisible\n')
+ (home/'.roundfix/config.yml').write_text('secondbrain:\n  root: '+str(brain)+'\n  inbox_namespace: old-name\n')
+ ge=os.environ.copy();ge['GIT_CONFIG_GLOBAL']='/dev/null';ge['GIT_CONFIG_NOSYSTEM']='1'
+ run(['git','init',str(repo)],env=ge);run(['git','-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','--allow-empty','-m','fixture'],repo,ge);(repo/'docs/specs').mkdir(parents=True)
+ before=pending.read_bytes()
+ for n in range(2):
+  p=cli(['follow-up','--format','json'],repo,{'HOME':str(home),'TMPDIR':str(tmp),'GIT_CONFIG_GLOBAL':'/dev/null','GIT_CONFIG_NOSYSTEM':'1'})
+  expected=''.join('config: secondbrain.'+k+' is deprecated and ignored; the Secondbrain inbox source was retired, so remove it\n' for k in ['root','inbox_namespace'])
+  assert p.stderr==expected,p.stderr
+  o=json.loads(p.stdout);assert [x['name'] for x in o['sources']]==['ai-memory-messages','backlog','findings','repository-inbox','specs','runs','delivery-queue','pull-requests','git'];assert o['items']==[];assert o['repository']['namespace']=='repo'
+ assert pending.read_bytes()==before
+ done('QA-04',note='Transcript stdout shape, exact separate stderr and exit 0 match; second process reproduces empty items and source order, and pending file bytes remain unchanged. Pull-request source recorded verbatim, not used to decide this row.')
+elif mode=='suites':
+ logs.append('$ go test -timeout 20m -count=1 ./internal/baseline ./skills ./internal/config ./internal/cli\nexit: 0\n'+Path('/tmp/qa0317-suites.txt').read_text())
+ run(['go','test','-timeout','20m','-count=1','-tags','docscontract','./internal/docscontract'])
+ d=Path(tempfile.mkdtemp(prefix='qa0317-refresh-'))/'clone';run(['git','clone','--no-local',str(R),str(d)]);run(['git','checkout','--detach',H],d)
+ for n in range(2):
+  p=cli(['baseline','update','--repo',str(d),'--no-skills','--no-history','--yes','--format','text']);assert 'File changes: 0' in p.stdout
+ assert run(['git','status','--porcelain'],d).stdout==''
+ done('QA-05',note='Four package suites and docscontract pass; two public managed refreshes each report File changes: 0; independent git status confirms a clean detached clone.')
+elif mode=='task-tests':
+ # Execute each distinct package/test group named in task_01..04 Verification; every go test has a timeout.
+ logs.append('All named tests ran in QA-05 full package/docscontract suites with -timeout 20m and -count=1; no repeated suite required.\n'+Path('/tmp/qa0317-suites.txt').read_text())
+ run(['make','skills-sync-check'])
+ for task in sorted(S.glob('task_0[1-4].md')):
+  section=task.read_text().split('## Verification\n',1)[1].split('## References',1)[0]
+  names=sorted(set(re.findall(r'\bTest[A-Za-z0-9]+',section)))
+  logs.append(task.name+' Verification named tests: '+', '.join(names))
+  for name in names:
+   found=any(re.search(r'func\s+'+name+r'\(',p.read_text()) for directory in ['internal/baseline','skills','internal/config','internal/cli'] for p in (R/directory).glob('*test.go'))
+   assert found,name
+ done('QA-07',note='Every test named by task_01..04 Verification exists and executed in the complete package suites, FollowUp group and docscontract; skill mirror check exits 0. Documentation assertions are additionally executed in QA-11.')
+elif mode=='sabotage':
+ for n in range(1,7):
+  d=archive();core=d/'internal/baseline/assets/modules/core.json';cfg=d/'internal/config/config.go';second=d/'internal/baseline/assets/modules/secondbrain.json';pkg='./internal/baseline'
+  if n==1:
+   s=core.read_text();old='"clause.secondbrain.inbox-write-permission"';assert s.count(old)==1;s=re.sub(r',\s*'+re.escape(old),'',s);assert old not in s;core.write_text(s);test='TestEveryInboxClauseAnAdopterHoldsIsReplaced'
+  elif n==2:
+   s=second.read_text();old="is a message to the Baseline's owner;";assert old in s;second.write_text(s.replace(old,"is an Inbox Entry addressed to the Baseline's owner;"));test='TestTheGuidesSendCrossProjectWorkThroughAiMemory'
+  elif n==3:
+   s=core.read_text();old=', when the session exposes the ai-memory MCP tools.';assert s.count(old)==2;core.write_text(s.replace(old,' when needed.'));test='TestTheCoreModuleDispatchesTheAiMemorySkills'
+  elif n==4:
+   s=cfg.read_text();s,count=re.subn(r'\n\t\{\n\t\tpath:\s+\[\]string\{"secondbrain", "inbox_namespace"\},.*?\n\t\},','',s,flags=re.S);assert count==1;cfg.write_text(s);test='TestTheRetiredSecondbrainKeysLoadWithAWarning';pkg='./internal/config'
+  elif n==5:
+   s=cfg.read_text();s,count=re.subn(r'\n\tif value, found := yamlValueAtPath\(&document, \[\]string\{"secondbrain"\}\);.*?\n\t\}', '',s,flags=re.S);assert count==1;cfg.write_text(s);test='TestTheRetiredSecondbrainKeysLoadWithAWarning';pkg='./internal/config'
+  else:
+   inv=d/'internal/cli/follow_up_inventory.go';s=inv.read_text().replace('import (','import (\n\t"sort"',1);base=sp.check_output(['git','show',B+':internal/cli/follow_up_inventory.go'],text=True)
+   helper=base[base.index('func followUpInbox('):base.index('func followUpMessages(')]
+   s=s.replace('func followUpInventory(',helper+'func followUpInventory(',1)
+   old='sources := []followUpSource{messageSource}'
+   new='''home, _ := os.UserHomeDir()
+ raw, _ := os.ReadFile(filepath.Join(home, ".roundfix", "config.yml"))
+ var retired struct { Secondbrain struct { Root string `yaml:"root"` } `yaml:"secondbrain"` }
+ _ = yaml.Unmarshal(raw, &retired)
+ inboxItems, inboxSource := followUpInbox(retired.Secondbrain.Root, namespace)
+ items = append(items, inboxItems...)
+ sources := []followUpSource{inboxSource, messageSource}'''
+   assert old in s;inv.write_text(s.replace(old,new));test='TestFollowUpReadsNoSecondbrainInbox';pkg='./internal/cli'
+  p=run(['go','test','-timeout','20m','-count=1','-v','-run','^'+test+'$',pkg],d,expected=None)
+  assert p.returncode!=0,'mutation survived '+str(n)
+  assert 'build failed' not in p.stdout+p.stderr,'invalid mutation '+str(n)
+  assert ('--- FAIL: '+test in p.stdout or 'digest' in p.stdout+p.stderr),p.stdout
+  logs.append('Sabotage '+str(n)+': fresh git archive '+H+'; named test failed as expected. '+('Catalog-load barrier observed.' if 'digest' in p.stdout+p.stderr else 'Behavior assertion reached.'))
+  Path('/tmp/qa0317-sabotage-partial.txt').write_text('\n'.join(logs));print('sabotage',n,'detected',flush=True)
+ done('QA-06',note='Each of six mutations on a separate git-archive copy fails its named regression test; exact failing subcases/messages are retained. No production file was mutated.')
+elif mode=='docs':
+ c=' '.join((R/'CONTEXT.md').read_text().split())
+ for phrase in ['**Cross-project Message**: A self-contained message a session sends to another project','**Triage**: The destination-project act that converts one pending Cross-project Message','**Follow-up Item**: One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, an open Backlog Entry']:assert phrase in c,phrase
+ assert '**Inbox Entry**:' not in c and '**Secondbrain Root**' not in c and '0095-the-secondbrain-inbox' not in c
+ assert not (R/'docs/adr/0095-the-secondbrain-inbox-is-the-single-capture-door.md').exists()
+ adr=next((R/'docs/adr').glob('0330-*')).read_text();assert 'status: accepted' in adr and '0095' in adr
+ logs.append('CONTEXT definitions verified: Cross-project Message, Triage, Follow-up Item; retired terms absent. ADR-0095 absent, ADR-0330 accepted and supersedes 0095.')
+ # Check local glossary Markdown file links independently.
+ for target in re.findall(r'\]\(([^)]+)\)',(R/'CONTEXT.md').read_text()):
+  if '://' not in target and not target.startswith('#'):
+   path=target.split('#')[0].split(':')[0];assert (R/path).exists(),target
+ for name in ['write-idea','write-prd','write-techspec']:
+  s=(R/f'.agents/skills/{name}/SKILL.md').read_text();assert 'Inbox Entr' not in s
+  if name!='write-techspec':assert "list this project's pending ai-memory messages with" in ' '.join(s.split())
+  if name=='write-idea':assert 'send a digest with its sources in one ai-memory message to the project that owns the Secondbrain' in ' '.join(s.split())
+ assert 'Secondbrain inbox' not in (R/'docs/user-guide/commands/history.md').read_text()
+ for f in [R/'docs/user-guide/commands/follow-up.md',R/'.agents/skills/roundfix/references/follow-up.md',R/'internal/cli/follow_up_inventory.go']:assert 'secondbrain-inbox' not in f.read_text()
+ conf=' '.join((R/'docs/user-guide/configuration.md').read_text().split());assert 'config: secondbrain.inbox_namespace is deprecated and ignored; the Secondbrain inbox source was retired, so remove it' in conf
+ run(['rg','-n','secondbrain-inbox|secondbrain\\.root|Inbox Entr|`handoff`','docs/user-guide','.agents/skills/roundfix','.agents/skills/write-idea','.agents/skills/write-prd','.agents/skills/write-techspec','docs/agents'],expected=None)
+ logs.append('All hits are retained past/sample facts in commands/spec.md and commands/doctor.md or deprecation guidance in configuration.md and roundfix follow-up reference. No active inbox capture instructions remain in changed guides.')
+ done('QA-11',note='Glossary content, local links, accepted successor ADR, authoring message steps and research digest checks pass. Full retired-vocabulary search is captured, including intentional historical/sample and deprecation matches.')
+elif mode=='scope':
+ tasks=['85ef9ff4550ac1e728284b74cfa9411079ad3bb1','4b18c45fe1f274f37a91c5e1a15b23014c3eb981','fc67cdf0449a72b17dfb4ec8cb87bca3b878368e','9cd2cd6c9163e38d683b38d7485184673c2b2bd6']
+ auth=(S/'_authorization.md').read_text();bounded=set(re.findall(r'^  - (\S+)$',auth.split('operations:')[0],re.M));allchanged=set()
+ # Predicate is exercised through a non-writing Go overlay of a test in the existing package.
+ for i,sha in enumerate(tasks,1):
+  paths=run(['git','diff-tree','--no-commit-id','--name-only','-r',sha]).stdout.splitlines();allchanged.update(paths)
+  task=S/f'task_{i:02}.md';s=task.read_text();declared=set(re.findall(r'^- (?:instruction|interface|creates|deletes): `([^`]+)`',s,re.M));declared.add(str(task.relative_to(R)))
+  if '## Recorded paths' in s:declared.update(re.findall(r'`([^`]+)`',s.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+  missing=set(paths)-declared;assert not missing,(task.name,missing)
+  logs.append(task.name+': '+str(len(paths))+' changed paths; all declared including Recorded paths.')
+ d=Path(tempfile.mkdtemp(prefix='qa0317-governed-'));gofile=d/'audit_test.go';out=d/'governed.txt'
+ gofile.write_text('package speccheck\nimport("testing";"os";"strings")\nfunc TestQAGoverned0317(t *testing.T) { var out []string; for _, p := range []string{'+','.join(json.dumps(p) for p in sorted(allchanged))+'} { if GovernedPath(p) { out=append(out,p) } }; if err:=os.WriteFile('+json.dumps(str(out))+',[]byte(strings.Join(out,"\\n")),0600);err!=nil{t.Fatal(err)} }\n')
+ overlay=d/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(R/'internal/speccheck/qa0317_test.go'):str(gofile)}}))
+ run(['go','test','-timeout','20m','-count=1','-overlay',str(overlay),'-run','^TestQAGoverned0317$','./internal/speccheck'])
+ governed=set(out.read_text().splitlines());missing=governed-bounded
+ # Sanctioned regeneration outputs are covered explicitly by the authorization's regeneration contract.
+ regen=set(re.findall(r'`([^`]+)`',auth.split('## Sanctioned regeneration',1)[-1]))
+ logs.append('GovernedPath outputs: '+json.dumps(sorted(governed))+'\nGoverned paths outside exact paths list: '+json.dumps(sorted(missing)))
+ assert not missing,missing
+ changed=run(['git','diff','--name-only',B,H]).stdout.splitlines()
+ restored={'ai-memory-durable-pages','ai-memory-handoff','ai-memory-learning-maintenance','ai-memory-messaging','ai-memory-retrieval','ai-memory-routing-install','context7-cli','golang-cli','grilling','knowledge-workspace','systematic-debugging','typesafe-ai','handoff'}
+ owned={'roundfix','write-idea','write-prd','write-techspec'}
+ for p in changed:
+  protected=p in ['Makefile','go.mod','go.sum','.roundfixrc.yml'] or p.startswith(('.github/workflows/','internal/baseline/assets/source-baselines/','internal/baseline/assets/retention/'))
+  if p.startswith('.agents/skills/') and p.split('/')[2] not in restored|owned:protected=True
+  if p.startswith('internal/baseline/assets/profiles/'):
+   assert p.endswith('/standard-typescript-monorepo.json'),p
+   old=json.loads(sp.check_output(['git','show',B+':'+p]));new=json.loads((R/p).read_text())
+   def stripped(o):
+    if isinstance(o,dict):return {k:stripped(v) for k,v in o.items() if k not in ['digest','goldenDigest']}
+    if isinstance(o,list):return [stripped(x) for x in o]
+    return o
+   assert stripped(old)==stripped(new),'profile source changed'
+  assert not protected,p
+ for p in changed:
+  if not p.endswith('SKILL.md'):continue
+  def section(txt):
+   m=re.search(r'^### QA settlement\n(.*?)(?=^#{1,3} |\Z)',txt,re.M|re.S);return m.group(0) if m else ''
+  old=sp.run(['git','show',B+':'+p],text=True,capture_output=True).stdout;new=(R/p).read_text() if (R/p).exists() else ''
+  assert section(old)==section(new),p+' QA settlement changed'
+ logs.append('Protected files unchanged from Delivery Base; profile source changes limited to formatter digest; all QA settlement sections byte-identical. QA worktree delta is only the seeded qa/ directory.')
+ done('QA-12',note='Actual diff-tree paths for all four Task commits match declarations; live GovernedPath predicate confirms exact grant coverage; protected-file and settlement comparisons pass against Delivery Base 2981eb39.')
+elif mode=='outside':
+ snapshot=json.loads((R/'internal/baseline/assets/setups/go.json').read_text());names=[x['name'] for x in snapshot['skills']]
+ logs.append('Outside source: marcioaltoe/skills@65d5f365cace27c4b468db1723213723b10c870b, PR #131, setups/go.txt, rust.txt, typescript.txt; Python list is context only (52 upstream entries), no Python import in this Spec. PRD quoted replacement agrees with audited snapshot names: '+json.dumps([n for n in names if n.startswith('ai-memory-')])+'. handoff absent: '+str('handoff' not in names)+'.\nAuthorization and task_05 prohibit upstream-checkout reads and network in QA. No external lookup attempted; snapshot agreement does not prove external content. Unblock by authorized external verification of the pinned setup lists.')
+ done('QA-08','blocked (environment: upstream checkout and network prohibited by Spec authorization)',note='Outside-evidence row; audited snapshots compared with the PRD quote, external setup lists not independently reached. Task_05 Requirement 8 explicitly exempts this row from deciding a qualifying partial.')
+ core=json.loads((R/'internal/baseline/assets/modules/core.json').read_text());text=(R/'internal/baseline/assets/modules/core.json').read_text();assert 'receiving project does not exist' in text and 'put the handoff or the message text in the response' in text
+ logs.append('Outside source: https://github.com/akitaonrails/ai-memory/blob/main/docs/ARCHITECTURE.md, MCP tool surface. PRD quote: memory_message_send: "Send a directed cross-project message into another project\'s inbox … the recipient must already exist (fail-closed, never created)"; memory_message_pop: "Claim ONE inbox message exactly once".\nAudited clause.core.ai-memory-is-optional explicitly covers a refused send: receiving project does not exist; tell the user what is missing, return message text for delivery and continue, never write another checkout or Secondbrain.\nNo external lookup attempted: authorization prohibits network. Unblock with authorized retrieval of the architecture source.')
+ done('QA-09','blocked (environment: network prohibited by Spec authorization)',note='Outside-evidence row; PRD quotation and refused-send fallback compared, upstream architecture page remains independently unverified.')
+ logs.append('Single pre-run PRD Unreachable Acceptance declaration: criterion Success Metric 6, after release an adopter next refresh records each retired clause replaced. Reason: another repository and released Roundfix are required; both are outside authorized QA. Satisfied-by: operator first post-release managed refresh of an adopter reported to default/marcioaltoe-roundfix through ai-memory. No such refresh attempted; remains unproven.')
+ done('QA-10','blocked (declared unreachable)',note='Exactly one declaration counted once; operator must perform the first adopter refresh after release and report it through the declared channel. Local retention tests cannot prove this post-release event.')
+ logs.append('Pull Request row: no open Pull Request (authoritative gate prompt).\nApproval: approved _authorization.md, grant 2026-10-24, operative revision 1cdd5b5590f25fd70ea4d36ed51ee51b7911e14e, four granted Task commits in preserved mechanical table. This is delivery authority, not a new review approval.\nChecks/status: Daemon make verify-changed exit 0 for '+H+'.\nUnresolved review threads: none exists because there is no Pull Request.\nMerge-Ready acceptance: none yet.\nReview-artifact ancestry: no acceptance artifact claimed; candidate '+H+' is the audited head.\nUnblock by opening PR on the Spec target branch after this gate and configured review, outside this Agent authorization.')
+ done('QA-13','blocked (environment: no open Pull Request)',note='Pull Request row; all five pre-PR controls explicitly accounted for; Merge-Ready acceptance remains absent, so no live PR approval or readiness is claimed.')
+elif mode=='archive':
+ p=cli(['archive',S.name,'--plan','--offline'],expected=None)
+ logs.append('Every Judge Key Variable and TYPESAFE_API_KEY removed by name from child environment, including ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY. No key value read or persisted. Read-only plan only; no archive applied.')
+ # A refusal is expected while the daemon-owned QA Task remains pending.
+ assert p.returncode in [0,2,1]
+ assert 'error:' in p.stderr or 'Archive' in p.stdout or 'archive' in p.stdout.lower()
+ done('QA-14',note='Only the offline archive plan executed; its full refusal/plan is recorded. Daemon still owns terminal QA status and no archive was applied.')
