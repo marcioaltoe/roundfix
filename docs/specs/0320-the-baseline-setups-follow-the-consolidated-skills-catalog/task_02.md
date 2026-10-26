@@ -34,8 +34,11 @@ writes into the checkout while a test suite runs.
 2. MUST verify Success Metric 1 and Invariants 1, 3 and 5 from the audited
    `internal/baseline/assets/setups/*.json` and the same five files at the
    Delivery Base (the merge base of the audited head with `main`): record
-   that each audited file names `8d71fade68c54693bedbd917371f0514311af157`
-   as its `source.ref` and as the `ref` of every `github` skill, that its
+   that each audited file with a `github` source names
+   `8d71fade68c54693bedbd917371f0514311af157` as its `source.ref`, that the
+   composed `go-cli-typescript-bun.json` source (`composed`, `setups: [go,
+   typescript]`, no ref) equals the Delivery Base's, that all five name that
+   commit as the `ref` of every `github` skill, that its
    ordered skill names equal the Delivery Base's, and that the only
    `treeDigest` that differs is `onioncry`'s, in `typescript.json` and
    `go-cli-typescript-bun.json`, now
@@ -97,8 +100,10 @@ writes into the checkout while a test suite runs.
    count it once in `rows_blocked_declared`.
 10. MUST perform the glossary and documentation checks: record that the Spec
     declares no glossary term and that `CONTEXT.md` is byte-identical to the
-    Delivery Base (`docs/agents/domain.md`), and that no file outside
-    `docs/history/` names `skill-architect` or `writing-for-agents`.
+    Delivery Base (`docs/agents/domain.md`), and that no operational file
+    names `skill-architect` or `writing-for-agents`: the scan excludes
+    `docs/history/` and this Spec's own folder, whose PRD, Tasks and adopted
+    reference quote the upstream messages on purpose.
 11. MUST verify from the repository history:
     - the Task's changed files stay within its declarations or its `##
       Recorded paths`;
