@@ -781,6 +781,10 @@
       {
         "version": "0.0.5",
         "digest": "5b6432e62bfffc6ba5b5137e2e66015a77299a93b74f733a88cb4e3292aed3c2"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "5fd0d41002184c313a97df09a34beadad243de952b9dc33d74ebf1881677f894"
       }
     ],
     "write-idea": [
