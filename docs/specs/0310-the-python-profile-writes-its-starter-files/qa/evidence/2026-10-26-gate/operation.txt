@@ -1,0 +1,35 @@
+$ go test -count=1 -v -run ^(TestStartersPreviewsAndCreatesOnlyAbsentFiles|TestStartersRefuseADigestThatNoLongerMatches|TestStartersRemoveWhatTheyCreatedWhenAWriteFails|TestTheUndeclaredGateNamesTheStartersCommand)$ ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestStartersPreviewsAndCreatesOnlyAbsentFiles
+=== PAUSE TestStartersPreviewsAndCreatesOnlyAbsentFiles
+=== RUN   TestStartersRefuseADigestThatNoLongerMatches
+=== PAUSE TestStartersRefuseADigestThatNoLongerMatches
+=== RUN   TestStartersRemoveWhatTheyCreatedWhenAWriteFails
+=== PAUSE TestStartersRemoveWhatTheyCreatedWhenAWriteFails
+=== RUN   TestTheUndeclaredGateNamesTheStartersCommand
+=== PAUSE TestTheUndeclaredGateNamesTheStartersCommand
+=== CONT  TestStartersPreviewsAndCreatesOnlyAbsentFiles
+=== CONT  TestStartersRemoveWhatTheyCreatedWhenAWriteFails
+=== CONT  TestStartersRefuseADigestThatNoLongerMatches
+=== CONT  TestTheUndeclaredGateNamesTheStartersCommand
+=== RUN   TestTheUndeclaredGateNamesTheStartersCommand/python
+=== PAUSE TestTheUndeclaredGateNamesTheStartersCommand/python
+=== RUN   TestTheUndeclaredGateNamesTheStartersCommand/rust-cli
+=== PAUSE TestTheUndeclaredGateNamesTheStartersCommand/rust-cli
+=== CONT  TestTheUndeclaredGateNamesTheStartersCommand/python
+=== CONT  TestTheUndeclaredGateNamesTheStartersCommand/rust-cli
+=== RUN   TestStartersPreviewsAndCreatesOnlyAbsentFiles/repository-owned_profile_retains_starters
+=== PAUSE TestStartersPreviewsAndCreatesOnlyAbsentFiles/repository-owned_profile_retains_starters
+=== CONT  TestStartersPreviewsAndCreatesOnlyAbsentFiles/repository-owned_profile_retains_starters
+--- PASS: TestStartersRefuseADigestThatNoLongerMatches (0.07s)
+--- PASS: TestStartersRemoveWhatTheyCreatedWhenAWriteFails (0.07s)
+--- PASS: TestTheUndeclaredGateNamesTheStartersCommand (0.00s)
+    --- PASS: TestTheUndeclaredGateNamesTheStartersCommand/rust-cli (0.07s)
+    --- PASS: TestTheUndeclaredGateNamesTheStartersCommand/python (0.07s)
+--- PASS: TestStartersPreviewsAndCreatesOnlyAbsentFiles (0.07s)
+    --- PASS: TestStartersPreviewsAndCreatesOnlyAbsentFiles/repository-owned_profile_retains_starters (0.04s)
+PASS
+suiteguard: guard cost: measured 2785 paths; fingerprint took 136.544167ms before and 133.180833ms after
+ok  	roundfix/internal/baseline	0.525s
+stderr:

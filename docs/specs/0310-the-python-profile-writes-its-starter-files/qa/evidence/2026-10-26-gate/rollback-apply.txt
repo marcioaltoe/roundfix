@@ -1,0 +1,5 @@
+$ ./bin/roundfix baseline starters --profile python --repo /tmp/qa0310-t0xrcmue/rollback-cli --confirm-plan sha256:1abbc2dc2fe86e9631c72a734dfb92292563d2e165f2757f421942c0c0491365
+exit: 1
+stdout:
+stderr:
+roundfix baseline starters: starters.write.failed: .github/workflows/verify.yml: openat .github: not a directory

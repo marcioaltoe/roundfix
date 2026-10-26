@@ -1,0 +1,56 @@
+Delivery Base 307631968822f7d180792fbdbb0f2cefb5396fe5; audited head 8f2f3e9cbb829f0a5de4edc370028068776fbf4a
+
+Task 1 463db82da704dd8e6a58e78ede70cb70407ef3ac
+docs/agents/setup-context.json
+docs/specs/0310-the-python-profile-writes-its-starter-files/task_01.md
+internal/baseline/assets/modules/python.json
+internal/baseline/assets/templates/index.json
+internal/baseline/assets/templates/starters/python/Makefile
+internal/baseline/assets/templates/starters/python/roundfixrc.yml
+internal/baseline/assets/templates/starters/python/verify.yml
+internal/baseline/catalog_load.go
+internal/baseline/catalog_validate.go
+internal/baseline/module-versions.json
+internal/baseline/starter_files.go
+internal/baseline/starter_files_test.go
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+Undeclared: []
+
+Task 2 8b9f6eb96b2369235f19a06101de0dc637cd527f
+docs/specs/0310-the-python-profile-writes-its-starter-files/task_02.md
+internal/baseline/profile_alignment.go
+internal/baseline/starters.go
+internal/baseline/starters_test.go
+Undeclared: []
+
+Task 3 8f2f3e9cbb829f0a5de4edc370028068776fbf4a
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/baseline.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0310-the-python-profile-writes-its-starter-files/task_03.md
+docs/user-guide/commands/baseline.md
+internal/cli/baseline_documentation_contract_test.go
+internal/cli/baseline_profile.go
+internal/cli/baseline_starters.go
+internal/cli/baseline_starters_test.go
+internal/cli/cli.go
+internal/docscontract/publicdocs_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/baseline.md
+skills/testdata/owned-skill-versions.json
+Undeclared: []
+
+Protected paths changed: none. All named unchanged groups byte-identical by git diff 307631968822f7d180792fbdbb0f2cefb5396fe5 8f2f3e9cbb829f0a5de4edc370028068776fbf4a.
+python.json changed fields: ['starterFiles', 'version']
+.agents/skills/roundfix/SKILL.md: QA settlement byte-identical
+.agents/skills/roundfix/references/baseline.md: QA settlement byte-identical
+skills/roundfix/SKILL.md: QA settlement byte-identical
+skills/roundfix/references/baseline.md: QA settlement byte-identical
+Governed scope: seeded mechanical authorization audit grants task_01 and task_03 at 24c40cdd4b07ed72b62eb7f5d03a089e65c2fddb. All actual protected paths are in its exact bounded list; deterministic derived records are sanctioned regeneration. No new Task commit outside seeded audit. task_02 touches no governed path.

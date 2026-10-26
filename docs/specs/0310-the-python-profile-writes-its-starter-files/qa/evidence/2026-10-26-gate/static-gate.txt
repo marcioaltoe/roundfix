@@ -1,0 +1,1 @@
+Daemon-supplied repository Verification: make verify-changed; pass; exit 0; diagnostics removed on success. Agent did not rerun it. make build exited 0.

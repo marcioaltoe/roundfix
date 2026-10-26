@@ -1,0 +1,11 @@
+$ ./bin/roundfix baseline starters --profile python --repo /tmp/qa0310-t0xrcmue/stale
+exit: 3
+stdout:
+Baseline starters: python
+- create Makefile
+- create .roundfixrc.yml
+- create .github/workflows/verify.yml
+State: preview
+Plan Digest: sha256:1abbc2dc2fe86e9631c72a734dfb92292563d2e165f2757f421942c0c0491365
+Next: roundfix baseline starters --profile python --confirm-plan sha256:1abbc2dc2fe86e9631c72a734dfb92292563d2e165f2757f421942c0c0491365
+stderr:

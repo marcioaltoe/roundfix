@@ -1,0 +1,6 @@
+$ ./bin/roundfix baseline starters --profile python --repo /tmp/qa0310-t0xrcmue/stale --profile missing
+exit: 2
+stdout:
+stderr:
+roundfix: lstat /tmp/qa0310-t0xrcmue/stale/.roundfix: no such file or directory
+Run 'roundfix baseline starters --help' for usage.

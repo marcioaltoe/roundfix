@@ -1,0 +1,13 @@
+$ go test -count=1 -v -run ^TestStartersPreviewsAndCreatesOnlyAbsentFiles$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestStartersPreviewsAndCreatesOnlyAbsentFiles
+=== PAUSE TestStartersPreviewsAndCreatesOnlyAbsentFiles
+=== CONT  TestStartersPreviewsAndCreatesOnlyAbsentFiles
+    starters_test.go:44: entries = [{Path:Makefile Action:create ContentIdentity:sha256:3e1a2700ca89de6b9271feb2fdaffe93704a2372186f92e981956c19bed71c77} {Path:.roundfixrc.yml Action:create ContentIdentity:sha256:3ce4f3c75272e500f03f504130b4c9e478943e1b7b9584ca91b6786e87a83b5c} {Path:.github/workflows/verify.yml Action:create ContentIdentity:sha256:14f48dacfeff2bf2bbf1ec65059dbcfbf0c2a6c301a6caccf5561ea4a2251bf0}], want [{Path:Makefile Action:keep ContentIdentity:sha256:3e1a2700ca89de6b9271feb2fdaffe93704a2372186f92e981956c19bed71c77} {Path:.roundfixrc.yml Action:create ContentIdentity:sha256:3ce4f3c75272e500f03f504130b4c9e478943e1b7b9584ca91b6786e87a83b5c} {Path:.github/workflows/verify.yml Action:create ContentIdentity:sha256:14f48dacfeff2bf2bbf1ec65059dbcfbf0c2a6c301a6caccf5561ea4a2251bf0}]
+--- FAIL: TestStartersPreviewsAndCreatesOnlyAbsentFiles (0.04s)
+FAIL
+suiteguard: guard cost: measured 2777 paths; fingerprint took 147.083208ms before and 119.285959ms after
+FAIL	roundfix/internal/baseline	0.635s
+FAIL
+stderr:

@@ -1,0 +1,5 @@
+$ ./bin/roundfix baseline starters --profile python --repo /tmp/qa0310-t0xrcmue/stale --format json
+exit: 3
+stdout:
+{"schemaVersion":"roundfix/baseline-starters/v1","profile":"python","state":"preview","starters":[{"path":"Makefile","action":"keep","contentIdentity":"sha256:3e1a2700ca89de6b9271feb2fdaffe93704a2372186f92e981956c19bed71c77"},{"path":".roundfixrc.yml","action":"create","contentIdentity":"sha256:3ce4f3c75272e500f03f504130b4c9e478943e1b7b9584ca91b6786e87a83b5c"},{"path":".github/workflows/verify.yml","action":"create","contentIdentity":"sha256:14f48dacfeff2bf2bbf1ec65059dbcfbf0c2a6c301a6caccf5561ea4a2251bf0"}],"planDigest":"sha256:043a0b9974df691326c27ce18b2bfdb1ffb1a4255062deedb3e1fef83611ab6c"}
+stderr:

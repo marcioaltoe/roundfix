@@ -1,0 +1,4 @@
+$ bash -c out="$(go test -tags docscontract -count=1 -v -run '^(TestBaselineStartersPreviewTranscript|TestBaselineStartersApplyTranscript|TestBaselineStartersWritesAProjectConfigRoundfixLoads|TestBaselineStartersJSONAndRefusals|TestBaselineStartersHelp|TestEveryCommandPathPrintsItsHelp|TestBaselineExamplesParse)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestBaselineStartersPreviewTranscript TestBaselineStartersApplyTranscript TestBaselineStartersWritesAProjectConfigRoundfixLoads TestBaselineStartersJSONAndRefusals TestBaselineStartersHelp TestEveryCommandPathPrintsItsHelp TestBaselineExamplesParse; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/cli
+exit: 0
+stdout:
+stderr:

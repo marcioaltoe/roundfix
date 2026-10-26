@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0310-the-python-profile-writes-its-starter-files
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
