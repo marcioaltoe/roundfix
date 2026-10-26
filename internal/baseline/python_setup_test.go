@@ -12,8 +12,6 @@ import (
 	"testing"
 )
 
-const pythonPresetRevision = "65d5f365cace27c4b468db1723213723b10c870b"
-
 func TestThePythonSetupIsThePublishedUpstreamPreset(t *testing.T) {
 	t.Parallel()
 
@@ -31,7 +29,7 @@ func TestThePythonSetupIsThePublishedUpstreamPreset(t *testing.T) {
 	}
 	wantSource := assetsSyncSource{
 		Type: "github", Repository: "marcioaltoe/skills",
-		Ref: pythonPresetRevision, Path: "setups/python.txt",
+		Ref: upstreamSetupRevision, Path: "setups/python.txt",
 	}
 	if !reflect.DeepEqual(setup.Source, wantSource) {
 		t.Errorf("Python setup source = %+v, want %+v", setup.Source, wantSource)
@@ -118,13 +116,13 @@ func TestEveryUpstreamSetupFollowsThePythonPresetRevision(t *testing.T) {
 			if err := json.Unmarshal(entry.Data, &setup); err != nil {
 				t.Fatal(err)
 			}
-			if setup.Source.Ref != pythonPresetRevision {
-				t.Errorf("setup %s revision = %q, want %q", id, setup.Source.Ref, pythonPresetRevision)
+			if setup.Source.Ref != upstreamSetupRevision {
+				t.Errorf("setup %s revision = %q, want %q", id, setup.Source.Ref, upstreamSetupRevision)
 			}
 			var hasMemoryHandoff bool
 			for _, skill := range setup.Skills {
-				if skill.Source.Type == "github" && skill.Source.Ref != pythonPresetRevision {
-					t.Errorf("setup %s skill %s revision = %q, want %q", id, skill.Name, skill.Source.Ref, pythonPresetRevision)
+				if skill.Source.Type == "github" && skill.Source.Ref != upstreamSetupRevision {
+					t.Errorf("setup %s skill %s revision = %q, want %q", id, skill.Name, skill.Source.Ref, upstreamSetupRevision)
 				}
 				if id == "python" && skill.Name == "handoff" {
 					t.Error("Python setup still contains the retired handoff skill")
