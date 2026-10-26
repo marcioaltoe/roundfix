@@ -59,9 +59,13 @@ explicit `-timeout`, and every row that runs `bin/roundfix` sets `HOME` and
    (`go build -buildvcs=false -o <tmp>/roundfix-base ./cmd/roundfix`), each on
    the same `HOME`, `TMPDIR` and repository paths with the fixture recreated
    before each run, and record that standard output, standard error and exit
-   codes are byte-identical; then run `bin/roundfix gc` the same way with each
-   binary and record the same, and that the 10 h and 3 h entries are gone and
-   the 0 h entry and README remain.
+   codes are byte-identical except the values after `Cutoff: ` and
+   `Run Retention cutoff: `, which print the invocation's wall clock (the same
+   binary run twice differs there); record those two lines raw, then compare
+   every other byte exactly after replacing only those two values with a fixed
+   placeholder; then run `bin/roundfix gc` the same way with each binary and
+   record the same, and that the 10 h and 3 h entries are gone and the 0 h
+   entry and README remain.
 4. MUST run each sabotage on its own temporary copy of the audited head made
    with `git archive`, and record that the named test fails, naming the case
    whose input makes the mutation observable:
@@ -162,7 +166,7 @@ explicit `-timeout`, and every row that runs `bin/roundfix` sets `HOME` and
 ## Acceptance Criteria
 
 - [ ] An Implement Run and a repository gate trim the declared cache first and keep their outcome whatever the trim does.
-- [ ] `roundfix gc` and `roundfix gc --dry-run` keep their bytes against the Delivery Base binary, and the doctor line appears only below 10 GiB free.
+- [ ] `roundfix gc` and `roundfix gc --dry-run` keep their bytes against the Delivery Base binary (apart from the two wall-clock cutoff values), and the doctor line appears only below 10 GiB free.
 - [ ] Each sabotage makes its named test fail, and the scope audit finds no change outside the declared files.
 
 ## Verification
