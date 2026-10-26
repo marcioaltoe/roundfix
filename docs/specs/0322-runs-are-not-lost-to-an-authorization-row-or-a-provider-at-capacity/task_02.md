@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -93,3 +93,94 @@ QA verdict the failed turn wrote, recording the verdict it discarded.
 - `_prd.md` → Sources 2; Goals 3-4; Core Feature 2; Success Metrics 4-6; Validation
 - `_techspec.md` → Current behavior 4-7; Interfaces; Data Models; API Contracts 3-5; Invariants 3-6; Testing Approach; Build Order 2
 - ADR-0335; ADR-0274
+
+
+## Result
+
+Implemented API Contracts 3–5 in the Agent Session owner. A Provider System
+Error now uses the next selection for Task and QA scopes regardless of the
+First Handoff or report verdict. Recovery resends the failed turn's prompt
+after the original Task prompt and notice when they differ. Before a QA
+fallback, the report's inline frontmatter verdict is reopened to `pending`;
+the appended runtime section records the discarded verdict between the cause
+and fallback lines. Pending or unreadable verdicts keep their existing bytes
+in the reset helper, and report bodies and file permissions are preserved.
+
+Acceptance evidence from focused implementation checks:
+
+- Repair after the First Handoff: the new
+  `TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback` observes three
+  turns, the fallback model/session, the exact original prompt + notice +
+  repair prompt, and one provider fallback event. The QA regression's
+  `partial`, `pass` and `fail` cases observe accepted QA on the fallback.
+- Reopened QA verdict: every non-pending verdict case compares the entire
+  report presented to the fallback with the previous bytes except the
+  verdict line and the appended section. It checks the discarded verdict's
+  position and single occurrence in the inherited and final report; the
+  pending case checks its absence. Additional helper cases cover missing or
+  unreadable verdicts, body verdict text, quoted values, CRLF, permissions and
+  propagated read errors.
+- Exhaustion and compatibility: Task failure before and after the First
+  Handoff and QA failure after a written verdict retain runtime-infrastructure
+  settlement, attempts and exhausted events. The focused checks include the
+  unchanged Lost Rollout and Light Tier tests and review eligibility cases.
+  Inspection confirms the seven existing top-level provider tests remain;
+  the coverage-equivalence command is reserved for the Daemon.
+
+Commands and outcomes:
+
+- Before production edits,
+  `rtk proxy go test -timeout 5m -count=1 -run '^(TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback|TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt)$' ./internal/daemon`
+  exited 1: the repair regression and `partial`, `pass`, `fail` QA cases
+  reproduced exhaustion despite a configured fallback.
+- After production edits,
+  `rtk proxy go test -timeout 5m -count=1 -run '^(TestProviderSystemError.*|TestQAProviderSystemError.*)$' ./internal/daemon`
+  exited 0.
+- After the final test edits,
+  `rtk proxy go test -timeout 5m -count=1 -run '^(TestResetUnfinishedQAVerdictPreservesTheRestOfTheReport|TestProviderSystemError.*|TestQAProviderSystemError.*|Test.*LostRollout.*|TestLightTier.*)$' ./internal/daemon`
+  exited 0.
+- Disposable `go test -overlay` probes independently restored the Task First
+  Handoff gate, restored the QA pending-report gate, skipped the verdict
+  reset, and omitted the repair prompt. All four exited 1 with the expected
+  repair or QA partial regression failure. Repository source bytes were
+  unchanged by these probes.
+- A source comparison against HEAD confirmed `recoverLostRollout`,
+  `activate`, `fallbackAfterSelectionFailure`, `applyLightTier`,
+  `canYieldLight`, `yieldLight` and `escalate` byte-identical. Only this Task
+  file and the three assigned Go paths are changed. `git diff --check`
+  exited 0.
+
+Declared Verification, coverage equivalence, the CLI compatibility check and
+repository Verification remain Daemon-owned and were not run. The existing
+`status: in_progress` was preserved. No commit, push or pull request was made.
+
+
+### Verification feedback — attempt 1
+
+Inspected the Daemon diagnostic at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261026T225106Z_fc0521ab2152ea3c/verification/batch-002-attempt-1.log`
+and reviewed the recovery implementation and QA regression. CLI compilation
+exhausted local temporary storage before the selected CLI test could run;
+the chained QA check was not reached. This feedback identified no assertion
+failure or implementation defect.
+
+`rtk proxy df -h /private/tmp /Volumes/Brain-SSD` confirmed the internal data
+volume had approximately 144 MiB available. The default Go build cache held
+about 12 GiB. With no active Go compiler processes, `rtk proxy go clean -cache`
+exited 0 and restored about 12 GiB of free space. Roundfix's separate shared
+build cache and all source files were preserved.
+
+Focused check:
+`rtk proxy go test -timeout 5m -count=1 -run '^(TestResetUnfinishedQAVerdictPreservesTheRestOfTheReport|TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt)$' ./internal/cli ./internal/daemon`
+exited 0. The CLI package compiled with no matching tests selected; the Daemon
+ran the verdict-reopening and report-preservation cases. This check does not
+claim that the selected CLI compatibility test or declared Verification ran.
+
+No production or test edits were needed for this feedback. The Task status
+remains Daemon-owned, and the complete configured Verification rerun remains
+with the Daemon. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T225106Z_fc0521ab2152ea3c`
+- Source commit: `64f41561f36ba27b1f30a11d1197693f3ba2c465`

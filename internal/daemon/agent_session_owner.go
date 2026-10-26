@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"gopkg.in/yaml.v3"
+
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/lighttier"
@@ -257,7 +259,11 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 			if recoveryErr := owner.recoverProviderSystemError(ctx, failure, err); recoveryErr != nil {
 				return result, recoveryErr
 			}
+			failedPrompt := req.Prompt
 			req.Prompt = owner.taskPrompt + "\n\n" + providerSystemErrorNotice
+			if failedPrompt != owner.taskPrompt {
+				req.Prompt += "\n\n" + failedPrompt
+			}
 			continue
 		}
 		var selectionErr *agent.SelectionFailureError
@@ -353,9 +359,8 @@ func (owner *agentSessionOwner) recoverProviderSystemError(ctx context.Context, 
 	}
 	candidates := owner.candidates()
 	nextIndex := owner.candidateIndex + 1
-	pending := owner.scope.Kind == "qa" && owner.reportPending != nil && owner.reportPending()
 	recovery := "exhausted"
-	if nextIndex < len(candidates) && ((owner.scope.Kind == "task" && !owner.handedOff) || pending) {
+	if nextIndex < len(candidates) && (owner.scope.Kind == "task" || owner.scope.Kind == "qa") {
 		recovery = "fallback"
 	}
 	payload := map[string]any{
@@ -377,8 +382,16 @@ func (owner *agentSessionOwner) recoverProviderSystemError(ctx context.Context, 
 		return &providerSystemErrorExhaustedError{scopeKind: owner.scope.Kind, scopeID: owner.scope.ID, detail: failure.Detail}
 	}
 	next := candidates[nextIndex]
-	if pending {
-		section := fmt.Sprintf("\n## Agent runtime fallback\n\n- provider_system_error: %s: %s\n- fallback: %s\n- retry_spent: false\n", selectionLabel(failed.Selection), failure.Detail, selectionLabel(next.Selection))
+	if owner.scope.Kind == "qa" && owner.reportPath != "" {
+		discarded, err := resetUnfinishedQAVerdict(owner.reportPath)
+		if err != nil {
+			return err
+		}
+		section := fmt.Sprintf("\n## Agent runtime fallback\n\n- provider_system_error: %s: %s\n", selectionLabel(failed.Selection), failure.Detail)
+		if discarded != "" {
+			section += "- discarded_verdict: " + discarded + "\n"
+		}
+		section += fmt.Sprintf("- fallback: %s\n- retry_spent: false\n", selectionLabel(next.Selection))
 		file, err := os.OpenFile(owner.reportPath, os.O_APPEND|os.O_WRONLY, 0)
 		if err != nil {
 			return fmt.Errorf("open QA runtime fallback report: %w", err)
@@ -394,6 +407,54 @@ func (owner *agentSessionOwner) recoverProviderSystemError(ctx context.Context, 
 	owner.candidateIndex = nextIndex
 	owner.selectionFailurePublished.Store(false)
 	return nil
+}
+
+// resetUnfinishedQAVerdict returns a QA report's frontmatter verdict to
+// pending when the turn that wrote it did not finish, and names the verdict
+// it discarded. A report without a readable frontmatter verdict keeps its
+// bytes and yields "".
+func resetUnfinishedQAVerdict(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read unfinished QA report: %w", err)
+	}
+	lines := strings.SplitAfter(string(content), "\n")
+	if strings.TrimRight(lines[0], "\r\n") != "---" {
+		return "", nil
+	}
+	closing, verdictLine := -1, -1
+	for index := 1; index < len(lines); index++ {
+		if strings.TrimRight(lines[index], "\r\n") == "---" {
+			closing = index
+			break
+		}
+		if strings.HasPrefix(lines[index], "verdict:") {
+			verdictLine = index
+		}
+	}
+	if closing < 0 || verdictLine < 0 {
+		return "", nil
+	}
+	var frontmatter struct {
+		Verdict string `yaml:"verdict"`
+	}
+	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:closing], "")), &frontmatter); err != nil || frontmatter.Verdict == "" || frontmatter.Verdict == spec.VerdictPending {
+		return "", nil
+	}
+	// Only an inline verdict can be rewritten by replacing its single line.
+	var inline struct {
+		Verdict string `yaml:"verdict"`
+	}
+	if err := yaml.Unmarshal([]byte(lines[verdictLine]), &inline); err != nil || inline.Verdict != frontmatter.Verdict {
+		return "", nil
+	}
+	line := lines[verdictLine]
+	ending := line[len(strings.TrimRight(line, "\r\n")):]
+	lines[verdictLine] = "verdict: " + spec.VerdictPending + ending
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "")), 0o644); err != nil {
+		return "", fmt.Errorf("reset unfinished QA verdict: %w", err)
+	}
+	return frontmatter.Verdict, nil
 }
 
 func (owner *agentSessionOwner) Close(ctx context.Context) error {
