@@ -30,8 +30,9 @@ regeneration:
     outputs:
       - docs/agents/setup-context.json
 promoted: []
+pull_request: "689"
 ---
 
 # The Baseline setups follow the consolidated skills catalog
 
-The Archive Record can carry a qualifying declared partial for audited head `9eda3f904aa6034f170c15f66dad56657b1edcee`, with 11 passing rows, Q09's matching Unreachable Acceptance and its `satisfied-by` evidence marked unproven, and Q12's pre-PR environment block. The required `./bin/roundfix archive 0320-the-baseline-setups-follow-the-consolidated-skills-catalog --plan --offline` exited 0, listed the Spec cut and its adopted source candidate, and reported `judge: skipped (offline)` (archive plan (`docs/specs/0320-the-baseline-setups-follow-the-consolidated-skills-catalog/qa/evidence/archive-plan.txt` (not reachable from any branch or tag))).
+The Archive Record can carry a qualifying declared partial for audited head `9eda3f904aa6034f170c15f66dad56657b1edcee`, with 11 passing rows, Q09's matching Unreachable Acceptance and its `satisfied-by` evidence marked unproven, and Q12's pre-PR environment block.
