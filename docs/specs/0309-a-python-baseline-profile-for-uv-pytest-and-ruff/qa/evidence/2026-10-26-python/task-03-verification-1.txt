@@ -1,7 +1,0 @@
-$ /bin/bash -c g="$(tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md)"; printf '%s\n' "$g" | grep -qE -- 'Roundfix ships .go-cli-tui., .go-cli-typescript-monorepo., .python., .rust-cli., and .standard-typescript-monorepo.[.]' || { echo 'profile list lacks python' >&2; exit 1; }; for p in 'Profile governs a Python project run with uv, ruff and pytest through' 'whether the project is a command-line tool, a backend service or a worker. It fixes no application surface' 'preset the upstream skills repository publishes, imported by the asset sync like every other setup.' 'FastAPI, file-pipeline and Streamlit skills only when the repository has chosen that tool.' 'Its guide makes the gate check the lockfile offline and type-check with ty besides ruff and pytest.'; do printf '%s\n' "$g" | grep -qF -- "$p" || { printf 'missing in guide: %s\n' "$p" >&2; exit 1; }; done; grep -qF -- '"review": "2026-10-24 — the only change names the new built-in' docs/references/skill-coverage.json || { echo 'missing coverage review' >&2; exit 1; }; go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent)$' ./internal/docscontract && go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills
-exit: 0
-stdout:
-ok  	roundfix/internal/docscontract	0.335s
-ok  	roundfix/skills	0.162s
-
-stderr:

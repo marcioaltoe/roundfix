@@ -20,7 +20,7 @@ ADR-0323).
 ## Requirements
 
 1. MUST answer the Backlog Entry Spec 0309 adopted,
-   [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md)
+   [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../../references/2026-10-22-a-baseline-profile-for-python-repositories.md)
    of 2026-10-22, its expected item 4.
 2. MUST create `internal/cli/baseline_starters.go` with the command of
    `_techspec.md` → API Contract 6: a `parseBaselineStartersCommand` for

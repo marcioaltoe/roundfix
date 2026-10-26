@@ -1,4 +1,0 @@
-QA files scanned: 67
-Secret pattern kinds checked: 10
-Matches: 0
-All QA artifacts are text.

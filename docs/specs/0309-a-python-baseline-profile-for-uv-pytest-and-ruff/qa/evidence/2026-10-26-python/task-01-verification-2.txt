@@ -1,6 +1,0 @@
-$ /bin/bash -c test -f internal/baseline/assets/setups/python.json || { echo 'missing python setup' >&2; exit 1; }; for f in go rust typescript python; do grep -qF -- '"ref": "65d5f365cace27c4b468db1723213723b10c870b"' "internal/baseline/assets/setups/$f.json" || { printf '%s not at the preset commit\n' "$f" >&2; exit 1; }; done; grep -qF -- '"name": "ai-memory-handoff"' internal/baseline/assets/setups/python.json || { echo 'python setup lacks the ai-memory skills' >&2; exit 1; }; go test -count=1 -run '^(TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract)$' ./internal/baseline
-exit: 0
-stdout:
-ok  	roundfix/internal/baseline	2.806s
-
-stderr:

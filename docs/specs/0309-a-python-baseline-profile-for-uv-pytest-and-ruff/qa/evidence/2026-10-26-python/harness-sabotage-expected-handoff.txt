@@ -1,8 +1,0 @@
-$ go test -v -count=1 -run ^TestThePythonSetupIsThePublishedUpstreamPreset$ ./internal/baseline
-exit: 1
-stdout:
-suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
-FAIL	roundfix/internal/baseline	0.321s
-FAIL
-
-stderr:
