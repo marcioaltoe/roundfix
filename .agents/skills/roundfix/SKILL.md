@@ -1,13 +1,14 @@
 ---
 name: roundfix
-description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, run its `--follow-up`, `--status` and `--unattended` Skill Modes, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
 metadata:
   category: code-review
+  opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.138
+  version: 0.1.139
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.138
+version: 0.1.139
 ---
 
 # Roundfix
@@ -18,6 +19,16 @@ Spec's Task Graph, diagnose Roundfix runtime health, reclaim Run storage with
 the GC Command, archive a completed Spec, or when a Roundfix daemon assigns one
 bounded Batch of Review Issues or one Task. Use the Run Event Stream when a
 Supervisor or script needs JSONL progress for one explicit Run.
+
+## Modes
+
+A request names a Skill Mode with the first word after the skill's name: `follow-up`, `status` or `unattended`, with or without a leading `--`, in every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix unattended`, `@roundfix --unattended` or `/roundfix unattended` in OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. Read the mode from the request text; a request whose first word after the skill's name is anything else, such as `/roundfix watch 123`, uses the skill as the rest of this file describes.
+
+- `--follow-up`: inventory pending work, plan, gather decisions, author and deliver the resulting work.
+- `--status`: run a short read-only status report.
+- `--unattended`: gather every decision in calls of up to three questions.
+
+Read [Skill Modes](references/modes.md) before running a mode.
 
 ## Archive Relink and History Citations
 
@@ -48,6 +59,7 @@ covers a topic that spans commands and owns none.
 | [events](references/events.md) | `events` | Reading JSONL progress for a Run. |
 | [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |
 | [implement](references/implement.md) | `implement` | Starting a Spec Run. |
+| [modes](references/modes.md) | — (the `--follow-up`, `--status` and `--unattended` Skill Modes; each command they run lives in its own reference) | Running a Skill Mode. |
 | [profiles](references/profiles.md) | `profiles` | Selecting an Agent or managing Agent Selection Profiles. |
 | [reconcile](references/reconcile.md) | `reconcile` | Reconciling Run Worktrees. |
 | [release](references/release.md) | `release` | Planning a release. |

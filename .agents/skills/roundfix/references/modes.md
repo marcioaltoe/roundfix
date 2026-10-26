@@ -1,0 +1,15 @@
+# Skill Modes
+
+The Roundfix skill reads an optional Skill Mode from the user's request and follows the selected mode while keeping command-specific details in the relevant reference.
+
+## How a mode is chosen
+
+Claude Code appends the text typed after the skill's name to the skill as an `ARGUMENTS:` line, while Codex and OpenCode keep it in the message, so the skill reads the mode from the request text in all three. The mode is the first word after the skill's name when that word is `follow-up`, `status` or `unattended`, with or without a leading `--`, so `/roundfix follow-up`, `/roundfix --follow-up`, `$roundfix status` and `@roundfix --unattended` each select a mode. This is the Skill Mode, not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. A request whose first word is anything else, or that has none, uses the skill as before (for example `/roundfix watch 123`), and a mode word later in such a request selects nothing. When the words after the mode word name another mode, with or without `--`, the skill asks one question that names them, recommending `follow-up` when it is named and `status` otherwise. Each mode runs Roundfix's read-only follow-up command; when the installed Roundfix lacks it, the mode says so, names `roundfix upgrade` and stops.
+
+## Optional sources
+
+The Secondbrain is a read-only knowledge source when the repository has `docs/agents/secondbrain.md`; consult it while authoring as that guide says. It holds no inbox, and the follow-up command reads no Secondbrain (Spec 0317 removed that source and deprecated its keys, so this section names neither `secondbrain.root` nor `secondbrain.inbox_namespace`). ai-memory is a source when the session exposes its MCP tools: list this project's messages without consuming them, write them to a JSON file in a temporary directory using the `roundfix/follow-up-messages/v1` schema documented by the command, and hand the file to `roundfix follow-up --messages <path> --format json`; consume a message only after recording it as a Spec, Backlog Entry, Finding or answer. Jev is used by the follow-up command when a judge key is configured; relay the command's own report when Jev was unavailable. A release-announcement step exists only when the user's own instructions define one; this skill never names one. A missing source never stops a mode; its report names each missing source and why.
+
+## --status
+
+Run `roundfix follow-up --status --format json` and report, in a few lines, the work in progress, the pending Specs in delivery order, the next release and what it brings, the blockers, and what waits on the user. The command's status view reads `runs`, `delivery-queue`, `pull-requests`, `git`, `specs` and the Release Plan; it writes nothing, asks nothing, consumes no ai-memory message and arms nothing. Read the command's `state`, `sources`, `judge` and `items` fields as documented in [Follow-up Command](follow-up.md); the message-file option is `--messages <path>`, its schema is `roundfix/follow-up-messages/v1`, and output formats are `--format <text|json>`.

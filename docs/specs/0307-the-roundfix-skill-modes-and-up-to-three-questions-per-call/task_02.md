@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -168,3 +168,17 @@ structure (`_prd.md` → Core Features 2, 3 and 6; ADR-0320).
 - `_prd.md` → Goals; User Stories 1, 3 and 4; Core Features 2, 3 and 6; Success Metric 3; Glossary
 - `_techspec.md` → Current behavior 5-6; API Contracts 3, 4 and 7; Invariant 4; Testing Approach; Build Order 2
 - ADR-0320
+
+## Result
+
+- Implemented the canonical Roundfix Skill Mode contract: OpenCode slash metadata, version `0.1.139`, the exact mode-selection paragraph and mode bullets, the reference-index row, and the new first-half modes reference covering selection, optional sources, and read-only status.
+- Added the `Skill Mode` glossary term after `Supervisor`, raised the reference-count expectation to 20, and added `TestTheRoundfixSkillReadsItsModeFromTheRequest` with YAML frontmatter parsing, canonical/embedded coverage, parallel subtests, mode text assertions, and placeholder protection.
+- Ran `make skills-sync` and `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; both succeeded and the canonical/mirror versions and reference are synchronized.
+- Focused check: `go test ./skills -run '^TestTheRoundfixSkillReadsItsModeFromTheRequest$' -count=1 -v` passed for canonical and embedded sources. `git diff --check` passed.
+- Acceptance evidence: the skill and mirror contain all three bare/flagged mode forms, distinguish Skill Mode from `roundfix follow-up`, preserve non-mode behavior, link `references/modes.md`, and contain no body argument placeholder; the modes reference names the tree's follow-up command, status view, message-file option/schema, and source behavior; `CONTEXT.md` defines `Skill Mode`; version recording and mirror synchronization were performed by the sanctioned commands.
+- Follow-up scope: `## --follow-up` and `## --unattended` remain intentionally absent for `task_03`.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T001144Z_01e9c317ace131a5`
+- Source commit: `caef08d675a940ae16bd68d56365c30f5a996231`

@@ -1328,6 +1328,10 @@ _Avoid_: Review Source, review provider, worker, bot
 The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
 _Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
 
+**Skill Mode**:
+A way of running the Roundfix skill that the user's request selects with the first word after the skill's name, `follow-up`, `status` or `unattended`, with or without a leading `--`; the skill reads it from the request text in every harness, it is not the CLI command `roundfix follow-up`, and a request whose first word names no mode uses the skill as before. [ADR-0320](docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md)
+_Avoid_: Command flag, CLI mode, Follow Mode
+
 **Follow Mode**:
 The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
 _Avoid_: tail mode, auto-scroll, live mode
