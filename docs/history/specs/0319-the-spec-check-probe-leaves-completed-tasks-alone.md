@@ -19,6 +19,7 @@ sources:
   - 2026-10-25-the-spec-check-probe-re-runs-completed-tasks.md
 regeneration: []
 promoted: []
+pull_request: "686"
 ---
 
 # The Spec Check probe leaves completed Tasks alone
