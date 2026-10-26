@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -135,3 +135,34 @@ None. The Task changes documents, skills and their contract test; no package con
 - `_prd.md` → Sources; Goal 5; Core Feature 4; Success Metric 7; Glossary
 - `_techspec.md` → API Contracts 7-8; Data Models; Testing Approach; Build Order 4; Glossary
 - ADR-0335; ADR-0276; ADR-0274
+
+## Result
+
+- Implemented API Contract 7 across the canonical settlement skills, Roundfix
+  references, user guides, QA-gate input rules and decision example, the
+  acceptance contract constants, and the four `CONTEXT.md` entries. The
+  subject form now names the authorization's bounded subject and preserves the
+  outside-evidence provenance.
+- Implemented API Contract 8 in the usage, configuration and profiles
+  references, including fallback in any Task or QA turn and the QA
+  `discarded_verdict` record before fallback.
+- `make skills-sync`: passed; owned skill mirrors regenerated from canonical
+  sources.
+- `go test ./skills -run '^TestTheSettlementSkillsNameTheNetworkProhibitedRow$'`:
+  passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  passed; the three owned skill version pairs and the record were updated.
+- `go test ./skills -run '^(TestTheSettlementSkillsNameTheNetworkProhibitedRow|TestSettlementGuidanceIsOneTable)$'`:
+  passed.
+- `git diff --check` and the stale-wording scan: passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  passed; the Behavior Surface fingerprint was re-recorded after the last guide
+  edit.
+- Acceptance evidence: the focused settlement contract, byte-invariant checks,
+  owned-skill record and Behavior Surface record are current; Daemon
+  Verification remains outstanding.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T225106Z_fc0521ab2152ea3c`
+- Source commit: `73b19d3bb3d8101d79f70149b42341bac6f9571a`

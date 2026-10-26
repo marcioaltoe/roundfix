@@ -167,7 +167,7 @@ archive leaves the Spec and report in place.
 Every other refusal is unchanged: a finding-blocked row, an
 environment-blocked row other than the pre-PR Pull Request row or an
 outside-evidence row recorded as `blocked (environment: network denied: <host>)` or
-`blocked (environment: network prohibited by Spec authorization)`, a declared count not covered by the Spec's
+`blocked (environment: <subject> prohibited by Spec authorization)`, a declared count not covered by the Spec's
 declarations, or `verdict: fail` exits `2` and names the first unmet condition.
 `qa_override` keeps its existing meaning for explicitly authorized archival
 when the normal QA prerequisite is unmet; declared unreachability does not use

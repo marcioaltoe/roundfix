@@ -155,9 +155,11 @@ their normal failure semantics. A Lost Rollout gets no repair: the Task
 continues in a new Agent Session, using the next Fallback Selection before the
 First Handoff or while a QA report is pending, and the same selection
 otherwise. A Provider System Error lets the next Fallback Selection take the
-Task under the same condition, gets no retry on the same selection, does not
-count toward the Lost Rollout budget, and otherwise settles the Task as runtime
-infrastructure. An Agent Session owner gets at most two Lost Rollout
+Task in any Task or QA turn, a repair turn after the First Handoff and a QA turn
+that already wrote a verdict included, gets no retry on the same selection,
+does not count toward the Lost Rollout budget, and settles the Task as runtime
+infrastructure only when the chain has no next selection. An Agent Session
+owner gets at most two Lost Rollout
 recoveries; the third Lost Rollout settles the Task as runtime infrastructure.
 
 Legacy `defaults.agent` and `runtimes.<runtime>.model` /
