@@ -1,0 +1,84 @@
+import importlib.util,re,json,subprocess,hashlib
+from pathlib import Path
+s=importlib.util.spec_from_file_location('qa','/tmp/rf0319_probe_qa.py');q=importlib.util.module_from_spec(s);s.loader.exec_module(q)
+R=q.ROOT;S=q.SPEC;E=q.E
+back=S/'references/2026-10-25-the-spec-check-probe-re-runs-completed-tasks.md';b=back.read_text();message=b.split('```markdown\n',1)[1].split('```',1)[0]
+checks=['gesttione-solutions/vortex@a961a29','Task 01','completed','exit 127','verdict unknown, exit final 1','A execução normal por implement continuou somente pelas Tasks pendentes.']
+assert all(x in message for x in checks)
+q.result('6a','pass','Validated the original message (not only its summary): upstream Vortex revision, completed Task, exit 127, unknown and final exit 1; pending-only implement behavior agrees with the local Base/current binary differential in row 3. No Vortex repository was accessed.','SOURCE: '+str(back.relative_to(R))+'\nPROVENANCE: default/marcioaltoe-secondbrain message 01a17436-c629-7622-a37d-12528b1da9f2, 2026-10-25 14:58 BRT; origin vortex.\n'+message+'\nChecks: all six original-message assertions passed.\n')
+h=R/'docs/references/2026-08-14-a-clean-checker-left-eight-vacuous-commands-standing.md';normalized=' '.join(h.read_text().split());quote='a check that cannot be complete should say what it did not cover';assert quote in normalized
+assert 'Eight vacuous commands' in h.read_text() and 'eleven authored Verification commands' in normalized
+q.result('6b','pass','The historical Fluxus/Roundfix measurement independently requires incomplete coverage to be named. The current CLI text, JSON and count meet that principle (row 3); the source predates this Spec.','SOURCE: '+str(h.relative_to(R))+'\nObserved measurements: eight vacuous commands in Fluxus; eleven in Roundfix.\nQuote: "'+quote+'".\nIndependent comparison: current built text names both omitted commands; JSON gives reason completed; verdict counts two; base names neither as omitted.\n')
+authorization=(S/'_authorization.md').read_text();assert 'reaches the network' in authorization
+q.result('6c','blocked (environment: network prohibited by Spec authorization)','TAP 14 was not fetched because `_authorization.md` → Limits forbids every QA row from reaching the network. Unblock through an authorized lookup or pre-Run offline external-source capture; this row alone never prevents qualifying partial.','SOURCE NOT REACHED: https://testanything.org/tap-version-14-specification.html\nAuthorization: No test, Verification command or QA row ... reaches the network.\nPRD citation only (not live verification): SKIP points "indicate that a test was not run"; "Harnesses must not treat failing `SKIP` test points as a test failure"; "Harnesses should report `SKIP` test points found as a list of items that were not tested".\n')
+q.result('7','blocked (declared unreachable)','Exactly one PRD Unreachable Acceptance declaration applies: released binary in another repository. The Spec prohibits reading that repository, and this gate has no released artifact. Satisfied-by remains unproven: operator release note to `default/gesttione-solutions-vortex` through ai-memory, followed by Vortex next resumed Spec Check session evidence. No message or release action is part of this gate.','DECLARATION: _prd.md -> Unreachable Acceptance\ncriterion: after release, Vortex resumed Spec Check names completed commands not probed and exits 0 when pending commands are honest.\nreason: released binary required in another repository; QA cannot read it.\nproof: audited candidate is unreleased Run build; authorization explicitly forbids reading another repository.\nLocal fixture is an analog, not the declared release observation. Exactly one declaration counted.\n')
+# Documentation and glossary: compare byte content with baseline, then cross-check mirrors/record.
+logs=[]
+def show(path,rev=q.BASE):return subprocess.run(['git','show',rev+':'+path],cwd=R,text=True,capture_output=True,check=True).stdout
+ctx=(R/'CONTEXT.md').read_text();old=show('CONTEXT.md')
+def entry(text):return text.split('**Vacuous Verification**:',1)[1].split('\n\n',1)[0].strip()
+newentry=entry(ctx);oldentry=entry(old)
+addition='A Task whose status is already `completed` is never probed, by the Daemon or by `roundfix spec check --run-verification`: its command passing is the postcondition its work proved, and the check reports it `not probed`.'
+assert newentry==oldentry.replace('\n_Avoid_', '\n'+addition+'\n_Avoid_');logs+=['Glossary exact baseline-preserving insertion: PASS\n'+newentry]
+for path in ['docs/user-guide/commands/spec.md','.agents/skills/roundfix/references/spec.md','skills/roundfix/references/spec.md']:
+ text=' '.join((R/path).read_text().split());assert 'The probe runs only the commands of Tasks a Run would still execute' in text and 'verification.notProbed' in text;logs.append(path+': required selection and report paragraph present')
+for path in ['.agents/skills/qa-gate/SKILL.md','skills/qa-gate/SKILL.md']:
+ text=' '.join((R/path).read_text().split());assert 'The probe leaves completed Tasks unprobed' in text and 'Probing completed Tasks would therefore report' not in text;logs.append(path+': current rationale present; stale sentence absent')
+record=json.loads((R/'skills/testdata/owned-skill-versions.json').read_text())['skills']
+for skill in ['roundfix','qa-gate']:
+ c=(R/f'.agents/skills/{skill}/SKILL.md').read_bytes();m=(R/f'skills/{skill}/SKILL.md').read_bytes();assert c==m
+ versions=re.findall(r'^\s*version: (\S+)',c.decode(),re.M);assert len(versions)==2 and versions[0]==versions[1];assert any(x['version']==versions[0] for x in record[skill]);logs.append(skill+': both fields/canonical/mirror/record = '+versions[0])
+assert (R/'.agents/skills/roundfix/references/spec.md').read_bytes()==(R/'skills/roundfix/references/spec.md').read_bytes()
+adr='docs/adr/0148-one-verification-prober-refuses-vacuous-tasks-before-agent-and-at-authoring.md';before=show(adr);after=(R/adr).read_text();amendment='Amendment (2026-10-26): both callers probe the same Tasks.';assert amendment in after
+# Sweep complete paragraphs, not just single lines, over all authored search roots.
+roots=['docs/user-guide','.agents/skills','skills','docs/agents','docs/adr','CONTEXT.md'];hits=[]
+for root in roots:
+ paths=[R/root] if (R/root).is_file() else sorted((R/root).rglob('*.md'))
+ for path in paths:
+  text=path.read_text(errors='replace')
+  for block in re.split(r'\n\s*\n',text):
+   n=' '.join(block.split())
+   if ('--run-verification' in n or 'Probing completed Tasks' in n) and re.search(r'complet\w*',n,re.I):
+    hits.append(str(path.relative_to(R))+': '+n)
+logs+=['Full wording sweep: paragraphs containing --run-verification (or legacy phrase) and completed:']+hits
+# The only old descriptions are historically dated ADR context or correct incomplete-before-work explanations.
+for root in roots:
+ paths=[R/root] if (R/root).is_file() else (R/root).rglob('*.md')
+ for path in paths:assert 'Probing completed Tasks would therefore report' not in ' '.join(path.read_text(errors='replace').split()),str(path)
+logs.append('No operative instruction says the current probe runs completed Tasks or reports them vacuous. ADR-0148 prior general classification remains valid for selected Tasks; dated amendment explicitly states selection. Historical examples describe authoring/pre-work commands.')
+q.result('8','pass','Exact glossary insertion preserves its first two sentences and Avoid line; guide and references agree; both qa-gate copies have current rationale. Paragraph sweep found no stale operative completed-task claim. roundfix version 0.1.142 and qa-gate 0.0.20 match both fields, mirrors and record; full skills/docscontract suites passed.', '\n\n'.join(logs)+'\n')
+# Commit scope and protected-byte audit.
+logs=[];allchanged=[]
+commits=q.git(['rev-list','--reverse',q.BASE+'..'+q.HEAD]).splitlines();assert len(commits)==2
+for task,commit in zip(['task_02','task_01'],commits):
+ text=(S/(task+'.md')).read_text();decl=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',text,re.M));decl.add(str((S/(task+'.md')).relative_to(R)))
+ if '## Recorded paths' in text:decl.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+ paths=q.git(['diff-tree','--no-commit-id','--name-only','-r',commit]).splitlines();allchanged+=paths;extra=set(paths)-decl;assert not extra,extra
+ logs.append(task+' '+commit+' declared scope PASS:\n'+'\n'.join(paths))
+# Include present tracked delta and confirm no non-QA changes.
+delta=q.git(['diff','--name-only','HEAD']).splitlines();assert not delta,delta
+protected=q.git(['diff','--name-only',q.BASE,q.HEAD,'--','Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml','internal/baseline','docs/agents']).splitlines();assert not protected,protected
+for path in q.git(['diff','--name-only',q.BASE,q.HEAD]).splitlines():
+ if path.startswith(('skills/','.agents/skills/')):assert path.startswith(('skills/roundfix/','skills/qa-gate/','.agents/skills/roundfix/','.agents/skills/qa-gate/')) or path=='skills/testdata/owned-skill-versions.json',path
+ if path.startswith('docs/adr/'):assert path==adr,path
+logs.append('Makefile, CI, manifests, project config, all Baseline and docs/agents files: byte-identical to Delivery Base (empty git diff). Other skill trees and ADRs unchanged; owned version record is the explicitly declared sanctioned output.')
+for path in q.git(['ls-tree','-r','--name-only',q.HEAD,'--','.agents/skills','skills']).splitlines():
+ if not path.endswith('.md'):continue
+ current=(R/path).read_text(errors='replace')
+ if '### QA settlement' not in current:continue
+ def section(t):return re.search(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',t,re.M|re.S).group()
+ assert section(current)==section(show(path)),path
+ logs.append(path+': QA settlement byte-identical to Base')
+# Invoke the actual exported classifier through a temporary overlay; no live test source is created.
+import tempfile
+scratch=Path(tempfile.mkdtemp(prefix='rf0319-governed-'));source=scratch/'governed_test.go';target=R/'internal/speccheck/qa0319_governed_test.go'
+body='package speccheck\nimport "testing"\nfunc TestQA0319GovernedPaths(t *testing.T) { t.Parallel(); for _, p := range []string{'+','.join(json.dumps(p) for p in allchanged)+'} { t.Logf("%t %s",GovernedPath(p),p) } }\n'
+source.write_text(body);overlay=scratch/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(target):str(source)}}))
+p,log=q.cmd(['go','test','-overlay',str(overlay),'-timeout','5m','-count=1','-v','-run','^TestQA0319GovernedPaths$','./internal/speccheck']);assert p.returncode==0,log
+paths=set(re.findall(r'true (\S+)',p.stdout));auth_paths=set(re.findall(r'^  - (\S+)',authorization.split('paths:',1)[1].split('operations:',1)[0],re.M));assert paths<=auth_paths,(paths,auth_paths)
+logs.append(log);logs.append('Every changed Governed Path is in approved authorization paths: '+', '.join(sorted(paths)))
+assert q.git(['merge-base','--is-ancestor',q.BASE,commits[0]])==''
+logs.append('Authorization '+q.BASE+' precedes separate task_02 '+commits[0]+' and task_01 '+commits[1]+'. No prerequisite/consequent fix declared; mechanical audit already credited task_02. Present tracked delta empty.')
+q.result('9','pass','All Task commit paths are declared (including each assigned Task file); every changed governed path is authorized. Protected trees and all QA settlement sections are byte-identical to Delivery Base. Authorization predates the separate tooling commit; no out-of-scope tracked delta.', '\n\n'.join(logs)+'\n')
+q.result('10','blocked (environment: no open Pull Request)','Prompt establishes no open Pull Request. Pre-PR controls: maintainer recorded authority in approved `_authorization.md`; Daemon checks pass at audited head; no unresolved PR threads because no PR exists; no Merge-Ready acceptance or review-artifact commit exists yet; candidate is '+q.HEAD+'. No forge lookup or publication performed.','Source: current QA assignment Pull Request fact.\nApproval: recorded cycle AQ maintainer authority, _authorization.md approved at '+q.BASE+'.\nChecks: Daemon make verify-changed exit 0 at '+q.HEAD+'.\nThreads: none (no PR).\nMerge-Ready acceptance: not obtained yet.\nReview-artifact ancestry: no artifact yet; claimed candidate '+q.HEAD+'.\nUnblock: later authorized delivery creates PR and obtains current-candidate review/checks.\n')
+print('AUDITS COMPLETE',flush=True)

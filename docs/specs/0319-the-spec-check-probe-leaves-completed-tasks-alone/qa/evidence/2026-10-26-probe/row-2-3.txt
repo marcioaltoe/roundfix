@@ -1,0 +1,30 @@
+COMMAND: go test -timeout 10m -count=1 -v -run ^TestVerdictLineStatesProbeCoverage$ ./internal/speccheck
+=== RUN   TestVerdictLineStatesProbeCoverage
+=== PAUSE TestVerdictLineStatesProbeCoverage
+=== CONT  TestVerdictLineStatesProbeCoverage
+=== RUN   TestVerdictLineStatesProbeCoverage/probe_ran
+=== PAUSE TestVerdictLineStatesProbeCoverage/probe_ran
+=== RUN   TestVerdictLineStatesProbeCoverage/probe_did_not_run
+=== PAUSE TestVerdictLineStatesProbeCoverage/probe_did_not_run
+=== RUN   TestVerdictLineStatesProbeCoverage/probe_ran_but_a_command_could_not_be_executed
+=== PAUSE TestVerdictLineStatesProbeCoverage/probe_ran_but_a_command_could_not_be_executed
+=== RUN   TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed
+=== PAUSE TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed
+=== RUN   TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed_and_could_not_execute_a_command
+=== PAUSE TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed_and_could_not_execute_a_command
+=== CONT  TestVerdictLineStatesProbeCoverage/probe_ran
+=== CONT  TestVerdictLineStatesProbeCoverage/probe_ran_but_a_command_could_not_be_executed
+=== CONT  TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed_and_could_not_execute_a_command
+=== CONT  TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed
+=== CONT  TestVerdictLineStatesProbeCoverage/probe_did_not_run
+--- PASS: TestVerdictLineStatesProbeCoverage (0.00s)
+    --- PASS: TestVerdictLineStatesProbeCoverage/probe_ran (0.00s)
+    --- PASS: TestVerdictLineStatesProbeCoverage/probe_ran_but_a_command_could_not_be_executed (0.00s)
+    --- PASS: TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed_and_could_not_execute_a_command (0.00s)
+    --- PASS: TestVerdictLineStatesProbeCoverage/probe_left_completed_Tasks_unprobed (0.00s)
+    --- PASS: TestVerdictLineStatesProbeCoverage/probe_did_not_run (0.00s)
+PASS
+suiteguard: guard cost: measured 2799 paths; fingerprint took 127.758958ms before and 131.438584ms after
+ok  	roundfix/internal/speccheck	0.566s
+
+EXIT: 0

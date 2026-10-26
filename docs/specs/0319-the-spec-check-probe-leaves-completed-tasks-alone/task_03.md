@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0319-the-spec-check-probe-leaves-completed-tasks-alone
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

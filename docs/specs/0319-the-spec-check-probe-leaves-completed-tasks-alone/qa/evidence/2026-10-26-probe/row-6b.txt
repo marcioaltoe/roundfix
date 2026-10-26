@@ -1,0 +1,4 @@
+SOURCE: docs/references/2026-08-14-a-clean-checker-left-eight-vacuous-commands-standing.md
+Observed measurements: eight vacuous commands in Fluxus; eleven in Roundfix.
+Quote: "a check that cannot be complete should say what it did not cover".
+Independent comparison: current built text names both omitted commands; JSON gives reason completed; verdict counts two; base names neither as omitted.

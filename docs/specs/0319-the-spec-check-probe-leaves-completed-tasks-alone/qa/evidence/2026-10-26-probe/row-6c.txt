@@ -1,0 +1,3 @@
+SOURCE NOT REACHED: https://testanything.org/tap-version-14-specification.html
+Authorization: No test, Verification command or QA row ... reaches the network.
+PRD citation only (not live verification): SKIP points "indicate that a test was not run"; "Harnesses must not treat failing `SKIP` test points as a test failure"; "Harnesses should report `SKIP` test points found as a list of items that were not tested".

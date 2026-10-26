@@ -1,0 +1,12 @@
+COMMAND: go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-close-bfe1mup1/overlay.json -timeout 5m -count=1 -v -run ^TestQA0319ReportClosure$ ./internal/speccheck
+STDOUT:
+=== RUN   TestQA0319ReportClosure
+=== PAUSE TestQA0319ReportClosure
+=== CONT  TestQA0319ReportClosure
+    qa0319_closure_test.go:14: qualifying partial; typed counts correct; report shape clean; 28 QA files scanned with zero Secret Matches
+--- PASS: TestQA0319ReportClosure (0.03s)
+PASS
+suiteguard: guard cost: measured 2823 paths; fingerprint took 279.4715ms before and 264.724125ms after
+ok  	roundfix/internal/speccheck	0.840s
+STDERR:
+EXIT: 0

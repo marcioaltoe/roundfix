@@ -1,0 +1,4 @@
+make build: exit 0
+user_flow_binary: roundfix 0.123.0 (80fa1359-dirty, built 2026-10-26 16:12:20 -0300)
+./bin/roundfix spec check 0319-the-spec-check-probe-leaves-completed-tasks-alone --strict: exit 0
+No findings. Authored Verification commands were not executed.

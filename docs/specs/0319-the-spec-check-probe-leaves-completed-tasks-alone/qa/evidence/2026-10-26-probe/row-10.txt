@@ -1,0 +1,7 @@
+Source: current QA assignment Pull Request fact.
+Approval: recorded cycle AQ maintainer authority, _authorization.md approved at d08f8557c601cd5fac84da5cb72e8b150b9577a4.
+Checks: Daemon make verify-changed exit 0 at 80fa135995f570a66af00f83e7a00dce944863f4.
+Threads: none (no PR).
+Merge-Ready acceptance: not obtained yet.
+Review-artifact ancestry: no artifact yet; claimed candidate 80fa135995f570a66af00f83e7a00dce944863f4.
+Unblock: later authorized delivery creates PR and obtains current-candidate review/checks.

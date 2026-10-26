@@ -1,0 +1,105 @@
+Fixture copied from audited HEAD; Task commands committed before probing. ./bin/roundfix is a symbolic link to the Run-built binary.
+COMMAND: ./bin/roundfix spec check clean --run-verification
+STDOUT:
+Spec clean
+No findings. Authored Verification commands executed: 1; not probed (completed Tasks): 2.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  vocabulary documentation detector: missing docs/specs/clean/_techspec.md Vocabulary Contract
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/clean/references/_index.md
+Verification tree: HEAD
+- task_01: not probed — "touch /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-vortex-shape-nijz8fh2/completed-command-ran" (Task completed)
+- task_01: not probed — "roundfix-verification-binary-that-does-not-exist --run" (Task completed)
+- task_02: honest — "test -f task-output-two.txt" (exited non-zero before work)
+STDERR:
+EXIT: 0
+COMMAND: ./bin/roundfix spec check clean --run-verification --format json
+STDOUT:
+{"schema":"roundfix-speccheck/v1","slug":"clean","findings":[],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-DECISIONS-UNRECORDED","missing":"a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"docs/specs/clean/_techspec.md Vocabulary Contract"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"docs/references/behavior-surfaces.json"},{"code":"SC-SKILL-VERSION-UNTASKED","missing":"skills/testdata/owned-skill-versions.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-REF-UNRESOLVED","missing":"docs/specs/clean/references/_index.md"}],"verification":{"executed":true,"tree":"HEAD","commands":[{"task":"task_02","command":"test -f task-output-two.txt","verdict":"honest"}],"uncommitted":[],"notProbed":[{"task":"task_01","command":"touch /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-vortex-shape-nijz8fh2/completed-command-ran","reason":"completed"},{"task":"task_01","command":"roundfix-verification-binary-that-does-not-exist --run","reason":"completed"}]}}
+STDERR:
+EXIT: 0
+Independent confirmation after text and JSON: marker absent.
+COMMAND: go build -buildvcs=false -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-archive-u228d965/roundfix-base ./cmd/roundfix
+STDOUT:
+STDERR:
+EXIT: 0
+COMMAND: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-archive-u228d965/roundfix-base spec check clean --run-verification
+STDOUT:
+Spec clean
+No findings. Authored Verification commands executed: 2; could not be executed: 1.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  vocabulary documentation detector: missing docs/specs/clean/_techspec.md Vocabulary Contract
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/clean/references/_index.md
+Verification tree: HEAD
+- task_01: vacuous — "touch /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-vortex-shape-nijz8fh2/completed-command-ran" (exited zero before work)
+- task_01: unknown — "roundfix-verification-binary-that-does-not-exist --run" (command could not be executed (exit 127): exit status 127)
+- task_02: honest — "test -f task-output-two.txt" (exited non-zero before work)
+STDERR:
+EXIT: 1
+Base alone created the marker, confirming the completed command actually ran; marker removed before audited rerun.
+COMMAND: ./bin/roundfix spec check clean --run-verification
+STDOUT:
+Spec clean
+No findings. Authored Verification commands executed: 1; not probed (completed Tasks): 2.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  vocabulary documentation detector: missing docs/specs/clean/_techspec.md Vocabulary Contract
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/clean/references/_index.md
+Verification tree: HEAD
+- task_01: not probed — "touch /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0319-vortex-shape-nijz8fh2/completed-command-ran" (Task completed)
+- task_01: not probed — "roundfix-verification-binary-that-does-not-exist --run" (Task completed)
+- task_02: vacuous — "true" (exited zero before work)
+STDERR:
+EXIT: 1

@@ -1,0 +1,10 @@
+COMMAND: ./bin/roundfix archive 0319-the-spec-check-probe-leaves-completed-tasks-alone --plan --offline
+STDOUT:
+archive plan for 0319-the-spec-check-probe-leaves-completed-tasks-alone: removes 30 file(s) (155943 bytes) and writes docs/history/specs/0319-the-spec-check-probe-leaves-completed-tasks-alone.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-26.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 20 file(s) (66036 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-25-the-spec-check-probe-re-runs-completed-tasks.md 3896 bytes: no advice (offline)
+promote with: roundfix archive 0319-the-spec-check-probe-leaves-completed-tasks-alone --promote <path>
+STDERR:
+EXIT: 0
