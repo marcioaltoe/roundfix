@@ -18,6 +18,7 @@ sources:
   - 2026-10-24-an-agent-may-start-the-setup-skill.md
 regeneration: []
 promoted: []
+pull_request: "676"
 ---
 
 # An Agent may start the setup skill
