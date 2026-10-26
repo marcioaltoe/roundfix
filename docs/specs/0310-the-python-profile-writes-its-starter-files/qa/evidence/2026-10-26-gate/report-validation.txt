@@ -1,1 +1,0 @@
-Report: one frontmatter; closed partial; 14 terminal rows; 11 pass, 2 environment, 1 declared; all rows have typed inputs; every linked evidence path resolves; text-only evidence; repository secret-pattern table found zero matches; git diff --check passed. Only qa report/evidence is untracked; no tracked file delta.

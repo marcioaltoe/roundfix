@@ -1,3 +1,0 @@
-Makefile sha256:3e1a2700ca89de6b9271feb2fdaffe93704a2372186f92e981956c19bed71c77
-.roundfixrc.yml sha256:3ce4f3c75272e500f03f504130b4c9e478943e1b7b9584ca91b6786e87a83b5c
-.github/workflows/verify.yml sha256:14f48dacfeff2bf2bbf1ec65059dbcfbf0c2a6c301a6caccf5561ea4a2251bf0

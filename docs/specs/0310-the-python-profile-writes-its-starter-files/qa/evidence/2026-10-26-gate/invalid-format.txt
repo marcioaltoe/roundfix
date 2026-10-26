@@ -1,6 +1,0 @@
-$ ./bin/roundfix baseline starters --profile python --repo /tmp/qa0310-t0xrcmue/stale --format yaml
-exit: 2
-stdout:
-stderr:
-roundfix: unsupported --format "yaml"; use text or json
-Run 'roundfix baseline starters --help' for usage.

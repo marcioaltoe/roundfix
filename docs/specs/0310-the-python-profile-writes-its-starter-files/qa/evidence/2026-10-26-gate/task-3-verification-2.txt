@@ -1,8 +1,0 @@
-$ bash -c tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Starter File**:' || { echo 'missing glossary term' >&2; exit 1; }; grep -qF -- '"command baseline starters"' docs/references/skill-coverage.json || { echo 'missing coverage entry' >&2; exit 1; }; for f in .agents/skills/roundfix/references/baseline.md skills/roundfix/references/baseline.md docs/user-guide/commands/baseline.md; do grep -qF -- 'roundfix baseline starters --profile' "$f" || { printf 'missing command in %s\n' "$f" >&2; exit 1; }; done; go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent|TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestBaselineDocumentationContract)$' ./internal/docscontract && go test -count=1 -run '^(TestEveryOwnedSkillVersionIsRecorded|TestNoPythonBaselineRuntime|TestRoundfixSkillIndexNamesEveryReference)$' ./skills && make skills-sync-check
-exit: 0
-stdout:
-ok  	roundfix/internal/docscontract	0.473s
-ok  	roundfix/skills	0.317s
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok  	roundfix/skills	0.152s
-stderr:

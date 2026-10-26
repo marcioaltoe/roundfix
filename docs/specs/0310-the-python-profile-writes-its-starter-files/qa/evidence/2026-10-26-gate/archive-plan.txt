@@ -1,9 +1,0 @@
-$ ./bin/roundfix archive 0310-the-python-profile-writes-its-starter-files --plan --offline
-exit: 0
-stdout:
-archive plan for 0310-the-python-profile-writes-its-starter-files: removes 46 file(s) (159529 bytes) and writes docs/history/specs/0310-the-python-profile-writes-its-starter-files.md
-core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-26.md, task_01.md, task_02.md, task_03.md, task_04.md
-evidence 37 file(s) (49745 bytes) under qa/evidence/
-judge: skipped (offline)
-promote with: roundfix archive 0310-the-python-profile-writes-its-starter-files --promote <path>
-stderr:

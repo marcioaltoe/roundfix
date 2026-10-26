@@ -1,7 +1,0 @@
-Glossary: **Starter File**:
-A repository tooling file, such as a Makefile, a Project Config or a CI workflow, that a Baseline module offers and `roundfix baseline starters` creates only where the path does not exist, after the maintainer confirms the exact preview; once written the repository owns it, and no refresh changes it ([ADR-0323](docs/adr/0323-a-profile-starter-file-is-written-only-where-absent-and-only-on-a-confirmed-preview.md)).
-_Avoid_: Scaffold, template file, managed tooling
-Only new declared domain term: Starter File; existing Baseline Profile and Plan Digest retained.
-docs/user-guide/commands/baseline.md: baseline starters; --confirm-plan, --format, --profile, --repo; all listed by built help.
-.agents/skills/roundfix/references/baseline.md: baseline starters; --confirm-plan, --format, --profile, --repo; all listed by built help.
-Skill versions: Delivery Base 0.1.140; audited head 0.1.141
