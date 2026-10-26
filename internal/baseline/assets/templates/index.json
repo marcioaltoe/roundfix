@@ -98,6 +98,15 @@
       "tokens": ["reference.tui"]
     },
     {
+      "id": "template.root.python",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/python.md",
+      "tokens": [
+        "reference.python"
+      ]
+    },
+    {
       "id": "template.root.rust",
       "version": 1,
       "kind": "root-block",
@@ -236,6 +245,15 @@
       "kind": "guide",
       "path": "guides/tui-surface.md",
       "tokens": ["artifact.rules"]
+    },
+    {
+      "id": "template.guide.python",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/python.md",
+      "tokens": [
+        "artifact.rules"
+      ]
     },
     {
       "id": "template.guide.rust",

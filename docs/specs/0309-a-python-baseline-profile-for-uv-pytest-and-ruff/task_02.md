@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -130,3 +130,44 @@ guide (`_prd.md` → Core Features 2-3; ADR-0322).
 - `_prd.md` → Goals 3-5; Core Features 2-3; Success Metrics 3 and 4; User Stories 1-3
 - `_techspec.md` → Current behavior 6-10; Data Models 3-7; API Contracts 3-5; Invariants 3-5; Testing Approach; Build Order 2
 - ADR-0322
+
+## Result
+
+Implemented the Python Profile and module on task_01's imported setup. The
+module requires and dispatches the nine skills in API Contract 3's order;
+only Typer, FastAPI, file pipelines and Streamlit have conditional triggers.
+The guide carries all twelve clauses enumerated in API Contract 4, including
+mandatory offline lock checking, ty over package and tests, pytest node-id
+selection and platform-branch coverage. The profile selects no CLI surface.
+The templates, coverage entry, core hierarchy and semantic owner are wired in.
+Only the five declared existing-test seams were adjusted; the two new
+parallel tests hold dispatch and whitespace-normalized rendered guidance.
+
+Starting evidence: the Python module and profile did not exist. Initial Git
+status contained only this Task file's pre-existing status modification;
+that modification was preserved. No other Task or Task Graph was edited.
+
+Sanctioned regeneration, in order, all exited 0:
+
+1. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1` recorded Python version 1 and raised core from version 24 to 25.
+2. `make baseline-digests` regenerated only the seven declared catalog and plan-characterization files. Other declared derived outputs were unchanged and were not edited.
+3. `go build -buildvcs=false -o "$tmp/roundfix" ./cmd/roundfix`, then `HOME="$(mktemp -d)" "$tmp/roundfix" baseline update --repo . --no-skills --no-history --yes --format text` twice. The first changed only `docs/agents/setup-context.json`; the second reported `File changes: 0`, an already-applied Plan and verified idempotence. Both reported skills skipped and zero installed/restored skills. Nested-carrier warnings named the unchanged formatter and Source Baseline fixtures.
+
+Acceptance evidence from focused implementation checks:
+
+- Catalog, dispatch and gate guidance: `go test -count=1 -run '^(TestThePythonModuleDispatchesItsSkills|TestThePythonProfileRendersThePythonGuide|TestEmbeddedCatalog|TestEveryModuleRequiresEverySkillItDispatches|TestBaselineClauseForceIsCharacterized)$' ./internal/baseline` exited 0 (five tests). This covers the five-profile catalog, exact nine-skill order, one trigger per skill, exactly four conditional skills, and the twelve clauses and their force, including offline lock checking and ty.
+- Greenfield composition and release journey: the rendering test above produced a ready Python plan, all nine skills in the dispatch guide and the root pointer, and no Go, Rust, TUI or CLI guide. `go test -count=1 -run '^TestGuidanceCompositionJourney$/^python$' ./internal/cli` exited 0 and exercised the real CLI's Python plan/apply/re-plan journey without running a Python tool.
+- Menu adaptation: `go test -count=1 -run '^TestBaselineHumanProfileAdaptation$' ./internal/cli` exited 0.
+- Derived ownership: `go test -count=1 -run '^TestOutputsForCommand$' ./internal/baseline` exited 0.
+- Repository refresh idempotence: the second isolated-HOME refresh above reported zero changes.
+- Scope postflight inspected staged, unstaged and untracked paths: all 23 changed paths are declared for task_02. A structural comparison confirmed core differs only in its two authorized entries and recorded version. `git diff --check` exited 0. No setup snapshot, parity corpus, retention asset, existing profile, skill, formatter fixture, user guide, Makefile, Project Config or Go production file changed.
+
+The retired-runtime guard and the files it protects were left unchanged. Its
+execution, the complete declared Verification and repository Verification
+remain Daemon-owned; none of those commands was run in this turn. Task status
+and checkboxes remain unchanged. No commit, push or pull request was made.
+
+Environment: the configured sandbox rejected the symlinked writable root
+before process creation, including with the resolved workdir. Approved
+escalated execution permitted the assigned worktree operations. No project
+or executor configuration was changed.
