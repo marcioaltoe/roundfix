@@ -169,6 +169,12 @@ Decision Documents form the Decision Plan; the projected repository mutation
 is the Change Plan. Repository policy such as an HTTP Contract Decision remains
 repository-owned input; implementation evidence cannot answer it.
 
+An Agent may start the `setup-context-driven` skill itself when its trigger
+matches; the skill does not turn off model invocation. Starting it writes
+nothing: the Baseline Command still writes only after the person approves the
+exact Plan Digest, through `--confirm-plan <digest>`, `--yes` or the
+interactive confirmation.
+
 ### Instruction hierarchy
 
 The generated root index applies only the active tiers, in this order:
