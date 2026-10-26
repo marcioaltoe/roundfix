@@ -59,9 +59,17 @@ Core Feature 1; ADR-0320).
    characterization pins only the enforcement, which does not change.
 6. MUST search the repository, outside `docs/history/`, for "exactly one
    question", "one question per call", "single question" and "Never bundle
-   questions", and report every match left: the owned interview skills keep
-   their one-question interviews by decision (ADR-0320), and any other match
-   is a stop-and-report condition.
+   questions", and report every match left. These matches are expected and
+   are NOT a stop condition: the owned interview skills and their mirrors
+   (one-question interviews by decision, ADR-0320); the Source Baseline
+   corpus under `internal/baseline/assets/source-baselines/**` (frozen,
+   Requirement 7); this Spec's own folder; ADR-0320; and the current
+   clause text in `internal/baseline/assets/modules/core.json`, its rendered
+   `docs/agents/agent-instructions.md` and the formatter-fixture golden, which
+   this Task rewrites. Any other match is a stop-and-report condition.
+   (Amended 2026-10-25 by the operator: Run
+   run_20261026T001144Z_01e9c317ace131a5 stopped on the frozen corpus and the
+   Spec's own quotations.)
 7. MUST NOT change the Source Baseline corpus, manifest, accounting or index,
    `internal/baseline/assets/retention/**`, any module other than `core`, any
    skill, any user guide page, `.roundfixrc.yml`, or any Go production file.
