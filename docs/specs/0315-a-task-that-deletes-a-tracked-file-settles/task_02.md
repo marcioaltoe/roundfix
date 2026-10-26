@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0315-a-task-that-deletes-a-tracked-file-settles
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -91,3 +91,45 @@ None. The Task adds tests only; it changes no contract another package reads.
 
 - `_prd.md` → Sources; Goals; Core Feature 3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior; API Contract 4; Invariant 3; Testing Approach; Build Order 2
+
+## Result
+
+Added `internal/daemon/task_deletes_settlement_test.go` only; production code
+and existing tests, fixtures, guides, skills and glossary remain unchanged.
+The shared fixture extends `settlementRepositoryFixture` with the recorded
+retirement rule using `spec.RetirementRuleSentinel`, a tracked Finding removed
+with `git rm` in a subsequent commit, a linked user guide, and task_01's
+declared TypeScript deletion. All repositories and commits created by the
+tests are disposable fixtures.
+
+Acceptance evidence from the focused implementation check:
+
+- `TestAGatedTaskWhoseDeclaredDeletionIsOnlyOnDiskSettles/disk-only` and
+  `/staged` exercise the gated `TaskCycle` with the default settlement
+  checker and assert no error, one completed Task and zero failed Tasks.
+  The Agent callback uses nonfatal error reporting and tolerates repeated
+  deletion on a repair turn (`os.ErrNotExist` or `git rm --ignore-unmatch`).
+- `TestSettlementStillReportsALinkToADeletedFile` removes the tracked guide
+  from disk and asserts no checker error plus an `SC-HISTORY-RETAINED`
+  finding naming `docs/user-guide/index.md` and `guide.md`.
+- `TestSettlementRefusesAnUnauthorizedGovernedDeletion` removes a tracked
+  skill from disk under a grant listing only `Makefile`; the prospective
+  commit audit returns no error and exactly one `QA-AUTH-PATHS` finding
+  naming `.agents/skills/escaped/SKILL.md`.
+
+Focused check:
+
+```text
+go test -count=1 -timeout 3m -run '^(TestAGatedTaskWhoseDeclaredDeletionIsOnlyOnDiskSettles|TestSettlementStillReportsALinkToADeletedFile|TestSettlementRefusesAnUnauthorizedGovernedDeletion)$' ./internal/daemon
+ok  roundfix/internal/daemon  4.208s
+```
+
+The new test file was absent before this change. `gofmt` formatted it, and
+`git diff --check` exited 0. The only pre-existing change was the Daemon's
+`status: in_progress` update in this Task file; that field was preserved.
+The executor rejected the symlinked writable root; execution succeeded using
+the resolved checkout with approved escalation. No configuration was changed.
+
+Not run: the declared Verification commands (including Windows vet), selected
+repository Verification and incremental Verification; these remain
+Daemon-owned. No follow-up work identified.
