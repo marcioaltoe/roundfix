@@ -281,6 +281,20 @@ a command that passes remains `vacuous`. The Daemon refuses malformed commands
 before opening an Agent Session. If the parser cannot start, the existing
 command probe still runs.
 
+The probe runs only the commands of Tasks a Run would still execute: every
+Task whose status is not `completed`, the rule the Daemon uses to schedule
+Tasks and route its QA gate. A completed Task's commands are not run, because
+they pass once its work exists and may need preparation the disposable
+checkout lacks. Each is reported as
+`- <task>: not probed — "<command>" (Task completed)`, the clean verdict line
+adds `; not probed (completed Tasks): <n>`, and JSON lists them under
+`verification.notProbed` as `{task, command, reason}` objects with reason
+`completed`, a key present only when the list is not empty. A not-probed
+command never changes the exit code. A vacuous, unknown or malformed command
+of a pending, in-progress or failed Task, or of a pending QA gate, still makes
+the check exit `1`, and the uncommitted-source lines still name every Task
+file, completed ones included.
+
 After `Verification tree: HEAD`, the text report names each Task Graph or Task
 file listed by Git status as an uncommitted Verification source:
 

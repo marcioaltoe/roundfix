@@ -351,6 +351,25 @@ func TestVerdictLineStatesProbeCoverage(t *testing.T) {
 			},
 			want: "No findings. Authored Verification commands executed: 1; could not be executed: 1.",
 		},
+		{
+			name: "probe left completed Tasks unprobed",
+			coverage: speccheck.VerificationCoverage{
+				Ran:       true,
+				Executed:  3,
+				NotProbed: 2,
+			},
+			want: "No findings. Authored Verification commands executed: 3; not probed (completed Tasks): 2.",
+		},
+		{
+			name: "probe left completed Tasks unprobed and could not execute a command",
+			coverage: speccheck.VerificationCoverage{
+				Ran:        true,
+				Executed:   1,
+				Unexecuted: 1,
+				NotProbed:  2,
+			},
+			want: "No findings. Authored Verification commands executed: 1; could not be executed: 1; not probed (completed Tasks): 2.",
+		},
 	}
 
 	for _, tt := range tests {

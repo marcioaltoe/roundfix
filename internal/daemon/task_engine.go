@@ -525,7 +525,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 	// existing gate only after its graph dependencies have all completed.
 	// A blocked gate never enters the scheduler, so it stays pending and
 	// resumable instead of being reported skipped.
-	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
+	if qaTask != nil && TaskAwaitsWork(*qaTask) && taskNeedsCompleted(*qaTask, statuses) {
 		if err := engine.stopTaskCycleIfRequested(cycleCtx, plan, ordinal+1); err != nil {
 			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 		}
@@ -537,7 +537,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 		result.QAVerdict = verdict
 		result.QAAccepted = accepted
 		result.QAReportPath = reportPath
-	} else if qaTask != nil && qaTask.Status != spec.StatusCompleted {
+	} else if qaTask != nil && TaskAwaitsWork(*qaTask) {
 		if _, err := fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", ")); err != nil {
 			return result, fmt.Errorf("write withheld QA task progress: %w", err)
 		}
@@ -919,7 +919,7 @@ func (engine *Engine) integrateTaskSettlement(ctx context.Context, plan TaskPlan
 func initialTaskRunStatuses(tasks []spec.Task) map[string]taskRunStatus {
 	statuses := make(map[string]taskRunStatus, len(tasks))
 	for _, task := range tasks {
-		if task.Status == spec.StatusCompleted {
+		if !TaskAwaitsWork(task) {
 			statuses[task.ID] = taskRunCompleted
 			continue
 		}

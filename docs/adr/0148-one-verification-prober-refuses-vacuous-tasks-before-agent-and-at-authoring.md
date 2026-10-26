@@ -1,7 +1,7 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-26T00:00:00Z
-updated_at: 2026-10-14T23:51:38Z
+updated_at: 2026-10-26T00:00:00Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
 superseded_by: null # null or ADR-NNNN
 ---
@@ -11,3 +11,10 @@ superseded_by: null # null or ADR-NNNN
 The Daemon runs a Task's `## Verification` commands once against the unchanged tree before creating the Agent Session and refuses the Task when any command already passes — a command that exits zero before the work exists proves nothing about the work (measured on Spec 0089, whose gate matched a string already in the file and settled a Task whose work was never done). The authoring-time check asks the identical question earlier, so the vacuous/failing/unknown classification lives in one extracted prober that both callers use: a second implementation would be free to disagree, and a checker that approves what the probe later refuses is the same defect one layer up. The Daemon keeps its Run bookkeeping around the shared loop; the authoring caller supplies a working directory and nothing else.
 
 Consolidates ADR-0109 and ADR-0124 (2026-08-26); both are retired, and Git keeps their text.
+
+Amendment (2026-10-26): both callers probe the same Tasks. The Daemon's
+`TaskAwaitsWork`, true for every status but `completed`, chooses the Tasks the
+Daemon schedules and the Tasks `roundfix spec check --run-verification`
+probes. A completed Task's command passes because its work exists, so the
+authoring check reports it `not probed` with its reason and never fails on it;
+the vacuous, honest, unknown and malformed classification is unchanged.
