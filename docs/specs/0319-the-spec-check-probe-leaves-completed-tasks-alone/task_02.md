@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0319-the-spec-check-probe-leaves-completed-tasks-alone
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -94,3 +94,45 @@ package reads them as a contract except the documentation contracts it runs.
 
 - `_prd.md` → Sources; Goal 5; Core Feature 3; Success Metric 6; Glossary
 - `_techspec.md` → Current behavior 6; Interfaces; ADR Alternatives; Build Order 1
+
+## Result
+
+Implementation evidence:
+
+- Added the selection rule and `not probed` report to the user guide and the
+  canonical Roundfix reference; `make skills-sync` propagated the reference
+  and `qa-gate` text to both mirrors.
+- Replaced the `qa-gate` precondition rationale, appended the dated ADR-0148
+  amendment, and added the revised sentence to the `Vacuous Verification`
+  entry while preserving its first two sentences and `_Avoid_` line.
+- The owned-skill recorder raised and recorded the `roundfix` and `qa-gate`
+  version pairs; the final Behavior Surface recorder updated its fingerprint.
+
+Focused checks:
+
+- `git diff --check` passed.
+- Whitespace-normalized phrase checks found the guide paragraph in all three
+  guide/reference files, the replacement `qa-gate` sentence in both copies,
+  the ADR amendment, and the glossary sentence; the stale `qa-gate` sentence
+  was absent.
+- `cmp` confirmed the canonical and mirrored `roundfix` skill, `roundfix`
+  reference, and `qa-gate` skill files match.
+- `make skills-sync` passed before and after
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`, which reported `1 passed in 1 packages`.
+- The final
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` reported
+  `1 passed in 1 packages`.
+
+Acceptance evidence:
+
+- Guide, canonical reference, and mirror contain the same selection rule and
+  `not probed` reporting text.
+- Both `qa-gate` copies state that completed Tasks remain unprobed and no
+  longer contain the stale vacuous-reporting rationale.
+- ADR-0148, `CONTEXT.md`, owned-skill versions, mirrors, and the Behavior
+  Surface record were updated by the scoped procedures above.
+
+The declared `## Verification` commands were not run; they remain for the
+Daemon's settlement pass.

@@ -367,6 +367,7 @@ _Avoid_: Failing test, mutation, sanity check
 
 **Vacuous Verification**:
 The Run Event classification (`verification_vacuous`) recorded when a Task's Verification command exits zero against the tree as it stands before the Agent runs. A command that passes before the work happened cannot be evidence that the work happened, so the Task is refused at dispatch with the offending command named and no Agent turn spent.
+A Task whose status is already `completed` is never probed, by the Daemon or by `roundfix spec check --run-verification`: its command passing is the postcondition its work proved, and the check reports it `not probed`.
 _Avoid_: Weak test, trivial gate, false green
 
 **Inverted Verification Exit**:

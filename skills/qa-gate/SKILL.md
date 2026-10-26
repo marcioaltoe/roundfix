@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.19
+  version: 0.0.20
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.19
+version: 0.0.20
 ---
 
 # QA Gate
@@ -111,10 +111,10 @@ provenance and preserve the observed output as evidence.
 
   The gate keeps this non-probing form because the probe asks whether a
   command already passes before its work exists, while the gate runs after
-  every Task is complete. Probing completed Tasks would therefore report their
-  already-passing commands as vacuous and refuse the gate. The three authoring
-  skills use `--run-verification` while the work is still being authored, when
-  that question is answerable.
+  every implementation Task is complete. The probe leaves completed Tasks
+  unprobed and reports their commands `not probed`, so it has nothing left to
+  ask of them. The three authoring skills use `--run-verification` while the
+  work is still being authored, when that question is answerable.
 
   Stop before building the matrix when the command fails, and write the refusal
   before you stop. A gate that stops here measured no requirement, so its whole
