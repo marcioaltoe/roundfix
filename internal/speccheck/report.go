@@ -70,6 +70,7 @@ type VerificationCoverage struct {
 	Ran        bool
 	Executed   int
 	Unexecuted int
+	NotProbed  int
 }
 
 // PromoteGaps applies the strictness of `spec check --strict` to one result:
@@ -243,14 +244,14 @@ func RenderText(result Result, coverage VerificationCoverage) string {
 	report.WriteByte('\n')
 	if len(result.Findings) == 0 {
 		if coverage.Ran {
+			fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d", coverage.Executed)
 			if coverage.Unexecuted > 0 {
-				// Both facts on the verdict line. A second line would be read
-				// after the verdict, which is the position this report exists
-				// to move away from.
-				fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d; could not be executed: %d.\n", coverage.Executed, coverage.Unexecuted)
-			} else {
-				fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d.\n", coverage.Executed)
+				fmt.Fprintf(&report, "; could not be executed: %d", coverage.Unexecuted)
 			}
+			if coverage.NotProbed > 0 {
+				fmt.Fprintf(&report, "; not probed (completed Tasks): %d", coverage.NotProbed)
+			}
+			report.WriteString(".\n")
 		} else {
 			report.WriteString("No findings. Authored Verification commands were not executed.\n")
 		}

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"roundfix/internal/spec"
 )
 
 // ErrVerificationMalformed identifies a command rejected by the shell parser.
@@ -37,6 +39,13 @@ func (err *commandProbeError) Unwrap() error {
 		return nil
 	}
 	return err.err
+}
+
+// TaskAwaitsWork reports whether a Run still has work to do on task: every
+// Task whose status is not completed. The Daemon schedules, probes and gates
+// exactly these Tasks, and the authoring check probes the same set.
+func TaskAwaitsWork(task spec.Task) bool {
+	return task.Status != spec.StatusCompleted
 }
 
 // ProbeCommands runs commands in order and classifies their behavior against

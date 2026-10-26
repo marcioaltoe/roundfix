@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0319-the-spec-check-probe-leaves-completed-tasks-alone
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -89,3 +89,68 @@ as `not probed` with its reason, in text, JSON and the verdict line.
 
 - `_prd.md` → Sources; Goals 1-4; Core Features 1 and 2; Success Metrics 1-5; Validation
 - `_techspec.md` → Current behavior; Interfaces; Data Models; API Contracts 1-5; Invariants 1-5; Testing Approach; Build Order 2
+
+## Result
+
+Implemented the shared `daemon.TaskAwaitsWork` rule and used it in initial
+scheduling, both QA routing conditions, and the authoring probe. Completed
+Tasks contribute ordered text lines and optional `verification.notProbed`
+entries with reason `completed`; their commands never enter the prober or
+exit-code evaluation. All Task files remain provenance sources. The clean
+verdict counts not-probed commands separately, and the no-command message is
+reserved for a graph with no authored commands.
+
+Added the two named regression test files and the two verdict-line cases.
+Existing assertions, probe classification/parser, disposable checkout, schema
+string, documentation, skills, tooling and Task Graph are unchanged. The
+pre-existing Daemon-owned `in_progress` status is preserved.
+
+Acceptance evidence from focused implementation checks:
+
+- Completed commands stay unexecuted and do not affect the exit code:
+  `TestSpecCheckLeavesCompletedTasksAlone` passed all eight named subtests.
+  The resumed fixture asserts the absent marker, exact ordered command lines,
+  two JSON entries with reason `completed`, and three honest commands from
+  pending, in-progress and failed Tasks. The all-completed fixture asserts
+  zero executed commands and no misleading no-command message. The modified
+  completed source remains named in text and JSON, and the pending-only
+  fixture has no `notProbed` key.
+- Pending vacuous, unknown and malformed commands still refuse with exit 1;
+  the pending QA gate's derived command remains probed and honest. The
+  existing run-verification, malformed-command and provenance tests passed
+  without assertion changes. Both new verdict-line cases and the three
+  existing cases passed.
+- Daemon selection is unchanged: the new backend/QA status matrix, existing
+  stale/completed Task-cycle test, initial-status test and three existing QA
+  routing tests passed. Temporary Go overlays changed `TaskAwaitsWork` first
+  to always true, then to pending only. Each mutation failed the resumed CLI
+  subtest, the new status-matrix test and
+  `TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks`, proving both callers
+  depend on the shared rule. The overlays were removed and never changed
+  repository source.
+
+Focused commands (each exited 0):
+
+- `go test -timeout 5m -count=1 -run '^TestSpecCheckLeavesCompletedTasksAlone$' ./internal/cli`
+- `go test -timeout 5m -count=1 -run '^(TestTaskAwaitsWorkSelectsEveryStatusButCompleted|TestInitialTaskRunStatusesSeedsEarlierRunCompletions|TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks)$' ./internal/daemon`
+- `go test -timeout 5m -count=1 -run '^TestVerdictLineStatesProbeCoverage$/probe_left_completed' ./internal/speccheck`
+- `go test -timeout 5m -count=1 -run '^(TestSpecCheckRunVerification|TestSpecCheckReportsAMalformedCommand|TestSpecCheckNamesAnUncommittedVerificationSource|TestSpecCheckNamesNoSourceWhenCommitted)$' ./internal/cli`
+- `go test -timeout 5m -count=1 -run '^(TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted|TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted|TestTaskCycleQAStepRequiresEveryGraphTaskCompleted)$' ./internal/daemon`
+- `go test -timeout 5m -count=1 -run '^TestVerdictLineStatesProbeCoverage$/probe_(ran|did)' ./internal/speccheck`
+
+Pre-change reproduction:
+`go test -timeout 5m -count=1 -run '^TestSpecCheckLeavesCompletedTasksAlone$/^a_resumed_Spec_probes_only_the_Tasks_still_to_run$' ./internal/cli`
+exited 1 before the implementation: the completed marker command was
+`vacuous`, the completed missing tool was `unknown`, and the check refused.
+The same subtest passed in the focused post-change run above.
+
+Mutation checks used `go test -overlay <temporary-overlay.json> -timeout 5m
+-count=1 -run <selector> ./internal/<package>` with the resumed CLI subtest
+selector above and
+`^(TestTaskAwaitsWorkSelectsEveryStatusButCompleted|TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks)$`
+for the Daemon. All four mutation invocations exited 1 and reported the
+expected test failures.
+
+Declared Task Verification and repository Verification were not run; the
+Daemon owns them and Task settlement. No follow-up outside this slice was
+required. No commit, push or pull request was made.

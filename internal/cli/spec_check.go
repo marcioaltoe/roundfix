@@ -84,6 +84,14 @@ type specCheckVerificationReport struct {
 	Tree        string                               `json:"tree,omitempty"`
 	Commands    []specCheckVerificationCommandReport `json:"commands"`
 	Uncommitted []specCheckVerificationSource        `json:"uncommitted"`
+	NotProbed   []specCheckVerificationNotProbed     `json:"notProbed,omitempty"`
+	textLines   []string
+}
+
+type specCheckVerificationNotProbed struct {
+	Task    string `json:"task"`
+	Command string `json:"command"`
+	Reason  string `json:"reason"` // "completed"
 }
 
 type specCheckVerificationSource struct {
@@ -446,6 +454,15 @@ func probeSpecVerifications(
 			return nil, err
 		}
 		for taskIndex, task := range graph.Tasks {
+			if !daemon.TaskAwaitsWork(task) {
+				for _, command := range task.Verification {
+					report.NotProbed = append(report.NotProbed, specCheckVerificationNotProbed{
+						Task: task.ID, Command: command, Reason: "completed",
+					})
+					report.textLines = append(report.textLines, fmt.Sprintf("- %s: not probed — %q (Task completed)\n", task.ID, command))
+				}
+				continue
+			}
 			verdicts, err := daemon.ProbeCommands(ctx, verifier, checkoutDir, task.Verification, func(commandIndex int) string {
 				return filepath.Join(
 					diagnosticDir,
@@ -456,7 +473,9 @@ func probeSpecVerifications(
 				return nil, fmt.Errorf("probe Spec %q Task %s Verification: %w", slug, task.ID, err)
 			}
 			for _, verdict := range verdicts {
-				report.Commands = append(report.Commands, specCheckVerificationCommand(task.ID, verdict))
+				command := specCheckVerificationCommand(task.ID, verdict)
+				report.Commands = append(report.Commands, command)
+				report.textLines = append(report.textLines, specCheckVerificationCommandLine(command))
 			}
 		}
 		reports[specIndex] = report
@@ -503,6 +522,7 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 		Ran:        verification.Executed,
 		Executed:   executed,
 		Unexecuted: unexecuted,
+		NotProbed:  len(verification.NotProbed),
 	}))
 	if len(outcome.repairInputs) > 0 {
 		report.WriteString("Repair inputs:\n")
@@ -521,25 +541,31 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 	for _, source := range verification.Uncommitted {
 		fmt.Fprintf(&report, "Uncommitted Verification source: %s (%s)\n", source.Path, source.State)
 	}
-	if len(verification.Commands) == 0 {
+	if len(verification.Commands) == 0 && len(verification.NotProbed) == 0 {
 		report.WriteString("No authored Verification commands.\n")
 		return report.String()
 	}
-	for _, command := range verification.Commands {
-		fmt.Fprintf(&report, "- %s: %s — %q", command.Task, command.Verdict, command.Command)
-		switch command.Verdict {
-		case specCheckVerificationVerdictVacuous:
-			report.WriteString(" (exited zero before work)")
-		case specCheckVerificationVerdictHonest:
-			report.WriteString(" (exited non-zero before work)")
-		case specCheckVerificationVerdictUnknown, specCheckVerificationVerdictMalformed:
-			if command.Cause != "" {
-				fmt.Fprintf(&report, " (%s)", command.Cause)
-			}
-		}
-		report.WriteByte('\n')
+	for _, line := range verification.textLines {
+		report.WriteString(line)
 	}
 	return report.String()
+}
+
+func specCheckVerificationCommandLine(command specCheckVerificationCommandReport) string {
+	var line strings.Builder
+	fmt.Fprintf(&line, "- %s: %s — %q", command.Task, command.Verdict, command.Command)
+	switch command.Verdict {
+	case specCheckVerificationVerdictVacuous:
+		line.WriteString(" (exited zero before work)")
+	case specCheckVerificationVerdictHonest:
+		line.WriteString(" (exited non-zero before work)")
+	case specCheckVerificationVerdictUnknown, specCheckVerificationVerdictMalformed:
+		if command.Cause != "" {
+			fmt.Fprintf(&line, " (%s)", command.Cause)
+		}
+	}
+	line.WriteByte('\n')
+	return line.String()
 }
 
 func renderSpecCheckJSON(outcome specCheckOutcome, verification specCheckVerificationReport) ([]byte, error) {
