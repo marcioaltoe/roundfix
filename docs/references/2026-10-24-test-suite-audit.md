@@ -282,3 +282,56 @@ PR #654, after Spec 0305, took 463 s (Verify changed 271 s, Verify docs
 - The four `internal/spec` archive corpus tests could share one sweep.
 - The slowest Git-bound tests (reconcile, asset sync, item branch safety)
   build their repositories one commit at a time.
+- No per-test count of Git starts exists for `internal/cli`: the 60,669
+  starts above are the package total that Go's test log records, and Go
+  does not attribute them to a test. Work that cuts the Git-bound tests
+  measures that count first, one test at a time, with an instrumented `git`
+  first on `PATH` that counts its starts; no Spec owns it yet (operator,
+  2026-10-26).
+
+## Addendum — 2026-10-26 — the unreaped-group probe
+
+On 2026-10-25, at about 12:10 BRT, the QA gate of Spec 0317 (Run
+`run_20261025T143420Z_c1664469a7b4b38b`) failed one test that Spec had not
+touched: `TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded`
+(`internal/cli`), "probe unreaped fixture group 6892: got <nil>, want
+EPERM", while the whole package ran; the test passed alone. The operator
+measured it on 2026-10-26 at `aa8b3db7`, on the same Mac mini, with another
+Run verifying beside it.
+
+1. The test starts `cat` in its own process group, closes its input, polls
+   every 10 ms until the darwin `detachFixtureGroupLiveMembers` reports no
+   live member, then expects `kill(-pgid, 0)` to fail with `EPERM`. That
+   reading leaves out a zombie (`SZOMB`) and also a process still exiting
+   (`P_WEXIT` set, state not yet `SZOMB`), so the poll can end while `cat` is
+   still exiting.
+2. Darwin's `killpg1` (`bsd/kern/kern_sig.c` in Apple's published XNU
+   source) iterates the group with a filter that keeps a member when
+   `!(p->p_flag & P_SYSTEM) && p->p_stat != SZOMB`, counts each member it may
+   signal, and returns `(karg.nfound > 0 ? 0 : (posix ? EPERM : ESRCH))`. An
+   exiting member is not yet `SZOMB`, so it is counted and the probe
+   succeeds; a zombie is filtered out and the probe fails with `EPERM`.
+3. A scratch program repeated the test's steps and recorded the member's
+   state around each probe. With busy polling, four at a time for 20 s:
+   34,913 first probes; 31,848 found the member exiting, and 9 of those
+   returned success; every one of 34,913 probes of a zombie returned
+   `EPERM`. With the test's 10 ms polling, eight at a time for 60 s under
+   eight CPU-bound loops (load average 15): 90 of 36,078 first probes found
+   the member exiting, 3 returned success; all 36,078 zombie probes returned
+   `EPERM`.
+4. A load harness ran the compiled `internal/cli` test binary, eight copies
+   at a time, each with
+   `-test.run '^TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded$' -test.count=2000`,
+   beside eight CPU-bound shell loops. At load average 15, one round of
+   16,000 runs failed once. At load averages from 49 to 55, three rounds
+   failed 49, 14 and 24 times. A prototype whose poll also waits until the
+   member's own state is `SZOMB` passed three rounds of 16,000 at the same
+   load with no failure.
+5. Darwin offers no wait that keeps the child: `wait4` with `WNOWAIT` reaped
+   the child (6,772 of 6,772 tries, then `cmd.Wait` found no child), and
+   `golang.org/x/sys/unix` has no `Waitid` for Darwin; a raw `waitid(P_PID,
+   pid, WEXITED|WNOWAIT)` kept it (1,981 of 1,981, each probe `EPERM`), but
+   only through a system call number.
+6. `store.SignalProvenProcessGroup` treats a successful group signal as
+   signalled and an `EPERM` with no live member as ended, which is right for
+   an exiting and for a zombie member; production code is not affected.
