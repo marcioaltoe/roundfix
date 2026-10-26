@@ -1,0 +1,8 @@
+Documentation search: ['rg', '-n', '-i', 'git rm|stag(e|ing).{0,60}delet|delet.{0,60}stag(e|ing)', 'docs/user-guide', 'docs/agents', '.agents/skills', 'skills']
+docs/user-guide/commands/baseline.md:318:git rm -r -q --ignore-unmatch .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool
+docs/user-guide/commands/archive.md:114:The Spec folder must match its repository's `HEAD`. Modified, staged, deleted
+
+Citation Source excerpt:
+**Citation Source**:
+A tracked regular text file outside the skill trees and testdata directories, holding no NUL byte in its first 8,000 bytes, in which History Citations are found ([ADR-0299](docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md)).
+A citation to a file or folder a selected history unit removes, listed in text and JSON and bound into the Plan Digest. As a History Citation, it is found and rewritten in every Citation Source to a Git Locator for removed text, or to the surviving record or promoted copy when one exists ([ADR-0299](docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md)).

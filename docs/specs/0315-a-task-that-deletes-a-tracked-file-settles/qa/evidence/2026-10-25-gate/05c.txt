@@ -1,0 +1,20 @@
+['go', 'test', '-timeout', '3m', '-count=1', '-v', '-run', '^TestTrackedSourceReadersStillRefuseAPathBehindAFile/stale-history-citations$', './internal/spec']
+Exit 1
+=== RUN   TestTrackedSourceReadersStillRefuseAPathBehindAFile
+=== PAUSE TestTrackedSourceReadersStillRefuseAPathBehindAFile
+=== CONT  TestTrackedSourceReadersStillRefuseAPathBehindAFile
+=== RUN   TestTrackedSourceReadersStillRefuseAPathBehindAFile/stale-history-citations
+=== PAUSE TestTrackedSourceReadersStillRefuseAPathBehindAFile/stale-history-citations
+=== CONT  TestTrackedSourceReadersStillRefuseAPathBehindAFile/stale-history-citations
+    citation_sources_working_tree_test.go:81: isolated citation test: exit status 1
+        --- FAIL: TestTrackedSourceReadersStillRefuseAPathBehindAFile (0.00s)
+            --- FAIL: TestTrackedSourceReadersStillRefuseAPathBehindAFile/stale-history-citations (0.03s)
+                citation_sources_working_tree_test.go:94: error=<nil>; want error naming notes/a.md
+        FAIL
+        suiteguard: guard cost: measured 2793 paths; fingerprint took 131.316708ms before and 130.054417ms after
+--- FAIL: TestTrackedSourceReadersStillRefuseAPathBehindAFile (0.00s)
+    --- FAIL: TestTrackedSourceReadersStillRefuseAPathBehindAFile/stale-history-citations (0.30s)
+FAIL
+suiteguard: guard cost: measured 2793 paths; fingerprint took 148.461792ms before and 129.081792ms after
+FAIL	roundfix/internal/spec	0.863s
+FAIL

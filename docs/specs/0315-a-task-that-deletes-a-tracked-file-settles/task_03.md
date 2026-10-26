@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0315-a-task-that-deletes-a-tracked-file-settles
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

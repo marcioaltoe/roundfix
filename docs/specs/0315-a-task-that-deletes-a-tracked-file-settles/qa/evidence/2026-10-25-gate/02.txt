@@ -1,0 +1,5 @@
+Command: ['/bin/sh', '-c', 'out="$(go test -timeout 10m -count=1 -v -run \'^(TestAGatedTaskWhoseDeclaredDeletionIsOnlyOnDiskSettles|TestSettlementStillReportsALinkToADeletedFile|TestSettlementRefusesAnUnauthorizedGovernedDeletion|TestATaskThatLeavesItsDeletesPathDoesNotSettle|TestATaskThatRemovesItsDeletesPathSettles|TestDefaultSettlementCheckerAuditsAProspectiveCommit|TestDefaultSettlementCheckerReturnsTheGatePreconditionFindings)$\' ./internal/daemon 2>&1)" || { printf \'%s\\n\' "$out"; exit 1; }; for name in TestAGatedTaskWhoseDeclaredDeletionIsOnlyOnDiskSettles/disk-only TestAGatedTaskWhoseDeclaredDeletionIsOnlyOnDiskSettles/staged TestSettlementStillReportsALinkToADeletedFile TestSettlementRefusesAnUnauthorizedGovernedDeletion TestATaskThatLeavesItsDeletesPathDoesNotSettle TestATaskThatRemovesItsDeletesPathSettles TestDefaultSettlementCheckerAuditsAProspectiveCommit TestDefaultSettlementCheckerReturnsTheGatePreconditionFindings; do printf \'%s\\n\' "$out" | grep -q -- "--- PASS: $name " || { printf \'missing pass: %s\\n\' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/daemon']
+Exit: 0
+STDOUT
+
+STDERR

@@ -1,0 +1,24 @@
+Delivery Base 19236ff0
+Audited head afca05f4634179f7d372db66e497e3372a083213
+Each Task commit diff-tree:
+2f3386a531c86744a0f903268a3dd44965d32396
+docs/specs/0315-a-task-that-deletes-a-tracked-file-settles/task_01.md
+internal/cli/baseline_update_citations_test.go
+internal/spec/citation_sources.go
+internal/spec/citation_sources_working_tree_test.go
+internal/spec/history_entries.go
+internal/spec/stale_citations.go
+afca05f4634179f7d372db66e497e3372a083213
+docs/specs/0315-a-task-that-deletes-a-tracked-file-settles/task_02.md
+internal/daemon/task_deletes_settlement_test.go
+Full delta:
+docs/specs/0315-a-task-that-deletes-a-tracked-file-settles/task_01.md
+docs/specs/0315-a-task-that-deletes-a-tracked-file-settles/task_02.md
+internal/cli/baseline_update_citations_test.go
+internal/daemon/task_deletes_settlement_test.go
+internal/spec/citation_sources.go
+internal/spec/citation_sources_working_tree_test.go
+internal/spec/history_entries.go
+internal/spec/stale_citations.go
+Declared scope matched: True
+Governed paths: none; authorization paths: [].
