@@ -247,6 +247,27 @@
       "tokens": ["artifact.rules"]
     },
     {
+      "id": "template.starter.python.makefile",
+      "version": 1,
+      "kind": "starter-file",
+      "path": "starters/python/Makefile",
+      "tokens": []
+    },
+    {
+      "id": "template.starter.python.project-config",
+      "version": 1,
+      "kind": "starter-file",
+      "path": "starters/python/roundfixrc.yml",
+      "tokens": []
+    },
+    {
+      "id": "template.starter.python.verify-workflow",
+      "version": 1,
+      "kind": "starter-file",
+      "path": "starters/python/verify.yml",
+      "tokens": []
+    },
+    {
       "id": "template.guide.python",
       "version": 1,
       "kind": "guide",

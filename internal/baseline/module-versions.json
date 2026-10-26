@@ -129,6 +129,10 @@
       {
         "version": 1,
         "digest": "sha256:4fd8124766da54160a1123a0557c60512e9a59e360e9e388f07805947fb4fb8d"
+      },
+      {
+        "version": 2,
+        "digest": "sha256:8ba346a19c103bb49de7723ec1714285c3496f29a52833a6012bb8a1116244a9"
       }
     ],
     "repository-extension": [

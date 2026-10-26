@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "python",
-  "version": 1,
+  "version": 2,
   "kind": "language-runtime",
   "title": "Python repository guidance",
   "dependsOn": [
@@ -143,6 +143,23 @@
   ],
   "repositoryExtensions": [
 
+  ],
+  "starterFiles": [
+    {
+      "id": "starter.python.makefile",
+      "path": "Makefile",
+      "template": "template.starter.python.makefile"
+    },
+    {
+      "id": "starter.python.project-config",
+      "path": ".roundfixrc.yml",
+      "template": "template.starter.python.project-config"
+    },
+    {
+      "id": "starter.python.verify-workflow",
+      "path": ".github/workflows/verify.yml",
+      "template": "template.starter.python.verify-workflow"
+    }
   ],
   "rules": [
     {

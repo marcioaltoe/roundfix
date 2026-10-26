@@ -1,0 +1,13 @@
+# Run the repository gate before accepting changes.
+defaults:
+  verification: make verify
+
+# Bootstrap each worktree from the committed lockfile.
+worktree:
+  bootstrap: uv sync --group dev --frozen
+  bootstrap_timeout: 5m
+  caches: [.venv, .pytest_cache, .ruff_cache]
+
+# Require these tools before starting a Run.
+verification:
+  tools: [uv, make, git]

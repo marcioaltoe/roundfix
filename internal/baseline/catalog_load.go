@@ -106,7 +106,7 @@ func (l *catalogLoader) validateSchemaFields(catalog *Catalog) {
 		"schemaVersion", "id", "version", "kind", "title", "dependsOn",
 		"conflictsWith", "rootBlocks", "supportingGuides", "rules",
 		"requiredSkills", "skillDispatch", "requiredDecisions",
-		"repositoryExtensions", "instructionHierarchy", "semanticOwners",
+		"repositoryExtensions", "instructionHierarchy", "semanticOwners", "starterFiles",
 	}
 	for id, doc := range catalog.modules {
 		l.allowFields("catalog.module.field.unknown", id, doc, moduleFields...)

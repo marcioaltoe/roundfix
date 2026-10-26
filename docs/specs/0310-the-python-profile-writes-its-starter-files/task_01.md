@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0310-the-python-profile-writes-its-starter-files
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -113,3 +113,62 @@ Features 1-2; ADR-0323).
 - `_prd.md` → Goals; Core Features 1-2; Success Metrics 1-2; User Story 1
 - `_techspec.md` → Current behavior 1-3; Interfaces; Data Models 1-2; API Contracts 1-2; Testing Approach; Build Order 1
 - ADR-0323
+
+
+## Result
+
+Implemented the task_01 catalog slice. Modules may declare optional
+`starterFiles`; loading validates the array shape, catalog-wide starter IDs
+and paths, safe relative paths, and template existence and kind. The resolver
+returns copies of verbatim template bytes in the supplied module order and
+then declaration order, with SHA-256 content identities, and rejects unknown
+modules. Python declares the Makefile, Project Config and workflow starters;
+no repository Starter File writer was added.
+
+Acceptance evidence:
+
+- Python resolves the three paths in order and the other four profiles resolve
+  none: `TestThePythonModuleDeclaresItsStarterFiles` passed. It checks IDs,
+  module ownership, content identities, required template lines, absence of
+  interpolation markers, returned-byte isolation, repeated module order and
+  unknown-module refusal.
+- Invalid declarations receive their own diagnostics:
+  `TestAStarterFileDeclarationIsValidated` passed, covering unsafe, absolute,
+  Windows and empty paths; duplicate paths; unknown and guide templates;
+  missing and duplicate IDs; malformed arrays and entries; and compatibility
+  when the optional field is absent.
+- A second Managed Refresh reported `File changes: 0` and
+  `Idempotence: verified`. The first refresh changed only
+  `docs/agents/setup-context.json` (the catalog digest).
+
+Focused checks and sanctioned regeneration, all exit 0:
+
+1. `go test ./internal/baseline -run '^(TestThePythonModuleDeclaresItsStarterFiles|TestAStarterFileDeclarationIsValidated)$' -count=1`.
+2. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1` recorded Python module version 2.
+3. `make baseline-digests` regenerated only `catalog.digest`,
+   `catalog.normalized.json` and the four declared plan characterization
+   goldens; its outputs were not hand-edited.
+4. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`, twice, each with a fresh temporary `HOME`.
+   Existing dependency storage was reused via `GOPATH`, with `GOPROXY=off`
+   and `GOSUMDB=off`; no dependency download was allowed. Both refreshes
+   reported nested-carrier warnings for the embedded formatter and Source
+   Baseline fixtures and left those carriers unchanged.
+5. `go test ./internal/baseline -run '^(TestThePythonModuleDeclaresItsStarterFiles|TestAStarterFileDeclarationIsValidated|TestEmbeddedCatalog|TestCatalogCompatibility|TestCatalogDiagnosticCharacterization|TestBaselinePlanCharacterization|TestEveryBaselineModuleVersionIsRecorded)$' -count=1` passed after regeneration and refresh.
+6. `git diff --check` passed.
+
+Environment and scope: sandbox initialization rejected the symlinked writable
+root even when the resolved working directory was supplied. Approved escalated
+execution used the assigned checkout. The only pre-existing dirty path was
+this Task file (its Daemon-owned status); that status was preserved. All
+implementation and generated paths remain within this Task's declarations.
+
+Not run: the declared Verification commands, full package suite, selected
+repository Verification and incremental Verification remain Daemon-owned.
+No existing test, other Task, Task Graph, skill, other module, profile, setup,
+repository Makefile or repository Project Config was edited. No commit, push
+or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T111302Z_6e46ba39379a80ff`
+- Source commit: `1861dbb464ae536691032a8eadaa181ad0cc58e2`
