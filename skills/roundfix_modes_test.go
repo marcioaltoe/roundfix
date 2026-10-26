@@ -176,6 +176,26 @@ func TestTheRoundfixSkillReadsItsModeFromTheRequest(t *testing.T) {
 			if regexp.MustCompile(`\$(?:[0-9]+|ARGUMENTS)`).MatchString(parts[2]) {
 				t.Error("skill body contains an argument placeholder")
 			}
+			reference, err := fs.ReadFile(source, "roundfix/references/modes.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			referenceText := string(reference)
+			for _, heading := range []string{"How a mode is chosen", "Optional sources", "--status"} {
+				if roundfixSection(referenceText, heading) == "" {
+					t.Errorf("modes reference has no non-empty %q section", heading)
+				}
+			}
+			chosen := strings.Join(strings.Fields(roundfixSection(referenceText, "How a mode is chosen")), " ")
+			for _, phrase := range []string{
+				"with or without a leading `--`",
+				"`/roundfix follow-up`, `/roundfix --follow-up`, `$roundfix status` and `@roundfix --unattended` each select a mode",
+				"This is the Skill Mode, not the CLI command `roundfix follow-up`",
+			} {
+				if !strings.Contains(chosen, phrase) {
+					t.Errorf("How a mode is chosen omits %q", phrase)
+				}
+			}
 		})
 	}
 }
