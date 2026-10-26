@@ -1,0 +1,7 @@
+archive head: 9eda3f904aa6034f170c15f66dad56657b1edcee
+fixture Git metadata: initialized and baseline staged, no commit
+mutation: sabotage-revision
+expected test process exit: 1
+observed exit: 1
+failed named tests: ["TestEveryUpstreamSetupFollowsTheAiMemoryRevision", "TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go", "TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun", "TestEveryUpstreamSetupFollowsTheAiMemoryRevision/python", "TestEveryUpstreamSetupFollowsTheAiMemoryRevision/rust", "TestEveryUpstreamSetupFollowsTheAiMemoryRevision/typescript", "TestEveryUpstreamSetupFollowsThePythonPresetRevision", "TestEveryUpstreamSetupFollowsThePythonPresetRevision/go", "TestEveryUpstreamSetupFollowsThePythonPresetRevision/python", "TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust", "TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript", "TestThePythonSetupIsThePublishedUpstreamPreset", "TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree", "TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun", "TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript"]
+expected failures observed: True

@@ -1,0 +1,7 @@
+command: make verify-changed
+executor: Daemon, outside Agent sandbox
+audited head: 9eda3f904aa6034f170c15f66dad56657b1edcee
+result: pass
+exit: 0
+diagnostics: removed on success
+Agent rerun: no

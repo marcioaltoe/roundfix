@@ -1,0 +1,85 @@
+{
+  "head": "9eda3f904aa6034f170c15f66dad56657b1edcee",
+  "delivery_base": "feeffa280e11053cea4d662c5d54589708d83ec9",
+  "github_skill_refs": 293,
+  "snapshots": [
+    {
+      "snapshot": "go",
+      "skills": 47,
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "path": "setups/go.txt"
+      },
+      "changed_trees": [],
+      "ordered_membership": "identical",
+      "other_JSON_fields": "identical after accounting for refs, generated digest and onioncry tree"
+    },
+    {
+      "snapshot": "go-cli-typescript-bun",
+      "skills": 115,
+      "source": {
+        "setups": [
+          "go",
+          "typescript"
+        ],
+        "type": "composed"
+      },
+      "changed_trees": [
+        {
+          "skill": "onioncry",
+          "before": "f918508da464fcc37b436a5a26fc243ffa159ead9e07b19e991451ed0ca53b6c",
+          "after": "be502b02544be90059c126e9b07bfeb6a4af115aada86455845b1407a5eab8b3"
+        }
+      ],
+      "ordered_membership": "identical",
+      "other_JSON_fields": "identical after accounting for refs, generated digest and onioncry tree"
+    },
+    {
+      "snapshot": "python",
+      "skills": 52,
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "path": "setups/python.txt"
+      },
+      "changed_trees": [],
+      "ordered_membership": "identical",
+      "other_JSON_fields": "identical after accounting for refs, generated digest and onioncry tree"
+    },
+    {
+      "snapshot": "rust",
+      "skills": 40,
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "path": "setups/rust.txt"
+      },
+      "changed_trees": [],
+      "ordered_membership": "identical",
+      "other_JSON_fields": "identical after accounting for refs, generated digest and onioncry tree"
+    },
+    {
+      "snapshot": "typescript",
+      "skills": 104,
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "path": "setups/typescript.txt"
+      },
+      "changed_trees": [
+        {
+          "skill": "onioncry",
+          "before": "f918508da464fcc37b436a5a26fc243ffa159ead9e07b19e991451ed0ca53b6c",
+          "after": "be502b02544be90059c126e9b07bfeb6a4af115aada86455845b1407a5eab8b3"
+        }
+      ],
+      "ordered_membership": "identical",
+      "other_JSON_fields": "identical after accounting for refs, generated digest and onioncry tree"
+    }
+  ]
+}

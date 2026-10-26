@@ -1,0 +1,8 @@
+{
+  "internal_test_files_scanned": 804,
+  "old_pin_matches": [],
+  "constant_declarations": [
+    "internal/baseline/upstream_setup_revision_test.go"
+  ],
+  "revision_test_consumers": 3
+}

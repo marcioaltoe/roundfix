@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0320-the-baseline-setups-follow-the-consolidated-skills-catalog
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

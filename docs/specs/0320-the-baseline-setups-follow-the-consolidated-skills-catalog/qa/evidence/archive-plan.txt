@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0320-the-baseline-setups-follow-the-consolidated-skills-catalog --plan --offline
+exit: 0
+stdout:
+archive plan for 0320-the-baseline-setups-follow-the-consolidated-skills-catalog: removes 36 file(s) (2596652 bytes) and writes docs/history/specs/0320-the-baseline-setups-follow-the-consolidated-skills-catalog.md
+core 8 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-26.md, references/_index.md, task_01.md, task_02.md
+evidence 27 file(s) (2523269 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-the-baseline-setups-trail-the-consolidated-skills-catalog.md 3069 bytes: no advice (offline)
+promote with: roundfix archive 0320-the-baseline-setups-follow-the-consolidated-skills-catalog --promote <path>
+
+stderr:
