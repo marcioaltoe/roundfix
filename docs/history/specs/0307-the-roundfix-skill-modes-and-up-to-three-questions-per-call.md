@@ -27,6 +27,7 @@ regeneration:
     outputs:
       - skills/testdata/owned-skill-versions.json
 promoted: []
+pull_request: "679"
 ---
 
 # The Roundfix skill's follow-up, status and unattended modes, and up to three questions per call
