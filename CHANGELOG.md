@@ -2,6 +2,31 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.122.0] - 2026-10-26
+
+### Skill Modes for follow-up, status and unattended work
+
+- **The Roundfix skill reads a Skill Mode from the request.** The first word after the skill's name selects `follow-up`, `status` or `unattended`, with or without a leading `--`, in Claude Code (`/roundfix follow-up`), Codex (`$roundfix status`) and OpenCode (`@roundfix --unattended`). Any other first word keeps today's behavior. A new `modes` reference describes each mode: `status` reports read-only; `follow-up` runs the inventory through `roundfix follow-up`, plans, gathers every decision, triages ai-memory messages (consumed only after their content is recorded), authors and checks Specs, queues them and arms the continuation; `unattended` gathers information, decisions and authorizations before work continues and records each answer in the consuming Spec's `_authorization.md`, or in a Backlog Entry or Finding without authorizations. Roundfix skill version 0.1.140.
+- **Up to three questions per call.** The Baseline's stop-and-ask clause now allows at most three independent questions per structured call, never more than the tool accepts; dependent questions still wait. Adopters' refresh records the clause as retained.
+
+### An Agent may start the setup skill
+
+- `setup-context-driven` no longer sets `disable-model-invocation`, so an agent can run the Baseline update when the user asks, without a second manual invocation. Its new "Who starts this skill" section keeps the confirmation with the person: the agent never passes `--confirm-plan` or `--yes` before the user approves the Plan Digest.
+
+### A Task that deletes a tracked file settles
+
+- The citation readers behind the Spec Consistency Check, `roundfix cancel` and `baseline update` (`CitationSources`, `HistoryCitations`, `StaleHistoryCitations`) skip a tracked path that is missing from the working tree, so a Task with `deletes:` settles without staging the deletion with `git rm`. Every other error, such as a tracked path behind a file, still fails.
+
+### `roundfix gc` trims a declared Shared Build Cache
+
+- New `worktree.shared_caches` (User or Project Config, default `[]`): each entry declares a Go build cache `path` (with `{tmpdir}`, `{home}`, `{uid}`), `kind: go-build`, `max_size_mb` and `idle` (at least `2h`). Above the limit, `roundfix gc` removes idle entries oldest first until the cache is within the limit; `--dry-run` reports the plan. It refuses a symlinked directory or one without the go cache README and removes only cache entry files. This repository declares its shared cache at 20 GiB / 4h; the first real run reclaimed 27 GB.
+
+### The internal/cli tests stop reading the live documentation
+
+- Repository test suite only: thirteen `internal/cli` tests that read the live guides and skills moved behind the `docscontract` tag, the upgrade characterization test runs in a fixture workspace, and the suite leak guard fingerprints the repository through Git (plus a mode pass), so a guide or skill edit leaves `internal/cli` cached. No product behavior changes.
+
+**Adopters:** run `roundfix upgrade`, then `roundfix baseline update` and apply the plan (the stop-and-ask clause and the setup skill change), and `roundfix skills install` or `roundfix baseline skills restore` as the update reports. Remove any `git rm` workaround in Tasks with `deletes:`.
+
 ## [0.121.0] - 2026-10-25
 
 ### The Baseline reports a required skill that is not installed
