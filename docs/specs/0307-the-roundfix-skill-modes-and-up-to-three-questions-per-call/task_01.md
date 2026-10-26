@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -121,3 +121,97 @@ Core Feature 1; ADR-0320).
 - `_prd.md` → Goals; Core Feature 1; Success Metric 1; Success Metric 2; Acceptance evidence
 - `_techspec.md` → Current behavior 1-4; API Contracts 1-2; Invariants 1-3; Testing Approach; Build Order 1
 - ADR-0320
+
+
+## Result
+
+Implemented the question-clause slice for the maintainer's decision 3, as
+recorded in ADR-0320 and this Spec's authorization. Status remains Daemon-owned.
+The pre-existing task-file edit was preserved; no other Task or manifest changed.
+
+### Implementation and acceptance evidence
+
+- Embedded clause: guidance matches whitespace-normalized TechSpec API Contract 1
+  exactly; its identity and `stop-and-ask` enforcement remain, with no `replaces`.
+  The decision-authority rule changed from version 5 to 6. The sanctioned recorder
+  advanced core from version 23 to 24 and recorded its digest.
+- Rendering: both the Standard TypeScript golden and this repository's agent
+  instructions contain the limit and independence sentences once, with the old
+  sentence absent. The focused rendering test passes for both files.
+- Adopter retention: `TestAnAdopterRetainsTheAskUserClause` builds a ready Standard
+  TypeScript Managed Refresh, asserts `ClauseRetained`, and checks that retention
+  evidence targets the same clause identity. Its focused run passes.
+- Added the three required tests and four specified constants in
+  `internal/baseline/question_batch_clause_test.go`. Every top-level test and
+  subtest starts with `t.Parallel()`. The whitespace-normalizing assertion helper
+  is unique to that file. Existing tests and production Go files were not edited.
+
+### Commands and outcomes
+
+1. `go test ./internal/baseline -run '^(TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall|TestTheAskUserClauseRendersInTheAgentInstructionsGuide|TestAnAdopterRetainsTheAskUserClause)$' -count=1`
+   before changing the clause: exit 1, exposing the missing new sentences and
+   retained old sentence in the embedded clause and both guides; retention itself
+   already held. After regeneration and both refreshes: exit 0.
+2. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`:
+   exit 0; core version 24 recorded.
+3. `make baseline-digests`: exit 0, `ok: true`, `changed: true`. Exactly the nine
+   declared derived files were regenerated: the formatter golden, profile, three
+   catalog artifacts and four plan-characterization goldens.
+4. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`,
+   with a temporary `HOME`: exit 0, approved postimages verified, two file changes
+   (`docs/agents/agent-instructions.md` and `docs/agents/setup-context.json`). The
+   same command again with the same temporary `HOME` and module networking disabled
+   through `GOPROXY` and `GOSUMDB`: exit 0, already applied, idempotence verified,
+   zero file changes. Both runs reported the existing nested-carrier warnings for
+   the formatter fixture and frozen corpus; neither carrier was modified.
+5. Focused clause and retention tests after regeneration: exit 0.
+6. `git diff --check`: exit 0.
+7. Case-insensitive `rg -n -i --hidden` sweep for all four Requirement 6 phrases,
+   excluding `.git` and `docs/history/`: remaining matches listed below. The live
+   module and both rendered instruction guides have no remaining match.
+
+Environment deviation: the first temporary-HOME refresh unexpectedly caused Go
+module downloads because HOME also changes Go's default caches. This breached the
+Spec's offline execution limit; it must not be represented as an offline run.
+No provider, judge, reviewer, Secondbrain or ai-memory call was made. The second
+refresh explicitly disabled module-network access and succeeded from that cache.
+The executor also required automatically approved escalation because its configured
+writable root contains a symlink; the assigned checkout was used throughout.
+
+### Remaining wording matches
+
+All interview-skill, frozen-corpus, Spec quotation and ADR matches are allowed by
+Requirement 6. The new test also necessarily matches at its required
+`askUserClauseRetired` negative-test constant (TechSpec Interfaces); this is a
+regression sentinel, not active guidance. No other live guidance match remains.
+
+- `.agents/skills/brainstorming/SKILL.md`: lines 28.
+- `.agents/skills/business-analyst/SKILL.md`: lines 50.
+- `.agents/skills/write-idea/SKILL.md`: lines 25.
+- `.agents/skills/write-prd/SKILL.md`: lines 118.
+- `docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md`: lines 12, 47.
+- `docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/_prd.md`: lines 13, 196, 248, 250.
+- `docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/_techspec.md`: lines 12, 65, 67, 68, 75, 151, 276, 283.
+- `docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/task_01.md`: lines 14, 61, 117.
+- `docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call/task_04.md`: lines 166.
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/agent-instructions.md`: lines 143.
+- `internal/baseline/question_batch_clause_test.go`: lines 13.
+- `skills/brainstorming/SKILL.md`: lines 28.
+- `skills/business-analyst/SKILL.md`: lines 50.
+- `skills/write-idea/SKILL.md`: lines 25.
+- `skills/write-prd/SKILL.md`: lines 118.
+
+### Scope and Daemon handback
+
+Only the declared core source, version record, nine digest-derived files, two
+Managed Refresh outputs, new test and this Task's Result were changed. No derived
+output was hand-edited. Source Baseline and retention assets, other modules,
+skills, user guides, Project Config, Go production files, `_tasks.md` and other
+Task files remain unchanged. Declared Verification commands, the complete package
+suites and repository Verification were not run; their verdicts remain with the
+Daemon. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T012710Z_3bd43b23da902551`
+- Source commit: `a3510bc81eca2f758a7a2f2801c20293df92a7ae`
