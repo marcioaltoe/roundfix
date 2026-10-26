@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -112,3 +112,62 @@ commands; no skill is restored (`_prd.md` → Core Feature 1; ADR-0322).
 - `_prd.md` → Goals 1-2; Core Feature 1; Success Metrics 1, 2 and 5; User Story 4
 - `_techspec.md` → Current behavior 1-5; Data Models 1-2; API Contracts 1-2; Invariants 1-3; Testing Approach; Build Order 1
 - ADR-0322; ADR-0191; ADR-0241; ADR-0206; ADR-0072
+
+## Result
+
+Implemented the Task 01 import slice for the promoted Backlog Entry
+`references/2026-10-22-a-baseline-profile-for-python-repositories.md`, expected
+item 5. Task status remains Daemon-owned.
+
+- Prerequisites: the local `~/dev/skills` checkout contains commit
+  `65d5f365cace27c4b468db1723213723b10c870b`, and `go.json` already names
+  that revision. Before the import, `python.json` was absent. The initial
+  worktree change was the Daemon's `pending` → `in_progress` status only.
+- Acceptance criterion 1: seeded `python.json` from the exact bytes of
+  `rust.json`, replacing only its setup ID and source path, then ran API
+  Contract 1's local fetch, detached checkout, binary build and asset sync
+  in order. The imported snapshot has all 52 literal names in order,
+  `setups/python.txt` provenance at the required commit, and the delivery
+  and QA activation bundles. Added both specified parallel tests; their
+  focused execution passed, including every upstream snapshot and its
+  GitHub skill revision, `ai-memory-handoff` presence and `handoff` absence.
+- Acceptance criterion 2: the sync's `--check --format text` exited 0.
+  The first sync reported only `skills.setup-snapshot.updated` for
+  `setup.python` (one finding, rather than the TechSpec transcript's five),
+  consistent with the requirement that existing snapshots remain unchanged.
+  `git diff --exit-code` confirmed `go.json`, `rust.json`, `typescript.json`
+  and `go-cli-typescript-bun.json` remain byte-identical. The focused
+  snapshot-agreement and maintained asset-sync parity checks passed.
+- Regeneration: ran the exact jq program from API Contract 1 through a
+  temporary fixture copy, then `make baseline-digests` (exit 0). Only the
+  declared catalog digest/normalized document, parity fixture/manifest and
+  four plan-characterization goldens changed; catalog diagnostics required
+  no change. Updated precisely the four setup counts and the ownership
+  enumeration declared by this Task. No derived bytes or digest values
+  were hand-edited.
+- Acceptance criterion 3: rebuilt the binary after synchronization and
+  regeneration, then ran `baseline update --repo . --no-skills --no-history
+  --yes --format text` twice, each with a fresh temporary `HOME`. The first
+  changed only `docs/agents/setup-context.json`; the second reported
+  `File changes: 0` and verified idempotence. Both reported skills skipped,
+  zero installs and zero restores. The required-installed-skills focused
+  check passed; `git diff --exit-code -- .agents/skills skills
+  skills-lock.json` confirmed unchanged skill trees and lock. The refresh
+  reported nested-carrier conflict warnings for the existing formatter and
+  Source Baseline fixtures and preserved those files.
+
+Focused implementation checks (exit 0):
+
+```sh
+go test -count=1 -run '^(TestThePythonSetupIsThePublishedUpstreamPreset|TestEveryUpstreamSetupFollowsThePythonPresetRevision|TestAssetsSyncCheckIsReadOnlyAndReportsDrift|TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract|TestOutputsForCommand|TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot)$' ./internal/baseline
+```
+
+`git diff --check` exited 0. Changed-path inspection found only this Task's
+specified source/test files, sanctioned derived outputs and this Task file.
+The shell sandbox initially rejected the symlinked writable root before
+launching a process, including when given the resolved checkout path;
+approved execution outside that sandbox allowed the authorized offline
+procedure. No network remote was contacted.
+
+The Task's declared Verification commands and repository Verification were
+not run; they remain Daemon-owned. No commit, push or pull request was made.
