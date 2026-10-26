@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -96,3 +96,59 @@ no existing test reads the host's disk.
 
 - `_prd.md` → Goals; Core Feature 3; User Experience; Success Metric 5
 - `_techspec.md` → Current behavior 5-6; Interfaces; Data Models; API Contract 6; Invariant 5; Testing Approach; Build Order 3
+
+
+## Result
+
+Implemented the Task 02 slice for the adopted disk-full Backlog Entry of
+2026-10-26. `store.AvailableBytes` delegates to the existing platform reader.
+Doctor checks the resolved worktree location and each declared Shared Build
+Cache in order, reading capacity through the command dependency at the nearest
+existing ancestor. Findings print one warning after `storage:` and before
+`linux-lane:` or `codex:`; low locations add `next: roundfix gc` once.
+Unresolvable paths retain their configured value in the unreadable finding.
+Both command test dependency constructors default to a 1 TiB capacity fake.
+
+Acceptance evidence from focused checks:
+
+- Exact warning and unchanged exit code: the `below the threshold` subtest
+  asserts the complete Doctor output against its baseline with one exact line
+  inserted after `storage:`. Both locations report 10,239 MiB with one next
+  action. `before linux lane` checks placement before that line, and
+  `preserves a failed exit` confirms an existing failure remains a failure.
+- Threshold, healthy output and read errors: `at the threshold` supplies
+  exactly 10,240 MiB and `healthy` supplies 1 TiB; both assert byte-identical
+  output to Doctor without the dependency. `one byte below the threshold`
+  confirms strict comparison and rounding down to 10,239 MiB. `unreadable`
+  asserts both error findings, no next action, empty stderr and exit 0.
+- Ancestor reads and test isolation: `missing location` supplies two absent
+  nested paths, asserts the fake receives their nearest existing ancestor
+  twice in location order, keeps the resolved locations in the warning, and
+  confirms neither missing location was created. Existing Doctor tests run
+  unchanged with the capacity fake installed by the command harness.
+- Exported reader: `TestAvailableBytesReadsTheFilesystemOfAPath` checks
+  positive capacity for a temporary directory and an error naming a missing
+  path. This new reader test exercises the platform reader; Doctor tests
+  inject capacity and never measure host free space.
+
+Focused commands and outcomes:
+
+- Before implementation, `go test -count=1 -run
+  '^TestAvailableBytesReadsTheFilesystemOfAPath$' ./internal/store` exited 1:
+  `undefined: AvailableBytes`.
+- `go test -count=1 -timeout 3m -run
+  '^TestAvailableBytesReadsTheFilesystemOfAPath$' ./internal/store` exited 0.
+- `go test -count=1 -timeout 5m -run
+  '^TestDoctorWarnsWhenALocationIsLowOnDisk$' ./internal/cli` exited 0.
+- After the final test edit, `go test -count=1 -timeout 5m -run
+  'Doctor|ResolveExternalSkillRequirement' ./internal/cli` exited 0,
+  covering the new cases and existing Doctor output, storage and Linux Lane
+  tests without changing them.
+- `git diff --check` exited 0; `gofmt -l` on the eight changed Go files
+  produced no paths.
+
+The initial worktree change was the Daemon's `status: in_progress`; that
+field and all existing checkboxes remain unchanged. No other Task, Task Graph,
+platform reader, GC implementation or document was edited. The declared
+Verification, including Windows and Linux builds, and repository Verification
+were not run; the Daemon owns those checks and Task settlement.
