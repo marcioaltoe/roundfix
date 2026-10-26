@@ -817,6 +817,10 @@ _Avoid_: Skill lock, catalog, upstream checkout
 A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains ([ADR-0204](docs/adr/0204-a-composed-profile-takes-a-setup-composed-from-upstream-setups-by-name.md)).
 _Avoid_: Merged setup, custom setup
 
+**Starter File**:
+A repository tooling file, such as a Makefile, a Project Config or a CI workflow, that a Baseline module offers and `roundfix baseline starters` creates only where the path does not exist, after the maintainer confirms the exact preview; once written the repository owns it, and no refresh changes it ([ADR-0323](docs/adr/0323-a-profile-starter-file-is-written-only-where-absent-and-only-on-a-confirmed-preview.md)).
+_Avoid_: Scaffold, template file, managed tooling
+
 **Retired Skill**:
 A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it ([ADR-0246](docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md)).
 _Avoid_: Deprecated skill, obsolete skill

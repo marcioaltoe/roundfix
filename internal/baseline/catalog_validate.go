@@ -121,8 +121,12 @@ func (l *catalogLoader) validateModules(catalog *Catalog) {
 	seenTriggers := make(map[string]string)
 	seenReferences := make(map[string]string)
 	seenExtensions := make(map[string]string)
+	seenStarters := make(map[string]string)
+	seenStarterPaths := make(map[string]string)
 
-	for moduleID, module := range catalog.modules {
+	for _, moduleID := range catalog.ModuleIDs() {
+		module := catalog.modules[moduleID]
+		l.validateStarterFiles(catalog, moduleID, module, seenStarters, seenStarterPaths)
 		requireFields(
 			l,
 			"module",
@@ -1778,5 +1782,36 @@ func (l *catalogLoader) validateClauseGate(catalog *Catalog, id string, clause d
 	}
 	if _, exists := gate["equals"]; !exists || validateDecisionValue(decision, gate["equals"]) != nil {
 		l.add("catalog.clause.applies-when.invalid", id, "gate equals must be a declared decision value")
+	}
+}
+
+func (l *catalogLoader) validateStarterFiles(
+	catalog *Catalog,
+	moduleID string,
+	module document,
+	seenIDs, seenPaths map[string]string,
+) {
+	raw, present := module["starterFiles"]
+	if !present {
+		return
+	}
+	for _, starter := range objectsOrDiagnostic(l, raw, "catalog.module.starterFiles.invalid", moduleID) {
+		id := validateOwnedID(l, "starter.file", moduleID, starter, seenIDs)
+		target, ok := stringValue(starter, "path")
+		if !ok || !safeRelative(target) {
+			l.add("catalog.starter.file.path.invalid", id, target)
+		} else {
+			if previous, exists := seenPaths[target]; exists {
+				l.add("catalog.starter.file.path.duplicate", id, previous+": "+target)
+			}
+			seenPaths[target] = id
+		}
+		templateID, _ := stringValue(starter, "template")
+		template, exists := catalog.templates[templateID]
+		if !exists {
+			l.add("catalog.starter.file.template.unknown", id, templateID)
+		} else if kind, _ := stringValue(template, "kind"); kind != "starter-file" {
+			l.add("catalog.starter.file.template.kind", id, templateID)
+		}
 	}
 }

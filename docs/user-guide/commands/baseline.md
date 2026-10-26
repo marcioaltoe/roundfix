@@ -11,6 +11,7 @@ roundfix baseline profile show <id> [--format <text|json>]
 roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
 roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
 roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+roundfix baseline starters --profile <id> [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
 roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
 ```
 
@@ -302,6 +303,34 @@ Pass `--no-history` to leave the history section out and use the History
 Sanitize Command's reviewed-batch procedure separately.
 
 While Pending History remains, an update with --no-history still writes the retirement rule into the guide, so SC-HISTORY-RETAINED reports every retained history file on each active Spec, and the path to green is the history conversion: rerun roundfix baseline update without --no-history, or apply roundfix history sanitize batches until nothing is pending.
+
+#### Starter Files
+
+A Starter File is a repository tooling file offered by a Baseline module.
+The `python` profile offers `Makefile`, `.roundfixrc.yml` (Project Config)
+and `.github/workflows/verify.yml` (CI workflow).
+
+```bash
+roundfix baseline starters --profile python
+roundfix baseline starters --profile python --confirm-plan <digest>
+```
+
+The first command previews each path as `create` when absent or `keep` when
+anything already exists there, and prints a Plan Digest. It writes nothing.
+A non-empty preview exits 3; an empty preview reports `current` and exits 0.
+Confirm the exact printed digest with `--confirm-plan` to create only the
+absent files. An existing path is never overwritten, compared or removed.
+
+Confirming the exact preview is the maintainer's express authorization for
+exactly those paths. An Agent runs the confirmation only with that express
+authorization. A stale digest is refused with exit 3 and nothing written;
+preview again. If a write fails, the command removes every file it created
+before returning exit 1; directories it created may remain.
+
+Once written, the repository owns each Starter File. It is outside the
+Change Plan and Setup Manifest, and no refresh changes it. JSON output uses
+`roundfix/baseline-starters/v1`; invalid arguments, an unknown profile or an
+unsupported format exit 2.
 
 ### Retired skills
 

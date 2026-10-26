@@ -1486,13 +1486,21 @@ func resolveVerificationProjection(
 			DeclarationDigest:    declaration.Digest,
 		})
 		if declaration.Path == "" {
+			nextAction := "select a command declared by the repository or add its local declaration"
+			starters, err := catalog.StarterFiles(profile.Modules)
+			if err != nil {
+				return nil, nil, fmt.Errorf("resolve profile starters: %w", err)
+			}
+			if len(starters) != 0 {
+				nextAction += fmt.Sprintf("; `roundfix baseline starters --profile %s` previews this profile's Starter Files", profile.ID)
+			}
 			divergences = append(divergences, ProfileDivergence{
 				Code:        "verification.command.undeclared",
 				ID:          decision.ID,
 				Requirement: CapabilityRequired,
 				Blocking:    true,
 				Message:     fmt.Sprintf("selected %s Verification command %q has no matching local declaration", label, command),
-				NextAction:  "select a command declared by the repository or add its local declaration",
+				NextAction:  nextAction,
 			})
 		}
 	}

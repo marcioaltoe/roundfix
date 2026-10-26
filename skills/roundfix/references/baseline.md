@@ -342,3 +342,27 @@ A vendored skill is installed from an upstream source and never edited in the re
 3. A repository-authored skill that replaces the vendored one, only when the vendored skill is useless or almost useless to the repository.
 
 Send an objective upstream defect to the upstream as a pull request; it never justifies the third choice.
+
+### Starter Files
+
+A Starter File is repository tooling a Baseline module offers. The `python`
+profile offers `Makefile`, `.roundfixrc.yml` and `.github/workflows/verify.yml`.
+
+```bash
+roundfix baseline starters --profile python
+roundfix baseline starters --profile python --confirm-plan <digest>
+```
+
+Preview writes nothing, lists absent paths as `create` and existing paths as
+`keep`, and prints the Plan Digest. A non-empty preview exits 3; an empty
+preview is `current` and exits 0. Confirmation with `--confirm-plan` writes
+only absent paths, never overwriting, comparing or removing existing files.
+A stale digest exits 3 without writing; preview again. A write failure removes
+every file the call created and exits 1; created directories may remain.
+
+Confirming the exact preview is the maintainer's express authorization for
+exactly those paths. An Agent runs the confirmation only with the
+maintainer's express authorization. Once written, the repository owns the
+file: it is outside the Change Plan and Setup Manifest and no refresh changes
+it. `--format json` emits `roundfix/baseline-starters/v1`; invalid input,
+an unknown profile or an unsupported format exits 2.
