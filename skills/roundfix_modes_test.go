@@ -23,6 +23,26 @@ func roundfixSection(text, heading string) string {
 	return strings.TrimSpace(body)
 }
 
+func roundfixNumberedItem(section string, number int) string {
+	prefix := fmt.Sprintf("%d. ", number)
+	item := ""
+	for _, line := range strings.Split(section, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			item = line
+		} else if item != "" {
+			if regexp.MustCompile(`^[1-8]\. `).MatchString(line) {
+				break
+			}
+			item += "\n" + line
+		}
+	}
+	return strings.TrimSpace(item)
+}
+
+func roundfixWhitespace(text string) string {
+	return strings.Join(strings.Fields(text), " ")
+}
+
 func TestTheFollowUpModeRunsItsStepsInOrder(t *testing.T) {
 	t.Parallel()
 	for name, source := range roundfixLayoutSources() {
@@ -71,6 +91,84 @@ func TestTheFollowUpModeRunsItsStepsInOrder(t *testing.T) {
 			for _, forbidden := range []string{"resolved_to", "_triaged", "Inbox Entr", "secondbrain.root"} {
 				if strings.Contains(text, forbidden) {
 					t.Errorf("reference contains forbidden %q", forbidden)
+				}
+			}
+		})
+	}
+}
+
+func TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage(t *testing.T) {
+	t.Parallel()
+	for name, source := range roundfixLayoutSources() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			referenceData, err := fs.ReadFile(source, "roundfix/references/modes.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			reference := string(referenceData)
+			followUp := roundfixSection(reference, "--follow-up")
+			step1 := roundfixWhitespace(roundfixNumberedItem(followUp, 1))
+			step4 := roundfixWhitespace(roundfixNumberedItem(followUp, 4))
+			step8 := roundfixWhitespace(roundfixNumberedItem(followUp, 8))
+			for _, phrase := range []string{
+				"take the project's Session Handoff first",
+				"use that block and claim no other; an accept that answers `consumed_by_hook` means the same",
+				"list the open handoffs with `memory_handoff_list`",
+				"when it names a `newer_unended_session`, read that session's newest observations with `memory_read_session_observations` before anything else, then accept the project's most recent open handoff with `memory_handoff_accept` and its `handoff_id`",
+				"one message entry with id `handoff:<handoff id>:<n>`, `from` this project's name, `created_at` the handoff's creation date and no `type`",
+				"name them in the plan and the report",
+				"settle the handed-in messages as step 4 says",
+			} {
+				if !strings.Contains(step1, roundfixWhitespace(phrase)) {
+					t.Errorf("step 1 omits %q", phrase)
+				}
+			}
+			for _, phrase := range []string{
+				"No message the mode handed in stays pending when the turn ends, also when the mode stops early: at step 1, when the user stops it, or when step 3 brings no answer.",
+				"A message the plan records becomes a Spec, a Backlog Entry or a Finding and is then consumed.",
+				"An informational message is consumed and the report names it.",
+				"A message not yet handled becomes a Backlog Entry that records its sender, date and text, and is then consumed.",
+				"Consume each one with `memory_message_pop` and its `message_id` only after its record is written",
+				"A `handoff:` entry is not an ai-memory message",
+			} {
+				if !strings.Contains(step4, roundfixWhitespace(phrase)) {
+					t.Errorf("step 4 omits %q", phrase)
+				}
+			}
+			if !strings.Contains(step8, roundfixWhitespace("report the accepted handoff and what became of each of its items, each consumed message and where it was recorded")) {
+				t.Error("step 8 omits the handoff and consumed-message report")
+			}
+
+			optionalSources := roundfixWhitespace(roundfixSection(reference, "Optional sources"))
+			for _, phrase := range []string{
+				"it brings the project's Session Handoff and its messages",
+				"a session-aware client omits `workspace` and `project`, and a static client passes both",
+				"`--status` and `--unattended` accept no handoff and consume no message",
+			} {
+				if !strings.Contains(optionalSources, roundfixWhitespace(phrase)) {
+					t.Errorf("Optional sources omits %q", phrase)
+				}
+			}
+			if strings.Contains(optionalSources, roundfixWhitespace("list this project's messages without consuming them")) {
+				t.Error("Optional sources still leaves messages unconsumed")
+			}
+			status := roundfixWhitespace(roundfixSection(reference, "--status"))
+			if !strings.Contains(status, roundfixWhitespace("accepts no handoff, consumes no ai-memory message and arms nothing")) {
+				t.Error("--status omits its handoff refusal")
+			}
+
+			skillData, err := fs.ReadFile(source, "roundfix/SKILL.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			modes := roundfixWhitespace(roundfixSection(string(skillData), "Modes"))
+			for _, bullet := range []string{
+				"- `--follow-up`: take the project's handoff, inventory pending work, plan, gather decisions, author and deliver the resulting work, and leave no handed-in message pending.",
+				"- `--status`: run a short read-only status report that accepts no handoff and consumes no message.",
+			} {
+				if !strings.Contains(modes, roundfixWhitespace(bullet)) {
+					t.Errorf("Modes omits %q", bullet)
 				}
 			}
 		})

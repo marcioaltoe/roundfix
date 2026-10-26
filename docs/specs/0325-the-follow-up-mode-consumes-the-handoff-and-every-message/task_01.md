@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0325-the-follow-up-mode-consumes-the-handoff-and-every-message
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -82,3 +82,12 @@ the text in both layouts.
 
 - `_prd.md` → Sources 1; Goals 1-5; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior 1-6; Interfaces; Data Models; API Contracts 1-3; Invariants 1-4; Testing Approach; Build Order 1
+
+## Result
+
+- Replaced the five specified passages in the canonical `roundfix` modes reference and the `--follow-up`/`--status` bullets in the skill entry with the TechSpec contract text. `make skills-sync` synchronized both mirrors before and after the owned-skill version recording.
+- Added `TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage`, covering both canonical and embedded layouts with whitespace-normalized assertions for handoff intake, early-stop message settlement, reporting, source scoping, status behavior and mode-summary bullets.
+- The sanctioned recorder raised the `roundfix` skill from `0.1.142` to `0.1.143` in both version fields and appended the corresponding digest record.
+- Focused checks: `go test ./skills -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' -count=1` — 3 passed; focused existing mode contracts (`TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage`, `TestTheFollowUpModeRunsItsStepsInOrder`, `TestTheUnattendedModeAsksWithinTheBaselineLimit`, `TestTheRoundfixSkillReadsItsModeFromTheRequest`) — 12 passed; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -count=1` — 1 passed; mandated recorder — 1 passed.
+- Acceptance evidence: step 1 now takes or accepts the handoff before running the command and emits `handoff:<handoff id>:<n>` entries; step 4 covers all three settlements and early stops while step 8 reports handoff/message outcomes; Optional sources, `--status`, `--unattended` and the `## Modes` bullets state the no-handoff/no-consumption contract; the new contract and relevant existing tests pass and the owned-skill record is updated.
+- The Daemon-owned status remains unchanged, and the Task's declared Verification/full suite were not run in this handoff.

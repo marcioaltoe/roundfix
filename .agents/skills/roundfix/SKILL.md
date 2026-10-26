@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.142
+  version: 0.1.143
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.142
+version: 0.1.143
 ---
 
 # Roundfix
@@ -24,8 +24,8 @@ Supervisor or script needs JSONL progress for one explicit Run.
 
 A request names a Skill Mode with the first word after the skill's name: `follow-up`, `status` or `unattended`, with or without a leading `--`, in every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix unattended`, `@roundfix --unattended` or `/roundfix unattended` in OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. Read the mode from the request text; a request whose first word after the skill's name is anything else, such as `/roundfix watch 123`, uses the skill as the rest of this file describes.
 
-- `--follow-up`: inventory pending work, plan, gather decisions, author and deliver the resulting work.
-- `--status`: run a short read-only status report.
+- `--follow-up`: take the project's handoff, inventory pending work, plan, gather decisions, author and deliver the resulting work, and leave no handed-in message pending.
+- `--status`: run a short read-only status report that accepts no handoff and consumes no message.
 - `--unattended`: gather every decision in calls of up to three questions.
 
 Read [Skill Modes](references/modes.md) before running a mode.
