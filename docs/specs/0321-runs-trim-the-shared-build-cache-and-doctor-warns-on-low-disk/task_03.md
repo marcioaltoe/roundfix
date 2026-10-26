@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -109,3 +109,39 @@ package reads them as a contract except the documentation contracts it runs.
 
 - `_prd.md` → Sources; Core Feature 4; Success Metric 6; Glossary
 - `_techspec.md` → Current behavior 7; Documentation; ADR Alternatives; Build Order 3
+
+## Result
+
+Implemented the documentation slice for automatic Shared Build Cache trims and
+the `roundfix doctor` disk-space warning. The GC, configuration, implement,
+deliver and doctor guides now carry the TechSpec text; canonical Roundfix
+references carry the matching storage, setup, implement and deliver text; and
+`make skills-sync` produced matching mirrors. `CONTEXT.md` now defines the GC
+Command, every Implement Run start and each Delivery Queue repository gate as
+trim triggers while retaining its `_Avoid_` line.
+
+Focused evidence:
+
+- `git diff --check`: passed.
+- `make skills-sync`: passed before and after version recording.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  passed (`Go test: 1 passed in 1 packages`); both `roundfix` version fields
+  are `0.1.143` and the ledger contains the recorded digest.
+- Canonical/mirror `cmp` checks for `storage`, `setup`, `implement` and
+  `deliver`: passed.
+- Focused marker checks found `Automatic trims`, the Run and queue paragraphs,
+  both disk-space codes, the revised glossary definition, and the shared-cache
+  trim wording in every named guide/reference/mirror.
+
+Acceptance evidence:
+
+- Every named guide, canonical reference and mirror has the Documentation text
+  from the TechSpec.
+- `CONTEXT.md` has the revised **Shared Build Cache** definition and its
+  `_Avoid_` line.
+- The owned skill version is recorded in both skill copies and the version
+  ledger; the required Behavior Surface recorder is the final operation of
+  this Task turn.
+
+The Task status remains daemon-owned and unchanged. The declared `## Verification`
+commands were not run in this daemon-assigned turn.

@@ -633,6 +633,13 @@ when the replacement fragment omits it. A Roundfix older than this release
 refuses a configuration that uses the key.
 
 
+Before the repository gate runs its Verification in an item worktree, the
+queue trims each declared Shared Build Cache with the GC Command's rules under
+a thirty-second budget, and writes a line to the Queue Owner's log when the
+trim removed entries, failed or stopped. The gate's result still comes only
+from its Verification and the Linux Lane, so a `deliver retry` that resumes at
+the gate trims first.
+
 ## Linux Lane
 
 With `delivery.linux_lane: true` (default `false`), the Delivery Queue runs the

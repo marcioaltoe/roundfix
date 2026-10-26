@@ -206,6 +206,31 @@ The live report uses `Entries removed`, counting only entries actually
 removed. A refused cache prints `    Kept: <reason>` instead of the size and
 entry lines. `gc compact` and `gc sanitize` keep their separate scopes.
 
+### Automatic trims
+
+Roundfix also trims every declared Shared Build Cache by itself, with the
+rules above: at the start of every Implement Run, after the Run is recorded
+and before its Run Worktree exists, and before each repository gate of the
+Delivery Queue. One budget of thirty seconds covers all declared caches at
+each trigger; when it runs out, the trim keeps what it removed and the next
+trigger continues. A refusal, an error or the end of the budget never fails,
+parks or delays the Run or the gate beyond the budget. Each Implement Run
+records one `daemon.status` Run Event per declared cache whose payload holds
+`event: shared_cache_trim`, `trigger: run_start`, `path`, `outcome`
+(`trimmed`, `unchanged`, `kept`, `failed` or `stopped`), `size_bytes`,
+`limit_bytes`, `removed_entries`, `removed_bytes` and, when there is one,
+`cause`. A trim that removed entries, failed or stopped also writes a line,
+on standard error at Run start and in the Queue Owner's log at the gate:
+
+```text
+roundfix: [prefix]Shared Build Cache <path>: removed <n> idle entries (<bytes> bytes) P
+roundfix: [prefix]Shared Build Cache <path>: trim stopped after its <budget> budget P; removed <n> idle entries (<bytes> bytes); the next trim continues
+roundfix: warning: [prefix]Shared Build Cache <path>: trim failed P: <cause>; C
+```
+
+Without a declared cache nothing runs and no line or event is written.
+`roundfix gc` still trims on demand (ADR-0334).
+
 ## Retention policy
 
 [ADR-0290](../../adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)
@@ -217,7 +242,7 @@ defines what Roundfix Home keeps and who reclaims it:
 | Run row and its records | the Run is not terminal, is queue-referenced, keeps its Run Worktree, or is younger than Run Retention | Run Retention (ADR-0255) |
 | Run Worktree and Run Branch | reconciliation does not prove them `safe` or `superseded` | `roundfix reconcile --apply` and the Delivery Queue's release after a merge, never by age (ADR-0053, ADR-0212, ADR-0289) |
 | Worktree Build Cache | its Run is not terminal or its item is not `merged` | the GC Command (ADR-0266) |
-| Shared Build Cache | its entries were used within `idle`, or the cache is within `max_size_mb` | the GC Command |
+| Shared Build Cache | its entries were used within `idle`, or the cache is within `max_size_mb` | the GC Command, each Implement Run start and each repository gate of the Delivery Queue |
 | Item Binary | its Delivery Queue item exists and is not `merged` | the Delivery Queue's release after a merge, and the GC Command |
 | Pre-PR Review Records, dispositions and delivery logs | always | nothing |
 | Archive evidence | always | nothing: it lives in Git |
