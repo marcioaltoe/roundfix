@@ -2,6 +2,21 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.123.0] - 2026-10-26
+
+### A Python Baseline Profile
+
+- **New built-in `python` profile** for Python projects run with uv, ruff, ty and pytest, whether a command-line tool, a backend service or a worker. It fixes no application surface: surface rules belong in the repository's own `docs/agents/specific-repository.md`. A new `python` module renders `docs/agents/python.md`, whose gate checks the lockfile offline (`uv lock --check --offline`), formats and lints with ruff, type-checks with `uv run ty check --error-on-warning` and tests with pytest, selecting a new test by its node id alone.
+- **The `python` setup is the upstream preset.** The asset sync imports `setups/python.txt` from marcioaltoe/skills `65d5f36` (52 skills, including the six `ai-memory-*`). The module dispatches the uv, ruff, ty, pytest and python-services skills whenever their work arises, and Typer, FastAPI, python-file-pipelines and Streamlit only when the repository has chosen that tool.
+
+### `roundfix baseline starters` writes a profile's Starter Files
+
+- **New `roundfix baseline starters --profile <id> [--confirm-plan <digest>]`.** A Baseline module may offer Starter Files: repository tooling files the Baseline never manages afterwards. The `python` profile offers a `Makefile` (`verify: lock-check fmt-check lint typecheck test`), a `.roundfixrc.yml` (Project Config with `make verify`, `uv sync --group dev --frozen` bootstrap and caches) and `.github/workflows/verify.yml` (CI running `uv sync --locked` and `make verify`).
+- The preview marks each path `create` when absent or `keep` when anything exists, prints a Plan Digest and exits 3; confirming that exact digest creates only the absent files, never overwrites or compares an existing one, and removes what it created if a write fails. Confirming is the maintainer's express authorization for exactly those paths. Once written, each file belongs to the repository and stays outside the Change Plan and Setup Manifest. JSON output uses `roundfix/baseline-starters/v1`.
+- The `baseline` and context-driven guides, the Roundfix skill reference (skill version 0.1.141) and the glossary (**Starter File**) describe it.
+
+**Adopters with a Python repository:** run `roundfix upgrade`, `roundfix baseline update` choosing the `python` profile, review and apply the plan, then `roundfix baseline starters --profile python` to preview the Starter Files and confirm only those you want. Repositories with their own tooling keep it: an existing file is never touched.
+
 ## [0.122.0] - 2026-10-26
 
 ### Skill Modes for follow-up, status and unattended work
