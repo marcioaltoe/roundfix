@@ -1,5 +1,0 @@
-DECLARATION: _prd.md -> Unreachable Acceptance
-criterion: after release, Vortex resumed Spec Check names completed commands not probed and exits 0 when pending commands are honest.
-reason: released binary required in another repository; QA cannot read it.
-proof: audited candidate is unreleased Run build; authorization explicitly forbids reading another repository.
-Local fixture is an analog, not the declared release observation. Exactly one declaration counted.
