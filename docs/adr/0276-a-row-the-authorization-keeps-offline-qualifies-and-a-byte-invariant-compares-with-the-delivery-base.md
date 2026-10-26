@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-13T00:00:00Z
+updated_at: 2026-10-26T21:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -83,3 +83,5 @@ check reads QA Tasks only.
   report and the authorization make the claim checkable.
 - An active Spec whose QA requirement pins bytes to a commit is refused under
   `--strict` until its author compares with the Delivery Base.
+
+**Amended by [ADR-0335](0335-a-stop-that-is-not-the-work-s-fault-does-not-cost-the-run.md) (2026-10-26).** The Network-Prohibited Row's status is `blocked (environment: <subject> prohibited by Spec authorization)`, where the subject names what the Spec's own authorization forbids, is 1 to 80 characters and holds no parenthesis; `network` is the subject of the status above. The rejection of any status that mentions the authorization still holds outside that form, and a row counts toward one exempt kind at most.

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-13T00:00:00Z
+updated_at: 2026-10-26T21:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -65,3 +65,5 @@ Run. A QA command that needs more than the Bash tool's longest timeout must now
 be split into foreground steps. An Unfinished Turn names a task the turn started
 and the turn did not show finished, not one that Roundfix proved is still
 running.
+
+**Amended by [ADR-0335](0335-a-stop-that-is-not-the-work-s-fault-does-not-cost-the-run.md) (2026-10-26).** A Provider System Error in any Task or QA turn, after the First Handoff and after a QA turn wrote a verdict included, lets the next Fallback Selection take the work. A QA fallback reopens a verdict the failed turn wrote to `pending` and records it as `- discarded_verdict: <verdict>`. Only an exhausted chain settles the Task as runtime infrastructure.
