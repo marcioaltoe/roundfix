@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -107,3 +107,94 @@ outcome ever depends on the trim, and GC's report keeps its bytes.
 
 - `_prd.md` → Goals; Core Feature 1; Core Feature 2; User Experience; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior 1-4; Interfaces; Data Models; API Contracts 1-5; Invariants 1-4; Testing Approach; Build Order 2
+
+
+## Result
+
+Implemented this Task's slice; Daemon Verification and settlement remain pending.
+The pre-existing `status: in_progress` is unchanged.
+
+- Added `MeasureContext` and `ApplyContext`, with cancellation checks between
+  entries, wrapped context errors and partial removal counts. The original
+  `Measure` and `Apply` delegate with `context.Background()`; existing engine
+  tests are unchanged.
+- Added declaration-ordered trim reports with all five outcomes and causes,
+  and rebuilt GC's sweep on the same helper. Automatic triggers share one
+  thirty-second context budget across all declarations. A stopped measure
+  reports size zero, and stopped or failed applies retain actual removal counts.
+- Implement Run start trims after detached-start reporting and before Run
+  Worktree creation, journals one `daemon.status` payload per cache and prints
+  the specified stderr lines. Event-append errors warn without changing the
+  Run outcome. No declarations produce no trim event or output.
+- The Delivery Queue repository gate trims first and writes the specified
+  prefixed lines to the Queue Owner's log. Its existing Verification and
+  Linux Lane control the result.
+
+Acceptance evidence:
+
+1. `TestImplementStartTrimsTheDeclaredSharedBuildCache` observes removal of
+   exactly the 10 h and 3 h entries at the Run Worktree creation boundary,
+   preserves the fresh entry and README, checks the exact stderr line and all
+   payload fields, and requires the trim event before the first Task event.
+2. `TestImplementStartRunsOnWhenTheTrimDoesNot/refused_cache` and
+   `/budget_ends` check exit zero, Clean outcome, identical Task output,
+   retained entries, and the `kept`/README and `stopped`/`budget of 0s elapsed`
+   event causes. `TestImplementStartWithoutASharedBuildCacheRecordsNoTrim`
+   checks the same Task output and absence of trim events and lines.
+   `TestImplementStartRunsOnWhenTheTrimEventCannotBeJournaled` injects a real
+   SQLite append refusal and observes one warning with the Run still Clean.
+3. `TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification` checks
+   Verification that requires the oldest entry absent, exact log output, and
+   successful Verification after budget exhaustion. Existing GC report tests,
+   Run Retention tests, end-to-end implement test and Linux Lane gate matrix
+   pass unchanged. Additional helper tests cover unchanged/failed outcomes and
+   one stopped report for every remaining declaration after cancellation.
+
+Focused checks (all commands below ran in this worktree):
+
+- Initial red: `go test ./internal/sharedcache -run 'ContextStops' -count=1`
+  failed to compile because `MeasureContext` and `ApplyContext` did not exist.
+- `go test ./internal/sharedcache -count=1 -timeout=2m` — exit 0; all six
+  engine tests passed, including cancellation and exactly one removal before
+  cancellation between planned entries.
+- `go test ./internal/cli -run '^(TestImplementStart.*|TestSharedCacheTrim.*|TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification|TestGC.*SharedBuildCache.*|TestRunRetentionAtStartWarnsAndNeverBlocks|TestGateReturnsTheLaneEnvironmentSkip|TestRunImplementExecutesSpecEndToEnd)$' -count=1 -timeout=5m`
+  — exit 0.
+- `git diff --check` — exit 0.
+
+The cancellation helper test initially exposed a later unresolved path being
+classified as failed after cancellation. Checking cancellation before cache
+measurement/classification corrected the precedence; the focused checks above
+include the regression.
+
+Not run by this Agent: the declared Verification command (including its Windows and Linux
+cross-builds), `make verify`, and `make verify-changed`; these remain
+Daemon-owned. No other Task, manifest, configuration, Makefile or document was
+edited. No commit, push or Pull Request was made. No follow-up identified.
+
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261026T215311Z_146a5646537e95bd/verification/batch-002-attempt-1.log`.
+The configured Verification stopped at
+`TestEveryRealTimeBudgetIsWithinItsFileCeiling`: the two positive nanosecond
+budget assignments in the new CLI tests exceeded that file's zero ceiling.
+
+Replaced the two `1ns` test inputs with zero budgets, which expire
+synchronously without depending on a timer. This is a bounded deviation from
+Testing Approach's `1ns` fixture input to satisfy the repository's existing
+Real-Time Budget rule. Both subtests retain exact stopped-outcome, cause and
+console assertions (now `0s`), retained-file checks and successful Run/gate
+outcomes. The production thirty-second default and the budget-contract test
+are unchanged.
+
+Fresh focused evidence after the repair:
+
+- `go test ./internal/cli -run '^(TestImplementStartRunsOnWhenTheTrimDoesNot|TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification)$' -count=1 -timeout=5m`
+  — exit 0.
+- `go test ./internal/testfixture -run '^TestEveryRealTimeBudgetIsWithinItsFileCeiling$' -count=1 -timeout=2m`
+  — exit 0.
+- `git diff --check` — exit 0.
+
+The Agent did not rerun declared Verification or `make verify-changed`.
+Task status remains Daemon-owned and unchanged; no commit, push or Pull Request.
