@@ -422,9 +422,7 @@ func TestBaselineUpdateHistoryCitationBoundaries(t *testing.T) {
 func TestBaselineUpdateHistoryCitationDetectorFailureIsLocal(t *testing.T) {
 	t.Parallel()
 	h := baselineCitationFixture(t, true)
-	if err := os.Remove(filepath.Join(h.repo, baselineCitationHandoff)); err != nil {
-		t.Fatal(err)
-	}
+	breakBaselineCitationHandoff(t, h.repo)
 	before := historySnapshot(t, h.repo)
 	r, output, stderr, code := baselineHistoryRun(t, h, "json", "--yes")
 	if code != 0 || stderr != "" || r.State != "verified" || r.History.Status != "blocked" || r.History.Tag != nil || len(r.History.Units) != 0 || r.History.Message == "" || strings.ContainsAny(r.History.Message, "\r\n") || r.PlanDigest != baselineHistoryDigest(t, h) {
@@ -444,9 +442,7 @@ func TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("%d %s %s", code, output, stderr)
 	}
-	if err := os.Remove(filepath.Join(h.repo, baselineCitationHandoff)); err != nil {
-		t.Fatal(err)
-	}
+	breakBaselineCitationHandoff(t, h.repo)
 	r, output, stderr, code := baselineHistoryRun(t, h, "json")
 	if code != 0 || stderr != "" || r.State != "current" || r.Category != "" || r.History.Status != "current" || r.History.Message == "" || r.PlanDigest != baselineHistoryDigest(t, h) {
 		t.Fatalf("%d %s %s", code, output, stderr)
@@ -541,5 +537,16 @@ func TestBaselineUpdateRewritesEveryListedCitation(t *testing.T) {
 	remaining, err := spec.SourceHistoryCitations(t.Context(), h.repo, []string{baselineCitationLesson})
 	if err != nil || len(remaining) != 0 {
 		t.Fatalf("remaining=%+v err=%v", remaining, err)
+	}
+}
+
+func breakBaselineCitationHandoff(t *testing.T, repo string) {
+	t.Helper()
+	folder := filepath.Dir(filepath.Join(repo, baselineCitationHandoff))
+	if err := os.RemoveAll(folder); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(folder, []byte("blocking file\n"), 0644); err != nil {
+		t.Fatal(err)
 	}
 }

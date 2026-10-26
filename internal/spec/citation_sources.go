@@ -66,7 +66,8 @@ func CitationSources(ctx context.Context, root string, withUntracked bool) ([]st
 			continue
 		}
 		if err := historyRewriteRegularFile(root, path); err != nil {
-			if errors.Is(err, os.ErrNotExist) && archivePathUnder(path, "docs/history") {
+			// Skip only a missing entry; a path behind a file and other errors must fail.
+			if errors.Is(err, os.ErrNotExist) {
 				continue
 			}
 			return nil, err

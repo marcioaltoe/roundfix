@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0315-a-task-that-deletes-a-tracked-file-settles
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -108,3 +108,43 @@ path in `internal/daemon`.
 
 - `_prd.md` → Sources; Goals; Core Features 1-2; Success Metric 5; Success Metric 6
 - `_techspec.md` → Current behavior; API Contracts 1-3; Invariants 1-2; Testing Approach; Build Order 1
+
+## Result
+
+Implemented API Contracts 1–3: the three tracked-source readers skip only
+`errors.Is(err, os.ErrNotExist)` at the specified inspection/read boundaries,
+regardless of directory. Each skip documents that a path behind a file and
+other errors still fail; existing error messages and symlink/binary handling
+remain unchanged.
+
+Added the two parallel reader regressions with all three named parallel
+subtests. Each uses a committed temporary Git repository, modifies only the
+working tree and runs with the existing private-HOME test helper. Updated
+only the two authorized baseline detector-failure injections to share
+`breakBaselineCitationHandoff(t, repo)`, replacing the handoff directory with
+a regular file; every assertion is retained.
+
+Acceptance evidence:
+
+- Missing tracked sources: the initial focused run failed in all three
+  missing-path subtests on `docs/gone.md`. After the reader changes,
+  `go test ./internal/spec -run '^TestTrackedSourceReaders' -count=1 -v -timeout 2m`
+  exited 0 with all six named subtests passing. The missing-path cases assert
+  exactly `README.md` and `notes/a.md`; citation cases also assert the expected
+  target and line, proving surviving citations remain visible.
+- Other read errors: the same focused run passed all three path-behind-a-file
+  cases, each requiring an error naming `notes/a.md`.
+- Consumer failure handling:
+  `go test ./internal/cli -run '^TestBaselineUpdateHistory(CitationDetectorFailureIsLocal|StaleDetectorFailureKeepsOutcome)$' -count=1 -timeout 3m`
+  exited 0 with both amended tests passing and their assertions unchanged.
+- `git diff --check` exited 0. Changed-path inspection found only the three
+  authorized production files, the new reader test, the authorized baseline
+  test file and this Task file. Its pre-existing `in_progress` status was
+  preserved.
+
+Environment: the executor refused the symlinked writable root; shell access
+used the resolved checkout with approved elevated execution. No repository
+configuration was changed.
+
+The Task's declared Verification and repository Verification were not run;
+those and Task settlement remain Daemon-owned. No follow-up work identified.

@@ -543,13 +543,15 @@ func HistoryCitations(ctx context.Context, repositoryRoot string, removed []stri
 			continue
 		}
 		if err := historyRewriteRegularFile(repositoryRoot, path); err != nil {
-			if errors.Is(err, os.ErrNotExist) && strings.HasPrefix(path, "docs/history/") {
+			// Skip only a missing entry; a path behind a file and other errors must fail.
+			if errors.Is(err, os.ErrNotExist) {
 				continue
 			}
 			return nil, err
 		}
 		content, err := os.ReadFile(filepath.Join(repositoryRoot, path))
-		if errors.Is(err, os.ErrNotExist) && strings.HasPrefix(path, "docs/history/") {
+		// Skip only a missing entry; a path behind a file and other errors must fail.
+		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {

@@ -28,6 +28,10 @@ func StaleHistoryCitations(ctx context.Context, repositoryRoot, historyRoot stri
 			return nil, fmt.Errorf("scan stale history citations: %w", err)
 		}
 		content, err := os.ReadFile(filepath.Join(repositoryRoot, source))
+		// Skip only a missing entry; a path behind a file and other errors must fail.
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("read stale history citation source %q: %w", source, err)
 		}
