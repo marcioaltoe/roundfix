@@ -26,6 +26,10 @@
       "id": "go"
     },
     {
+      "digest": "640ac52396fe809b71427bdf7c3d576d47842542bd0733142cf259163ed02539",
+      "id": "python"
+    },
+    {
       "digest": "1532f30a67757fe6117e93582044eee592cda2cdc6236194aba7eb0d1a992772",
       "id": "rust"
     },
@@ -551,6 +555,582 @@
         ],
         "source": {
           "path": "setups/go.txt",
+          "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+          "repository": "example/skills",
+          "type": "github"
+        },
+        "version": "0.0.1"
+      },
+      {
+        "activationBundles": [
+          {
+            "id": "bundle.delivery",
+            "skills": [
+              "conventional-commits",
+              "github-pr-workflow"
+            ]
+          },
+          {
+            "id": "bundle.qa",
+            "skills": [
+              "qa-gate",
+              "evidence-gate"
+            ]
+          }
+        ],
+        "digest": "640ac52396fe809b71427bdf7c3d576d47842542bd0733142cf259163ed02539",
+        "id": "python",
+        "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
+        "skills": [
+          {
+            "name": "find-skills",
+            "path": "skills/00-setup/find-skills",
+            "source": {
+              "path": "skills/00-setup/find-skills",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "60365b67532d85d07d80de06256c2854f920d7f9b2c691373d47684d6a8a0563"
+          },
+          {
+            "name": "knowledge-workspace",
+            "path": "skills/00-setup/knowledge-workspace",
+            "source": {
+              "path": "skills/00-setup/knowledge-workspace",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "dc442587c49ec61d556dfa335bd310ef88852ac1cc7aff7fd5b5774d457c8ea7"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "setup-context-driven",
+            "path": "skills/00-setup/setup-context-driven",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "brainstorming",
+            "path": "skills/01-discovery/brainstorming",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "business-analyst",
+            "path": "skills/01-discovery/business-analyst",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "context7-cli",
+            "path": "skills/01-discovery/context7-cli",
+            "source": {
+              "path": "skills/01-discovery/context7-cli",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
+          },
+          {
+            "name": "exa-web-search",
+            "path": "skills/01-discovery/exa-web-search",
+            "source": {
+              "path": "skills/01-discovery/exa-web-search",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
+          },
+          {
+            "name": "grill-with-docs",
+            "path": "skills/01-discovery/grill-with-docs",
+            "source": {
+              "path": "skills/01-discovery/grill-with-docs",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "0850cb2964af7590ea2c4d9ee66c514c8a8c9ae8876b22506e9b240731891303"
+          },
+          {
+            "name": "grilling",
+            "path": "skills/01-discovery/grilling",
+            "source": {
+              "path": "skills/01-discovery/grilling",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-idea",
+            "path": "skills/01-discovery/write-idea",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-prd",
+            "path": "skills/02-planning/write-prd",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "agentic-cli-design",
+            "path": "skills/03-engineering-design/agentic-cli-design",
+            "source": {
+              "path": "skills/03-engineering-design/agentic-cli-design",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "bde43699f7cacc3c63f825c8f3005761a1a84484fda4c7c37de5c79960ef9521"
+          },
+          {
+            "name": "domain-modeling",
+            "path": "skills/03-engineering-design/domain-modeling",
+            "source": {
+              "path": "skills/03-engineering-design/domain-modeling",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "59c40b93c4b52cf5cc13beeca2038100f4cbc4aa9e2c7482385c4d1b6a0ffa8e"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-techspec",
+            "path": "skills/03-engineering-design/write-techspec",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-tasks",
+            "path": "skills/04-issue-decomposition/write-tasks",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "coding-guidelines",
+            "path": "skills/05-implementation-loop/coding-guidelines",
+            "source": {
+              "path": "skills/05-implementation-loop/coding-guidelines",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "ce68273f3d33f3398f3a4cddea556be06ce9a2313a34dcc80f9964305072ab08"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "implement-spec",
+            "path": "skills/05-implementation-loop/implement-spec",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "implement-task",
+            "path": "skills/05-implementation-loop/implement-task",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "no-workarounds",
+            "path": "skills/05-implementation-loop/no-workarounds",
+            "source": {
+              "path": "skills/05-implementation-loop/no-workarounds",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "31cb2535a21fad90108ea78071b5656037f074f338603bd8cf617ff277ddc34e"
+          },
+          {
+            "name": "testing-boss",
+            "path": "skills/05-implementation-loop/testing-boss",
+            "source": {
+              "path": "skills/05-implementation-loop/testing-boss",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "e9298579b8effa7ee3902a541d9282560a4662b81266dee39a231afdfa016164"
+          },
+          {
+            "name": "typesafe-ai",
+            "path": "skills/05-implementation-loop/typesafe-ai",
+            "source": {
+              "path": "skills/05-implementation-loop/typesafe-ai",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "8f5afa9495cb0eb5fa4a579bc7cb99813169562aed234239aa4d86d32d54758e"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "evidence-gate",
+            "path": "skills/06-review-repair/evidence-gate",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "qa-gate",
+            "path": "skills/06-review-repair/qa-gate",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "systematic-debugging",
+            "path": "skills/06-review-repair/systematic-debugging",
+            "source": {
+              "path": "skills/06-review-repair/systematic-debugging",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "roundfix",
+            "path": "skills/06-review-repair/roundfix",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "archive-spec",
+            "path": "skills/07-evidence-delivery/archive-spec",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "conventional-commits",
+            "path": "skills/07-evidence-delivery/conventional-commits",
+            "source": {
+              "path": "skills/07-evidence-delivery/conventional-commits",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d63d7583306d335531efe68a3f4bb763870be5c1e86be07787d2a25857fffd0d"
+          },
+          {
+            "name": "crafting-effective-readmes",
+            "path": "skills/07-evidence-delivery/crafting-effective-readmes",
+            "source": {
+              "path": "skills/07-evidence-delivery/crafting-effective-readmes",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a889987611d3af1a2558bce86571b3a06efb35b207556086b6a3efd2836c91a2"
+          },
+          {
+            "name": "github-pr-workflow",
+            "path": "skills/07-evidence-delivery/github-pr-workflow",
+            "source": {
+              "path": "skills/07-evidence-delivery/github-pr-workflow",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "e28949f5140f9d58c78b7c0c134412470dbd1f9b31ec42fe0277c47fcb7566b6"
+          },
+          {
+            "name": "ai-memory-durable-pages",
+            "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-durable-pages",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "3c0279a65df8969377733887def8d34f4a43a07e61fee2763234a50e01422b16"
+          },
+          {
+            "name": "ai-memory-handoff",
+            "path": "skills/07-evidence-delivery/ai-memory-handoff",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-handoff",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "532dcb27d9f58a4faef6e75820ccebaaa6ab23bc600e2e075606a3975946683b"
+          },
+          {
+            "name": "ai-memory-learning-maintenance",
+            "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4682061d37186313ef2ff05fcf47297d83bd8051bad1fe4e71052664fa39daa0"
+          },
+          {
+            "name": "ai-memory-messaging",
+            "path": "skills/07-evidence-delivery/ai-memory-messaging",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-messaging",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c0d333ee32a5062df88bbe14b660be196c49184361e6b865d150bb2b6832d350"
+          },
+          {
+            "name": "ai-memory-retrieval",
+            "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-retrieval",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a2cad906131c5dcf03428a3d8c2f2fba90dd4ce05083adc68334d0483a4f59e9"
+          },
+          {
+            "name": "ai-memory-routing-install",
+            "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+            "source": {
+              "path": "skills/07-evidence-delivery/ai-memory-routing-install",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c41c84b4645047c1e37766699c82cac260b4f097858201cda4a121866b952a53"
+          },
+          {
+            "name": "tech-writer",
+            "path": "skills/07-evidence-delivery/tech-writer",
+            "source": {
+              "path": "skills/07-evidence-delivery/tech-writer",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4dba8fcd6c64a6909be84bec2d8bff3094dd230e8f3f49c738632a3cd1b7b3fe"
+          },
+          {
+            "name": "uv",
+            "path": "skills/05-implementation-loop/uv",
+            "source": {
+              "path": "skills/05-implementation-loop/uv",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4a725893da6197387f69b904901e3f4e72a5beaf70a55846196209dc120a15cd"
+          },
+          {
+            "name": "ruff",
+            "path": "skills/05-implementation-loop/ruff",
+            "source": {
+              "path": "skills/05-implementation-loop/ruff",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "f2f0c5a2a5670b8e5698e403cf7947ddb1ef789aefefbaa82f58ba373beedb19"
+          },
+          {
+            "name": "ty",
+            "path": "skills/05-implementation-loop/ty",
+            "source": {
+              "path": "skills/05-implementation-loop/ty",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4bab6800912d0084bd9b2b1e057ed395428a147231895622d52146908dd0685e"
+          },
+          {
+            "name": "pytest",
+            "path": "skills/05-implementation-loop/pytest",
+            "source": {
+              "path": "skills/05-implementation-loop/pytest",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "9616cccc8bd1d11ba35e856ec8a0f5c688d452bf86893b3f5711610be2655e00"
+          },
+          {
+            "name": "typer",
+            "path": "skills/05-implementation-loop/typer",
+            "source": {
+              "path": "skills/05-implementation-loop/typer",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "7e4eddef5c1f0b2871c34cf61325f878597b9ace603388de0196c226ed84bb90"
+          },
+          {
+            "name": "fastapi",
+            "path": "skills/05-implementation-loop/fastapi",
+            "source": {
+              "path": "skills/05-implementation-loop/fastapi",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "b22eeac18dbf7499db96f6fc1cb768085e0eeed38a0c998973b8e8cc7e8f470d"
+          },
+          {
+            "name": "python-services",
+            "path": "skills/05-implementation-loop/python-services",
+            "source": {
+              "path": "skills/05-implementation-loop/python-services",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "fb38296865a71d3c431d6268d5ea2936b6f0c1f86be5c929e6191c901b2a4390"
+          },
+          {
+            "name": "python-file-pipelines",
+            "path": "skills/05-implementation-loop/python-file-pipelines",
+            "source": {
+              "path": "skills/05-implementation-loop/python-file-pipelines",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d98de5b2b15319ec7e6108a614c8409cfe640739b26ae33d542ac16ea5261196"
+          },
+          {
+            "name": "backend-docs",
+            "path": "skills/03-engineering-design/backend-docs",
+            "source": {
+              "path": "skills/03-engineering-design/backend-docs",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "285585ba37ac4dcce69d9481a8a665f4e10fb980f641ec9fdea01916bf88bcc6"
+          },
+          {
+            "name": "external-api-adapters",
+            "path": "skills/05-implementation-loop/external-api-adapters",
+            "source": {
+              "path": "skills/05-implementation-loop/external-api-adapters",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "6ab9f65e12ab9108f82beca2f7fc66af88ce87bd4235e11838c5dbf054205f6f"
+          },
+          {
+            "name": "integration-contract-testing",
+            "path": "skills/05-implementation-loop/integration-contract-testing",
+            "source": {
+              "path": "skills/05-implementation-loop/integration-contract-testing",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "551d0a812c1c33323ef9db486ba11f696244e0e5dc7cc27864c1bc145046e11e"
+          },
+          {
+            "name": "security-best-practices",
+            "path": "skills/03-engineering-design/security-best-practices",
+            "source": {
+              "path": "skills/03-engineering-design/security-best-practices",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c735e94f05d0ab7220d22b89cb564e38dc76b1812a7d4b65f1d06e8f3e1f5576"
+          },
+          {
+            "name": "pdf",
+            "path": "skills/07-evidence-delivery/pdf",
+            "source": {
+              "path": "skills/07-evidence-delivery/pdf",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "2d4cf7b8e775ee7c6c9e7df8ef516296aa208fbc0637a52ee45929baabede0e3"
+          },
+          {
+            "name": "pdftk-server",
+            "path": "skills/07-evidence-delivery/pdftk-server",
+            "source": {
+              "path": "skills/07-evidence-delivery/pdftk-server",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "fce425115ffb35ea563a2cd8cf4821f716cd63827634d941ba45dfc72786b4ea"
+          },
+          {
+            "name": "docker",
+            "path": "skills/08-release/docker",
+            "source": {
+              "path": "skills/08-release/docker",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "2d9641f8c463f9366e0a1b3da5016dcae92cb4ba2e057e70120c486caa120a7e"
+          },
+          {
+            "name": "developing-with-streamlit",
+            "path": "skills/05-implementation-loop/developing-with-streamlit",
+            "source": {
+              "path": "skills/05-implementation-loop/developing-with-streamlit",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "5e029fcc0136a1f447fad10925d3e731cf2dec01b5eb3d826adc7fb6fdcea86c"
+          }
+        ],
+        "source": {
+          "path": "setups/python.txt",
           "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
           "repository": "example/skills",
           "type": "github"
@@ -2233,6 +2813,14 @@
         {
           "action": "Review the snapshot diff and run asset validation.",
           "code": "skills.setup-snapshot.updated",
+          "managedId": "setup.python",
+          "message": "Setup snapshot was synchronized from the canonical source.",
+          "path": "assets/setups/python.json",
+          "severity": "info"
+        },
+        {
+          "action": "Review the snapshot diff and run asset validation.",
+          "code": "skills.setup-snapshot.updated",
           "managedId": "setup.rust",
           "message": "Setup snapshot was synchronized from the canonical source.",
           "path": "assets/setups/rust.json",
@@ -2253,7 +2841,7 @@
       "summary": {
         "decisions": 0,
         "errors": 0,
-        "info": 3,
+        "info": 4,
         "warnings": 0
       }
     }

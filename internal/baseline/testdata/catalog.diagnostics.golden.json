@@ -184,6 +184,11 @@
         },
         {
           "code": "catalog.profile.dependency.order",
+          "subject": "python",
+          "detail": "core -\u003e context-workflow"
+        },
+        {
+          "code": "catalog.profile.dependency.order",
           "subject": "rust-cli",
           "detail": "core -\u003e context-workflow"
         },

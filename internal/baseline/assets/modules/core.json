@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 24,
+  "version": 25,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -183,6 +183,7 @@
           "root.backend",
           "root.frontend",
           "root.go",
+          "root.python",
           "root.rust"
         ]
       },
@@ -275,6 +276,11 @@
       "managedId": "guide.go",
       "title": "Go guidance",
       "classifications": ["go"]
+    },
+    {
+      "managedId": "guide.python",
+      "title": "Python guidance",
+      "classifications": ["python"]
     },
     {
       "managedId": "guide.rust",

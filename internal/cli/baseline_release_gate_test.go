@@ -34,7 +34,7 @@ func TestGuidanceCompositionJourney(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load embedded Baseline catalog: %v", err)
 	}
-	profiles := []string{"go-cli-tui", "go-cli-typescript-monorepo", "rust-cli", "standard-typescript-monorepo"}
+	profiles := []string{"go-cli-tui", "go-cli-typescript-monorepo", "python", "rust-cli", "standard-typescript-monorepo"}
 	if got := fmt.Sprint(catalog.ProfileIDs()); got != fmt.Sprint(profiles) {
 		t.Fatalf("maintained Profiles = %s, want %s", got, fmt.Sprint(profiles))
 	}
@@ -1013,6 +1013,8 @@ func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
 	switch profile {
 	case "go-cli-tui", "go-cli-typescript-monorepo":
 		runBaselineReleaseExternal(t, repo, "gofmt", "-w", "main.go")
+	case "python":
+		// Python declares formatter kind none; this journey runs no Python tool.
 	case "rust-cli":
 		runBaselineReleaseExternal(t, repo, testfixture.RequireTool(t, "rustfmt"), "src/main.rs")
 	case "standard-typescript-monorepo":
@@ -1150,6 +1152,9 @@ func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	switch profile {
 	case "go-cli-tui":
 		writeBaselinePlanTestFile(t, repo, "main.go", "package main\nfunc main( ){ }\n")
+	case "python":
+		writeBaselinePlanTestFile(t, repo, "pyproject.toml", "[project]\nname = \"example\"\nversion = \"0.1.0\"\n")
+		writeBaselinePlanTestFile(t, repo, "src/example/__init__.py", "")
 	case "rust-cli":
 		writeBaselinePlanTestFile(t, repo, "src/main.rs", "fn main( ) {println!(\"ok\");}\n")
 	case "standard-typescript-monorepo", "go-cli-typescript-monorepo":

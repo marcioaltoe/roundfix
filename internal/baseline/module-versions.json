@@ -91,6 +91,10 @@
       {
         "version": 24,
         "digest": "sha256:aa69237fab469c23651a268e474c8a18841c852d6dcc323c4bd1e45ba5328c4c"
+      },
+      {
+        "version": 25,
+        "digest": "sha256:3ff3b009cd17c9bb645b62d0dba1d248ceb97333ad205962bd78bdc5751694aa"
       }
     ],
     "external-triage": [
@@ -119,6 +123,12 @@
       {
         "version": 3,
         "digest": "sha256:b20f6ea7058a5b239f154d7eafd97cb4add9d3edf94d9147bd4cb98d68a43652"
+      }
+    ],
+    "python": [
+      {
+        "version": 1,
+        "digest": "sha256:4fd8124766da54160a1123a0557c60512e9a59e360e9e388f07805947fb4fb8d"
       }
     ],
     "repository-extension": [

@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "python",
+  "version": 1,
+  "kind": "language-runtime",
+  "title": "Python repository guidance",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [
+
+  ],
+  "requiredSkills": [
+    "uv",
+    "ruff",
+    "ty",
+    "pytest",
+    "python-services",
+    "typer",
+    "fastapi",
+    "python-file-pipelines",
+    "developing-with-streamlit"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "uv",
+      "triggers": [
+        {
+          "id": "trigger.python.uv",
+          "when": "Changing the Python project's dependencies, lockfile, Python version or environment, or running a project tool through uv."
+        }
+      ]
+    },
+    {
+      "skill": "ruff",
+      "triggers": [
+        {
+          "id": "trigger.python.ruff",
+          "when": "Formatting or linting Python code, fixing a ruff finding, or changing the ruff configuration."
+        }
+      ]
+    },
+    {
+      "skill": "ty",
+      "triggers": [
+        {
+          "id": "trigger.python.ty",
+          "when": "Type checking Python code with ty, fixing a ty diagnostic, or changing the ty configuration."
+        }
+      ]
+    },
+    {
+      "skill": "pytest",
+      "triggers": [
+        {
+          "id": "trigger.python.pytest",
+          "when": "Writing, selecting, or reviewing Python tests, fixtures, parametrization, or pytest configuration."
+        }
+      ]
+    },
+    {
+      "skill": "python-services",
+      "triggers": [
+        {
+          "id": "trigger.python.python-services",
+          "when": "Structuring a Python command-line tool, HTTP backend, or worker around shared application services: its entry points, configuration, retries, cancellation, or durable work."
+        }
+      ]
+    },
+    {
+      "skill": "typer",
+      "triggers": [
+        {
+          "id": "trigger.python.typer",
+          "when": "Only when the repository's command-line interface already uses Typer: adding or changing its commands, options, or their tests."
+        }
+      ]
+    },
+    {
+      "skill": "fastapi",
+      "triggers": [
+        {
+          "id": "trigger.python.fastapi",
+          "when": "Only when the repository's HTTP service already uses FastAPI: adding or changing its routes, dependencies, Pydantic models, or their tests."
+        }
+      ]
+    },
+    {
+      "skill": "python-file-pipelines",
+      "triggers": [
+        {
+          "id": "trigger.python.python-file-pipelines",
+          "when": "Only when the repository ingests or reconciles files or generates reports in a Python pipeline, such as CSV, XML, ZIP, SQLite, XLSX, or DOCX processing."
+        }
+      ]
+    },
+    {
+      "skill": "developing-with-streamlit",
+      "triggers": [
+        {
+          "id": "trigger.python.developing-with-streamlit",
+          "when": "Only when the repository ships a Streamlit internal tool or prototype the maintainer asked for: creating or changing that Streamlit app."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.python",
+      "version": 1,
+      "template": "template.root.python",
+      "rules": [
+
+      ],
+      "references": [
+        {
+          "id": "reference.root.python",
+          "token": "reference.python",
+          "ownership": "setup",
+          "managedId": "guide.python"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.python",
+      "version": 1,
+      "path": "docs/agents/python.md",
+      "template": "template.guide.python",
+      "rules": [
+        "rule.python.uv-environment",
+        "rule.python.verification-gates",
+        "rule.python.hermetic-tests"
+      ],
+      "references": [
+
+      ]
+    }
+  ],
+  "repositoryExtensions": [
+
+  ],
+  "rules": [
+    {
+      "id": "rule.python.uv-environment",
+      "version": 1,
+      "coverage": [
+        "coverage.python",
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.python.change-dependencies-through-uv",
+          "enforcement": "mandatory",
+          "guidance": "Change dependencies only through uv: `uv add`, `uv add --group dev`, `uv remove` and `uv lock --upgrade-package`. Commit `pyproject.toml` and `uv.lock` together, and never install into the project environment with `pip`."
+        },
+        {
+          "id": "clause.python.run-tools-through-uv",
+          "enforcement": "mandatory",
+          "guidance": "Run Python, pytest, ruff and every other project tool through `uv run`, so each uses the locked project environment and the Python version the project pins, never a globally installed interpreter or tool."
+        },
+        {
+          "id": "clause.python.sync-the-locked-environment",
+          "enforcement": "mandatory",
+          "guidance": "Create a worktree's or CI job's environment with `uv sync --frozen` and the development group the gate needs, so it installs exactly what `uv.lock` records; a step that must also refuse a lockfile that no longer matches `pyproject.toml` uses `--locked` instead."
+        },
+        {
+          "id": "clause.python.check-the-lock-offline",
+          "enforcement": "mandatory",
+          "guidance": "The repository Verification checks the lockfile with `uv lock --check --offline`: it compares `uv.lock` with `pyproject.toml` from local files alone, fails when they no longer match, and needs no network or cache, so it runs inside a Run as in CI."
+        }
+      ]
+    },
+    {
+      "id": "rule.python.verification-gates",
+      "version": 1,
+      "coverage": [
+        "coverage.python",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.python.iterate-with-focused-commands",
+          "enforcement": "mandatory",
+          "guidance": "Use focused commands such as `uv run pytest <node id>`, `uv run ruff check <path>` and `uv run ty check <path>` while iterating, then run the selected repository Verification."
+        },
+        {
+          "id": "clause.python.ruff-findings-fail-the-gate",
+          "enforcement": "prohibited",
+          "guidance": "Do not hide a ruff finding: never pass `--exit-zero`, add a blanket `# noqa`, or widen the ruff configuration to make a finding disappear. A `# noqa` names the rule code it silences and the reason."
+        },
+        {
+          "id": "clause.python.type-check-with-ty",
+          "enforcement": "mandatory",
+          "guidance": "The repository Verification type-checks the package and its tests with `uv run ty check --error-on-warning`, ty being a development dependency. Do not hide a ty diagnostic: never pass `--exit-zero` or `--exit-zero-on-warning`, add a blanket `# ty: ignore` or `# type: ignore`, or widen the ty configuration to make a diagnostic disappear. A suppression names the rule it silences and the reason."
+        },
+        {
+          "id": "clause.python.select-a-new-test-by-its-node-id",
+          "enforcement": "mandatory",
+          "guidance": "A Task Verification selects a new test by its pytest node id, such as `tests/test_report.py::test_totals`, and never passes that test's file or directory in the same command. pytest collects a node id once when another argument already contains it and exits 0 even before the test exists, so the command could never fail before the work; a missing node id alone exits 4 and an empty selection exits 5. `roundfix spec check` reports a command that names a test both ways."
+        }
+      ]
+    },
+    {
+      "id": "rule.python.hermetic-tests",
+      "version": 1,
+      "coverage": [
+        "coverage.python",
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.python.keep-tests-hermetic",
+          "enforcement": "mandatory",
+          "guidance": "Keep tests hermetic: set or clear with `monkeypatch` every environment variable the code under test reads, write only under `tmp_path`, and never read the host's credentials, home directory, network or tool state."
+        },
+        {
+          "id": "clause.python.outside-data-skips-by-name",
+          "enforcement": "mandatory",
+          "guidance": "A test that needs data from outside the repository, such as a mounted drive or a credentialed service, calls `pytest.skip` with a reason that names the environment variable or path it lacks, so the selected Verification passes on a machine without that data. A Task Verification never depends on such a test."
+        },
+        {
+          "id": "clause.python.exercise-every-platform-branch",
+          "enforcement": "mandatory",
+          "guidance": "When a change touches code that branches on the operating system, such as on `sys.platform`, `os.name` or `platform.system()`, exercise every branch it names: test each one with `monkeypatch` over the value the code reads, or run `uv run ty check --python-platform <platform>` for each platform it names, because a test run on the host executes only the host's branch."
+        },
+        {
+          "id": "clause.python.keep-entry-points-thin",
+          "enforcement": "mandatory",
+          "guidance": "Keep each entry point thin, whether a console script, a web application factory or a worker's start-up: it reads its input and calls behavior that lives in the package. Test behavior through the package and the entry point's observable contract: for a console script, standard output, standard error and the exit code it raises with `SystemExit`; for a web application or a worker, the responses or messages it produces."
+        }
+      ]
+    }
+  ]
+}

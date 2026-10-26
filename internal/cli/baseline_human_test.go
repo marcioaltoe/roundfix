@@ -1285,7 +1285,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	t.Parallel()
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
-	answers := "\n4\n\n\nmake verify-incremental\n" +
+	answers := "\n5\n\n\nmake verify-incremental\n" +
 		strings.Repeat("\n", 32) +
 		"2\n" +
 		"1\n" +

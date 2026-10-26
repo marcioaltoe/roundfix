@@ -23,6 +23,7 @@
     {"id": "coverage.backend", "version": 2, "description": "Backend boundaries expose ownership, cancellation, and observable errors.", "delegationAliases": ["backend", "backend guidance"]},
     {"id": "coverage.frontend", "version": 2, "description": "Frontend work follows user-visible behavior and repository-owned design policy.", "delegationAliases": ["frontend", "frontend guidance"]},
     {"id": "coverage.go", "version": 2, "description": "Go work follows stdlib-first, context, error, and testing contracts.", "delegationAliases": ["go guidance"]},
+    {"id":"coverage.python","version":1,"description":"Python work runs through uv, keeps ruff and pytest gates honest, and keeps tests hermetic.","delegationAliases":["python","python guidance"]},
     {"id": "coverage.rust", "version": 2, "description": "Rust work uses current toolchain contracts and observable CLI tests.", "delegationAliases": ["rust", "rust guidance"]},
     {"id": "coverage.cli", "version": 2, "description": "CLI work treats commands and machine interfaces as public API.", "delegationAliases": ["cli", "cli guidance"]},
     {"id": "coverage.tui", "version": 2, "description": "TUI work keeps interaction and rendering behavior observable.", "delegationAliases": ["tui", "tui guidance"]},

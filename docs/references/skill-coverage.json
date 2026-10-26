@@ -1165,7 +1165,8 @@
       ],
       "sources": [
         "docs/user-guide/context-driven-development.md"
-      ]
+      ],
+      "review": "2026-10-24 — the only change names the new built-in `python` Baseline Profile in the profile list and its skills; the covering skills describe how a Baseline is adopted and refreshed, not which built-in profiles or setups exist, so no skill text changes."
     },
     {
       "id": "guide docs/user-guide/release-runbook.md",

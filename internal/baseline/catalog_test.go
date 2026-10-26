@@ -49,6 +49,7 @@ func TestEmbeddedCatalog(t *testing.T) {
 	wantProfiles := []string{
 		"go-cli-tui",
 		"go-cli-typescript-monorepo",
+		"python",
 		"rust-cli",
 		"standard-typescript-monorepo",
 	}

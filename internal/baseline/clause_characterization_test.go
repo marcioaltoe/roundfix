@@ -160,6 +160,18 @@ func baselineClauseForceDifferences(clauses []characterizedBaselineClause, want 
 // entry. Wording may change without changing identifiers or enforcement.
 func characterizedBaselineForce() map[string]string {
 	return map[string]string{
+		"clause.python.change-dependencies-through-uv":                "mandatory",
+		"clause.python.run-tools-through-uv":                          "mandatory",
+		"clause.python.sync-the-locked-environment":                   "mandatory",
+		"clause.python.check-the-lock-offline":                        "mandatory",
+		"clause.python.iterate-with-focused-commands":                 "mandatory",
+		"clause.python.ruff-findings-fail-the-gate":                   "prohibited",
+		"clause.python.type-check-with-ty":                            "mandatory",
+		"clause.python.select-a-new-test-by-its-node-id":              "mandatory",
+		"clause.python.keep-tests-hermetic":                           "mandatory",
+		"clause.python.outside-data-skips-by-name":                    "mandatory",
+		"clause.python.exercise-every-platform-branch":                "mandatory",
+		"clause.python.keep-entry-points-thin":                        "mandatory",
 		"clause.secondbrain.research-to-the-knowledge-owner":          "mandatory",
 		"clause.core.consume-messages-after-recording":                "mandatory",
 		"clause.core.messages-are-self-contained":                     "mandatory",

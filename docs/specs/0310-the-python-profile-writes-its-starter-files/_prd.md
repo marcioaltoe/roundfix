@@ -22,7 +22,7 @@ This Spec is a secondary Spec of one source. Spec 0309, which delivers the
 `python` profile, owns the source and adopted it as a promoted Backlog
 Entry; this Spec links the owner's copy and adopts nothing:
 
-- [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md),
+- [`../0309-a-python-baseline-profile-for-uv-pytest-and-ruff/references/2026-10-22-a-baseline-profile-for-python-repositories.md`](../../references/2026-10-22-a-baseline-profile-for-python-repositories.md),
   type `feat`: Quaestor's request of 2026-10-21 and the maintainer's
   decisions of 2026-10-22. This Spec delivers its expected item 4: generating
   the Makefile, the Project Config and the CI workflow.
