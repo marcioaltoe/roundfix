@@ -38,6 +38,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -55,6 +56,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -72,6 +74,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -89,6 +92,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -106,6 +110,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -123,6 +128,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -140,6 +146,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -157,6 +164,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -174,6 +182,25 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
+        "internal/cli/baseline_update.go",
+        "internal/cli/baseline_update_history.go"
+      ]
+    },
+    {
+      "id": "command baseline starters",
+      "skills": [
+        ".agents/skills/roundfix/references/baseline.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/baseline.md",
+        "internal/cli/baseline_apply.go",
+        "internal/cli/baseline_assets_sync.go",
+        "internal/cli/baseline_human.go",
+        "internal/cli/baseline_profile.go",
+        "internal/cli/baseline_skills_reconcile.go",
+        "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]
@@ -191,6 +218,7 @@
         "internal/cli/baseline_profile.go",
         "internal/cli/baseline_skills_reconcile.go",
         "internal/cli/baseline_skills_restore.go",
+        "internal/cli/baseline_starters.go",
         "internal/cli/baseline_update.go",
         "internal/cli/baseline_update_history.go"
       ]

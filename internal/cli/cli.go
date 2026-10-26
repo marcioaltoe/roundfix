@@ -74,6 +74,7 @@ Usage:
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline starters --profile <id> [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
   roundfix profiles check [--json]
   roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
@@ -5572,6 +5573,7 @@ explicit post-QA authority.
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline starters --profile <id> [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
 
 The root command guides one interactive adoption or update from repository
@@ -5784,6 +5786,27 @@ no target is supplied. The command reads no user-scoped profile catalog.
 
 Options:
   --format  Output format: text or json (default text)
+`
+	case "baseline starters":
+		return `Usage:
+  roundfix baseline starters --profile <id> [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+
+Previews a profile's Starter Files and writes only paths that do not exist.
+It never changes an existing file. A non-empty preview exits 3.
+An empty preview exits 0. Confirm the exact Plan Digest with --confirm-plan
+only with the maintainer's express authorization for those paths.
+
+Options:
+  --profile <id>           Baseline Profile (required).
+  --confirm-plan <digest>  Apply this exact preview.
+  --repo <path>            Repository path (default .).
+  --format <text|json>     Output format (default text).
+
+Exit codes:
+  0  Current or applied.
+  3  Preview or stale confirmation; preview again when stale.
+  2  Invalid arguments, unknown profile or unsupported format.
+  1  Write or output failure; files created by a failed write are removed.
 `
 	case "baseline skills restore":
 		return `Usage:

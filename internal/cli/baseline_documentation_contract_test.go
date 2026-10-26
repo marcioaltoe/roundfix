@@ -30,6 +30,9 @@ func parsePublishedBaselineExample(args []string, workDir string) error {
 	case len(args) == 0:
 		_, err := parseBaselineHumanCommand(nil)
 		return err
+	case args[0] == "starters":
+		_, err := parseBaselineStartersCommand(args[1:])
+		return err
 	case args[0] == "update":
 		_, err := parseBaselineUpdateCommand(args[1:])
 		return err

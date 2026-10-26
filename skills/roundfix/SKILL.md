@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.140
+  version: 0.1.141
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.140
+version: 0.1.141
 ---
 
 # Roundfix
@@ -38,6 +38,10 @@ citations are rewritten to the promoted copy or Archive Record, and the
 Archive Record names rewritten files under `relinked`. It refuses promotion
 collisions, duplicate basenames and dirty Live Documents, and warns about
 citations it leaves unrelinked.
+
+`roundfix baseline starters` previews and creates absent Starter Files only
+after the maintainer expressly authorizes the exact preview; see the
+[Baseline reference](references/baseline.md).
 
 `roundfix baseline update` lists History Citations in text and JSON and binds
 them into the Plan Digest. Live Document citations of promotable files offer

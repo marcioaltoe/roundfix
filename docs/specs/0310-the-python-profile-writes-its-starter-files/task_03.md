@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0310-the-python-profile-writes-its-starter-files
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -154,3 +154,51 @@ run_20261026T111302Z_6e46ba39379a80ff failed on that).
 - `_prd.md` → Core Features 3 and 5; Success Metrics 2, 3 and 5; User Stories 1-3; Glossary
 - `_techspec.md` → Current behavior 5-8; API Contract 6; Surface Transcript 1; Surface Transcript 2; Invariants 4 and 6; Testing Approach; Build Order 3
 - ADR-0323
+
+
+## Result
+
+Implemented task_03's CLI and documentation slice; Task status and settlement
+remain Daemon-owned. The pre-existing task-file change was preserved.
+
+- Transcript/API criterion: added `baseline starters` dispatch, required profile
+  parsing, repository/output defaults, confirmation, exact ordered text output,
+  JSON payloads, stale stderr-only refusal and exit categories. Both synopsis
+  locations and dedicated help describe the contract. The five new top-level
+  tests call `t.Parallel()` first and exercise in-process dispatch over isolated
+  temporary repositories/homes. The preview writes nothing; apply creates the
+  three files; the subsequent preview keeps them and reports current. Refusal
+  coverage also checks preservation of an existing config and removal of files
+  created before a blocked workflow write.
+- Project Config criterion: `TestBaselineStartersWritesAProjectConfigRoundfixLoads`
+  applies the preview and loads it through `config.Load`, asserting `make verify`,
+  frozen uv bootstrap, five-minute timeout, the three caches and uv/make/git.
+- Documentation criterion: updated the command guide, canonical Roundfix skill
+  and reference, synchronized mirrors, Starter File glossary definition linked
+  to ADR-0323, the coverage entry and all other Baseline command source lists.
+  Published examples now parse through the starters parser; the documentation
+  help contract includes starters. The skill recorder raised both version
+  fields to 0.1.141 and recorded the content; no QA settlement text changed.
+
+Focused checks from this turn (all final runs exited 0):
+
+- `go test ./internal/cli -run '^TestBaselineStarters' -count=1`.
+- `go test -tags docscontract ./internal/cli -run 'TestBaselineStarters|TestBaselineExamplesParse|TestEveryCommandPathPrintsItsHelp' -count=1`.
+- `go test -tags docscontract ./internal/docscontract -run '^TestBaselineDocumentationContract$' -count=1`.
+- `go test -tags docscontract ./internal/docscontract -run 'TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestBaselineDocumentationContract' -count=1`.
+- `make skills-sync` and `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`.
+  The first recorder attempt required synchronized mirrors; after sync the
+  recorder succeeded, and a final sync preserved identical copies.
+- `make baseline-digests`: sanctioned regeneration succeeded with
+  `changed: false`; no Baseline asset, module, profile, setup or pin changed.
+- `git diff --check` and a read-only scope/mirror/protected-section/wording
+  inspection passed. Only this Task's declared paths are changed.
+
+Final generation, after this Result and all guide edits:
+`go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`.
+Its observed outcome is reported in the Agent handback. This is the required
+recorder operation, not execution of the Task's declared Verification commands.
+
+Declared Verification, Windows vet and repository Verification were not run;
+they remain for the Daemon. No commit, push, Pull Request, other Task edit or
+Task Graph edit was made. No out-of-slice follow-up was identified.

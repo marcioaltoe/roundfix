@@ -50,9 +50,15 @@ func TestBaselineDocumentationContract(t *testing.T) {
 				"roundfix baseline capabilities check [--profile <id>]",
 				"roundfix baseline profile init --id <id>",
 				"roundfix baseline skills restore --profile <id>",
+				"roundfix baseline starters --profile <id>",
 				"roundfix baseline assets sync --source-dir <path>",
 				"explicit confirmation of the displayed Plan Digest",
 			},
+		},
+		{
+			command:  "baseline starters",
+			args:     []string{"baseline", "starters", "--help"},
+			snippets: []string{"writes only paths that do not exist", "A non-empty preview exits 3", "An empty preview exits 0"},
 		},
 		{
 			command: "baseline capabilities check",
