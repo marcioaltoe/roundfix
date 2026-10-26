@@ -1,3 +1,0 @@
-detached head: 9eda3f904aa6034f170c15f66dad56657b1edcee
-tracked/untracked status after regeneration and refresh:
-(clean)

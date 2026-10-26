@@ -1,3 +1,0 @@
-roundfix 0.123.0 (9eda3f90-dirty, built 2026-10-26 17:40:06 -0300)
-
-exit: 0

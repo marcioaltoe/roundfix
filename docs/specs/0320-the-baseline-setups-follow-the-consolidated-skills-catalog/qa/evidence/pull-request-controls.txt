@@ -1,6 +1,0 @@
-Pull Request: none open, supplied Run fact
-approval: maintainer delivery authority in _authorization.md, approved, committed before task_01; implementation/commit/push/pull_request/merge grant does not establish review acceptance
-checks: Daemon make verify-changed pass, exit 0, at 9eda3f904aa6034f170c15f66dad56657b1edcee
-unresolved threads: none; no Pull Request exists
-Merge-Ready acceptance: none yet; no Review Source acceptance for this candidate
-review-artifact ancestry: no review artifact exists; claimed candidate is 9eda3f904aa6034f170c15f66dad56657b1edcee and matches current HEAD

@@ -1,7 +1,0 @@
-archive head: 9eda3f904aa6034f170c15f66dad56657b1edcee
-fixture Git metadata: initialized and baseline staged, no commit
-mutation: sabotage-manifest
-expected test process exit: 1
-observed exit: 1
-failed named tests: ["TestTheSetupManifestIsCurrent"]
-expected failures observed: False

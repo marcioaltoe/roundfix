@@ -1,6 +1,0 @@
-fixture source: git archive 9eda3f904aa6034f170c15f66dad56657b1edcee
-Git metadata: fetched existing audited commit locally, update-ref HEAD; no commit created
-control: audited manifest, exit 0
-mutation: Delivery Base manifest only
-observed exit: 1
-expected stale diagnostic: True

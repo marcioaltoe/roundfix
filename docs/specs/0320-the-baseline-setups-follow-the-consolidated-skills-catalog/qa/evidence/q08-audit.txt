@@ -1,5 +1,0 @@
-Source: default/marcioaltoe-skills, operator-recorded messages in audited adopted Backlog Entry docs/specs/0320-the-baseline-setups-follow-the-consolidated-skills-catalog/references/2026-10-26-the-baseline-setups-trail-the-consolidated-skills-catalog.md
-01a17807-93df-7a91-be10-195aad68863a: 2026-10-26 08:45 BRT
-01a1781b-6c32-72a1-b192-b3ee00265a4d: 2026-10-26 09:07 BRT
-Observed: all five audited snapshots exclude skill-architect, writing-for-agents and skill-creator; ordered membership equals Delivery Base. Exactly onioncry changes tree, in typescript and composed snapshots, to be502b02544be90059c126e9b07bfeb6a4af115aada86455845b1407a5eab8b3. This corroborates the upstream no-preset-membership and onioncry-updated statements offline; no claim about current live upstream state or auto-invocation behavior is made.
-
