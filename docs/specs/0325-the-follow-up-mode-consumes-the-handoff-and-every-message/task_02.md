@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0325-the-follow-up-mode-consumes-the-handoff-and-every-message
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -57,3 +57,45 @@ consumes the two entries.
 
 - `_prd.md` → Goals 5; Core Feature 5; Success Metric 5; Glossary
 - `_techspec.md` → Interfaces; Glossary; Build Order 2
+
+## Result
+
+Implemented the two `CONTEXT.md` edits through `domain-modeling`, applied
+verbatim from `_techspec.md` → Interfaces:
+
+- Added the **Session Handoff** entry directly after the
+  `_Avoid_: Inbox Entry, capture, note` line of **Cross-project Message**,
+  separated by one blank line, with the ADR-0338 link and one `_Avoid_` line
+  (`Handoff file, session note, resume brief`).
+- Revised **Follow-up Item** to insert `a next step or open question of a
+  Session Handoff the caller hands in as a message entry with id
+  \`handoff:<handoff id>:<n>\`,` between `an ai-memory message the caller
+  hands in,` and `an open Backlog Entry,`; every other byte of that entry and
+  every other entry is unchanged.
+
+Focused check (the Task's own Verification command, run while working):
+
+```
+tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Session Handoff**:' && \
+  tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Follow-up Item**: One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry' && \
+  go test -timeout 15m -count=1 -tags docscontract -run '^TestGlossary' ./internal/docscontract
+```
+
+Result: `ok roundfix/internal/docscontract 0.641s` (exit 0).
+
+Acceptance criteria evidence:
+
+- **`CONTEXT.md` defines Session Handoff with its ADR-0338 link and one
+  `_Avoid_` line** — the entry is present with the
+  `[ADR-0338](docs/adr/0338-...)` link and the single `_Avoid_: Handoff file,
+  session note, resume brief` line.
+- **Follow-up Item names a Session Handoff's next steps and open questions
+  handed in as message entries** — the entry now reads "a next step or open
+  question of a Session Handoff the caller hands in as a message entry with
+  id `handoff:<handoff id>:<n>`" and keeps the rest of its bytes.
+- **The glossary contracts pass** — `TestGlossary` passes under the
+  `docscontract` build tag (exit 0).
+
+Scope: only `CONTEXT.md` changed in the working tree (`git status --porcelain`
+shows this task file's Result section as the sole other modification).
+

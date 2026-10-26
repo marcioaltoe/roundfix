@@ -152,6 +152,10 @@ _Avoid_: Finding, idea artifact, untyped suggestion
 A self-contained message a session sends to another project's ai-memory inbox with `memory_message_send` when it observes work that project owns. The receiving project reads its messages oldest first, records each in a Spec, a Backlog Entry or a Finding, or names it when it only informs, and only then consumes it with `memory_message_pop`; without ai-memory the sender gives the text to the user ([ADR-0330](docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md)).
 _Avoid_: Inbox Entry, capture, note
 
+**Session Handoff**:
+A single-use ai-memory record that one session of a project leaves for the next with `memory_handoff_begin`, holding a short summary, next steps and open questions, and that one later session claims with `memory_handoff_accept`. The Roundfix skill's `--follow-up` Skill Mode takes the project's handoff before its inventory: it uses the one the SessionStart hook already claimed, or reads a newer cut-off session first and accepts the most recent open one, and hands each next step and open question to the Follow-up Command as a Follow-up Item ([ADR-0338](docs/adr/0338-the-follow-up-mode-claims-the-handoff-and-leaves-no-handed-in-message-pending.md)).
+_Avoid_: Handoff file, session note, resume brief
+
 **Rollup**:
 A Finding of `rollup` kind that consolidates related Findings as declared members and retires by deletion when its work is resolved. Its members resolve as unresolved Findings or through Git, which keeps their retired text ([ADR-0278](docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md)).
 _Avoid_: Summary, digest, archive manifest
@@ -165,7 +169,7 @@ The read-only `roundfix follow-up` command that lists a repository's Follow-up I
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
-One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:
