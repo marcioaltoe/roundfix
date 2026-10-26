@@ -1,8 +1,0 @@
-import pathlib,os,subprocess,json,tempfile
-R=pathlib.Path.cwd();E=next((R/'docs/specs').glob('0307*/qa/evidence/2026-10-25-gate'));D=pathlib.Path('/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le');e=os.environ.copy();e.update(json.loads(subprocess.check_output(['go','env','-json','GOMODCACHE','GOCACHE','GOPATH'])));e.update(GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',GIT_CONFIG_NOSYSTEM='1')
-for k in list(e):
- if k.endswith(('API_KEY','TOKEN','SECRET','PASSWORD')):e.pop(k)
-for name,test in [('s01-enforcement','^(TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall|TestAnAdopterRetainsTheAskUserClause)$'),('s02-repository-guide','^TestTheAskUserClauseRendersInTheAgentInstructionsGuide$'),('s03-golden-independence','^TestTheAskUserClauseRendersInTheAgentInstructionsGuide$')]:
- d=D/name;p=pathlib.Path(tempfile.mkdtemp(dir=D));(p/'home').mkdir();(p/'tmp').mkdir();ee=dict(e,HOME=str(p/'home'),TMPDIR=str(p/'tmp'))
- for args in [['git','init','-q'],['git','add','.']]:subprocess.run(args,cwd=d,env=ee,check=True)
- args=['go','test','-v','-count=1','-run',test,'./internal/baseline'];p=subprocess.run(args,cwd=d,env=ee,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT);(E/(name+'-retry.txt')).write_text('Command: '+repr(args)+'\nExit: '+str(p.returncode)+'\n'+p.stdout);print(name,p.returncode,p.stdout[-2600:],flush=True)
