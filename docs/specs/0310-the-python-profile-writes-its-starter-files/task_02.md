@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0310-the-python-profile-writes-its-starter-files
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -84,3 +84,61 @@ ADR-0323; ADR-0068).
 - `_prd.md` → Goals; Core Features 3-4; Success Metrics 3-4; User Stories 2-4
 - `_techspec.md` → Current behavior 4; Interfaces; Data Model 3; API Contracts 3-5; Invariants 1-3 and 5; Testing Approach; Build Order 2
 - ADR-0323; ADR-0068
+
+## Result
+
+Implemented the backend Starter Files operation and the undeclared-command next
+action within this Task's slice. `Starters` resolves built-in and
+repository-owned profiles, previews ordered `create`/`keep` entries without
+reading existing contents, and binds the profile and entries to a canonical
+SHA-256 Plan Digest. Confirmation exclusively creates absent files through
+`os.Root`, with parent mode 0755 and file mode 0644. Write or close failure
+removes all files created by the call; cleanup errors are returned with the
+original failure. No production test hook was added.
+
+Acceptance evidence:
+
+- Preview/apply and preservation: `TestStartersPreviewsAndCreatesOnlyAbsentFiles`
+  checks the ordered entries, schema, digest shape, absence of preview writes,
+  rejection of an unrelated confirmation without writes, exact created
+  template bytes, an unchanged existing Makefile, subsequent `current` state,
+  and no-op confirmation when all paths exist. Its parallel subtest checks a
+  repository-owned profile derived from Python retains the Starter Files.
+- Stale refusal and rollback: `TestStartersRefuseADigestThatNoLongerMatches`
+  checks `errors.Is(err, ErrStartersStale)` after a path appears, preserves that
+  file's bytes and leaves `.github` absent.
+  `TestStartersRemoveWhatTheyCreatedWhenAWriteFails` uses an existing regular
+  `.github` file to force a later write failure, checks its path-bearing
+  error, confirms removal of the earlier-created Project Config, and checks
+  that the obstructing file remains byte-identical.
+- Next action: `TestTheUndeclaredGateNamesTheStartersCommand` resolves Python
+  and Rust alignment without a Makefile and checks the exact Python hint and
+  unchanged Rust text. Both use the existing alignment decisions helper,
+  filtered to the selected profile's decisions.
+
+Focused checks:
+
+- `go test ./internal/baseline -run '^(TestStarters|TestTheUndeclaredGate|TestProfileAlignment|TestBaselinePlanCharacterization)' -count=1`
+  — exit 0 (`ok roundfix/internal/baseline`). This includes the four new tests,
+  existing profile-alignment tests and plan-characterization tests; no existing
+  tests or golden files were edited.
+- `git diff --check` — exit 0.
+- The initial focused alignment check exposed TypeScript-only fixture answers
+  rejected by Python and Rust; filtering the helper to each resolved profile's
+  selected decisions corrected the fixture, without changing production
+  validation.
+
+Environment: the executor rejected the symlinked writable-root configuration.
+Commands ran with approved escalation; the resolved checkout is under
+`/Volumes/Brain-SSD/cache/.roundfix/worktrees/`.
+
+Scope inspection shows only `starters.go`, `starters_test.go`,
+`profile_alignment.go` and this Task file changed. The Task's existing
+`in_progress` status was preserved. Declared Verification, the full package
+suite, Windows vet and repository Verification were not run; the Daemon owns
+those checks and settlement. No commit, push or Pull Request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T111302Z_6e46ba39379a80ff`
+- Source commit: `001b2c525aff66b32debdc96c0536214faa78cc5`
