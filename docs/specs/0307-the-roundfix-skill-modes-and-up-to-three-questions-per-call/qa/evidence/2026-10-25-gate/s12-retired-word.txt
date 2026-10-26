@@ -1,0 +1,20 @@
+Command: ['go', 'test', '-v', '-count=1', '-run', '^TestTheFollowUpModeRunsItsStepsInOrder$', './skills']
+Working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le/s12-retired-word
+Exit: 1
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== NAME  TestTheFollowUpModeRunsItsStepsInOrder/canonical
+    roundfix_modes_test.go:73: reference contains forbidden "resolved_to"
+--- FAIL: TestTheFollowUpModeRunsItsStepsInOrder (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/embedded (0.00s)
+    --- FAIL: TestTheFollowUpModeRunsItsStepsInOrder/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.354s
+FAIL

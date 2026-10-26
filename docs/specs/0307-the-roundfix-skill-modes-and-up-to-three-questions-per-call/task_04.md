@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

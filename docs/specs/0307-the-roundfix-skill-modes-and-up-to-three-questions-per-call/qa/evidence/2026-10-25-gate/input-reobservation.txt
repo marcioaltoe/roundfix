@@ -1,0 +1,306 @@
+baseline-positive exit 0
+=== RUN   TestCatalogCompatibility
+=== PAUSE TestCatalogCompatibility
+=== RUN   TestNoTwoBaselineClausesShareText
+=== PAUSE TestNoTwoBaselineClausesShareText
+=== RUN   TestBaselineClauseForceIsCharacterized
+=== PAUSE TestBaselineClauseForceIsCharacterized
+=== RUN   TestBaselinePlanCharacterization
+=== PAUSE TestBaselinePlanCharacterization
+=== RUN   TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== PAUSE TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== RUN   TestAnAdopterRetainsTheAskUserClause
+=== PAUSE TestAnAdopterRetainsTheAskUserClause
+=== CONT  TestCatalogCompatibility
+=== CONT  TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== CONT  TestBaselineClauseForceIsCharacterized
+=== CONT  TestAnAdopterRetainsTheAskUserClause
+=== CONT  TestBaselinePlanCharacterization
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== CONT  TestNoTwoBaselineClausesShareText
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+--- PASS: TestTheAskUserClauseRendersInTheAgentInstructionsGuide (0.00s)
+    --- PASS: TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden (0.00s)
+    --- PASS: TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository (0.00s)
+=== RUN   TestBaselinePlanCharacterization/clean-adoption
+--- PASS: TestCatalogCompatibility (0.02s)
+--- PASS: TestBaselineClauseForceIsCharacterized (0.02s)
+--- PASS: TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall (0.02s)
+--- PASS: TestNoTwoBaselineClausesShareText (0.02s)
+=== RUN   TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply
+=== RUN   TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities
+--- PASS: TestAnAdopterRetainsTheAskUserClause (1.00s)
+=== RUN   TestBaselinePlanCharacterization/advisory-only-divergences
+=== RUN   TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests
+--- PASS: TestBaselinePlanCharacterization (1.59s)
+    --- PASS: TestBaselinePlanCharacterization/clean-adoption (0.04s)
+    --- PASS: TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply (0.92s)
+    --- PASS: TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities (0.04s)
+    --- PASS: TestBaselinePlanCharacterization/advisory-only-divergences (0.04s)
+    --- PASS: TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests (0.54s)
+PASS
+suiteguard: guard cost: measured 2839 paths; fingerprint took 152.458667ms before and 129.337208ms after
+ok  	roundfix/internal/baseline	2.421s
+
+skills-positive exit 0
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestRoundfixSkillIndexNamesEveryReference
+=== PAUSE TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexLinksResolve
+=== PAUSE TestRoundfixSkillIndexLinksResolve
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== PAUSE TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== RUN   TestInstallWritesEveryRoundfixReference
+=== PAUSE TestInstallWritesEveryRoundfixReference
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/embedded
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== CONT  TestInstallWritesEveryRoundfixReference
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== CONT  TestRoundfixSkillIndexLinksResolve
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== RUN   TestRoundfixSkillIndexLinksResolve/canonical
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded
+--- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded (0.00s)
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== RUN   TestRoundfixSkillIndexLinksResolve/embedded
+--- PASS: TestRoundfixSkillIndexNamesEveryReference (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/embedded (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/canonical (0.00s)
+--- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical (0.00s)
+--- PASS: TestTheFollowUpModeRunsItsStepsInOrder (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/embedded (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/canonical (0.00s)
+--- PASS: TestRoundfixSkillIndexLinksResolve (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/canonical (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/embedded (0.00s)
+--- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+--- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/canonical (0.00s)
+--- PASS: TestInstallWritesEveryRoundfixReference (0.01s)
+PASS
+ok  	roundfix/skills	0.324s
+
+s01-enforcement-retry exit 1
+=== RUN   TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== PAUSE TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== RUN   TestAnAdopterRetainsTheAskUserClause
+=== PAUSE TestAnAdopterRetainsTheAskUserClause
+=== CONT  TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== CONT  TestAnAdopterRetainsTheAskUserClause
+=== NAME  TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+    question_batch_clause_test.go:17: LoadEmbeddedCatalog() error = load embedded Baseline catalog: validate Baseline catalog: catalog.transition.target.enforcement.mismatch: transition.legacy-typescript-bun-to-portable-v3: clause.core.ask-user-answerable-decisions; run 'make baseline-digests' to regenerate stale derived artifacts
+=== NAME  TestAnAdopterRetainsTheAskUserClause
+    question_batch_clause_test.go:52: LoadEmbeddedCatalog() error = load embedded Baseline catalog: validate Baseline catalog: catalog.transition.target.enforcement.mismatch: transition.legacy-typescript-bun-to-portable-v3: clause.core.ask-user-answerable-decisions; run 'make baseline-digests' to regenerate stale derived artifacts
+--- FAIL: TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall (0.01s)
+--- FAIL: TestAnAdopterRetainsTheAskUserClause (0.01s)
+FAIL
+suiteguard: guard cost: measured 2787 paths; fingerprint took 153.817792ms before and 128.395292ms after
+FAIL	roundfix/internal/baseline	0.642s
+FAIL
+
+s02-repository-guide-retry exit 1
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+    question_batch_clause_test.go:45: sentence "Ask at most three questions per call or message, never more than the tool accepts, and keep only that call pending." occurs 0 times, want 1
+    question_batch_clause_test.go:45: sentence "Put questions in one call only when they are independent of each other; a question whose options depend on another answer waits for that answer." occurs 0 times, want 1
+    question_batch_clause_test.go:45: guidance contains retired sentence "Ask exactly one question per call or message"
+--- FAIL: TestTheAskUserClauseRendersInTheAgentInstructionsGuide (0.00s)
+    --- PASS: TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden (0.00s)
+    --- FAIL: TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository (0.00s)
+FAIL
+suiteguard: guard cost: measured 2787 paths; fingerprint took 155.142209ms before and 128.110125ms after
+FAIL	roundfix/internal/baseline	0.646s
+FAIL
+
+s03-golden-independence-retry exit 1
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== RUN   TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== PAUSE TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+=== CONT  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository
+=== NAME  TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden
+    question_batch_clause_test.go:45: sentence "Put questions in one call only when they are independent of each other; a question whose options depend on another answer waits for that answer." occurs 0 times, want 1
+--- FAIL: TestTheAskUserClauseRendersInTheAgentInstructionsGuide (0.00s)
+    --- FAIL: TestTheAskUserClauseRendersInTheAgentInstructionsGuide/Standard_TypeScript_golden (0.00s)
+    --- PASS: TestTheAskUserClauseRendersInTheAgentInstructionsGuide/repository (0.00s)
+FAIL
+suiteguard: guard cost: measured 2787 paths; fingerprint took 158.726542ms before and 133.535084ms after
+FAIL	roundfix/internal/baseline	0.637s
+FAIL
+
+s04-placeholder exit 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== NAME  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+    roundfix_modes_test.go:177: skill body contains an argument placeholder
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.335s
+FAIL
+
+s05-metadata exit 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== NAME  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+    roundfix_modes_test.go:160: metadata opencode/slash = <nil>, want "true"
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.336s
+FAIL
+
+s06-embedded-invocation exit 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+    roundfix_modes_test.go:166: Modes section does not start with required paragraph
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.344s
+FAIL
+
+s07-cli-distinction exit 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== NAME  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+    roundfix_modes_test.go:166: Modes section does not start with required paragraph
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.339s
+FAIL
+
+s08-leading-dashes exit 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== NAME  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+    roundfix_modes_test.go:196: How a mode is chosen omits "with or without a leading `--`"
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.343s
+FAIL
+
+s09-status-heading exit 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== NAME  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+    roundfix_modes_test.go:186: modes reference has no non-empty "--status" section
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.365s
+FAIL
+
+Source manifest byte-identical to Delivery Base: true; stop-and-ask entry independently confirmed.

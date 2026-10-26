@@ -1,0 +1,19 @@
+Command: ['go', 'test', '-v', '-count=1', '-run', '^TestTheRoundfixSkillNamesNoPersonalAssistant$', './skills']
+Working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le/s16-neutrality
+Exit: 1
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+    roundfix_modes_test.go:129: roundfix/references/modes.md names a personal assistant or channel
+--- FAIL: TestTheRoundfixSkillNamesNoPersonalAssistant (0.00s)
+    --- FAIL: TestTheRoundfixSkillNamesNoPersonalAssistant/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.356s
+FAIL

@@ -1,0 +1,20 @@
+Command: ['go', 'test', '-v', '-count=1', '-run', '^TestTheUnattendedModeAsksWithinTheBaselineLimit$', './skills']
+Working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le/s15-authorization
+Exit: 1
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== NAME  TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+    roundfix_modes_test.go:104: unattended section omits "An item that does not become a Spec now becomes a Backlog Entry or a Finding that records the information and decisions and never an authorization."
+--- FAIL: TestTheUnattendedModeAsksWithinTheBaselineLimit (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded (0.00s)
+    --- FAIL: TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.350s
+FAIL

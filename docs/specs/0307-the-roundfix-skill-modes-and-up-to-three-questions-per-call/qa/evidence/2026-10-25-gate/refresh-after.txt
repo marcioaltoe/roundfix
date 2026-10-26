@@ -1,0 +1,3 @@
+Command: ['git', 'status', '--porcelain']
+Working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le/refresh
+Exit: 0

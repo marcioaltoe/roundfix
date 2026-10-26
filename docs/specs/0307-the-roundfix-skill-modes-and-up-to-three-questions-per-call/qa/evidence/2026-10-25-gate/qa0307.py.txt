@@ -1,0 +1,31 @@
+import os,subprocess,pathlib,tempfile,tarfile,io,json,re,shutil
+R=pathlib.Path.cwd(); S=R/'docs/specs/0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call'; Q=S/'qa'; E=Q/'evidence/2026-10-25-gate';E.mkdir(parents=True,exist_ok=True); D=pathlib.Path((Q/'.qa-temp-root').read_text()); (Q/'.qa-temp-root').unlink(); (D/'source').mkdir()
+def raw(a,cwd=R): return subprocess.check_output(a,cwd=cwd)
+head=raw(['git','rev-parse','HEAD']).decode().strip(); base='f5bc75e94cf347b2bbe1a81103a8af7b0ab95e0c'
+# Resolve Go's existing dependency/build caches before isolating HOME; never dump environment.
+go=json.loads(raw(['go','env','-json','GOMODCACHE','GOCACHE','GOPATH']).decode())
+baseenv=os.environ.copy();baseenv.update(go);baseenv.update(GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',GIT_CONFIG_NOSYSTEM='1')
+for k in list(baseenv):
+ if k.endswith(('API_KEY','TOKEN','SECRET','PASSWORD')):baseenv.pop(k)
+def isolated():
+ p=pathlib.Path(tempfile.mkdtemp(dir=D));(p/'home').mkdir();(p/'tmp').mkdir();return dict(baseenv,HOME=str(p/'home'),TMPDIR=str(p/'tmp'))
+def run(name,args,cwd=R,expect=0):
+ p=subprocess.run(args,cwd=cwd,env=isolated(),text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT);out=p.stdout; (E/(name+'.txt')).write_text('Command: '+repr(args)+'\nWorking directory: '+str(cwd)+'\nExit: '+str(p.returncode)+'\n'+out);print(name, p.returncode,flush=True);return p.returncode,out
+archive=raw(['git','archive',head]);tarfile.open(fileobj=io.BytesIO(archive)).extractall(D/'source',filter='data')
+report=Q/'qa-report-2026-10-25.md'
+def status(row,value,detail):
+ s=report.read_text();s=s.replace('| '+row+' | pending |','| '+row+' | '+value+' |');s+='\n### Row '+row+'\n\n'+detail+'\n';report.write_text(s)
+status('01','pass','`make build` exited 0. Daemon-supplied `make verify-changed` passed (exit 0) at '+head+'; not rerun. Public binary identity recorded in frontmatter. Strict authoring precondition exited 0: no findings; skipped detectors are retained in scope audit as applicable. Executor symlink restriction required approved escalation; checkout identity resolved to the assigned Run.')
+# exact commands authored by implementation tasks
+success=True
+for task in ['01','02','03']:
+ text=(S/('task_'+task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+ commands=re.findall(r'^- `(.*)` — expected:',text,re.M)
+ for i,cmd in enumerate(commands):
+  code,_=run('verification-'+task+'-'+str(i+1),['/bin/zsh','-f','-c',cmd]);success &=code==0
+status('05','pass' if success else 'fail','Executed each task_01/task_02/task_03 Verification command verbatim with module networking disabled and isolated HOME/TMPDIR. See `evidence/2026-10-25-gate/verification-*.txt` for exact commands and exits.')
+code,_=run('baseline-positive',['go','test','-v','-count=1','-run','^(TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall|TestTheAskUserClauseRendersInTheAgentInstructionsGuide|TestAnAdopterRetainsTheAskUserClause|TestBaselineClauseForceIsCharacterized|TestNoTwoBaselineClausesShareText|TestCatalogCompatibility|TestBaselinePlanCharacterization)$','./internal/baseline'])
+code2,_=run('skills-positive',['go','test','-v','-count=1','-run','^(TestTheRoundfixSkillReadsItsModeFromTheRequest|TestRoundfixSkillIndexNamesEveryReference|TestRoundfixSkillIndexLinksResolve|TestRoundfixSkillEntryFileStaysWithinItsBudget|TestInstallWritesEveryRoundfixReference|TestTheFollowUpModeRunsItsStepsInOrder|TestTheUnattendedModeAsksWithinTheBaselineLimit|TestTheRoundfixSkillNamesNoPersonalAssistant|TestEveryOwnedSkillVersionIsRecorded)$','./skills'])
+run('glossary',['go','test','-count=1','-tags','docscontract','-run','^TestGlossary','./internal/docscontract'])
+json.dump({'head':head,'base':base,'baseline':code,'skills':code2},open(D/'state.json','w'))
+print('TEMP_ROOT '+str(D),flush=True)

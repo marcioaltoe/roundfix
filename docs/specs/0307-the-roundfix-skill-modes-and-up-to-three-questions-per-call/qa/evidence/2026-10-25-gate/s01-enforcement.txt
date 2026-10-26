@@ -1,0 +1,6 @@
+Command: ['go', 'test', '-v', '-count=1', '-run', '^(TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall|TestAnAdopterRetainsTheAskUserClause)$', './internal/baseline']
+Working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le/s01-enforcement
+Exit: 1
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/baseline	0.371s
+FAIL

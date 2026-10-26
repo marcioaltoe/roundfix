@@ -1,0 +1,15 @@
+Command: ['./bin/roundfix', 'follow-up', '--help']
+Working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call-1ed2dd0a39544af8-ad8592a2-d1680002/run_20261026T023753Z_027db395913dd1f3
+Exit: 0
+Usage:
+  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+
+List this repository's pending work in Follow-up Priority order, or show its status.
+It is read-only: it never writes a file, commits, pushes or prompts.
+Options:
+  --status    Show work in progress, pending Specs, the next release and blockers
+  --messages  JSON file of ai-memory messages to list with the pending work
+  --format    text (default) or json
+
+Exits 0 for a report, including one with nothing to do; 2 for invalid usage,
+configuration or messages file; 1 for an unreadable Run Database.

@@ -1,0 +1,4 @@
+Command: ['/bin/zsh', '-f', '-c', "tr -s '[:space:]' ' ' < docs/agents/agent-instructions.md | grep -qF -- 'Ask at most three questions per call or message, never more than the tool accepts, and keep only that call pending.' || { echo 'agent instructions lack the three-question limit' >&2; exit 1; }; if grep -qF 'Ask exactly one question per call' docs/agents/agent-instructions.md; then echo 'agent instructions keep the retired sentence' >&2; exit 1; fi; go test -count=1 -tags docscontract ./internal/docscontract"]
+Working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call-1ed2dd0a39544af8-ad8592a2-d1680002/run_20261026T023753Z_027db395913dd1f3
+Exit: 0
+ok  	roundfix/internal/docscontract	15.323s

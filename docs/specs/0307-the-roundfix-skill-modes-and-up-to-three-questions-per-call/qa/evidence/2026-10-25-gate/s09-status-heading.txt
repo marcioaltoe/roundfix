@@ -1,0 +1,20 @@
+Command: ['go', 'test', '-v', '-count=1', '-run', '^TestTheRoundfixSkillReadsItsModeFromTheRequest$', './skills']
+Working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0307-lljiy7le/s09-status-heading
+Exit: 1
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== NAME  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+    roundfix_modes_test.go:186: modes reference has no non-empty "--status" section
+--- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.353s
+FAIL

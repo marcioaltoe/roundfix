@@ -1,0 +1,83 @@
+Command: ['go', 'test', '-v', '-count=1', '-run', '^(TestTheRoundfixSkillReadsItsModeFromTheRequest|TestRoundfixSkillIndexNamesEveryReference|TestRoundfixSkillIndexLinksResolve|TestRoundfixSkillEntryFileStaysWithinItsBudget|TestInstallWritesEveryRoundfixReference|TestTheFollowUpModeRunsItsStepsInOrder|TestTheUnattendedModeAsksWithinTheBaselineLimit|TestTheRoundfixSkillNamesNoPersonalAssistant|TestEveryOwnedSkillVersionIsRecorded)$', './skills']
+Working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call-1ed2dd0a39544af8-ad8592a2-d1680002/run_20261026T023753Z_027db395913dd1f3
+Exit: 0
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestRoundfixSkillIndexNamesEveryReference
+=== PAUSE TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexLinksResolve
+=== PAUSE TestRoundfixSkillIndexLinksResolve
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== PAUSE TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== RUN   TestInstallWritesEveryRoundfixReference
+=== PAUSE TestInstallWritesEveryRoundfixReference
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestRoundfixSkillIndexNamesEveryReference
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder
+=== CONT  TestInstallWritesEveryRoundfixReference
+=== CONT  TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== CONT  TestRoundfixSkillIndexLinksResolve
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestRoundfixSkillIndexLinksResolve/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/canonical
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== RUN   TestRoundfixSkillIndexLinksResolve/embedded
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/embedded
+--- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded (0.00s)
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/embedded
+--- PASS: TestRoundfixSkillIndexLinksResolve (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/canonical (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/embedded (0.00s)
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+--- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+--- PASS: TestRoundfixSkillIndexNamesEveryReference (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/canonical (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/embedded (0.00s)
+--- PASS: TestTheFollowUpModeRunsItsStepsInOrder (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/embedded (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/canonical (0.00s)
+--- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded (0.00s)
+--- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/canonical (0.00s)
+--- PASS: TestInstallWritesEveryRoundfixReference (0.01s)
+PASS
+ok  	roundfix/skills	0.329s
