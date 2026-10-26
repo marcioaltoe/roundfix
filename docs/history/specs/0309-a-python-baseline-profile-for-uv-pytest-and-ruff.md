@@ -42,6 +42,7 @@ relinked:
   - docs/specs/0310-the-python-profile-writes-its-starter-files/task_01.md
   - docs/specs/0310-the-python-profile-writes-its-starter-files/task_02.md
   - docs/specs/0310-the-python-profile-writes-its-starter-files/task_03.md
+pull_request: "681"
 ---
 
 # A Python Baseline Profile for uv, pytest and ruff
