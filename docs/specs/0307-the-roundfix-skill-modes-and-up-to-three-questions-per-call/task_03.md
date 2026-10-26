@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0307-the-roundfix-skill-modes-and-up-to-three-questions-per-call
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -147,3 +147,16 @@ extends them, so it declares them as files it writes and runs after task_02.
 - `_techspec.md` → API Contracts 5-7; Invariants 5-7; Testing Approach; Build Order 3
 - ADR-0320
 - ADR-0330
+
+## Result
+
+- Added the canonical `--follow-up` eight-step sequence and `--unattended` guidance, including ai-memory-only triage, answer placement, authorization scope, fallback questioning, and continuation arming; synchronized the embedded mirror.
+- Added `TestTheFollowUpModeRunsItsStepsInOrder`, `TestTheUnattendedModeAsksWithinTheBaselineLimit`, and `TestTheRoundfixSkillNamesNoPersonalAssistant`, covering both canonical and embedded skill layouts.
+- Raised the canonical Roundfix skill from `0.1.139` to `0.1.140`; `make skills-sync` synchronized both skill mirrors and `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed and updated the owned-version record.
+- Focused evidence: `go test ./skills -run 'TestThe(FollowUpModeRunsItsStepsInOrder|UnattendedModeAsksWithinTheBaselineLimit|RoundfixSkillNamesNoPersonalAssistant)$' -count=1` passed with 9 tests/subtests; the required Verification section was not run by this Daemon-assigned turn.
+- Acceptance evidence: the order test asserts all eight numbered steps and required command/message markers; the unattended test reads `../internal/baseline/assets/modules/core.json` and asserts the three API Contract 5 sentences; the neutrality test walks both skill layouts for banned personal-assistant/channel names; the reference contains none of `resolved_to`, `_triaged`, `Inbox Entr` or `secondbrain.root`.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261026T012710Z_3bd43b23da902551`
+- Source commit: `9381115d7f2fffdfacca8b296452d4403c25a3de`
