@@ -17,8 +17,6 @@ func TestEveryUpstreamSetupFollowsTheAiMemoryRevision(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// This revision is the upstream migration contract, not a production version constant.
-	const revision = "65d5f365cace27c4b468db1723213723b10c870b"
 	required := []string{
 		"ai-memory-durable-pages", "ai-memory-handoff", "ai-memory-learning-maintenance",
 		"ai-memory-messaging", "ai-memory-retrieval", "ai-memory-routing-install",
@@ -33,14 +31,14 @@ func TestEveryUpstreamSetupFollowsTheAiMemoryRevision(t *testing.T) {
 			if err := json.Unmarshal(entry.Data, &snapshot); err != nil {
 				t.Fatalf("setup %s: %v", id, err)
 			}
-			if snapshot.Source.Type == "github" && snapshot.Source.Ref != revision {
-				t.Errorf("setup %s revision = %q, want %s", id, snapshot.Source.Ref, revision)
+			if snapshot.Source.Type == "github" && snapshot.Source.Ref != upstreamSetupRevision {
+				t.Errorf("setup %s revision = %q, want %s", id, snapshot.Source.Ref, upstreamSetupRevision)
 			}
 			names := make([]string, 0, len(snapshot.Skills))
 			for _, skill := range snapshot.Skills {
 				names = append(names, skill.Name)
-				if skill.Source.Type == "github" && skill.Source.Ref != revision {
-					t.Errorf("setup %s skill %s revision = %q, want %s", id, skill.Name, skill.Source.Ref, revision)
+				if skill.Source.Type == "github" && skill.Source.Ref != upstreamSetupRevision {
+					t.Errorf("setup %s skill %s revision = %q, want %s", id, skill.Name, skill.Source.Ref, upstreamSetupRevision)
 				}
 				if skill.Name == "handoff" || skill.Name == "brand-guidelines" || strings.HasPrefix(skill.Name, "gws-") {
 					t.Errorf("setup %s retains retired skill %s", id, skill.Name)

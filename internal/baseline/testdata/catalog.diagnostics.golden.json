@@ -215,7 +215,7 @@
         {
           "code": "catalog.setup.digest.mismatch",
           "subject": "rust",
-          "detail": "got 0bdef4c9a58eaa08552ff1ece930ae13a69013e13fce5ee25285fa9b1df472d81, want bdef4c9a58eaa08552ff1ece930ae13a69013e13fce5ee25285fa9b1df472d81"
+          "detail": "got 0131d26c39b0ae41a8083fbae32e8599e4da80fde8cd2f70e458c4d8ac0a81700, want 131d26c39b0ae41a8083fbae32e8599e4da80fde8cd2f70e458c4d8ac0a81700"
         }
       ]
     },

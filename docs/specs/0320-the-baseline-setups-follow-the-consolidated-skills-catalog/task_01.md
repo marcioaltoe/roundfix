@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0320-the-baseline-setups-follow-the-consolidated-skills-catalog
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -101,3 +101,79 @@ that pins the republished `onioncry` tree (`_prd.md` → Core Features 1-3).
 - `_prd.md` → Goals; Core Features 1-3; Success Metrics 1-4
 - `_techspec.md` → Current behavior 1-7; Interfaces; API Contracts 1-4; Invariants 1-5; Testing Approach; Build Order 1
 - ADR-0191
+
+## Result
+
+Imported the published upstream commit through the asset sync, regenerated
+the seven declared Baseline artifacts, and refreshed only the Setup
+Manifest's `catalogDigest`. Added `upstreamSetupRevision` and
+`onioncryTreeDigest` with the parallel tree test; the three existing revision
+tests now read the shared revision constant. Existing assertions otherwise
+retain their bytes, as API Contract 3 requires.
+
+### Import and regeneration evidence
+
+- The required read-only `git -C /Users/marcio/dev/skills cat-file -e
+  8d71fade68c54693bedbd917371f0514311af157^{commit}` exited `0` before
+  any write. The initial changed-path inventory contained only this Task's
+  Daemon-owned status change.
+- Initialized an empty temporary repository, fetched that exact commit from
+  `/Users/marcio/dev/skills` with network protocols disabled and the local
+  file protocol allowed, checked out `FETCH_HEAD` detached, and added
+  `origin=https://github.com/marcioaltoe/skills.git` without contacting it.
+  `rev-parse HEAD` returned the required commit and the temporary checkout
+  was clean. No write was made to the source checkout.
+- `go build -buildvcs=false -o <temporary-binary> ./cmd/roundfix` exited `0`.
+  The binary's `baseline assets sync --source-dir <fetched>/setups --format
+  text` exited `0` with exactly five `skills.setup-snapshot.updated`
+  findings; its following `--check` exited `0` with
+  `setup-context-driven audit: ok`.
+- `make baseline-digests` exited `0`, reported `"ok":true,"changed":true`,
+  and listed exactly the seven derived files declared by this Task.
+- Ran `go run -buildvcs=false ./cmd/roundfix baseline update --repo .
+  --no-skills --no-history --yes --format text` twice. Both exited `0`;
+  the first reported one managed entry in `docs/agents/setup-context.json`,
+  and the second reported `File changes: 0` and `Idempotence: verified`.
+  Every Roundfix invocation used a separate fresh temporary `HOME`; the
+  refreshes reused existing Go caches with proxy and checksum access off.
+  Both refreshes reported nested-carrier warnings for the existing formatter
+  fixture and Source Baseline corpus; neither carrier changed.
+
+### Acceptance criterion evidence
+
+1. A read-only Python comparison against `HEAD` confirmed the new revision
+   for all four direct upstream snapshot sources and all 293 GitHub skill
+   references across the five snapshots. The composed snapshot retains its
+   composed source. Ordered membership remains 47 Go, 115 composed, 52
+   Python, 40 Rust and 104 TypeScript skills. Exactly two skill trees changed:
+   `onioncry` in the TypeScript and composed snapshots, both to
+   `be502b02544be90059c126e9b07bfeb6a4af115aada86455845b1407a5eab8b3`.
+   After accounting for those changes, refs and generated snapshot digests,
+   every snapshot equals its original JSON value.
+2. The sanctioned regeneration and the zero-change second refresh above
+   provide current derived-file and manifest evidence. A JSON comparison
+   confirmed the manifest changed only `catalogDigest`.
+3. Before replacing the old pins, a focused run of the three revision tests
+   exited `1`, with each failing on the expected old-versus-new revision
+   mismatch. After the edits, this focused command exited `0`, including
+   both tree subtests, snapshot agreement and the installed-skill comparison:
+
+   ```sh
+   GOPROXY=off GOSUMDB=off go test -count=1 -v -run '^(TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree|TestEveryUpstreamSetupFollowsTheAiMemoryRevision|TestThePythonSetupIsThePublishedUpstreamPreset|TestEveryUpstreamSetupFollowsThePythonPresetRevision|TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot)$' ./internal/baseline
+   ```
+
+   A read-only scan found no `65d5f365` in any Baseline test. Mechanical
+   comparison confirmed the two existing test files contain exactly the
+   removals and constant substitutions declared by API Contract 3.
+
+Scope postflight accounted for all 17 changed paths, including this Task
+file and the new test: all are declared by this Task. No production Go,
+installed skill, lock, module, profile, template, guide or other Task changed.
+`git diff --check` exited `0`. No snapshot or derived value was hand-edited.
+The executor's symlinked writable-root limitation required execution
+overrides; no repository configuration was changed to address it.
+
+Declared Verification and repository Verification were not run; the Daemon
+owns those checks and Task settlement. Task status remains unchanged by the
+Agent. No commit, push or pull request was made. No follow-up was identified
+within this slice.
