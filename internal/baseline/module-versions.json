@@ -87,6 +87,10 @@
       {
         "version": 23,
         "digest": "sha256:019a910757d36a9930e15c64a40ecf62c0743453048b9fe42f5f202f5db25501"
+      },
+      {
+        "version": 24,
+        "digest": "sha256:aa69237fab469c23651a268e474c8a18841c852d6dcc323c4bd1e45ba5328c4c"
       }
     ],
     "external-triage": [
