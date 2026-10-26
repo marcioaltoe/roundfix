@@ -195,8 +195,36 @@ type Worktree struct {
 	Location         string
 	Copy             []string
 	Caches           []string
+	SharedCaches     []SharedCache
 	Bootstrap        string
 	BootstrapTimeout time.Duration
+}
+
+// SharedCache declares a shared build cache that GC may trim.
+type SharedCache struct {
+	Path, Kind string
+	MaxSizeMB  int64
+	Idle       time.Duration
+}
+
+// SharedCacheMinimumIdle protects the go command's hourly usage refresh.
+const SharedCacheMinimumIdle = 2 * time.Hour
+
+type sharedCacheOverlay struct {
+	Path      string        `yaml:"path"`
+	Kind      string        `yaml:"kind"`
+	MaxSizeMB int64         `yaml:"max_size_mb"`
+	Idle      durationValue `yaml:"idle"`
+}
+
+func (entry *sharedCacheOverlay) UnmarshalYAML(node *yaml.Node) error {
+	type rawEntry sharedCacheOverlay
+	var raw rawEntry
+	if err := node.Decode(&raw); err != nil {
+		return fmt.Errorf("worktree.shared_caches: %w", err)
+	}
+	*entry = sharedCacheOverlay(raw)
+	return nil
 }
 
 type Verification struct {
@@ -463,12 +491,13 @@ func (overlay *notifyOverlay) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type worktreeOverlay struct {
-	Concurrency      *int           `yaml:"concurrency"`
-	Location         *string        `yaml:"location"`
-	Copy             *[]string      `yaml:"copy"`
-	Caches           *[]string      `yaml:"caches"`
-	Bootstrap        *string        `yaml:"bootstrap"`
-	BootstrapTimeout *durationValue `yaml:"bootstrap_timeout"`
+	Concurrency      *int                  `yaml:"concurrency"`
+	Location         *string               `yaml:"location"`
+	Copy             *[]string             `yaml:"copy"`
+	Caches           *[]string             `yaml:"caches"`
+	SharedCaches     *[]sharedCacheOverlay `yaml:"shared_caches"`
+	Bootstrap        *string               `yaml:"bootstrap"`
+	BootstrapTimeout *durationValue        `yaml:"bootstrap_timeout"`
 }
 
 type runsOverlay struct {
@@ -671,7 +700,7 @@ func (overlay *worktreeOverlay) UnmarshalYAML(node *yaml.Node) error {
 		for index := 0; index < len(node.Content); index += 2 {
 			key := node.Content[index].Value
 			switch key {
-			case "concurrency", "location", "copy", "caches", "bootstrap", "bootstrap_timeout":
+			case "concurrency", "location", "copy", "caches", "shared_caches", "bootstrap", "bootstrap_timeout":
 			default:
 				return fmt.Errorf("worktree.%s is not a supported config key", key)
 			}
@@ -1183,6 +1212,20 @@ func Validate(config Config) error {
 	}
 	if config.Worktree.BootstrapTimeout <= 0 {
 		return errors.New("worktree.bootstrap_timeout must be greater than 0")
+	}
+	for _, entry := range config.Worktree.SharedCaches {
+		if entry.Kind != "go-build" {
+			return fmt.Errorf("worktree.shared_caches kind %q must be go-build", entry.Kind)
+		}
+		if entry.MaxSizeMB <= 0 || entry.MaxSizeMB > math.MaxInt64/(1024*1024) {
+			return errors.New("worktree.shared_caches max_size_mb must be positive and fit in bytes")
+		}
+		if entry.Idle < SharedCacheMinimumIdle {
+			return fmt.Errorf("worktree.shared_caches idle must be at least %s", SharedCacheMinimumIdle)
+		}
+		if _, err := ResolveSharedCachePath(entry.Path, os.TempDir(), filepath.Join(os.TempDir(), "roundfix-home"), os.Getuid()); err != nil {
+			return err
+		}
 	}
 	for _, entry := range config.Worktree.Caches {
 		if err := validateWorktreeCachePath(entry); err != nil {
@@ -1948,6 +1991,12 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 				}
 			}
 		}
+		if overlay.Worktree.SharedCaches != nil {
+			config.Worktree.SharedCaches = nil
+			for _, entry := range *overlay.Worktree.SharedCaches {
+				config.Worktree.SharedCaches = append(config.Worktree.SharedCaches, SharedCache{Path: entry.Path, Kind: entry.Kind, MaxSizeMB: entry.MaxSizeMB, Idle: entry.Idle.value})
+			}
+		}
 		if overlay.Worktree.Bootstrap != nil {
 			config.Worktree.Bootstrap = *overlay.Worktree.Bootstrap
 		}
@@ -2141,4 +2190,21 @@ func validateWorktreeCachePath(entry string) error {
 		return fmt.Errorf("worktree.caches entry %q must be a clean repository-relative directory outside .git with no .. segment", entry)
 	}
 	return nil
+}
+
+// ResolveSharedCachePath expands the supported tokens without cleaning unsafe paths.
+func ResolveSharedCachePath(template, tmpdir, home string, uid int) (string, error) {
+	invalid := func() (string, error) {
+		return "", fmt.Errorf("worktree.shared_caches path %q must resolve to a clean absolute path without braces or .. segments", template)
+	}
+	for _, segment := range strings.FieldsFunc(template, func(r rune) bool { return r == '/' || r == '\\' }) {
+		if segment == ".." {
+			return invalid()
+		}
+	}
+	resolved := strings.NewReplacer("{tmpdir}", strings.TrimRight(tmpdir, string(filepath.Separator)), "{home}", strings.TrimRight(home, string(filepath.Separator)), "{uid}", fmt.Sprint(uid)).Replace(template)
+	if strings.ContainsAny(resolved, "{}") || !filepath.IsAbs(resolved) || filepath.Clean(resolved) != resolved {
+		return invalid()
+	}
+	return resolved, nil
 }

@@ -140,7 +140,8 @@ and a Delivery Queue item worktree at stage `merged`, are eligible regardless
 of retention age. Active Runs and items in any other stage keep their caches.
 GC skips worktrees outside `worktree.location`, declared paths that are
 symlinks, and paths that resolve outside their worktree. Source files, Git
-metadata, the user's checkout cache and the shared Go build cache stay intact.
+metadata and the user's checkout cache stay intact. A shared cache is reclaimed
+only as a declared Shared Build Cache.
 With `worktree.caches: []`, GC omits the Worktree Build Cache section. `gc compact` and
 `gc sanitize` retain their separate scopes.
 
@@ -172,6 +173,39 @@ The item's other artifacts, including `item-binary-build.log` and
 other removals proceed, and GC exits `1` with the report of successful removals.
 With no Item Binary directory, GC output stays byte-identical.
 
+## Shared Build Caches
+
+`worktree.shared_caches` declares shared caches in User Config or Project
+Config. The default is `[]`, which adds no GC output. Each entry specifies
+`path`, `kind: go-build`, a positive `max_size_mb` limit in MiB and `idle`.
+Paths support `{tmpdir}`, `{home}` and `{uid}` for the temporary directory,
+loaded home directory and user ID.
+
+After the Item Binary section, GC measures each declared cache. Above the
+limit, it trims idle entries oldest first until the remaining size is within
+the limit or no idle entries remain. `idle` must be at least `2h`: the go
+command refreshes a used entry's modification time at most hourly. GC rereads
+that time before removing each entry, preserving entries used since measurement.
+
+GC refuses a symlinked cache directory or one without the go command's cache
+README. It removes only regular files named by 64 lowercase hexadecimal
+digits followed by `-a` or `-d`, directly inside a two-digit lowercase
+hexadecimal shard directory. The README and other non-entry files remain.
+A refusal prints `Kept: <reason>` and exits successfully. Removal errors are
+diagnosed on stderr; GC reports successful removals and exits `1`.
+
+`roundfix gc --dry-run` reports the plan without applying it:
+
+```text
+  Shared Build Cache: <resolved path>
+    Size: <bytes> bytes of <limit> allowed
+    Entries reclaimable: <n> (<bytes> bytes)
+```
+
+The live report uses `Entries removed`, counting only entries actually
+removed. A refused cache prints `    Kept: <reason>` instead of the size and
+entry lines. `gc compact` and `gc sanitize` keep their separate scopes.
+
 ## Retention policy
 
 [ADR-0290](../../adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)
@@ -183,6 +217,7 @@ defines what Roundfix Home keeps and who reclaims it:
 | Run row and its records | the Run is not terminal, is queue-referenced, keeps its Run Worktree, or is younger than Run Retention | Run Retention (ADR-0255) |
 | Run Worktree and Run Branch | reconciliation does not prove them `safe` or `superseded` | `roundfix reconcile --apply` and the Delivery Queue's release after a merge, never by age (ADR-0053, ADR-0212, ADR-0289) |
 | Worktree Build Cache | its Run is not terminal or its item is not `merged` | the GC Command (ADR-0266) |
+| Shared Build Cache | its entries were used within `idle`, or the cache is within `max_size_mb` | the GC Command |
 | Item Binary | its Delivery Queue item exists and is not `merged` | the Delivery Queue's release after a merge, and the GC Command |
 | Pre-PR Review Records, dispositions and delivery logs | always | nothing |
 | Archive evidence | always | nothing: it lives in Git |
