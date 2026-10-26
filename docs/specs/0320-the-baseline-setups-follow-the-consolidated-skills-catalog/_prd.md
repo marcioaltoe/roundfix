@@ -132,9 +132,11 @@ its instructions are unchanged. Go, Rust and Python adopters see only the
 
 ## Success Metrics
 
-1. Success Metric: each of the five snapshots names
-   `8d71fade68c54693bedbd917371f0514311af157` for itself and for every
-   `github` skill, holds the same skill names in the same order as at the
+1. Success Metric: each of the four snapshots with a `github` source names
+   `8d71fade68c54693bedbd917371f0514311af157` as its `source.ref`, the
+   composed `go-cli-typescript-bun.json` keeps its `composed` source
+   (`setups: [go, typescript]`, no ref) byte-identical to the Delivery Base,
+   and all five name that commit as the `ref` of every `github` skill, hold the same skill names in the same order as at the
    Delivery Base, and differs from the Delivery Base in exactly one skill
    tree, `onioncry`, in `typescript.json` and `go-cli-typescript-bun.json`.
 2. Success Metric: `go test ./internal/baseline ./skills` passes,
