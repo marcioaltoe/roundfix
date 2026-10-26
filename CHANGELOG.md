@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.124.0] - 2026-10-26
+
+### The Spec Check probe leaves completed Tasks alone
+
+- **`roundfix spec check --run-verification` no longer re-runs a completed Task's Verification.** The probe selects Tasks with the same rule the Daemon schedules by: every status except `completed`, so a pending, in-progress or failed Task and a reopened QA gate are still probed. Resuming a Spec whose first Task is done no longer reports a red `unknown` or `vacuous` for delivered work (reported by vortex on Spec 0162).
+- Each completed Task's command is named as not probed, with reason `completed`, in a text line and in a new optional `verification.notProbed` JSON list, and counted on the verdict line; it never changes the exit code. The schema stays `roundfix-speccheck/v1`, and output for a Spec with no completed Task is unchanged.
+- The `spec` guide, the Roundfix skill reference (skill version 0.1.142), the `qa-gate` skill and ADR-0148 describe it.
+
+### The Baseline setups follow the consolidated skills catalog
+
+- **Every upstream setup now follows marcioaltoe/skills `8d71fade`.** The five bundled setup snapshots move from `65d5f36` with the same skills in the same order. The only content change is `onioncry` (its `metadata.source` now names marcioaltoe/onioncry), in the `standard-typescript-monorepo` and `go-cli-typescript-monorepo` setups. `skill-architect` and `writing-for-agents`, removed upstream, were in no preset.
+- An adopter's next `baseline update` records the new catalog digest. Adopters of the two TypeScript setups see `onioncry` reported as differing from the snapshot until they run `roundfix baseline skills restore --profile <id> --skill onioncry`.
+
 ## [0.123.0] - 2026-10-26
 
 ### A Python Baseline Profile
