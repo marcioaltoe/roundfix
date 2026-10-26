@@ -1,0 +1,6 @@
+Commit range: 034d54c1bc312a43710c533d53f065a9660b424c..253dddeb7c8a81f5ee2a1c8b830a7c5452aafd96
+Each Task diff-tree: all changes within Context declarations plus assigned Task file. No Recorded paths were needed.
+Protected-set difference: 0 paths.
+Core structural comparison: only version, root.python and guide.python differ
+Authorization present at delivery base and an ancestor of every Task commit; mechanically audited task_01/task_02 retained.
+Issues: none

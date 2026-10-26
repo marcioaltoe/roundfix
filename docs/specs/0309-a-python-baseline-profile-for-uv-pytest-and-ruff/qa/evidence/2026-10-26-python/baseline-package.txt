@@ -1,0 +1,12 @@
+$ go test -count=1 ./internal/baseline
+exit: 1
+stdout:
+--- FAIL: TestOutputsForCommand (0.00s)
+    --- FAIL: TestOutputsForCommand/make_baseline-digests_matches_the_2026-08-06_enumeration (0.03s)
+        derived_ownership_test.go:62: read historical proof-cost grant 81a6afb48f4a3683d0e5fad52f3919cf1bdfbbf4:docs/workflow/authorizations/2026-08-06-proof-cost.md: exit status 128
+FAIL
+suiteguard: guard cost: measured 2776 paths; fingerprint took 133.306292ms before and 121.667ms after
+FAIL	roundfix/internal/baseline	66.221s
+FAIL
+
+stderr:

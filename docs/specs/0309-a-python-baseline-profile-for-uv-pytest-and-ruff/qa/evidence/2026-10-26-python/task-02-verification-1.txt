@@ -1,0 +1,6 @@
+$ /bin/bash -c for name in TestThePythonModuleDispatchesItsSkills TestThePythonProfileRendersThePythonGuide; do go test -list "^${name}\$" ./internal/baseline | grep -qx "$name" || { printf 'missing test %s\n' "$name" >&2; exit 1; }; done; go test -count=1 ./internal/baseline
+exit: 0
+stdout:
+ok  	roundfix/internal/baseline	71.889s
+
+stderr:

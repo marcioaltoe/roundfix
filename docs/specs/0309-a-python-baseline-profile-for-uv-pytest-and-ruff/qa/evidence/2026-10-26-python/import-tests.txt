@@ -1,0 +1,52 @@
+$ go test -v -count=1 -run ^(TestThePythonSetupIsThePublishedUpstreamPreset|TestEveryUpstreamSetupFollowsThePythonPresetRevision|TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill|TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract|TestRestoreSkillsAcceptsARepositoryProfile|TestSetupSnapshotDifferencesCompareARepositoryProfile)$ ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestAssetsSyncCompatibilityMatchesMaintainedPythonContract
+=== PAUSE TestAssetsSyncCompatibilityMatchesMaintainedPythonContract
+=== RUN   TestThePythonSetupIsThePublishedUpstreamPreset
+=== PAUSE TestThePythonSetupIsThePublishedUpstreamPreset
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== RUN   TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== PAUSE TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== RUN   TestRestoreSkillsAcceptsARepositoryProfile
+=== PAUSE TestRestoreSkillsAcceptsARepositoryProfile
+=== RUN   TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill
+=== PAUSE TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill
+=== RUN   TestSetupSnapshotDifferencesCompareARepositoryProfile
+=== PAUSE TestSetupSnapshotDifferencesCompareARepositoryProfile
+=== CONT  TestAssetsSyncCompatibilityMatchesMaintainedPythonContract
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== CONT  TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== CONT  TestSetupSnapshotDifferencesCompareARepositoryProfile
+=== CONT  TestRestoreSkillsAcceptsARepositoryProfile
+=== CONT  TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill
+=== CONT  TestThePythonSetupIsThePublishedUpstreamPreset
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+--- PASS: TestThePythonSetupIsThePublishedUpstreamPreset (0.02s)
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+--- PASS: TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill (0.02s)
+--- PASS: TestEveryUpstreamSetupFollowsThePythonPresetRevision (0.02s)
+    --- PASS: TestEveryUpstreamSetupFollowsThePythonPresetRevision/go (0.00s)
+    --- PASS: TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust (0.00s)
+    --- PASS: TestEveryUpstreamSetupFollowsThePythonPresetRevision/python (0.00s)
+    --- PASS: TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript (0.00s)
+--- PASS: TestSetupSnapshotDifferencesCompareARepositoryProfile (0.02s)
+--- PASS: TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot (0.03s)
+--- PASS: TestRestoreSkillsAcceptsARepositoryProfile (0.04s)
+--- PASS: TestAssetsSyncCompatibilityMatchesMaintainedPythonContract (2.39s)
+PASS
+suiteguard: guard cost: measured 2776 paths; fingerprint took 138.567084ms before and 118.651542ms after
+ok  	roundfix/internal/baseline	3.017s
+
+stderr:

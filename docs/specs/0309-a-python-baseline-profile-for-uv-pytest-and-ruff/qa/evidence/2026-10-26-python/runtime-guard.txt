@@ -1,0 +1,11 @@
+$ go test -v -count=1 -run ^TestNoPythonBaselineRuntime$ ./skills
+exit: 0
+stdout:
+=== RUN   TestNoPythonBaselineRuntime
+=== PAUSE TestNoPythonBaselineRuntime
+=== CONT  TestNoPythonBaselineRuntime
+--- PASS: TestNoPythonBaselineRuntime (0.00s)
+PASS
+ok  	roundfix/skills	0.166s
+
+stderr:

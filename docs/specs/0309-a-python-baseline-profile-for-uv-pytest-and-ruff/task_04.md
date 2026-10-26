@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

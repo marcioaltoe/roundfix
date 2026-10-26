@@ -1,0 +1,14 @@
+$ go test -v -count=1 -run ^TestThePythonModuleDispatchesItsSkills$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestThePythonModuleDispatchesItsSkills
+=== PAUSE TestThePythonModuleDispatchesItsSkills
+=== CONT  TestThePythonModuleDispatchesItsSkills
+    python_profile_test.go:56: ty conditional = true, want false: Only when the repository has chosen ty: Type checking Python code with ty, fixing a ty diagnostic, or changing the ty configuration.
+--- FAIL: TestThePythonModuleDispatchesItsSkills (0.02s)
+FAIL
+suiteguard: guard cost: measured 2776 paths; fingerprint took 134.689667ms before and 124.749125ms after
+FAIL	roundfix/internal/baseline	0.560s
+FAIL
+
+stderr:

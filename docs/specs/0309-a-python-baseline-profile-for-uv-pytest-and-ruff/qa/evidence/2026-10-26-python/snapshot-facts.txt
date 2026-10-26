@@ -1,0 +1,93 @@
+Python source: {"type":"github","repository":"marcioaltoe/skills","ref":"65d5f365cace27c4b468db1723213723b10c870b","path":"setups/python.txt"}
+Ordered names (52):
+1. find-skills
+2. knowledge-workspace
+3. setup-context-driven
+4. brainstorming
+5. business-analyst
+6. context7-cli
+7. exa-web-search
+8. grill-with-docs
+9. grilling
+10. write-idea
+11. write-prd
+12. agentic-cli-design
+13. domain-modeling
+14. write-techspec
+15. write-tasks
+16. coding-guidelines
+17. implement-spec
+18. implement-task
+19. no-workarounds
+20. testing-boss
+21. typesafe-ai
+22. evidence-gate
+23. qa-gate
+24. systematic-debugging
+25. roundfix
+26. archive-spec
+27. conventional-commits
+28. crafting-effective-readmes
+29. github-pr-workflow
+30. ai-memory-durable-pages
+31. ai-memory-handoff
+32. ai-memory-learning-maintenance
+33. ai-memory-messaging
+34. ai-memory-retrieval
+35. ai-memory-routing-install
+36. tech-writer
+37. uv
+38. ruff
+39. ty
+40. pytest
+41. typer
+42. fastapi
+43. python-services
+44. python-file-pipelines
+45. backend-docs
+46. external-api-adapters
+47. integration-contract-testing
+48. security-best-practices
+49. pdf
+50. pdftk-server
+51. docker
+52. developing-with-streamlit
+
+Roundfix-owned (13):
+setup-context-driven 0.0.2
+brainstorming 0.0.2
+business-analyst 0.0.2
+write-idea 0.0.2
+write-prd 0.0.2
+write-techspec 0.0.2
+write-tasks 0.0.2
+implement-spec 0.0.2
+implement-task 0.0.2
+evidence-gate 0.0.2
+qa-gate 0.0.2
+roundfix 0.0.2
+archive-spec 0.0.2
+
+Bundles:
+[
+  {
+    "id": "bundle.delivery",
+    "skills": [
+      "conventional-commits",
+      "github-pr-workflow"
+    ]
+  },
+  {
+    "id": "bundle.qa",
+    "skills": [
+      "qa-gate",
+      "evidence-gate"
+    ]
+  }
+]
+go source.ref: 65d5f365cace27c4b468db1723213723b10c870b
+rust source.ref: 65d5f365cace27c4b468db1723213723b10c870b
+typescript source.ref: 65d5f365cace27c4b468db1723213723b10c870b
+python source.ref: 65d5f365cace27c4b468db1723213723b10c870b
+
+Python first 36 names equal the ordered common Go/Rust entries: true; common count: 36

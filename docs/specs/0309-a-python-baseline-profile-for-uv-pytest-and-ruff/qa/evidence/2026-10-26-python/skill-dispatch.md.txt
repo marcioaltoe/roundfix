@@ -1,0 +1,108 @@
+<!-- setup-context-driven:begin id=guide.skill-dispatch version=0.0.1 -->
+
+# Skill dispatch
+
+This setup-owned guide is generated from the active modules. Activate every
+matching skill before governed work; repository-authored dispatch extensions
+may add stricter triggers.
+
+- **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule. Read a skill's bundled files from the directory where the skill is installed, never from a fixed absolute path the skill names.
+
+- **mandatory**: When a matching skill can be started only by a person, because its metadata turns off model invocation, ask the person to run it instead of activating it or carrying out its workflow yourself.
+
+- **prohibited**: Do not edit a skill the repository installs from an upstream source; its upstream owns its text, and the next sync replaces the folder. When such a skill diverges from what the repository needs, choose in this order. First, state the correction as a rule that governs over the skill's default, in the Baseline or as a Repository-Specific Normative Rule; this is the answer to a convention difference such as the package manager, the test runner, or a library choice. Second, add a repository-authored skill that supplies or overrides only what is missing and leaves the upstream skill installed. Third, replace the upstream skill with a repository-authored one only when it is useless or almost useless to the repository. Send an objective upstream defect to the upstream as a pull request; a defect never justifies the third choice.
+
+- **mandatory**: Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles.
+
+- **mandatory**: Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request.
+
+Exact activation bundles:
+
+- `trigger.delivery`: Preparing commits or pull request delivery.
+  - `bundle.delivery`: `conventional-commits`, `github-pr-workflow`
+- `trigger.qa`: Running final Spec QA.
+  - `bundle.qa`: `qa-gate`, `evidence-gate`
+
+Individual skill triggers:
+
+- `ai-memory-handoff`:
+  - `trigger.core.ai-memory-handoff`: Recording resumable session state for another Agent or maintainer, or resuming from one, when the session exposes the ai-memory MCP tools.
+- `ai-memory-messaging`:
+  - `trigger.core.ai-memory-messaging`: Sending a finding or request to another project, or reading and consuming this project's messages, when the session exposes the ai-memory MCP tools.
+- `archive-spec`:
+  - `trigger.context-workflow.archive-spec`: Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed.
+- `brainstorming`:
+  - `trigger.context-workflow.brainstorming`: Starting creative feature or behavior design before implementation.
+- `business-analyst`:
+  - `trigger.context-workflow.business-analyst`: Evaluating product viability, options, KPIs, or business trade-offs.
+- `coding-guidelines`:
+  - `trigger.core.coding-guidelines`: Writing, modifying, refactoring, or reviewing implementation code.
+- `context7-cli`:
+  - `trigger.core.context7-cli`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
+- `conventional-commits`:
+  - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
+- `crafting-effective-readmes`:
+  - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
+- `developing-with-streamlit`:
+  - `trigger.python.developing-with-streamlit`: Only when the repository ships a Streamlit internal tool or prototype the maintainer asked for: creating or changing that Streamlit app.
+- `domain-modeling`:
+  - `trigger.context-workflow.domain-modeling`: Defining or changing domain vocabulary, ownership, or bounded-context relationships.
+- `evidence-gate`:
+  - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
+- `exa-web-search`:
+  - `trigger.core.exa-web-search`: Searching the web broadly when local sources and current documentation do not answer the question.
+- `fastapi`:
+  - `trigger.python.fastapi`: Only when the repository's HTTP service already uses FastAPI: adding or changing its routes, dependencies, Pydantic models, or their tests.
+- `github-pr-workflow`:
+  - `trigger.core.github-pr-workflow`: Preparing, opening, updating, or handing off a pull request.
+- `grill-with-docs`:
+  - `trigger.context-workflow.grill-with-docs`: Stress-testing a plan or decision against repository documents.
+- `grilling`:
+  - `trigger.context-workflow.grilling`: Stress-testing an idea or plan through direct questions.
+- `implement-spec`:
+  - `trigger.autonomous-work.implement-spec`: Delegating a complete autonomous Spec Task Graph.
+  - `trigger.context-workflow.implement-spec`: Executing every pending Task in a Spec Task Graph.
+- `implement-task`:
+  - `trigger.autonomous-work.implement-task`: Delegating one autonomous Task to an ACP Runtime.
+  - `trigger.context-workflow.implement-task`: Executing exactly one assigned Spec Task.
+- `knowledge-workspace`:
+  - `trigger.context-workflow.knowledge-workspace`: Consulting the configured knowledge workspace for relevant prior context.
+  - `trigger.context-workflow.knowledge-workspace-secondbrain-authoring`: Consulting the Secondbrain before authoring an Idea, PRD, or TechSpec.
+- `no-workarounds`:
+  - `trigger.core.no-workarounds`: Fixing defects, regressions, or verification failures at their root cause.
+- `pytest`:
+  - `trigger.python.pytest`: Writing, selecting, or reviewing Python tests, fixtures, parametrization, or pytest configuration.
+- `python-file-pipelines`:
+  - `trigger.python.python-file-pipelines`: Only when the repository ingests or reconciles files or generates reports in a Python pipeline, such as CSV, XML, ZIP, SQLite, XLSX, or DOCX processing.
+- `python-services`:
+  - `trigger.python.python-services`: Structuring a Python command-line tool, HTTP backend, or worker around shared application services: its entry points, configuration, retries, cancellation, or durable work.
+- `qa-gate`:
+  - `trigger.context-workflow.qa-gate`: Running final Spec QA after implementation Tasks complete.
+- `ruff`:
+  - `trigger.python.ruff`: Formatting or linting Python code, fixing a ruff finding, or changing the ruff configuration.
+- `setup-context-driven`:
+  - `trigger.context-workflow.setup-context-driven`: Auditing or applying the Context-Driven Baseline for first adoption, or refreshing an adopted repository with `roundfix baseline update`.
+- `systematic-debugging`:
+  - `trigger.core.systematic-debugging`: Diagnosing a bug, failing check, or unexpected behavior before proposing a fix.
+- `tech-writer`:
+  - `trigger.core.tech-writer`: Writing or revising technical documentation, Specs, findings, or delivery notes.
+- `testing-boss`:
+  - `trigger.core.testing-boss`: Writing, changing, or reviewing tests and fixtures.
+- `ty`:
+  - `trigger.python.ty`: Type checking Python code with ty, fixing a ty diagnostic, or changing the ty configuration.
+- `typer`:
+  - `trigger.python.typer`: Only when the repository's command-line interface already uses Typer: adding or changing its commands, options, or their tests.
+- `typesafe-ai`:
+  - `trigger.core.typesafe-ai`: Adding programmable semantic judgment (routing, ranking, extraction, verification) or touching TypeSafe/Jev.
+- `uv`:
+  - `trigger.python.uv`: Changing the Python project's dependencies, lockfile, Python version or environment, or running a project tool through uv.
+- `write-idea`:
+  - `trigger.context-workflow.write-idea`: Expanding a product-level idea into a researched opportunity artifact.
+- `write-prd`:
+  - `trigger.context-workflow.write-prd`: Defining product requirements and user outcomes.
+- `write-tasks`:
+  - `trigger.context-workflow.write-tasks`: Decomposing an approved Spec into a dependency-ordered Task Graph.
+- `write-techspec`:
+  - `trigger.context-workflow.write-techspec`: Settling implementation architecture and technical contracts.
+
+<!-- setup-context-driven:end id=guide.skill-dispatch -->

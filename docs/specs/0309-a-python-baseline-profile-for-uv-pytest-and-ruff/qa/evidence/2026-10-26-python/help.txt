@@ -1,0 +1,248 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix --help
+exit: 0
+stdout:
+Roundfix
+
+Usage:
+  roundfix --help
+  roundfix --version
+  roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+  roundfix resolve --pr <number> [--spec <slug>]
+  roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
+  roundfix review [--base <ref>]
+  roundfix review dispose <finding-id> --dismiss --evidence <text>
+  roundfix review dispose <finding-id> --fixed-by <commit>
+  roundfix implement --spec <slug>
+  roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
+  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+  roundfix window <set|show|clear>
+  roundfix settle --spec <slug> --task <task_id>
+  roundfix reopen --spec <slug>
+  roundfix supersede --spec <slug> --by <slug> --reason <text>
+  roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
+  roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
+  roundfix qa-report accept <path>
+  roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]
+  roundfix spec audit <slug> [--format <text|json>]
+  roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+  roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
+  roundfix profiles show [--category <category>] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
+  roundfix profiles validate [--category <category>] [--json]
+  roundfix archive <slug>
+  roundfix cancel <slug> --reason <text>
+  roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]
+  roundfix init [--scope <project|user>]
+  roundfix setup [--yes] [--no-input]
+  roundfix migrate [--check]
+  roundfix doctor
+  roundfix gc [--dry-run]
+  roundfix storage report
+  roundfix upgrade [--check]
+  roundfix runs
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
+  roundfix runs show <run-id> [--json]
+  roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
+  roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
+  roundfix attach [<run-id>] [--no-input]
+  roundfix events <run-id> [--follow] [--filter <categories>]
+  roundfix skills check
+  roundfix skills install [--target <project|codex|claude|opencode|all>]
+
+Commands:
+  init       Create User Config or Project Config
+  fetch      Download review issues for an Open Pull Request
+  resolve    Resolve downloaded Unresolved Review Issues
+  watch      Fetch and resolve in a watched loop
+  review     Run the configured pre-PR reviewer over the current candidate
+  implement  Execute a Spec's Task Graph as one Run
+  deliver    Advance an ordered queue of Specs from Run to merge
+  follow-up  List pending work in priority order, or show status
+  window     Set, show, or clear this repository's Run Window
+  settle     Verify and commit one failed, or completed but uncommitted, Task
+  reopen     Return a stale completed QA gate to pending
+  supersede  Record that another Spec delivered a Spec's content
+  reconcile  Inspect or release proven terminal spec Run worktrees
+  release    Plan the next release version without mutating repository or release state
+  qa-report  Apply the declared-acceptance policy to a QA Report
+  spec       Check Spec artifact consistency; audit Spec delivery
+  baseline   Plan, apply, and validate a Context-Driven Baseline
+  profiles   Show Agent Selection Profiles and advisory recommendations
+  archive    Archive a completed Spec
+  cancel     Cancel an active Spec with an Archive Record
+  history    Plan or apply a batch of history sanitization
+  stop       Request or force-stop an Active Run
+  setup      Verify and prepare this machine for Roundfix Runs
+  migrate    Upgrade the Run Database schema
+  doctor     Diagnose this machine's readiness for Roundfix Runs
+  gc         Prune old terminal Run journals and run artifacts
+  storage    Report measured Run Database and Artifact Root storage
+  upgrade    Upgrade the Roundfix binary from GitHub Releases
+  runs       List Runs from the Run Database
+  attach     Replay a Run's event timeline from the Run Database
+  events     Replay or follow a Run's Supervisor event stream as JSONL
+  skills     List, check, or install the bundled Roundfix skills
+
+Options:
+  -h, --help      Show help
+  -v, --version   Show version
+
+stderr:
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix spec check --help
+exit: 0
+stdout:
+Usage:
+  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict] [--run-verification]
+
+Checks the declarations and citations in the requested Specs without changing
+their artifacts. With no slug, checks every active Spec in the Spec Root.
+
+Options:
+  --stage   Limit checks to the prd, techspec, or tasks authoring stage
+  --format  Output format: text or json (default: text)
+  --strict  Promote gap findings to errors; a full sweep reports gate repair inputs separately
+  --run-verification
+            Execute authored Verification commands in a disposable checkout at HEAD
+
+Exit codes:
+  0  no errors (clean or gaps only)
+  1  at least one error, vacuous command, or unknown/malformed command verdict
+  2  usage error or unreadable Spec Root
+
+stderr:
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix baseline --help
+exit: 0
+stdout:
+Usage:
+  roundfix baseline [--repo <path>] [--format <text|json>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+
+The root command guides one interactive adoption or update from repository
+preflight through Baseline verification. Numbered linear prompts collect one
+Baseline Profile and repository decisions, then present one consolidated
+Change Plan with file changes first. Repository mutation occurs only after
+explicit confirmation of the displayed Plan Digest.
+
+Commands:
+  update   Refresh an adopted repository from its stored Setup Manifest without prompting.
+  plan     Automation: emit a portable, digest-bound Baseline Plan without prompting or writing.
+  apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
+  capabilities  Re-check Profile capability evidence without decisions, prompts, or writes.
+  profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
+  skills   Restore external Repository Skill Set members or reconcile obsolete lock entries.
+  assets   Check or refresh Go-owned canonical Baseline setup snapshots.
+
+The interactive root command refuses redirected or absent terminal input.
+Automation must use baseline plan followed by baseline apply with the exact
+approved Plan Digest.
+
+Repository-owned profiles live only under
+.roundfix/baseline/profiles/<id>.json and may reference only entries in the
+embedded Baseline catalog.
+
+stderr:
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix baseline profile show --help
+exit: 0
+stdout:
+Usage:
+  roundfix baseline profile show <id> [--format <text|json>]
+
+Resolves one built-in or repository-owned Baseline Profile against the
+embedded catalog and prints its normalized composition and digest.
+
+Options:
+  --format  Output format: text or json (default text)
+
+stderr:
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix baseline profile validate --help
+exit: 0
+stdout:
+Usage:
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+
+Validates one built-in or repository-owned Baseline Profile by ID, one direct
+file under .roundfix/baseline/profiles, or every repository-owned profile when
+no target is supplied. The command reads no user-scoped profile catalog.
+
+Options:
+  --format  Output format: text or json (default text)
+
+stderr:
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix baseline profile init --help
+exit: 0
+stdout:
+Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+
+Creates .roundfix/baseline/profiles/<id>.json exclusively. The declaration
+copies allowed embedded entry IDs from the selected built-in source; it does
+not compose profiles, copy assets, or accept executable or remote content.
+
+Options:
+  --id    Required lowercase repository-owned Baseline Profile ID
+  --from  Embedded built-in Baseline Profile (default go-cli-tui)
+
+stderr:
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix baseline skills restore --help
+exit: 0
+stdout:
+Usage:
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+
+Previews or applies exact external Repository Skill Set restoration for one
+built-in Baseline Profile. Sources are grouped by immutable provider,
+repository, and commit provenance. Source bytes, portable tree digests,
+skills-lock.json adapter compatibility, targets, and the complete preimage are
+validated before mutation.
+
+A non-empty preview exits 3 and returns its exact Plan Digest. Apply requires
+that digest through --confirm-plan and uses the recoverable Baseline
+transaction to update selected skill files and skills-lock.json atomically.
+An empty restoration is an idempotent exit 0.
+
+Exit codes:
+  0  selected skills already match, or the confirmed restoration was applied
+  1  source acquisition, proof, apply, output, rollback, or recovery failure
+  2  invalid arguments, profile, skill, lock schema, source, or unsafe target
+  3  confirmation is required or does not match the current Change Plan, or the
+     lock changed during planning (finding lock.changed-during-plan)
+  130 operation canceled
+
+Options:
+  --profile       Required built-in Baseline Profile
+  --skill         External profile skill to restore; repeat to select multiple,
+                  or omit to restore every drifted external profile skill
+  --source-dir    Declared offline Git checkout or bare object store containing
+                  every selected skill's exact immutable commit
+  --confirm-plan  Exact lowercase Plan Digest returned by the current preview
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
+
+stderr:

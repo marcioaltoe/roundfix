@@ -1,0 +1,14 @@
+$ go test -v -count=1 -run ^TestThePythonSetupIsThePublishedUpstreamPreset$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestThePythonSetupIsThePublishedUpstreamPreset
+=== PAUSE TestThePythonSetupIsThePublishedUpstreamPreset
+=== CONT  TestThePythonSetupIsThePublishedUpstreamPreset
+    python_setup_test.go:22: load embedded Baseline catalog: validate Baseline catalog: catalog.setup.digest.mismatch: python: got d69291efd384d2a14ac2cc257fe9da3c8feea16c780d291785412be404b37a35, want 1f7088ad89286812727ff26d979a851febd4b347e27309805830bd8d81744831
+--- FAIL: TestThePythonSetupIsThePublishedUpstreamPreset (0.01s)
+FAIL
+suiteguard: guard cost: measured 2776 paths; fingerprint took 147.682625ms before and 121.607708ms after
+FAIL	roundfix/internal/baseline	0.595s
+FAIL
+
+stderr:

@@ -1,0 +1,7 @@
+$ git fetch --no-tags <audited Run checkout> <audited head>
+exit: 0
+stdout:
+
+stderr:
+From /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7
+ * branch              253dddeb7c8a81f5ee2a1c8b830a7c5452aafd96 -> FETCH_HEAD

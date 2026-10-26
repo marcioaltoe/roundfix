@@ -1,0 +1,6 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix --version
+exit: 0
+stdout:
+roundfix 0.122.0 (253dddeb-dirty, built 2026-10-26 07:32:53 -0300)
+
+stderr:

@@ -1,0 +1,7 @@
+$ /bin/bash -c test -f internal/baseline/assets/profiles/python.json || { echo 'missing python profile' >&2; exit 1; }; if grep -qE -- 'cli-surface|rule[.]cli[.]' internal/baseline/assets/profiles/python.json; then echo 'python profile selects the CLI surface' >&2; exit 1; fi; grep -qF -- '"python",' internal/cli/baseline_release_gate_test.go || { echo 'release journey lacks python' >&2; exit 1; }; go test -count=1 -run '^(TestGuidanceCompositionJourney|TestBaselineHumanProfileAdaptation)$' ./internal/cli && go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills
+exit: 0
+stdout:
+ok  	roundfix/internal/cli	4.931s
+ok  	roundfix/skills	0.135s
+
+stderr:

@@ -1,0 +1,14 @@
+$ go test -v -count=1 -run ^TestThePythonSetupIsThePublishedUpstreamPreset$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestThePythonSetupIsThePublishedUpstreamPreset
+=== PAUSE TestThePythonSetupIsThePublishedUpstreamPreset
+=== CONT  TestThePythonSetupIsThePublishedUpstreamPreset
+    python_setup_test.go:98: Python setup skills = [find-skills knowledge-workspace setup-context-driven brainstorming business-analyst context7-cli exa-web-search grill-with-docs grilling write-idea write-prd agentic-cli-design domain-modeling write-techspec write-tasks coding-guidelines implement-spec implement-task no-workarounds testing-boss typesafe-ai evidence-gate qa-gate systematic-debugging roundfix archive-spec conventional-commits crafting-effective-readmes github-pr-workflow ai-memory-durable-pages ai-memory-handoff ai-memory-learning-maintenance ai-memory-messaging ai-memory-retrieval ai-memory-routing-install tech-writer uv ruff ty pytest typer fastapi python-services python-file-pipelines backend-docs external-api-adapters integration-contract-testing security-best-practices pdf pdftk-server docker developing-with-streamlit], want ordered preset [find-skills knowledge-workspace setup-context-driven brainstorming business-analyst context7-cli exa-web-search grill-with-docs grilling write-idea write-prd agentic-cli-design domain-modeling write-techspec write-tasks coding-guidelines implement-spec implement-task no-workarounds testing-boss typesafe-ai evidence-gate qa-gate systematic-debugging roundfix archive-spec conventional-commits crafting-effective-readmes github-pr-workflow ai-memory-durable-pages handoff ai-memory-learning-maintenance ai-memory-messaging ai-memory-retrieval ai-memory-routing-install tech-writer uv ruff ty pytest typer fastapi python-services python-file-pipelines backend-docs external-api-adapters integration-contract-testing security-best-practices pdf pdftk-server docker developing-with-streamlit]
+--- FAIL: TestThePythonSetupIsThePublishedUpstreamPreset (0.02s)
+FAIL
+suiteguard: guard cost: measured 2776 paths; fingerprint took 149.397583ms before and 123.7245ms after
+FAIL	roundfix/internal/baseline	0.605s
+FAIL
+
+stderr:

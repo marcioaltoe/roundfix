@@ -1,0 +1,38 @@
+<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
+
+### Instruction hierarchy
+
+Apply active guidance in this order. A narrower guide may add constraints for its concern but cannot weaken a universal Normative Clause or confirmed project decision.
+
+1. **Universal instructions**
+2. **Context and documentation**
+3. **Spec workflow**
+4. **Stack guidance**
+
+### Universal instructions
+
+- Follow the mandatory setup-owned baseline in `docs/agents/agent-instructions.md`.
+- Activate skills through `docs/agents/skill-dispatch.md` before governed work.
+
+<!-- setup-context-driven:end id=root.core -->
+<!-- setup-context-driven:begin id=root.context-workflow version=0.0.1 -->
+
+### CONTEXT-driven workflow
+
+- Domain rules are mandatory: `docs/agents/domain.md`. Read `docs/agents/docs-layout.md`, whose rules then apply, before creating, changing, moving, or retiring `CONTEXT.md` or a document under `docs/`, and before a test or build step reads one.
+
+<!-- setup-context-driven:end id=root.context-workflow -->
+<!-- setup-context-driven:begin id=root.spec-workflow version=0.0.1 -->
+
+### Local Spec workflow
+
+- Route and execute local Specs through `docs/agents/spec-routing.md` and `docs/agents/issue-tracker.md`.
+
+<!-- setup-context-driven:end id=root.spec-workflow -->
+<!-- setup-context-driven:begin id=root.python version=0.0.1 -->
+
+### Python
+
+- Python implementation rules are mandatory: `docs/agents/python.md`.
+
+<!-- setup-context-driven:end id=root.python -->

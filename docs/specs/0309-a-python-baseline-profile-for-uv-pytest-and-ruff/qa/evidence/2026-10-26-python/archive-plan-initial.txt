@@ -1,0 +1,16 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0309-a-python-baseline-profile-for-uv-pytest-and-ruff-b6dff995117c102c-09a3f396-4fb194c8/run_20261026T095905Z_3b6621466c3f10c7/bin/roundfix archive 0309-a-python-baseline-profile-for-uv-pytest-and-ruff --plan --offline
+exit: 0
+stdout:
+archive plan for 0309-a-python-baseline-profile-for-uv-pytest-and-ruff: removes 11 file(s) (157071 bytes) and writes docs/history/specs/0309-a-python-baseline-profile-for-uv-pytest-and-ruff.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-26.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 0 file(s) (0 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-22-a-baseline-profile-for-python-repositories.md 3701 bytes: no advice (offline)
+promotes references/2026-10-22-a-baseline-profile-for-python-repositories.md to docs/references/2026-10-22-a-baseline-profile-for-python-repositories.md
+relinks docs/specs/0310-the-python-profile-writes-its-starter-files/_prd.md: 1 citation(s)
+relinks docs/specs/0310-the-python-profile-writes-its-starter-files/task_01.md: 1 citation(s)
+relinks docs/specs/0310-the-python-profile-writes-its-starter-files/task_02.md: 1 citation(s)
+relinks docs/specs/0310-the-python-profile-writes-its-starter-files/task_03.md: 1 citation(s)
+promote with: roundfix archive 0309-a-python-baseline-profile-for-uv-pytest-and-ruff --promote <path>
+
+stderr:

@@ -1,0 +1,6 @@
+$ go test ./internal/baseline -run ^TestEveryBaselineModuleVersionIsRecorded$ -record-module-versions -count=1
+exit: 0
+stdout:
+ok  	roundfix/internal/baseline	0.744s
+
+stderr:

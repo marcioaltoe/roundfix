@@ -1,0 +1,14 @@
+$ go test -v -count=1 -run ^TestThePythonProfileRendersThePythonGuide$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestThePythonProfileRendersThePythonGuide
+=== PAUSE TestThePythonProfileRendersThePythonGuide
+=== CONT  TestThePythonProfileRendersThePythonGuide
+    python_profile_test.go:91: Python guide lacks "- **mandatory**: The repository Verification type-checks the package and its tests with `uv run ty check --error-on-warning`, ty being a development dependency. Do not hide a ty diagnostic: never pass `--exit-zero` or `--exit-zero-on-warning`, add a blanket `# ty: ignore` or `# type: ignore`, or widen the ty configuration to make a diagnostic disappear. A suppression names the rule it silences and the reason."
+--- FAIL: TestThePythonProfileRendersThePythonGuide (0.06s)
+FAIL
+suiteguard: guard cost: measured 2776 paths; fingerprint took 150.446917ms before and 121.558916ms after
+FAIL	roundfix/internal/baseline	0.642s
+FAIL
+
+stderr:

@@ -1,0 +1,14 @@
+$ go test -v -count=1 -run ^TestThePythonProfileRendersThePythonGuide$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestThePythonProfileRendersThePythonGuide
+=== PAUSE TestThePythonProfileRendersThePythonGuide
+=== CONT  TestThePythonProfileRendersThePythonGuide
+    python_profile_test.go:91: Python guide lacks "- **mandatory**: A Task Verification selects a new test by its pytest node id, such as `tests/test_report.py::test_totals`, and never passes that test's file or directory in the same command. pytest collects a node id once when another argument already contains it and exits 0 even before the test exists, so the command could never fail before the work; a missing node id alone exits 4 and an empty selection exits 5. `roundfix spec check` reports a command that names a test both ways."
+--- FAIL: TestThePythonProfileRendersThePythonGuide (0.06s)
+FAIL
+suiteguard: guard cost: measured 2776 paths; fingerprint took 125.164792ms before and 120.52175ms after
+FAIL	roundfix/internal/baseline	0.578s
+FAIL
+
+stderr:
