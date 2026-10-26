@@ -136,8 +136,18 @@ ADR-0323).
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run '^(TestBaselineStartersPreviewTranscript|TestBaselineStartersApplyTranscript|TestBaselineStartersWritesAProjectConfigRoundfixLoads|TestBaselineStartersJSONAndRefusals|TestBaselineStartersHelp|TestEveryCommandPathPrintsItsHelp|TestBaselineExamplesParse)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestBaselineStartersPreviewTranscript TestBaselineStartersApplyTranscript TestBaselineStartersWritesAProjectConfigRoundfixLoads TestBaselineStartersJSONAndRefusals TestBaselineStartersHelp TestEveryCommandPathPrintsItsHelp TestBaselineExamplesParse; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/cli` — expected: exit 0. Before this Task the five starters tests do not exist, so the command fails at its first pass check. Afterwards the transcripts, the written Project Config, the JSON and refusals, the help, every command path's help and the published examples pass, and the package's tests compile for Windows.
+- `out="$(go test -tags docscontract -count=1 -v -run '^(TestBaselineStartersPreviewTranscript|TestBaselineStartersApplyTranscript|TestBaselineStartersWritesAProjectConfigRoundfixLoads|TestBaselineStartersJSONAndRefusals|TestBaselineStartersHelp|TestEveryCommandPathPrintsItsHelp|TestBaselineExamplesParse)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestBaselineStartersPreviewTranscript TestBaselineStartersApplyTranscript TestBaselineStartersWritesAProjectConfigRoundfixLoads TestBaselineStartersJSONAndRefusals TestBaselineStartersHelp TestEveryCommandPathPrintsItsHelp TestBaselineExamplesParse; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; GOOS=windows go vet ./internal/cli` — expected: exit 0. Before this Task the five starters tests do not exist, so the command fails at its first pass check. Afterwards the transcripts, the written Project Config, the JSON and refusals, the help, every command path's help and the published examples pass, and the package's tests compile for Windows.
 - `tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Starter File**:' || { echo 'missing glossary term' >&2; exit 1; }; grep -qF -- '"command baseline starters"' docs/references/skill-coverage.json || { echo 'missing coverage entry' >&2; exit 1; }; for f in .agents/skills/roundfix/references/baseline.md skills/roundfix/references/baseline.md docs/user-guide/commands/baseline.md; do grep -qF -- 'roundfix baseline starters --profile' "$f" || { printf 'missing command in %s\n' "$f" >&2; exit 1; }; done; go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent|TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestBaselineDocumentationContract)$' ./internal/docscontract && go test -count=1 -run '^(TestEveryOwnedSkillVersionIsRecorded|TestNoPythonBaselineRuntime|TestRoundfixSkillIndexNamesEveryReference)$' ./skills && make skills-sync-check` — expected: exit 0. Before this Task the glossary lacks the term, so the command fails at its first check. Afterwards the glossary, the coverage entry and the three documents name the command, the documentation contracts and the skill version record pass, and the mirrors match.
+
+
+Amendment of 2026-10-26 (operator): Spec 0313, delivered after this plan was
+written, moved `TestBaselineExamplesParse` into
+`internal/cli/live_documents_docscontract_test.go` behind the `docscontract`
+tag, so the Verification above runs `./internal/cli` with
+`-tags docscontract`. Do not add a test file with a negative build
+constraint (`//go:build !docscontract`): the repository contract requires
+each contract file to select exactly one contract tag (Run
+run_20261026T111302Z_6e46ba39379a80ff failed on that).
 
 ## References
 
