@@ -18,6 +18,7 @@ sources:
   - 2026-10-22-task-com-deletes-nao-assenta-pela-consistencia.md
 regeneration: []
 promoted: []
+pull_request: "678"
 ---
 
 # A Task that deletes a tracked file settles
