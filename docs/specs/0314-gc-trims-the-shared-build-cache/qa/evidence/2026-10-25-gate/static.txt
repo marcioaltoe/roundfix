@@ -1,3 +1,0 @@
-make build: exit 0; built from Run Worktree.
-make verify-changed: Daemon-supplied pass (exit 0) at audited head; diagnostics removed on success. Agent did not rerun repository Verification.
-Strict spec check: exit 0; see precondition.txt.
