@@ -815,7 +815,7 @@ the Baseline contract.
 
 ### Profiles
 
-Roundfix ships `go-cli-tui`, `go-cli-typescript-monorepo`, `rust-cli`, and
+Roundfix ships `go-cli-tui`, `go-cli-typescript-monorepo`, `python`, `rust-cli`, and
 `standard-typescript-monorepo`. The `go-cli-typescript-monorepo` Profile combines
 the Go CLI and Standard TypeScript Monorepo modules on a composed setup.
 
@@ -823,6 +823,19 @@ The composed profile's root gate is expected to run `make verify-go` and
 `bun run verify`. Alignment reports a non-blocking
 `verification.gate.part.missing` divergence for each part a declared root Make
 gate does not reach through its prerequisites or recipes.
+
+The `python` Profile governs a Python project run with uv, ruff and pytest
+through `docs/agents/python.md`, whether the project is a command-line tool, a
+backend service or a worker. It fixes no application surface: rules for one
+surface belong in the repository's own `docs/agents/specific-repository.md`.
+Its `python` setup is the Python preset the upstream skills repository
+publishes, imported by the asset sync like every other setup. Its guide makes
+the gate check the lockfile offline and type-check with ty besides ruff and
+pytest. It dispatches the uv, ruff, ty, pytest and Python-services skills
+whenever their work arises, and the Typer, FastAPI, file-pipeline and
+Streamlit skills only when the repository has chosen that tool. Like every
+profile, its alignment needs the repository's declared `make` Verification
+targets before a plan is ready.
 
 Inspect a built-in or repository-owned Baseline Profile before selecting it:
 

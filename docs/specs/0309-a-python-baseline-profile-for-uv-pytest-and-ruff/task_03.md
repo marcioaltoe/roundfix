@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0309-a-python-baseline-profile-for-uv-pytest-and-ruff
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -85,3 +85,72 @@ Core Feature 4; ADR-0322).
 - `_prd.md` → Core Feature 4; Success Metric 6; Skills; User Story 1
 - `_techspec.md` → Current behavior 10-11; Build Order 3
 - ADR-0322
+
+## Result
+
+Implementation-ready. Three files changed; no Go file, skill, other guide page,
+`README.md`, `CONTEXT.md` or Baseline asset was touched.
+
+### What changed
+
+- `docs/user-guide/context-driven-development.md` (`### Profiles`): the first
+  sentence now reads "Roundfix ships `go-cli-tui`,
+  `go-cli-typescript-monorepo`, `python`, `rust-cli`, and
+  `standard-typescript-monorepo`." and a new `python` paragraph follows the
+  composed profile's root-gate paragraph, naming what it governs, that it fixes
+  no application surface, that its `python` setup is the upstream preset
+  imported by the asset sync, that its gate runs the offline lock check and ty,
+  the always-dispatched and chosen-only skills, and the `make` Verification
+  dependency.
+- `docs/references/skill-coverage.json`: the
+  `guide docs/user-guide/context-driven-development.md` entry gained a `review`
+  key with `2026-10-24 — ` followed by that surface's reason in `_prd.md` →
+  Skills; no other entry changed.
+- `docs/references/behavior-surfaces.json`: re-recorded as the LAST step after
+  the last guide edit; the only diff is the guide's fingerprint.
+
+### Acceptance criterion 1 — the guide names python and the retired markers are absent
+
+Focused check: normalized-whitespace grep of the guide confirms the profile list
+`Roundfix ships `go-cli-tui`, `go-cli-typescript-monorepo`, `python`,
+`rust-cli`, and `standard-typescript-monorepo`.` matches, and each required
+paragraph fragment is present verbatim:
+
+- `Profile governs a Python project run with uv, ruff and pytest through`
+- `whether the project is a command-line tool, a backend service or a worker. It fixes no application surface`
+- `preset the upstream skills repository publishes, imported by the asset sync like every other setup.`
+- `FastAPI, file-pipeline and Streamlit skills only when the repository has chosen that tool.`
+- `Its guide makes the gate check the lockfile offline and type-check with ty besides ruff and pytest.`
+
+`grep -n 'python3\|Python fallback' docs/user-guide/context-driven-development.md`
+returns no match, so the guide carries no retired runtime marker. The section
+names no command the binary lacks (only the existing `roundfix baseline profile
+show/validate/init` and `roundfix baseline skills restore` examples it already
+had).
+
+### Acceptance criterion 2 — the Coverage Review is recorded and the Record is current
+
+Focused check: `grep -qF '"review": "2026-10-24 — the only change names the new built-in' docs/references/skill-coverage.json` matches, and the file
+remains valid JSON. After the last guide edit, the Behavior Surface Record was
+re-recorded with:
+
+```
+go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1
+```
+
+which exited 0 and rewrote only the guide's fingerprint. `git diff
+docs/references/behavior-surfaces.json` shows a single-line change to
+`guide docs/user-guide/context-driven-development.md`.
+
+### Focused checks run
+
+- `go test -count=1 -tags docscontract -run '^(TestTheSkillCoverageMapIsCurrent)$' ./internal/docscontract` — ok (Record current).
+- `go test -count=1 -run '^TestNoPythonBaselineRuntime$' ./skills` — ok (retired-runtime guard passes).
+- `go test -count=1 -tags docscontract ./internal/docscontract` — ok (full docscontract suite).
+- `go test -count=1 ./skills` — ok (full skills suite).
+- The task's full `## Verification` command, run as a focused check, exited 0.
+
+### Follow-ups (out of this Task's slice)
+
+- None. The remaining `python` profile behavior lives in task_01/task_02 and the
+  Starter files in Spec 0310.
