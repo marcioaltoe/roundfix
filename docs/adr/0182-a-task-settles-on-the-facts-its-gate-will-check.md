@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-09-30T00:00:00Z
+updated_at: 2026-10-27T15:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -58,3 +58,10 @@ still integrate into a red tree, which the next settlement or the gate finds.
 A failure that predates the Task is still reported to it, because the Daemon
 takes no entry observation of the repository Verification; only the Spec
 Consistency findings are compared with the Task's start.
+
+## Addendum — 2026-10-27
+
+ADR-0342 narrows the first consequence above. The repository Verification at
+settlement now runs for every non-QA Task whether or not the graph has a QA
+gate Task, and a Run without one checks its integrated tree once before it
+ends Clean. The two in-process checks keep the scope this record gives them.
