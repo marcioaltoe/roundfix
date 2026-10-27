@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -112,3 +112,91 @@ of the adopted Backlog Entry (Quaestor, 2026-10-26).
 - `_prd.md` → Goals; Core Feature 1; Core Feature 2; Core Feature 3; User Experience; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior 1-3; Interfaces; API Contract 1; API Contract 2; API Contract 3; Invariants 1-2; Testing Approach; Build Order 1
 - ADR-0263; ADR-0341
+
+
+## Result
+
+Implemented the task_02 slice for Daemon Verification:
+
+- Added opt-in recorded-decision carrying to `PlanRequest` and the sorted
+  `PlanOutcome.CarriedDecisions` projection. Only `runBaselinePlanCommand`
+  enables it, for built-in profiles and profile-file drafts; update,
+  interactive planning and recalculation retain their existing inputs.
+- Read the Setup Manifest through `ResolveManifestInput.Manifest`, including
+  incompatible recorded profiles. Shared the existing catalog closure with
+  normalization, so explicit answers and fixed profile values determine which
+  recorded answers remain selected. Invalid, unselected and fixed recorded
+  values produce individual deterministic warnings; absent manifests leave
+  input unchanged and unparsable manifests contribute only a warning.
+- Printed the sorted carried IDs immediately after `Baseline Profile:` in
+  text; the portable JSON Plan Document schema is unchanged. Carried-decision
+  warnings survive both repository snapshot passes exactly once.
+- Joined missing base decisions, conditional non-optional dependents from
+  direct requirements or activated modules, and absent preservation mode into
+  one refusal. Single-part refusals retain the prior message and next action.
+- Added `ProfileChangeRefusal` before declaration normalization and mapped it
+  to update category `invalid`, exit 2, with the original repository argument
+  in the plan/apply next action. Other unknown-decision handling is unchanged.
+
+Acceptance evidence:
+
+1. `TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange` adopts
+   `go-cli-tui` through CLI plan and apply with fake `context7`, `context7-cli`
+   and `exa-web-search` skills. Planning `python` with only preservation mode
+   exits 0, retains every selected recorded value and prints the sorted carried
+   IDs. A narrowed profile-file draft also carries recorded answers.
+2. The same CLI test proves a flag overrides `secondbrain.enabled` and a
+   narrowed draft emits exactly one warning for its excluded decision.
+   `TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects` additionally
+   exercises conditional runtime decisions, flag-driven closure changes,
+   fixed values, catalog-rejected values and an incompatible old profile.
+   `TestCarryRecordedDecisionsWithoutAManifestChangesNothing` checks absent
+   and unparsable manifests without changing explicit answers.
+3. `TestBaselinePlanNamesEveryMissingAnswerInOneRefusal` asserts every base
+   required ID, `required when autonomous.enabled is true: runtime.backend,
+   runtime.design`, preservation mode and the exact combined next action.
+4. `TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand` checks
+   exit 2, category `invalid`, the recorded profile and plan/apply next action,
+   JSON and text output, precedence over another unknown decision, and an
+   unchanged repository tree.
+
+Focused checks (all exited 0):
+
+- `go test ./internal/baseline ./internal/cli -run '^(TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects|TestCarryRecordedDecisionsWithoutAManifestChangesNothing|TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange|TestBaselinePlanNamesEveryMissingAnswerInOneRefusal|TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand|TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus|TestBaselineUpdateRefusesAnUndeclarableDecision|TestBaselineUpdateDeclaresTheBetterAuthBasePath)$' -count=1 -timeout=3m`
+- `go test ./internal/cli -run '^(TestBaselinePlan.*|TestBaselineUpdateRecordsADeclaredDecision|TestBaselineUpdateRefusesAnUndeclarableDecision|TestBaselineUpdateDeclaresTheBetterAuthBasePath|TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand)$' -count=1 -timeout=4m`
+- `go test ./internal/baseline -run '^(TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects|TestCarryRecordedDecisionsWithoutAManifestChangesNothing)$' -count=1 -timeout=2m`
+- `git diff --check`
+
+Before production edits, the new update regression reproduced the original
+unknown-decision message and generic next action. The initial missing-answer
+fixture needed a seed file before it could reach the command boundary.
+Isolated Go-overlay negative probes then removed CLI carrying, conditional
+reporting, the typed update refusal, recorded values and absent-manifest
+handling individually. Each of the five required new tests produced an
+assertion failure when its corresponding behavior was removed; all overlays
+lived outside the checkout.
+
+No existing plan or update test assertion was changed. The initial worktree
+already contained the Daemon's task-file status change; it was preserved.
+Declared Verification, repository Verification and terminal settlement were
+not run. No Task Graph, other Task, commit, push or Pull Request was changed.
+
+
+### Verification feedback repair, attempt 1
+
+The Daemon diagnostic identified an unintended serialized `CarriedDecisions`
+field in the package's PlanOutcome characterization records. The TechSpec
+requires this projection to remain non-serialized. Added `json:"-"` to
+`PlanOutcome.CarriedDecisions`; existing characterization fixtures and
+assertions remain unchanged.
+
+Fresh focused checks after the repair (each exited 0):
+
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -timeout=3m`
+- `go test ./internal/cli -run '^TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange$' -count=1 -timeout=3m`
+- `git diff --check`
+
+The package characterization now matches all five existing repository shapes,
+and the CLI still carries the recorded answers and prints the carried IDs.
+The declared Verification command was not rerun; Task status remains
+Daemon-owned and unchanged by this repair.

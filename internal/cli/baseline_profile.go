@@ -320,12 +320,13 @@ func runBaselinePlanCommand(
 		profileDraft = &input
 	}
 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
-		Repository:            req.repo,
-		ProfileID:             req.profile,
-		ProfileDraft:          profileDraft,
-		Decisions:             decisionInput,
-		Preservation:          preservation,
-		ExecutableDirectories: executableDirectories,
+		Repository:             req.repo,
+		ProfileID:              req.profile,
+		ProfileDraft:           profileDraft,
+		CarryRecordedDecisions: true,
+		Decisions:              decisionInput,
+		Preservation:           preservation,
+		ExecutableDirectories:  executableDirectories,
 	})
 	if err != nil {
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
@@ -356,7 +357,7 @@ func runBaselinePlanCommand(
 		}
 		return exitOK
 	}
-	printBaselinePlanText(*outcome.Plan, stdout)
+	printBaselinePlanText(*outcome.Plan, stdout, outcome.CarriedDecisions...)
 	return exitOK
 }
 
@@ -514,12 +515,15 @@ func parseBaselineInlineDecision(value string) any {
 	return trimmed
 }
 
-func printBaselinePlanText(plan baseline.PlanDocument, stdout io.Writer) {
+func printBaselinePlanText(plan baseline.PlanDocument, stdout io.Writer, carried ...string) {
 	fmt.Fprintln(stdout, "Baseline Plan: ready")
 	fmt.Fprintf(stdout, "Plan Digest: %s\n", plan.PlanDigest)
 	fmt.Fprintf(stdout, "Repository identity: %s\n", plan.Repository.Digest)
 	fmt.Fprintf(stdout, "Catalog identity: %s\n", plan.Catalog.Digest)
 	fmt.Fprintf(stdout, "Baseline Profile: %s\n", plan.Profile.ID)
+	if len(carried) != 0 {
+		fmt.Fprintf(stdout, "Carried decisions: %s\n", strings.Join(carried, ", "))
+	}
 	fmt.Fprintf(stdout, "Managed entries: %d\n", len(plan.ManagedEntries))
 	fmt.Fprintf(stdout, "File changes: %d\n", len(plan.FileChanges))
 	for _, change := range plan.FileChanges {
