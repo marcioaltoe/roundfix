@@ -34,8 +34,9 @@ regeneration:
     outputs:
       - docs/references/coverage-record.json
 promoted: []
+pull_request: "709"
 ---
 
 # The skills lock matches what is installed, and a Run without a QA gate settles green
 
-Quaestor reported two frictions on Roundfix v0.124.0 and saw both again on v0.125.0. After `roundfix baseline update` installed the Roundfix-owned skills the binary carries, the repository's `skills-lock.json` still held the `computedHash` of the copies it replaced, so the repository's own lock test failed until someone rewrote five hashes by hand.
+Quaestor reported two frictions on Roundfix v0.124.0 and saw both again on v0.125.0.
