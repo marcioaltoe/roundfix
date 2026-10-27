@@ -1,0 +1,5 @@
+make build: exit 0
+./bin/roundfix --version: exit 0
+roundfix 0.124.0 (7d4e8e60-dirty, built 2026-10-27 05:46:55 -0300)
+
+make verify-changed: Daemon-supplied pass (exit 0); diagnostics removed on success. Not rerun.

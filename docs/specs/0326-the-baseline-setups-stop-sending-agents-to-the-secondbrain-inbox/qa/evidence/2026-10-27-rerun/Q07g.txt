@@ -1,0 +1,14 @@
+git archive 7d4e8e60ce31ce665db897f7fc4e65d07267f539 into independent temp copy; git init + git add before mutation.
+Mutation: ['internal/baseline/testdata/catalog.digest']
+COMMAND: go test -timeout 20m -count=1 -v -run ^(TestCatalogCompatibility)$ ./internal/baseline
+exit: 1
+=== RUN   TestCatalogCompatibility
+=== PAUSE TestCatalogCompatibility
+=== CONT  TestCatalogCompatibility
+    catalog_test.go:665: Digest() = "sha256:c935ef409bc2588edc8085c3d3fdfe0e712fc1753257ad5857f941b2d8f4e292\n", want "sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5\n"; run 'make baseline-digests'
+--- FAIL: TestCatalogCompatibility (0.02s)
+FAIL
+suiteguard: guard cost: measured 2828 paths; fingerprint took 145.68275ms before and 132.198333ms after
+FAIL	roundfix/internal/baseline	0.584s
+FAIL
+

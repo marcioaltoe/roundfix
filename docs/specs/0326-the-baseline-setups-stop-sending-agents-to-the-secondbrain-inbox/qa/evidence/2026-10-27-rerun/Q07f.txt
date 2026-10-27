@@ -1,0 +1,15 @@
+git archive 7d4e8e60ce31ce665db897f7fc4e65d07267f539 into independent temp copy; git init + git add before mutation.
+Mutation: ['docs/agents/setup-context.json']
+COMMAND: go test -timeout 20m -count=1 -v -tags docscontract -run ^(TestTheSetupManifestIsCurrent)$ ./internal/docscontract
+exit: 1
+=== RUN   TestTheSetupManifestIsCurrent
+=== PAUSE TestTheSetupManifestIsCurrent
+=== CONT  TestTheSetupManifestIsCurrent
+    publicdocs_test.go:1294: Setup Manifest is stale; Managed Refresh proposes changes:
+        docs/agents/setup-context.json
+        regenerate with go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes
+--- FAIL: TestTheSetupManifestIsCurrent (0.09s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.495s
+FAIL
+

@@ -1,0 +1,1 @@
+FAILED: ('suite failed', ['-tags', 'docscontract', './internal/docscontract'])

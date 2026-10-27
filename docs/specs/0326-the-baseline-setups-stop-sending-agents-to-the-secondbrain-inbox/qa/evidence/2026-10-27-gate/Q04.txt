@@ -1,0 +1,53 @@
+Local clone detached at 164e2b1ce732afc0501947114007e91d23ea506e
+COMMAND: make baseline-digests
+exit: 0
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+stderr:
+ok  	roundfix/internal/baseline	0.994s
+ok  	roundfix/skills	0.331s
+ok  	roundfix/internal/baseline	1.261s
+ok  	roundfix/internal/baseline	0.439s
+ok  	roundfix/internal/baseline	0.835s
+ok  	roundfix/internal/baseline	0.852s
+ok  	roundfix/internal/baseline	1.761s
+ok  	roundfix/internal/baseline	0.478s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+
+COMMAND: ./bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0326-clone-lbktqou6/repo --no-skills --no-history --yes --format text
+exit: 0
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:c935ef409bc2588edc8085c3d3fdfe0e712fc1753257ad5857f941b2d8f4e292
+Current catalog: sha256:c935ef409bc2588edc8085c3d3fdfe0e712fc1753257ad5857f941b2d8f4e292
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Plan Digest: sha256:10de660c910961d5dc0f72c77cea9f59e520ba542a89c994e7199b8323513ae2
+Approved Plan Digest: sha256:10de660c910961d5dc0f72c77cea9f59e520ba542a89c994e7199b8323513ae2
+
+stderr:
+
+COMMAND: ./bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0326-clone-lbktqou6/repo --no-history --format json
+exit: 0
+stdout:
+{"history":{"status":"skipped","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":true,"state":"current","message":"the repository already matches the current Baseline catalog","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:c935ef409bc2588edc8085c3d3fdfe0e712fc1753257ad5857f941b2d8f4e292"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:c935ef409bc2588edc8085c3d3fdfe0e712fc1753257ad5857f941b2d8f4e292"},"fileChanges":[],"retention":[],"warnings":[{"code":"baseline.inventory.nested-carrier-conflict","path":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md","message":"nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"},{"code":"baseline.inventory.nested-carrier-conflict","path":"internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md","message":"nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"}],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:10de660c910961d5dc0f72c77cea9f59e520ba542a89c994e7199b8323513ae2","skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[],"differing":[]}}
+
+stderr:
+
+Final clone git status:

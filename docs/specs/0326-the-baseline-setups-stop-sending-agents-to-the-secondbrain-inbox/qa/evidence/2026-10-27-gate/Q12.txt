@@ -1,0 +1,20 @@
+COMMAND: git diff-tree --no-commit-id --name-only -r 164e2b1ce732afc0501947114007e91d23ea506e
+.agents/skills/knowledge-workspace/SKILL.md
+docs/agents/setup-context.json
+docs/specs/0326-the-baseline-setups-stop-sending-agents-to-the-secondbrain-inbox/task_01.md
+internal/baseline/assets/setups/go-cli-typescript-bun.json
+internal/baseline/assets/setups/go.json
+internal/baseline/assets/setups/python.json
+internal/baseline/assets/setups/rust.json
+internal/baseline/assets/setups/typescript.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+internal/baseline/upstream_setup_revision_test.go
+skills-lock.json
+
+All 17 paths declared; seven governed paths explicitly authorized. Operative grant unchanged at parent 4bfe61302f17f2757ca547cb3612ca925f04c90f; ancestry proved. Only knowledge-workspace lock entry changed. No prohibited scope or QA settlement change. Current tracked delta only QA report.

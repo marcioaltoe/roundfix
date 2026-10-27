@@ -1,0 +1,14 @@
+git archive 7d4e8e60ce31ce665db897f7fc4e65d07267f539 into independent temp copy; git init + git add before mutation.
+Mutation: ['.agents/skills/knowledge-workspace/SKILL.md']
+COMMAND: go test -timeout 20m -count=1 -v -tags docscontract -run ^(TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot)$ ./internal/baseline
+exit: 1
+=== RUN   TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== PAUSE TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== CONT  TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+    repository_skills_snapshot_test.go:48: required skill "knowledge-workspace" differs from the Setup Snapshot; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill knowledge-workspace
+--- FAIL: TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot (0.02s)
+FAIL
+suiteguard: guard cost: measured 2828 paths; fingerprint took 159.293667ms before and 129.78275ms after
+FAIL	roundfix/internal/baseline	0.630s
+FAIL
+

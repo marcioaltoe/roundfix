@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0326-the-baseline-setups-stop-sending-agents-to-the-secondbrain-inbox
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

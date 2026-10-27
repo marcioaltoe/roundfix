@@ -1,0 +1,149 @@
+from pathlib import Path
+import os,subprocess as sp,json,tempfile,re,tarfile,io,shutil
+R=Path.cwd(); S=R/'docs/specs/0326-the-baseline-setups-stop-sending-agents-to-the-secondbrain-inbox'; P=S/'qa/qa-report-2026-10-27-01.md'; E=S/'qa/evidence/2026-10-27-rerun'
+head=sp.check_output(['git','rev-parse','HEAD'],text=True).strip();base=sp.check_output(['git','rev-parse',head+'^'],text=True).strip()
+exec(Path('/tmp/qa0326-rerun.py').read_text().split('def finish')[1].split('def q1')[0].join(['def finish','']))
+NEW='b56fc5ffcad1ab366fbc03839a6ce8c662401178';TREE='490af37df4faba388e560380df0863b88881716d96e6185858918681182f2a96'
+paths=list((R/'internal/baseline/assets/setups').glob('*.json'))
+def old(p):return sp.check_output(['git','show',base+':'+str(p)],cwd=R)
+
+def q4():
+ clone=Path(tempfile.mkdtemp(prefix='qa0326-clone-'))/'repo';rc,o,e=run(['git','clone','--no-local','--no-hardlinks',str(R),str(clone)]);assert rc==0,e
+ rc,o,e=run(['git','checkout','--detach',head],cwd=clone);assert rc==0,e
+ out=['Local clone detached at '+head]
+ for cmd,cli in [(['make','baseline-digests'],False),(['./bin/roundfix','baseline','update','--repo',str(clone),'--no-skills','--no-history','--yes','--format','text'],True),(['./bin/roundfix','baseline','update','--repo',str(clone),'--no-history','--format','json'],True)]:
+  rc,o,e=run(cmd,cwd=clone if not cli else R,cli=cli);out.append('COMMAND: '+' '.join(cmd)+'\nexit: '+str(rc)+'\nstdout:\n'+o+'\nstderr:\n'+e);log('Q04','\n'.join(out));assert rc==0,(cmd,rc,e)
+  if not cli:assert '"changed":false' in o.replace(' ','')
+  elif cmd[-1]=='text':assert 'File changes: 0' in o
+  else:
+   j=json.loads(o);skills=j.get('skills',{});assert 'skills' in j,j
+   for k in ['missing','drifted','differing']:assert not skills.get(k),(k,skills)
+ rc,o,e=run(['git','status','--porcelain'],cwd=clone);out.append('Final clone git status:\n'+o);log('Q04','\n'.join(out));assert not o.strip(),o
+ finish('Q04','pass','Detached clone regeneration reported changed:false; applied refresh File changes: 0; fresh preview lists no missing/drifted/differing skills; clone remains clean.')
+phase('Q04',q4)
+
+def q5():
+ oldref='8d71fade68c54693bedbd917371f0514311af157';out=[]
+ tracked=sp.check_output(['git','ls-files','-z'],cwd=R).decode().split('\0')
+ for p in tracked:
+  if p.startswith('internal/') and p.endswith('_test.go'):assert oldref not in (R/p).read_text(),p
+ for const in ['upstreamSetupRevision','knowledgeWorkspaceTreeDigest']:
+  hits=[p for p in tracked if p.endswith('.go') and (R/p).is_file() and re.search(r'const\s+'+const+r'\s*=',(R/p).read_text())];assert hits==['internal/baseline/upstream_setup_revision_test.go'],hits;out.append(const+': unique declaration '+hits[0])
+ skill=(R/'.agents/skills/knowledge-workspace/SKILL.md').read_text();assert 'version: 0.6.2' in skill;assert json.loads((R/'skills-lock.json').read_text())['skills']['knowledge-workspace']['ref']==NEW
+ hits=[]
+ # Sweep tracked and untracked hidden files, excluding Git metadata, generated binary and this QA evidence itself.
+ for p in R.rglob('*'):
+  rel=str(p.relative_to(R))
+  if not p.is_file() or p.is_symlink() or rel.startswith(('.git/','docs/history/',str(S.relative_to(R))+'/','bin/','.gocache/')):continue
+  try:t=p.read_text()
+  except (UnicodeError,OSError):continue
+  for phrase in ['dev/secondbrain/inbox/','create-only carve-out']:
+   if phrase in t:hits.append((rel,phrase))
+ assert not hits,hits
+ out+=['No internal test pins old full revision.','Installed version 0.6.2 and lock ref correct.','Hidden-inclusive text sweep: zero forbidden phrase matches outside historical/Spec exclusions.'];log('Q05','\n'.join(out));finish('Q05','pass','Revision declarations, installed version/lock and hidden-inclusive retired wording sweep passed.')
+phase('Q05',q5)
+
+def q6():
+ prefix='internal/baseline/assets/source-baselines/';rc,o,e=run(['git','diff','--name-only',base,head,'--',prefix]);assert rc==0 and not o.strip(),o
+ manifest=json.loads((R/'docs/agents/setup-context.json').read_text());assert prefix not in json.dumps(manifest['managedArtifacts'])
+ roots=['docs/agents','internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden'];out=['Source Baseline Task delta empty; no managedArtifacts path under '+prefix]
+ for root in roots:
+  for p in (R/root).rglob('*'):
+   if p.is_file():
+    t=p.read_text();assert 'MAY create files under' not in t and 'only writable Secondbrain namespace' not in t,p
+  p=R/root/'docs/agents/secondbrain.md' if root!='docs/agents' else R/root/'secondbrain.md'
+  if not p.exists():p=next((R/root).rglob('secondbrain.md'))
+  assert re.search(r'inbox/. included',p.read_text()),p;out.append(str(p.relative_to(R))+': prohibition regex matched; retired permissions absent from full directory.')
+ log('Q06','\n'.join(out));finish('Q06','pass','Frozen Source Baseline unchanged and absent from managed paths; both rendered guide trees prohibit inbox writes.')
+phase('Q06',q6)
+
+NEWTEST='TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox'; REPO='TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot'
+oldsetup=json.loads(old('internal/baseline/assets/setups/go.json')); OLDREF=oldsetup['source']['ref'];OLDTREE=next(x['treeDigest'] for x in oldsetup['skills'] if x['name']=='knowledge-workspace')
+def sabotage(letter,restore=(),replace=None,tests=(),pkg='./internal/baseline',tag=False,need=()):
+ i='Q07'+letter;d=Path(tempfile.mkdtemp(prefix='qa0326-sabotage-'+letter+'-'))
+ data=sp.check_output(['git','archive',head],cwd=R)
+ with tarfile.open(fileobj=io.BytesIO(data)) as tf:tf.extractall(d,filter='data')
+ # suiteguard fingerprints require a staged repository, with process-local identity only; no commits.
+ for cmd in [['git','init','-q'],['git','add','--all']]:
+  rc,o,e=run(cmd,cwd=d);assert rc==0,e
+ rc,o,e=run(['git','fetch','--quiet',str(R),head],cwd=d);assert rc==0,e
+ rc,o,e=run(['git','reset','--soft','FETCH_HEAD'],cwd=d);assert rc==0,e
+ for p in restore:(d/p).write_bytes(old(p))
+ if replace:
+  p=d/'internal/baseline/upstream_setup_revision_test.go';a,b=replace;t=p.read_text();assert a in t;p.write_text(t.replace(a,b))
+ cmd=['go','test','-timeout','20m','-count=1','-v']+(['-tags','docscontract'] if tag else [])+['-run','^('+'|'.join(tests)+')$',pkg]
+ rc,o,e=run(cmd,cwd=d);log(i,'git archive '+head+' into independent temp copy; git init + git add before mutation.\nMutation: '+str(list(restore) or replace)+'\nCOMMAND: '+' '.join(cmd)+'\nexit: '+str(rc)+'\n'+o+'\n'+e)
+ assert rc!=0,'sabotage unexpectedly passed'
+ for name in tests:assert '--- FAIL: '+name in o,('missing failing test',name)
+ if NEWTEST in tests:
+  for name in ['go','go-cli-typescript-bun','python','rust','typescript']:assert '--- FAIL: '+NEWTEST+'/'+name in o,('missing failing subtest',name)
+ for text in need:assert text in o,('missing diagnostic',text)
+ finish(i,'pass','Independent archived-head mutation made every named test fail with the required diagnostics; see captured command/output.')
+phase('Q07a',lambda:sabotage('a',[str(p.relative_to(R)) for p in paths],tests=[NEWTEST,REPO],tag=True,need=[OLDREF,OLDTREE]))
+phase('Q07b',lambda:sabotage('b',['.agents/skills/knowledge-workspace/SKILL.md'],tests=[REPO],tag=True,need=['knowledge-workspace','roundfix baseline skills restore']))
+phase('Q07c',lambda:sabotage('c',['skills-lock.json'],tests=['TestCheckRepositoryMatchesRealRepository'],pkg='./skills',need=['OutdatedExternal:', 'knowledge-workspace']))
+phase('Q07d',lambda:sabotage('d',replace=(TREE,OLDTREE),tests=[NEWTEST]))
+phase('Q07e',lambda:sabotage('e',replace=(NEW,OLDREF),tests=[NEWTEST,'TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree','TestEveryUpstreamSetupFollowsTheAiMemoryRevision','TestEveryUpstreamSetupFollowsThePythonPresetRevision','TestThePythonSetupIsThePublishedUpstreamPreset']))
+phase('Q07f',lambda:sabotage('f',['docs/agents/setup-context.json'],tests=['TestTheSetupManifestIsCurrent'],pkg='./internal/docscontract',tag=True,need=['Setup Manifest is stale']))
+phase('Q07g',lambda:sabotage('g',['internal/baseline/testdata/catalog.digest'],tests=['TestCatalogCompatibility']))
+def q8():
+ task=(S/'task_01.md').read_text();section=task.split('## Verification\n')[1].split('## References')[0];cmds=re.findall(r'^- `(.+?)` — expected:',section,re.M);assert len(cmds)==2
+ out=[]
+ for cmd in cmds:
+  cmd=cmd.replace('go test -list','go test -timeout 20m -list');rc,o,e=run(['bash','-c',cmd]);out.append('COMMAND: '+cmd+'\nexit: '+str(rc)+'\n'+o+e);log('Q08','\n'.join(out));assert rc==0,(rc,e,o)
+ finish('Q08','pass','Both task_01 Verification commands executed successfully, with an explicit timeout added to test discovery.')
+phase('Q08',q8)
+
+def q9():
+ t=' '.join((R/'.agents/skills/knowledge-workspace/SKILL.md').read_text().split());phrases=['send research to','default/marcioaltoe-secondbrain','The filesystem inbox was retired','do not create a filesystem substitute','there is no outside-session write carve-out'];out=[]
+ for phrase in phrases:assert phrase in t,phrase;out.append('normalized match: '+phrase)
+ ref=S/'references/2026-10-26-the-knowledge-workspace-skill-still-writes-to-the-secondbrain-inbox.md';source=' '.join(ref.read_text().split());
+ for phrase in phrases:assert phrase in source,phrase
+ out.append('Offline outside source: marcioaltoe/skills#136, upstream skills/00-setup/knowledge-workspace/SKILL.md diff 8d71fade..b56fc5ff; quoted in '+str(ref.relative_to(R)))
+ out.append('Message 01a179b6-de08-7b43-9ff4-96ff9a4693d7, default/gesttione-solutions-pantheon, 2026-10-26 16:36 BRT; message 01a1795f-d2d0-7bf0-a85c-e94970373063 item 3, default/marcioaltoe-skills, 2026-10-26 15:01 BRT. Upstream merge 2026-10-26 15:02 BRT.')
+ log('Q09','\n'.join(out));finish('Q09','pass','Five whitespace-normalized upstream passages independently match installed skill and adopted upstream quotation; offline source identified in evidence.')
+phase('Q09',q9)
+
+def q10():
+ t=(S/'_prd.md').read_text().split('## Unreachable Acceptance')[1].split('## Validation')[0];assert t.count('criterion:')==1 and 'Success Metric 5' in t and 'another repository' in t
+ log('Q10','Pre-run declaration verified:\n'+t+'\nObserved constraint: assigned binary is unreleased Run build; Spec authorization prohibits another repository. No release or adopter checkout read permitted. Required later evidence: Pantheon refresh and restore with released binary, reported through ai-memory.\n')
+ finish('Q10','blocked (declared: Success Metric 5)','Success Metric 5 is blocked (declared unreachable): needs released binary in another repository; matches the single PRD Unreachable Acceptance entry. Its satisfied-by remains unproven.')
+phase('Q10',q10)
+
+def q11():
+ for f in ['_prd.md','_techspec.md']:assert re.search(r'## Glossary\s+None\.',(S/f).read_text())
+ rc,o,e=run(['git','diff','--name-only',base,head,'--','CONTEXT.md']);assert rc==0 and not o.strip(),o;log('Q11','PRD and TechSpec glossary declarations: None.\ngit diff --name-only '+base+' '+head+' -- CONTEXT.md: exit 0, empty.\n');finish('Q11','pass','No glossary term declared; CONTEXT.md unchanged by Task range.')
+phase('Q11',q11)
+
+def q12():
+ rc,o,e=run(['git','diff-tree','--no-commit-id','--name-only','-r',head]);assert rc==0;changed=o.splitlines();task=(S/'task_01.md').read_text();declared=re.findall(r'^- interface: `([^`]+)`',task,re.M)+[str((S/'task_01.md').relative_to(R))];assert set(changed)<=set(declared),set(changed)-set(declared)
+ auth=(S/'_authorization.md').read_text();governed=[p for p in changed if p.startswith(('.agents/','docs/agents/','internal/baseline/assets/'))];assert all('  - '+p in auth.split('operations:')[0] for p in governed)
+ for p in changed:
+  assert p not in ['Makefile','go.mod','go.sum','.roundfixrc.yml','CONTEXT.md']
+  assert not p.startswith(('.github/workflows/','docs/user-guide/','docs/adr/','skills/'))
+  if p.startswith('internal/baseline/assets/'):assert p in [str(x.relative_to(R)) for x in paths]
+  if p.startswith('.agents/'):assert p=='.agents/skills/knowledge-workspace/SKILL.md'
+  if p.startswith('docs/agents/'):assert p=='docs/agents/setup-context.json'
+  if p.endswith('.go'):assert p.endswith('_test.go')
+ before=json.loads(old('skills-lock.json'))['skills'];after=json.loads((R/'skills-lock.json').read_text())['skills'];assert set(before)==set(after);assert [k for k in before if before[k]!=after[k]]==['knowledge-workspace']
+ # Authorization already audited mechanically; prove operative parent record and chronology by ancestry.
+ assert old(str((S/'_authorization.md').relative_to(R))).decode()==auth
+ rc,o2,e=run(['git','merge-base','--is-ancestor',base,head]);assert rc==0
+ oldskill=old('.agents/skills/knowledge-workspace/SKILL.md').decode();newskill=(R/'.agents/skills/knowledge-workspace/SKILL.md').read_text()
+ def settlement(t):return t.split('### QA settlement')[1].split('\n### ')[0] if '### QA settlement' in t else None
+ assert settlement(oldskill)==settlement(newskill)
+ rc,delta,e=run(['git','diff','--name-only']);assert all(p.startswith(str((S/'qa').relative_to(R))+'/') for p in delta.splitlines()),delta
+ log('Q12','COMMAND: git diff-tree --no-commit-id --name-only -r '+head+'\n'+o+'\nAll '+str(len(changed))+' paths declared; seven governed paths explicitly authorized. Operative grant unchanged at parent '+base+'; ancestry proved. Only knowledge-workspace lock entry changed. No prohibited scope or QA settlement change. Current tracked delta only QA report.\n')
+ finish('Q12','pass','All Task paths fall within declarations; governed paths bounded by operative parent grant; prohibited files/lock entries/QA settlement unchanged. Mechanical authorization audit preserved.')
+phase('Q12',q12)
+
+def q13():
+ log('Q13','Pull Request row: blocked (environment: no open Pull Request), supplied by Daemon.\nApproval: recorded maintainer cycle AQ delivery authority in _authorization.md, granted 2026-10-26; implementation authorization is not Merge-Ready acceptance.\nChecks: Daemon reports make verify-changed passed exit 0 at '+head+'.\nUnresolved threads: none, no Pull Request exists.\nMerge-Ready acceptance: none yet; no reviewer/provider called.\nReview-artifact ancestry: no review artifact yet; claimed candidate '+head+'; no acceptance of another head credited.\n')
+ finish('Q13','blocked (environment: no open Pull Request)','Pull Request row: recorded approval authority, Daemon checks, no unresolved threads, no Merge-Ready acceptance or review artifact, and exact claimed candidate head. No provider calls.')
+phase('Q13',q13)
+
+def q14():
+ cmd=['./bin/roundfix','archive',S.name,'--plan','--offline'];rc,o,e=run(cmd,cli=True);log('Q14','COMMAND: fresh HOME/TMPDIR ./bin/roundfix archive '+S.name+' --plan --offline\nJudge API key variables and TYPESAFE_API_KEY removed by name; no values recorded.\nexit: '+str(rc)+'\nstdout:\n'+o+'\nstderr:\n'+e)
+ assert rc==0,(rc,o,e)
+ finish('Q14','pass','Offline archive plan completed without provider calls or mutation; recorded proposed durable-knowledge disposition. Archive was not performed.')
+phase('Q14',q14)

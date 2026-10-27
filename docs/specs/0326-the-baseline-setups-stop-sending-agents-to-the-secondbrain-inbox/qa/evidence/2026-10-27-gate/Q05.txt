@@ -1,0 +1,5 @@
+upstreamSetupRevision: unique declaration internal/baseline/upstream_setup_revision_test.go
+knowledgeWorkspaceTreeDigest: unique declaration internal/baseline/upstream_setup_revision_test.go
+No internal test pins old full revision.
+Installed version 0.6.2 and lock ref correct.
+Hidden-inclusive text sweep: zero forbidden phrase matches outside historical/Spec exclusions.

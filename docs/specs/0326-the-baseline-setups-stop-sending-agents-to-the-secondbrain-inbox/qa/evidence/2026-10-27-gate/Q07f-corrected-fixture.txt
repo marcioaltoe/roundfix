@@ -1,0 +1,13 @@
+Independent git archive head; copied existing .git metadata from a no-checkout --no-local clone, no commits created. Restored parent Setup Manifest.
+COMMAND: go test -timeout 20m -count=1 -v -tags docscontract -run ^TestTheSetupManifestIsCurrent$ ./internal/docscontract
+exit: 1
+=== RUN   TestTheSetupManifestIsCurrent
+=== PAUSE TestTheSetupManifestIsCurrent
+=== CONT  TestTheSetupManifestIsCurrent
+    publicdocs_test.go:1294: Setup Manifest is stale; Managed Refresh proposes changes:
+        docs/agents/setup-context.json
+        regenerate with go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes
+--- FAIL: TestTheSetupManifestIsCurrent (0.10s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.495s
+FAIL

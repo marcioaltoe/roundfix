@@ -1,0 +1,31 @@
+from pathlib import Path
+import subprocess as sp,os,tempfile,json,re
+R=Path.cwd();S=R/'docs/specs/0326-the-baseline-setups-stop-sending-agents-to-the-secondbrain-inbox';P=S/'qa/qa-report-2026-10-27-01.md';E=S/'qa/evidence/2026-10-27-rerun'
+# Every referenced evidence target must exist before documentation contracts inspect the pending report.
+for target in re.findall(r'\]\((evidence/[^)]+)\)',P.read_text()):assert (P.parent/target).is_file(),target
+e=os.environ.copy();e['GOPROXY']='off';e['GOSUMDB']='off'
+for k in list(e):
+ if any(x in k for x in ['API_KEY','ACCESS_TOKEN','AUTH_TOKEN']):e.pop(k)
+passed=set()
+for p in E.glob('Q03-full-0.txt'):
+ for line in p.read_text().splitlines():
+  try:v=json.loads(line)
+  except:continue
+  if v.get('Action')=='pass':passed.add(v.get('Test',''))
+for name,args in [('Q03-docs-repaired',['-tags','docscontract','./internal/docscontract']),('Q03-snapshot-contract',['-tags','docscontract','-run','^TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot$','./internal/baseline'])]:
+ cmd=['go','test','-timeout','20m','-count=1','-json']+args
+ x=sp.run(cmd,env=e,text=True,capture_output=True)
+ (E/(name+'.txt')).write_text('COMMAND: '+' '.join(cmd)+'\nexit: '+str(x.returncode)+'\nstdout:\n'+x.stdout+'\nstderr:\n'+x.stderr)
+ print(name,x.returncode,flush=True)
+ assert x.returncode==0,name
+ for line in x.stdout.splitlines():
+  try:v=json.loads(line)
+  except:continue
+  if v.get('Action')=='pass':passed.add(v.get('Test',''))
+targets=['TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox','TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree','TestEveryUpstreamSetupFollowsTheAiMemoryRevision','TestEveryUpstreamSetupFollowsThePythonPresetRevision','TestThePythonSetupIsThePublishedUpstreamPreset','TestCatalogCompatibility','TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill','TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot','TestCheckRepositoryMatchesRealRepository','TestTheSetupManifestIsCurrent']
+assert set(targets)<=passed,set(targets)-passed
+for name in ['go','go-cli-typescript-bun','python','rust','typescript']:assert targets[0]+'/'+name in passed
+(E/'Q03-named-passes.txt').write_text('\n'.join(sorted(t for t in passed if any(t.startswith(n) for n in targets))))
+t=P.read_text().replace('| Q03 | fail |','| Q03 | pass |')
+t+='\nQ03 corrected observation: full docscontract suite and tagged installed-snapshot contract passed after repairing premature evidence links. Full baseline/skills suite passed on its first run. Every named test and all five new-test subtests are confirmed in evidence/2026-10-27-rerun/Q03-named-passes.txt. Initial failure logs remain preserved; it failed only TestCheckCorpusGolden and TestCheckActiveCorpusHasNoErrors with SC-HISTORY-RETAINED on pending evidence links. This is a corrected QA artifact, with no product change.\n'
+P.write_text(t)

@@ -1,0 +1,9 @@
+COMMAND: go test -timeout 20m -count=1 -v -tags docscontract -run ^TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot$ ./internal/baseline
+exit: 0
+=== RUN   TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== PAUSE TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+=== CONT  TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot
+--- PASS: TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot (0.02s)
+PASS
+suiteguard: guard cost: measured 2856 paths; fingerprint took 160.866041ms before and 125.708125ms after
+ok  	roundfix/internal/baseline	0.594s
