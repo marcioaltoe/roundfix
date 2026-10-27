@@ -1,5 +1,10 @@
 ## Context-Driven Baseline
 
+Profile-change output carries valid recorded decisions as `Carried decisions:`.
+Apply names each Root Backup with `baseline.preservation.backup.written`;
+reconcile names the Setup Snapshot revision. Restoration uses `create-link`
+and never moves an installed skill.
+
 Use the Baseline Command for Context-Driven Baseline adoption, update, profile
 management, recovery, Repository Skill Set restoration, and canonical asset
 synchronization. The CLI is the runtime authority; the

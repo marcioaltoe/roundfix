@@ -4,10 +4,10 @@ description: Adopt, update, or verify a repository's Context-Driven Baseline thr
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.6
+  version: 0.0.7
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.6
+version: 0.0.7
 ---
 
 # Setup Context-Driven
@@ -231,6 +231,12 @@ completed and archived legacy Specs byte-identical.
 
 ## Non-interactive planning for adoption or profile change
 
+For a profile change, `baseline plan --profile <id>` with `preservation.mode`
+carries each valid **Carried Decision** and names all missing answers in one
+refusal. Apply names each Root Backup with a
+`baseline.preservation.backup.written` warning; reconcile names the Setup
+Snapshot revision.
+
 The interactive root command refuses redirected or absent terminal input.
 Automation and Agents use `baseline update` for an adopted repository. For
 first adoption or a Profile change, use:
@@ -326,6 +332,10 @@ IDs, and must be versioned with the repository. They cannot combine profiles,
 load user-scoped catalogs, or declare executable or remote content.
 
 ## Repository Skill Set restoration
+
+Restore preserves the **Claude Skill Link** layout, uses `create-link` for a
+missing link, repairs links for installed skills, and never moves an installed
+skill.
 
 Adoption reports missing or drifted external skills but never restores them as
 a side effect. Preview an explicitly requested restoration:

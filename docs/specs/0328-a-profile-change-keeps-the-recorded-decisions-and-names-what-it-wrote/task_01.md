@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -100,3 +100,22 @@ closes the documentation of frictions (a) to (e) of the adopted Backlog Entry
 - `_prd.md` → Goals; Core Features 1-6; User Experience; Non-Goals / Out of Scope; Success Metric 6; Glossary
 - `_techspec.md` → API Contracts 1-6; Glossary; Build Order 4
 - ADR-0341
+
+## Result
+
+- Updated the context-driven guide, baseline command guide, canonical Roundfix
+  baseline reference, and setup-context-driven skill with the profile-change
+  path, Carried Decisions, Root Backup warnings, Setup Snapshot reconciliation,
+  and Claude Skill Link restoration behavior.
+- Added **Carried Decision**, **Root Backup**, and **Claude Skill Link** to
+  `CONTEXT.md`, each with an `_Avoid_` line and ADR-0341 link.
+- Ran `make skills-sync` successfully; the canonical and mirror skill content
+  was synchronized.
+- Ran `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions -count=1` successfully (1 passed package), recording
+  the owned-skill versions.
+- As the final documentation-generation step, ran
+  `go test -tags docscontract ./internal/docscontract
+  -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  successfully (1 passed package), recording the Behavior Surface fingerprint.
+- The Daemon-owned `## Verification` commands were not run.

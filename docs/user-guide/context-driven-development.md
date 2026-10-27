@@ -366,6 +366,12 @@ carriers stay repository-owned, byte-identical, and warning-only.
 
 ### First adoption
 
+For automation or a profile change, use `baseline plan --profile <id>` with
+`preservation.mode`. The plan carries each valid **Carried Decision** and
+names every missing answer in one refusal. An apply names each **Root Backup**
+with a `baseline.preservation.backup.written` warning; the repository owns
+those backups. Reconcile names the Setup Snapshot revision it used.
+
 An unconfigured or incompatible repository enters adoption. Choose one
 instruction mode:
 
@@ -410,6 +416,11 @@ The interactive workflow handles a Baseline Profile change. It retains
 still-valid stored decisions as defaults, asks whether to keep or change the
 profile, and produces a new complete Change Plan and Plan Digest. Profiles are
 never combined.
+
+The non-interactive path is `baseline plan --profile <id>` with
+`preservation.mode`; it carries valid Carried Decisions and reports all missing
+answers together. `baseline update` refuses `--decision profile=<id>` and
+names `baseline plan` as the command for that change.
 
 Rejecting a final plan does not authorize a partial write. Select the decision
 area to revisit:
@@ -704,6 +715,12 @@ byte-identical.
 
 ### Automation
 
+A profile change runs `baseline plan --profile <id>` with `preservation.mode`.
+It carries each valid Carried Decision and names every missing answer in one
+refusal. Apply names every Root Backup it writes with a
+`baseline.preservation.backup.written` warning; the repository must commit
+those backups. Reconcile names the Setup Snapshot revision.
+
 For a repository with a compatible Setup Manifest, update directly from the
 recorded Baseline Profile and decisions:
 
@@ -871,6 +888,10 @@ The output keeps three concepts separate:
   executed action or readiness claim.
 
 ### Repository Skill Set restoration
+
+When `.claude/skills` keeps its links, restore writes a **Claude Skill Link**
+for each restored skill missing one and repairs a missing link for an installed
+skill in the same transaction.
 
 Baseline adoption reports missing or drifted external skills but never restores
 them as a side effect. Preview the explicit operation:

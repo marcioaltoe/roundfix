@@ -1,5 +1,10 @@
 ### baseline
 
+Profile-change output carries valid recorded decisions as `Carried decisions:`.
+Apply names each Root Backup with `baseline.preservation.backup.written`;
+reconcile names the Setup Snapshot revision. Restoration uses `create-link`
+and never moves an installed skill.
+
 ```text
 roundfix baseline [--repo <path>] [--format <text|json>]
 roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--decision <id=value> ...] [--no-skills] [--no-history] [--skills-source-dir <path>]
