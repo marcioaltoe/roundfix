@@ -93,6 +93,13 @@ load), the Vortex report of 2026-10-26.
    `TestACPXProbeFallbackReportsCleanupInfrastructureError`. Their cases
    move to the new contract in the tests of requirement 7. No other existing
    test changes.
+9. MUST re-record `docs/references/coverage-record.json` after removing those
+   four tests, only with
+   `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+   (`docs/agents/specific-repository.md`); `TestCoverageEquivalence` runs in
+   the repository Verification at settlement and fails while the record still
+   lists them. The record's only change is the removal of those four names and
+   the addition of the tests this Task and earlier Specs added.
 
 ## Subtasks
 
@@ -102,6 +109,7 @@ load), the Vortex report of 2026-10-26.
 - [ ] Write the record and the warnings.
 - [ ] Keep the analyzer's stop.
 - [ ] Add the named tests, remove the four join tests, add the ceiling.
+- [ ] Re-record the coverage record with its command.
 
 ## Acceptance Criteria
 
@@ -125,6 +133,7 @@ load), the Vortex report of 2026-10-26.
 - interface: `internal/baselineacp/analyzer.go`
 - interface: `internal/baselineacp/analyzer_test.go`
 - interface: `internal/testfixture/real_time_budget_test.go`
+- interface: `docs/references/coverage-record.json`
 
 ## Consumers
 
