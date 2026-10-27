@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -118,3 +118,66 @@ pins the sentences.
 - `_prd.md` → Sources 1; Goal 5; Core Feature 3; Success Metric 7
 - `_techspec.md` → Current behavior 8; API Contract 6; Testing Approach; Build Order 3; Risks & Considerations
 - ADR-0335; ADR-0276
+
+
+## Result
+
+Implemented the Baseline subject wording from API Contract 6 for the adopted
+Backlog Entry of 2026-10-26. The two clauses retain their identities,
+enforcement and replacement metadata. Rule versions rose from 6 to 7
+(`rule.spec.project-constraints`) and 7 to 8 (`rule.autonomous.loop`). The
+sanctioned recorder raised module versions from 21 to 22 (`spec-workflow`)
+and 16 to 17 (`autonomous-work`). Only the two sentence constants changed in
+`network_prohibited_row_clause_test.go`.
+
+### Implementation and focused evidence
+
+- Starting signal: both embedded clauses and both sentence constants carried
+  the exact network sentence rather than the subject sentence. The Task's
+  `in_progress` status was already present and was left untouched.
+- Ran `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`:
+  exit 0; module versions and their record were generated.
+- Then ran `make baseline-digests`: exit 0, `ok: true`, `changed: true`.
+  Its formatter, compatibility corpus, catalog, diagnostic characterization,
+  plan characterization and final strict catalog steps passed. It rewrote
+  exactly the ten derived files declared by this Task.
+- Then ran `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  twice, with a temporary HOME, the existing module cache, `GOPROXY=off` and
+  `GOSUMDB=off`. Both exited 0. The first changed exactly the three declared
+  managed files. The second reported `File changes: 0`,
+  `Idempotence: verified`, and an already-applied approved Plan. The temporary
+  HOME was removed. Neither refresh used real Roundfix Home or network access.
+- Focused Python comparisons against HEAD confirmed each module differs only
+  in its one sentence, its rule version and its generated module version;
+  they also confirmed the test differs only in its two constants. Normalized
+  text assertions found the exact new sentence and no old sentence in each
+  of the four rendered guide copies. This supports acceptance criterion 1.
+- The second Managed Refresh provides idempotence evidence for acceptance
+  criterion 2. `TestTheSetupManifestIsCurrent` remains Daemon-owned and was
+  not run in this turn.
+- The recorder and regeneration steps provide focused module-version,
+  catalog and characterization evidence for acceptance criterion 3. The
+  complete declared Verification remains Daemon-owned and was not run.
+- `git diff --check`: exit 0. Changed-path inspection found only the declared
+  Task slice and this Task file; no other Task, manifest, skill, production
+  Go file, retention asset or Source Baseline file was edited.
+
+### Remaining wording matches
+
+Repository-wide `rg -n --hidden` for `authorization forbids network access`,
+excluding `.git`, `docs/history/`, `docs/adr/`, `CHANGELOG.md` and this Spec,
+left exactly these four matches:
+
+- `docs/specs/0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk/task_04.md:105`:
+  “because this Spec's authorization forbids network access, record the Go”.
+- `docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/task_04.md:98`:
+  “because this Spec's authorization forbids network access, record the”.
+- `docs/specs/0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms/task_03.md:90`:
+  “because this Spec's authorization forbids network access, record the”.
+- `docs/specs/0325-the-follow-up-mode-consumes-the-handoff-and-every-message/task_03.md:113`:
+  “because this Spec's authorization forbids network access, record the”.
+
+These are other Specs' offline authorization instructions rather than copies
+of the changed exemption sentence. They remain untouched under the
+single-Task boundary. No remaining skill or user-guide match was found in
+this checkout. No Task status or acceptance checkbox was settled.

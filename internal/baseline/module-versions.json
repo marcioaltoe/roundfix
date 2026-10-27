@@ -21,6 +21,10 @@
       {
         "version": 16,
         "digest": "sha256:006fed4d7c780a7db58e58237e38a94ca9bb73aeb21e618b97a943744b2b7239"
+      },
+      {
+        "version": 17,
+        "digest": "sha256:47a6fdb1aaa9897f72fba8056cb35c54be7303b975f91aab52ff3fa49c97c01d"
       }
     ],
     "backend": [
@@ -201,6 +205,10 @@
       {
         "version": 21,
         "digest": "sha256:dfc21e276bc9a144caab733750a912088217aae807ef2193582d011b7d622c85"
+      },
+      {
+        "version": 22,
+        "digest": "sha256:7824573a5e1a6617b8e37e96a7a64737d785677f0b91001e7e7d3ceb376eb3ed"
       }
     ],
     "tui-surface": [
