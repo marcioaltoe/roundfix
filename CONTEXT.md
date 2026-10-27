@@ -48,6 +48,10 @@ _Avoid_: Internal helper, implementation detail
 A non-QA Task between a contract-changing Task and the QA gate whose Verification runs the consuming suites ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
 _Avoid_: Final QA, follow-up task
 
+**Authorized Executable**:
+A path the Spec's `_authorization.md` lists under `executables`, which a Task commit keeps with its execute bit; the list comes from the authorization the Run resolved at start. A QA Report or Batch commit never keeps an untracked executable ([ADR-0340](docs/adr/0340-an-untracked-executable-rides-a-task-commit-only-when-the-spec-authorization-names-it.md)).
+_Avoid_: Executable allowlist, approved script, build artifact exemption
+
 **Run**:
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job
@@ -476,7 +480,7 @@ A Run started with the detach flag: roundfix re-executes itself as a session lea
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
-The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
+The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome or after settle integrates it, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
 _Avoid_: Sandbox, scratch dir, user checkout
 
 **Worktree Root**:
@@ -731,7 +735,7 @@ The command that executes a Spec's Task Graph by running Agents over its Tasks i
 _Avoid_: Run command, execute command, spec command
 
 **Settle Command**:
-The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
+The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it names each worktree it removes on stderr, creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
@@ -1043,7 +1047,7 @@ A check of the lines a Task commit would add, the files a QA Report commit would
 _Avoid_: Redaction, post-push scan, advisory check
 
 **Archive Command**:
-The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)). The normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
+The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)). A Declared QA Decline archives on Task completion alone, without an override. The normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Move command, retire run, cleanup command
 
 **Source Revision Recovery**:
@@ -1384,6 +1388,10 @@ another head. A Delivery Retry's correction proof reads it for the parked
 candidate, as described in
 [ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).
 _Avoid_: round record, review history
+
+**Declared QA Decline**:
+A Task Graph's `qa: declined` with a non-empty `qa_reason`, declaring no Task of type `qa`. The Spec archives once every Task is completed, without a QA Report, with the disposition `no-qa`, and a QA Archive Override is refused for it ([ADR-0154](docs/adr/0154-a-qa-archive-override-records-user-authority-not-a-pass.md)).
+_Avoid_: QA pass, QA Archive Override, skipped QA gate
 
 **QA Archive Override**:
 An explicit user request or applicable prior authorization to archive a covered

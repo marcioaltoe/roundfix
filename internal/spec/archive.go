@@ -143,6 +143,9 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 					return ArchiveResult{}, fmt.Errorf("Task %q is %q; QA archive override requires every non-QA Task to be %q", task.ID, task.Status, StatusCompleted)
 				}
 			}
+			if graph.QADeclined && allTasksCompleted {
+				return ArchiveResult{}, errors.New("QA archive override is not allowed because the Spec already qualifies for normal archive")
+			}
 			report, reportErr := ReadQAReport(graph.Spec.Dir)
 			switch {
 			case reportErr == nil:
@@ -163,13 +166,15 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 					return ArchiveResult{}, fmt.Errorf("Task %q is %q; archive requires every Task to be %q", task.ID, task.Status, StatusCompleted)
 				}
 			}
-			report, reportErr := ReadQAReport(graph.Spec.Dir)
-			if reportErr != nil {
-				return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
-			}
-			unproven, reportErr = archiveUnprovenActions(graph.Spec.Dir, report)
-			if reportErr != nil {
-				return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+			if !graph.QADeclined {
+				report, reportErr := ReadQAReport(graph.Spec.Dir)
+				if reportErr != nil {
+					return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+				}
+				unproven, reportErr = archiveUnprovenActions(graph.Spec.Dir, report)
+				if reportErr != nil {
+					return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+				}
 			}
 		}
 	}

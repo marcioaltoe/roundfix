@@ -66,6 +66,14 @@ payload, command-runner, and event-stream evidence.
    and integrates onto the Run Branch. Re-run `roundfix implement --spec <slug>`
    to pick up any still-pending Tasks; completed Tasks are skipped.
 
+   After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+   Run settle from the user checkout. On stderr:
+
+   ```text
+   Task Worktree removed: <task worktree path>
+   Run Worktree removed: <run worktree path>
+   ```
+
 6. **Stop when needed.** Prefer graceful `roundfix stop --spec <slug>`; the Run
    ends after the current Work Item settles. If a later command finds an
    Active-Run lock whose recorded owner PID is provably dead, Roundfix reclaims
@@ -84,6 +92,9 @@ payload, command-runner, and event-stream evidence.
    terminal `qa` Task completed, because settlement applies the same
    declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
+
+   A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+   `--qa-override` is refused for such a Spec. Every other archive precondition still applies.
 
 Failure recovery stays clean when you keep two invariants: never edit
 Run-touched files while a Run is Active, and never reap sessions or Worktrees by
@@ -160,6 +171,9 @@ Per Spec, in order:
    now settles the terminal `qa` Task completed, because settlement applies the same
    declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
+
+   A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+   `--qa-override` is refused for such a Spec. Every other archive precondition still applies.
 
 7. **Resolve Pull Request feedback.** This applies only when the repository's
    Review Source gives feedback on the Pull Request. Run

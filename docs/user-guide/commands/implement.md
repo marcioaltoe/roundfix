@@ -18,6 +18,9 @@ The gate is the Spec's authored terminal `qa` Task; no flag requests it.
 upstream. Integration Pending, Unresolved, Failed, Stopped, and failing-QA
 Runs never push.
 
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+The list must be on the delivery target before the Run reads it. QA Report and Batch commits never keep an untracked executable. A repository with core.fileMode false records the file as 100644.
+
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. It considers Runs with outcome Stopped or
 Unresolved when their recorded Run Worktree is present. Preflight Validation

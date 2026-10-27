@@ -1257,6 +1257,10 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		return false, true, err
 	}
 	changed, projectConfigDrops := dropProjectConfigFromCommit(plan.GitRoot, changed, projectConfigNonTaskCommitExclusionReason, false)
+	changed, err = expandUntrackedCommitDirectories(ctx, plan.GitRoot, changed)
+	if err != nil {
+		return false, false, err
+	}
 	stageable, dropped := FilterStageablePaths(ctx, plan.GitRoot, changed)
 	dropped = append(projectConfigDrops, dropped...)
 	for _, drop := range dropped {

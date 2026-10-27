@@ -342,7 +342,9 @@ func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	assertOnlySettleSurfaceLine(t, stderr.String(), run.WorkDir)
+	if want := "Settle surface: " + run.WorkDir + "\n" + "Run Worktree removed: " + run.WorkDir + "\n"; stderr.String() != want {
+		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	}
 	if !strings.Contains(stdout.String(), "verify test -f done.txt — ok\n") {
 		t.Fatalf("expected verification line, got %q", stdout.String())
 	}
@@ -435,7 +437,9 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
+	if want := "Settle surface: " + taskRef.Path + "\n" + "Task Worktree removed: " + taskRef.Path + "\n" + "Run Worktree removed: " + run.WorkDir + "\n"; stderr.String() != want {
+		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	}
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f done.txt — ok\n" +
 		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
@@ -599,7 +603,9 @@ func TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal(t *testi
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
+	if want := "Settle surface: " + taskRef.Path + "\n" + "Task Worktree removed: " + taskRef.Path + "\n" + "Run Worktree removed: " + run.WorkDir + "\n"; stderr.String() != want {
+		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	}
 	// The Task Worktree's own task file declares this command; the checkout's
 	// copy declares one that cannot pass.
 	if !strings.Contains(stdout.String(), "verify test -f done.txt — ok\n") {
@@ -668,7 +674,9 @@ func TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
+	if want := "Settle surface: " + taskRef.Path + "\n" + "Task Worktree removed: " + taskRef.Path + "\n" + "Run Worktree removed: " + run.WorkDir + "\n"; stderr.String() != want {
+		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	}
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f renamed.txt — ok\n" +
 		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
@@ -1815,4 +1823,54 @@ func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir str
 func writeSettleHookFixture(t *testing.T, path string) {
 	t.Helper()
 	writeScriptFixture(t, path, "#!/bin/sh\n"+measuredHookRefusalScriptForTest)
+}
+
+func TestSettleNamesEachWorktreeItRemoves(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", taskType: "backend", status: string(spec.StatusFailed), verification: []string{"test -f done.txt"}},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
+	mustWrite(t, filepath.Join(taskRef.Path, "done.txt"), "recovered work\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("settle exit = %d, want 0; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	want := "Settle surface: " + taskRef.Path + "\nTask Worktree removed: " + taskRef.Path + "\nRun Worktree removed: " + run.WorkDir + "\n"
+	if stderr.String() != want {
+		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	}
+	assertRunWorktreeRemoved(t, taskRef.Path)
+	assertRunWorktreeRemoved(t, run.WorkDir)
+}
+
+func TestSettleNamesNoRemovalWhenIntegrationIsPending(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", taskType: "backend", status: string(spec.StatusFailed), verification: []string{"test -f done.txt"}},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, runRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateUnresolved)
+	mustWrite(t, filepath.Join(runRef.Path, "done.txt"), "recovered work\n")
+	mustWrite(t, filepath.Join(repoDir, "user.txt"), "checkout advanced\n")
+	gitImplement(t, repoDir, "add", "user.txt")
+	gitImplement(t, repoDir, "commit", "-m", "advance user branch after Run started")
+	var stdout, stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("settle exit = %d, want 1; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	want := "verify test -f done.txt — ok\nintegration pending — git merge --ff-only " + runRef.Branch + "\n"
+	if stdout.String() != want {
+		t.Fatalf("stdout = %q, want %q", stdout.String(), want)
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), run.WorkDir)
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertRunBranchExists(t, repoDir, runRef.Branch)
 }

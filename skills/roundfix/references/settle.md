@@ -131,6 +131,14 @@ integration pending — git merge --ff-only roundfix/run-<id>
 
 Review the Run Worktree before running it.
 
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+Run settle from the user checkout. On stderr:
+
+```text
+Task Worktree removed: <task worktree path>
+Run Worktree removed: <run worktree path>
+```
+
 ## QA Report acceptance
 
 ```bash

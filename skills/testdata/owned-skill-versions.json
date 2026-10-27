@@ -57,6 +57,10 @@
       {
         "version": "0.0.15",
         "digest": "c5bf9cbb95c01a4349a06a64acb7e2f9bed1af07a2598b97c950476a6128c085"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "753f1e913ae2f3e189936e18d2b462855a700a74f7dbc75f6877c625d3b01000"
       }
     ],
     "brainstorming": [
@@ -807,6 +811,18 @@
       {
         "version": "0.1.147",
         "digest": "5e53961c076a29c1aa36fa7d949f34e6d0cfcb7257ab67c1be5de36b43f69f18"
+      },
+      {
+        "version": "0.1.148",
+        "digest": "51a2a53b6956250a8b71c64cd2f374af266c419c08e84086f30f6c74f51cfc41"
+      },
+      {
+        "version": "0.1.149",
+        "digest": "dfa0bb398ce185f153a6ad046c8a5a39169f5a34ab0a2b8612152b902583cca5"
+      },
+      {
+        "version": "0.1.150",
+        "digest": "11ac39f8d88f072dce59d339a2272e2ed98eab92a2359715e227af6a2a1e2ba5"
       }
     ],
     "setup-context-driven": [
@@ -979,6 +995,10 @@
       {
         "version": "0.0.20",
         "digest": "f5bcfb3e54896fd20058243bc0a05dc8b820286cf36755f8dee4a2ed8a19a470"
+      },
+      {
+        "version": "0.0.21",
+        "digest": "725b815aba0f06403e71aaff5a82a918017281ffc8ac8fd79f1c072505380112"
       }
     ],
     "write-techspec": [

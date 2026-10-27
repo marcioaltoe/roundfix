@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.20
+  version: 0.0.21
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.20
+version: 0.0.21
 ---
 
 # Write Tasks
@@ -66,6 +66,8 @@ Run this preflight before deriving or approving a breakdown:
    will use. `roundfix deliver start` refuses a record lacking `implement`,
    `commit`, `push`, `pull_request` or `merge`; a Spec with no Governed Path
    records `paths: []`.
+8. A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+   The list must be on the delivery target before the Run reads it. QA Report and Batch commits never keep an untracked executable. A repository with core.fileMode false records the file as 100644.
 
 Dependencies remain owned only by `_tasks.md`; Task status remains owned only
 by each Task file. The preflight never moves either responsibility.

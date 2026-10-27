@@ -8581,7 +8581,7 @@ func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 	if got := eventPayloadString(t, dropped[0], "mode"); got != "0755" {
 		t.Fatalf("expected executable mode 0755, got %q", got)
 	}
-	wantWarning := "roundfix: refused executable file " + executablePath + " (mode 0755); build artifacts and deliberately executable repository files are not valid Work Item output\n"
+	wantWarning := "roundfix: refused executable file " + executablePath + " (mode 0755); build artifacts and deliberately executable repository files are not valid Work Item output unless the Spec's _authorization.md lists the path under executables\n"
 	if !strings.Contains(fixture.progress.String(), wantWarning) {
 		t.Fatalf("expected executable refusal %q, got %q", wantWarning, fixture.progress.String())
 	}

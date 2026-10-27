@@ -21,6 +21,9 @@ entry without one keeps its bytes (ADR-0308). It writes
 `<specs.root>/<slug>/`. The archive performs an Archive Relink before writing:
 Live Document citations are rewritten to promoted copies or the Archive Record.
 
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+`--qa-override` is refused for such a Spec. Every other archive precondition still applies.
+
 In the outcome, each `unproven` entry and each promoted copy, a citation of a
 removed folder file points at its promoted copy or becomes a Git Locator: `path@commit`, written as
 code. The locator prefers `source_revision` when the Default Branch Head or a

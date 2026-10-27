@@ -66,11 +66,14 @@ all refuse; an environment-blocked row remains acceptable under the existing
 policy. For a Spec without a Task Graph, a
 recorded supersession is accepted in place of those completed Tasks and the
 passing gate. Every other archive precondition still applies, and a Spec with
-a Task Graph keeps its existing evidence rules. The command is
+a Task Graph with an authored QA gate keeps its existing evidence rules. The command is
 non-interactive, creates no Run, and never pushes. Before touching the
 filesystem, it verifies every Task in the Spec's Task Graph has
-`status: completed` and that the newest QA Report meets that eligibility
-contract.
+`status: completed` and, when the graph authors a QA gate, that the newest QA
+Report meets that eligibility contract.
+
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+`--qa-override` is refused for such a Spec. Every other archive precondition still applies.
 
 For a passing verdict, archive writes `<slug>.md` under the resolved archive
 root and removes the Spec folder, which stays in Git at the record's
