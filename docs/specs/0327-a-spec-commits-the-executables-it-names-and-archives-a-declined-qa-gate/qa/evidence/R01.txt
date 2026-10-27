@@ -1,2 +1,0 @@
-make build: exit 0
-make verify-changed: Daemon pass (exit 0)
