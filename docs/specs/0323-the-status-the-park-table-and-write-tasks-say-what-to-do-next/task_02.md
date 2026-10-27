@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -86,3 +86,30 @@ skill version and the Behavior Surface fingerprint.
 
 - `_prd.md` → Sources 2; Goal 3; Core Feature 2; Success Metric 3
 - `_techspec.md` → Current behavior 4; Interfaces; API Contract 3; Invariants 3-4; Testing Approach; Build Order 2
+
+## Result
+
+Implementation evidence:
+
+- The `finding` row now contains only blocker names in the user guide and both
+  Roundfix `deliver` reference copies. The `archived-item-unproven` and
+  `secret-found` actions are separate sentences in each copy.
+- Added `checkParkActionDocumentation` and its two contract tests. The helper
+  derives blocker names from `delivery` constants and next actions from
+  `delivery.ClassifyPark` using `<worktree>` and `<slug>` placeholders.
+- `make skills-sync` ran before and after the sanctioned skill-version recorder;
+  `roundfix` is recorded as `0.1.144` in both skill copies and
+  `skills/testdata/owned-skill-versions.json`.
+- The Behavior Surface fingerprint was re-recorded last with the sanctioned
+  `TestTheSkillCoverageMapIsCurrent` recorder.
+
+Focused checks:
+
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem$'` — passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheParkActionContractReportsAnActionInTheClassTable$'` — passed; the joined row and reworded action were both rejected.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed.
+- `git diff --check` — passed.
+
+The Task's declared Verification remains for the Daemon; Task status remains
+Daemon-owned.
