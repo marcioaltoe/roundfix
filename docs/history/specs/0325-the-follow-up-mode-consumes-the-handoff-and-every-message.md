@@ -18,6 +18,7 @@ sources:
   - 2026-10-26-the-follow-up-mode-leaves-the-handoff-and-handed-in-messages-pending.md
 regeneration: []
 promoted: []
+pull_request: "698"
 ---
 
 # The follow-up mode consumes the handoff and every message
