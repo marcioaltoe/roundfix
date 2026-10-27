@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -89,3 +89,46 @@ Setup Snapshot revision the installed skills follow. This answers frictions
 - `_prd.md` → Goals; Core Feature 4; Core Feature 5; User Experience; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior 4-5; Interfaces; API Contract 4; API Contract 5; Invariants 3-4; Testing Approach; Build Order 2
 - ADR-0264; ADR-0341
+
+
+## Result
+
+Implemented API Contracts 4 and 5 within this Task's slice.
+
+- Root Backup file changes now include `; root backup of <carrier>` inside
+  their plan-text parentheses. Successful apply results append one
+  `baseline.preservation.backup.written` warning per backup entry after the
+  original plan warnings. Existing text and JSON result writers expose the
+  backup path and exact contract message without schema changes.
+- Exported `SetupSnapshotRevisions` uses the existing built-in/repository
+  profile snapshot loader, filters external skills by source, and returns
+  sorted distinct refs. Only successful, unapplied, finding-free no-change
+  text results print the three explanation lines. JSON and reconciliation
+  planning are unchanged.
+- Added all four named tests. Adoption starts from committed `AGENTS.md`
+  with greenfield preservation through the plan/apply CLI; text and JSON
+  assertions name the created backup and compare its bytes to the original
+  carrier. Managed-refresh coverage checks both an applied update and its
+  underlying apply-result warning contract. Reconcile covers an embedded
+  source and a source with no profile skills, obtains expected refs from
+  the exported catalog-backed function, and checks CLI JSON byte-for-byte
+  against the unchanged package payload.
+
+Focused evidence:
+
+- `go test ./internal/cli -run '^(TestBaselineApplyNamesTheRootBackupItWrote|TestBaselinePlanTextLabelsTheRootBackup|TestBaselineUpdateWritesNoRootBackupWarning|TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision|TestBaselineApplyCommand|TestBaselineSkillsReconcilePreviewThenConfirm)$' -count=1 -timeout=3m`
+  exited 0.
+- A temporary Go overlay restoring the pre-change apply and text renderers
+  made the backup warning, plan label, and reconcile explanation tests fail
+  on their missing behavior. A separate overlay injecting a backup warning
+  into managed-refresh apply made
+  `TestBaselineUpdateWritesNoRootBackupWarning` fail. Overlay files and
+  logs are outside the repository; production files were not mutated by
+  these probes.
+- The first focused build exposed an incorrect test call argument order;
+  it was corrected before the successful focused runs.
+- `git diff --check` exited 0.
+
+The Daemon's existing `status: in_progress` change was preserved. No other
+Task or Task Graph was edited. Declared Verification and repository gates
+remain for the Daemon; no terminal Task verdict is claimed.

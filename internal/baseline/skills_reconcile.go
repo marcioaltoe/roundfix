@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -75,6 +76,30 @@ type reconcilePlan struct {
 type reconcileDependencies struct {
 	profile         restoreProfile
 	transactionHook func(transactionFaultPoint) error
+}
+
+// SetupSnapshotRevisions returns the sorted distinct external skill refs for a source.
+func SetupSnapshotRevisions(repoRoot, profileID, sourceRepository string) ([]string, error) {
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		return nil, err
+	}
+	profile, err := loadSkillSnapshotProfile(repoRoot, profileID, catalog)
+	if err != nil {
+		return nil, err
+	}
+	refs := make(map[string]struct{})
+	for _, skill := range profile.Skills {
+		if skill.Source.Repository == sourceRepository {
+			refs[skill.Source.Ref] = struct{}{}
+		}
+	}
+	result := make([]string, 0, len(refs))
+	for ref := range refs {
+		result = append(result, ref)
+	}
+	sort.Strings(result)
+	return result, nil
 }
 
 // ReconcileSkillsLock previews or applies removal of lock entries proven obsolete.

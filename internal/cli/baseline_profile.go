@@ -527,8 +527,14 @@ func printBaselinePlanText(plan baseline.PlanDocument, stdout io.Writer, carried
 	fmt.Fprintf(stdout, "Managed entries: %d\n", len(plan.ManagedEntries))
 	fmt.Fprintf(stdout, "File changes: %d\n", len(plan.FileChanges))
 	for _, change := range plan.FileChanges {
-		fmt.Fprintf(stdout, "- %s %s (%d managed entries)\n",
-			change.Action, change.Path, len(change.ManagedEntries))
+		label := ""
+		for _, entry := range change.ManagedEntries {
+			if carrier, ok := strings.CutPrefix(entry, "backup:"); ok {
+				label += "; root backup of " + carrier
+			}
+		}
+		fmt.Fprintf(stdout, "- %s %s (%d managed entries%s)\n",
+			change.Action, change.Path, len(change.ManagedEntries), label)
 	}
 	if len(plan.HistoryMoves) != 0 {
 		fmt.Fprintf(stdout, "History moves: %d\n", len(plan.HistoryMoves))
