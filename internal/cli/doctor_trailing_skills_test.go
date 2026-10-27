@@ -123,6 +123,7 @@ func TestBaselineUpdateKeepsASetupSnapshotDifference(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			var requests []baseline.SkillsRestoreRequest
 			deps := baselineUpdateSkillsDependencies{
+				recordLock:         func(context.Context, string, []string) ([]string, error) { return nil, nil },
 				resolveProjectRoot: func(context.Context, string) (string, error) { return "/repo", nil },
 				install: func(context.Context, skills.InstallRequest) (skills.InstallResult, error) {
 					return skills.InstallResult{}, nil

@@ -90,8 +90,10 @@ settlement.
 
 #### Settlement Checks
 
-For every non-QA Task in a Task Graph with an authored QA gate, the Daemon runs
-three checks as part of the Task's settlement attempt, in this order:
+For every non-QA Task in a Task Graph, with or without a QA gate, the Daemon
+runs the repository Verification as part of the Task's settlement attempt. In
+a graph with an authored QA gate, it also runs two in-process checks, in this
+order:
 
 1. The repository Verification runs at settlement as the attempt's last
    command.
@@ -100,8 +102,14 @@ three checks as part of the Task's settlement attempt, in this order:
 3. `settlement check: authorization` checks the prospective Task commit against
    the frozen authorization record.
 
-Both in-process checks run after the attempt's commands, whatever their result,
-and before the attempt's verdict.
+The repository Verification runs for every non-QA Task, with or without a QA
+gate. The two in-process checks run after the attempt's commands, whatever
+their result, and only in a graph with an authored QA gate, before the
+attempt's verdict.
+
+A Run without a QA gate runs the Integrated Repository Verification under the
+conditions in `_techspec.md` → API Contract 5. If it fails, the Run ends
+`Unresolved` with the line specified by API Contract 6.
 
 A failed check returns as Verification Feedback for the single repair turn. A
 final failure settles the Task `failed`. An in-process failure uses the reason

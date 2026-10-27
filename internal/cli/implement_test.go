@@ -1765,6 +1765,8 @@ func TestRunImplementVerificationCapacityDoesNotAddFlag(t *testing.T) {
 func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	fakeACPX := fakeACPXCommand(t)
 	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
 		"implement", "--spec", implementTestSlug, "--detach")
@@ -2323,6 +2325,8 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		{id: "task_01", title: "Write the widget guide", taskType: "docs"},
 		{id: "task_02", title: "Build the widget backend", needs: []string{"task_01"}},
 	})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
 		statusByTask: map[string]spec.Status{
@@ -2562,6 +2566,8 @@ func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *t
 		title:        "Recover one temporary gate",
 		verification: []string{command},
 	}})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
@@ -2653,6 +2659,8 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 		{id: "task_01", title: "Exhaust one temporary gate", verification: []string{command}},
 		{id: "task_02", title: "Complete an independent Task"},
 	})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	configureImplementCapacities(t, repoDir, 2, 1)
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -2746,6 +2754,8 @@ func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *te
 		title:        "Repair one deterministic gate",
 		verification: []string{command},
 	}})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	var callsMu sync.Mutex
 	taskCalls := 0
 	runner := &implementFakeRunner{
@@ -2894,6 +2904,8 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 		id:    "task_01",
 		title: "Build the widget core",
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	command := "pwd > bootstrap.cwd && printf ready > bootstrap.ready"
 	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
 	gitImplement(t, repoDir, "add", ".gitignore")
@@ -2939,6 +2951,8 @@ func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *test
 		{id: "task_01", title: "Build the first slice"},
 		{id: "task_02", title: "Build the second slice"},
 	})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	command := "pwd > bootstrap.cwd && printf ready > bootstrap.ready"
 	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
 	gitImplement(t, repoDir, "add", ".gitignore")
@@ -4377,6 +4391,8 @@ func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUs
 		title:        "Build isolated work",
 		verification: []string{"test -f agent.txt"},
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	mustWrite(t, filepath.Join(repoDir, "local.txt"), "user dirt\n")
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4429,6 +4445,8 @@ func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T)
 		title:        "Build isolated work",
 		verification: []string{"test -f agent.txt"},
 	}})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
@@ -4488,6 +4506,8 @@ func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *test
 		title:        "Edit shared file",
 		verification: []string{"grep -q run shared.txt"},
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	mustWrite(t, filepath.Join(repoDir, "shared.txt"), "base\n")
 	gitImplement(t, repoDir, "add", "shared.txt")
 	gitImplement(t, repoDir, "commit", "-m", "seed shared file")
@@ -4590,6 +4610,8 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 		title:  "Build after cleanup",
 		status: string(spec.StatusPending),
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
 	staleRun, _, staleTask := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateStopped)
 	runner := &implementFakeRunner{
@@ -4629,6 +4651,8 @@ func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
 		title:  "Build after reachable cleanup",
 		status: string(spec.StatusPending),
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
 	staleRun, staleRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateStopped)
 	mustWrite(t, filepath.Join(staleRef.Path, "reachable.txt"), "reachable\n")
@@ -4662,6 +4686,8 @@ func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
 		title:  "Build while preserving unique work",
 		status: string(spec.StatusPending),
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
 	staleRun, staleRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateStopped)
 	mustWrite(t, filepath.Join(staleRef.Path, "unique.txt"), "unique\n")
@@ -4694,6 +4720,8 @@ func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
 		title:  "Build after session cleanup",
 		status: string(spec.StatusPending),
 	}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
 	terminalRun, _, terminalTask := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateStopped)
 	activeOther := createActiveImplementRunForStopInGitRoot(t, homeDir, filepath.Join(repoDir, "other"), "0002-other-spec")
@@ -4766,7 +4794,8 @@ func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
 		status: string(spec.StatusPending),
 	}})
 	artifactDir := filepath.Join(homeDir, "artifacts")
-	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  artifact_dir: %q\nstore:\n  journal_retention: 336h\n", artifactDir))
+	// Use a passing repository check in this retention fixture.
+	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  verification: true\n  artifact_dir: %q\nstore:\n  journal_retention: 336h\n", artifactDir))
 	fixture := seedGCFixture(t, ctx, homeDir, artifactDir, time.Now().UTC())
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4805,7 +4834,8 @@ func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
 		status: string(spec.StatusPending),
 	}})
 	artifactDir := filepath.Join(homeDir, "artifacts")
-	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  artifact_dir: %q\nstore:\n  journal_retention: 336h\n", artifactDir))
+	// Use a passing repository check in this retention fixture.
+	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  verification: true\n  artifact_dir: %q\nstore:\n  journal_retention: 336h\n", artifactDir))
 	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
 		t.Fatalf("open Run store: %v", err)
@@ -4851,7 +4881,8 @@ func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
 		status: string(spec.StatusPending),
 	}})
 	artifactDir := filepath.Join(homeDir, "artifacts")
-	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  artifact_dir: %q\nstore:\n  journal_retention: 0\n", artifactDir))
+	// Use a passing repository check in this retention fixture.
+	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  verification: true\n  artifact_dir: %q\nstore:\n  journal_retention: 0\n", artifactDir))
 	fixture := seedGCFixture(t, ctx, homeDir, artifactDir, time.Now().UTC())
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -5661,6 +5692,8 @@ func TestBudgetClockCrossesAfterTheSettledTask(t *testing.T) {
 		{id: "task_01", title: "Complete before the Run Budget"},
 		{id: "task_02", title: "Reach the Run Budget", needs: []string{"task_01"}},
 	})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	const maximum = time.Hour
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\n")
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
@@ -6588,6 +6621,8 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 
 	t.Run("a selection failure activates the fallback chain", func(t *testing.T) {
 		fake, homeDir, repoDir := configureMacroBackendProfile(t, binary, "Backend selection falls back")
+		// Use a passing repository check in this profile-selection fixture.
+		writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 		env := fake.env()
 		env["ROUNDFIX_FAKE_ACPX_FAIL_PROMPT_MODEL"] = "macro-backend"
 		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")
@@ -6638,6 +6673,8 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 
 	t.Run("agent output before failure keeps the chain ineligible", func(t *testing.T) {
 		fake, homeDir, repoDir := configureMacroBackendProfile(t, binary, "Backend fails after output")
+		// Use a passing repository check in this profile-selection fixture.
+		writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 		env := fake.env()
 		env["ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL"] = `{"prompt":1}`
 		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")

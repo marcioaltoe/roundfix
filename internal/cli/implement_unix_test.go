@@ -66,6 +66,8 @@ func blockingVerificationCommand(taskID string, logPath string, startedPath stri
 func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	// Use a passing repository check in this temporary repository.
+	writeUserConfig(t, homeDir, "defaults:\n  verification: true\n")
 	ownerPID := 0
 	ownerIdentity := ""
 	reapOwner := func() {
@@ -193,6 +195,8 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 			verification: []string{blockingVerificationCommand("task_02", logPath, startedPaths["task_02"], releasePaths["task_02"])},
 		},
 	})
+	// Disable settlement verification to preserve the call or commit sequence this test measures.
+	writeUserConfig(t, homeDir, "verification:\n  repository_at_settlement: false\n")
 	configureImplementCapacities(t, repoDir, 2, 1)
 	overlap := newImplementAgentOverlapProbe()
 	t.Cleanup(overlap.releaseAgents)

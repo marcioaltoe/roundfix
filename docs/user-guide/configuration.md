@@ -53,10 +53,12 @@ source. Empty values are valid only where this page defines their behavior:
 Do not use a bare YAML value such as `command:` to mean an empty string. Use
 the explicit value shown above or omit the key to inherit it.
 
-Setting `verification.repository_at_settlement: false` turns off only the
-repository Verification appended at settlement for non-QA Tasks of a graph
-with a QA gate Task; declared Task commands, entry preconditions, and the QA
-gate keep their existing Verification.
+Setting `verification.repository_at_settlement: false` turns off the repository
+Verification appended at settlement for every graph and also turns off the
+Integrated Repository Verification. Declared Task commands, entry
+preconditions, and the QA gate keep their existing Verification. A repository
+without the built-in `make verify` target must configure `defaults.verification`
+or turn this key off.
 
 `verification.tools` lists additional tools Doctor checks on `PATH` without
 running them, such as tools used inside a Makefile. It defaults to `[]` and is
@@ -471,7 +473,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `verification.concurrency` | `1` | Limits concurrent Task Verification attempts within one Implement Run, independently from Task Capacity. |
 | `verification.format` | `""` | Optional Format Command for regular files under a Spec's `qa/` directory at the imported-pass and QA Report commit boundaries; Project Config replaces User Config. |
 | `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
-| `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
+| `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for every non-QA Task and enables the Integrated Repository Verification for a Run without a QA gate. `false` turns off both settlement checks. |
 | `worktree.caches` | `[]` | Declares rebuildable directories of ended worktrees for Doctor and GC. |
 | `worktree.shared_caches` | `[]` | Declares shared build caches for GC, each Implement Run start and the queue's repository gate to trim above their size limits. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |

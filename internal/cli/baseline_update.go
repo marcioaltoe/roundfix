@@ -59,6 +59,7 @@ type baselineUpdateSkillOutdated struct {
 }
 
 type baselineUpdateSkillsResult struct {
+	LockUpdated    []string                         `json:"lockUpdated,omitempty"`
 	Retired        []baseline.InstalledRetiredSkill `json:"retired,omitempty"`
 	Outdated       []baselineUpdateSkillOutdated    `json:"outdated,omitempty"`
 	Missing        []baselineUpdateSkillDrift       `json:"missing,omitempty"`
@@ -76,6 +77,7 @@ type baselineUpdateSkillsStage func(
 ) (baselineUpdateSkillsResult, error)
 
 type baselineUpdateSkillsDependencies struct {
+	recordLock          func(context.Context, string, []string) ([]string, error)
 	resolveProjectRoot  func(context.Context, string) (string, error)
 	install             func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error)
 	ownedNames          func() []string
@@ -513,6 +515,7 @@ func runBaselineUpdateSkillsStage(
 	return runBaselineUpdateSkillsStageWith(ctx, request, baselineUpdateSkillsDependencies{
 		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
 		install:             roundskills.Install,
+		recordLock:          baseline.RecordInstalledOwnedSkills,
 		ownedNames:          roundskills.Names,
 		resolveExternal:     resolveExternalSkillRequirement,
 		checkRepository:     roundskills.CheckRepositoryWithExternal,
@@ -549,6 +552,11 @@ func runBaselineUpdateSkillsStageWith(
 	result.Installed = append(result.Installed, dependencies.ownedNames()...)
 	sort.Strings(result.Installed)
 	result.InstalledCount = len(result.Installed)
+	result.LockUpdated, err = dependencies.recordLock(ctx, root, result.Installed)
+	if err != nil {
+		result.Status = baselineUpdateSkillsFailed
+		return result, fmt.Errorf("record installed Roundfix skills in skills-lock.json: %w", err)
+	}
 
 	external, manifestOK, err := dependencies.resolveExternal(root)
 	if err != nil {
@@ -893,6 +901,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	fmt.Fprintf(stdout, "Skills installed: %d\n", result.Skills.InstalledCount)
 	for _, skill := range result.Skills.Installed {
 		fmt.Fprintf(stdout, "- installed %s\n", skill)
+	}
+	if len(result.Skills.LockUpdated) != 0 {
+		fmt.Fprintf(stdout, "Skills lock updated: %d\n", len(result.Skills.LockUpdated))
+		for _, name := range result.Skills.LockUpdated {
+			fmt.Fprintf(stdout, "- lock updated %s\n", name)
+		}
 	}
 	fmt.Fprintf(stdout, "Skills restored: %d\n", len(result.Skills.Restored))
 	for _, skill := range result.Skills.Restored {

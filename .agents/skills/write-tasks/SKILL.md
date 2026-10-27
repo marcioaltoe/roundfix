@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.21
+  version: 0.0.22
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.21
+version: 0.0.22
 ---
 
 # Write Tasks
@@ -207,7 +207,7 @@ Code for another operating system is verified by building its non-test code for 
 
 A suite that consumes a Shared Contract the Task changes is the exception; see
 Consumers of a shared contract.
-- **A gated graph leaves the repository Verification green.** Every Task of a graph that includes the authored QA gate leaves the repository Verification green because the Daemon runs that command when each Task settles. `verification.repository_at_settlement` is the operator's switch for this settlement check; it is not an authoring choice.
+- **Every Task leaves the repository Verification green.** Every Task leaves the repository Verification green because the Daemon runs that command when each Task settles, with or without a QA gate. `verification.repository_at_settlement` is the operator's switch for this settlement check; it is not an authoring choice.
 - **Task declarations are explicit.** A Task may declare `verification: independent` when its Verification commands are independent and every command must run after a failure; do not infer this from shell text. A red repository gate may admit only Tasks named in the frozen `_authorization.md` `precondition_repairs` list, and the list cannot be widened by the Task or Agent. A `creates: docs/adr/NNNN-...` declaration claims that ADR ordinal; a duplicate tree or active-Spec claim is refused with `SC-ORDINAL-CLAIMED`.
 - **Temporal prerequisites do not grant authority.** Represent a future release, external observation, generated ordinal, or other temporal prerequisite as a named prerequisite with its evidence owner. It never invents release authority or turns an expected future fact into completed Task work.
 - **Acceptance and test seams must expose the contract.** Write property-shaped acceptance that states what remains true across meaningful inputs and failure boundaries. Name the narrowest test seam that can fail for the regression, including public use-case or persistence behavior when required, and update the affected existing contract instead of adding a parallel test that cannot fail for the same defect. When a newly required test class is declared, verify that the repository gate actually runs it.

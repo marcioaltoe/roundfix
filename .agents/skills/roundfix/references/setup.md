@@ -147,6 +147,11 @@ nothing is restored.
 Git repository, fails with exit `1` for each Missing Required Skill, naming it
 with `roundfix baseline skills restore --profile <id> --skill <name>`.
 
+After the bundle install, an existing `skills-lock.json` entry naming an owned
+skill receives the installed folder's `computedHash`; every other field is
+kept. No entry or lock is created when none exists, and the names are reported
+as `Updated skills-lock.json computedHash: <name>`.
+
 ## Migration check
 
 The synopsis is `roundfix migrate [--check]`. With `--check`, the migration

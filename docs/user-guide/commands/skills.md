@@ -21,3 +21,9 @@ Required Skill, printing
 `.agents/skills/<name>: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile <id> --skill <name>`
 on stderr. Outside a Git repository, or without a Setup Manifest, it checks
 only the shipped bundle.
+
+After bundle installation, an existing `skills-lock.json` entry naming an
+owned skill is updated with the installed folder's computed hash; every other
+field is preserved. No entry or lock is created when no matching lock entry
+exists. Each changed name is reported as `Updated skills-lock.json computedHash:
+<name>`.

@@ -618,7 +618,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	outcome := store.StateClean
-	if cycleResult.Failed > 0 || cycleResult.Skipped > 0 {
+	if cycleResult.Failed > 0 || cycleResult.Skipped > 0 || cycleResult.IntegratedVerificationFailure != "" {
 		outcome = store.StateUnresolved
 	}
 	// The same eligibility decision that settles the terminal QA Task decides
@@ -692,10 +692,16 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 	closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-	publishTerminalCompletion(ctx, runStore, outcomeNotifier, stderr, completed, cycleResult.Failed+cycleResult.Skipped)
+	publishTerminalCompletionWithContext(ctx, runStore, outcomeNotifier, stderr, completed, terminalCompletionContext{
+		Remaining: cycleResult.Failed + cycleResult.Skipped,
+		Reason:    cycleResult.IntegratedVerificationFailure,
+	})
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close(ctx)
+	if cycleResult.IntegratedVerificationFailure != "" {
+		fmt.Fprintln(stderr, cycleResult.IntegratedVerificationFailure)
+	}
 	fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
 	if completed.State != store.StateClean {
 		printKeptRunWorktree(stderr, runRef.Path)
