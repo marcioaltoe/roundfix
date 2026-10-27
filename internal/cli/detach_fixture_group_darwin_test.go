@@ -99,3 +99,88 @@ func TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded(t *testing.T) {
 		return false, fmt.Sprintf("deadline reached after %d launches", launches)
 	})
 }
+
+// detachFixtureMemberIsZombie distinguishes an exited, unreaped process from
+// one still exiting with P_WEXIT set.
+func detachFixtureMemberIsZombie(pid int) (bool, error) {
+	process, err := unix.SysctlKinfoProc("kern.proc.pid", pid)
+	if err != nil {
+		return false, fmt.Errorf("read fixture process %d zombie state: %w", pid, err)
+	}
+	if int(process.Proc.P_pid) != pid {
+		return false, fmt.Errorf("read fixture process %d zombie state: got PID %d", pid, process.Proc.P_pid)
+	}
+	return process.Proc.P_stat == detachFixtureZombieState, nil
+}
+
+func TestDetachFixtureZombieReadingRejectsAnExitingMember(t *testing.T) {
+	t.Parallel()
+	deadline := time.Now().Add(testwait.Bound(t))
+	launches := 0
+	testwait.Poll(t, "exiting fixture reads as non-zombie before becoming a zombie", (<-chan error)(nil), func() (bool, string) {
+		if !time.Now().Before(deadline) {
+			return false, fmt.Sprintf("deadline reached after %d launches", launches)
+		}
+		cmd := exec.Command("/usr/bin/true")
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		if err := cmd.Start(); err != nil {
+			t.Fatalf("start short-lived fixture: %v", err)
+		}
+		launches++
+		pid := cmd.Process.Pid
+		// true exits on its own. Reap it before the next launch, including
+		// when a reading or assertion fails, without sending any signal.
+		defer func() {
+			if err := cmd.Wait(); err != nil {
+				t.Errorf("reap short-lived fixture %d: %v", pid, err)
+			}
+		}()
+		// Read continuously so the poll interval cannot hide the exiting
+		// window. The only time bound is the enclosing test's deadline.
+		for time.Now().Before(deadline) {
+			before, err := unix.SysctlKinfoProc("kern.proc.pid", pid)
+			if err != nil {
+				t.Fatalf("read raw fixture %d before zombie reading: %v", pid, err)
+			}
+			if int(before.Proc.P_pid) != pid {
+				t.Fatalf("read raw fixture %d: got PID %d", pid, before.Proc.P_pid)
+			}
+			if before.Proc.P_stat == detachFixtureZombieState {
+				return false, fmt.Sprintf("launch %d: fixture %d became a zombie before the window was observed", launches, pid)
+			}
+			if before.Proc.P_flag&detachFixtureExitingFlag == 0 {
+				continue
+			}
+			zombie, err := detachFixtureMemberIsZombie(pid)
+			if err != nil {
+				t.Fatalf("read exiting fixture %d zombie state: %v", pid, err)
+			}
+			after, err := unix.SysctlKinfoProc("kern.proc.pid", pid)
+			if err != nil {
+				t.Fatalf("read raw fixture %d after zombie reading: %v", pid, err)
+			}
+			if int(after.Proc.P_pid) != pid {
+				t.Fatalf("read raw fixture %d: got PID %d", pid, after.Proc.P_pid)
+			}
+			if after.Proc.P_stat == detachFixtureZombieState {
+				return false, fmt.Sprintf("launch %d: fixture %d exiting window closed during zombie reading", launches, pid)
+			}
+			if zombie {
+				t.Fatalf("exiting fixture %d read as a zombie: state=%d flags=%#x; before state=%d flags=%#x", pid, after.Proc.P_stat, after.Proc.P_flag, before.Proc.P_stat, before.Proc.P_flag)
+			}
+			t.Logf("observed non-zombie exiting fixture after %d launches: pid=%d state=%d flags=%#x", launches, pid, after.Proc.P_stat, after.Proc.P_flag)
+			testwait.Poll(t, "observed exiting fixture becomes a zombie", (<-chan error)(nil), func() (bool, string) {
+				zombie, err := detachFixtureMemberIsZombie(pid)
+				if err != nil {
+					t.Fatalf("read fixture %d zombie state: %v", pid, err)
+				}
+				return zombie, fmt.Sprintf("pid=%d zombie=%t", pid, zombie)
+			})
+			if err := syscall.Kill(-pid, 0); !errors.Is(err, syscall.EPERM) {
+				t.Fatalf("probe zombie fixture group %d: got %v, want EPERM", pid, err)
+			}
+			return true, "exiting fixture rejected and zombie group probe returned EPERM"
+		}
+		return false, fmt.Sprintf("deadline reached after %d launches", launches)
+	})
+}
