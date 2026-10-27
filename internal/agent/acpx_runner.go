@@ -141,6 +141,7 @@ type ACPXRunner struct {
 	warnf               func(string, ...any)
 	cancelClock         cancellationClock
 	cleanupTimeout      time.Duration // non-positive uses acpxPreflightCleanupTimeout
+	proofReapOnce       sync.Once
 	stateMu             sync.Mutex
 	ensuredSessions     map[string]struct{}
 	warmedSessions      map[string]struct{}

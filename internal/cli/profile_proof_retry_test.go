@@ -347,3 +347,50 @@ func (runner *profileProofRetryRunner) ProveProfileSelection(ctx context.Context
 		Status:                agent.SelectionProofStatusProven,
 	}, nil
 }
+
+func TestACloseDeadlineIsNotRetriedAsASetupTimeout(t *testing.T) {
+	t.Parallel()
+	waits := recordProfileProofSleeps(t)
+	withCLIWorkspace(t)
+	preferred := roundconfig.Builtin().Profiles[roundconfig.CategoryBackend].Profile.Preferred
+	runner := newProfileProofRetryRunner(func(context.Context, roundconfig.AgentSelection, int) error {
+		return &agent.AgentSessionCleanupError{Session: "recorded-proof", Err: context.DeadlineExceeded}
+	})
+	withAgentRunner(t, runner)
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"profiles", "validate", "--category", "backend", "--json"}, &stdout, &stderr)
+	response := decodeProfilesValidateResponse(t, stdout.String())
+	if code != exitPreflight || runner.attempts[preferred] != 1 || response.Proofs[0].Classification != "session_cleanup_failed" || strings.Contains(response.Proofs[0].Error, "setup timed out") {
+		t.Fatalf("close deadline: exit=%d attempts=%d response=%+v", code, runner.attempts[preferred], response)
+	}
+	assertProfileProofWaits(t, *waits)
+}
+
+func TestProfileProofTimeoutDistinguishesJoinedSetupAndCleanupDeadlines(t *testing.T) {
+	t.Parallel()
+	cleanup := &agent.AgentSessionCleanupError{Session: "proof", Err: context.DeadlineExceeded}
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"setup", fmt.Errorf("setup: %w", context.DeadlineExceeded), true},
+		{"cleanup", cleanup, false},
+		{"wrapped cleanup", fmt.Errorf("proof: %w", cleanup), false},
+		{"cleanup joined with rejection", errors.Join(cleanup, errors.New("rejected")), false},
+		{"cleanup joined with setup", errors.Join(cleanup, fmt.Errorf("setup: %w", context.DeadlineExceeded)), true},
+		{"setup and cleanup wrapped together", fmt.Errorf("proof: %w", errors.Join(context.DeadlineExceeded, cleanup)), true},
+		{"deadlines only beneath cleanup", &agent.AgentSessionCleanupError{Session: "proof", Err: errors.Join(context.DeadlineExceeded, context.DeadlineExceeded)}, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := profileProofSetupTimedOut(t.Context(), test.err); got != test.want {
+				t.Fatalf("setup timeout=%t want %t: %v", got, test.want, test.err)
+			}
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+			if profileProofSetupTimedOut(ctx, test.err) {
+				t.Fatal("cancelled command accepted as setup timeout")
+			}
+		})
+	}
+}

@@ -29,6 +29,7 @@ type realTimeBudgetCeiling struct {
 
 // A ceiling only falls. When a file loses a budget, lower its ceiling here.
 var realTimeBudgetCeilings = map[string]realTimeBudgetCeiling{
+	"internal/agent/proof_close_test.go":         {1, "The cleanup deadline is asserted against a blocked sessions close."},
 	"internal/agent/acpx_runner_test.go":         {1, "StopGrace is unused by the successful prompt; it bounds no cancellation child."},
 	"internal/agent/cursor_login_test.go":        {1, "The caller deadline is asserted against a login fixture that blocks."},
 	"internal/cli/cli_test.go":                   {2, "Review and check deadlines are data for the fake watch clock and sleeper."},

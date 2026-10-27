@@ -775,3 +775,59 @@ func analyzerProposalJSON(t *testing.T, snapshot baseline.AnalysisSnapshot) []by
 func bytesContain(data, fragment []byte) bool {
 	return strings.Contains(string(data), string(fragment))
 }
+
+// unclosedProofRuntime uses the existing fake sealed boundary and changes only
+// the preferred proof's close outcome.
+type unclosedProofRuntime struct{ fakeSealedRuntime }
+
+func (runtime *unclosedProofRuntime) ProveProfileSelection(ctx context.Context, request agent.ProbeRequest) (agent.SelectionProof, error) {
+	proof, err := runtime.fakeSealedRuntime.ProveProfileSelection(ctx, request)
+	if request.Runtime.Model == PreferredModel {
+		proof.Unclosed = &agent.UnclosedProofSession{Session: "proof-left-open", Warning: "close rejected"}
+	}
+	return proof, err
+}
+
+func TestAProofThatLeftItsSessionOpenStopsSemanticAnalysis(t *testing.T) {
+	t.Parallel()
+	for _, stage := range []string{"segmentation", "classification", "revision"} {
+		t.Run(stage, func(t *testing.T) {
+			runtime := &unclosedProofRuntime{}
+			analyzer := NewAnalyzer(runtime)
+			switch stage {
+			case "segmentation":
+				snapshot := analyzerSegmentationSnapshot(t)
+				proposal, err := analyzer.Segment(context.Background(), snapshot)
+				if err != nil {
+					t.Fatal(err)
+				}
+				materialized, err := baseline.MaterializeRuleSegments(snapshot, proposal)
+				if err != nil || !reflect.DeepEqual(materialized, snapshot.SourceBaseline) {
+					t.Fatalf("not manual segmentation: %+v %v", proposal, err)
+				}
+			case "classification":
+				snapshot := analyzerTestSnapshot(t)
+				proposal, err := analyzer.Classify(context.Background(), snapshot)
+				if err != nil || len(proposal.Dispositions) != len(snapshot.Entries) {
+					t.Fatalf("not complete manual classification: %+v %v", proposal, err)
+				}
+			case "revision":
+				proposal, err := analyzer.Revise(context.Background(), analyzerRevisionSnapshot(t))
+				if err != nil || !proposal.Manual || len(proposal.Changes) != 0 {
+					t.Fatalf("not manual revision: %+v %v", proposal, err)
+				}
+			}
+			if got := runtime.provedModels(); !reflect.DeepEqual(got, []string{PreferredModel}) {
+				t.Fatalf("fallback started: %v", got)
+			}
+			if got := runtime.attemptedModels(); len(got) != 0 {
+				t.Fatalf("sealed prompt started: %v", got)
+			}
+			proof, err := analyzer.proveSelection(context.Background(), classificationRuntime(PreferredModel))
+			var cleanup *agent.AgentSessionCleanupError
+			if proof.Unclosed == nil || !errors.As(err, &cleanup) || cleanup.Session != "proof-left-open" || cleanup.Err.Error() != "close rejected" {
+				t.Fatalf("cleanup stop lost session or warning: %+v %v", proof, err)
+			}
+		})
+	}
+}

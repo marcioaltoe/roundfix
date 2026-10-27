@@ -331,6 +331,9 @@ func (analyzer *Analyzer) proveSelection(
 			Runtime: selection,
 			WorkDir: workDir,
 		})
+		if proof.Unclosed != nil {
+			return &agent.AgentSessionCleanupError{Session: proof.Unclosed.Session, Err: errors.New(proof.Unclosed.Warning)}
+		}
 		return proofErr
 	})
 	return proof, err

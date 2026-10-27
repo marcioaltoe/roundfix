@@ -491,17 +491,21 @@ across scopes.
 
 ### Profile proof setup deadline
 
-`defaults.profile_proof_setup_timeout` bounds the disposable Agent Session
-setup of each proof attempt. It defaults to `30s` and accepts a Go duration
+`defaults.profile_proof_setup_timeout` bounds each attempt's setup and the
+close of its disposable Agent Session. It defaults to `30s` and accepts a Go duration
 greater than zero and at most 10m in User Config or Project Config, with
 Project Config winning.
 
 Every profile-readiness consumer passes it: `profiles validate`, operational
 Preflight, pre-PR review, Doctor, Setup and `profiles configure`. Every
-configured tuple is still proven. The value reaches only each attempt's setup
-context; when its deadline expires, Roundfix stops the acpx command and closes
-the disposable Session. The cleanup deadline, the Fallback Chain probe after
-Run creation and Run sessions keep their existing deadlines.
+configured tuple is still proven. The value reaches each attempt's setup and
+close context; when a setup deadline expires, Roundfix stops the acpx command
+and closes the disposable Session. A setup timeout names its step as
+`profile proof step "<step>"`. If setup passes but close fails, the proof still
+passes with a warning and an Unclosed Proof Session record under
+`~/.roundfix/unclosed-proof-sessions/`; the first proof of a later command
+closes that record. The Fallback Chain probe keeps the built-in setup deadline,
+and Run sessions and sealed prompts keep their cleanup deadlines.
 
 A timed-out attempt is retried after 5 seconds and again after 10 seconds. If
 all three attempts time out, the proof is classified `temporary`; adjust
@@ -611,7 +615,8 @@ confirmation, or output failure preserves the target bytes. `profiles
 validate` performs the same read-only Exact Agent Selection Proof over the
 effective profiles, deduplicates exact tuples, and closes every disposable ACP
 Session without creating a Run, worktree, prompt, credential, or
-runtime-owned setting.
+runtime-owned setting. A close failure after a passing proof is a warning, not
+a proof failure.
 
 Agent-starting commands have two supported selection forms: omit `--agent`,
 `--model`, and `--reasoning-effort` to use the effective profiles, or provide
