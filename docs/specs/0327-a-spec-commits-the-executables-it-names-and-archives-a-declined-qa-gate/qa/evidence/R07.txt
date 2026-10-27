@@ -1,0 +1,39 @@
+.agents/skills/write-tasks/SKILL.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+skills/write-tasks/SKILL.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+.agents/skills/write-tasks/references/task-template.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+skills/write-tasks/references/task-template.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+.agents/skills/roundfix/references/implement.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+skills/roundfix/references/implement.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+docs/user-guide/commands/implement.md: exact API phrase=True
+A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+.agents/skills/roundfix/references/archive.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+skills/roundfix/references/archive.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+.agents/skills/roundfix/references/spec-delivery.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+skills/roundfix/references/spec-delivery.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+.agents/skills/archive-spec/SKILL.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+skills/archive-spec/SKILL.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+docs/user-guide/commands/archive.md: exact API phrase=True
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+.agents/skills/roundfix/references/settle.md: exact API phrase=True
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+skills/roundfix/references/settle.md: exact API phrase=True
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+.agents/skills/roundfix/references/spec-delivery.md: exact API phrase=True
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+skills/roundfix/references/spec-delivery.md: exact API phrase=True
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+docs/user-guide/commands/settle.md: exact API phrase=True
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+Task refusal suffix exact=True

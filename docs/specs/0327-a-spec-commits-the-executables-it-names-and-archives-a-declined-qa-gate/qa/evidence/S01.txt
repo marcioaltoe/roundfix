@@ -1,0 +1,20 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestTaskCommitKeepsAnAuthorizedExecutable|TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode)$' ./internal/daemon
+=== RUN   TestTaskCommitKeepsAnAuthorizedExecutable
+=== PAUSE TestTaskCommitKeepsAnAuthorizedExecutable
+=== RUN   TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== PAUSE TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== CONT  TestTaskCommitKeepsAnAuthorizedExecutable
+=== CONT  TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== NAME  TestTaskCommitKeepsAnAuthorizedExecutable
+    task_engine_executables_test.go:75: stageable = [docs/specs/0001-sample-feature/task_01.md]
+--- FAIL: TestTaskCommitKeepsAnAuthorizedExecutable (0.15s)
+=== NAME  TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+    task_engine_executables_test.go:111: result = {Completed:0 Failed:1 Skipped:0 QAVerdict: QAAccepted:false QAReportPath: Outcomes:[{Task:task_01 Status:failed Reason:Task commit lost output: scripts/launch.sh (executable file)}] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:}
+--- FAIL: TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode (0.16s)
+FAIL
+suiteguard: guard cost: measured 2831 paths; fingerprint took 151.870834ms before and 131.441958ms after
+FAIL	roundfix/internal/daemon	0.786s
+FAIL
+
+exit=1
+Expected test failures observed: True

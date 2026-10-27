@@ -1,0 +1,13 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestQAReportCommitRefusesAListedExecutable)$' ./internal/daemon
+=== RUN   TestQAReportCommitRefusesAListedExecutable
+=== PAUSE TestQAReportCommitRefusesAListedExecutable
+=== CONT  TestQAReportCommitRefusesAListedExecutable
+    task_engine_executables_test.go:178: QA staged executable: [[docs/specs/0001-sample-feature/qa/evidence/helper.sh]]
+--- FAIL: TestQAReportCommitRefusesAListedExecutable (0.15s)
+FAIL
+suiteguard: guard cost: measured 2831 paths; fingerprint took 142.580459ms before and 135.804958ms after
+FAIL	roundfix/internal/daemon	0.728s
+FAIL
+
+exit=1
+Expected test failures observed: True

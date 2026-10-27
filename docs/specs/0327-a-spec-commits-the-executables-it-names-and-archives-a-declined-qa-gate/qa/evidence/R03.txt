@@ -1,0 +1,336 @@
+$ go test -count=3 -timeout 15m -v -run '^(TestAuthorizationReadsExecutables|TestAuthorizationRefusesAMalformedExecutablesEntry)$' ./internal/authorization
+=== RUN   TestAuthorizationReadsExecutables
+=== PAUSE TestAuthorizationReadsExecutables
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry
+=== CONT  TestAuthorizationReadsExecutables
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry
+=== RUN   TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== PAUSE TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== RUN   TestAuthorizationReadsExecutables/executables:_null_
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== PAUSE TestAuthorizationReadsExecutables/executables:_null_
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+=== RUN   TestAuthorizationReadsExecutables/#00
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+=== PAUSE TestAuthorizationReadsExecutables/#00
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== CONT  TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== CONT  TestAuthorizationReadsExecutables/#00
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== CONT  TestAuthorizationReadsExecutables/executables:_null_
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+--- PASS: TestAuthorizationReadsExecutables (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_ (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/#00 (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/executables:_null_ (0.01s)
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+--- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/parent (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/non_string (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/backslash (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/dot (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/glob (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment (0.00s)
+=== RUN   TestAuthorizationReadsExecutables
+=== PAUSE TestAuthorizationReadsExecutables
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry
+=== CONT  TestAuthorizationReadsExecutables
+=== RUN   TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== PAUSE TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+=== RUN   TestAuthorizationReadsExecutables/executables:_null_
+=== PAUSE TestAuthorizationReadsExecutables/executables:_null_
+=== RUN   TestAuthorizationReadsExecutables/#00
+=== PAUSE TestAuthorizationReadsExecutables/#00
+=== CONT  TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== CONT  TestAuthorizationReadsExecutables/#00
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== CONT  TestAuthorizationReadsExecutables/executables:_null_
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+--- PASS: TestAuthorizationReadsExecutables (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/#00 (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_ (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/executables:_null_ (0.01s)
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+--- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/non_string (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/parent (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/dot (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/backslash (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/glob (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path (0.00s)
+=== RUN   TestAuthorizationReadsExecutables
+=== PAUSE TestAuthorizationReadsExecutables
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry
+=== CONT  TestAuthorizationReadsExecutables
+=== RUN   TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry
+=== PAUSE TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== RUN   TestAuthorizationReadsExecutables/executables:_null_
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+=== PAUSE TestAuthorizationReadsExecutables/executables:_null_
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+=== RUN   TestAuthorizationReadsExecutables/#00
+=== PAUSE TestAuthorizationReadsExecutables/#00
+=== CONT  TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_
+=== CONT  TestAuthorizationReadsExecutables/#00
+=== CONT  TestAuthorizationReadsExecutables/executables:_null_
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== RUN   TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== PAUSE TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/parent
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/dot
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/non_string
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/backslash
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace
+--- PASS: TestAuthorizationReadsExecutables (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/#00 (0.00s)
+    --- PASS: TestAuthorizationReadsExecutables/executables:_null_ (0.01s)
+    --- PASS: TestAuthorizationReadsExecutables/executables:_[scripts/launch.sh,_scripts/check.sh]_ (0.01s)
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/glob
+=== CONT  TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment
+--- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/backslash (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/absolute_path (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/parent (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/non_string (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/scalar_value (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/dot (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/trailing_slash (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/empty_path (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/glob (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/surrounding_whitespace (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/unclean_path (0.00s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/duplicate (0.01s)
+    --- PASS: TestAuthorizationRefusesAMalformedExecutablesEntry/upward_segment (0.00s)
+PASS
+suiteguard: guard cost: measured 2836 paths; fingerprint took 130.463083ms before and 126.967458ms after
+ok  	roundfix/internal/authorization	0.389s
+
+exit=0
+
+$ go test -count=3 -timeout 15m -v -run '^(TestTaskCommitKeepsAnAuthorizedExecutable|TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode|TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory|TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory|TestQAReportCommitRefusesAListedExecutable|TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths|TestTaskCycleLostOutputRefusesCompletion)$' ./internal/daemon
+=== RUN   TestTaskCommitKeepsAnAuthorizedExecutable
+=== PAUSE TestTaskCommitKeepsAnAuthorizedExecutable
+=== RUN   TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== PAUSE TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== RUN   TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== PAUSE TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== RUN   TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== PAUSE TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== RUN   TestQAReportCommitRefusesAListedExecutable
+=== PAUSE TestQAReportCommitRefusesAListedExecutable
+=== RUN   TestTaskCycleLostOutputRefusesCompletion
+=== PAUSE TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== PAUSE TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== CONT  TestTaskCommitKeepsAnAuthorizedExecutable
+=== CONT  TestQAReportCommitRefusesAListedExecutable
+=== CONT  TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== CONT  TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason
+=== CONT  TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== CONT  TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== CONT  TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+--- PASS: TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory (0.06s)
+--- PASS: TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths (0.18s)
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed
+--- PASS: TestQAReportCommitRefusesAListedExecutable (0.20s)
+--- PASS: TestTaskCommitKeepsAnAuthorizedExecutable (0.21s)
+--- PASS: TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory (0.22s)
+--- PASS: TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode (0.26s)
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before
+--- PASS: TestTaskCycleLostOutputRefusesCompletion (0.39s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason (0.18s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed (0.11s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before (0.10s)
+=== RUN   TestTaskCommitKeepsAnAuthorizedExecutable
+=== PAUSE TestTaskCommitKeepsAnAuthorizedExecutable
+=== RUN   TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== PAUSE TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== RUN   TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== PAUSE TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== RUN   TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== PAUSE TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== RUN   TestQAReportCommitRefusesAListedExecutable
+=== PAUSE TestQAReportCommitRefusesAListedExecutable
+=== RUN   TestTaskCycleLostOutputRefusesCompletion
+=== PAUSE TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== PAUSE TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== CONT  TestTaskCommitKeepsAnAuthorizedExecutable
+=== CONT  TestQAReportCommitRefusesAListedExecutable
+=== CONT  TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== CONT  TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== CONT  TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== CONT  TestTaskCycleLostOutputRefusesCompletion
+=== CONT  TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason
+--- PASS: TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory (0.08s)
+--- PASS: TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths (0.15s)
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed
+--- PASS: TestQAReportCommitRefusesAListedExecutable (0.17s)
+--- PASS: TestTaskCommitKeepsAnAuthorizedExecutable (0.19s)
+--- PASS: TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory (0.19s)
+--- PASS: TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode (0.23s)
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before
+--- PASS: TestTaskCycleLostOutputRefusesCompletion (0.37s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason (0.17s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed (0.11s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before (0.10s)
+=== RUN   TestTaskCommitKeepsAnAuthorizedExecutable
+=== PAUSE TestTaskCommitKeepsAnAuthorizedExecutable
+=== RUN   TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== PAUSE TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== RUN   TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== PAUSE TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== RUN   TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== PAUSE TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== RUN   TestQAReportCommitRefusesAListedExecutable
+=== PAUSE TestQAReportCommitRefusesAListedExecutable
+=== RUN   TestTaskCycleLostOutputRefusesCompletion
+=== PAUSE TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== PAUSE TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== CONT  TestTaskCommitKeepsAnAuthorizedExecutable
+=== CONT  TestQAReportCommitRefusesAListedExecutable
+=== CONT  TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory
+=== CONT  TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths
+=== CONT  TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory
+=== CONT  TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode
+=== CONT  TestTaskCycleLostOutputRefusesCompletion
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason
+--- PASS: TestResolveCycleRefusesAnExecutableInsideANewBatchDirectory (0.08s)
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed
+--- PASS: TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths (0.16s)
+--- PASS: TestQAReportCommitRefusesAListedExecutable (0.17s)
+--- PASS: TestTaskCycleRefusesAnUnlistedExecutableInANewDirectory (0.19s)
+--- PASS: TestTaskCommitKeepsAnAuthorizedExecutable (0.19s)
+--- PASS: TestTaskCycleCommitsAnAuthorizedExecutableWithItsMode (0.24s)
+=== RUN   TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before
+--- PASS: TestTaskCycleLostOutputRefusesCompletion (0.37s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason (0.16s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/external_refusal_remains_completed (0.11s)
+    --- PASS: TestTaskCycleLostOutputRefusesCompletion/clean_Task_settles_as_before (0.10s)
+PASS
+suiteguard: guard cost: measured 2836 paths; fingerprint took 141.057334ms before and 126.267834ms after
+ok  	roundfix/internal/daemon	1.588s
+
+exit=0
+
+$ go test -count=1 -timeout 20m ./internal/daemon
+ok  	roundfix/internal/daemon	21.443s
+
+exit=0

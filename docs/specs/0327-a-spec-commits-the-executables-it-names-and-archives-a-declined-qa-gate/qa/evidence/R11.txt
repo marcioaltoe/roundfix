@@ -1,0 +1,88 @@
+$ git diff-tree --no-commit-id --name-only -r c339d8880e975b7de28c10448aadd7b52b97dcb1
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-tasks/references/task-template.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate/task_01.md
+docs/user-guide/commands/implement.md
+internal/authorization/authorization.go
+internal/authorization/executables_test.go
+internal/daemon/engine.go
+internal/daemon/task_engine.go
+internal/daemon/task_engine_executables_test.go
+internal/daemon/task_engine_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/implement.md
+skills/testdata/owned-skill-versions.json
+skills/write-tasks/SKILL.md
+skills/write-tasks/references/task-template.md
+outside declarations=[]
+forbidden changes=[]
+Governed .agents/skills/roundfix/SKILL.md: explicit paths grant=True
+.agents/skills/roundfix/SKILL.md: QA settlement unchanged=True
+Governed .agents/skills/roundfix/references/implement.md: explicit paths grant=True
+Governed .agents/skills/write-tasks/SKILL.md: explicit paths grant=True
+.agents/skills/write-tasks/SKILL.md: QA settlement unchanged=True
+Governed .agents/skills/write-tasks/references/task-template.md: explicit paths grant=True
+Governed skills/roundfix/SKILL.md: explicit paths grant=True
+skills/roundfix/SKILL.md: QA settlement unchanged=True
+Governed skills/write-tasks/SKILL.md: explicit paths grant=True
+skills/write-tasks/SKILL.md: QA settlement unchanged=True
+authority revision precedes Task=True
+$ git diff-tree --no-commit-id --name-only -r d8744ced053042d6926a826ef0e9fae01bce9e6b
+.agents/skills/archive-spec/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/spec-delivery.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate/task_02.md
+docs/user-guide/commands/archive.md
+internal/cli/archive.go
+internal/cli/archive_declined_qa_test.go
+internal/cli/archive_pull_request_test.go
+internal/spec/archive.go
+skills/archive-spec/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/roundfix/references/spec-delivery.md
+skills/testdata/owned-skill-versions.json
+outside declarations=[]
+forbidden changes=[]
+Governed .agents/skills/archive-spec/SKILL.md: explicit paths grant=True
+.agents/skills/archive-spec/SKILL.md: QA settlement unchanged=True
+Governed .agents/skills/roundfix/SKILL.md: explicit paths grant=True
+.agents/skills/roundfix/SKILL.md: QA settlement unchanged=True
+Governed .agents/skills/roundfix/references/archive.md: explicit paths grant=True
+Governed .agents/skills/roundfix/references/spec-delivery.md: explicit paths grant=True
+Governed internal/spec/archive.go: explicit paths grant=True
+Governed skills/archive-spec/SKILL.md: explicit paths grant=True
+skills/archive-spec/SKILL.md: QA settlement unchanged=True
+Governed skills/roundfix/SKILL.md: explicit paths grant=True
+skills/roundfix/SKILL.md: QA settlement unchanged=True
+authority revision precedes Task=True
+$ git diff-tree --no-commit-id --name-only -r 28246a53fe142c11b1b432c70f4d035dcd8ae4c6
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/settle.md
+.agents/skills/roundfix/references/spec-delivery.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate/task_03.md
+docs/user-guide/commands/settle.md
+internal/cli/settle.go
+internal/cli/settle_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/settle.md
+skills/roundfix/references/spec-delivery.md
+skills/testdata/owned-skill-versions.json
+outside declarations=[]
+forbidden changes=[]
+Governed .agents/skills/roundfix/SKILL.md: explicit paths grant=True
+.agents/skills/roundfix/SKILL.md: QA settlement unchanged=True
+Governed .agents/skills/roundfix/references/settle.md: explicit paths grant=True
+Governed .agents/skills/roundfix/references/spec-delivery.md: explicit paths grant=True
+Governed skills/roundfix/SKILL.md: explicit paths grant=True
+skills/roundfix/SKILL.md: QA settlement unchanged=True
+authority revision precedes Task=True

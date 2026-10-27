@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,13 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestSettleNamesNoRemovalWhenIntegrationIsPending)$' ./internal/cli
+=== RUN   TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== PAUSE TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleNamesNoRemovalWhenIntegrationIsPending
+    settle_test.go:1873: expected stderr "Settle surface: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSettleNamesNoRemovalWhenIntegrationIsPending3798618876/001/worktrees/002-7fe38251/run_20261027T063829Z_90377b66534bf79a\n", got "Settle surface: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSettleNamesNoRemovalWhenIntegrationIsPending3798618876/001/worktrees/002-7fe38251/run_20261027T063829Z_90377b66534bf79a\nRun Worktree removed: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSettleNamesNoRemovalWhenIntegrationIsPending3798618876/001/worktrees/002-7fe38251/run_20261027T063829Z_90377b66534bf79a\n"
+--- FAIL: TestSettleNamesNoRemovalWhenIntegrationIsPending (0.26s)
+FAIL
+suiteguard: guard cost: measured 2831 paths; fingerprint took 147.778625ms before and 131.927875ms after
+FAIL	roundfix/internal/cli	0.977s
+FAIL
+
+exit=1
+Expected test failures observed: True

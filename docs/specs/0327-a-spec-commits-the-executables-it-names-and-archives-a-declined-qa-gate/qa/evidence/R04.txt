@@ -1,0 +1,94 @@
+$ go test -count=3 -timeout 15m -v -run '^(TestArchiveAcceptsADeclaredQADecline|TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline|TestArchiveRefusesADeclaredQADeclineWithAPendingTask)$' ./internal/cli
+=== RUN   TestArchiveAcceptsADeclaredQADecline
+=== PAUSE TestArchiveAcceptsADeclaredQADecline
+=== RUN   TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+=== PAUSE TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+=== RUN   TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== PAUSE TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== CONT  TestArchiveAcceptsADeclaredQADecline
+=== CONT  TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== CONT  TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+--- PASS: TestArchiveRefusesADeclaredQADeclineWithAPendingTask (0.10s)
+--- PASS: TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline (0.10s)
+--- PASS: TestArchiveAcceptsADeclaredQADecline (0.14s)
+=== RUN   TestArchiveAcceptsADeclaredQADecline
+=== PAUSE TestArchiveAcceptsADeclaredQADecline
+=== RUN   TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+=== PAUSE TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+=== RUN   TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== PAUSE TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== CONT  TestArchiveAcceptsADeclaredQADecline
+=== CONT  TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== CONT  TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+--- PASS: TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline (0.10s)
+--- PASS: TestArchiveRefusesADeclaredQADeclineWithAPendingTask (0.10s)
+--- PASS: TestArchiveAcceptsADeclaredQADecline (0.14s)
+=== RUN   TestArchiveAcceptsADeclaredQADecline
+=== PAUSE TestArchiveAcceptsADeclaredQADecline
+=== RUN   TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+=== PAUSE TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+=== RUN   TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== PAUSE TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== CONT  TestArchiveAcceptsADeclaredQADecline
+=== CONT  TestArchiveRefusesADeclaredQADeclineWithAPendingTask
+=== CONT  TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline
+--- PASS: TestArchiveRefusesAnOverrideForAQualifyingDeclaredQADecline (0.10s)
+--- PASS: TestArchiveRefusesADeclaredQADeclineWithAPendingTask (0.10s)
+--- PASS: TestArchiveAcceptsADeclaredQADecline (0.14s)
+PASS
+suiteguard: guard cost: measured 2837 paths; fingerprint took 143.222667ms before and 126.803459ms after
+ok  	roundfix/internal/cli	1.012s
+
+exit=0
+
+$ ./bin/roundfix archive 0001-demo
+stdout:
+archived 0001-demo -> docs/history/specs/0001-demo.md; removed 3 file(s) (386 bytes) kept in Git at 4d3e67381418
+
+stderr:
+
+exit=0
+
+Archive Record (fresh filesystem read):
+---
+schema: roundfix/archive-record/v1
+spec: 0001-demo
+title: Demo
+status: archived
+created: "2026-10-27"
+archived: "2026-10-27"
+disposition: no-qa
+source: docs/specs/0001-demo
+source_revision: 4d3e67381418161a13fd6a7909d63e2256011bbe
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+adrs: []
+sources: []
+regeneration: []
+promoted: []
+---
+
+# Demo
+
+Documentation-only demo.
+
+Original Task Graph recoverable with git show: yes
+
+$ ./bin/roundfix archive 0001-demo --qa-override --approval qa --reason qa
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  QA archive override is not allowed because the Spec already qualifies for normal archive
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+
+exit=2

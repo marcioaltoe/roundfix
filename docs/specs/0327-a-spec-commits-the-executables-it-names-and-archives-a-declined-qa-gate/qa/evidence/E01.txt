@@ -1,0 +1,22 @@
+Sources: https://raw.githubusercontent.com/git/git/master/Documentation/config/core.adoc
+https://code.googlesource.com/git/+/HEAD/t/t3700-add.sh
+
+The outside-evidence rows rest on sources this Spec did not write.
+
+- Git's own documentation, read through Exa on 2026-10-26.
+  `Documentation/config/core.adoc` (https://raw.githubusercontent.com/git/git/master/Documentation/config/core.adoc):
+  "`core.fileMode` Tells Git if the executable bit of files in the working
+  tree is to be honored. … The default is true (when core.filemode is not
+  specified in the config file)." Git's test `t/t3700-add.sh`
+  (https://code.googlesource.com/git/+/HEAD/t/t3700-add.sh), "git add: Test
+  that executable bit is not used if core.filemode=0": a file made `chmod 755`
+  and added is checked to be in the index as `100644`. So a Task commit that
+  keeps the file records `100755` under Git's default and `100644` where the
+  repository turned the setting off.
+- Git's behaviour on the QA host, a tool this Spec did not build: in a shell
+  whose working directory was removed, `git rev-parse HEAD` prints `fatal:
+  Unable to read current working directory: No such file or directory` and
+  exits `128`, measured at authoring. That is the exit Quaestor's caller saw
+  after settle removed the Run Worktree it stood in.
+- Quaestor's report, quoted verbatim in the adopted Backlog Entry, written by
+  another project before this Spec existed.
