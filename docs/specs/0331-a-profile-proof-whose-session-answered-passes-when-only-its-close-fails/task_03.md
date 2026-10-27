@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -112,3 +112,88 @@ timeout.
 - `_prd.md` → Goals; Core Features 3-5; User Experience; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior 5, 7; Interfaces; Data Models; API Contracts 5-7; Invariants 2, 4, 6; Testing Approach; Build Order 2
 - ADR-0344
+
+## Result
+
+Implemented API Contracts 5–7 within this Task's slice. Task status remains
+Daemon-owned. The initial working tree already contained the Daemon's status
+change in this Task file; no other pre-existing changed paths were present.
+
+- Recorded-session recovery: both exact proofs and fallback candidate probes
+  run one shared `sync.Once` reaping pass before opening their disposable
+  session. Records sort by `recorded_at`, then session name. Close commands
+  use the recorded runtime and working directory, under the current proof's
+  close deadline. Successful or proven-absent closes delete their records;
+  an already-missing record is accepted. A failed close warns and stops,
+  retaining the record and later records. Unreadable records warn and remain.
+  Cancellation stops the pass; its outcome does not decide the proof verdict.
+- Close-deadline retry: before changing production code,
+  `rtk proxy go test ./internal/cli -run '^TestACloseDeadlineIsNotRetriedAsASetupTimeout$' -count=1 -v`
+  characterized **three calls** and `profile proof setup timed out on 3 attempts
+  of 30s each` for a fake prover returning `AgentSessionCleanupError` wrapping
+  `context.DeadlineExceeded`. The test now requires one call, no backoff,
+  classification `session_cleanup_failed`, and no `setup timed out` text.
+  Error-tree traversal excludes cleanup subtrees while preserving independent
+  setup deadlines in joined errors. Existing third-attempt setup timeout and
+  third-attempt success checks retain their previous behavior.
+- Warning reporting: passed proofs copy `Unclosed.Warning` into the optional
+  JSON `warning` field and print `   warning: <text>` immediately after their
+  reference lines. The command test checks text and JSON with exit zero.
+
+Focused evidence for the acceptance criteria:
+
+1. Recovery and retention: all five required agent tests passed. Additional
+   fake-harness tests passed for a cancelled proof and for a fallback candidate
+   reaping before ensure, followed by an exact proof sharing the once guard.
+   Every new top-level test starts with `t.Parallel()`; no new test uses a
+   real-time budget or a real adapter.
+2. Retry classification: the characterization test passed under its new
+   one-call contract, and the joined-error table passed for wrapped cleanup,
+   independent setup deadlines, and cancelled command contexts. The existing
+   `TestProfileProofReportsAThirdTimeoutAsTemporary` and
+   `TestProfileProofPassesOnTheThirdAttempt` passed.
+3. Warning output: `TestProfilesValidateReportsAnUnclosedProofSession` passed
+   for both output modes, including the literal JSON field and text placement.
+
+Final focused command (exit 0, both packages):
+
+```sh
+rtk proxy go test ./internal/agent ./internal/cli -run '^(TestTheNextProofClosesARecordedSessionFirst|TestARecordedSession.*|TestAFailedReapKeepsTheRecordAndStops|TestTheReapRunsOncePerRunner|TestAnUnreadableRecordIsReportedAndKept|TestACloseDeadlineIsNotRetriedAsASetupTimeout|TestProfilesValidateReportsAnUnclosedProofSession|TestProfileProofTimeoutDistinguishesJoinedSetupAndCleanupDeadlines|TestProfileProofReportsAThirdTimeoutAsTemporary|TestProfileProofPassesOnTheThirdAttempt)$' -count=1
+```
+
+Temporary `go test -overlay` probes, with altered files outside the repository,
+confirmed behavioral failures when reaping was removed (the next-close,
+absence, stop-on-failure and unreadable-record tests), the once guard was
+removed (the once-per-runner test), age ordering was reversed (the failed-reap
+test), warning propagation was removed (both command output modes), and broad
+deadline retry was restored (three calls and `temporary` instead of cleanup).
+Each probe compiled and failed at the intended behavioral assertion; no mutant
+was retained. `rtk proxy git diff --check` exited 0.
+
+The declared Verification, including the Windows build, and repository
+Verification were not run; they remain for the Daemon. No Task Graph, other
+Task, tooling configuration, commit, push, or Pull Request was changed or made.
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon's `batch-002-attempt-1.log`. The configured incremental
+Verification reported a failure in
+`TestTheProofCloseDeadlineFollowsTheSetupDeadline/write_error`: the reaper
+added a store-read warning before the existing record-write recovery warning
+when `.roundfix` was a regular file. Such a root cannot contain recorded
+sessions. The reaper now recognizes that case before reading the records
+subdirectory, leaving the writer to report the failed record and manual close
+command. Actual unreadable records and store-read errors retain their warnings.
+No existing test assertions were changed.
+
+Focused repair check, exit 0:
+
+```sh
+rtk proxy go test ./internal/agent -run '^(TestTheProofCloseDeadlineFollowsTheSetupDeadline|TestTheNextProofClosesARecordedSessionFirst|TestAFailedReapKeepsTheRecordAndStops|TestAnUnreadableRecordIsReportedAndKept)$' -count=1 -v
+```
+
+All four tests passed, including all three close-deadline subcases. This checks
+the reported warning-count regression, successful recovery, failed-close
+retention and unreadable-record reporting. The Daemon's full configured
+Verification remains outstanding; neither it nor the Task's declared
+Verification was rerun in this repair turn. Task status remains unchanged.

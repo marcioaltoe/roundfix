@@ -55,6 +55,7 @@ func (runner *ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime Ru
 	if err := validateRuntimeSelection(candidate); err != nil {
 		return FallbackSelection{}, false, err
 	}
+	runner.reapUnclosedProofSessions(ctx, runner.proofCloseTimeout(acpxPreflightSetupTimeout))
 	sessionName, err := disposablePreflightSessionName()
 	if err != nil {
 		return FallbackSelection{}, false, err

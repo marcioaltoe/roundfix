@@ -119,6 +119,7 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 	if setupTimeout <= 0 {
 		setupTimeout = acpxPreflightSetupTimeout
 	}
+	runner.reapUnclosedProofSessions(ctx, runner.proofCloseTimeout(setupTimeout))
 	setupCtx, setupCancel := context.WithTimeout(ctx, setupTimeout)
 	adapter, err := checkAdapter(setupCtx, request.Runtime, runner.baseEnv())
 	if err != nil {
