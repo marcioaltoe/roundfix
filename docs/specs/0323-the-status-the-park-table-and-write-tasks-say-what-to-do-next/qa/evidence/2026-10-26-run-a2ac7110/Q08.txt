@@ -1,0 +1,89 @@
+Independent git archive c8a2d0a03658dce7c81b990e69265a4240b1ddd8 fixture with initialized/staged Git metadata.
+Remove only manual reason assignment; reason remains nil. Run each named test separately.
+$ go test -timeout 15m -count=1 -v -run '^TestFollowUpStatusNamesTheManualClassification$' ./internal/cli
+stdout:
+=== RUN   TestFollowUpStatusNamesTheManualClassification
+=== PAUSE TestFollowUpStatusNamesTheManualClassification
+=== CONT  TestFollowUpStatusNamesTheManualClassification
+    follow_up_status_test.go:247: release={State:manual_classification_required Base:v0.4.1 ProposedVersion: Changes:[{Commit:190b14e32aa6535a5890931c3900edd21e41d067 Subject:feat: expose widget status} {Commit:6e8e34854872f34603003dc946aa95f060a7d695 Subject:chore: change widget behavior} {Commit:9253f04caa6b80667bbd876c08ff44d73a8ffd7a Subject:chore: change widget storage}] Reason:<nil>}, want manual classification with reason "2 commit(s) since v0.4.1 need a manual release classification" and three changes
+--- FAIL: TestFollowUpStatusNamesTheManualClassification (0.26s)
+panic: runtime error: invalid memory address or nil pointer dereference [recovered, repanicked]
+[signal SIGSEGV: segmentation violation code=0x2 addr=0x0 pc=0x100d7cec8]
+
+goroutine 24 [running]:
+testing.tRunner.func1.2({0x101f95ae0, 0x1023299f0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x101f95ae0?, 0x1023299f0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+roundfix/internal/cli.renderFollowUpStatusText({{0x1012490b3, 0x15}, {0x1012298f1, 0x6}, {0x10122ec86, 0xa}, {{0x151798e6fc20, 0x92}, {0x151798d84575, 0x6}}, ...})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_status.go:204 +0x8b8
+roundfix/internal/cli.runFollowUpStatus({_, _}, {{_, _}, {_, _}, _}, {_, _}, {_, ...}, ...)
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_status.go:123 +0xc9c
+roundfix/internal/cli.runFollowUpCommand({_, _}, {_, _, _}, {_, _}, {_, _}, {{0x151798e77d40, ...}, ...})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up.go:132 +0x990
+roundfix/internal/cli.runWithContext({_, _}, {_, _, _}, {_, _}, {_, _}, {{0x151798e77d40, ...}, ...})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/cli.go:573 +0x17f4
+roundfix/internal/cli.runCLI(0x151798866b48, {0x151798b7abc0, 0x2, 0x2}, {0x1020ca2e0, 0x1517988a37a0}, {0x1020ca2e0, 0x1517988a37d0})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/cli_test.go:183 +0x118
+roundfix/internal/cli.followUpRunCLI(0x151798866b48, {0x151798d17e80, 0x1, 0x1517987048a0?})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_test.go:148 +0x100
+roundfix/internal/cli.TestFollowUpStatusNamesTheManualClassification(0x151798866b48)
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_status_test.go:253 +0x468
+testing.tRunner(0x151798866b48, 0x1020bbbe0)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	roundfix/internal/cli	0.857s
+FAIL
+
+stderr:
+
+exit: 1
+$ go test -timeout 15m -count=1 -v -run '^TestFollowUpStatusReportsTheNextRelease$/^manual$' ./internal/cli
+stdout:
+=== RUN   TestFollowUpStatusReportsTheNextRelease
+=== PAUSE TestFollowUpStatusReportsTheNextRelease
+=== CONT  TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusReportsTheNextRelease/manual
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/manual
+=== CONT  TestFollowUpStatusReportsTheNextRelease/manual
+--- FAIL: TestFollowUpStatusReportsTheNextRelease (0.20s)
+    --- FAIL: TestFollowUpStatusReportsTheNextRelease/manual (0.20s)
+panic: runtime error: invalid memory address or nil pointer dereference [recovered, repanicked]
+[signal SIGSEGV: segmentation violation code=0x2 addr=0x0 pc=0x10536cec8]
+
+goroutine 38 [running]:
+testing.tRunner.func1.2({0x106585ae0, 0x1069199f0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x106585ae0?, 0x1069199f0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+roundfix/internal/cli.renderFollowUpStatusText({{0x1058390b3, 0x15}, {0x1058198f1, 0x6}, {0x10581ec86, 0xa}, {{0x172f87325b90, 0x90}, {0x172f870341b5, 0x6}}, ...})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_status.go:204 +0x8b8
+roundfix/internal/cli.runFollowUpStatus({_, _}, {{_, _}, {_, _}, _}, {_, _}, {_, ...}, ...)
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_status.go:123 +0xc9c
+roundfix/internal/cli.runFollowUpCommand({_, _}, {_, _, _}, {_, _}, {_, _}, {{0x172f873254d0, ...}, ...})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up.go:132 +0x990
+roundfix/internal/cli.runWithContext({_, _}, {_, _, _}, {_, _}, {_, _}, {{0x172f873254d0, ...}, ...})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/cli.go:573 +0x17f4
+roundfix/internal/cli.runCLI(0x172f86f60d88, {0x172f8730e500, 0x2, 0x2}, {0x1066ba2e0, 0x172f86f759b0}, {0x1066ba2e0, 0x172f86f75a10})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/cli_test.go:183 +0x118
+roundfix/internal/cli.followUpRunCLI(0x172f86f60d88, {0x172f87477eb8, 0x1, 0x6?})
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_test.go:148 +0x100
+roundfix/internal/cli.TestFollowUpStatusReportsTheNextRelease.func1(0x172f86f60d88)
+	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/sabotage-reason/internal/cli/follow_up_status_test.go:179 +0x444
+testing.tRunner(0x172f86f60d88, 0x172f86e722a0)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 37
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	roundfix/internal/cli	0.664s
+FAIL
+
+stderr:
+
+exit: 1
+
+QA transcript review: both named failures and exit 1 confirmed. Existing manual subtest reaches the mutated nil reason through the renderer and panics; no missing detection.

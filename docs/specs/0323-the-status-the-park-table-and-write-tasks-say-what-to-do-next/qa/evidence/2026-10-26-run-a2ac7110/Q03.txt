@@ -1,0 +1,16 @@
+$ go test -timeout 15m -count=1 -v -tags docscontract -run '^(TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem|TestTheParkActionContractReportsAnActionInTheClassTable)$' ./internal/docscontract
+stdout:
+=== RUN   TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem
+=== PAUSE TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem
+=== RUN   TestTheParkActionContractReportsAnActionInTheClassTable
+=== PAUSE TestTheParkActionContractReportsAnActionInTheClassTable
+=== CONT  TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem
+=== CONT  TestTheParkActionContractReportsAnActionInTheClassTable
+--- PASS: TestTheParkActionContractReportsAnActionInTheClassTable (0.00s)
+--- PASS: TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem (0.00s)
+PASS
+ok  	roundfix/internal/docscontract	0.392s
+
+stderr:
+
+exit: 0

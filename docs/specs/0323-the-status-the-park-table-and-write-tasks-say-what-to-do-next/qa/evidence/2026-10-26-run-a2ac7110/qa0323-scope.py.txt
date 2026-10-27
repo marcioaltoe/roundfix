@@ -1,0 +1,49 @@
+from qa0323lib import *
+def git(*args):
+ p=subprocess.run(['git',*args],cwd=ROOT,env=ENV,text=True,capture_output=True); assert p.returncode==0,p.stderr; return p.stdout
+log='Delivery Base: '+S['base']+'\nAudited head: '+S['head']+'\n'; errors=[]; allpaths=set()
+authrel='docs/specs/'+S['spec']+'/_authorization.md'; auth=(ROOT/authrel).read_text(); grant=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+commits=git('rev-list','--reverse',S['base']+'..'+S['head']).splitlines(); assert len(commits)==3
+for num,commit in enumerate(commits,1):
+ task='task_0'+str(num); taskrel='docs/specs/'+S['spec']+'/'+task+'.md'; text=(ROOT/taskrel).read_text(); context=text.split('## Context\n',1)[1].split('\n## ',1)[0]; declarations=set(re.findall(r'^- (?:interface|creates|deletes): `([^`]+)`',context,re.M)); recorded=set()
+ if '## Recorded paths\n' in text: recorded=set(re.findall(r'^- `([^`]+)`',text.split('## Recorded paths\n',1)[1].split('\n## ',1)[0],re.M))
+ actual=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines(); allpaths.update(actual); outside=set(actual)-declarations-recorded-{taskrel}
+ log+='\n'+task+' '+commit+'\n$ git diff-tree --no-commit-id --name-only -r '+commit+'\n'+'\n'.join(actual)+'\nRecorded paths: '+(', '.join(sorted(recorded)) or 'none')+'\nOutside declared interfaces/Recorded paths/assigned Task: '+(', '.join(sorted(outside)) or 'none')+'\n'
+ if outside:errors.append(task+' undeclared paths '+repr(outside))
+ for rev in [commit+'^',commit]:
+  assert git('show',rev+':'+authrel)==auth; log+='Authorization at '+rev+' matches operative Delivery Base grant.\n'
+assert git('show',S['base']+':'+authrel)==auth
+# Use the repository predicate, not a copied heuristic, for every actual changed path.
+go='package speccheck\n\nimport "testing"\n\nfunc TestQA0323GovernedScope(t *testing.T) {\n t.Parallel()\n paths := []string{\n'+''.join(json.dumps(p)+',\n' for p in sorted(allpaths))+'}\n for _, p := range paths { t.Logf("governed=%t path=%s", GovernedPath(p), p) }\n}\n'
+source=TMP/'governed_scope.go.txt'; source.write_text(go); overlay=TMP/'governed-overlay.json'; overlay.write_text(json.dumps({'Replace':{str(ROOT/'internal/speccheck/qa0323_scope_test.go'):str(source)}}))
+p,out=run(['go','test','-timeout','5m','-count=1','-v','-overlay',str(overlay),'-run','^TestQA0323GovernedScope$','./internal/speccheck']); log+=out
+if p.returncode: errors.append('governed predicate probe failed')
+actual_governed=set(re.findall(r'governed=true path=(\S+)',p.stdout)); log+='Actual governed changed paths:\n'+'\n'.join(sorted(actual_governed))+'\n'
+if actual_governed-grant:errors.append('governed paths outside grant: '+repr(actual_governed-grant))
+assert len(actual_governed)==6
+# Exact git tree comparison proves each forbidden tree byte-identical, including filenames and modes.
+protected=['Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml','internal/releaseplan','internal/delivery','internal/spec','internal/speccheck','internal/daemon','internal/baseline','docs/agents','docs/adr']
+protected += [str(p.relative_to(ROOT)) for base in [ROOT/'.agents/skills',ROOT/'skills'] for p in base.iterdir() if p.is_dir() and p.name not in ['roundfix','write-tasks','testdata']]
+for rel in protected:
+ a=git('ls-tree','-r',S['base'],'--',rel); b=git('ls-tree','-r',S['head'],'--',rel)
+ if a!=b:errors.append('protected tree differs: '+rel)
+log+='\nProtected trees compared by git ls-tree -r, names/modes/blob IDs identical:\n'+'\n'.join(protected)+'\n'
+# Compare every QA settlement section that existed in the Delivery Base.
+settlement=[]
+for rel in git('ls-tree','-r','--name-only',S['base'],'--','.agents/skills','skills').splitlines():
+ if not rel.endswith('.md'):continue
+ base=git('show',S['base']+':'+rel)
+ if '### QA settlement\n' not in base:continue
+ def section(text):return re.search(r'^### QA settlement\n(.*?)(?=^#{1,3} |\Z)',text,re.S|re.M).group(0)
+ current=(ROOT/rel).read_text()
+ if section(base)!=section(current):errors.append('QA settlement changed: '+rel)
+ settlement.append(rel)
+log+='\nQA settlement sections byte-identical:\n'+'\n'.join(settlement)+'\n'
+# Validate actual current delta too; report/evidence is the sole allowed Agent output.
+delta=git('status','--short','--untracked-files=all'); log+='\nCurrent worktree delta:\n'+delta
+for line in delta.splitlines():
+ rel=line[3:]
+ if not rel.startswith('docs/specs/'+S['spec']+'/qa/'):errors.append('Agent delta outside QA: '+rel)
+log+='\nErrors: '+(repr(errors) if errors else 'none')+'\n'
+(EV/'governed-scope.go.txt').write_text(go)
+finish('Q17','pass' if not errors else 'fail','All three actual Task commits fit declared interfaces plus assigned Task file; no Recorded paths. Six actual Governed Paths are authorized by an unchanged earlier grant. Protected trees and every QA settlement section equal Delivery Base; Agent delta is QA only.' if not errors else '; '.join(errors),log)

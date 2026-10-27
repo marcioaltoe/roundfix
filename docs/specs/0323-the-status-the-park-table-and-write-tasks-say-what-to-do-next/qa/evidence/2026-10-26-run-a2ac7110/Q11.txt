@@ -1,0 +1,9 @@
+$ /bin/sh -c 'grep -q '"'"'func TestFollowUpStatusNamesTheManualClassification'"'"' internal/cli/follow_up_status_test.go && go test -timeout 15m -count=1 -run '"'"'^TestFollowUpStatus'"'"' ./internal/cli && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/user-guide/commands/follow-up.md | grep -qF -- '"'"'Next release: not proposed (manual_classification_required): <n> commit(s) since <base> need a manual release classification'"'"' && for ref in .agents/skills/roundfix/references/follow-up.md skills/roundfix/references/follow-up.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$ref" | grep -q -- '"'"'the .release_classification. item of .maintainer. names the'"'"' || { printf '"'"'missing manual classification text: %s\n'"'"' "$ref" >&2; exit 1; }; done && go test -timeout 10m -count=1 ./skills && go test -timeout 15m -count=1 -tags docscontract -run '"'"'^TestTheSkillCoverageMapIsCurrent$'"'"' ./internal/docscontract'
+stdout:
+ok  	roundfix/internal/cli	1.566s
+ok  	roundfix/skills	1.213s
+ok  	roundfix/internal/docscontract	0.336s
+
+stderr:
+
+exit: 0

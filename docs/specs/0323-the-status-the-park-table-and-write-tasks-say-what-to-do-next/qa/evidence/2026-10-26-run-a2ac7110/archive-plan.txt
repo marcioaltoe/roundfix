@@ -1,0 +1,15 @@
+Judge Key Variables ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY and ROUNDFIX_TYPESAFE_API_KEY unset; TYPESAFE_API_KEY unset. HOME and TMPDIR fresh; PATH starts with gh stub.
+$ ./bin/roundfix archive 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next --plan --offline
+stdout:
+archive plan for 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next: removes 46 file(s) (187767 bytes) and writes docs/history/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-26.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 33 file(s) (76507 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-follow-up-status-leaves-the-next-version-blank-under-manual-classification.md 2280 bytes: no advice (offline)
+candidate references/2026-10-26-the-park-class-table-joins-the-secret-rewrite-to-every-finding-park.md 1780 bytes: no advice (offline)
+candidate references/2026-10-26-two-tasks-of-one-wave-that-change-an-undeclared-test-fake-lose-the-run-at-the-qa-gate.md 2251 bytes: no advice (offline)
+promote with: roundfix archive 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next --promote <path>
+
+stderr:
+
+exit: 0

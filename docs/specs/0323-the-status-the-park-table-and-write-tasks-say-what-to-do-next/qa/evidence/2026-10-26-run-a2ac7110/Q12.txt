@@ -1,0 +1,8 @@
+$ /bin/sh -c 'grep -q '"'"'func TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem'"'"' internal/docscontract/command_documentation_test.go && go test -timeout 15m -count=1 -tags docscontract -run '"'"'^(TestTheParkAction.*|TestTheSkillCoverageMapIsCurrent)$'"'"' ./internal/docscontract && go test -timeout 10m -count=1 ./skills'
+stdout:
+ok  	roundfix/internal/docscontract	0.355s
+ok  	roundfix/skills	0.887s
+
+stderr:
+
+exit: 0

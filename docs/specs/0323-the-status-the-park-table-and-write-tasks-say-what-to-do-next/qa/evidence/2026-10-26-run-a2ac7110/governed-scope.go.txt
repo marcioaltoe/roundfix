@@ -1,0 +1,29 @@
+package speccheck
+
+import "testing"
+
+func TestQA0323GovernedScope(t *testing.T) {
+ t.Parallel()
+ paths := []string{
+".agents/skills/roundfix/SKILL.md",
+".agents/skills/roundfix/references/deliver.md",
+".agents/skills/roundfix/references/follow-up.md",
+".agents/skills/write-tasks/SKILL.md",
+"CONTEXT.md",
+"docs/references/behavior-surfaces.json",
+"docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/task_01.md",
+"docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/task_02.md",
+"docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/task_03.md",
+"docs/user-guide/commands/deliver.md",
+"docs/user-guide/commands/follow-up.md",
+"internal/cli/follow_up_status.go",
+"internal/cli/follow_up_status_test.go",
+"internal/docscontract/command_documentation_test.go",
+"skills/roundfix/SKILL.md",
+"skills/roundfix/references/deliver.md",
+"skills/roundfix/references/follow-up.md",
+"skills/testdata/owned-skill-versions.json",
+"skills/write-tasks/SKILL.md",
+}
+ for _, p := range paths { t.Logf("governed=%t path=%s", GovernedPath(p), p) }
+}

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,55 @@
+Fixture: separate main repository, feat seed tagged v0.4.1 then fix: repair widget; no remote.
+$ ./bin/roundfix follow-up --status
+stdout:
+Status for patch-fixture in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture
+In progress: 0
+Pending Specs: 0
+Next release: v0.4.2 from v0.4.1 (ready)
+  ef3d4a1aa331 fix: repair widget
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: gh stub: exit status 1
+  git: checked 0
+  specs: unavailable: specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture/docs/specs", which does not exist; create the directory or update specs.root
+  release-plan: checked 1
+
+stderr:
+
+exit: 0
+$ ./bin/roundfix follow-up --status --format json
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture","namespace":"patch-fixture"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"unavailable","count":0,"detail":"gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: gh stub: exit status 1"},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"unavailable","count":0,"detail":"specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture/docs/specs\", which does not exist; create the directory or update specs.root"},{"name":"release-plan","state":"checked","count":1,"detail":""}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"ef3d4a1","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[],"release":{"state":"ready","base":"v0.4.1","proposed_version":"v0.4.2","changes":[{"commit":"ef3d4a1aa331bba69ed6eb74d9cccc9c48316277","subject":"fix: repair widget"}],"reason":null},"blockers":[],"maintainer":[]}
+
+stderr:
+
+exit: 0
+$ /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/roundfix-base follow-up --status
+stdout:
+Status for patch-fixture in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture
+In progress: 0
+Pending Specs: 0
+Next release: v0.4.2 from v0.4.1 (ready)
+  ef3d4a1aa331 fix: repair widget
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: gh stub: exit status 1
+  git: checked 0
+  specs: unavailable: specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture/docs/specs", which does not exist; create the directory or update specs.root
+  release-plan: checked 1
+
+stderr:
+
+exit: 0
+$ /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/roundfix-base follow-up --status --format json
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture","namespace":"patch-fixture"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"unavailable","count":0,"detail":"gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: gh stub: exit status 1"},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"unavailable","count":0,"detail":"specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/patch-fixture/docs/specs\", which does not exist; create the directory or update specs.root"},{"name":"release-plan","state":"checked","count":1,"detail":""}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"ef3d4a1","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[],"release":{"state":"ready","base":"v0.4.1","proposed_version":"v0.4.2","changes":[{"commit":"ef3d4a1aa331bba69ed6eb74d9cccc9c48316277","subject":"fix: repair widget"}],"reason":null},"blockers":[],"maintainer":[]}
+
+stderr:
+
+exit: 0

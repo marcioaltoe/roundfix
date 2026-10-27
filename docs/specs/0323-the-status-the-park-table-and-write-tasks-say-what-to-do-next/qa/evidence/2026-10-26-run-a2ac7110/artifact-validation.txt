@@ -1,0 +1,72 @@
+$ go test -timeout 5m -count=1 -v -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/artifact-overlay.json -run '^TestQA0323FinalArtifact$' ./internal/spec
+stdout:
+=== RUN   TestQA0323FinalArtifact
+=== PAUSE TestQA0323FinalArtifact
+=== CONT  TestQA0323FinalArtifact
+    qa0323_artifact_test.go:18: production parser: qualifying partial; one pre-PR row, one prohibited-network row, one declared acceptance
+    qa0323_artifact_test.go:27: production secret scan: 36 QA text files checked
+--- PASS: TestQA0323FinalArtifact (0.02s)
+PASS
+suiteguard: guard cost: measured 2879 paths; fingerprint took 149.374625ms before and 128.196709ms after
+ok  	roundfix/internal/spec	0.733s
+
+stderr:
+
+exit: 0
+
+Final structural check: PASS
+21 unique rows; 18 passed; 2 environment-blocked; 1 declared unreachable; zero failed/finding-blocked/skipped/pending.
+One frontmatter and one seeded report; auditor fields/audit inputs/mechanical skips preserved.
+Every executed row has fixed typed inputs; commit reads declare commit_range; every evidence link exists; all evidence is UTF-8 text.
+Outcome is one paragraph and does not end with colon.
+Git diff --check: exit 0.
+Only qa/ report and evidence are changed/untracked.
+$ git diff --check
+stdout:
+
+stderr:
+
+exit: 0
+$ git status --short --untracked-files=all
+stdout:
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q01.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q02.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q03.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q04.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q05.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q06.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q07.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q08.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q09.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q10.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q11.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q12.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q13.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q14.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q15.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q16.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q17.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q18.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q19.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q20.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/Q21.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/archive-plan.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/artifact-validation.go.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/artifact-validation.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/build.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/delivery-base-build.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/governed-scope.go.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/precondition.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/qa0323-docs.py.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/qa0323-e2e.py.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/qa0323-sabotage.py.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/qa0323-scope.py.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/qa0323-suites.py.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/qa0323lib.py.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/reproduction.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/evidence/2026-10-26-run-a2ac7110/version.txt
+?? docs/specs/0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next/qa/qa-report-2026-10-26.md
+
+stderr:
+
+exit: 0

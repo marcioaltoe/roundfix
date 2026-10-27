@@ -1,0 +1,35 @@
+Independent git archive c8a2d0a03658dce7c81b990e69265a4240b1ddd8 fixture with initialized/staged Git metadata.
+Change count becomes 3 although only 2 chore commits block.
+$ go test -timeout 15m -count=1 -v -run '^TestFollowUpStatusNamesTheManualClassification$' ./internal/cli
+stdout:
+=== RUN   TestFollowUpStatusNamesTheManualClassification
+=== PAUSE TestFollowUpStatusNamesTheManualClassification
+=== CONT  TestFollowUpStatusNamesTheManualClassification
+    follow_up_status_test.go:247: release={State:manual_classification_required Base:v0.4.1 ProposedVersion: Changes:[{Commit:0a41507f4ab1e41a90cf411154cb19f8964ba13c Subject:feat: expose widget status} {Commit:305125a66d901ce4376ff71c97b30affaa35417a Subject:chore: change widget behavior} {Commit:9c5621348b540fe9b837e2610419f59e0ab23da3 Subject:chore: change widget storage}] Reason:0x2e366c9b6020}, want manual classification with reason "2 commit(s) since v0.4.1 need a manual release classification" and three changes
+    follow_up_status_test.go:262: stdout=Status for widget in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/tmp-8s6wmsmf/TestFollowUpStatusNamesTheManualClassification2822165394/001
+        In progress: 0
+        Pending Specs: 0
+        Next release: not proposed (manual_classification_required): 3 commit(s) since v0.4.1 need a manual release classification
+          0a41507f4ab1 feat: expose widget status
+          305125a66d90 chore: change widget behavior
+          9c5621348b54 chore: change widget storage
+        Blockers: 0
+        Waiting on the maintainer: 1
+          release classification: classify them with roundfix release plan --from v0.4.1 --to HEAD --impact <none|patch|minor|major> --reason <text>
+        Sources:
+          runs: checked 0
+          delivery-queue: checked 0
+          pull-requests: checked 0
+          git: checked 0
+          specs: checked 0
+          release-plan: checked 1
+        , want "\nNext release: not proposed (manual_classification_required): 2 commit(s) since v0.4.1 need a manual release classification\n"
+--- FAIL: TestFollowUpStatusNamesTheManualClassification (0.26s)
+FAIL
+suiteguard: guard cost: measured 2840 paths; fingerprint took 145.314458ms before and 132.000458ms after
+FAIL	roundfix/internal/cli	1.010s
+FAIL
+
+stderr:
+
+exit: 1
