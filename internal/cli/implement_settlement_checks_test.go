@@ -67,6 +67,44 @@ func testImplementSettlementRepositoryCommands(t *testing.T, configKey string, w
 	}
 }
 
+func TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement(t *testing.T) {
+	t.Parallel()
+	home, repo := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	const repositoryCommand = "repository check"
+	writeUserConfig(t, home, "defaults:\n  verification: "+repositoryCommand+"\n")
+	runner := &implementFakeRunner{gitRoot: repo, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
+	committer, verifier, _, _ := withImplementCollaborators(t, runner)
+	recording := &implementSettlementVerifier{fakeVerifier: verifier}
+	withVerifier(t, recording)
+	var stdout, stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("implement exit = %d; stderr=%s stdout=%s", code, stderr.String(), stdout.String())
+	}
+	// The real marker command fails in the pre-work probe, then the fake Agent
+	// records its work and the command passes. The wrapper records only the
+	// non-QA Task's settlement commands.
+	want := []string{implementFixtureVerificationCommand("task_01"), repositoryCommand}
+	if !reflect.DeepEqual(recording.taskCommands, want) {
+		t.Fatalf("non-QA Task commands = %v, want %v", recording.taskCommands, want)
+	}
+	repositoryCalls := 0
+	for _, command := range verifier.commands {
+		if command == repositoryCommand {
+			repositoryCalls++
+		}
+	}
+	wantRepositoryCalls := 1 // Only the non-QA Task settlement runs it.
+	if repositoryCalls != wantRepositoryCalls {
+		t.Fatalf("repository calls = %d, want %d", repositoryCalls, wantRepositoryCalls)
+	}
+	if committer.calls != 1 || runner.calls != 1 {
+		t.Fatalf("Task commits = %d, Agent calls = %d", committer.calls, runner.calls)
+	}
+}
+
 // Keep QA's own repository Verification out of the non-QA assertion.
 type implementSettlementVerifier struct {
 	*fakeVerifier

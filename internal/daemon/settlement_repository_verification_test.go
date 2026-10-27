@@ -164,7 +164,7 @@ func TestEmptySettlementRepositoryCommandAppendsNothing(t *testing.T) {
 	}
 }
 
-func TestUngatedGraphIgnoresEnabledRepositorySettlementVerification(t *testing.T) {
+func TestUngatedGraphRunsRepositoryVerificationAtSettlement(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"declared check"}}})
 	plan := fixture.plan()
@@ -178,7 +178,89 @@ func TestUngatedGraphIgnoresEnabledRepositorySettlementVerification(t *testing.T
 	if err != nil || result.Completed != 1 {
 		t.Fatalf("TaskCycle = %+v, %v", result, err)
 	}
+	if !reflect.DeepEqual(verifier.commands, []string{"declared check", settlementRepositoryCommand}) {
+		t.Fatalf("commands = %v", verifier.commands)
+	}
+}
+
+func TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands(t *testing.T) {
+	t.Parallel()
+	fixture, plan, runner, verifier, committer := settlementRepositoryFixture(t, []string{"declared check"})
+	plan.Tasks = plan.Tasks[:1]
+	plan.RepositoryVerificationAtSettlement = false
+	result, err := fixture.engine(t, runner, verifier, committer, fixture.worktree).TaskCycle(context.Background(), plan)
+	if err != nil || result.Completed != 1 {
+		t.Fatalf("TaskCycle = %+v, %v", result, err)
+	}
 	if !reflect.DeepEqual(verifier.commands, []string{"declared check"}) {
+		t.Fatalf("commands = %v", verifier.commands)
+	}
+}
+
+func TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback(t *testing.T) {
+	t.Parallel()
+	t.Run("repair", func(t *testing.T) {
+		t.Parallel()
+		fixture, plan, runner, verifier, committer := settlementRepositoryFixture(t, []string{"declared check"})
+		plan.Tasks = plan.Tasks[:1]
+		verifier.script = []error{nil, errors.New("exit status 1"), nil, nil}
+		result, err := fixture.engine(t, runner, verifier, committer, fixture.worktree).TaskCycle(context.Background(), plan)
+		if err != nil || result.Completed != 1 || result.Failed != 0 {
+			t.Fatalf("TaskCycle = %+v, %v", result, err)
+		}
+		if len(runner.requests) != 2 {
+			t.Fatalf("Agent requests = %d, want 2", len(runner.requests))
+		}
+		if prompt := runner.requests[1].Prompt; !strings.Contains(prompt, "Verification Feedback") || !strings.Contains(prompt, "Failed command: "+settlementRepositoryCommand) {
+			t.Fatalf("repair prompt omitted repository failure: %s", prompt)
+		}
+		if runner.requests[0].Session != runner.requests[1].Session {
+			t.Fatal("repair changed Agent Session")
+		}
+		if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != "completed" {
+			t.Fatalf("status = %q", got)
+		}
+		if len(committer.messages) != 1 {
+			t.Fatalf("commits = %v, want one repaired Task commit", committer.messages)
+		}
+	})
+	t.Run("final-failure", func(t *testing.T) {
+		t.Parallel()
+		fixture, plan, runner, verifier, committer := settlementRepositoryFixture(t, []string{"declared check"})
+		plan.Tasks = plan.Tasks[:1]
+		verifier.failOn = map[string]error{settlementRepositoryCommand: errors.New("exit status 7")}
+		result, err := fixture.engine(t, runner, verifier, committer, fixture.worktree).TaskCycle(context.Background(), plan)
+		if err != nil || result.Failed != 1 || result.Completed != 0 {
+			t.Fatalf("TaskCycle = %+v, %v", result, err)
+		}
+		outcome, ok := taskOutcomeByID(result.Outcomes, "task_01")
+		if !ok || !strings.Contains(outcome.Reason, settlementRepositoryCommand) {
+			t.Fatalf("failure outcome = %+v", outcome)
+		}
+		if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != "failed" {
+			t.Fatalf("status = %q", got)
+		}
+		if len(runner.requests) != 2 || len(committer.messages) != 0 {
+			t.Fatalf("requests = %d, commits = %v", len(runner.requests), committer.messages)
+		}
+	})
+}
+
+func TestUngatedGraphRunsNoInProcessSettlementCheck(t *testing.T) {
+	t.Parallel()
+	fixture, plan, runner, verifier, committer := settlementRepositoryFixture(t, []string{"declared check"})
+	plan.Tasks = plan.Tasks[:1]
+	checker := &fakeSettlementChecker{}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+	engine.deps.SettlementChecker = checker
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil || result.Completed != 1 {
+		t.Fatalf("TaskCycle = %+v, %v", result, err)
+	}
+	if checker.calls != 0 || checker.refusingCalls != 0 {
+		t.Fatalf("in-process calls: audit=%d, consistency=%d", checker.calls, checker.refusingCalls)
+	}
+	if !reflect.DeepEqual(verifier.commands, []string{"declared check", settlementRepositoryCommand}) {
 		t.Fatalf("commands = %v", verifier.commands)
 	}
 }

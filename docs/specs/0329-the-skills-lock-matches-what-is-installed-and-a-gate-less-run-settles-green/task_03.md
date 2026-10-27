@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -136,3 +136,81 @@ ADR-0342's first decision.
 - `_prd.md` → Goals; Core Feature 2; User Experience; Success Metric 4; Success Metric 6
 - `_techspec.md` → Current behavior 4; Current behavior 6; API Contract 4; Invariants 3-5; Testing Approach; Build Order 3
 - ADR-0342; ADR-0182
+
+## Result
+
+Implemented the task_03 slice. `executeTaskWorker` now selects the repository
+Verification with `enteredOnRedRepository ||
+plan.RepositoryVerificationAtSettlement`; the existing empty-command handling,
+Spec Consistency baseline scope and in-process Settlement Check scope remain
+unchanged. Replaced the old ungated-contract test, added the four other named
+regressions, and configured all 21 listed CLI fixtures explicitly without
+changing their existing assertions. The integrated-tree check belongs to
+task_04 and is not included here.
+
+Acceptance evidence:
+
+- Declared commands precede repository Verification in an ungated graph:
+  `TestUngatedGraphRunsRepositoryVerificationAtSettlement` and
+  `TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement` pass.
+- Repository failure returns command-naming Verification Feedback in the same
+  Agent Session, and persistent failure settles the fixture Task failed with
+  a command-naming reason:
+  `TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair` and
+  `/final-failure` pass, including status and commit-count assertions.
+- Switch-off runs only declared commands:
+  `TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands` passes.
+  `TestUngatedGraphRunsNoInProcessSettlementCheck` records both consistency
+  and audit calls as zero while observing both commands. The unchanged
+  `TestGatelessGraphNeverCallsTheSettlementChecker`, gated repository tests,
+  Spec Consistency tests and authorization Settlement Check tests pass.
+
+Checks run in this turn (all Go test runs bounded by an explicit timeout):
+
+- Before the production edit,
+  `go test -count=1 -timeout 3m ./internal/daemon ./internal/cli -run '^Test(Implement)?UngatedGraph'`
+  exited 1: the new order/checker tests observed only `declared check`,
+  feedback observed one Agent request instead of two, persistent repository
+  failure incorrectly completed the fixture Task, and the CLI omitted the
+  repository command. After the edit the same focused check exited 0.
+- `go test -count=1 -timeout 4m -v ./internal/daemon -run '^(TestUngatedGraph.*|TestGatedGraph.*|TestRepositoryVerification.*|TestTaskDeclaringRepositoryVerification.*|TestRepositoryAtSettlementOff.*|TestPreWorkProbeNeverRuns.*|TestEmptySettlementRepository.*|TestGatelessGraphNeverCalls.*|TestSettlement.*)$'`
+  exited 0.
+- A focused CLI selection of all 21 named migrated tests plus gated/ungated
+  settlement and switch-off tests, with `-count=1 -timeout 8m -v`, exited 0.
+  Every named migrated test reported PASS. An inspection comparing their
+  pre-edit and current condition/assertion lines found them unchanged.
+- `go test -count=1 -timeout 20m ./internal/daemon ./internal/cli`
+  exited 0: daemon 50.959s, CLI 197.405s. These are the two package suites
+  expressly required by Requirement 6, not the declared Verification wrapper.
+- `GOOS=linux go build ./internal/cli ./internal/daemon` exited 0.
+- `go test -count=1 -timeout 3m ./internal/spec -run '^TestCoverageEquivalence$'`
+  exited 0 after regeneration; the replaced test is absent from the record
+  and all new test names are present.
+- `git diff --check` exited 0.
+
+Coverage regeneration and follow-up:
+
+- Ran only the sanctioned writer:
+  `GOFLAGS='-timeout=3m' go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`.
+  Its test body passed and wrote `docs/references/coverage-record.json`, but
+  the command exited 1 because suiteguard reported
+  `modified: docs/references/coverage-record.json`. `internal/spec/main_test.go`
+  invokes `suiteguard.Main` without declaring the sanctioned regeneration
+  command; suiteguard requires that declaration as well as the approved Spec
+  authorization. No guard bypass or hand edit was used. The generated output
+  remains in this diff and passes the read-only equivalence check above.
+  The recorder also incorporates previously unrecorded tests elsewhere in
+  the current repository, as its deterministic full inventory requires.
+- Follow-up outside this Task's interfaces: wire the coverage recorder's
+  sanctioned-command declaration into the spec package test lifecycle, so
+  its first writing invocation can exit successfully under suiteguard.
+
+The incoming `status: in_progress` is preserved. No Task Graph, other Task
+file, commit, push or pull request was changed or created. The command under
+`## Verification`, selected repository Verification and incremental
+Verification were not run; Daemon settlement remains pending.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T193605Z_00ac54bea6e5fdc9`
+- Source commit: `14013d6ca42b0cc31b0628c1fce4af29dc384751`

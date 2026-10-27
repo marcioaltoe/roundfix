@@ -824,7 +824,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 		}
 	}
 	requiredRepositoryVerification := ""
-	if enteredOnRedRepository || (plan.settlementChecks && plan.RepositoryVerificationAtSettlement) {
+	if enteredOnRedRepository || plan.RepositoryVerificationAtSettlement {
 		requiredRepositoryVerification = strings.TrimSpace(plan.RepositoryVerification)
 	}
 	probe, probeErr := engine.verifyTaskPreWork(ctx, taskPlan, task, ordinal)
