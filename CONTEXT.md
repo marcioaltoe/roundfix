@@ -244,6 +244,9 @@ A path the Daemon records under a Task file's `## Recorded paths` section when
 the Task changed it without declaring it. The QA scope audit counts it as
 declared and names it in the scope row; recording discloses a change and
 reserves nothing, while a Governed Path still needs its authorization.
+Its settlement commit is still collision evidence: two Tasks of one Wave that
+each change the same Recorded Path make the QA gate's precondition refuse with
+`SC-WAVE-COLLISION`, so a file two Tasks may each change is declared by both.
 _Avoid_: Declared path, reserved path, authorized path
 
 **Task Type**:
@@ -342,7 +345,7 @@ The first Agent Selection that Roundfix proves and attempts for an Agent Work Ca
 _Avoid_: Default model, primary runtime, recommendation winner
 
 **Fallback Chain**:
-The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. One exception reaches past Agent Work Started: a Lost Rollout or Provider System Error before the First Handoff, or in a Task of type `qa` before its report, lets the next Fallback Selection take the Task, because the runtime discarded that turn before it could be handed back ([ADR-0245](docs/adr/0245-a-lost-rollout-is-runtime-infrastructure.md), [ADR-0274](docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md)).
+The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. The exception reaches past Agent Work Started when a Lost Rollout happens before the First Handoff or in a Task of type `qa` before its report, and a Provider System Error in any Task or QA turn, let the next Fallback Selection take the Task. A Provider System Error can therefore replace the selection after work has begun, because the runtime discarded that turn before it could be handed back ([ADR-0245](docs/adr/0245-a-lost-rollout-is-runtime-infrastructure.md), [ADR-0274](docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md), [ADR-0335](docs/adr/0335-a-stop-that-is-not-the-work-s-fault-does-not-cost-the-run.md)).
 _Avoid_: Dynamic fallback, silent retry, unproven selection
 
 **Default Agent Model**:
@@ -433,6 +436,7 @@ _Avoid_: Session loss, missing prompt, retryable Task failure
 
 **Provider System Error**:
 The runtime infrastructure failure (`provider_system_error`) of a turn whose stream reports that the model provider failed it — the turn's last `threadStatus` is `systemError` — whatever its stop reason. The Daemon recovers it like a Lost Rollout, without a retry on the same selection ([ADR-0274](docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md)).
+The next Fallback Selection takes the work in any Task or QA turn, reopening a QA verdict the failed turn wrote; only an exhausted Fallback Chain settles the Task as runtime infrastructure ([ADR-0274](docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md), [ADR-0335](docs/adr/0335-a-stop-that-is-not-the-work-s-fault-does-not-cost-the-run.md)).
 _Avoid_: Provider failure, capacity reply, Lost Rollout
 
 **Agent Background Task**:
@@ -444,7 +448,7 @@ The outcome (`turn_unfinished`) of a QA turn that ends with its seeded report at
 _Avoid_: Pending QA, finished turn, background job
 
 **First Handoff**:
-The first Agent turn of a Task that returns to the Daemon ([ADR-0057](docs/adr/0057-daemon-exclusively-owns-implement-task-status.md)'s "Agent handoff"). Before it, the Fallback Chain's Lost Rollout and Provider System Error exception still applies; after it, no Fallback Selection takes over work a turn handed back.
+The first Agent turn of a Task that returns to the Daemon ([ADR-0057](docs/adr/0057-daemon-exclusively-owns-implement-task-status.md)'s "Agent handoff"). Before it, the Fallback Chain's Lost Rollout and Provider System Error exception still applies; after it, only a Provider System Error lets a Fallback Selection take over work a turn handed back.
 _Avoid_: Session opening, first prompt, Agent Work Started
 
 **Merge-Ready**:
@@ -1107,9 +1111,11 @@ _Avoid_: Run artifacts, shared build cache
 
 **Shared Build Cache**:
 A build cache several worktrees share outside any one of them, declared in
-`worktree.shared_caches`; the GC Command trims it above its declared size by
+`worktree.shared_caches`; the GC Command, the start of every Implement Run and
+the Delivery Queue's repository gate trim it above its declared size by
 removing only cache entries no build used for the declared idle time, oldest
-first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md)).
+first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md),
+[ADR-0334](docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md)).
 _Avoid_: global cache, Go cache cleanup, cache GC
 
 **Item Binary**:
@@ -1443,7 +1449,7 @@ An outside-evidence QA row blocked only because the Run sandbox denied network a
 _Avoid_: Failed outside evidence, skipped row, environment pass
 
 **Network-Prohibited Row**:
-An outside-evidence QA row the gate did not look up because the Spec's own authorization forbids network access, recorded as `blocked (environment: network prohibited by Spec authorization)` with the outside-evidence row named in its provenance. Like the Network-Denied Row, it never decides a qualifying partial; any other wording still needs a declaration or the override.
+An outside-evidence QA row the gate did not look up because the Spec's own authorization forbids that lookup, recorded as `blocked (environment: <subject> prohibited by Spec authorization)` with the outside-evidence row named in its provenance. The subject names what the authorization forbids in its words, such as `network` for a network lookup; it is 1 to 80 characters, holds no parenthesis, and each row counts toward one exempt kind at most (ADR-0276, ADR-0335). Like the Network-Denied Row, it never decides a qualifying partial; any other wording still needs a declaration or the override.
 _Avoid_: Network-denied row, authorization override, skipped source
 
 **Pinned Byte Invariant**:

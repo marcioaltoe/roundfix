@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:2563009bc376f6ed80df8a8261e5ed236614a6c6c9dc4a1f15f2423e40245f13",
+  "catalogDigest": "sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5",
   "modules": [
     "core",
     "context-workflow",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "1711166034c6e9ccc1424e12c7cf94ed4e9dbe79d169b38ee5c1bed1c1c646b7"
+      "digest": "7782ca95190209fb0cebbb4aef4c48e87021a7375b50dc47a5d4c2754a4b13f1"
     },
     {
       "id": "guide.issue-tracker",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "077c27858b51414370748e8d3635fa8bac462d08900c8fa89edf088d23f1a096"
+      "digest": "62180238bf4dc7442ed779760fd1be9fb5ef243d70f41e066b8c13c08b223c2c"
     },
     {
       "id": "root.secondbrain",

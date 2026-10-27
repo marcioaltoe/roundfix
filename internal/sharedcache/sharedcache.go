@@ -2,6 +2,7 @@
 package sharedcache
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -70,7 +71,15 @@ func openCache(dir string) (*os.Root, error) {
 
 // Measure reads all regular file sizes and plans only idle cache entries.
 // It leaves the directory unchanged, even when it exceeds limit.
-func Measure(dir string, limit int64, idle time.Duration, now time.Time) (plan Plan, err error) {
+func Measure(dir string, limit int64, idle time.Duration, now time.Time) (Plan, error) {
+	return MeasureContext(context.Background(), dir, limit, idle, now)
+}
+
+// MeasureContext plans a trim, checking cancellation between entries.
+func MeasureContext(ctx context.Context, dir string, limit int64, idle time.Duration, now time.Time) (plan Plan, err error) {
+	if err := ctx.Err(); err != nil {
+		return plan, fmt.Errorf("measure Go build cache %q: %w", dir, err)
+	}
 	if idle < MinimumIdle {
 		return plan, fmt.Errorf("%w: idle time must be at least %s", ErrNotGoBuildCache, MinimumIdle)
 	}
@@ -82,6 +91,9 @@ func Measure(dir string, limit int64, idle time.Duration, now time.Time) (plan P
 	plan.Path, plan.Limit = dir, limit
 	var candidates []Entry
 	err = fs.WalkDir(root.FS(), ".", func(path string, d fs.DirEntry, walkErr error) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if errors.Is(walkErr, fs.ErrNotExist) {
 			return nil
 		}
@@ -114,6 +126,9 @@ func Measure(dir string, limit int64, idle time.Duration, now time.Time) (plan P
 		return candidates[i].ModTime.Before(candidates[j].ModTime)
 	})
 	for _, entry := range candidates {
+		if err := ctx.Err(); err != nil {
+			return plan, fmt.Errorf("plan Go build cache %q: %w", dir, err)
+		}
 		if plan.Bytes-plan.RemoveSize <= limit {
 			break
 		}
@@ -126,6 +141,14 @@ func Measure(dir string, limit int64, idle time.Duration, now time.Time) (plan P
 // Apply rereads each planned entry immediately before removal, keeping entries
 // used since measurement. Missing files are harmless; other errors are joined.
 func Apply(plan Plan, idle time.Duration, now func() time.Time) (removed int, bytes int64, err error) {
+	return ApplyContext(context.Background(), plan, idle, now)
+}
+
+// ApplyContext stops between entries and reports removals already made.
+func ApplyContext(ctx context.Context, plan Plan, idle time.Duration, now func() time.Time) (removed int, bytes int64, err error) {
+	if err := ctx.Err(); err != nil {
+		return 0, 0, fmt.Errorf("apply Go build cache %q: %w", plan.Path, err)
+	}
 	if idle < MinimumIdle {
 		return 0, 0, fmt.Errorf("%w: idle time must be at least %s", ErrNotGoBuildCache, MinimumIdle)
 	}
@@ -136,6 +159,9 @@ func Apply(plan Plan, idle time.Duration, now func() time.Time) (removed int, by
 	defer func() { err = errors.Join(err, root.Close()) }()
 	var errs []error
 	for _, entry := range plan.Remove {
+		if err := ctx.Err(); err != nil {
+			return removed, bytes, errors.Join(append(errs, fmt.Errorf("apply Go build cache %q: %w", plan.Path, err))...)
+		}
 		relative, relErr := filepath.Rel(plan.Path, entry.Path)
 		if relErr != nil || !entryName.MatchString(filepath.ToSlash(relative)) {
 			errs = append(errs, fmt.Errorf("refuse cache entry %q outside the entry naming contract", entry.Path))

@@ -108,7 +108,12 @@ func runFollowUpStatus(ctx context.Context, req followUpRequest, stdout, stderr 
 		case releaseplan.StateApprovalRequired:
 			doc.Maintainer = append(doc.Maintainer, followUpMaintainer{Kind: "release_approval", Detail: plan.Approval.Question})
 		case releaseplan.StateManualClassificationRequired:
-			doc.Maintainer = append(doc.Maintainer, followUpMaintainer{Kind: "release_classification", Detail: "manual classification required"})
+			doc.Release.Reason = followUpString(fmt.Sprintf(
+				"%d commit(s) since %s need a manual release classification",
+				len(plan.Classification.BlockingCommits), plan.Base.Tag))
+			doc.Maintainer = append(doc.Maintainer, followUpMaintainer{Kind: "release_classification",
+				Detail: fmt.Sprintf("classify them with roundfix release plan --from %s --to %s --impact <none|patch|minor|major> --reason <text>",
+					plan.Base.Tag, plan.Target.Name)})
 		}
 	}
 	doc.Sources = append(doc.Sources, releaseSource)
@@ -198,6 +203,8 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 		out.WriteString("Next release: none (no_release)\n")
 	case "unavailable":
 		fmt.Fprintf(&out, "Next release: unavailable: %s\n", *doc.Release.Reason)
+	case string(releaseplan.StateManualClassificationRequired):
+		fmt.Fprintf(&out, "Next release: not proposed (manual_classification_required): %s\n", *doc.Release.Reason)
 	default:
 		fmt.Fprintf(&out, "Next release: %s from %s (%s)\n", doc.Release.ProposedVersion, doc.Release.Base, doc.Release.State)
 	}
@@ -212,6 +219,8 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 	for _, item := range doc.Maintainer {
 		if item.Kind == "pending_question" {
 			fmt.Fprintf(&out, "  question %s parked %s: %s\n", item.Spec, item.Detail, item.Answer)
+		} else if item.Kind == "release_classification" {
+			fmt.Fprintf(&out, "  release classification: %s\n", item.Detail)
 		} else {
 			fmt.Fprintf(&out, "  release %s: %s\n", doc.Release.ProposedVersion, item.Detail)
 		}

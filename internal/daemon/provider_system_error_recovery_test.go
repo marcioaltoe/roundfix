@@ -196,9 +196,30 @@ func TestProviderSystemErrorBeforeFirstHandoffActivatesTheFallback(t *testing.T)
 	}
 }
 
-func TestProviderSystemErrorAfterFirstHandoffSettlesRuntimeInfrastructure(t *testing.T) {
+func TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback(t *testing.T) {
 	t.Parallel()
 	runner, result, sink := runProviderSystemErrorTask(t, true, []error{nil, providerSystemErrorForTest()}, true)
+	if result.Completed != 1 || result.Failed != 0 || len(runner.seen) != 3 {
+		t.Fatalf("result=%+v turns=%d", result, len(runner.seen))
+	}
+	if runner.seen[0].Session != runner.seen[1].Session || !strings.Contains(runner.seen[1].Prompt, "Verification Feedback") {
+		t.Fatalf("feedback=%+v", runner.seen[1])
+	}
+	req := runner.seen[2]
+	wantPrompt := runner.seen[0].Prompt + "\n\n" + providerSystemErrorNoticeForTest + "\n\n" + runner.seen[1].Prompt
+	if req.Runtime.Model != "fallback-model" || !strings.HasSuffix(req.Session.Name, "-fallback-01") || req.Prompt != wantPrompt {
+		t.Fatalf("recovery=%+v", req)
+	}
+	assertProviderSystemErrorEvents(t, sink, "task", "fallback")
+	event := singleEventOfKind(t, sink, runevent.KindDaemonAgentSelectionFallback)
+	if !strings.Contains(string(event.Payload), `"reason_code":"provider_system_error"`) {
+		t.Fatalf("fallback=%s", event.Payload)
+	}
+}
+
+func TestProviderSystemErrorAfterFirstHandoffSettlesRuntimeInfrastructure(t *testing.T) {
+	t.Parallel()
+	runner, result, sink := runProviderSystemErrorTask(t, false, []error{nil, providerSystemErrorForTest()}, true)
 	wantReason := "runtime infrastructure: task task_01 hit a provider system error: " + providerSystemErrorDetailForTest
 	if result.Failed != 1 || len(runner.seen) != 2 || result.Outcomes[0].Reason != wantReason {
 		t.Fatalf("result=%+v turns=%d", result, len(runner.seen))
@@ -312,9 +333,10 @@ func TestProviderSystemErrorRecoveryEligibility(t *testing.T) {
 		{"task without output falls back", "task", true},
 		{"review after output keeps the error", "review", false},
 		{"review without output keeps the error", "review", true},
-		{"QA with a finished report exhausts", "qa", false},
+		{"QA with a finished report falls back", "qa", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 			cause := providerSystemErrorForTest()
 			if tc.noOutput {
@@ -339,7 +361,7 @@ func TestProviderSystemErrorRecoveryEligibility(t *testing.T) {
 				t.Fatal(err)
 			}
 			switch tc.scope {
-			case "task":
+			case "task", "qa":
 				if runErr != nil || len(runner.seen) != 2 || runner.seen[1].Runtime.Model != "fallback-model" {
 					t.Fatalf("err=%v turns=%v", runErr, runner.seen)
 				}
@@ -354,13 +376,6 @@ func TestProviderSystemErrorRecoveryEligibility(t *testing.T) {
 				if events := eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionFallback); len(events) != 0 {
 					t.Fatalf("review fell back: %v", events)
 				}
-			case "qa":
-				want := "runtime infrastructure: qa fixture-scope hit a provider system error: " + providerSystemErrorDetailForTest
-				if runErr == nil || runErr.Error() != want || len(runner.seen) != 1 {
-					t.Fatalf("err=%v want=%s turns=%v", runErr, want, runner.seen)
-				}
-				assertProviderSystemErrorAttempts(t, fixture, tc.scope, "fixture-scope", 1)
-				assertProviderSystemErrorEvents(t, fixture.sink, tc.scope, "exhausted")
 			}
 		})
 	}

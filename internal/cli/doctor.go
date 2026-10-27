@@ -34,6 +34,7 @@ type doctorDependencies struct {
 	snapshotDifferences func(string, []string) ([]string, error)
 	residue             func(context.Context, string) []CheckResult
 	storage             func(context.Context, roundconfig.Loaded) []CheckResult
+	diskSpace           func(context.Context, roundconfig.Loaded) []CheckResult
 	linuxLane           func(context.Context, roundconfig.Loaded) CheckResult
 }
 
@@ -54,6 +55,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		snapshotDifferences: manifestSnapshotDifferences,
 		residue:             defaultDoctorResidueResults,
 		storage:             defaultDoctorStorageResults,
+		diskSpace:           defaultDoctorDiskSpaceResults,
 		linuxLane:           doctorLinuxLaneCheck,
 	}
 }
@@ -113,6 +115,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, repositorySkillsCheck(ctx, dependencies, repositoryRoot))
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, dependencies.storage(ctx, loaded)...)
+	if dependencies.diskSpace != nil {
+		results = append(results, dependencies.diskSpace(ctx, loaded)...)
+	}
 	if dependencies.linuxLane != nil && loaded.Config.Delivery.LinuxLane {
 		results = append(results, dependencies.linuxLane(ctx, loaded))
 	}

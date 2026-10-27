@@ -1655,6 +1655,16 @@ func pullRequestRecordChangeIsExact(before, after []byte, number string) bool {
 }
 
 func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, head string) (delivery.GateResult, error) {
+	if len(workflow.loaded.Config.Worktree.SharedCaches) > 0 {
+		budget := commandDependenciesForContext(ctx).gc.sharedCacheTrimBudget
+		trimCtx, cancel := context.WithTimeout(ctx, budget)
+		reports := trimSharedCaches(trimCtx, workflow.loaded, false)
+		cancel()
+		for _, report := range reports {
+			printSharedCacheTrim(workflow.log, report, budget, "Delivery Queue item "+specSlug+": ", "before the repository gate", "the gate continues")
+		}
+	}
+
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(
 		workflow.loaded.Config.Defaults.ArtifactDir,
 		workflow.loaded.GitRoot,

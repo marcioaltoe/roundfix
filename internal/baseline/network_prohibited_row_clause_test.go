@@ -8,8 +8,8 @@ import (
 
 func TestTheGuidesExemptANetworkProhibitedOutsideEvidenceRow(t *testing.T) {
 	t.Parallel()
-	const specWorkflowSentence = "So is an outside-evidence row the QA gate did not look up because the Spec's own authorization forbids network access, recorded as `blocked (environment: network prohibited by Spec authorization)`."
-	const autonomousWorkSentence = "Nor does an outside-evidence row the QA gate did not look up because the Spec's own authorization forbids network access, recorded as `blocked (environment: network prohibited by Spec authorization)`."
+	const specWorkflowSentence = "So is an outside-evidence row the QA gate did not look up because the Spec's own authorization forbids that lookup, recorded as `blocked (environment: <subject> prohibited by Spec authorization)`, where `<subject>` names what the authorization forbids, such as `network` or `another repository`."
+	const autonomousWorkSentence = "Nor does an outside-evidence row the QA gate did not look up because the Spec's own authorization forbids that lookup, recorded as `blocked (environment: <subject> prohibited by Spec authorization)`, where `<subject>` names what the authorization forbids, such as `network` or `another repository`."
 
 	for _, want := range []struct {
 		id       string

@@ -100,6 +100,7 @@ func commandEnvironmentForTest(t *testing.T) commandEnvironment {
 	t.Helper()
 	overrides := commandEnvironmentOverridesForTest(t)
 	dependencies := defaultCommandDependencies()
+	dependencies.availableBytes = func(string) (int64, error) { return 1 << 40, nil }
 	if overrides.dependenciesSet {
 		dependencies = overrides.dependencies
 	}
@@ -143,6 +144,7 @@ func updateCommandDependenciesForTest(t *testing.T, mutate func(*commandDependen
 	overrides := commandEnvironmentOverridesForTest(t)
 	if !overrides.dependenciesSet {
 		overrides.dependencies = defaultCommandDependencies()
+		overrides.dependencies.availableBytes = func(string) (int64, error) { return 1 << 40, nil }
 		overrides.dependenciesSet = true
 	}
 	mutate(&overrides.dependencies)

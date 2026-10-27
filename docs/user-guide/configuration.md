@@ -473,7 +473,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
 | `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
 | `worktree.caches` | `[]` | Declares rebuildable directories of ended worktrees for Doctor and GC. |
-| `worktree.shared_caches` | `[]` | Declares shared build caches for GC to trim above their size limits. |
+| `worktree.shared_caches` | `[]` | Declares shared build caches for GC, each Implement Run start and the queue's repository gate to trim above their size limits. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
@@ -661,9 +661,11 @@ rate-limit failures keep their normal failure semantics. A Lost Rollout gets no
 repair: the Task continues in a new Agent Session, using the next Fallback
 Selection before the First Handoff or while a QA report is pending, and the
 same selection otherwise. A Provider System Error lets the next Fallback
-Selection take the Task under the same condition, gets no retry on the same
-selection, does not count toward the Lost Rollout budget, and otherwise settles
-the Task as runtime infrastructure. An Agent Session owner gets at most two
+Selection take the Task in any Task or QA turn, a repair turn after the First
+Handoff and a QA turn that already wrote a verdict included, gets no retry on
+the same selection, does not count toward the Lost Rollout budget, and settles
+the Task as runtime infrastructure only when the chain has no next selection.
+An Agent Session owner gets at most two
 Lost Rollout recoveries; the third Lost Rollout settles the Task as runtime
 infrastructure.
 
@@ -1049,3 +1051,7 @@ above its limit when too few entries are idle.
 Use `roundfix gc --dry-run` to preview without writing; `roundfix gc` applies
 the trim. See [GC](commands/gc.md#shared-build-caches) for the report and
 refusal behavior.
+
+The start of every Implement Run and every repository gate of the Delivery
+Queue apply the same trim by themselves under a thirty-second budget; see
+[GC](commands/gc.md#automatic-trims).
