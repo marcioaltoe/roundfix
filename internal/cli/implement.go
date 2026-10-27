@@ -461,6 +461,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
+	trimSharedCachesAtRunStart(runCtx, loadedConfig, runStore, run.ID, stderr)
 	if len(gitState.Dirty) > 0 {
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
 	}

@@ -1,6 +1,7 @@
 package sharedcache_test
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -168,5 +169,44 @@ func TestApplySkipsAnEntryUsedSinceItWasPlanned(t *testing.T) {
 	count, bytes, err = sharedcache.Apply(plan, sharedcache.MinimumIdle, func() time.Time { return now })
 	if err != nil || count != 0 || bytes != 0 {
 		t.Fatalf("repeat Apply = %d, %d, %v", count, bytes, err)
+	}
+}
+
+func TestMeasureContextStopsWhenTheContextEnds(t *testing.T) {
+	t.Parallel()
+	dir, now, names := fixture(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	_, err := sharedcache.MeasureContext(ctx, dir, 0, sharedcache.MinimumIdle, now)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("MeasureContext error = %v", err)
+	}
+	for _, name := range names {
+		if _, err := os.Stat(name); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestApplyContextStopsBetweenEntries(t *testing.T) {
+	t.Parallel()
+	dir, now, names := fixture(t)
+	plan, err := sharedcache.Measure(dir, 0, sharedcache.MinimumIdle, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	count, bytes, err := sharedcache.ApplyContext(ctx, plan, sharedcache.MinimumIdle, func() time.Time { cancel(); return now })
+	if count != 1 || bytes != 1000 || !errors.Is(err, context.Canceled) {
+		t.Fatalf("ApplyContext = %d, %d, %v", count, bytes, err)
+	}
+	if _, err := os.Stat(names[0]); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("first entry remains: %v", err)
+	}
+	for _, name := range names[1:] {
+		if _, err := os.Stat(name); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

@@ -72,6 +72,12 @@ after the Task cycle. When it expires, Roundfix cancels the Run's Agent
 Sessions, settles `BudgetExceeded`, and keeps the Run Worktree and Run Branch
 for recovery.
 
+When `worktree.shared_caches` declares a Shared Build Cache, the Run trims it
+right after the Run is recorded and before its Run Worktree exists, with the
+GC Command's rules and a thirty-second budget, and records one
+`shared_cache_trim` Run Event per declared cache. The trim never changes the
+Run's outcome; the GC guide's Shared Build Caches section describes it.
+
 A deterministic Verification failure releases Verification Capacity before
 the Daemon sends diagnostics to the same Agent Session. The Agent receives one
 Verification Feedback repair turn, then the repaired Task queues and acquires

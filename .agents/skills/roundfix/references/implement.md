@@ -16,6 +16,12 @@ push, and cleanup. When the allowance expires, the Run settles
 elapsed time since the renewal point. The bounded Run preserves its Run
 Worktree and Run Branch for inspection and recovery.
 
+When `worktree.shared_caches` declares a Shared Build Cache, the Run trims it
+right after the Run is recorded and before its Run Worktree exists, with the
+GC Command's rules and a thirty-second budget, and records one
+`shared_cache_trim` Run Event per declared cache. The trim never changes the
+Run's outcome; the GC guide's Shared Build Caches section describes it.
+
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. When a `BudgetExceeded`, `Stopped`, or
 `Unresolved` Run with a present Run Worktree has a complete candidate set that
