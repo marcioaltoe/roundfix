@@ -1,0 +1,47 @@
+import pathlib,json,subprocess,re
+s=json.loads(pathlib.Path('/tmp/qa0321-state.json').read_text());r=pathlib.Path(s['root']);e=pathlib.Path(s['evidence']);sp='docs/specs/'+s['spec'];base=s['base'];out=[];fail=[]
+def git(*args):return subprocess.check_output(['git',*args],cwd=r,text=True)
+commits={'task_01':'7bff1925c898c320177d8075e527bf9f9c8546d3','task_02':'ad99b44ea607604bcbb64619368a24f78fde65e3','task_03':'b6f888f091b4645d76970420b6c14d6de82f140f'}
+authority=(r/sp/'_authorization.md').read_text();governed=set(re.findall(r'^  - (.+)$',authority.split('operations:')[0],re.M))
+for task,commit in commits.items():
+ text=(r/sp/(task+'.md')).read_text();declared=set(re.findall(r'^- (?:interface|creates|instruction|deletes): `([^`]+)`',text,re.M));declared.add(sp+'/'+task+'.md');changed=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();outside=set(changed)-declared
+ out.append(task+' '+commit+'\n'+ '\n'.join(changed)+'\nOutside declarations: '+repr(sorted(outside)))
+ if outside:fail.append(task+' scope')
+ for path in changed:
+  isgov=path.startswith('.agents/skills/') or bool(re.match(r'^skills/[^/]+/SKILL.md$',path)) or path=='internal/cli/cli_test.go'
+  if isgov and path not in governed:fail.append('ungranted '+path)
+ # Current grant must predate each Task; mechanical input already audits governed Task commits.
+ if subprocess.run(['git','merge-base','--is-ancestor',base,commit],cwd=r).returncode:fail.append(task+' grant ancestry')
+changed=git('diff','--name-only',base,s['head']).splitlines()
+protected=[]
+for path in changed:
+ if path in ['Makefile','go.mod','go.sum','.roundfixrc.yml'] or path.startswith(('.github/workflows/','internal/config/','internal/baseline/','docs/agents/','docs/adr/')) or (path.startswith(('.agents/skills/','skills/')) and not path.startswith(('.agents/skills/roundfix/','skills/roundfix/')) and path!='skills/testdata/owned-skill-versions.json'):protected.append(path)
+if protected:fail+=protected
+out.append('Protected bytes changed: '+repr(protected))
+for path in changed:
+ if path.endswith('SKILL.md'):
+  before=git('show',base+':'+path);after=(r/path).read_text()
+  def settlement(v):
+   if '### QA settlement' not in v:return ''
+   return v.split('### QA settlement',1)[1].split('\n## ',1)[0].split('\n### ',1)[0]
+  if settlement(before)!=settlement(after):fail.append('QA settlement '+path)
+out.append('QA settlement sections byte-identical. No trim added to resolve/watch or Task execution; only implement.go and Gate call sites added (diff inspected).')
+(e/'scope.txt').write_text('\n\n'.join(out)+'\nFailures: '+repr(fail)+'\n');print('scope failures',fail)
+checks=[]
+def check(label,condition):checks.append([label,bool(condition)])
+def collapsed(path):return ' '.join((r/path).read_text().split())
+ctx=(r/'CONTEXT.md').read_text();a=ctx.index('**Shared Build Cache**:');entry=ctx[a:ctx.find('\n\n',a)];check('glossary triggers',all(x in entry for x in ['GC Command','Implement Run','Delivery Queue']));check('glossary Avoid','_Avoid_: global cache, Go cache cleanup, cache GC' in entry)
+for path in ['docs/user-guide/commands/gc.md','.agents/skills/roundfix/references/storage.md','skills/roundfix/references/storage.md']:check(path,all(x in (r/path).read_text() for x in ['### Automatic trims','Roundfix also trims every declared Shared Build Cache by itself']))
+check('config','apply the same trim by themselves under a thirty-second budget' in collapsed('docs/user-guide/configuration.md'))
+for group,phrase in [('implement','the Run trims it right after the Run is recorded'),('deliver','queue trims each declared Shared Build Cache')]:
+ for path in ['docs/user-guide/commands/'+group+'.md','.agents/skills/roundfix/references/'+group+'.md','skills/roundfix/references/'+group+'.md']:check(path,phrase in collapsed(path))
+for path in ['docs/user-guide/commands/doctor.md','.agents/skills/roundfix/references/setup.md','skills/roundfix/references/setup.md']:check(path,all(x in collapsed(path) for x in ['only when the filesystem holding the worktree location','DR-DISK-LOW','DR-DISK-UNREAD']))
+for ref in ['deliver','implement','setup','storage']:check('mirror '+ref,(r/('.agents/skills/roundfix/references/'+ref+'.md')).read_bytes()==(r/('skills/roundfix/references/'+ref+'.md')).read_bytes())
+v=[]
+for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:v+=re.findall(r'^\s*version: (\S+)',(r/path).read_text(),re.M)
+ledger=json.loads((r/'skills/testdata/owned-skill-versions.json').read_text());check('equal recorded version '+repr(v),len(set(v))==1 and len(v)==4 and v[0] in [x['version'] for x in ledger['skills']['roundfix']])
+(e/'documentation.txt').write_text('Shared Build Cache entry:\n'+entry+'\n\n'+ '\n'.join(label+': '+str(ok) for label,ok in checks)+'\n')
+# Broad semantic search: preserve every match for inspection, then distinguish historical ADRs from current instructions.
+args=['rg','-n','-i','only.{0,100}(GC Command|roundfix gc|shared build cache)|(GC Command|roundfix gc|shared build cache).{0,100}only','docs/user-guide','.agents/skills','skills','docs/agents','docs/adr','CONTEXT.md'];p=subprocess.run(args,cwd=r,capture_output=True,text=True);(e/'wording-search.txt').write_text('command: '+' '.join(args)+'\n'+p.stdout+p.stderr)
+audit=(r/'docs/references/2026-10-24-test-suite-audit.md').read_text();disk=audit.split('## Disk\n',1)[1].split('\n## ',1)[0];check('outside prior incident','31 GB' in disk and '43.7 GB' in disk and '`roundfix gc` does not reclaim it.' in disk);(e/'outside-audit.txt').write_text(disk)
+(e/'audit-results.json').write_text(json.dumps({'scope':fail,'docs':checks}));print('doc failures',[x for x in checks if not x[1]])

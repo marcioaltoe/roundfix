@@ -1,0 +1,14 @@
+mutation: budget
+command: go test -count=1 -timeout 5m -v -run ^TestImplementStartRunsOnWhenTheTrimDoesNot$/^budget_ends$ ./internal/cli
+exit: 1
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot
+=== PAUSE TestImplementStartRunsOnWhenTheTrimDoesNot
+=== CONT  TestImplementStartRunsOnWhenTheTrimDoesNot
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot/budget_ends
+    shared_cache_trim_test.go:185: payload={Event:shared_cache_trim Trigger:run_start Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementStartRunsOnWhenTheTrimDoesNotbudget_ends3905983321/001/gocache Outcome:trimmed Size:3145798 Limit:1048576 Entries:2 Bytes:2097152 Cause:}
+--- FAIL: TestImplementStartRunsOnWhenTheTrimDoesNot (0.30s)
+    --- FAIL: TestImplementStartRunsOnWhenTheTrimDoesNot/budget_ends (0.30s)
+FAIL
+suiteguard: guard cost: measured 2845 paths; fingerprint took 147.524334ms before and 142.637792ms after
+FAIL	roundfix/internal/cli	0.997s
+FAIL

@@ -1,0 +1,10 @@
+import pathlib,json,subprocess,os
+s=json.loads(pathlib.Path('/tmp/qa0321-state.json').read_text());r=pathlib.Path(s['root']);e=pathlib.Path(s['evidence']);results=[]
+def run(name,args,extra=None):
+ env=os.environ.copy();env.update(GOPROXY='off',GOSUMDB='off');env.update(extra or {})
+ p=subprocess.run(args,cwd=r,env=env,capture_output=True,text=True);(e/(name+'.txt')).write_text('command: '+' '.join(args)+'\nexit: '+str(p.returncode)+'\n'+p.stdout+p.stderr);results.append([name,p.returncode]);print(name,p.returncode,flush=True)
+run('focused',['go','test','-count=1','-timeout','20m','-v','-run','^(TestMeasure.*|TestApply.*|TestImplementStart.*|TestSharedCacheTrim.*|TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification|TestGC.*SharedBuildCache.*|TestImplementStartRunsRunRetention|TestRunRetentionAtStartWarnsAndNeverBlocks|TestGateReturnsTheLaneEnvironmentSkip|TestDoctor.*|TestAvailableBytesReadsTheFilesystemOfAPath)$','./internal/sharedcache','./internal/cli','./internal/store'])
+run('skills',['go','test','-timeout','15m','-count=1','./skills'])
+run('docscontract',['go','test','-timeout','20m','-count=1','-tags','docscontract','./internal/docscontract'])
+for target in ['windows','linux']:run('build-'+target,['go','build','-buildvcs=false','./internal/store','./internal/sharedcache','./internal/cli'],{'GOOS':target})
+(e/'test-results.json').write_text(json.dumps(results))

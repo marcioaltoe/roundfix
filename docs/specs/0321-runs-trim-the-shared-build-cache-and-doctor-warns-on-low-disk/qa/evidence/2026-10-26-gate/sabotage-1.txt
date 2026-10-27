@@ -1,0 +1,12 @@
+mutation: run-call
+command: go test -count=1 -timeout 5m -v -run ^TestImplementStartTrimsTheDeclaredSharedBuildCache$ ./internal/cli
+exit: 1
+=== RUN   TestImplementStartTrimsTheDeclaredSharedBuildCache
+=== PAUSE TestImplementStartTrimsTheDeclaredSharedBuildCache
+=== CONT  TestImplementStartTrimsTheDeclaredSharedBuildCache
+    shared_cache_trim_test.go:132: expected path /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementStartTrimsTheDeclaredSharedBuildCache481201344/001/gocache/ab/0000000000000000000000000000000000000000000000000000000000000000-d to be missing
+--- FAIL: TestImplementStartTrimsTheDeclaredSharedBuildCache (0.17s)
+FAIL
+suiteguard: guard cost: measured 2845 paths; fingerprint took 152.833667ms before and 142.5345ms after
+FAIL	roundfix/internal/cli	0.881s
+FAIL

@@ -1,0 +1,14 @@
+mutation: preflight
+command: go test -count=1 -timeout 5m -v -run ^TestImplementStartRunsOnWhenTheTrimDoesNot$/^refused_cache$ ./internal/cli
+exit: 1
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot
+=== PAUSE TestImplementStartRunsOnWhenTheTrimDoesNot
+=== CONT  TestImplementStartRunsOnWhenTheTrimDoesNot
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot/refused_cache
+    shared_cache_trim_test.go:178: exit=1 calls=0 stdout="" stderr=""
+--- FAIL: TestImplementStartRunsOnWhenTheTrimDoesNot (0.17s)
+    --- FAIL: TestImplementStartRunsOnWhenTheTrimDoesNot/refused_cache (0.17s)
+FAIL
+suiteguard: guard cost: measured 2845 paths; fingerprint took 146.080583ms before and 143.015375ms after
+FAIL	roundfix/internal/cli	0.881s
+FAIL

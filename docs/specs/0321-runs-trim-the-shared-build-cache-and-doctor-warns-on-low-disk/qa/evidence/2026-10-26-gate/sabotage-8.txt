@@ -1,0 +1,16 @@
+mutation: next-action
+command: go test -count=1 -timeout 5m -v -run ^TestDoctorWarnsWhenALocationIsLowOnDisk$/^below_the_threshold$ ./internal/cli
+exit: 1
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+    doctor_disk_space_test.go:116: stdout="node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ndisk-space: warn (DR-DISK-LOW: worktree location /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskbelow_the_threshold2957885/001/worktrees has 10239 MiB free, below 10240 MiB; next: roundfix gc; DR-DISK-LOW: Shared Build Cache /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskbelow_the_threshold2957885/001/gocache has 10239 MiB free, below 10240 MiB; next: roundfix gc; next: roundfix gc)\ncodex: ok\n" want="node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ndisk-space: warn (DR-DISK-LOW: worktree location /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskbelow_the_threshold2957885/001/worktrees has 10239 MiB free, below 10240 MiB; DR-DISK-LOW: Shared Build Cache /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskbelow_the_threshold2957885/001/gocache has 10239 MiB free, below 10240 MiB; next: roundfix gc)\ncodex: ok\n"
+--- FAIL: TestDoctorWarnsWhenALocationIsLowOnDisk (0.00s)
+    --- FAIL: TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold (0.00s)
+FAIL
+suiteguard: guard cost: measured 2845 paths; fingerprint took 155.195333ms before and 139.301834ms after
+FAIL	roundfix/internal/cli	0.723s
+FAIL

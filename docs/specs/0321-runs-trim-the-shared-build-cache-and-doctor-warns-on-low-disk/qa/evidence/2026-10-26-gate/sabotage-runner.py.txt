@@ -1,0 +1,29 @@
+import pathlib,json,subprocess,os,tarfile,io
+s=json.loads(pathlib.Path('/tmp/qa0321-state.json').read_text());root=pathlib.Path(s['root']);e=pathlib.Path(s['evidence']);tmp=pathlib.Path(s['temp']);env=os.environ.copy();env.update(GOPROXY='off',GOSUMDB='off')
+archive=subprocess.check_output(['git','archive',s['head']],cwd=root)
+def replace(d,file,a,b):
+ p=d/file;v=p.read_text();assert a in v,(file,a);p.write_text(v.replace(a,b,1))
+def mutate(d,i):
+ if i==1:replace(d,'internal/cli/implement.go','\ttrimSharedCachesAtRunStart(runCtx, loadedConfig, runStore, run.ID, stderr)\n','')
+ if i==2:replace(d,'internal/cli/implement.go','\ttrimSharedCachesAtRunStart(runCtx, loadedConfig, runStore, run.ID, stderr)','\tfor _, report := range trimSharedCaches(runCtx, loadedConfig, false) {\n\t\tif report.outcome != sharedCacheTrimmed && report.outcome != sharedCacheUnchanged { return exitRunFailed }\n\t}\n\ttrimSharedCachesAtRunStart(runCtx, loadedConfig, runStore, run.ID, stderr)')
+ if i==3:
+  # Only Run-start loses its budget; keep budget metadata for the console.
+  p=d/'internal/cli/gc_shared_cache.go';v=p.read_text();a=v.index('func trimSharedCachesAtRunStart');v=v[:a]+v[a:].replace('trimCtx, cancel := context.WithTimeout(ctx, budget)\n\treports := trimSharedCaches(trimCtx, loaded, false)\n\tcancel()','reports := trimSharedCaches(ctx, loaded, false)',1);p.write_text(v)
+ if i==4:
+  replace(d,'internal/sharedcache/sharedcache.go','entryName.MatchString(path) && info.ModTime().Before(now.Add(-idle))','entryName.MatchString(path)')
+  replace(d,'internal/sharedcache/sharedcache.go','!info.Mode().IsRegular() || !info.ModTime().Before(now().Add(-idle))','!info.Mode().IsRegular()')
+ if i==5:
+  replace(d,'internal/cli/gc_shared_cache.go','_, err = runStore.AppendRunEvent(ctx, runevent.RunEvent{','_, err = func(context.Context, runevent.RunEvent) (int, error) { return 0, nil }(ctx, runevent.RunEvent{')
+ if i==6:
+  p=d/'internal/cli/deliver_workflow.go';v=p.read_text();a=v.index('\tif len(workflow.loaded.Config.Worktree.SharedCaches) > 0 {',v.index('func (workflow *commandDeliveryWorkflow) Gate('));b=v.index('\n\n\tartifactDir',a);block=v[a:b];v=v[:a]+v[b:];point=v.index('\n\tif err != nil {',v.index('_, err = (daemon.ExecVerifier{}).Verify',a));v=v[:point]+'\n'+block+v[point:];p.write_text(v)
+ if i==7:replace(d,'internal/cli/doctor_disk_space.go','available < doctorDiskSpaceThreshold','available <= doctorDiskSpaceThreshold')
+ if i==8:replace(d,'internal/cli/doctor_disk_space.go','below 10240 MiB", label','below 10240 MiB; next: roundfix gc", label')
+ if i==9:replace(d,'internal/cli/doctor_disk_space.go','availableBytes(ancestor)','availableBytes(path)');replace(d,'internal/cli/doctor_disk_space.go','ancestor, err = doctorDiskSpaceAncestor(path)','ancestor, err = doctorDiskSpaceAncestor(path)\n\t\t\t_ = ancestor')
+cases=[('run-call','TestImplementStartTrimsTheDeclaredSharedBuildCache'),('preflight','TestImplementStartRunsOnWhenTheTrimDoesNot/refused_cache'),('budget','TestImplementStartRunsOnWhenTheTrimDoesNot/budget_ends'),('idle','TestImplementStartTrimsTheDeclaredSharedBuildCache'),('event','TestImplementStartTrimsTheDeclaredSharedBuildCache'),('gate-order','TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification/idle_entries_removed_first'),('threshold','TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold'),('next-action','TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold'),('ancestor','TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location')]
+results=[]
+for i,(name,test) in enumerate(cases,1):
+ d=tmp/('sabotage-'+str(i));d.mkdir();tarfile.open(fileobj=io.BytesIO(archive)).extractall(d,filter='data');subprocess.run(['git','init','-q'],cwd=d,check=True);subprocess.run(['git','add','.'],cwd=d,check=True);mutate(d,i)
+ args=['go','test','-count=1','-timeout','5m','-v','-run','^'+test.split('/')[0]+'$'+('/^'+test.split('/')[1]+'$' if '/' in test else ''),'./internal/cli']
+ p=subprocess.run(args,cwd=d,env=env,capture_output=True,text=True);out=p.stdout+p.stderr;ok=p.returncode!=0 and '--- FAIL: '+test in out and '[build failed]' not in out
+ (e/('sabotage-'+str(i)+'.txt')).write_text('mutation: '+name+'\ncommand: '+' '.join(args)+'\nexit: '+str(p.returncode)+'\n'+out);results.append([name,p.returncode,ok]);print(name,p.returncode,'detected='+str(ok),flush=True)
+(e/'sabotage-results.json').write_text(json.dumps(results))

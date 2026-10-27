@@ -1,0 +1,1 @@
+[["dry-head", 0, [true, true, true], true], ["dry-base", 0, [true, true, true], true], ["dry equality", true], ["apply-head", 0, [false, false, true], true], ["apply-base", 0, [false, false, true], true], ["apply equality", true]]

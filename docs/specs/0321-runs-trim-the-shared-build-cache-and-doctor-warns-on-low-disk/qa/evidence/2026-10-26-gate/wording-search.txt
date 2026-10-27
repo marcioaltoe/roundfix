@@ -1,0 +1,15 @@
+command: rg -n -i only.{0,100}(GC Command|roundfix gc|shared build cache)|(GC Command|roundfix gc|shared build cache).{0,100}only docs/user-guide .agents/skills skills docs/agents docs/adr CONTEXT.md
+docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md:50:`roundfix gc compact` and `roundfix reconcile`, which are all read-only.
+docs/user-guide/commands/gc.md:93:`roundfix gc --dry-run` opens only the reader and changes nothing. Its Run
+docs/user-guide/commands/gc.md:144:only as a declared Shared Build Cache.
+docs/user-guide/commands/gc.md:251:`roundfix gc compact` and `roundfix reconcile`. Run Worktrees leave only by
+docs/user-guide/configuration.md:1003:`roundfix gc` removes only the declared directories, retaining worktree source
+docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md:11:ADR-0327 lets the GC Command trim a declared Shared Build Cache, but only when
+docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md:49:- Keep the trim manual (`roundfix gc` only). Rejected: it failed twice in
+docs/adr/0327-gc-trims-a-declared-shared-build-cache.md:28:**A Shared Build Cache is declared, and GC trims only its idle entries.**
+docs/adr/0327-gc-trims-a-declared-shared-build-cache.md:38:would remove; `roundfix gc` removes them. A trim acts only when the cache
+skills/roundfix/references/storage.md:10:Use `roundfix gc [--dry-run]` to inspect or reclaim Run storage. Its Journal Retention block counts only Runs that still hold Run Event
+skills/roundfix/references/storage.md:170:trims a declared Shared Build Cache above its limit by removing only cache
+docs/adr/0172-doctor-reports-reclaimable-run-storage-from-cheap-reads.md:11:Run storage grows with every Run, and only the GC Command says how much of it
+.agents/skills/roundfix/references/storage.md:10:Use `roundfix gc [--dry-run]` to inspect or reclaim Run storage. Its Journal Retention block counts only Runs that still hold Run Event
+.agents/skills/roundfix/references/storage.md:170:trims a declared Shared Build Cache above its limit by removing only cache

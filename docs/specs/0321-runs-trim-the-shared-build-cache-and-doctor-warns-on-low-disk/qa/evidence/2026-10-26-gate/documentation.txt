@@ -1,0 +1,32 @@
+Shared Build Cache entry:
+**Shared Build Cache**:
+A build cache several worktrees share outside any one of them, declared in
+`worktree.shared_caches`; the GC Command, the start of every Implement Run and
+the Delivery Queue's repository gate trim it above its declared size by
+removing only cache entries no build used for the declared idle time, oldest
+first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md),
+[ADR-0334](docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md)).
+_Avoid_: global cache, Go cache cleanup, cache GC
+
+glossary triggers: True
+glossary Avoid: True
+docs/user-guide/commands/gc.md: True
+.agents/skills/roundfix/references/storage.md: True
+skills/roundfix/references/storage.md: True
+config: True
+docs/user-guide/commands/implement.md: True
+.agents/skills/roundfix/references/implement.md: True
+skills/roundfix/references/implement.md: True
+docs/user-guide/commands/deliver.md: True
+.agents/skills/roundfix/references/deliver.md: True
+skills/roundfix/references/deliver.md: True
+docs/user-guide/commands/doctor.md: True
+.agents/skills/roundfix/references/setup.md: True
+skills/roundfix/references/setup.md: True
+mirror deliver: True
+mirror implement: True
+mirror setup: True
+mirror storage: True
+equal recorded version ['0.1.143', '0.1.143', '0.1.143', '0.1.143']: True
+
+Exact whitespace-collapsed TechSpec glossary definition: equal. Avoid line equals Delivery Base: true.

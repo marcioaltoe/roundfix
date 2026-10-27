@@ -1,0 +1,14 @@
+mutation: gate-order
+command: go test -count=1 -timeout 5m -v -run ^TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification$/^idle_entries_removed_first$ ./internal/cli
+exit: 1
+=== RUN   TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification
+=== PAUSE TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification
+=== CONT  TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification
+=== RUN   TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification/idle_entries_removed_first
+    shared_cache_trim_test.go:234: gate={Passed:false Reason:verification command "test ! -e '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerificationid3173546921/001/gocache/ab/0000000000000000000000000000000000000000000000000000000000000000-d'" failed; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerificationid3173546921/001/.roundfix/artifacts/5b2d6c5ea6b535fc/delivery/0001-widget-flow/repository-gate.log: exit status 1 Blocker: LaneSkip:} err=<nil> log="roundfix: Delivery Queue item 0001-widget-flow: Shared Build Cache /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerificationid3173546921/001/gocache: removed 2 idle entries (2097152 bytes) before the repository gate\n"
+--- FAIL: TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification (0.06s)
+    --- FAIL: TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification/idle_entries_removed_first (0.06s)
+FAIL
+suiteguard: guard cost: measured 2845 paths; fingerprint took 142.961208ms before and 141.653834ms after
+FAIL	roundfix/internal/cli	0.768s
+FAIL

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

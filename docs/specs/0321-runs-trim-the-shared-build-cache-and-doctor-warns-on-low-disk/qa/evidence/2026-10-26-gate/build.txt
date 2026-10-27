@@ -1,0 +1,5 @@
+command: make build
+exit: 0
+binary: ./bin/roundfix
+identity: roundfix 0.124.0 (b8c211f0-dirty, built 2026-10-26 23:05:16 -0300)
+The dirty suffix includes the seeded untracked QA directory; no product code delta existed.

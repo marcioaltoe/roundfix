@@ -1,0 +1,16 @@
+mutation: ancestor
+command: go test -count=1 -timeout 5m -v -run ^TestDoctorWarnsWhenALocationIsLowOnDisk$/^missing_location$ ./internal/cli
+exit: 1
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+    doctor_disk_space_test.go:102: capacity reads=["/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskmissing_location3744003672/001/worktrees/not-created" "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskmissing_location3744003672/001/gocache/not-created"] want=["/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskmissing_location3744003672/001" "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorWarnsWhenALocationIsLowOnDiskmissing_location3744003672/001"]
+--- FAIL: TestDoctorWarnsWhenALocationIsLowOnDisk (0.00s)
+    --- FAIL: TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location (0.00s)
+FAIL
+suiteguard: guard cost: measured 2845 paths; fingerprint took 154.946291ms before and 139.819708ms after
+FAIL	roundfix/internal/cli	0.740s
+FAIL

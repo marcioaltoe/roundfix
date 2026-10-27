@@ -1,0 +1,16 @@
+GC dry-run
+  Journal Retention: 336h
+  Cutoff: 2026-10-13T02:10:07.679307Z
+  Runs eligible: 0
+  Journal rows eligible: 0
+  Artifact bytes reclaimable: 0
+  Orphan artifact dirs eligible: 0
+  Run Retention: 30 days
+  Run Retention cutoff: 2026-09-27T02:10:07.679322Z
+  Runs removable: 0
+  Runs kept past the cutoff: 0 (queue-referenced 0, worktree present 0, artifact root unproven 0)
+  Rows removable: runs=0 run_events=0 run_agent_selections=0 run_token_usage=0 active_run_locks=0
+  Database bytes reclaimable (estimated): 0
+  Shared Build Cache: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0321-qpnoxn7b/gc-home/gocache
+    Size: 3145798 bytes of 1048576 allowed
+    Entries reclaimable: 2 (2097152 bytes)

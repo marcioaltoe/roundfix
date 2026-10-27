@@ -1,0 +1,9 @@
+
+- The shared build cache `roundfix-go-build-501` under `$TMPDIR` held 31 GB
+  on 2026-10-24 (43.7 GB on 2026-10-22, when it filled the disk); Go's
+  default cache held another 10 GB. Each Run worktree compiles every package
+  under its own path, so entries do not repeat across Runs, and Go deletes an
+  entry only after five days without use. `roundfix gc` does not reclaim it.
+- The leaked package adapter roots above held 184 MiB.
+
+History confirmation: git show f5538d2ad0604daa98b9c7222735b755922919fa:docs/references/2026-10-24-test-suite-audit.md contains all three incident markers before the Task commits.

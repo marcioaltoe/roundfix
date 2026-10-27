@@ -1,0 +1,9 @@
+command: ./bin/roundfix archive 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk --plan --offline
+Judge Key Variables and TYPESAFE_API_KEY unset; fresh HOME and TMPDIR
+exit: 0
+archive plan for 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk: removes 47 file(s) (166257 bytes) and writes docs/history/specs/0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-26.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 36 file(s) (58598 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-the-shared-build-cache-fills-the-disk-between-manual-gc-runs.md 3241 bytes: no advice (offline)
+promote with: roundfix archive 0321-runs-trim-the-shared-build-cache-and-doctor-warns-on-low-disk --promote <path>
