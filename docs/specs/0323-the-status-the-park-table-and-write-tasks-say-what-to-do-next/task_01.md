@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,46 @@ report, and the Roundfix skill reads the unchanged `kind` field.
 
 - `_prd.md` → Sources 1; Goals 1-2; Core Feature 1; Success Metrics 1-2
 - `_techspec.md` → Current behavior 1-3; Interfaces; API Contracts 1-2; Invariants 1-2; Testing Approach; Build Order 1
+
+## Result
+
+Implemented the manual classification status slice for Daemon Verification.
+
+- Manual state: `release.reason` counts `plan.Classification.BlockingCommits`
+  and names the base tag. The maintainer detail uses the plan's base and target
+  in the classification command. Text renders the reason and command without
+  an empty version field. JSON fields and types are unchanged, including the
+  empty `release.proposed_version`.
+- Regression evidence: added `TestFollowUpStatusNamesTheManualClassification`
+  through the public CLI using a temporary repository tagged `v0.4.1`, one
+  feature commit and two ambiguous chore commits. It asserts three changes,
+  exactly two blocking commits in the reason, the exact maintainer item and
+  both complete text lines, and rejects both old blank-version strings.
+  Before the implementation,
+  `go test -timeout 5m -count=1 ./internal/cli -run '^TestFollowUpStatusNamesTheManualClassification$'`
+  exited 1, exposing the null reason, generic detail and both blank fields.
+- Compatibility evidence:
+  `go test -timeout 5m -count=1 ./internal/cli -run '^TestFollowUpStatus(NamesTheManualClassification|ReportsTheNextRelease|ListsBlockersAndTheMaintainersQuestion)$'`
+  exited 0 after the Go edits. All seven existing release-state cases and the
+  pending-question rendering check passed. The existing release test changes
+  only its manual-state reason expectation and manual text phrase.
+- Documentation and skill evidence: added the TechSpec's paragraphs at the
+  required guide and reference anchors. Ran `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then `make skills-sync`; each exited 0. The recorder raised both Roundfix
+  version fields to `0.1.143` and appended its digest to the owned-skill record.
+  `go test -timeout 2m -count=1 ./skills -run '^(TestEveryOwnedSkillVersionIsRecorded|TestCheckValidatesRoundfixSkillArtifacts)$'`
+  exited 0. `diff -qr .agents/skills/roundfix skills/roundfix` exited 0.
+- Generated-artifact evidence: repository-required `make baseline-digests`
+  exited 0 with `changed:false`. After every guide, skill, version and mirror
+  edit, ran the final implementation regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0. Its diff changes only the follow-up guide's Behavior Surface
+  fingerprint.
+- Scope inspection: `git diff --check` exited 0; newly changed paths are
+  limited to this Task's declared interfaces. The initial worktree change was
+  the Daemon's `status: in_progress` in this Task file; it is preserved.
+
+The Task's declared Verification and repository Verification were not run;
+the Daemon owns them and terminal settlement. No follow-up implementation
+was added.

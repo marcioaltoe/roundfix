@@ -13,6 +13,13 @@ The list command reads the sources `ai-memory-messages`,
 `runs`, `delivery-queue`, `pull-requests`, `git`, `specs` and the Release Plan;
 it never calls the judge.
 
+When the Release Plan needs a manual classification, the status `release.state`
+is `manual_classification_required` and `release.proposed_version` is empty.
+`release.reason` says how many commits since the base tag need a manual release
+classification, and the `release_classification` item of `maintainer` names the
+`roundfix release plan --from <base> --to HEAD --impact <none|patch|minor|major> --reason <text>`
+command that classifies them.
+
 ai-memory messages are handed in by the caller with `--messages <path>`, never
 read through an MCP. The file uses
 `roundfix/follow-up-messages/v1`:

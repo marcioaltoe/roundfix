@@ -114,6 +114,17 @@ line:
 Next release: no unreleased changes
 ```
 
+When the Release Plan needs a manual classification, the status proposes no
+version and says why instead of leaving the version blank. Its `Next release`
+line reads
+`Next release: not proposed (manual_classification_required): <n> commit(s) since <base> need a manual release classification`,
+and `Waiting on the maintainer` lists
+`release classification: classify them with roundfix release plan --from <base> --to HEAD --impact <none|patch|minor|major> --reason <text>`.
+The JSON carries the first sentence in `release.reason` and the second in the
+`detail` of the `release_classification` item of `maintainer`;
+`release.proposed_version` stays empty, as in every state that proposes no
+version.
+
 Its JSON adds `view: "status"`, `pending_specs`, `release`, `blockers` and
 `maintainer` to the shared report fields. For example:
 
