@@ -1,2 +1,0 @@
-Existing Darwin group reader and exiting-member proof byte-identical: true
-Repository subtest and ten original seeded table entries byte-identical: true

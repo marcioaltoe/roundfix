@@ -1,2 +1,0 @@
-PASS
-suiteguard: guard cost: measured 2827 paths; fingerprint took 282.215916ms before and 294.384917ms after

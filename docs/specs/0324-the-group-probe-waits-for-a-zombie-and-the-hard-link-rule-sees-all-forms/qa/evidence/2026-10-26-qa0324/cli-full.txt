@@ -1,4 +1,0 @@
-$ go test -count=1 -timeout 20m ./internal/cli
-ok  	roundfix/internal/cli	169.867s
-
-exit: 0

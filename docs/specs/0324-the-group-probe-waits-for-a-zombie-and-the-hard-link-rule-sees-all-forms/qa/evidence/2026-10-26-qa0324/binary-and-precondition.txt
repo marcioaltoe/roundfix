@@ -1,9 +1,0 @@
-$ make build
-exit: 0
-$ ./bin/roundfix --version
-roundfix 0.124.0 (18441a42-dirty, built 2026-10-26 22:35:26 -0300)
-exit: 0
-$ ./bin/roundfix spec check 0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms --strict
-No findings. Authored Verification commands were not executed.
-exit: 0
-Daemon static gate: make verify-changed, pass (exit 0); not rerun.

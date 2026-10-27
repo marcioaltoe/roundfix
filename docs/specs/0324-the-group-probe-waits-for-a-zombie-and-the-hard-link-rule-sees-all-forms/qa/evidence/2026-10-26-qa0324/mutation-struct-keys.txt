@@ -1,3 +1,0 @@
-nonReferences[key] = true
-=>
-_ = key // sabotage: allow struct keys
