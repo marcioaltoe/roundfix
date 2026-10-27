@@ -66,7 +66,7 @@ A non-QA Task between a contract-changing Task and the QA gate whose Verificatio
 _Avoid_: Final QA, follow-up task
 
 **Authorized Executable**:
-A path the Spec's `_authorization.md` lists under `executables`, which a Task commit keeps with its execute bit; the list comes from the authorization the Run resolved at start. A QA Report or Batch commit never keeps an untracked executable ([ADR-0340](docs/adr/0340-an-untracked-executable-rides-a-task-commit-only-when-the-spec-authorization-names-it.md)).
+A path the Spec's `_authorization.md` lists under `executables`, which a Task commit keeps with its execute bit; the list comes from the authorization the Run resolved at start. A settle commit keeps the same paths. A QA Report or Batch commit never keeps an untracked executable ([ADR-0340](docs/adr/0340-an-untracked-executable-rides-a-task-commit-only-when-the-spec-authorization-names-it.md)).
 _Avoid_: Executable allowlist, approved script, build artifact exemption
 
 **Run**:

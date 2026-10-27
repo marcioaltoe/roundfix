@@ -365,6 +365,22 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 	if err := requireSettleCommitAuthority(plan, changed); err != nil {
 		return settlePlan{}, validationError{message: err.Error()}
 	}
+	untracked, err := reconcileGitRaw(ctx, plan.workDir, "ls-files", "--others", "--exclude-standard", "-z")
+	if err != nil {
+		return settlePlan{}, validationError{message: fmt.Sprintf("list settle untracked files: %v", err)}
+	}
+	var paths []string
+	if len(untracked) > 0 {
+		paths = strings.Split(strings.TrimSuffix(string(untracked), "\x00"), "\x00")
+	}
+	refused := daemon.UnauthorizedExecutables(ctx, plan.workDir, paths, plan.authorization)
+	if len(refused) > 0 {
+		details := make([]string, 0, len(refused))
+		for _, drop := range refused {
+			details = append(details, fmt.Sprintf("executable file %s (mode %s)", drop.Path, drop.Mode))
+		}
+		return settlePlan{}, validationError{message: "refuse Settle commit: " + strings.Join(details, ", ") + " is not valid Work Item output unless the Spec's _authorization.md lists the path under executables"}
+	}
 	if err := followSettleBranchPlan(ctx, &plan, stderr); err != nil {
 		return settlePlan{}, validationError{message: err.Error()}
 	}

@@ -185,3 +185,27 @@ func TestQAReportCommitRefusesAListedExecutable(t *testing.T) {
 		t.Fatalf("events = %+v", events)
 	}
 }
+
+func TestTaskCycleCommitsATrackedFileMadeExecutable(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Make script executable"}})
+	gittest.AppendConfig(t, fixture.gitRoot, "[core]\n\tfileMode = true\n")
+	mustWriteForTest(t, filepath.Join(fixture.gitRoot, "helper.sh"), "#!/bin/sh\nexit 0\n")
+	commitTaskFixtureSource(t, fixture.gitRoot, "track script")
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, afterTask: func(string) {
+		if err := os.Chmod(filepath.Join(fixture.gitRoot, "helper.sh"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, GitWorktreeSnapshotter{})
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("result = %+v", result)
+	}
+	if tree := gittest.Run(t, fixture.gitRoot, "ls-tree", "HEAD", "--", "helper.sh"); !strings.HasPrefix(tree, "100755 blob ") || !strings.HasSuffix(tree, "\thelper.sh\n") {
+		t.Fatalf("tree = %q", tree)
+	}
+}

@@ -1,5 +1,12 @@
 ### settle
 
+Settle refuses an untracked executable file that the Spec's authorization does not list under executables, as a Task commit does; a tracked file whose mode changes is committed by both.
+It exits `2` before writing anything, with this refusal:
+
+```text
+refuse Settle commit: executable file <path> (mode <mode>)[, …] is not valid Work Item output unless the Spec's _authorization.md lists the path under executables
+```
+
 When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
 
 ```text

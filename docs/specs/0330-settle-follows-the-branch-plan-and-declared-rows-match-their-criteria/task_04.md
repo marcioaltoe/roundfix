@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,52 @@ a tracked file whose mode a Task changes as work output in both paths
 - `_prd.md` → Goals 5 and 6; Core Features 5 and 6; Success Metrics 6 and 7; Glossary
 - `_techspec.md` → Current behavior 8; API Contracts 7 and 11; Declared breaks 5 and 6; Invariant 4; Testing Approach; Build Order 4
 - ADR-0340, ADR-0157
+
+
+## Result
+
+Implemented the Task 04 slice; status and settlement remain Daemon-owned.
+
+- Acceptance criterion 1: added `daemon.UnauthorizedExecutables`, reusing
+  `filterStageablePaths` and the granted authorization's executable paths.
+  Settle enumerates untracked files with
+  `git ls-files --others --exclude-standard -z` and refuses every executable
+  drop with the prescribed exit-2 diagnostic before branch comparison or
+  writes. The new CLI refusal test checks an executable inside a new
+  directory and unchanged HEAD, full porcelain status and Task bytes.
+- Acceptance criterion 2: CLI tests commit a granted, explicitly listed
+  executable and a tracked script changed to executable, asserting Git mode
+  `100755`. The real-Git Task Cycle test also commits a tracked script's
+  mode change as `100755` and observes one completed Task and no failure.
+  Daemon Task, QA Report and Batch commit filters are unchanged.
+- Acceptance criterion 3: added API Contract 11 verbatim and its refusal
+  message to the canonical settle reference and user guide. Revised
+  **Authorized Executable** with the prescribed settle sentence, preserving
+  its `_Avoid_` line. Synchronized skill mirrors and recorded both Roundfix
+  version fields as `0.1.155`. Regenerated the Behavior Surface fingerprint
+  after the final guide edit, using only the sanctioned recorders.
+
+Focused evidence:
+
+- Red check before the production change:
+  `go test -count=1 -timeout 3m ./internal/cli -run '^TestSettleRefusesAnUnlistedExecutable'`
+  exited 1: settle exited 0 and committed `newdir/helper.sh`, reproducing the
+  recorded defect.
+- After the production change:
+  `go test -count=1 -timeout 4m ./internal/cli ./internal/daemon -run '^(TestSettle(RefusesAnUnlisted|CommitsAListed|CommitsATracked)|TestTaskCycleCommitsATracked)'`
+  exited 0 for both packages, exercising all four new regressions.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and recorded the version pair.
+- As the final regeneration after guide edits:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0.
+- A read-only Python comparison confirmed every canonical Roundfix skill
+  file equals its mirror and all three references contain the exact
+  executable-rule sentence. `git diff --check` exited 0.
+
+The initial changed-path baseline contained only this Task file. Final scope
+is limited to this Task's declared interfaces, new CLI test and Result.
+Declared Task Verification, repository Verification and incremental
+Verification were not run. No Task status, Task Graph or other Task file was
+edited; no commit, push or Pull Request was made. No follow-up identified.
