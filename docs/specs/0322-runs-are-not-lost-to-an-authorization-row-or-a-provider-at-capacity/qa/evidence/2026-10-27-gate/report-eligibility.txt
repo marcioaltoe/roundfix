@@ -1,4 +1,0 @@
-$ ./bin/roundfix qa-report accept docs/specs/0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity/qa/qa-report-2026-10-27.md
-exit: 0
-stdout: empty
-stderr: empty

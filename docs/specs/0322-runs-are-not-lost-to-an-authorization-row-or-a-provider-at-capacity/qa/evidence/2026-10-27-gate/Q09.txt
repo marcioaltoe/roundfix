@@ -1,4 +1,0 @@
-LangSmith
-https://docs.langchain.com/langsmith/llm-gateway-fallbacks
-PRD-cited passage, not independently fetched: Calls each fallback in order until one succeeds, returns a status that does not trigger another fallback, or the chain is exhausted; 503 among trigger codes
-_authorization.md Limits: No test, Verification command or QA row reaches the network.
