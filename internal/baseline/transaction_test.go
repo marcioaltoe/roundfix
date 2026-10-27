@@ -723,3 +723,101 @@ func writeTransactionFile(t *testing.T, root, relative, content string, mode fs.
 		t.Fatal(err)
 	}
 }
+
+func TestTransactionWritesVerifiesAndRollsBackASymbolicLinkPostimage(t *testing.T) {
+	t.Parallel()
+	for _, outcome := range []string{"write", "rollback", "verify-wrong-target", "recovery"} {
+		t.Run(outcome, func(t *testing.T) {
+			repo, _, _ := claudeRestoreFixture(t)
+			_, identity, err := inspectRepositoryIdentity(context.Background(), repo, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			document := PlanDocument{
+				Repository: identity,
+				PlanDigest: "sha256:" + strings.Repeat("a", 64),
+				Preimages:  []Preimage{{Path: restoredClaudePath, Kind: PreimageMissing}},
+				Postimages: []Postimage{{Path: restoredClaudePath, Kind: PreimageSymlink, Content: []byte(restoredClaudeTarget)}},
+			}
+			begin := func() *fileTransaction {
+				t.Helper()
+				tx, err := beginFileTransaction(context.Background(), repo, document, nil, validateRestoreTransactionPlan, verifyRestoreTransactionState)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return tx.(*fileTransaction)
+			}
+			tx := begin()
+			injected := errors.New("fault after symbolic link")
+			hit := false
+			tx.phaseHook = func(point transactionFaultPoint) error {
+				if point.Phase == transactionPhaseReplaced && point.Path == restoredClaudePath {
+					hit = true
+					assertClaudeLink(t, repo)
+					if outcome == "rollback" {
+						return injected
+					}
+					if outcome == "verify-wrong-target" {
+						if err := os.Remove(filepath.Join(repo, restoredClaudePath)); err != nil {
+							t.Fatal(err)
+						}
+						if err := os.Symlink("wrong", filepath.Join(repo, restoredClaudePath)); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+				return nil
+			}
+			if outcome == "recovery" {
+				if err := tx.stagePostimages(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+				if err := tx.revalidatePreimages(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+				if err := tx.replacePostimage(context.Background(), 0); err != nil {
+					t.Fatal(err)
+				}
+				abandonTestTransaction(t, tx)
+				recovered := begin()
+				if _, err := os.Lstat(filepath.Join(repo, restoredClaudePath)); !errors.Is(err, fs.ErrNotExist) {
+					t.Fatalf("recovery left link: %v", err)
+				}
+				if err := recovered.Close(); err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			evidence, err := tx.Apply(context.Background())
+			if !hit {
+				t.Fatal("link replacement not reached")
+			}
+			switch outcome {
+			case "write":
+				if err != nil || len(evidence.VerifiedPostimages) != 1 {
+					t.Fatalf("evidence=%+v error=%v", evidence, err)
+				}
+				assertClaudeLink(t, repo)
+			case "rollback":
+				if !errors.Is(err, injected) {
+					t.Fatalf("apply error=%v", err)
+				}
+				if _, err := os.Lstat(filepath.Join(repo, restoredClaudePath)); !errors.Is(err, fs.ErrNotExist) {
+					t.Fatalf("rollback left link: %v", err)
+				}
+			case "verify-wrong-target":
+				if err == nil || !strings.Contains(err.Error(), "verify Baseline postimage") {
+					t.Fatalf("wrong target accepted: %v", err)
+				}
+				// A third party's replacement is refused by rollback, rather than removed.
+				var incomplete *IncompleteRollbackError
+				if !errors.As(err, &incomplete) {
+					t.Fatalf("foreign link rollback error=%v", err)
+				}
+			}
+			if err := tx.Close(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}

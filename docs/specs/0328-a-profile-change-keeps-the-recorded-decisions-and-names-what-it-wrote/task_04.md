@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -99,3 +99,48 @@ friction (e) of the adopted Backlog Entry (Quaestor, 2026-10-26).
 - `_prd.md` → Goals; Core Feature 6; User Experience; Success Metric 5; Acceptance evidence
 - `_techspec.md` → Current behavior 6; Interfaces; Data Models; API Contract 6; Invariants 5-6; Testing Approach; Build Order 3; Risks & Considerations
 - ADR-0341
+
+## Result
+
+Implemented the task_04 slice. Restore recognizes the existing per-skill
+Claude link layout with `Lstat` and `Readlink`, plans missing links even when
+the installed tree and lock need no changes, and binds each link target into
+the Plan Digest. `create-link` JSON carries exactly `action`, `path`, `skill`
+and `target`; the existing text formatter prints the required preview line.
+The update skills stage remains unchanged and still calls
+`baseline.RestoreSkills`.
+
+The shared transaction accepts a symbolic-link postimage only with a missing
+preimage. It journals the target, stages and verifies its target bytes, creates
+a temporary link, replaces it after the skill files, verifies the installed
+link without following it, and removes it on rollback or interrupted-transaction
+recovery. Existing regular-file destination and parent refusals remain in
+place. A foreign replacement detected during rollback is refused rather than
+removed.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused-check evidence |
+| --- | --- |
+| A new restored skill gains its Claude link | `TestSkillsRestoreLinksARestoredSkillWhereClaudeLinksAreKept` passed: offline preview/apply writes the exact target, restores the skill bytes, marshals the exact four-field change, and becomes idempotent. |
+| An installed skill missing its link previews and writes only the link | `TestSkillsRestoreLinksAnInstalledSkillThatLacksItsLink` passed: action-required preview has one `create-link`, its digest differs when that operation is omitted, and skill-file and lock identities remain unchanged after apply. |
+| No new links without the established layout; existing entries stay untouched | `TestSkillsRestoreAddsNoLinkWithoutClaudeLinks` passed for absent, symlinked, copies-only, symlinked `.claude`, and wrong-target layouts. `TestSkillsRestoreLeavesAnExistingClaudeEntry` passed for a file, directory, and dangling link. |
+| A failed apply leaves no new link | `TestSkillsRestoreRollsBackTheClaudeLinkWithTheTree` passed: an injected fault after link replacement observes the installed tree and link, then rollback removes both and leaves no lock. `TestTransactionWritesVerifiesAndRollsBackASymbolicLinkPostimage` passed for write, rollback, wrong-target verification refusal, and interrupted-journal recovery. |
+
+Focused checks (all exited 0):
+
+- `go test ./internal/baseline ./internal/cli -run '^(TestSkillsRestore(Links|AddsNoLink|LeavesAnExistingClaude|RollsBackTheClaude).*|TestTransactionWritesVerifiesAndRollsBackASymbolicLinkPostimage|TestBaselineSkillsRestoreTextListsTheClaudeLink)$' -count=1`
+- `go test ./internal/baseline ./internal/cli -run '^(TestTransaction(StagesBeforeMutation|Rollback|Recovery|RejectsStalePreimage)|TestSkillsRestoreOfflinePreviewApplyAndIdempotence|TestBaselineSkillsRestoreCommand)$' -count=1`
+- `go test ./internal/baseline -run '^TestSkillsRestoreLinksAnInstalledSkillThatLacksItsLink$' -count=1` after strengthening the digest and unchanged-file assertions.
+- `GOOS=windows go test -c -o /tmp/task04-baseline.test.exe ./internal/baseline` and `GOOS=windows go test -c -o /tmp/task04-cli.test.exe ./internal/cli`: test packages compile; Windows runtime behavior was not exercised.
+- `git diff --check`: no whitespace errors.
+
+Pre-change characterization: the new restored-skill test failed because
+`.claude/skills/agentic-cli-design` did not exist after apply. The same test
+passed after implementation. CLI coverage asserts the exact text line and
+four-field JSON change, with preview exit `3`.
+
+The Task status was already modified when this turn began and was left
+untouched. No other Task file or Task Graph was edited. The declared
+Verification and repository Verification commands were not run; the Daemon
+owns those checks and settlement. No commit, push, or Pull Request was made.

@@ -483,11 +483,15 @@ func (transaction *fileTransaction) stagePostimages(ctx context.Context) error {
 		if err := transaction.runPhaseHook(point); err != nil {
 			return err
 		}
-		if entry.After.Kind != PreimageRegular {
+		if entry.After.Kind != PreimageRegular && entry.After.Kind != PreimageSymlink {
 			continue
 		}
 		staged := transaction.stagedPath(index)
-		if err := writeSyncedFile(staged, entry.After.Content, fs.FileMode(entry.After.Mode)); err != nil {
+		mode := fs.FileMode(entry.After.Mode)
+		if entry.After.Kind == PreimageSymlink {
+			mode = 0o600
+		}
+		if err := writeSyncedFile(staged, entry.After.Content, mode); err != nil {
 			return fmt.Errorf("stage Baseline postimage %q: %w", entry.Path, err)
 		}
 		if err := verifyStagedPostimage(staged, entry.After); err != nil {
@@ -653,7 +657,7 @@ func (transaction *fileTransaction) replacePostimage(ctx context.Context, index 
 		if err := transaction.anchored.Remove(entry.Path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("remove Baseline destination %q: %w", entry.Path, err)
 		}
-	case PreimageRegular:
+	case PreimageRegular, PreimageSymlink:
 		temporary, err := transaction.createDestinationTemporary(index, entry.After)
 		if err != nil {
 			return err
@@ -677,6 +681,18 @@ func (transaction *fileTransaction) createDestinationTemporary(
 	temporary := transaction.destinationTemporaryPath(index, postimage.Path, "apply")
 	if err := transaction.recordTemporaryPath(temporary); err != nil {
 		return "", err
+	}
+	if postimage.Kind == PreimageSymlink {
+		if err := verifyStagedPostimage(transaction.stagedPath(index), postimage); err != nil {
+			return "", err
+		}
+		if err := transaction.anchored.Symlink(string(postimage.Content), temporary); err != nil {
+			return "", fmt.Errorf("create Baseline symbolic-link temporary %q: %w", temporary, err)
+		}
+		if err := transaction.syncRepositoryParent(temporary); err != nil {
+			return "", err
+		}
+		return temporary, nil
 	}
 	file, err := transaction.anchored.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
@@ -947,6 +963,22 @@ func restoreTransactionPreimage(
 ) error {
 	if err := transaction.ensureParentDirectories(entry.Path); err != nil {
 		return err
+	}
+	if entry.After.Kind == PreimageSymlink && entry.Before.Kind == PreimageMissing {
+		if err := validatePathParents(transaction.anchored, entry.Path); err != nil {
+			return err
+		}
+		current, err := captureTransactionState(transaction.anchored, entry.Path)
+		if err != nil {
+			return err
+		}
+		if current.Kind != PreimageMissing && !postimageMatchesState(entry.After, current) {
+			return fmt.Errorf("restore Baseline link %q: destination changed", entry.Path)
+		}
+		if err := transaction.anchored.Remove(entry.Path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		return transaction.syncRepositoryParent(entry.Path)
 	}
 	if err := validateMutationDestination(transaction.anchored, entry.Path); err != nil {
 		return fmt.Errorf("restore Baseline preimage %q: %w", entry.Path, err)
@@ -1347,6 +1379,9 @@ func validateTransactionJournal(journal transactionJournal) error {
 		if err := validateTransactionPostimage(entry.After); err != nil {
 			return err
 		}
+		if entry.After.Kind == PreimageSymlink && entry.Before.Kind != PreimageMissing {
+			return fmt.Errorf("symbolic-link entry %q must have a missing preimage", entry.Path)
+		}
 		if err := validateTransactionFileState(entry.Before); err != nil {
 			return fmt.Errorf("entry %q preimage: %w", entry.Path, err)
 		}
@@ -1476,6 +1511,12 @@ func validateTransactionPostimage(postimage Postimage) error {
 		if postimage.Mode != 0 || len(postimage.Content) != 0 || postimage.ContentIdentity != "" {
 			return fmt.Errorf("missing Baseline postimage %q carries file data", postimage.Path)
 		}
+	case PreimageSymlink:
+		target := string(postimage.Content)
+		resolved := path.Clean(path.Join(path.Dir(postimage.Path), target))
+		if postimage.Mode != 0 || postimage.ContentIdentity != "" || target == "" || strings.ContainsAny(target, "\x00\\:") || path.IsAbs(target) || !repositoryPathIsSafe(resolved) {
+			return fmt.Errorf("Baseline symbolic-link postimage %q has unsafe target or file data", postimage.Path)
+		}
 	case PreimageRegular:
 		if !validTransactionMode(postimage.Mode) {
 			return fmt.Errorf("Baseline postimage %q has unsafe mode %#o", postimage.Path, postimage.Mode)
@@ -1564,6 +1605,9 @@ func captureTransactionEntries(
 		current := exactByPath[postimage.Path]
 		if current.Kind != PreimageMissing && current.Kind != PreimageRegular {
 			return nil, nil, nil, nil, fmt.Errorf("Baseline destination %q has unsafe preimage kind %q", postimage.Path, current.Kind)
+		}
+		if postimage.Kind == PreimageSymlink && current.Kind != PreimageMissing {
+			return nil, nil, nil, nil, fmt.Errorf("Baseline symbolic-link destination %q must be missing", postimage.Path)
 		}
 		entries[index] = transactionJournalEntry{
 			Path:   postimage.Path,
@@ -1695,6 +1739,8 @@ func postimageMatchesState(postimage Postimage, state transactionFileState) bool
 	switch postimage.Kind {
 	case PreimageMissing:
 		return state.Kind == PreimageMissing
+	case PreimageSymlink:
+		return state.Kind == PreimageSymlink && state.LinkTarget == string(postimage.Content)
 	case PreimageRegular:
 		return state.Kind == PreimageRegular &&
 			state.Mode == postimage.Mode &&
@@ -1709,14 +1755,22 @@ func verifyStagedPostimage(name string, postimage Postimage) error {
 	if err != nil {
 		return fmt.Errorf("inspect staged Baseline postimage %q: %w", postimage.Path, err)
 	}
-	if !info.Mode().IsRegular() || uint32(info.Mode()) != postimage.Mode {
+	mode := postimage.Mode
+	if postimage.Kind == PreimageSymlink {
+		mode = 0o600
+	}
+	if !info.Mode().IsRegular() || uint32(info.Mode()) != mode {
 		return fmt.Errorf("staged Baseline postimage %q mode mismatch", postimage.Path)
 	}
 	content, err := os.ReadFile(name)
 	if err != nil {
 		return fmt.Errorf("read staged Baseline postimage %q: %w", postimage.Path, err)
 	}
-	if transactionContentIdentity(content) != postimage.ContentIdentity {
+	identity := postimage.ContentIdentity
+	if postimage.Kind == PreimageSymlink {
+		identity = transactionContentIdentity(postimage.Content)
+	}
+	if transactionContentIdentity(content) != identity {
 		return fmt.Errorf("staged Baseline postimage %q content mismatch", postimage.Path)
 	}
 	return nil
@@ -1801,7 +1855,7 @@ func removeTransactionTemporary(root *os.Root, relative string) error {
 	if err != nil {
 		return fmt.Errorf("inspect Baseline transaction temporary %q: %w", relative, err)
 	}
-	if !info.Mode().IsRegular() {
+	if !info.Mode().IsRegular() && info.Mode()&fs.ModeSymlink == 0 {
 		return fmt.Errorf("Baseline transaction temporary %q is unsafe", relative)
 	}
 	if err := root.Remove(relative); err != nil {
