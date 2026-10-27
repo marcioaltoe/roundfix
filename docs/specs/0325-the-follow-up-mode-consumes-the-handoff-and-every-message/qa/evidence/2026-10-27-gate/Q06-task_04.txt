@@ -1,7 +1,0 @@
-command: /bin/sh -c grep -qF 'Optional sources still lists messages only to leave them pending' skills/roundfix_modes_test.go && grep -qF -- '--status section does not say it accepts no handoff' skills/roundfix_modes_test.go && go test -timeout 10m -count=1 -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' ./skills && go test -timeout 15m -count=1 ./skills
-exit: 0
-stdout:
-ok  	roundfix/skills	0.127s
-ok  	roundfix/skills	0.910s
-
-stderr:
