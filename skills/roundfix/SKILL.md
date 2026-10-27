@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.150
+  version: 0.1.151
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.150
+version: 0.1.151
 ---
 
 # Roundfix

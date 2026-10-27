@@ -38,12 +38,13 @@ const (
 
 // PlanRequest is the complete normalized non-interactive planning input.
 type PlanRequest struct {
-	Repository            string
-	ProfileID             string
-	ProfileDraft          *ProfileDraftInput
-	Decisions             []DecisionValue
-	Preservation          RootPreservationRequest
-	ExecutableDirectories []string
+	CarryRecordedDecisions bool
+	Repository             string
+	ProfileID              string
+	ProfileDraft           *ProfileDraftInput
+	Decisions              []DecisionValue
+	Preservation           RootPreservationRequest
+	ExecutableDirectories  []string
 }
 
 // ProfileDraftInput binds one strict repository-owned Profile draft to the
@@ -56,8 +57,9 @@ type ProfileDraftInput struct {
 // PlanOutcome contains either one complete portable plan or an actionable
 // result. A nil Plan always means that no partial plan is available.
 type PlanOutcome struct {
-	Plan   *PlanDocument
-	Result Result
+	CarriedDecisions []string `json:"-"`
+	Plan             *PlanDocument
+	Result           Result
 }
 
 type specificRepositoryPlan struct {
@@ -316,20 +318,39 @@ func buildPlanWithCatalog(
 		profile.Path = portableProfilePath(initial.Root, profile.Path)
 	}
 
-	decisions, missing, err := normalizePlanDecisions(profile, request.Decisions, catalog)
+	decisionInput := request.Decisions
+	var carried []string
+	var carryWarnings []Finding
+	if request.CarryRecordedDecisions {
+		decisionInput, carried, carryWarnings, err = carryRecordedDecisions(initial.Root, profile, decisionInput, catalog)
+		if err != nil {
+			return PlanOutcome{}, err
+		}
+	}
+	initial.Snapshot.Warnings = append(initial.Snapshot.Warnings, carryWarnings...)
+	decisions, missing, err := normalizePlanDecisions(profile, decisionInput, catalog)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	parts := []string{}
+	nextAction := "answer every named decision with --decision or --decision-file and rerun"
 	if len(missing) != 0 {
-		return actionOutcome("decision",
-			"required Baseline decisions are missing: "+strings.Join(missing, ", "),
-			"answer every named decision with --decision or --decision-file and rerun",
-			initial.Snapshot.Warnings), nil
+		parts = append(parts, "required Baseline decisions are missing: "+strings.Join(missing, ", "))
+		parts = append(parts, conditionalMissingDecisionParts(profile, decisions, missing, catalog)...)
 	}
 	if request.Preservation.Mode == "" {
-		return actionOutcome("decision", "instruction-preservation mode is required",
-			"rerun with --decision preservation.mode=greenfield or preservation",
-			initial.Snapshot.Warnings), nil
+		parts = append(parts, "instruction-preservation mode is required")
+		if len(parts) == 1 {
+			nextAction = "rerun with --decision preservation.mode=greenfield or preservation"
+		}
+	}
+	if len(parts) > 1 {
+		nextAction = "answer every named decision with --decision or --decision-file, including --decision preservation.mode=greenfield or preservation, and rerun"
+	}
+	if len(parts) != 0 {
+		outcome := actionOutcome("decision", strings.Join(parts, "; "), nextAction, initial.Snapshot.Warnings)
+		outcome.CarriedDecisions = carried
+		return outcome, nil
 	}
 	_, carrierArtifacts, err := resolveManagedArtifacts(
 		catalog,
@@ -476,6 +497,7 @@ func buildPlanWithCatalog(
 		snapshot.Warnings,
 		currentClassifications,
 	)
+	snapshot.Warnings = append(snapshot.Warnings, carryWarnings...)
 	preservationRequest.classifications = currentClassifications
 	if plannedDraft != nil {
 		if err := validateProfileDraftTarget(snapshot, *plannedDraft); err != nil {
@@ -614,7 +636,7 @@ func buildPlanWithCatalog(
 		return PlanOutcome{}, fmt.Errorf("validate assembled Baseline Plan: %w", err)
 	}
 	result := readyResult(doc.PlanDigest, doc.Warnings, alignment.Verification)
-	return PlanOutcome{Plan: &doc, Result: result}, nil
+	return PlanOutcome{Plan: &doc, Result: result, CarriedDecisions: carried}, nil
 }
 
 func planHistoryMoves(ctx context.Context, root string) ([]HistoryMove, []Finding, error) {
@@ -1554,37 +1576,7 @@ func normalizePlanDecisions(
 		}
 		values[id] = cloneJSONValue(decision.Value)
 	}
-	required := stringSet(profile.Decisions)
-	changed := true
-	for changed {
-		changed = false
-		for id := range required {
-			value, answered := values[id]
-			if !answered {
-				continue
-			}
-			for _, effect := range objectsOrEmpty(catalog.decisions[id]["effects"]) {
-				when, _ := objectValue(effect["when"])
-				if !planConditionMatches(when, value) {
-					continue
-				}
-				for _, dependent := range stringsOrEmpty(effect["requireDecisions"]) {
-					if _, exists := required[dependent]; !exists {
-						required[dependent] = struct{}{}
-						changed = true
-					}
-				}
-				for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
-					for _, dependent := range stringsOrEmpty(catalog.modules[moduleID]["requiredDecisions"]) {
-						if _, exists := required[dependent]; !exists {
-							required[dependent] = struct{}{}
-							changed = true
-						}
-					}
-				}
-			}
-		}
-	}
+	required := selectedPlanDecisions(profile, values, catalog)
 	for id := range values {
 		if _, ok := required[id]; !ok {
 			return nil, nil, fmt.Errorf(
@@ -1616,6 +1608,41 @@ func normalizePlanDecisions(
 		return nil, nil, fmt.Errorf("normalize Baseline decisions: %w", err)
 	}
 	return ordered, missing, nil
+}
+
+func selectedPlanDecisions(profile ResolvedProfile, values map[string]any, catalog *Catalog) map[string]struct{} {
+	required := stringSet(profile.Decisions)
+	changed := true
+	for changed {
+		changed = false
+		for id := range required {
+			value, answered := values[id]
+			if !answered {
+				continue
+			}
+			for _, effect := range objectsOrEmpty(catalog.decisions[id]["effects"]) {
+				when, _ := objectValue(effect["when"])
+				if !planConditionMatches(when, value) {
+					continue
+				}
+				for _, dependent := range stringsOrEmpty(effect["requireDecisions"]) {
+					if _, exists := required[dependent]; !exists {
+						required[dependent] = struct{}{}
+						changed = true
+					}
+				}
+				for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
+					for _, dependent := range stringsOrEmpty(catalog.modules[moduleID]["requiredDecisions"]) {
+						if _, exists := required[dependent]; !exists {
+							required[dependent] = struct{}{}
+							changed = true
+						}
+					}
+				}
+			}
+		}
+	}
+	return required
 }
 
 func profileAlignmentDecisions(profile ResolvedProfile, decisions []DecisionValue) []DecisionValue {

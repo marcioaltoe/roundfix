@@ -4,6 +4,23 @@ Roundfix picks up Work Items — Review Issues from pull request reviews and Tas
 
 ## Language
 
+**Carried Decision**:
+A recorded Setup Manifest decision that a profile change preserves because the
+selected profile accepts it and no explicit answer overrides it ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).
+_Avoid_: Default suggestion, guessed answer, profile merge
+
+**Root Backup**:
+A content-addressed backup of a root instruction carrier written by adoption
+or a profile-changing apply, named by its warning and owned by the repository
+to commit ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).
+_Avoid_: Temporary copy, nested backup, automatic commit
+
+**Claude Skill Link**:
+A repository-owned symbolic link under `.claude/skills` to the corresponding
+`.agents/skills/<name>` tree, restored when the repository already uses that
+link layout ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).
+_Avoid_: Installed skill, copied skill, arbitrary symlink
+
 **Behavior Surface**:
 One user-visible unit of Roundfix behavior: a command's help, the set of configuration keys, the table of exit codes, or one user-guide page ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
 _Avoid_: Source file, command family, feature

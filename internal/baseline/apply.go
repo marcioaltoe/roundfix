@@ -370,6 +370,16 @@ func verifiedApplyResult(
 		matrix.RepositoryVerification,
 		matrix.Idempotence,
 	)
+	warnings := cloneFindings(document.Warnings)
+	for _, entry := range document.ManagedEntries {
+		if carrier, ok := strings.CutPrefix(entry.ID, "backup:"); ok {
+			warnings = append(warnings, Finding{
+				Code:    "baseline.preservation.backup.written",
+				Path:    entry.Path,
+				Message: fmt.Sprintf("exact copy of %s before this apply; commit it with this change, Roundfix never deletes it", carrier),
+			})
+		}
+	}
 	return Result{
 		SchemaVersion:        ResultSchemaVersion,
 		Operation:            "apply",
@@ -378,7 +388,7 @@ func verifiedApplyResult(
 		PlanDigest:           document.PlanDigest,
 		VerifiedPostimages:   clonePostimages(verified),
 		VerifiedHistoryMoves: cloneHistoryMoves(verifiedHistoryMoves),
-		Warnings:             cloneFindings(document.Warnings),
+		Warnings:             warnings,
 		Recommendations:      recommendations,
 		StatusMatrix:         &matrix,
 	}

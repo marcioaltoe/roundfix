@@ -317,10 +317,22 @@ type DeclaredDecision struct {
 	Recorded any    `json:"recorded"` // Previous recorded value, or null.
 }
 
+// ProfileChangeRefusal directs profile changes through reviewed adoption planning.
+type ProfileChangeRefusal struct{ Recorded, Requested string }
+
+func (refusal *ProfileChangeRefusal) Error() string {
+	return fmt.Sprintf("\"profile\" is not a Baseline decision; baseline update keeps the recorded Baseline Profile %s", refusal.Recorded)
+}
+
 // DeclareManifestDecisions overlays declarations on resolved manifest input and
 // normalizes them as a plan does. It never writes the repository or mutates the
 // prior manifest, which remains the source of recorded-value evidence.
 func DeclareManifestDecisions(input ManifestInput, declared []DecisionValue, catalog *Catalog) (ManifestInput, []DeclaredDecision, error) {
+	for _, decision := range declared {
+		if strings.TrimSpace(decision.ID) == "profile" {
+			return input, nil, &ProfileChangeRefusal{Recorded: input.ProfileID, Requested: fmt.Sprint(decision.Value)}
+		}
+	}
 	reports := make([]DeclaredDecision, 0, len(declared))
 	if len(declared) == 0 {
 		return input, reports, nil

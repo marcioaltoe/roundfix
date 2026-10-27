@@ -823,6 +823,10 @@
       {
         "version": "0.1.150",
         "digest": "11ac39f8d88f072dce59d339a2272e2ed98eab92a2359715e227af6a2a1e2ba5"
+      },
+      {
+        "version": "0.1.151",
+        "digest": "69534d0d1b1bcc15a2f7d1f047b30c62c4492ecce92273e45df9eeb0c4dc09fc"
       }
     ],
     "setup-context-driven": [
@@ -845,6 +849,10 @@
       {
         "version": "0.0.6",
         "digest": "5fd0d41002184c313a97df09a34beadad243de952b9dc33d74ebf1881677f894"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "cdb24381010c1526d094ef499eba17ebc10eff6e348d9d5948f24b8db32d5667"
       }
     ],
     "write-idea": [

@@ -74,7 +74,15 @@ func runBaselineSkillsReconcileCommand(
 			stderr,
 		)
 	}
-	if err := writeBaselineSkillsReconcilePayload(payload, jsonOutput, stdout); err != nil {
+	var revisions []string
+	if !jsonOutput && payload.OK && !payload.Applied && len(payload.PlannedChanges) == 0 && payload.Finding == nil {
+		revisions, err = baseline.SetupSnapshotRevisions(request.repo, payload.Profile, request.sourceRepository)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: baseline skills reconcile snapshot lookup failed: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+	}
+	if err := writeBaselineSkillsReconcilePayloadWithSnapshot(payload, jsonOutput, stdout, revisions); err != nil {
 		fmt.Fprintf(stderr, "%s: baseline skills reconcile output failed: %v\n", app.Name, err)
 		return exitRunFailed
 	}
@@ -166,6 +174,15 @@ func writeBaselineSkillsReconcilePayload(
 	jsonOutput bool,
 	stdout io.Writer,
 ) error {
+	return writeBaselineSkillsReconcilePayloadWithSnapshot(payload, jsonOutput, stdout, nil)
+}
+
+func writeBaselineSkillsReconcilePayloadWithSnapshot(
+	payload baseline.SkillsReconcilePayload,
+	jsonOutput bool,
+	stdout io.Writer,
+	revisions []string,
+) error {
 	if jsonOutput {
 		encoder := json.NewEncoder(stdout)
 		encoder.SetIndent("", "  ")
@@ -180,6 +197,19 @@ func writeBaselineSkillsReconcilePayload(
 	}
 	if _, err := fmt.Fprintf(stdout, "Baseline skills reconcile: %s\n", status); err != nil {
 		return err
+	}
+	if payload.OK && !payload.Applied && len(payload.PlannedChanges) == 0 && payload.Finding == nil && len(payload.Acquisitions) != 0 {
+		source := payload.Acquisitions[0]
+		if _, err := fmt.Fprintf(stdout, "Reconcile removes only skills-lock.json entries absent at %s; it never moves an installed skill to that revision.\n", source.Ref); err != nil {
+			return err
+		}
+		line := fmt.Sprintf("No skill of profile %s comes from %s.", payload.Profile, source.Repository)
+		if len(revisions) != 0 {
+			line = fmt.Sprintf("Installed skills from %s follow the Setup Snapshot this binary carries: %s.", source.Repository, strings.Join(revisions, ", "))
+		}
+		if _, err := fmt.Fprintf(stdout, "%s\nA newer revision reaches them with the Roundfix release whose Setup Snapshot names it; restore one with roundfix baseline skills restore --profile %s --skill <name>.\n", line, payload.Profile); err != nil {
+			return err
+		}
 	}
 	if payload.Finding != nil {
 		if _, err := fmt.Fprintf(

@@ -91,11 +91,12 @@ type RestoreLockEdit struct {
 	After  map[string]any `json:"after"`
 }
 
-// RestorePlannedChange is one flattened file or lock operation.
+// RestorePlannedChange is one flattened file, link, or lock operation.
 type RestorePlannedChange struct {
 	Action       string         `json:"action"`
 	Path         string         `json:"path"`
 	Skill        string         `json:"skill"`
+	Target       string         `json:"target,omitempty"`
 	BeforeDigest *string        `json:"-"`
 	AfterDigest  *string        `json:"-"`
 	Before       map[string]any `json:"-"`
@@ -121,8 +122,17 @@ type RestoreFinding struct {
 }
 
 // MarshalJSON preserves the maintained operation-specific restoration shape:
-// file changes carry byte digests, while lock edits carry entry documents.
+// file changes carry byte digests, links carry targets, and lock edits carry entry documents.
 func (change RestorePlannedChange) MarshalJSON() ([]byte, error) {
+	if change.Action == "create-link" {
+		return json.Marshal(struct {
+			Action string `json:"action"`
+			Path   string `json:"path"`
+			Skill  string `json:"skill"`
+			Target string `json:"target"`
+		}{change.Action, change.Path, change.Skill, change.Target})
+	}
+
 	if change.Action == "update-lock-entry" || change.Action == "remove-lock-entry" {
 		return json.Marshal(struct {
 			Action string         `json:"action"`
@@ -307,7 +317,7 @@ func restoreSkills(
 		}
 		return failedRestorePayload(request.ProfileID, dependencies.profile.Setup, err)
 	}
-	if len(plan.payload.Skills) == 0 {
+	if len(plan.payload.PlannedChanges) == 0 {
 		plan.payload.OK = true
 		return plan.payload, nil
 	}
@@ -455,7 +465,22 @@ func buildSkillsRestorePlan(
 	var skillPlans []RestoreSkill
 	var plannedChanges []RestorePlannedChange
 	sourceFiles := make(map[string][]restoreFile)
+	claudeLinks, err := keepsClaudeSkillLinks(root)
+	if err != nil {
+		return restorePlan{}, err
+	}
 	for _, contract := range selected {
+		if claudeLinks {
+			linkPath := path.Join(".claude/skills", contract.Name)
+			if _, err := os.Lstat(filepath.Join(root, filepath.FromSlash(linkPath))); errors.Is(err, fs.ErrNotExist) {
+				plannedChanges = append(plannedChanges, RestorePlannedChange{
+					Action: "create-link", Path: linkPath, Skill: contract.Name,
+					Target: "../../.agents/skills/" + contract.Name,
+				})
+			} else if err != nil {
+				return restorePlan{}, fmt.Errorf("inspect Claude Skill Link %q: %w", linkPath, err)
+			}
+		}
 		target := path.Join(".agents/skills", contract.Name)
 		current, exists, inspectErr := inspectRestoreTarget(root, target)
 		if inspectErr != nil {
@@ -555,6 +580,7 @@ func buildSkillsRestorePlan(
 		sourceFiles,
 		lock.before,
 		lockAfterBytes,
+		plannedChanges...,
 	)
 	if err != nil {
 		return restorePlan{}, err
@@ -1147,8 +1173,14 @@ func buildRestoreTransactionDocument(
 	sourceFiles map[string][]restoreFile,
 	lockBefore []byte,
 	lockAfter []byte,
+	linkChanges ...RestorePlannedChange,
 ) (PlanDocument, error) {
 	postimages := make(map[string]Postimage)
+	for _, change := range linkChanges {
+		if change.Action == "create-link" {
+			postimages[change.Path] = Postimage{Path: change.Path, Kind: PreimageSymlink, Content: []byte(change.Target)}
+		}
+	}
 	for _, skill := range skills {
 		changedFiles := make(map[string]struct{}, len(skill.Changes))
 		for _, change := range skill.Changes {
@@ -1216,6 +1248,9 @@ func buildRestoreTransactionDocument(
 		}
 		if relative == skillsLockPath && !plannedSkillsLockMatchesState(lockBefore, state) {
 			return PlanDocument{}, skillsLockChangedDuringPlanError()
+		}
+		if postimages[relative].Kind == PreimageSymlink && state.Kind != PreimageMissing {
+			return PlanDocument{}, fmt.Errorf("Claude Skill Link destination %q changed during planning", relative)
 		}
 		preimages[index] = preimageFromTransactionState(relative, state)
 	}
@@ -1492,4 +1527,38 @@ func safeRestoreRelative(relative string) bool {
 		!strings.Contains(relative, "/.git/") &&
 		!strings.HasPrefix(relative, "node_modules/") &&
 		!strings.Contains(relative, "/node_modules/")
+}
+
+// keepsClaudeSkillLinks recognizes only the repository's existing per-skill
+// link layout. Lstat and Readlink never follow an existing skill entry.
+func keepsClaudeSkillLinks(root string) (bool, error) {
+	for _, relative := range []string{".claude", ".claude/skills"} {
+		info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(relative)))
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("inspect Claude skills directory %q: %w", relative, err)
+		}
+		if !info.IsDir() {
+			return false, nil
+		}
+	}
+	entries, err := os.ReadDir(filepath.Join(root, ".claude/skills"))
+	if err != nil {
+		return false, fmt.Errorf("read Claude skills directory: %w", err)
+	}
+	for _, entry := range entries {
+		if entry.Type()&fs.ModeSymlink == 0 {
+			continue
+		}
+		target, err := os.Readlink(filepath.Join(root, ".claude/skills", entry.Name()))
+		if err != nil {
+			return false, fmt.Errorf("read Claude Skill Link %q: %w", entry.Name(), err)
+		}
+		if target == "../../.agents/skills/"+entry.Name() {
+			return true, nil
+		}
+	}
+	return false, nil
 }

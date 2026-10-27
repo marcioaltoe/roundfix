@@ -202,6 +202,12 @@ func runBaselineUpdateCommandWithSkillsStage(
 	}
 	input, declared, err := baseline.DeclareManifestDecisions(input, request.decisions, catalog)
 	if err != nil {
+		var refusal *baseline.ProfileChangeRefusal
+		if errors.As(err, &refusal) {
+			nextAction := fmt.Sprintf("change the profile with roundfix baseline plan --repo %s --profile %s --decision preservation.mode=preservation --format json, which carries the recorded decisions, then apply the reviewed plan with roundfix baseline apply --repo %s --plan <plan-file> --confirm-plan <planDigest>", request.repo, refusal.Requested, request.repo)
+			return writeBaselineUpdateFailure(result, err, "invalid", nextAction, exitPreflight, jsonOutput, stdout, stderr)
+		}
+
 		return writeBaselineUpdateFailure(
 			result, err, "invalid",
 			"correct the declared decisions and rerun roundfix baseline update",

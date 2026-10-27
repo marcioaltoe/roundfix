@@ -343,3 +343,51 @@ func baselineSkillsReconcileGitOutput(t *testing.T, directory string, args ...st
 	}
 	return strings.TrimSpace(string(output))
 }
+
+func TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision(t *testing.T) {
+	t.Parallel()
+	repository := newBaselineSkillsReconcileGitRepository(t, map[string]string{"README.md": "repository\n"})
+	source := newBaselineSkillsReconcileGitRepository(t, map[string]string{"README.md": "source\n"})
+	revision := baselineSkillsReconcileGitOutput(t, source, "rev-parse", "HEAD")
+	for _, upstream := range []string{"marcioaltoe/skills", "example/no-profile-skills"} {
+		t.Run(upstream, func(t *testing.T) {
+			refs, err := baseline.SetupSnapshotRevisions(repository, "go-cli-tui", upstream)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if upstream == "marcioaltoe/skills" && len(refs) == 0 {
+				t.Fatal("expected embedded external skills")
+			}
+			args := []string{"baseline", "skills", "reconcile", "--repo", repository, "--profile", "go-cli-tui", "--source", upstream, "--revision", revision, "--source-dir", source}
+			var out, diagnostics bytes.Buffer
+			code := RunContext(t.Context(), args, &out, &diagnostics)
+			if code != exitOK || diagnostics.Len() != 0 {
+				t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &diagnostics)
+			}
+			middle := "No skill of profile go-cli-tui comes from " + upstream + "."
+			if len(refs) != 0 {
+				middle = "Installed skills from " + upstream + " follow the Setup Snapshot this binary carries: " + strings.Join(refs, ", ") + "."
+			}
+			want := "Baseline skills reconcile: no changes\nReconcile removes only skills-lock.json entries absent at " + revision + "; it never moves an installed skill to that revision.\n" + middle + "\nA newer revision reaches them with the Roundfix release whose Setup Snapshot names it; restore one with roundfix baseline skills restore --profile go-cli-tui --skill <name>.\n"
+			if !strings.HasPrefix(out.String(), want) {
+				t.Fatalf("want prefix %q, got %s", want, &out)
+			}
+			out.Reset()
+			code = RunContext(t.Context(), append(args, "--format=json"), &out, &diagnostics)
+			if code != exitOK {
+				t.Fatal(out.String())
+			}
+			expected, err := baseline.ReconcileSkillsLock(t.Context(), baseline.SkillsReconcileRequest{Repository: repository, ProfileID: "go-cli-tui", SourceRepository: upstream, Commit: revision, SourceDir: source})
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := json.MarshalIndent(expected, "", "  ")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if out.String() != string(data)+"\n" {
+				t.Fatalf("JSON changed: %s", &out)
+			}
+		})
+	}
+}

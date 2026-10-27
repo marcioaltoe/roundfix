@@ -188,3 +188,38 @@ func TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal(t *testing.T) {
 func stringPointerForCLI(value string) *string {
 	return &value
 }
+
+func TestBaselineSkillsRestoreTextListsTheClaudeLink(t *testing.T) {
+	t.Parallel()
+	for _, format := range []string{"text", "json"} {
+		t.Run(format, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			execute := func(context.Context, baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
+				finding := baseline.RestoreFinding{Code: "plan.confirmation.required", Message: "Review this plan.", Action: "Confirm its digest."}
+				return baseline.SkillsRestorePayload{
+					PlannedChanges: []baseline.RestorePlannedChange{{Action: "create-link", Path: ".claude/skills/example", Skill: "example", Target: "../../.agents/skills/example"}},
+					Finding:        &finding,
+				}, &baseline.SkillsRestoreError{Category: baseline.SkillsRestoreAction, Finding: finding}
+			}
+			code := runBaselineSkillsRestoreCommandWith(context.Background(), []string{"--profile", "rust-cli", "--format", format}, &stdout, &stderr, execute)
+			if code != exitUnverified {
+				t.Fatalf("exit=%d stdout=%s stderr=%s", code, &stdout, &stderr)
+			}
+			if format == "text" {
+				if !strings.Contains(stdout.String(), "\n- create-link .claude/skills/example [example]\n") {
+					t.Fatalf("preview=%s", &stdout)
+				}
+			} else {
+				var payload struct {
+					PlannedChanges []map[string]any `json:"plannedChanges"`
+				}
+				if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+					t.Fatal(err)
+				}
+				if len(payload.PlannedChanges) != 1 || len(payload.PlannedChanges[0]) != 4 || payload.PlannedChanges[0]["target"] != "../../.agents/skills/example" {
+					t.Fatalf("changes=%+v", payload.PlannedChanges)
+				}
+			}
+		})
+	}
+}
