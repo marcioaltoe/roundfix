@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -108,3 +108,41 @@ guide and `CONTEXT.md`.
 
 - `_prd.md` → Goals 3 and 5; Core Features 3 and 5; Success Metrics 6 and 7; Glossary
 - `_techspec.md` → Current behavior 5, 6 and 8; API Contracts 6 and 9; Declared breaks 4 and 5; Invariant 4; Testing Approach; Build Order 3
+
+## Result
+
+- Removal reporting: `runSettleCommand` now prints the Task Worktree path
+  after its integration and cleanup succeed, and the Run Worktree path only
+  after Run integration returns neither an error nor a pending command.
+  Stdout statements, exit codes, staging, surface resolution and integration
+  helpers are unchanged. The four named existing tests assert exact stderr
+  in removal order; their existing stdout assertions remain intact.
+- Pending integration: `TestSettleNamesNoRemovalWhenIntegrationIsPending`
+  creates a kept Run Worktree, advances the user branch, and asserts exit 1,
+  exact verification/pending stdout, only the surface line on stderr, and
+  retention of the Run Worktree and branch. The new successful cleanup test
+  asserts exit 0, all three stderr lines in order, and absence of both paths.
+- Written rule: added API Contract 9 verbatim to both canonical references
+  and the settle guide, with both stderr lines and user-checkout advice;
+  added its usage sentence. Through domain-modeling, revised Run Worktree
+  and Settle Command in CONTEXT.md while retaining both `_Avoid_` lines.
+- Red evidence: `go test ./internal/cli -run '^TestSettleNames' -count=1
+  -timeout 3m` exited 1 before the implementation; the cleanup test observed
+  only the surface line instead of the required three lines.
+- Focused check: `go test ./internal/cli -run
+  '^(TestSettleNames|TestRunSettleRetargets|TestSettleTaskStatusRetargets|TestSettleAcceptsCompletedTaskFromKept|TestSettleCommitsDeletedAndRenamed|TestRunSettleTaskWorktreeIntegrationConflict)'
+  -count=1 -timeout 3m` exited 0 after implementation, exercising the two
+  new tests, the four changed expectations, and conflict retention.
+- Sanctioned generation: `make skills-sync` exited 0;
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` exited 0 and raised the Roundfix version pair to
+  0.1.150. `make baseline-digests` exited 0 with `changed: false`.
+  A focused byte comparison confirmed the Roundfix mirror matches its
+  canonical directory and the `### QA settlement` section is unchanged.
+- After the last guide edit, the final artifact regeneration was
+  `go test -count=1 -tags docscontract ./internal/docscontract
+  -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  exit 0, refreshing docs/references/behavior-surfaces.json.
+- `git diff --check` exited 0. Declared Verification and repository
+  Verification remain for the Daemon; no Task status, Task Graph, other Task,
+  Makefile or workflow was edited by this turn. No commit or publication.

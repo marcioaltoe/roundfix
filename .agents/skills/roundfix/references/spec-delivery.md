@@ -66,6 +66,14 @@ payload, command-runner, and event-stream evidence.
    and integrates onto the Run Branch. Re-run `roundfix implement --spec <slug>`
    to pick up any still-pending Tasks; completed Tasks are skipped.
 
+   After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+   Run settle from the user checkout. On stderr:
+
+   ```text
+   Task Worktree removed: <task worktree path>
+   Run Worktree removed: <run worktree path>
+   ```
+
 6. **Stop when needed.** Prefer graceful `roundfix stop --spec <slug>`; the Run
    ends after the current Work Item settles. If a later command finds an
    Active-Run lock whose recorded owner PID is provably dead, Roundfix reclaims

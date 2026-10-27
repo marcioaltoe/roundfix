@@ -33,6 +33,9 @@ for a kept Task Worktree, commits all Task Worktree changes plus the task file
 and integrates them onto the Run Branch. settle creates no Run, writes no Run
 Event Journal entries, and never pushes.
 
+After a successful integration, settle removes the kept Task Worktree and Run
+Worktree it integrated and names each on stderr.
+
 Options:
   --spec  Spec slug under docs/specs/
   --task  Task id from the Spec Task Graph
@@ -129,6 +132,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else if integratedSHA != "" {
 			shortSHA = integratedSHA
 		}
+		fmt.Fprintf(stderr, "Task Worktree removed: %s\n", plan.taskRef.Path)
 	}
 	if plan.hasRun {
 		integrationCommand, err := integrateSettledRun(ctx, plan)
@@ -140,6 +144,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stdout, "integration pending — %s\n", integrationCommand)
 			return exitRunFailed
 		}
+		fmt.Fprintf(stderr, "Run Worktree removed: %s\n", plan.runRef.Path)
 	}
 	if len(commitResult.paths) > 0 {
 		emitSettleSharedFailedWarning(stderr, plan)

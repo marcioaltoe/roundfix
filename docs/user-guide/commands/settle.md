@@ -81,3 +81,11 @@ When other Tasks of the Spec are `failed` at settle time, one stderr warning
 names them: their work may be swept into this commit. Settle creates no Run,
 writes no Run Event Journal entries, and never pushes; Task Worktree
 settlements integrate onto the Run Branch before the Run-level integration.
+
+After a successful integration, settle removes the kept Task Worktree and Run Worktree it integrated and names each on stderr; leave any shell that stands in one of them before you run settle, because Git exits 128 in a removed directory.
+Run settle from the user checkout. On stderr:
+
+```text
+Task Worktree removed: <task worktree path>
+Run Worktree removed: <run worktree path>
+```

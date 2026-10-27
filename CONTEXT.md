@@ -480,7 +480,7 @@ A Run started with the detach flag: roundfix re-executes itself as a session lea
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
-The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
+The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome or after settle integrates it, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
 _Avoid_: Sandbox, scratch dir, user checkout
 
 **Worktree Root**:
@@ -735,7 +735,7 @@ The command that executes a Spec's Task Graph by running Agents over its Tasks i
 _Avoid_: Run command, execute command, spec command
 
 **Settle Command**:
-The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
+The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it names each worktree it removes on stderr, creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
