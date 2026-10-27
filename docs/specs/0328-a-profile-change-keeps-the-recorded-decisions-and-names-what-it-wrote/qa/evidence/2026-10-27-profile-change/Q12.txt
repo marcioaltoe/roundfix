@@ -1,9 +1,0 @@
-# Q12 Pull Request row: blocked (environment: no open Pull Request)
-Cause: the prompt states no Pull Request is open for this Spec; the target branch is roundfix/deliver-0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote-ff360caa5d7350f0. The Run Worktree branch is never pushed and has no Pull Request of its own, so none was resolved from it.
-Equivalent evidence per control:
-- approval: _authorization.md, status approved, granted 2026-10-26 by the maintainer, operations implement, commit, push, pull_request, merge, consuming this Spec; Daemon authorization audit input: task_01 2e72cc31 granted, operative grant.
-- checks and status: Daemon-run repository Verification make verify-changed at the audited head, pass, exit 0, diagnostics removed on success (Q01); every Task Verification re-run here exits 0 (Q07).
-- unresolved review threads: none, because no Pull Request exists.
-- Merge-Ready acceptance: none exists yet; it comes after the Pull Request opens.
-- review-artifact ancestry: the claimed candidate is the audited head 060968908842f32100558eb8581d2d4beca9c4e9; git log a25af061..HEAD = 06096890 aaca6997 78f3fed6 2e72cc31 
-Unblocking action: open the Pull Request from the Spec target branch and observe approval, checks, threads and Merge-Ready acceptance for this head.
