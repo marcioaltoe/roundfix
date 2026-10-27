@@ -1,7 +1,7 @@
 // Suite: Hard Link repository rule.
-// Invariant: no internal test creates a hard link, preserving Single-Name Test Binaries.
-// Boundary IN: imported os.Link, syscall.Link/Linkat and unix.Link/Linkat calls in internal/**/*_test.go.
-// Boundary OUT: other receivers, local variables, symbolic links and link reads.
+// Invariant: no module test creates a hard link, preserving Single-Name Test Binaries.
+// Boundary IN: named, aliased and dot-imported hard-link references in module *_test.go files.
+// Boundary OUT: testdata, hidden and underscore directories; shadowed names, declarations, fields, struct keys, labels, symbolic links and link reads.
 package testfixture
 
 import (
@@ -19,11 +19,17 @@ import (
 
 func hardLinkViolations(root string) ([]string, error) {
 	var violations []string
-	err := filepath.WalkDir(filepath.Join(root, "internal"), func(path string, entry fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || !strings.HasSuffix(path, "_test.go") {
+		if entry.IsDir() {
+			if path != root && (entry.Name() == "testdata" || strings.HasPrefix(entry.Name(), ".") || strings.HasPrefix(entry.Name(), "_")) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
 		positions := token.NewFileSet()
@@ -36,6 +42,7 @@ func hardLinkViolations(root string) ([]string, error) {
 			return fmt.Errorf("resolve %s: %w", path, err)
 		}
 		imports := make(map[string]string)
+		var dotImports []string
 		for _, imp := range file.Imports {
 			imported, err := strconv.Unquote(imp.Path.Value)
 			if err != nil {
@@ -47,27 +54,75 @@ func hardLinkViolations(root string) ([]string, error) {
 				if imp.Name != nil {
 					name = imp.Name.Name
 				}
-				imports[name] = imported
+				if name == "." {
+					dotImports = append(dotImports, imported)
+				} else if name != "_" {
+					imports[name] = imported
+				}
 			}
 		}
+		// Mark names that are syntax rather than references before walking in
+		// source order. The parser resolves local declarations through Obj.
+		nonReferences := make(map[*ast.Ident]bool)
 		ast.Inspect(file, func(node ast.Node) bool {
-			call, ok := node.(*ast.CallExpr)
-			if !ok {
-				return true
+			switch node := node.(type) {
+			case *ast.SelectorExpr:
+				nonReferences[node.Sel] = true
+			case *ast.FuncDecl:
+				nonReferences[node.Name] = true
+			case *ast.Field:
+				for _, name := range node.Names {
+					nonReferences[name] = true
+				}
+			case *ast.CompositeLit:
+				literalType := node.Type
+				if name, ok := literalType.(*ast.Ident); ok && name.Obj != nil {
+					if declaration, ok := name.Obj.Decl.(*ast.TypeSpec); ok {
+						literalType = declaration.Type
+					}
+				}
+				// Only struct keys name fields; map and array keys are expressions.
+				switch literalType.(type) {
+				case *ast.StructType, *ast.Ident, *ast.SelectorExpr:
+					for _, element := range node.Elts {
+						if pair, ok := element.(*ast.KeyValueExpr); ok {
+							if key, ok := pair.Key.(*ast.Ident); ok {
+								nonReferences[key] = true
+							}
+						}
+					}
+				}
+			case *ast.LabeledStmt:
+				nonReferences[node.Label] = true
+			case *ast.BranchStmt:
+				nonReferences[node.Label] = true
 			}
-			selector, ok := call.Fun.(*ast.SelectorExpr)
-			if !ok {
-				return true
+			return true
+		})
+		ast.Inspect(file, func(node ast.Node) bool {
+			var imported, name string
+			switch node := node.(type) {
+			case *ast.SelectorExpr:
+				receiver, ok := node.X.(*ast.Ident)
+				if !ok || receiver.Obj != nil {
+					return true
+				}
+				imported, name = imports[receiver.Name], node.Sel.Name
+			case *ast.Ident:
+				if node.Obj != nil || nonReferences[node] {
+					return true
+				}
+				name = node.Name
+				for _, candidate := range dotImports {
+					if name == "Link" || (name == "Linkat" && candidate != "os") {
+						imported = candidate
+						break
+					}
+				}
 			}
-			receiver, ok := selector.X.(*ast.Ident)
-			if !ok || receiver.Obj != nil {
-				return true
+			if imported != "" && (name == "Link" || (name == "Linkat" && imported != "os")) {
+				violations = append(violations, fmt.Sprintf("%s:%d: %s.%s creates a hard link; copy or use a symbolic link", filepath.ToSlash(relative), positions.Position(node.Pos()).Line, filepath.Base(imported), name))
 			}
-			imported, ok := imports[receiver.Name]
-			if !ok || (selector.Sel.Name != "Link" && (selector.Sel.Name != "Linkat" || imported == "os")) {
-				return true
-			}
-			violations = append(violations, fmt.Sprintf("%s:%d: %s.%s creates a hard link; copy or use a symbolic link", filepath.ToSlash(relative), positions.Position(call.Pos()).Line, filepath.Base(imported), selector.Sel.Name))
 			return true
 		})
 		return nil
@@ -125,6 +180,31 @@ func fixture() {
 }
 `, nil},
 		{"symbolic links and reads", "package seeded\nimport \"os\"\nfunc fixture() { os.Symlink(\"source\", \"target\"); os.Readlink(\"target\") }\n", nil},
+		{"dot import of os", "package seeded\nimport . \"os\"\nfunc fixture() { Link(\"source\", \"target\") }\n", []string{"internal/seeded/fixture_test.go:3: os.Link"}},
+		{"dot import of unix Linkat", "package seeded\nimport . \"golang.org/x/sys/unix\"\nfunc fixture() { Linkat(0, \"source\", 0, \"target\", 0) }\n", []string{"internal/seeded/fixture_test.go:3: unix.Linkat"}},
+		{"os Link as a function value", "package seeded\nimport \"os\"\nvar link = os.Link\nfunc fixture() { apply(os.Link) }\n", []string{"internal/seeded/fixture_test.go:3: os.Link", "internal/seeded/fixture_test.go:4: os.Link"}},
+		{"dot-imported syscall Link as a value", "package seeded\nimport . \"syscall\"\nvar link = Link\n", []string{"internal/seeded/fixture_test.go:3: syscall.Link"}},
+		{"dot import shadowed by a local Link", `package seeded
+import . "os"
+func fixture() {
+ Link := func(string, string) {}
+ Link("source", "target")
+}
+`, nil},
+		{"dot import beside Link fields methods keys and labels", `package seeded
+import . "os"
+type record struct { Link string }
+type filesystem struct{}
+func (filesystem) Link(Link string) {}
+func fixture() {
+ filesystem{}.Link("target")
+ _ = record{Link: "target"}
+Link:
+ for { break Link }
+ _ = Symlink
+}
+`, nil},
+		{"dot-imported os has no Linkat", "package seeded\nimport . \"os\"\nvar _ = Linkat\n", nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
@@ -133,6 +213,39 @@ func fixture() {
 				t.Fatal(err)
 			}
 			if err := os.WriteFile(filepath.Join(directory, "fixture_test.go"), []byte(tc.source), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			violations, err := hardLinkViolations(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(violations) != len(tc.want) {
+				t.Fatalf("violations = %q, want %q", violations, tc.want)
+			}
+			for index, want := range tc.want {
+				if !strings.HasPrefix(violations[index], want) {
+					t.Errorf("violation = %q, want prefix %q", violations[index], want)
+				}
+			}
+		})
+	}
+	for _, tc := range []struct {
+		name, directory string
+		want            []string
+	}{
+		{"a test outside internal", "cmd/seeded", []string{"cmd/seeded/fixture_test.go:3: os.Link"}},
+		{"a test under skills", "skills", []string{"skills/fixture_test.go:3: os.Link"}},
+		{"a testdata directory", "internal/testdata/seeded", nil},
+		{"a hidden directory", ".agents/seeded", nil},
+		{"an underscore directory", "internal/_seeded", nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			directory := filepath.Join(root, tc.directory)
+			if err := os.MkdirAll(directory, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(directory, "fixture_test.go"), []byte("package seeded\nimport \"os\"\nfunc fixture() { os.Link(\"source\", \"target\") }\n"), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			violations, err := hardLinkViolations(root)

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -102,3 +102,40 @@ None. Only the `internal/testfixture` rule test changes; no production contract 
 - `_prd.md` → Goal 4; Core Feature 3; Success Metrics 4 and 5
 - `_techspec.md` → Current behavior 6; Interfaces; API Contract 3; Invariant 4; Testing Approach; Build Order 2
 - ADR-0324
+
+
+## Result
+
+Implemented the Task slice in `internal/testfixture/hard_link_rule_test.go`.
+The scan now walks the supplied root, skips descendant `testdata`, hidden
+and underscore directories, and parses only `_test.go` files. It reports
+named and aliased selector references, including function values, and bare
+unresolved dot-imported references in source order. Dot imports retain import
+order and `os` never supplies `Linkat`. A syntax-name pass excludes selected
+members, declaration names, field and parameter names, struct literal keys,
+and labels; resolved local names remain excluded. Updated the boundary header.
+
+Acceptance evidence:
+
+- Repository and new forms/locations: the focused command
+  `go test ./internal/testfixture -run '^TestNoTestCreatesAHardLink/' -count=1 -v`
+  exited 0. The repository subtest reported no hard links. All seven new
+  form seeds and five new location seeds passed, including both ordered
+  `os.Link` function-value findings and the `cmd/` and `skills/` findings
+  with the required paths and lines.
+- Non-references and original seeds: the same focused check passed the
+  local-shadow, fields/methods/keys/labels, missing `os.Linkat`, and skipped
+  directory cases, plus all ten original seeded cases. A Python comparison
+  against `git show HEAD:internal/testfixture/hard_link_rule_test.go`
+  confirmed the repository subtest and the contiguous ten original seed
+  entries remain byte-identical.
+- Red starting point: after adding the seeds but before changing the
+  detector, `go test ./internal/testfixture -run
+  '^TestNoTestCreatesAHardLink/(dot|os_Link_as|a_test)' -count=1` exited 1:
+  dot imports and function values were unreported, outside-internal paths
+  errored, and the testdata seed was incorrectly reported.
+- `gofmt` applied; `git diff --check` exited 0.
+
+The declared Verification (including Windows vet) and repository Verification
+were not run; the Daemon owns those checks and Task settlement. Status and
+checkboxes were left unchanged. No follow-up outside this slice was needed.
