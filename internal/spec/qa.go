@@ -71,6 +71,11 @@ const (
 // ErrNoQAReport reports that the Spec has no qa/qa-report-*.md yet.
 var ErrNoQAReport = errors.New("no QA Report found")
 
+// QADeclaredRow names a Results row and the criterion its declared status names.
+type QADeclaredRow struct {
+	ID, Criterion string
+}
+
 // QAReport is the validated verdict metadata callers need from a QA Report.
 // Each blocked-row cause remains independent; absent counts are zero.
 type QAReport struct {
@@ -94,6 +99,7 @@ type QAReport struct {
 	RowsSkipped                  int
 	RowsBlockedFinding           int
 	RowsBlockedDeclared          int
+	DeclaredRows                 []QADeclaredRow
 	RowsBlockedPrecondition      int
 	// Precondition is the refusal the report records, zero when the gate
 	// reached its matrix. It is optional metadata: a report that names no
@@ -380,18 +386,41 @@ func QAReportEligibility(specDir string, report QAReport) error {
 		if err != nil {
 			return fmt.Errorf("read unreachable acceptance declarations: %w", err)
 		}
-		if report.RowsBlockedDeclared > len(declarations) {
+		var unmatched []string
+		for _, row := range report.DeclaredRows {
+			matched := false
+			for _, declaration := range declarations {
+				for _, criterion := range declaration.Criteria {
+					if CriterionNamed(criterion, row.Criterion) {
+						matched = true
+						break
+					}
+				}
+				if matched {
+					break
+				}
+			}
+			if !matched {
+				unmatched = append(unmatched, fmt.Sprintf("declared-blocked row %s (%q)", row.ID, row.Criterion))
+			}
+		}
+		matched := len(report.DeclaredRows) > 0 && len(unmatched) == 0 && report.RowsBlockedDeclared <= len(report.DeclaredRows)
+		if !matched && report.RowsBlockedDeclared > len(declarations) {
 			plural := ""
 			if len(declarations) != 1 {
 				plural = "s"
 			}
-			return fmt.Errorf(
+			refusal := fmt.Sprintf(
 				"rows_blocked_declared is %d, but Spec declares %d unreachable acceptance%s; shortfall is %d",
 				report.RowsBlockedDeclared,
 				len(declarations),
 				plural,
 				report.RowsBlockedDeclared-len(declarations),
 			)
+			if len(unmatched) > 0 {
+				refusal += "; no declaration names " + strings.Join(unmatched, ", ")
+			}
+			return errors.New(refusal)
 		}
 	}
 	if report.RowsBlockedPrePullRequest == 0 && report.RowsBlockedNetworkDenied == 0 && report.RowsBlockedNetworkProhibited == 0 && report.RowsBlockedDeclared == 0 {
@@ -447,7 +476,7 @@ func readQAReport(path string) (QAReport, error) {
 	// reason stays empty rather than becoming the writer's placeholder, so a
 	// reader can tell a refusal whose cause was unnamed from one that was never
 	// written down.
-	prePullRequest, networkDenied, networkProhibited, skipped := qaReportResultsCounts(body)
+	prePullRequest, networkDenied, networkProhibited, skipped, declaredRows := qaReportResultsCounts(body)
 	report := QAReport{
 		Verdict:                      frontmatter.Verdict,
 		Hollow:                       qaReportHollow(body),
@@ -461,6 +490,7 @@ func readQAReport(path string) (QAReport, error) {
 		RowsSkipped:                  skipped,
 		RowsBlockedFinding:           rowsBlockedFinding,
 		RowsBlockedDeclared:          rowsBlockedDeclared,
+		DeclaredRows:                 declaredRows,
 		RowsBlockedPrecondition:      rowsBlockedPrecondition,
 		Precondition: PreconditionRefusal{
 			CheckName: qaRefusalLine(frontmatter.PreconditionCheck),
@@ -614,10 +644,10 @@ func qaReportHollow(body []byte) bool {
 	return hasResults
 }
 
-// qaReportResultsCounts derives exempt environment and skipped counts in
-// one Results-table pass. Exempt rows also require a Provenance column;
+// qaReportResultsCounts derives exempt environment and skipped counts and
+// declared rows in one Results-table pass. Exempt rows also require a Provenance column;
 // frontmatter counts retain their existing meaning and validation.
-func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkProhibited, skipped int) {
+func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkProhibited, skipped int, declaredRows []QADeclaredRow) {
 	lines := strings.Split(string(body), "\n")
 	inResults := false
 	inFence := false
@@ -678,6 +708,9 @@ func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkP
 			}
 			if !markdownTableSeparator(cells) && statusColumn >= 0 && statusColumn < len(cells) {
 				status := strings.TrimSpace(cells[statusColumn])
+				if criterion, ok := QADeclaredRowCriterion(status); ok {
+					declaredRows = append(declaredRows, QADeclaredRow{ID: cells[0], Criterion: criterion})
+				}
 				if strings.EqualFold(status, "skipped") {
 					skipped++
 				}
@@ -698,7 +731,7 @@ func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkP
 			index++
 		}
 	}
-	return prePullRequest, networkDenied, networkProhibited, skipped
+	return prePullRequest, networkDenied, networkProhibited, skipped, declaredRows
 }
 
 // qaProhibitedRowSubject returns the subject of a status in the
@@ -770,4 +803,35 @@ func qaBlockedCount(node yaml.Node, field string) (int, error) {
 		return 0, fmt.Errorf("%s must be a non-negative integer", field)
 	}
 	return count, nil
+}
+
+// QADeclaredRowCriterion reads the criterion of a typed declared-blocked status.
+func QADeclaredRowCriterion(status string) (string, bool) {
+	const prefix = "blocked (declared:"
+	if !strings.HasPrefix(strings.ToLower(status), prefix) || !strings.HasSuffix(status, ")") {
+		return "", false
+	}
+	criterion := strings.TrimSpace(status[len(prefix) : len(status)-1])
+	return criterion, criterion != ""
+}
+
+// CriterionNamed matches normalized criterion text or its leading label.
+func CriterionNamed(declared, row string) bool {
+	normalize := func(text string) string {
+		text = strings.ReplaceAll(text, "`", "")
+		return strings.ToLower(strings.TrimRight(strings.Join(strings.Fields(text), " "), ". "))
+	}
+	declared, row = normalize(declared), normalize(row)
+	if row == "" {
+		return false
+	}
+	if declared == row {
+		return true
+	}
+	for _, separator := range []string{",", ":", ";", ".", " (", " —", " - "} {
+		if strings.HasPrefix(declared, row+separator) {
+			return true
+		}
+	}
+	return false
 }

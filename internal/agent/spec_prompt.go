@@ -51,7 +51,7 @@ const taskExecutionInvariants = `Execution invariants:
 const qaGateContract = `QA contract:
 - Run every command in the foreground and wait for it to exit; never end the turn while a command you started is still running. The end of the turn is the end of the gate.
 - Run the qa-gate process for this Spec. Each numbered qa Task Requirement that starts with MUST verify or MUST run is a declared verification Requirement, and the declared Requirements with the non-waivable sources are the coverage sources; otherwise the coverage sources are the PRD user stories and Goals, each non-QA Task's Acceptance Criteria and the declared intentional breaks.
-- The non-waivable sources are the outside-evidence row, the Pull Request row, the repository Verification, each PRD Unreachable Acceptance declaration and, when the PRD declares frontend, the frontend sweep.
+- The non-waivable sources are the outside-evidence row, the Pull Request row, the repository Verification, each criterion a PRD Unreachable Acceptance declaration names and, when the PRD declares frontend, the frontend sweep.
 - Every row names in its provenance the sources it covers; every source appears in at least one row, and no row covers anything else.
 - Once the matrix exists, a finding blocks only the rows that depend on it; every other row still runs.
 - A seeded row whose status is carried (established by: …; head: …) is not executed again: keep its identifier, status and provenance, and count it as passed. Execute every other row; the seeded Row carry-forward section names why each prior row re-runs.

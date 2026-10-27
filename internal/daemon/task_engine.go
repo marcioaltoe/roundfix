@@ -2494,6 +2494,19 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 	return filterStageablePaths(ctx, workDir, paths, nil)
 }
 
+// UnauthorizedExecutables reports executable files the Task stage filter refuses
+// under the resolved Spec authorization. Other stage-filter drops are omitted.
+func UnauthorizedExecutables(ctx context.Context, workDir string, paths []string, resolution spec.AuthorizationResolution) []DroppedStagePath {
+	_, dropped := filterStageablePaths(ctx, workDir, paths, authorizedExecutables(resolution))
+	var executables []DroppedStagePath
+	for _, drop := range dropped {
+		if drop.Reason == executableStagePathReason {
+			executables = append(executables, drop)
+		}
+	}
+	return executables
+}
+
 func authorizedExecutables(resolution spec.AuthorizationResolution) map[string]bool {
 	if resolution.Outcome != spec.AuthorizationGranted {
 		return nil

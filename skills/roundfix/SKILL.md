@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.152
+  version: 0.1.156
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.152
+version: 0.1.156
 ---
 
 # Roundfix
@@ -200,13 +200,8 @@ synchronization, or build failure blocks settlement.
 
 ### Settlement Checks
 
-Settlement Checks apply to every non-QA Task in a Task Graph, with or without a
-QA gate. The repository Verification runs for every such Task. The two
-in-process checks run only in a graph with an authored QA gate Task. A Run
-without a QA gate also runs the Integrated Repository Verification under the
-conditions in API Contract 5 and ends `Unresolved` with the API Contract 6
-failure line when it fails. They run in this order when the Daemon settles the
-Task:
+Settlement Checks apply to every non-QA Task in a Task Graph that has an
+authored QA gate Task. They run in this order when the Daemon settles the Task:
 
 1. The repository Verification runs at settlement as the attempt's last
    command when `verification.repository_at_settlement` is enabled.
@@ -216,8 +211,7 @@ Task:
    against the frozen authorization record.
 
 Both in-process checks run after the attempt's commands, whatever their
-result, and before the attempt's verdict, only when the graph has an authored
-QA gate.
+result, and before the attempt's verdict.
 
 A failed check returns its diagnostics as Verification Feedback for the one
 repair turn. If the final attempt still fails, the Task settles `failed`. The

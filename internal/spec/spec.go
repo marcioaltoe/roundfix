@@ -180,6 +180,7 @@ type Graph struct {
 // the reach of any hermetic Verification before the gate ran.
 type UnreachableDeclaration struct {
 	Criterion   string
+	Criteria    []string
 	Reason      string
 	SatisfiedBy string
 	Line        int
@@ -326,7 +327,7 @@ func (builder *unreachableDeclarationBuilder) readField(line string) bool {
 	field := strings.TrimSpace(label)
 	switch field {
 	case "criterion":
-		builder.declaration.Criterion = strings.TrimSpace(value)
+		builder.declaration.Criteria = append(builder.declaration.Criteria, strings.TrimSpace(value))
 	case "reason":
 		builder.declaration.Reason = strings.TrimSpace(value)
 	case "satisfied-by":
@@ -348,7 +349,7 @@ func (builder *unreachableDeclarationBuilder) appendContinuation(line string) {
 	}
 	switch builder.activeField {
 	case "criterion":
-		appendValue(&builder.declaration.Criterion)
+		appendValue(&builder.declaration.Criteria[len(builder.declaration.Criteria)-1])
 	case "reason":
 		appendValue(&builder.declaration.Reason)
 	case "satisfied-by":
@@ -358,8 +359,13 @@ func (builder *unreachableDeclarationBuilder) appendContinuation(line string) {
 
 func (builder *unreachableDeclarationBuilder) finish(prdPath string) (UnreachableDeclaration, error) {
 	missing := ""
+	for _, criterion := range builder.declaration.Criteria {
+		if criterion == "" {
+			missing = "criterion"
+		}
+	}
 	switch {
-	case builder.declaration.Criterion == "":
+	case len(builder.declaration.Criteria) == 0 || missing != "":
 		missing = "criterion"
 	case builder.declaration.Reason == "":
 		missing = "reason"
@@ -373,6 +379,7 @@ func (builder *unreachableDeclarationBuilder) finish(prdPath string) (Unreachabl
 			Field: missing,
 		}
 	}
+	builder.declaration.Criterion = builder.declaration.Criteria[0]
 	return builder.declaration, nil
 }
 

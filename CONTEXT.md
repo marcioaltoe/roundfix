@@ -66,7 +66,7 @@ A non-QA Task between a contract-changing Task and the QA gate whose Verificatio
 _Avoid_: Final QA, follow-up task
 
 **Authorized Executable**:
-A path the Spec's `_authorization.md` lists under `executables`, which a Task commit keeps with its execute bit; the list comes from the authorization the Run resolved at start. A QA Report or Batch commit never keeps an untracked executable ([ADR-0340](docs/adr/0340-an-untracked-executable-rides-a-task-commit-only-when-the-spec-authorization-names-it.md)).
+A path the Spec's `_authorization.md` lists under `executables`, which a Task commit keeps with its execute bit; the list comes from the authorization the Run resolved at start. A settle commit keeps the same paths. A QA Report or Batch commit never keeps an untracked executable ([ADR-0340](docs/adr/0340-an-untracked-executable-rides-a-task-commit-only-when-the-spec-authorization-names-it.md)).
 _Avoid_: Executable allowlist, approved script, build artifact exemption
 
 **Run**:
@@ -307,7 +307,7 @@ Evidence for at least one named acceptance row that originates outside the Spec'
 _Avoid_: Self-authored rehearsal, internal fixture, passing suite
 
 **Unreachable Acceptance**:
-The `## Unreachable Acceptance` declaration a Spec authors with its QA rows, naming each acceptance row whose evidence needs the network, an open pull request or a credential the repository cannot hold. A row blocked for a declared reason can still qualify a declared `partial`; the pre-PR pull request row, a Network-Denied Row and a Network-Prohibited Row need no declaration.
+The `## Unreachable Acceptance` declaration a Spec authors with its QA rows, naming each acceptance row whose evidence needs the network, an open pull request or a credential the repository cannot hold. A row blocked for a declared reason can still qualify a declared `partial`; the pre-PR pull request row, a Network-Denied Row and a Network-Prohibited Row need no declaration. One declaration may name several criteria; each is its own QA row. A declared-blocked row matches the criterion by its text or leading label; the declaration count remains the fallback for reports accepted before this rule (ADR-0343).
 _Avoid_: Skipped row, waived criterion, known limitation
 
 **ACP Runtime**:
@@ -497,7 +497,7 @@ A Run started with the detach flag: roundfix re-executes itself as a session lea
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
-The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome or after settle integrates it, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
+The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome or after settle integrates it, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees; settle fast-forwards it to the Run's branch when that branch changed the Spec folder.
 _Avoid_: Sandbox, scratch dir, user checkout
 
 **Worktree Root**:
@@ -758,6 +758,7 @@ The command that executes a Spec's Task Graph by running Agents over its Tasks i
 _Avoid_: Run command, execute command, spec command
 
 **Settle Command**:
+It runs from the user checkout.
 The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it names each worktree it removes on stderr, creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
 
