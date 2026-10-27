@@ -2,6 +2,36 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.126.0] - 2026-10-27
+
+### The skills lock describes what is installed
+
+- **`baseline update` and `skills install --target project` rewrite the `computedHash` of each Roundfix-owned skill they install** in an existing `skills-lock.json`, keeping `source`, `ref`, every other field and the key order; no entry or lock is created. The result reports `skills.lockUpdated` and prints `Skills lock updated: <count>` followed by one `- lock updated <name>` line per name (reported by quaestor).
+
+### A Run without a QA gate does not end Clean with the repository red
+
+- **The repository Verification runs at settlement for every Task, with or without a QA gate** (`verification.repository_at_settlement`, on by default; `defaults.verification` is `make verify` unless configured). The Spec Consistency and authorization checks still run only in a graph with a QA gate.
+- **A Run without a QA gate checks its integrated tree once before Clean** (Integrated Repository Verification) when Task Capacity is above one and two or more Tasks completed; a failure ends the Run `Unresolved` and names the command and its diagnostics file (reported by quaestor).
+
+### Settle follows the branch's plan and the Task commit's rules
+
+- **`roundfix settle` refuses to run inside a Run or Task Worktree** and names the checkout recorded for the Run.
+- **Settle reads the current plan:** a kept Run Worktree the branch is ahead of is fast-forwarded and reloaded (`Run Worktree advanced: …`); a diverged branch or an overlapping change is refused with the files named (reported by quaestor).
+- **Settle applies the Task commit's executable rule:** an untracked executable is committed only when the Spec's authorization lists it under `executables`; a tracked file whose mode changes is committed by both.
+
+### A declared QA row matches the criterion it names
+
+- **One `## Unreachable Acceptance` declaration may name several criteria**, and `roundfix qa-report accept`, settlement and archive match each declared-blocked row to a criterion a declaration names. Every report accepted before is still accepted; a refusal names each unmatched row. `write-prd` and `qa-gate` say each criterion becomes its own QA row (reported by quaestor).
+
+### A profile proof under load does not park the work
+
+- **A profile proof whose disposable session answered passes when only its close fails**, with one warning. The unclosed session is recorded under `~/.roundfix/unclosed-proof-sessions/` (no environment values) and the next proof of that runner closes recorded sessions first. A session that never answered still fails.
+- The close shares the attempt's Proof Setup Deadline instead of a fixed five seconds, a timed-out step is named as `profile proof step "<step>"`, and only a setup deadline counts as a proof timeout (reported by vortex).
+
+### Tests
+
+- The Roundfix skill is at version 0.1.158.
+
 ## [0.125.0] - 2026-10-27
 
 ### Runs keep the disk from filling
