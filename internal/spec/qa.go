@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 
@@ -36,6 +37,16 @@ const (
 	QANetworkDeniedStatusPrefix = "blocked (environment: network denied: "
 	QANetworkProhibitedStatus   = "blocked (environment: network prohibited by Spec authorization)"
 	QAOutsideEvidenceRowSource  = "outside-evidence row"
+)
+
+// The Network-Prohibited Row's status form: the prefix, a subject that names
+// what the Spec's own authorization forbids, and the fixed suffix. The
+// canonical status QANetworkProhibitedStatus is this form with the subject
+// "network".
+const (
+	QAProhibitedStatusPrefix    = "blocked (environment: "
+	QAProhibitedStatusSuffix    = " prohibited by Spec authorization)"
+	QAProhibitedSubjectMaxRunes = 80
 )
 
 // The terminal row a gate writes when it refuses at a precondition check. The
@@ -675,10 +686,9 @@ func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkP
 					if status == QANoOpenPullRequestStatus && qaReportProvenanceNames(provenance, QAPullRequestRowSource) {
 						prePullRequest++
 					}
-					if status == QANetworkProhibitedStatus && qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
+					if _, ok := qaProhibitedRowSubject(status); ok && qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
 						networkProhibited++
-					}
-					if strings.HasPrefix(status, QANetworkDeniedStatusPrefix) && strings.HasSuffix(status, ")") &&
+					} else if strings.HasPrefix(status, QANetworkDeniedStatusPrefix) && strings.HasSuffix(status, ")") &&
 						strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(status, QANetworkDeniedStatusPrefix), ")")) != "" &&
 						qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
 						networkDenied++
@@ -689,6 +699,20 @@ func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkP
 		}
 	}
 	return prePullRequest, networkDenied, networkProhibited, skipped
+}
+
+// qaProhibitedRowSubject returns the subject of a status in the
+// Network-Prohibited Row's form: non-empty after trimming, at most
+// QAProhibitedSubjectMaxRunes Unicode code points, and free of parentheses.
+func qaProhibitedRowSubject(status string) (string, bool) {
+	if !strings.HasPrefix(status, QAProhibitedStatusPrefix) || !strings.HasSuffix(status, QAProhibitedStatusSuffix) {
+		return "", false
+	}
+	subject := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(status, QAProhibitedStatusPrefix), QAProhibitedStatusSuffix))
+	if subject == "" || utf8.RuneCountInString(subject) > QAProhibitedSubjectMaxRunes || strings.ContainsAny(subject, "()") {
+		return "", false
+	}
+	return subject, true
 }
 
 func qaReportProvenanceNames(provenance, source string) bool {

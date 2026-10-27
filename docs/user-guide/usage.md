@@ -280,9 +280,11 @@ failures use normal Task or Run failure semantics. A Lost Rollout gets no
 repair: the Task continues in a new Agent Session, using the next Fallback
 Selection before the First Handoff or while a QA report is pending, and the
 same selection otherwise. A Provider System Error lets the next Fallback
-Selection take the Task under the same condition, gets no retry on the same
-selection, does not count toward the Lost Rollout budget, and otherwise settles
-the Task as runtime infrastructure. Each Agent Session owner can recover at
+Selection take the Task in any Task or QA turn, a repair turn after the First
+Handoff and a QA turn that already wrote a verdict included, gets no retry on
+the same selection, does not count toward the Lost Rollout budget, and settles
+the Task as runtime infrastructure only when the chain has no next selection.
+Each Agent Session owner can recover at
 most twice from Lost Rollouts; the third Lost Rollout settles the Task as
 runtime infrastructure.
 
@@ -298,9 +300,12 @@ A Provider System Error recovery is recorded as a `daemon.task` event with
 phase `provider_system_error`. Its payload includes `scope_kind`, `scope_id`,
 `selection`, `detail`, `recovery` (`fallback` or `exhausted`),
 `next_selection` for a fallback, and `retry_spent: false`. A QA fallback adds
-`- provider_system_error: <selection>: <detail>`, `- fallback: <next selection>`
-and `- retry_spent: false` to the seeded report's `## Agent runtime fallback`
-section.
+`- provider_system_error: <selection>: <detail>`,
+`- discarded_verdict: <verdict>` when the failed turn wrote a verdict other
+than `pending`, `- fallback: <next selection>` and `- retry_spent: false` to
+the seeded report's `## Agent runtime fallback` section. Before the fallback
+session starts, a report with a written verdict is reopened by rewriting its
+`verdict:` line to `pending`.
 
 When a QA turn returns with its seeded report still at `verdict: pending` after
 starting an Agent Background Task, the Run Event is `daemon.task` with phase

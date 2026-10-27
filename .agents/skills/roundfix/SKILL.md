@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.145
+  version: 0.1.146
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.145
+version: 0.1.146
 ---
 
 # Roundfix
@@ -96,12 +96,15 @@ The same outcome settles the authored `qa` Task and determines what the archive 
 ### Rows the Spec's authorization keeps offline
 
 The qualifying declared `partial` above also accepts an outside-evidence row
-the gate did not look up because the Spec's own authorization forbids network
-access, recorded as `blocked (environment: network prohibited by Spec authorization)`
-with the outside-evidence row named in its provenance. Like the network-denied
-row, it never decides a qualifying partial and needs no Unreachable Acceptance
-declaration, and settlement, `roundfix qa-report accept` and `roundfix archive`
-read it through the same policy (ADR-0276).
+the gate did not look up because the Spec's own authorization forbids that
+lookup, recorded as `blocked (environment: <subject> prohibited by Spec authorization)`
+with the outside-evidence row named in its provenance. The subject names what
+the authorization forbids, in its words: `network` for a network lookup, or
+`another repository`; it is 1 to 80 characters and holds no parenthesis. Like
+the network-denied row, it never decides a qualifying partial and needs no
+Unreachable Acceptance declaration, a row counts toward one exempt kind at
+most, and settlement, `roundfix qa-report accept` and `roundfix archive` read
+it through the same policy (ADR-0276, ADR-0335).
 
 ## Context-Efficient Evidence Boundaries
 

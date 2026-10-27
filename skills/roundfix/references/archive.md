@@ -53,9 +53,11 @@ row named in its provenance, and the outside-evidence row, recorded as
 `blocked (environment: network denied: <host>)` with the outside-evidence row
 named in its provenance, never decide a qualifying partial and need no
 Unreachable Acceptance declaration. So does an outside-evidence row the gate
-did not look up because the Spec's own authorization forbids network access,
-recorded as `blocked (environment: network prohibited by Spec authorization)`
-with the outside-evidence row named in its provenance (ADR-0276). Any other
+did not look up because the Spec's own authorization forbids that lookup,
+recorded as `blocked (environment: <subject> prohibited by Spec authorization)`
+with the outside-evidence row named in its provenance, where the subject names
+what the authorization forbids in 1 to 80 characters without parentheses
+(ADR-0276, ADR-0335). Any other
 blocked outside-evidence row still blocks Pull Request preparation. Settlement and archive both apply this
 same policy. A `fail`, an
 undeclared `partial`, a missing or unparseable

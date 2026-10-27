@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.20
+  version: 0.0.21
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.20
+version: 0.0.21
 ---
 
 # QA Gate
@@ -76,12 +76,15 @@ The same outcome settles the authored `qa` Task and determines what the archive 
 ### Rows the Spec's authorization keeps offline
 
 The qualifying declared `partial` above also accepts an outside-evidence row
-the gate did not look up because the Spec's own authorization forbids network
-access, recorded as `blocked (environment: network prohibited by Spec authorization)`
-with the outside-evidence row named in its provenance. Like the network-denied
-row, it never decides a qualifying partial and needs no Unreachable Acceptance
-declaration, and settlement, `roundfix qa-report accept` and `roundfix archive`
-read it through the same policy (ADR-0276).
+the gate did not look up because the Spec's own authorization forbids that
+lookup, recorded as `blocked (environment: <subject> prohibited by Spec authorization)`
+with the outside-evidence row named in its provenance. The subject names what
+the authorization forbids, in its words: `network` for a network lookup, or
+`another repository`; it is 1 to 80 characters and holds no parenthesis. Like
+the network-denied row, it never decides a qualifying partial and needs no
+Unreachable Acceptance declaration, a row counts toward one exempt kind at
+most, and settlement, `roundfix qa-report accept` and `roundfix archive` read
+it through the same policy (ADR-0276, ADR-0335).
 
 ## 1. Resolve scope and preconditions
 
@@ -413,12 +416,15 @@ the Spec's own premise. When the Run sandbox denies network access to the
 lookup, record the row as `blocked (environment: network denied: <host>)`, naming
 the host the lookup tried, and keep an `outside-evidence row` item in its
 provenance. This records that the source was not reached and never decides a
-qualifying partial. When the Spec's own `_authorization.md` forbids network
-access, do not attempt the lookup: record the row exactly as
-`blocked (environment: network prohibited by Spec authorization)`, keep an
-`outside-evidence row` item in its provenance, and name in the report the
-authorization text that forbids it. It never decides a qualifying partial
-either (ADR-0276). A source the row can check offline, such as a passage the
+qualifying partial. When the Spec's own `_authorization.md` forbids that
+lookup, do not attempt it: record the row as
+`blocked (environment: <subject> prohibited by Spec authorization)`, where
+`<subject>` names what the authorization forbids in its words, such as
+`network` for a network lookup, is 1 to 80 characters, and holds no
+parenthesis. Keep an `outside-evidence row` item in its provenance and name in
+the report the authorization text that forbids it. It never decides a
+qualifying partial either (ADR-0276, ADR-0335). A source the row can check
+offline, such as a passage the
 PRD quotes or a document under `docs/references/`, is checked, never
 blocked. Any other blocked outside-evidence row still blocks Pull
 Request preparation. Count every blocked outside-evidence row in
@@ -648,9 +654,12 @@ The gate permits Pull Request preparation on `pass`, or on a qualifying declared
   record `blocked (environment: network denied: <host>)` with the attempted
   host and an `outside-evidence row` provenance item when the Run sandbox denied
   network access; this records that the source was not reached and never decides
-  a qualifying partial. When the Spec's own authorization forbids network access,
-  record `blocked (environment: network prohibited by Spec authorization)` with
-  the same provenance item instead; it never decides a qualifying partial either.
+  a qualifying partial. When the Spec's own authorization forbids that lookup,
+  record `blocked (environment: <subject> prohibited by Spec authorization)`;
+  `<subject>` names what the authorization forbids in its words, such as
+  `network` for a network lookup, is 1 to 80 characters, and holds no
+  parenthesis. Keep the same provenance item and name the authorization text in
+  the report; it never decides a qualifying partial either.
   Any other blocked outside-evidence row still blocks Pull
   Request preparation. Count it in `rows_blocked_environment` — never substitute
   a rehearsal the Spec authored.
