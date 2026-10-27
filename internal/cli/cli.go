@@ -247,6 +247,7 @@ type commandDependencies struct {
 	getenv                          func(string) string
 	environ                         func() []string
 	tempDir                         func() string
+	availableBytes                  func(string) (int64, error)
 	auditor                         func() app.AuditingBinary
 	deliveryReadiness               func(context.Context, roundconfig.Loaded) []CheckResult
 	judgeTransport                  http.RoundTripper
@@ -317,10 +318,11 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
-		getenv:  os.Getenv,
-		environ: os.Environ,
-		tempDir: os.TempDir,
-		auditor: app.Auditor,
+		getenv:         os.Getenv,
+		environ:        os.Environ,
+		tempDir:        os.TempDir,
+		availableBytes: store.AvailableBytes,
+		auditor:        app.Auditor,
 		deliveryReadiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
 			return forgeReadiness(ctx, readinessDependenciesForCommand(commandDependenciesForContext(ctx)), loaded)
 		},

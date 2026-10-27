@@ -170,6 +170,31 @@ Each entry names its path template, kind, maximum size and idle window. GC
 trims a declared Shared Build Cache above its limit by removing only cache
 entries no build used for the declared idle time, oldest first.
 
+### Automatic trims
+
+Roundfix also trims every declared Shared Build Cache by itself, with the
+rules above: at the start of every Implement Run, after the Run is recorded
+and before its Run Worktree exists, and before each repository gate of the
+Delivery Queue. One budget of thirty seconds covers all declared caches at
+each trigger; when it runs out, the trim keeps what it removed and the next
+trigger continues. A refusal, an error or the end of the budget never fails,
+parks or delays the Run or the gate beyond the budget. Each Implement Run
+records one `daemon.status` Run Event per declared cache whose payload holds
+`event: shared_cache_trim`, `trigger: run_start`, `path`, `outcome`
+(`trimmed`, `unchanged`, `kept`, `failed` or `stopped`), `size_bytes`,
+`limit_bytes`, `removed_entries`, `removed_bytes` and, when there is one,
+`cause`. A trim that removed entries, failed or stopped also writes a line,
+on standard error at Run start and in the Queue Owner's log at the gate:
+
+```text
+roundfix: [prefix]Shared Build Cache <path>: removed <n> idle entries (<bytes> bytes) P
+roundfix: [prefix]Shared Build Cache <path>: trim stopped after its <budget> budget P; removed <n> idle entries (<bytes> bytes); the next trim continues
+roundfix: warning: [prefix]Shared Build Cache <path>: trim failed P: <cause>; C
+```
+
+Without a declared cache nothing runs and no line or event is written.
+`roundfix gc` still trims on demand (ADR-0334).
+
 ## Item Binaries
 
 After the Worktree Build Cache section, GC scans

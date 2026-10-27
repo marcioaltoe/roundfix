@@ -20,21 +20,23 @@ import (
 var gcDeps = defaultGCDependencies()
 
 type gcDependencies struct {
-	loadConfig        func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	openStore         func(context.Context, string) (*store.Store, error)
-	openStoreReader   func(context.Context, string) (*store.Store, error)
-	openStorageReader func(context.Context, string) (*store.Store, error)
-	previewCompaction func(context.Context, *store.Store) (store.CompactionPreview, error)
-	compact           func(context.Context, *store.Store, store.CompactionPreview) (store.CompactionResult, error)
-	now               func() time.Time
+	sharedCacheTrimBudget time.Duration
+	loadConfig            func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	openStore             func(context.Context, string) (*store.Store, error)
+	openStoreReader       func(context.Context, string) (*store.Store, error)
+	openStorageReader     func(context.Context, string) (*store.Store, error)
+	previewCompaction     func(context.Context, *store.Store) (store.CompactionPreview, error)
+	compact               func(context.Context, *store.Store, store.CompactionPreview) (store.CompactionResult, error)
+	now                   func() time.Time
 }
 
 func defaultGCDependencies() gcDependencies {
 	return gcDependencies{
-		loadConfig:        roundconfig.Load,
-		openStore:         store.Open,
-		openStoreReader:   store.OpenReader,
-		openStorageReader: store.OpenStorageReader,
+		sharedCacheTrimBudget: 30 * time.Second,
+		loadConfig:            roundconfig.Load,
+		openStore:             store.Open,
+		openStoreReader:       store.OpenReader,
+		openStorageReader:     store.OpenStorageReader,
 		previewCompaction: func(ctx context.Context, runStore *store.Store) (store.CompactionPreview, error) {
 			return runStore.PreviewCompaction(ctx)
 		},

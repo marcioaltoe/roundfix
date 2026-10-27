@@ -37,6 +37,7 @@ const (
 	HealthCheckSkills          = "skills"
 	HealthCheckResidue         = "residue"
 	HealthCheckStorage         = "storage"
+	HealthCheckDiskSpace       = "disk-space"
 	HealthCheckLinuxLane       = "linux-lane"
 	HealthCheckCodex           = "codex"
 )

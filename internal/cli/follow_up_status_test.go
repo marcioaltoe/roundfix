@@ -204,7 +204,7 @@ func TestFollowUpStatusReportsTheNextRelease(t *testing.T) {
 					wantState, wantVersion = "manual_classification_required", ""
 				}
 				sha := strings.TrimSpace(gitImplementOutput(t, f.repo, "rev-parse", "HEAD"))
-				if doc.Release.State != wantState || doc.Release.Base != "v0.4.1" || doc.Release.ProposedVersion != wantVersion || doc.Release.Reason != nil || len(doc.Release.Changes) != 1 || doc.Release.Changes[0].Subject != subject || doc.Release.Changes[0].Commit != sha || !strings.Contains(out, " "+subject+"\n") {
+				if doc.Release.State != wantState || doc.Release.Base != "v0.4.1" || doc.Release.ProposedVersion != wantVersion || (doc.Release.Reason != nil) != (mode == "manual") || len(doc.Release.Changes) != 1 || doc.Release.Changes[0].Subject != subject || doc.Release.Changes[0].Commit != sha || !strings.Contains(out, " "+subject+"\n") {
 					t.Fatalf("release=%+v text=%s", doc.Release, out)
 				}
 				switch mode {
@@ -213,7 +213,7 @@ func TestFollowUpStatusReportsTheNextRelease(t *testing.T) {
 						t.Fatalf("doc=%+v text=%s", doc, out)
 					}
 				case "manual":
-					if doc.State != "work_found" || len(doc.Maintainer) != 1 || doc.Maintainer[0].Kind != "release_classification" || !strings.Contains(out, "manual classification") {
+					if doc.State != "work_found" || len(doc.Maintainer) != 1 || doc.Maintainer[0].Kind != "release_classification" || !strings.Contains(out, "manual release classification") {
 						t.Fatalf("doc=%+v text=%s", doc, out)
 					}
 				case "maintenance":
@@ -227,6 +227,45 @@ func TestFollowUpStatusReportsTheNextRelease(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFollowUpStatusNamesTheManualClassification(t *testing.T) {
+	t.Parallel()
+	f := newFollowUpFixture(t)
+	gitImplement(t, f.repo, "tag", "v0.4.1")
+	for i, subject := range []string{"feat: expose widget status", "chore: change widget behavior", "chore: change widget storage"} {
+		followUpWrite(t, f.repo, fmt.Sprintf("internal/widget%d.go", i), "widget change\n")
+		gitImplement(t, f.repo, "add", ".")
+		gitImplement(t, f.repo, "commit", "-m", subject)
+	}
+
+	doc := followUpStatusJSON(t)
+	const reason = "2 commit(s) since v0.4.1 need a manual release classification"
+	const detail = "classify them with roundfix release plan --from v0.4.1 --to HEAD --impact <none|patch|minor|major> --reason <text>"
+	if doc.Release.State != "manual_classification_required" || doc.Release.Base != "v0.4.1" || doc.Release.ProposedVersion != "" || doc.Release.Reason == nil || *doc.Release.Reason != reason || len(doc.Release.Changes) != 3 {
+		t.Errorf("release=%+v, want manual classification with reason %q and three changes", doc.Release, reason)
+	}
+	wantMaintainer := []followUpMaintainer{{Kind: "release_classification", Detail: detail}}
+	if !reflect.DeepEqual(doc.Maintainer, wantMaintainer) {
+		t.Errorf("maintainer=%+v, want %+v", doc.Maintainer, wantMaintainer)
+	}
+	out, stderr, code := followUpRunCLI(t, "--status")
+	if code != 0 || stderr != "" {
+		t.Fatalf("exit=%d stderr=%q stdout=%s", code, stderr, out)
+	}
+	for _, want := range []string{
+		"\nNext release: not proposed (manual_classification_required): " + reason + "\n",
+		"\nWaiting on the maintainer: 1\n  release classification: " + detail + "\nSources:\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("stdout=%s, want %q", out, want)
+		}
+	}
+	for _, blank := range []string{"Next release:  ", "  release : "} {
+		if strings.Contains(out, blank) {
+			t.Errorf("stdout contains blank version %q: %s", blank, out)
+		}
 	}
 }
 

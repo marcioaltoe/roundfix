@@ -473,7 +473,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
 | `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
 | `worktree.caches` | `[]` | Declares rebuildable directories of ended worktrees for Doctor and GC. |
-| `worktree.shared_caches` | `[]` | Declares shared build caches for GC to trim above their size limits. |
+| `worktree.shared_caches` | `[]` | Declares shared build caches for GC, each Implement Run start and the queue's repository gate to trim above their size limits. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
@@ -1051,3 +1051,7 @@ above its limit when too few entries are idle.
 Use `roundfix gc --dry-run` to preview without writing; `roundfix gc` applies
 the trim. See [GC](commands/gc.md#shared-build-caches) for the report and
 refusal behavior.
+
+The start of every Implement Run and every repository gate of the Delivery
+Queue apply the same trim by themselves under a thirty-second budget; see
+[GC](commands/gc.md#automatic-trims).

@@ -240,6 +240,9 @@ A path the Daemon records under a Task file's `## Recorded paths` section when
 the Task changed it without declaring it. The QA scope audit counts it as
 declared and names it in the scope row; recording discloses a change and
 reserves nothing, while a Governed Path still needs its authorization.
+Its settlement commit is still collision evidence: two Tasks of one Wave that
+each change the same Recorded Path make the QA gate's precondition refuse with
+`SC-WAVE-COLLISION`, so a file two Tasks may each change is declared by both.
 _Avoid_: Declared path, reserved path, authorized path
 
 **Task Type**:
@@ -1104,9 +1107,11 @@ _Avoid_: Run artifacts, shared build cache
 
 **Shared Build Cache**:
 A build cache several worktrees share outside any one of them, declared in
-`worktree.shared_caches`; the GC Command trims it above its declared size by
+`worktree.shared_caches`; the GC Command, the start of every Implement Run and
+the Delivery Queue's repository gate trim it above its declared size by
 removing only cache entries no build used for the declared idle time, oldest
-first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md)).
+first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md),
+[ADR-0334](docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md)).
 _Avoid_: global cache, Go cache cleanup, cache GC
 
 **Item Binary**:
