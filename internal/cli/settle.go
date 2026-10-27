@@ -36,6 +36,10 @@ Event Journal entries, and never pushes.
 After a successful integration, settle removes the kept Task Worktree and Run
 Worktree it integrated and names each on stderr.
 
+Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
+Refusal (exit 2):
+  settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
+
 Options:
   --spec  Spec slug under docs/specs/
   --task  Task id from the Spec Task Graph
@@ -272,6 +276,13 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 	if err != nil {
 		return settlePlan{}, validationError{message: fmt.Sprintf("repository resolves: %v", err)}
 	}
+	if strings.HasPrefix(gitState.Branch, store.RunBranchPrefix) {
+		checkout, err := settleUserCheckout(ctx, loadedConfig.HomeDir, gitState.Root, gitState.Branch)
+		if err != nil {
+			return settlePlan{}, validationError{message: fmt.Sprintf("resolve settle user checkout: %v", err)}
+		}
+		return settlePlan{}, validationError{message: fmt.Sprintf("settle runs from the user checkout, not from %s on branch %s; run it from %s: roundfix settle --spec %s --task %s", gitState.Root, gitState.Branch, checkout, req.specSlug, req.taskID)}
+	}
 	plan := settlePlan{
 		userRoot:     gitState.Root,
 		workDir:      gitState.Root,
@@ -351,6 +362,33 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 		return settlePlan{}, validationError{message: err.Error()}
 	}
 	return plan, nil
+}
+
+// settleUserCheckout reads the exact Run named by either a Run or Task Branch.
+// Without that record, Git's main worktree is the recovery destination.
+func settleUserCheckout(ctx context.Context, homeDir, root, branch string) (string, error) {
+	if _, err := os.Stat(store.DatabasePath(homeDir)); err == nil {
+		reader, err := store.OpenReader(ctx, homeDir)
+		if err != nil {
+			return "", fmt.Errorf("open Run Database: %w", err)
+		}
+		defer func() { _ = reader.Close() }()
+		runID, _, _ := strings.Cut(strings.TrimPrefix(branch, store.RunBranchPrefix), "-task_")
+		run, found, err := reader.Run(ctx, runID)
+		if err != nil {
+			return "", fmt.Errorf("read Run %s: %w", runID, err)
+		}
+		if found && strings.TrimSpace(run.GitRoot) != "" {
+			return run.GitRoot, nil
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("inspect Run Database: %w", err)
+	}
+	roots, err := roundconfig.RepositoryRoots(root)
+	if err != nil {
+		return "", fmt.Errorf("find repository roots: %w", err)
+	}
+	return roots[0], nil
 }
 
 func readSettleAuthorization(ctx context.Context, plan settlePlan) spec.AuthorizationResolution {

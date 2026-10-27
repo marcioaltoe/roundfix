@@ -752,6 +752,7 @@ The command that executes a Spec's Task Graph by running Agents over its Tasks i
 _Avoid_: Run command, execute command, spec command
 
 **Settle Command**:
+It runs from the user checkout.
 The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it names each worktree it removes on stderr, creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
 

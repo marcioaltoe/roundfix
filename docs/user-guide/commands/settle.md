@@ -1,5 +1,12 @@
 ### settle
 
+Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
+It exits `2` before writing anything, with this refusal:
+
+```text
+settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
+```
+
 ```bash
 roundfix settle --spec <slug> --task <task_id>
 ```
@@ -11,7 +18,8 @@ picks the first candidate, in that order, **where the task file is actually
 — the state a refusing commit hook leaves behind, where the Daemon settled the
 Task after its Verification passed and the commit never landed. A `completed`
 Task whose surfaces are all clean was committed already and settles nothing.
-Settle always reports the choice on stderr as `Settle surface: <path>`; when no
+After accepting the user checkout, settle reports the choice on stderr as
+`Settle surface: <path>`; when no
 candidate qualifies, the refusal names each candidate path, the status found
 there, and `no uncommitted work` for a surface that holds none. It re-runs the
 Task's Verification commands in the selected tree — verbatim, in task file

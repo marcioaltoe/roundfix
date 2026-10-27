@@ -32,6 +32,13 @@ neither stale nor above a proven Late Dependency.
 
 ## Settle Command
 
+Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
+It exits `2` before writing anything, with this refusal:
+
+```text
+settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
+```
+
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
 command for one Task whose completed work is already in a kept Task Worktree, a
 kept Run Worktree, or the current repository. Settle resolves that surface by

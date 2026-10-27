@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -103,3 +103,51 @@ and `spec-delivery` references, the `settle` guide and `CONTEXT.md`.
 - `_prd.md` → Goals 4 and 6; Core Features 4 and 6; Success Metrics 4 and 7; Glossary
 - `_techspec.md` → Current behavior 5; API Contracts 5 and 9; Declared breaks 3 and 6; Invariant 3; Testing Approach; Build Order 2
 - ADR-0343
+
+
+## Result
+
+Implemented the checkout guard immediately after Git inspection. A Run Branch
+or Task Branch refuses with exit 2 and the API Contract 5 recovery message.
+The branch's Run ID is cut before `-task_`; a read-only Run lookup supplies
+its recorded GitRoot, with RepositoryRoots' main worktree as the fallback
+when the database or record is absent. Surface selection and integration
+remain downstream of this guard.
+
+Acceptance evidence:
+
+- Run/Task Worktree refusal: the CLI tests assert exit 2, the recovery message
+  including the user checkout, empty stdout, unchanged HEAD, porcelain status
+  and Task file, and preservation of the Run Worktree. Additional subtests
+  prove a recorded linked checkout takes precedence over the main worktree,
+  an unknown Run falls back, and a missing database stays absent.
+- User checkout behavior: the CLI test settles the same failed Task from the
+  user checkout with exit 0, reports `Run Worktree removed:`, verifies removal
+  and reads the recovered file from the user checkout.
+- Written rule: added API Contract 9's exact sentence and refusal to usage,
+  both canonical references and the settle guide. Revised Settle Command
+  through domain-modeling with `It runs from the user checkout.` while
+  retaining its Avoid line. Generated mirrors match their canonical sources;
+  the version recorder raised both roundfix versions to 0.1.153. The Behavior
+  Surface fingerprint was regenerated after the final guide edit.
+
+Focused checks and regeneration:
+
+- Red check: `go test ./internal/cli -run '^TestSettleRefusesInsideTheRunWorktree$' -count=1 -timeout 3m`
+  reproduced exit 1 and `integration pending` before the implementation.
+- `go test ./internal/cli -run '^(TestSettleRefusesInside.*|TestSettleFromTheUserCheckout.*|TestSettleCheckoutRecordAndFallback)$' -count=1 -timeout 3m`
+  exited 0 after the final code edit, covering the three requested tests and
+  all record/fallback subtests.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and wrote the version pair and record through the sanctioned recorder.
+- `make baseline-digests` exited 0 with `changed:false`; no derived Baseline
+  file changed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 after the final guide edit.
+- `git diff --check` exited 0. Scope inspection found only Task 02's declared
+  paths, including its new test file; the pre-existing Task status was retained.
+
+Declared Verification and repository Verification remain unrun for the
+Daemon. No Task status, other Task, Task Graph, QA settlement section,
+Makefile or CI edit was made. No commit, push or Pull Request was made.
