@@ -305,18 +305,21 @@ type TaskOutcome struct {
 // to the working tree, empty when no report exists. TerminalOutcome and
 // TerminalReason identify a Run-budget end for the command that owns Run
 // settlement; they stay empty for every other Task-cycle result.
-// BudgetDeadline is the deadline in force at return, and BudgetRenewedBy names
-// the Task whose settlement established it. Both are empty when disabled.
+// IntegratedVerificationFailure names a red integrated Run tree without changing
+// the settled Tasks. BudgetDeadline is the deadline in force at return, and
+// BudgetRenewedBy names the Task whose settlement established it. Both are
+// empty when disabled.
 type TaskCycleResult struct {
-	Completed, Failed, Skipped int
-	QAVerdict                  string
-	QAAccepted                 bool
-	QAReportPath               string
-	Outcomes                   []TaskOutcome
-	TerminalOutcome            string
-	TerminalReason             string
-	BudgetDeadline             time.Time
-	BudgetRenewedBy            string
+	IntegratedVerificationFailure string
+	Completed, Failed, Skipped    int
+	QAVerdict                     string
+	QAAccepted                    bool
+	QAReportPath                  string
+	Outcomes                      []TaskOutcome
+	TerminalOutcome               string
+	TerminalReason                string
+	BudgetDeadline                time.Time
+	BudgetRenewedBy               string
 }
 
 type taskCycleBudget struct {
@@ -521,6 +524,13 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 	if err != nil {
 		return result, err
 	}
+	if qaTask == nil && plan.RepositoryVerificationAtSettlement && strings.TrimSpace(plan.RepositoryVerification) != "" &&
+		plan.Concurrency > 1 && result.Completed >= 2 && result.Failed == 0 && result.Skipped == 0 {
+		result.IntegratedVerificationFailure, err = engine.verifyIntegratedRepository(cycleCtx, plan, ordinal+1)
+		if err != nil {
+			return result, err
+		}
+	}
 	// QA step (ADR 0015, ADR 0091): a declared qa Task routes through the
 	// existing gate only after its graph dependencies have all completed.
 	// A blocked gate never enters the scheduler, so it stays pending and
@@ -552,6 +562,71 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 		return result, err
 	}
 	return result, nil
+}
+
+// verifyIntegratedRepository checks the Run tree after all Task integrations.
+// Its failure belongs to the Run; settled Tasks and Agent Sessions stay untouched.
+func (engine *Engine) verifyIntegratedRepository(ctx context.Context, plan TaskPlan, ordinal int) (string, error) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
+		return "", context.DeadlineExceeded
+	}
+	if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal); err != nil {
+		return "", err
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
+		return "", fmt.Errorf("update run %q before Integrated Repository Verification: %w", plan.RunID, err)
+	}
+	command := strings.TrimSpace(plan.RepositoryVerification)
+	path := filepath.Join(plan.ArtifactDir, "runs", plan.RunID, "verification", "integrated-repository.log")
+	request := verificationAttemptRequest{
+		RunID:                   plan.RunID,
+		WorkDir:                 plan.WorkDir,
+		ArtifactDir:             plan.ArtifactDir,
+		DiagnosticPath:          path,
+		BatchNumber:             ordinal,
+		Attempt:                 1,
+		Mode:                    verificationShared,
+		Capacity:                plan.VerificationConcurrency,
+		TemporaryRetryAvailable: true,
+		Commands:                []string{command},
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			return engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonVerification, summary, payload)
+		},
+	}
+	verifyCtx, finish := engine.watchStopRequest(ctx, plan.RunID)
+	outcome, err := engine.runTaskVerificationRequest(verifyCtx, plan, spec.Task{}, request)
+	if err == nil && outcome.TemporaryFailure != nil {
+		request.Retry = 1
+		request.Mode = verificationExclusive
+		request.TemporaryRetryAvailable = false
+		outcome, err = engine.runTaskVerificationRequest(verifyCtx, plan, spec.Task{}, request)
+	}
+	stopped := finish()
+	if stopped {
+		return "", ErrStopRequested
+	}
+	if err != nil {
+		return "", err
+	}
+	if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal); err != nil {
+		return "", err
+	}
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
+		return "", context.DeadlineExceeded
+	}
+	verdict := "passed"
+	failure := ""
+	if outcome.Failure != "" {
+		verdict = "failed"
+		failure = fmt.Sprintf("Integrated Repository Verification failed: %s; diagnostics: %s", command, path)
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonVerification,
+		fmt.Sprintf("Integrated Repository Verification %s: %s.", verdict, command),
+		map[string]any{"command": command, "diagnostic_path": path, "verdict": verdict},
+	); err != nil {
+		return "", err
+	}
+	return failure, nil
 }
 
 func (engine *Engine) taskCycleResultWithBudgetOutcome(plan TaskPlan, result TaskCycleResult, err error) (TaskCycleResult, error) {

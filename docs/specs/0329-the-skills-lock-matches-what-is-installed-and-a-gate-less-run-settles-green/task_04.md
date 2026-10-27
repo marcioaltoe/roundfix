@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -110,3 +110,64 @@ decision.
 - `_prd.md` → Goals; Core Feature 3; User Experience; Success Metric 5; Success Metric 6
 - `_techspec.md` → Current behavior 5; Interfaces; API Contract 5; API Contract 6; Invariants 3-6; Testing Approach; Build Order 4
 - ADR-0342
+
+## Result
+
+Implemented the integrated Run-tree check after the Task scheduler returns.
+The check requires every API Contract 5 condition, uses the Run Worktree and
+Verification Capacity gate, writes `verification/integrated-repository.log`,
+and retries exit `75` once with exclusive capacity. Its terminal
+`daemon_verification` event names the command and verdict. A red tree sets
+`TaskCycleResult.IntegratedVerificationFailure` without a Task repair turn
+or a Task-status change. Stop Requests and Run Budget expiry retain their
+existing terminal paths.
+
+The implement command reads that failure before integrating the Run Branch.
+It keeps the Run Worktree, records `Unresolved`, publishes the failure as the
+terminal completion reason, prints it before the terminal stderr line, and
+returns exit `1`.
+
+Acceptance evidence:
+
+- Parallel ungated graph: `TestIntegratedRepositoryVerificationRunsOnceAfterAParallelUngatedGraph`
+  observes both settlement events before the integrated verifier call, exactly
+  one extra repository command, the Run Worktree, diagnostics file, and success
+  event. The new CLI green test exercises two independent Tasks with Task
+  Capacity two and real disposable Git worktrees, then asserts Clean and exit zero.
+- Red integrated tree: `TestIntegratedRepositoryVerificationFailureLeavesTaskStatuses`
+  asserts the exact failure reason, both completed statuses on disk, the failure
+  event, and only two Agent requests. Its Tasks are dependency-ordered to avoid
+  the existing scheduler fake's whole-tree copy overwriting the first Task's
+  status. The CLI red test separately exercises independent parallel Tasks with
+  real disposable Git worktrees: both remain completed, the user's branch stays
+  unchanged, the Run Worktree stays present, exit is one, and stderr and the
+  terminal outcome event carry the reason.
+- Exclusions: `TestIntegratedRepositoryVerificationDoesNotRun` covers
+  `capacity-one`, `one-completed`, `failed-task`, `skipped-task`, `switch-off`,
+  `empty-command`, and `gated-graph`. Additional tests cover an exclusive retry
+  that succeeds, an exclusive retry that again exits `75` without a third call,
+  a durable Stop Request during verification, and Run Budget cancellation during
+  verification.
+
+Focused checks:
+
+- Before implementation, `go test -timeout 2m ./internal/daemon -run '^TestIntegratedRepositoryVerification' -count=1`
+  exited one because the new result field did not exist.
+- `go test -timeout 3m ./internal/daemon -run '^(TestIntegratedRepositoryVerification.*|TestUngatedGraph.*|TestRepository.*Settlement.*|TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands)$' -count=1`
+  exited zero on the final code (`ok roundfix/internal/daemon`, 1.945s).
+- `go test -timeout 10m ./internal/cli -run '^(TestImplement.*|TestRunImplement.*|TestAgentSelectionProfilesMacro|TestBudgetClockCrossesAfterTheSettledTask)$' -count=1`
+  exited zero on the final code (`ok roundfix/internal/cli`, 27.374s). This
+  selection includes the migrated implement fixtures; their existing assertions
+  needed no changes. An earlier run's tests passed but its suite guard rejected
+  a concurrent source edit; the recorded successful run used a stable tree.
+- `git diff --check` exited zero.
+
+The declared Verification command, selected repository Verification, and full
+package suites were not run in this child turn; the Daemon owns those gates.
+The pre-existing `status: in_progress` change remains untouched. No other Task,
+Task Graph, commit, push, or Pull Request was changed or created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T193605Z_00ac54bea6e5fdc9`
+- Source commit: `5ee76ace2e541a6cd5d2d8fe92484e6462c79fd3`
