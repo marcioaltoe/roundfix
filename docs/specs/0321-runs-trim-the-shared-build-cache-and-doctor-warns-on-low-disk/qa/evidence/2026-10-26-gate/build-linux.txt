@@ -1,2 +1,0 @@
-command: go build -buildvcs=false ./internal/store ./internal/sharedcache ./internal/cli
-exit: 0
