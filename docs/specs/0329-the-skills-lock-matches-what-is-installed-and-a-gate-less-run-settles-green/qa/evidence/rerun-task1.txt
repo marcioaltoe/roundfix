@@ -1,4 +1,0 @@
-ok  	roundfix/skills	1.239s
-ok  	roundfix/internal/docscontract	8.851s
-
-exit: 0
