@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 5m -v ./internal/daemon -run ^TestUngatedGraphRunsRepositoryVerificationAtSettlement$
+=== RUN   TestUngatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestUngatedGraphRunsRepositoryVerificationAtSettlement
+=== CONT  TestUngatedGraphRunsRepositoryVerificationAtSettlement
+    settlement_repository_verification_test.go:182: commands = [declared check]
+--- FAIL: TestUngatedGraphRunsRepositoryVerificationAtSettlement (0.13s)
+FAIL
+suiteguard: guard cost: measured 2841 paths; fingerprint took 152.627458ms before and 132.755334ms after
+FAIL	roundfix/internal/daemon	0.758s
+FAIL
+
+exit: 1

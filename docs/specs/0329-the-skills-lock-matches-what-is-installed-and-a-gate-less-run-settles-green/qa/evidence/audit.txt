@@ -1,0 +1,49 @@
+task 1 c5c580c997c47c071134fe818519ea7462a7045d
+.agents/skills/roundfix/SKILL.md declared
+.agents/skills/roundfix/references/baseline.md declared
+.agents/skills/roundfix/references/implement.md declared
+.agents/skills/roundfix/references/setup.md declared
+.agents/skills/write-tasks/SKILL.md declared
+CONTEXT.md declared
+docs/references/behavior-surfaces.json declared
+docs/specs/0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green/task_01.md declared
+docs/user-guide/commands/baseline.md declared
+docs/user-guide/commands/implement.md declared
+docs/user-guide/commands/skills.md declared
+docs/user-guide/configuration.md declared
+skills/roundfix/SKILL.md declared
+skills/roundfix/references/baseline.md declared
+skills/roundfix/references/implement.md declared
+skills/roundfix/references/setup.md declared
+skills/testdata/owned-skill-versions.json declared
+skills/write-tasks/SKILL.md declared
+QA settlement section heading modified: False
+task 2 6e8200cc
+docs/specs/0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green/task_02.md declared
+internal/baseline/owned_skills_lock.go declared
+internal/baseline/owned_skills_lock_test.go declared
+internal/cli/baseline_update.go declared
+internal/cli/baseline_update_test.go declared
+internal/cli/cli.go declared
+internal/cli/doctor_trailing_skills_test.go declared
+internal/cli/owned_skills_lock_test.go declared
+internal/cli/repository_profile_docscontract_test.go declared
+QA settlement section heading modified: False
+task 3 14013d6c
+docs/references/coverage-record.json declared
+docs/specs/0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green/task_03.md declared
+internal/cli/implement_settlement_checks_test.go declared
+internal/cli/implement_test.go declared
+internal/cli/implement_unix_test.go declared
+internal/daemon/settlement_repository_verification_test.go declared
+internal/daemon/task_engine.go declared
+QA settlement section heading modified: False
+task 4 5ee76ace
+docs/specs/0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green/task_04.md declared
+internal/cli/implement.go declared
+internal/cli/implement_settlement_checks_test.go declared
+internal/daemon/integrated_repository_verification_test.go declared
+internal/daemon/task_engine.go declared
+QA settlement section heading modified: False
+scope violations []
+head 5ee76ace2e541a6cd5d2d8fe92484e6462c79fd3

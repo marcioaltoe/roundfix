@@ -1,0 +1,1277 @@
+=== RUN   TestRecordInstalledOwnedSkillsRewritesOnlyTheHashOfAnInstalledOwnedSkill
+=== PAUSE TestRecordInstalledOwnedSkillsRewritesOnlyTheHashOfAnInstalledOwnedSkill
+=== RUN   TestRecordInstalledOwnedSkillsLeavesAMatchingLockUntouched
+=== PAUSE TestRecordInstalledOwnedSkillsLeavesAMatchingLockUntouched
+=== RUN   TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock
+=== PAUSE TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock
+=== PAUSE TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock
+=== RUN   TestRecordInstalledOwnedSkillsSetsMissingHashesInSortedOrder
+=== PAUSE TestRecordInstalledOwnedSkillsSetsMissingHashesInSortedOrder
+=== CONT  TestRecordInstalledOwnedSkillsRewritesOnlyTheHashOfAnInstalledOwnedSkill
+=== CONT  TestRecordInstalledOwnedSkillsLeavesAMatchingLockUntouched
+=== CONT  TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/symlink
+=== CONT  TestRecordInstalledOwnedSkillsSetsMissingHashesInSortedOrder
+=== CONT  TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock
+--- PASS: TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock (0.00s)
+--- PASS: TestRecordInstalledOwnedSkillsRewritesOnlyTheHashOfAnInstalledOwnedSkill (0.00s)
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/directory
+--- PASS: TestRecordInstalledOwnedSkillsLeavesAMatchingLockUntouched (0.00s)
+--- PASS: TestRecordInstalledOwnedSkillsSetsMissingHashesInSortedOrder (0.00s)
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/malformed
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/schema
+--- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock (0.01s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/symlink (0.00s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/directory (0.00s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/malformed (0.00s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/schema (0.00s)
+PASS
+suiteguard: guard cost: measured 2846 paths; fingerprint took 251.273292ms before and 316.268416ms after
+ok  	roundfix/internal/baseline	0.774s
+=== RUN   TestIntegratedRepositoryVerificationRunsOnceAfterAParallelUngatedGraph
+=== PAUSE TestIntegratedRepositoryVerificationRunsOnceAfterAParallelUngatedGraph
+=== RUN   TestIntegratedRepositoryVerificationFailureLeavesTaskStatuses
+=== PAUSE TestIntegratedRepositoryVerificationFailureLeavesTaskStatuses
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun
+=== RUN   TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively
+=== PAUSE TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively
+=== RUN   TestIntegratedRepositoryVerificationHonorsStopRequest
+=== PAUSE TestIntegratedRepositoryVerificationHonorsStopRequest
+=== RUN   TestIntegratedRepositoryVerificationHonorsRunBudget
+=== PAUSE TestIntegratedRepositoryVerificationHonorsRunBudget
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== RUN   TestSettlementRefusesATaskThatPinsItsSpecPath
+=== PAUSE TestSettlementRefusesATaskThatPinsItsSpecPath
+=== RUN   TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== PAUSE TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== RUN   TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== PAUSE TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== RUN   TestSettlementCheckerErrorFailsTheCheck
+=== PAUSE TestSettlementCheckerErrorFailsTheCheck
+=== RUN   TestSettlementChecksRunAfterAFailedCommand
+=== PAUSE TestSettlementChecksRunAfterAFailedCommand
+=== RUN   TestSettlementChecksPublishVerificationEvents
+=== PAUSE TestSettlementChecksPublishVerificationEvents
+=== RUN   TestGatelessGraphNeverCallsTheSettlementChecker
+=== PAUSE TestGatelessGraphNeverCallsTheSettlementChecker
+=== RUN   TestSettlementChecksSkipAnUnobservedCommand
+=== PAUSE TestSettlementChecksSkipAnUnobservedCommand
+=== RUN   TestSettlementChecksSkipAnInfrastructureError
+=== PAUSE TestSettlementChecksSkipAnInfrastructureError
+=== RUN   TestSettlementChecksSkipAStopRequest
+=== PAUSE TestSettlementChecksSkipAStopRequest
+=== RUN   TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== PAUSE TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== RUN   TestSettlementChecksExcludePreexistingGovernedPaths
+=== PAUSE TestSettlementChecksExcludePreexistingGovernedPaths
+=== RUN   TestSettlementChecksRunAgainOnTemporaryRetry
+=== PAUSE TestSettlementChecksRunAgainOnTemporaryRetry
+=== RUN   TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands
+=== PAUSE TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands
+=== RUN   TestRepositoryVerificationFailureAtSettlementReturnsFeedback
+=== PAUSE TestRepositoryVerificationFailureAtSettlementReturnsFeedback
+=== RUN   TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+=== PAUSE TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+=== RUN   TestTaskDeclaringRepositoryVerificationRunsItOnce
+=== PAUSE TestTaskDeclaringRepositoryVerificationRunsItOnce
+=== RUN   TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification
+=== PAUSE TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification
+=== RUN   TestEmptySettlementRepositoryCommandAppendsNothing
+=== PAUSE TestEmptySettlementRepositoryCommandAppendsNothing
+=== RUN   TestUngatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestUngatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback
+=== PAUSE TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback
+=== RUN   TestUngatedGraphRunsNoInProcessSettlementCheck
+=== PAUSE TestUngatedGraphRunsNoInProcessSettlementCheck
+=== RUN   TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== PAUSE TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== RUN   TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== PAUSE TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== RUN   TestSettlementStillReportsALinkToADeletedFile
+=== PAUSE TestSettlementStillReportsALinkToADeletedFile
+=== RUN   TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== PAUSE TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== CONT  TestIntegratedRepositoryVerificationRunsOnceAfterAParallelUngatedGraph
+=== CONT  TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== CONT  TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== CONT  TestIntegratedRepositoryVerificationHonorsRunBudget
+=== CONT  TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== CONT  TestSettlementRefusesATaskThatPinsItsSpecPath
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== CONT  TestGatelessGraphNeverCallsTheSettlementChecker
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+=== CONT  TestSettlementChecksSkipAnInfrastructureError
+=== CONT  TestSettlementChecksSkipAStopRequest
+=== CONT  TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+--- PASS: TestSettlementRefusesAnUnauthorizedGovernedDeletion (0.43s)
+=== CONT  TestSettlementChecksSkipAnUnobservedCommand
+--- PASS: TestSettlementRefusesATaskThatPinsItsSpecPath (0.58s)
+=== CONT  TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively
+=== RUN   TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-1
+=== PAUSE TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-1
+=== RUN   TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-2
+=== PAUSE TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-2
+=== CONT  TestIntegratedRepositoryVerificationHonorsStopRequest
+--- PASS: TestIntegratedRepositoryVerificationRunsOnceAfterAParallelUngatedGraph (0.73s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/capacity-one
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/capacity-one
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/one-completed
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/one-completed
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/failed-task
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/failed-task
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/skipped-task
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/skipped-task
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/switch-off
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/switch-off
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/empty-command
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/empty-command
+=== RUN   TestIntegratedRepositoryVerificationDoesNotRun/gated-graph
+=== PAUSE TestIntegratedRepositoryVerificationDoesNotRun/gated-graph
+=== CONT  TestSettlementChecksRunAfterAFailedCommand
+--- PASS: TestSettlementChecksSkipAStopRequest (0.75s)
+=== CONT  TestSettlementChecksPublishVerificationEvents
+=== CONT  TestEmptySettlementRepositoryCommandAppendsNothing
+--- PASS: TestSettlementChecksSkipAnInfrastructureError (0.78s)
+=== CONT  TestSettlementStillReportsALinkToADeletedFile
+--- PASS: TestSettlementChecksSkipGrantReadsForOrdinaryPaths (1.05s)
+=== CONT  TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+--- PASS: TestIntegratedRepositoryVerificationHonorsRunBudget (1.11s)
+--- PASS: TestGatelessGraphNeverCallsTheSettlementChecker (1.72s)
+=== CONT  TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+--- PASS: TestSettlementChecksSkipAnUnobservedCommand (1.28s)
+=== CONT  TestUngatedGraphRunsNoInProcessSettlementCheck
+=== CONT  TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback
+--- PASS: TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason (1.93s)
+=== RUN   TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair
+=== PAUSE TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair
+=== RUN   TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure
+=== PAUSE TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure
+=== CONT  TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+--- PASS: TestSettlementAuditFindingReturnsFeedbackAndRepairSettles (2.12s)
+=== CONT  TestUngatedGraphRunsRepositoryVerificationAtSettlement
+--- PASS: TestEmptySettlementRepositoryCommandAppendsNothing (2.13s)
+=== CONT  TestSettlementCheckerErrorFailsTheCheck
+--- PASS: TestSettlementChecksRunAfterAFailedCommand (2.57s)
+=== CONT  TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+--- PASS: TestSettlementChecksPublishVerificationEvents (2.86s)
+=== CONT  TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification
+--- PASS: TestSettlementIgnoresASpecConsistencyFindingPresentAtStart (2.57s)
+=== CONT  TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+--- PASS: TestUngatedGraphRunsNoInProcessSettlementCheck (2.04s)
+=== CONT  TestTaskDeclaringRepositoryVerificationRunsItOnce
+--- PASS: TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands (1.93s)
+=== CONT  TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands
+--- PASS: TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced (2.14s)
+=== CONT  TestRepositoryVerificationFailureAtSettlementReturnsFeedback
+--- PASS: TestUngatedGraphRunsRepositoryVerificationAtSettlement (1.83s)
+=== CONT  TestSettlementChecksRunAgainOnTemporaryRetry
+--- PASS: TestIntegratedRepositoryVerificationHonorsStopRequest (3.53s)
+=== CONT  TestSettlementChecksExcludePreexistingGovernedPaths
+--- PASS: TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification (0.87s)
+=== CONT  TestIntegratedRepositoryVerificationFailureLeavesTaskStatuses
+--- PASS: TestSettlementStillReportsALinkToADeletedFile (3.50s)
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+--- PASS: TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask (1.34s)
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+--- PASS: TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands (0.97s)
+=== CONT  TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-1
+--- PASS: TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands (0.98s)
+=== CONT  TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-2
+--- PASS: TestSettlementCheckerErrorFailsTheCheck (1.99s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/capacity-one
+--- PASS: TestRepositoryVerificationFailureAtSettlementReturnsFeedback (1.34s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/switch-off
+--- PASS: TestTaskDeclaringRepositoryVerificationRunsItOnce (1.44s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/gated-graph
+--- PASS: TestSettlementChecksExcludePreexistingGovernedPaths (1.13s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/empty-command
+--- PASS: TestSettlementChecksRunAgainOnTemporaryRetry (1.45s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/failed-task
+--- PASS: TestIntegratedRepositoryVerificationFailureLeavesTaskStatuses (1.07s)
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/skipped-task
+=== CONT  TestIntegratedRepositoryVerificationDoesNotRun/one-completed
+=== CONT  TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair
+=== CONT  TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure
+--- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary (0.00s)
+    --- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing (2.50s)
+    --- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign (2.45s)
+--- PASS: TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively (0.00s)
+    --- PASS: TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-1 (2.71s)
+    --- PASS: TestIntegratedRepositoryVerificationRetriesTemporaryFailureExclusively/temporary-calls-2 (2.74s)
+--- PASS: TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback (0.00s)
+    --- PASS: TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair (0.90s)
+    --- PASS: TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure (0.72s)
+--- PASS: TestIntegratedRepositoryVerificationDoesNotRun (0.00s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/capacity-one (1.65s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/skipped-task (1.31s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/failed-task (2.21s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/switch-off (2.50s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/one-completed (1.31s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/empty-command (2.77s)
+    --- PASS: TestIntegratedRepositoryVerificationDoesNotRun/gated-graph (3.08s)
+PASS
+suiteguard: guard cost: measured 2846 paths; fingerprint took 388.537167ms before and 289.495792ms after
+ok  	roundfix/internal/daemon	9.307s
+=== RUN   TestBaselineUpdateWithoutABranchPrefixAsksNothing
+=== PAUSE TestBaselineUpdateWithoutABranchPrefixAsksNothing
+=== RUN   TestBaselineUpdateKeepsARecordedBranchPrefix
+=== PAUSE TestBaselineUpdateKeepsARecordedBranchPrefix
+=== RUN   TestBaselineUpdateRefusesADigestWhoseCitationsChanged
+=== PAUSE TestBaselineUpdateRefusesADigestWhoseCitationsChanged
+=== RUN   TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== PAUSE TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== RUN   TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== PAUSE TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== RUN   TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== PAUSE TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== RUN   TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+=== PAUSE TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+=== RUN   TestBaselineUpdateWritesNoRootBackupWarning
+=== PAUSE TestBaselineUpdateWritesNoRootBackupWarning
+=== RUN   TestBaselineUpdateListsHistoryCitationsTranscript
+=== PAUSE TestBaselineUpdateListsHistoryCitationsTranscript
+=== RUN   TestBaselineUpdatePromotesOnlyOnRequestTranscript
+=== PAUSE TestBaselineUpdatePromotesOnlyOnRequestTranscript
+=== RUN   TestBaselineUpdateReportsStaleHistoryCitationsTranscript
+=== PAUSE TestBaselineUpdateReportsStaleHistoryCitationsTranscript
+=== RUN   TestBaselineUpdateHistoryDigestBindsCitations
+=== PAUSE TestBaselineUpdateHistoryDigestBindsCitations
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion
+=== PAUSE TestBaselineUpdateRefusesAnInvalidPromotion
+=== RUN   TestBaselineUpdateWithoutCitationsKeepsDigestAndText
+=== PAUSE TestBaselineUpdateWithoutCitationsKeepsDigestAndText
+=== RUN   TestBaselineUpdateHistoryCitationBoundaries
+=== PAUSE TestBaselineUpdateHistoryCitationBoundaries
+=== RUN   TestBaselineUpdateHistoryCitationDetectorFailureIsLocal
+=== PAUSE TestBaselineUpdateHistoryCitationDetectorFailureIsLocal
+=== RUN   TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome
+=== PAUSE TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome
+=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames
+=== PAUSE TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames
+=== RUN   TestBaselineUpdateRewritesEveryListedCitation
+=== PAUSE TestBaselineUpdateRewritesEveryListedCitation
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision
+=== PAUSE TestBaselineUpdateRecordsADeclaredDecision
+=== RUN   TestBaselineUpdateDeclaresTheBetterAuthBasePath
+=== PAUSE TestBaselineUpdateDeclaresTheBetterAuthBasePath
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision
+=== PAUSE TestBaselineUpdateRefusesAnUndeclarableDecision
+=== RUN   TestBaselineUpdatePlansPendingHistoryWithoutWrites
+=== PAUSE TestBaselineUpdatePlansPendingHistoryWithoutWrites
+=== RUN   TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag
+=== PAUSE TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag
+=== RUN   TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest
+=== PAUSE TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest
+=== RUN   TestBaselineUpdateNoHistorySkipsTheSection
+=== PAUSE TestBaselineUpdateNoHistorySkipsTheSection
+=== RUN   TestBaselineUpdateRefusesUnitsWithUncommittedChanges
+=== PAUSE TestBaselineUpdateRefusesUnitsWithUncommittedChanges
+=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag
+=== PAUSE TestBaselineUpdateHistoryHonorsAnExistingTag
+=== RUN   TestBaselineUpdateRejectsAStaleHistoryDigest
+=== PAUSE TestBaselineUpdateRejectsAStaleHistoryDigest
+=== RUN   TestBaselineUpdateReportsATagFailureBeforeAnyConversion
+=== PAUSE TestBaselineUpdateReportsATagFailureBeforeAnyConversion
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries
+=== PAUSE TestBaselineUpdateHistoryPlanningBoundaries
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== PAUSE TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== PAUSE TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== RUN   TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+=== PAUSE TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+=== RUN   TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+=== PAUSE TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+=== RUN   TestBaselineUpdateNamesEveryFileItWillRemove
+=== PAUSE TestBaselineUpdateNamesEveryFileItWillRemove
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets
+=== PAUSE TestBaselineUpdateRetiredSkillDeletionTargets
+=== RUN   TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState
+=== PAUSE TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState
+=== RUN   TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== PAUSE TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== RUN   TestBaselineUpdateAppliesAndListsRetiredSkills
+=== PAUSE TestBaselineUpdateAppliesAndListsRetiredSkills
+=== RUN   TestBaselineUpdateReportsRetiredSkillInspectionFailure
+=== PAUSE TestBaselineUpdateReportsRetiredSkillInspectionFailure
+=== RUN   TestBaselineUpdateAppliesManifestPlanAndReportsJSON
+=== PAUSE TestBaselineUpdateAppliesManifestPlanAndReportsJSON
+=== RUN   TestBaselineUpdateTextReportsHistoryMoves
+=== PAUSE TestBaselineUpdateTextReportsHistoryMoves
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput
+=== PAUSE TestBaselineUpdateUnrecordedManagedRegionTextOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput
+=== PAUSE TestBaselineUpdateUnrecordedManagedRegionJSONOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput
+=== PAUSE TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput
+=== RUN   TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs
+=== PAUSE TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs
+=== RUN   TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills
+=== PAUSE TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills
+=== RUN   TestBaselineUpdateSkillWarningKeepsApplyAxisVerified
+=== PAUSE TestBaselineUpdateSkillWarningKeepsApplyAxisVerified
+=== RUN   TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory
+=== PAUSE TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory
+=== RUN   TestBaselineUpdatePassesOfflineSourceToSkillStage
+=== PAUSE TestBaselineUpdatePassesOfflineSourceToSkillStage
+=== RUN   TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation
+=== PAUSE TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation
+=== RUN   TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill
+=== PAUSE TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill
+=== RUN   TestBaselineUpdateIdempotenceReportsZeroFileChanges
+=== PAUSE TestBaselineUpdateIdempotenceReportsZeroFileChanges
+=== RUN   TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites
+=== PAUSE TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites
+=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis
+=== PAUSE TestBaselineUpdateUnresolvedProfileDiagnosis
+=== RUN   TestBaselineUpdateFleetSweep
+=== PAUSE TestBaselineUpdateFleetSweep
+=== RUN   TestBaselineUpdateNewDecisionRequiresActionWithoutWrites
+=== PAUSE TestBaselineUpdateNewDecisionRequiresActionWithoutWrites
+=== RUN   TestBaselineUpdateAdoptsEverySuggestedDecision
+=== PAUSE TestBaselineUpdateAdoptsEverySuggestedDecision
+=== RUN   TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest
+=== PAUSE TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest
+=== RUN   TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms
+=== PAUSE TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms
+=== RUN   TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites
+=== PAUSE TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites
+=== RUN   TestBaselineUpdateHelpNamesNonInteractiveContract
+=== PAUSE TestBaselineUpdateHelpNamesNonInteractiveContract
+=== RUN   TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency
+=== PAUSE TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency
+=== RUN   TestImplementPreflightNamesOnlyTheTasksLeftToCarry
+=== PAUSE TestImplementPreflightNamesOnlyTheTasksLeftToCarry
+=== RUN   TestImplementPreflightIsSilentForARunWithNothingToCarry
+=== PAUSE TestImplementPreflightIsSilentForARunWithNothingToCarry
+=== RUN   TestImplementProfileCategoriesDerivesQAFromGraphDeclaration
+=== PAUSE TestImplementProfileCategoriesDerivesQAFromGraphDeclaration
+=== RUN   TestBaselineUpdateKeepsASetupSnapshotDifference
+=== PAUSE TestBaselineUpdateKeepsASetupSnapshotDifference
+=== RUN   TestBaselineUpdatePlansLineageAndLiveLinks
+=== PAUSE TestBaselineUpdatePlansLineageAndLiveLinks
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate
+=== RUN   TestBaselineUpdatePromotionRebasesLinks
+=== PAUSE TestBaselineUpdatePromotionRebasesLinks
+=== RUN   TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== PAUSE TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== RUN   TestBaselineUpdateRewritesBrokenRecordLinks
+=== PAUSE TestBaselineUpdateRewritesBrokenRecordLinks
+=== RUN   TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations
+=== PAUSE TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations
+=== RUN   TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate
+=== PAUSE TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate
+=== RUN   TestImplementSerialRunLongerThanItsBudgetEndsClean
+=== PAUSE TestImplementSerialRunLongerThanItsBudgetEndsClean
+=== RUN   TestImplementIntegrationRunsUnderTheRenewedDeadline
+=== PAUSE TestImplementIntegrationRunsUnderTheRenewedDeadline
+=== RUN   TestImplementEndsBudgetExceededWhenTheRenewedDeadlinePasses
+=== PAUSE TestImplementEndsBudgetExceededWhenTheRenewedDeadlinePasses
+=== RUN   TestImplementDetachChildEndsWhenItsTestBinaryDies
+=== PAUSE TestImplementDetachChildEndsWhenItsTestBinaryDies
+=== RUN   TestImplementSkipsTheLightTierUnderProjectFullAccess
+=== PAUSE TestImplementSkipsTheLightTierUnderProjectFullAccess
+=== RUN   TestImplementBuildsTheLightTierPlan
+=== PAUSE TestImplementBuildsTheLightTierPlan
+=== RUN   TestImplementPassesVerificationFormatToTheQAStep
+=== PAUSE TestImplementPassesVerificationFormatToTheQAStep
+=== RUN   TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed
+=== PAUSE TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed
+=== RUN   TestImplementUngatedRunEndsCleanWhenTheIntegratedTreeIsGreen
+=== PAUSE TestImplementUngatedRunEndsCleanWhenTheIntegratedTreeIsGreen
+=== RUN   TestImplementTaskContentChoosesVerificationByTaskType
+=== PAUSE TestImplementTaskContentChoosesVerificationByTaskType
+=== RUN   TestRunImplementHelpListsExactlyImplementedFlags
+=== PAUSE TestRunImplementHelpListsExactlyImplementedFlags
+=== RUN   TestRunImplementRemovedQAFlagExplainsTaskGraph
+=== PAUSE TestRunImplementRemovedQAFlagExplainsTaskGraph
+=== RUN   TestRunImplementVerificationCapacityDoesNotAddFlag
+=== PAUSE TestRunImplementVerificationCapacityDoesNotAddFlag
+=== RUN   TestRunImplementDetachPrintsReportAndCompletesRun
+=== PAUSE TestRunImplementDetachPrintsReportAndCompletesRun
+=== RUN   TestRunImplementDetachReportsAndRelaysPreflightFailure
+=== PAUSE TestRunImplementDetachReportsAndRelaysPreflightFailure
+=== RUN   TestRunImplementValidationFailures
+=== PAUSE TestRunImplementValidationFailures
+=== RUN   TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation
+=== PAUSE TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation
+=== RUN   TestImplementDispatchesWithoutRecordWhenNoGovernedMutation
+=== PAUSE TestImplementDispatchesWithoutRecordWhenNoGovernedMutation
+=== RUN   TestRunImplementInteractiveInputPicksSpecThroughCollector
+=== PAUSE TestRunImplementInteractiveInputPicksSpecThroughCollector
+=== RUN   TestRunImplementUsesConfiguredExternalSpecRootEndToEnd
+=== PAUSE TestRunImplementUsesConfiguredExternalSpecRootEndToEnd
+=== RUN   TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot
+=== PAUSE TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot
+=== RUN   TestRunImplementInteractiveInputDoesNotChooseQAGate
+=== PAUSE TestRunImplementInteractiveInputDoesNotChooseQAGate
+=== RUN   TestRunImplementInteractiveInputPersistsAgentButNotSpec
+=== PAUSE TestRunImplementInteractiveInputPersistsAgentButNotSpec
+=== RUN   TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow
+=== PAUSE TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow
+=== RUN   TestRunImplementExecutesSpecEndToEnd
+=== PAUSE TestRunImplementExecutesSpecEndToEnd
+=== RUN   TestRunImplementAgentThatDoesNoWorkStillFailsVerification
+=== PAUSE TestRunImplementAgentThatDoesNoWorkStillFailsVerification
+=== RUN   TestRunImplementHasNoSpecCheckPrecondition
+=== PAUSE TestRunImplementHasNoSpecCheckPrecondition
+=== RUN   TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture
+=== PAUSE TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture
+=== RUN   TestRunImplementPassesVerificationCapacityIntoTaskCycle
+=== PAUSE TestRunImplementPassesVerificationCapacityIntoTaskCycle
+=== RUN   TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== PAUSE TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== RUN   TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== PAUSE TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== RUN   TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== PAUSE TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== RUN   TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit
+=== PAUSE TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit
+=== RUN   TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork
+=== PAUSE TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork
+=== RUN   TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification
+=== PAUSE TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification
+=== RUN   TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork
+=== PAUSE TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork
+=== RUN   TestRunImplementAutoPushOutcomeMatrix
+=== PAUSE TestRunImplementAutoPushOutcomeMatrix
+=== RUN   TestRunImplementReportPrintsVerificationFailureReason
+=== PAUSE TestRunImplementReportPrintsVerificationFailureReason
+=== RUN   TestRunImplementReportPrintsModelNotAdvertisedReason
+=== PAUSE TestRunImplementReportPrintsModelNotAdvertisedReason
+=== RUN   TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean
+=== PAUSE TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean
+=== RUN   TestRunImplementAutoPushFailureEndsFailedAndJournalsPush
+=== PAUSE TestRunImplementAutoPushFailureEndsFailedAndJournalsPush
+=== RUN   TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly
+=== PAUSE TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly
+=== RUN   TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs
+=== PAUSE TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs
+=== RUN   TestRunImplementUsesOneAgentSessionPerRunAndCloses
+=== PAUSE TestRunImplementUsesOneAgentSessionPerRunAndCloses
+=== RUN   TestRunImplementClosesAgentSessionForTerminalOutcomes
+=== PAUSE TestRunImplementClosesAgentSessionForTerminalOutcomes
+=== RUN   TestRunImplementPreflightFailures
+=== PAUSE TestRunImplementPreflightFailures
+=== RUN   TestImplementRunWindow
+=== PAUSE TestImplementRunWindow
+=== RUN   TestImplementRefusesWhenCarryForwardIsAvailable
+=== PAUSE TestImplementRefusesWhenCarryForwardIsAvailable
+=== RUN   TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry
+=== PAUSE TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry
+=== RUN   TestImplementProceedsWhenNothingIsCarriable
+=== PAUSE TestImplementProceedsWhenNothingIsCarriable
+=== RUN   TestImplementRunWindowCrossing
+=== PAUSE TestImplementRunWindowCrossing
+=== RUN   TestImplementRejectsInvalidTaskTypeBeforeSideEffects
+=== PAUSE TestImplementRejectsInvalidTaskTypeBeforeSideEffects
+=== RUN   TestRunImplementDirtyWorkingTreePrintsNoteAndRuns
+=== PAUSE TestRunImplementDirtyWorkingTreePrintsNoteAndRuns
+=== RUN   TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt
+=== PAUSE TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt
+=== RUN   TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit
+=== PAUSE TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit
+=== RUN   TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks
+=== PAUSE TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks
+=== RUN   TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath
+=== PAUSE TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath
+=== RUN   TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees
+=== PAUSE TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees
+=== RUN   TestRunImplementPreflightTerminalReachableChangedBranch
+=== PAUSE TestRunImplementPreflightTerminalReachableChangedBranch
+=== RUN   TestRunImplementPreflightTerminalUniqueChangedBranch
+=== PAUSE TestRunImplementPreflightTerminalUniqueChangedBranch
+=== RUN   TestRunImplementPreflightClosesTerminalRunSessionsOnly
+=== PAUSE TestRunImplementPreflightClosesTerminalRunSessionsOnly
+=== RUN   TestRunImplementPreflightPrunesRetainedRunStorage
+=== PAUSE TestRunImplementPreflightPrunesRetainedRunStorage
+=== RUN   TestRunImplementPreflightRetentionPruneFailureIsNonFatal
+=== PAUSE TestRunImplementPreflightRetentionPruneFailureIsNonFatal
+=== RUN   TestRunImplementPreflightRetentionZeroSkipsPrune
+=== PAUSE TestRunImplementPreflightRetentionZeroSkipsPrune
+=== RUN   TestRunImplementPreflightRejectsActiveRunInWorkingTree
+=== PAUSE TestRunImplementPreflightRejectsActiveRunInWorkingTree
+=== RUN   TestImplementRunCeilingZeroDisables
+=== PAUSE TestImplementRunCeilingZeroDisables
+=== RUN   TestRunImplementPreflightProbeFailureCreatesNoRun
+=== PAUSE TestRunImplementPreflightProbeFailureCreatesNoRun
+=== RUN   TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt
+=== PAUSE TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt
+=== RUN   TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
+=== PAUSE TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
+=== RUN   TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback
+=== PAUSE TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback
+=== RUN   TestRunImplementPassesOneRunSelectionOverridesToPreflight
+=== PAUSE TestRunImplementPassesOneRunSelectionOverridesToPreflight
+=== RUN   TestRunImplementPersistsEffectiveSelection
+=== PAUSE TestRunImplementPersistsEffectiveSelection
+=== RUN   TestRunImplementAcceptsExplicitEmptyReasoningEffort
+=== PAUSE TestRunImplementAcceptsExplicitEmptyReasoningEffort
+=== RUN   TestRunImplementRejectsExplicitEmptySelectionOverrides
+=== PAUSE TestRunImplementRejectsExplicitEmptySelectionOverrides
+=== RUN   TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad
+=== PAUSE TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad
+=== RUN   TestRunImplementAllTasksCompletedReportsWithoutRun
+=== PAUSE TestRunImplementAllTasksCompletedReportsWithoutRun
+=== RUN   TestRunImplementSettledQAGateReportsWithoutRun
+=== PAUSE TestRunImplementSettledQAGateReportsWithoutRun
+=== RUN   TestRunImplementDeclinedQAGateReportsWithoutRun
+=== PAUSE TestRunImplementDeclinedQAGateReportsWithoutRun
+=== RUN   TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree
+=== PAUSE TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree
+=== RUN   TestRunImplementResumesStaleInProgressTask
+=== PAUSE TestRunImplementResumesStaleInProgressTask
+=== RUN   TestRunImplementStopRequestEndsStoppedWithInterruptMapping
+=== PAUSE TestRunImplementStopRequestEndsStoppedWithInterruptMapping
+=== RUN   TestBudgetClockCrossesAfterTheSettledTask
+=== PAUSE TestBudgetClockCrossesAfterTheSettledTask
+=== RUN   TestImplementRunBudgetBoundsSetupAndIntegration
+=== PAUSE TestImplementRunBudgetBoundsSetupAndIntegration
+=== RUN   TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock
+=== PAUSE TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock
+=== RUN   TestRunImplementQAVerdictMatrix
+=== PAUSE TestRunImplementQAVerdictMatrix
+=== RUN   TestRunImplementQAStepSkippedWhenAnyTaskFails
+=== PAUSE TestRunImplementQAStepSkippedWhenAnyTaskFails
+=== RUN   TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict
+=== PAUSE TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict
+=== RUN   TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord
+=== PAUSE TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord
+=== RUN   TestRunImplementInfrastructureFailureEndsFailed
+=== PAUSE TestRunImplementInfrastructureFailureEndsFailed
+=== RUN   TestAgentSelectionProfilesMacro
+=== PAUSE TestAgentSelectionProfilesMacro
+=== RUN   TestImplementSummaryEndsWithTheTokensLine
+=== PAUSE TestImplementSummaryEndsWithTheTokensLine
+=== RUN   TestImplementSummaryPrintsRecordedUsage
+=== PAUSE TestImplementSummaryPrintsRecordedUsage
+=== RUN   TestImplementTokenSummaryCoversSetupIntegrationAndPush
+=== PAUSE TestImplementTokenSummaryCoversSetupIntegrationAndPush
+=== RUN   TestRunImplementDetachSurvivesCallerProcessGroupKill
+=== PAUSE TestRunImplementDetachSurvivesCallerProcessGroupKill
+=== RUN   TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow
+=== PAUSE TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow
+=== RUN   TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks
+=== PAUSE TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks
+=== RUN   TestRunImplementReclaimsDeadOwnerActiveRun
+=== PAUSE TestRunImplementReclaimsDeadOwnerActiveRun
+=== RUN   TestSkillsInstallRewritesTheOwnedSkillLockHash
+=== PAUSE TestSkillsInstallRewritesTheOwnedSkillLockHash
+=== RUN   TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries
+=== PAUSE TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock
+=== PAUSE TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock
+=== RUN   TestImplementStartRunsRunRetention
+=== PAUSE TestImplementStartRunsRunRetention
+=== RUN   TestImplementStartTrimsTheDeclaredSharedBuildCache
+=== PAUSE TestImplementStartTrimsTheDeclaredSharedBuildCache
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot
+=== PAUSE TestImplementStartRunsOnWhenTheTrimDoesNot
+=== RUN   TestImplementStartWithoutASharedBuildCacheRecordsNoTrim
+=== PAUSE TestImplementStartWithoutASharedBuildCacheRecordsNoTrim
+=== RUN   TestImplementStartRunsOnWhenTheTrimEventCannotBeJournaled
+=== PAUSE TestImplementStartRunsOnWhenTheTrimEventCannotBeJournaled
+=== CONT  TestBaselineUpdateWithoutABranchPrefixAsksNothing
+=== CONT  TestRunImplementDetachReportsAndRelaysPreflightFailure
+=== CONT  TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs
+=== CONT  TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag
+=== CONT  TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput
+=== CONT  TestBaselineUpdateUnrecordedManagedRegionJSONOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan
+=== CONT  TestBaselineUpdateUnrecordedManagedRegionTextOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan
+=== CONT  TestBaselineUpdateTextReportsHistoryMoves
+=== CONT  TestBaselineUpdateAppliesManifestPlanAndReportsJSON
+=== CONT  TestBaselineUpdateReportsRetiredSkillInspectionFailure
+--- PASS: TestBaselineUpdateTextReportsHistoryMoves (0.00s)
+=== CONT  TestBaselineUpdateAppliesAndListsRetiredSkills
+--- PASS: TestRunImplementDetachReportsAndRelaysPreflightFailure (0.44s)
+=== CONT  TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+--- PASS: TestBaselineUpdateReportsRetiredSkillInspectionFailure (3.95s)
+=== CONT  TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan
+--- PASS: TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput (4.02s)
+=== CONT  TestBaselineUpdateRetiredSkillDeletionTargets
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/lock_only
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/two_paths
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock
+--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/lock_only (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/two_paths (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock (0.00s)
+=== CONT  TestBaselineUpdateNamesEveryFileItWillRemove
+--- PASS: TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs (4.22s)
+=== CONT  TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan
+=== CONT  TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+--- PASS: TestBaselineUpdateAppliesManifestPlanAndReportsJSON (5.69s)
+--- PASS: TestBaselineUpdateWithoutABranchPrefixAsksNothing (6.01s)
+=== CONT  TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false
+--- PASS: TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag (7.15s)
+=== CONT  TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+=== RUN   TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies
+--- PASS: TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck (4.10s)
+=== CONT  TestBaselineUpdateHistoryPlanningBoundaries
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag
+--- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput (8.54s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan (4.26s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan (4.28s)
+=== CONT  TestBaselineUpdateReportsATagFailureBeforeAnyConversion
+--- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput (8.61s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan (3.97s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan (4.64s)
+=== CONT  TestBaselineUpdateRejectsAStaleHistoryDigest
+--- PASS: TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch (4.22s)
+=== CONT  TestBaselineUpdateHistoryHonorsAnExistingTag
+=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag/annotated
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true
+=== CONT  TestBaselineUpdateRefusesUnitsWithUncommittedChanges
+--- PASS: TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState (7.39s)
+    --- PASS: TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies (3.11s)
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag
+--- PASS: TestBaselineUpdateReportsATagFailureBeforeAnyConversion (3.03s)
+=== CONT  TestBaselineUpdateNoHistorySkipsTheSection
+--- PASS: TestBaselineUpdateAppliesAndListsRetiredSkills (11.67s)
+=== CONT  TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest
+--- PASS: TestBaselineUpdateRejectsAStaleHistoryDigest (3.72s)
+=== CONT  TestBaselineUpdateRefusesAnInvalidPromotion
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/core
+--- PASS: TestBaselineUpdateNamesEveryFileItWillRemove (9.90s)
+=== CONT  TestBaselineUpdatePlansPendingHistoryWithoutWrites
+=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out
+--- PASS: TestBaselineUpdateNoHistorySkipsTheSection (3.17s)
+=== CONT  TestBaselineUpdateRefusesAnUndeclarableDecision
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/malformed_pair
+--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill (8.83s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false (4.43s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true (4.40s)
+=== CONT  TestBaselineUpdateDeclaresTheBetterAuthBasePath
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry
+--- PASS: TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest (3.57s)
+=== CONT  TestBaselineUpdateRecordsADeclaredDecision
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/changed_recorded_decision
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core
+--- PASS: TestBaselineUpdateRefusesUnitsWithUncommittedChanges (4.55s)
+=== CONT  TestBaselineUpdateRewritesEveryListedCitation
+--- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag (6.90s)
+    --- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag/annotated (4.07s)
+    --- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight (2.84s)
+=== CONT  TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames
+=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/empty_id
+--- PASS: TestBaselineUpdateWithoutSkillsOmitsRetiredSkills (16.91s)
+=== CONT  TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome
+--- PASS: TestBaselineUpdatePlansPendingHistoryWithoutWrites (3.75s)
+=== CONT  TestBaselineUpdateHistoryCitationDetectorFailureIsLocal
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind
+--- PASS: TestBaselineUpdateDeclaresTheBetterAuthBasePath (4.01s)
+=== CONT  TestBaselineUpdateHistoryCitationBoundaries
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/outside_units
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/new_required_decision
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/empty_value
+--- PASS: TestBaselineUpdateHistoryCitationDetectorFailureIsLocal (3.34s)
+=== CONT  TestBaselineUpdateWithoutCitationsKeepsDigestAndText
+=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/apply_text
+--- PASS: TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome (3.91s)
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec
+=== CONT  TestRunImplementDetachPrintsReportAndCompletesRun
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/unknown_decision
+--- PASS: TestBaselineUpdateRewritesEveryListedCitation (6.19s)
+=== CONT  TestRunImplementVerificationCapacityDoesNotAddFlag
+--- PASS: TestRunImplementVerificationCapacityDoesNotAddFlag (0.00s)
+=== CONT  TestRunImplementRemovedQAFlagExplainsTaskGraph
+--- PASS: TestRunImplementRemovedQAFlagExplainsTaskGraph (0.05s)
+=== CONT  TestRunImplementHelpListsExactlyImplementedFlags
+--- PASS: TestRunImplementHelpListsExactlyImplementedFlags (0.00s)
+=== CONT  TestImplementTaskContentChoosesVerificationByTaskType
+=== RUN   TestImplementTaskContentChoosesVerificationByTaskType/qa_seed_derives_its_default
+=== RUN   TestImplementTaskContentChoosesVerificationByTaskType/qa_seed_keeps_an_explicit_command
+=== RUN   TestImplementTaskContentChoosesVerificationByTaskType/non-qa_seed_keeps_the_agent_marker_default
+=== RUN   TestImplementTaskContentChoosesVerificationByTaskType/supported_policy_is_proven_for_preferred_and_fallback_selections
+--- PASS: TestImplementTaskContentChoosesVerificationByTaskType (0.00s)
+    --- PASS: TestImplementTaskContentChoosesVerificationByTaskType/qa_seed_derives_its_default (0.00s)
+    --- PASS: TestImplementTaskContentChoosesVerificationByTaskType/qa_seed_keeps_an_explicit_command (0.00s)
+    --- PASS: TestImplementTaskContentChoosesVerificationByTaskType/non-qa_seed_keeps_the_agent_marker_default (0.00s)
+    --- PASS: TestImplementTaskContentChoosesVerificationByTaskType/supported_policy_is_proven_for_preferred_and_fallback_selections (0.00s)
+=== CONT  TestImplementUngatedRunEndsCleanWhenTheIntegratedTreeIsGreen
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination
+--- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill (15.91s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed (4.23s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry (3.61s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry (4.63s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed (3.42s)
+=== CONT  TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed
+--- PASS: TestBaselineUpdateHistoryCitationBoundaries (4.24s)
+=== CONT  TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/remaining_suggestions
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/unselected_decision
+--- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames (7.48s)
+    --- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files (4.25s)
+    --- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename (3.23s)
+=== CONT  TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+--- PASS: TestBaselineUpdateWithoutCitationsKeepsDigestAndText (3.49s)
+=== CONT  TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+--- PASS: TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement (1.42s)
+=== CONT  TestImplementPassesVerificationFormatToTheQAStep
+--- PASS: TestBaselineUpdateHistoryPlanningBoundaries (16.25s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag (3.21s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag (3.05s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out (3.13s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind (3.51s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/apply_text (3.34s)
+=== CONT  TestImplementBuildsTheLightTierPlan
+=== RUN   TestImplementBuildsTheLightTierPlan/missing-key
+--- PASS: TestRunImplementDetachPrintsReportAndCompletesRun (3.41s)
+=== CONT  TestImplementSkipsTheLightTierUnderProjectFullAccess
+--- PASS: TestImplementUngatedRunEndsCleanWhenTheIntegratedTreeIsGreen (2.56s)
+=== CONT  TestImplementDetachChildEndsWhenItsTestBinaryDies
+--- PASS: TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed (1.67s)
+=== CONT  TestImplementEndsBudgetExceededWhenTheRenewedDeadlinePasses
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/profile-fixed_decision
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/no_history
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/repository_profile
+--- PASS: TestImplementSkipsTheLightTierUnderProjectFullAccess (1.38s)
+=== CONT  TestImplementIntegrationRunsUnderTheRenewedDeadline
+--- PASS: TestImplementEndsBudgetExceededWhenTheRenewedDeadlinePasses (1.39s)
+=== CONT  TestImplementSerialRunLongerThanItsBudgetEndsClean
+=== RUN   TestImplementBuildsTheLightTierPlan/configured-light
+--- PASS: TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands (2.00s)
+=== CONT  TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate
+--- PASS: TestImplementGatedGraphRunsRepositoryVerificationAtSettlement (1.81s)
+=== CONT  TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations
+--- PASS: TestImplementPassesVerificationFormatToTheQAStep (1.82s)
+=== CONT  TestBaselineUpdateRewritesBrokenRecordLinks
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/same_profile-fixed_value
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/unclean
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/empty_array_without_declarations
+--- PASS: TestImplementIntegrationRunsUnderTheRenewedDeadline (1.91s)
+=== CONT  TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== CONT  TestBaselineUpdatePromotionRebasesLinks
+--- PASS: TestImplementSerialRunLongerThanItsBudgetEndsClean (2.61s)
+=== RUN   TestImplementBuildsTheLightTierPlan/override
+--- PASS: TestImplementDetachChildEndsWhenItsTestBinaryDies (4.18s)
+=== CONT  TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/preservation_mode
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/absolute
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/help
+--- PASS: TestBaselineUpdateRecordsADeclaredDecision (15.12s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/changed_recorded_decision (4.07s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/new_required_decision (3.78s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/remaining_suggestions (2.27s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/repository_profile (1.80s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/empty_array_without_declarations (3.20s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/help (0.00s)
+=== CONT  TestBaselineUpdateHistoryDigestBindsCitations
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_typed_value
+--- PASS: TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand (1.76s)
+=== CONT  TestBaselineUpdateReportsStaleHistoryCitationsTranscript
+--- PASS: TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate (4.61s)
+=== CONT  TestBaselineUpdatePromotesOnlyOnRequestTranscript
+--- PASS: TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations (4.65s)
+=== CONT  TestBaselineUpdateListsHistoryCitationsTranscript
+=== RUN   TestImplementBuildsTheLightTierPlan/disabled-models
+--- PASS: TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy (4.34s)
+=== CONT  TestBaselineUpdateWritesNoRootBackupWarning
+--- PASS: TestBaselineUpdatePromotionRebasesLinks (3.70s)
+=== CONT  TestBaselineUpdateAdoptsEverySuggestedDecision
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/duplicate_declaration
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/directory
+--- PASS: TestBaselineUpdateHistoryDigestBindsCitations (3.91s)
+=== CONT  TestBaselineUpdatePlansLineageAndLiveLinks
+=== RUN   TestImplementBuildsTheLightTierPlan/configured-ceiling
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/atomic_refusal
+=== RUN   TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request
+--- PASS: TestBaselineUpdateAdoptsEverySuggestedDecision (2.69s)
+=== CONT  TestBaselineUpdateKeepsASetupSnapshotDifference
+=== RUN   TestBaselineUpdateKeepsASetupSnapshotDifference/difference_alone
+--- PASS: TestBaselineUpdateListsHistoryCitationsTranscript (4.17s)
+=== CONT  TestImplementProfileCategoriesDerivesQAFromGraphDeclaration
+=== RUN   TestBaselineUpdateKeepsASetupSnapshotDifference/missing
+=== RUN   TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category
+=== PAUSE TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category
+=== RUN   TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category
+=== PAUSE TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category
+=== RUN   TestBaselineUpdateKeepsASetupSnapshotDifference/lock_mismatch
+--- PASS: TestBaselineUpdateKeepsASetupSnapshotDifference (0.01s)
+    --- PASS: TestBaselineUpdateKeepsASetupSnapshotDifference/difference_alone (0.00s)
+    --- PASS: TestBaselineUpdateKeepsASetupSnapshotDifference/missing (0.00s)
+    --- PASS: TestBaselineUpdateKeepsASetupSnapshotDifference/lock_mismatch (0.00s)
+=== CONT  TestImplementPreflightIsSilentForARunWithNothingToCarry
+=== CONT  TestImplementPreflightNamesOnlyTheTasksLeftToCarry
+--- PASS: TestBaselineUpdateReportsStaleHistoryCitationsTranscript (4.59s)
+=== CONT  TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency
+--- PASS: TestBaselineUpdateWritesNoRootBackupWarning (3.01s)
+=== CONT  TestBaselineUpdateHelpNamesNonInteractiveContract
+--- PASS: TestBaselineUpdateHelpNamesNonInteractiveContract (0.00s)
+=== CONT  TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/missing
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_auth
+--- PASS: TestImplementBuildsTheLightTierPlan (12.72s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/missing-key (1.72s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/configured-light (2.55s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/override (2.71s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/disabled-models (3.06s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/configured-ceiling (2.68s)
+=== CONT  TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms
+--- PASS: TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms (0.00s)
+=== CONT  TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest
+--- PASS: TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency (2.15s)
+=== CONT  TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill
+--- PASS: TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill (0.00s)
+=== CONT  TestBaselineUpdateNewDecisionRequiresActionWithoutWrites
+--- PASS: TestImplementPreflightNamesOnlyTheTasksLeftToCarry (2.25s)
+=== CONT  TestBaselineUpdateFleetSweep
+=== RUN   TestBaselineUpdateFleetSweep/manifest-predates-managed-regions
+--- PASS: TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites (2.23s)
+=== CONT  TestBaselineUpdateUnresolvedProfileDiagnosis
+=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile
+--- PASS: TestImplementPreflightIsSilentForARunWithNothingToCarry (3.07s)
+=== CONT  TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites
+--- PASS: TestBaselineUpdateRewritesBrokenRecordLinks (12.39s)
+=== CONT  TestBaselineUpdateIdempotenceReportsZeroFileChanges
+--- PASS: TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites (0.74s)
+=== CONT  TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory
+--- PASS: TestBaselineUpdatePromotesOnlyOnRequestTranscript (8.15s)
+    --- PASS: TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request (3.30s)
+=== CONT  TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation
+--- PASS: TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation (0.00s)
+=== CONT  TestBaselineUpdatePassesOfflineSourceToSkillStage
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/duplicate
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/
+=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity
+--- PASS: TestBaselineUpdateNewDecisionRequiresActionWithoutWrites (2.31s)
+=== CONT  TestBaselineUpdateRefusesADigestWhoseCitationsChanged
+=== RUN   TestBaselineUpdateFleetSweep/structural-clauses-missing
+--- PASS: TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest (3.75s)
+=== CONT  TestBaselineUpdateKeepsARecordedBranchPrefix
+--- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis (5.44s)
+    --- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile (2.04s)
+    --- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity (3.40s)
+=== CONT  TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/
+--- PASS: TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory (4.21s)
+=== CONT  TestBaselineUpdateSkillWarningKeepsApplyAxisVerified
+--- PASS: TestBaselineUpdatePassesOfflineSourceToSkillStage (4.13s)
+=== CONT  TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+--- PASS: TestBaselineUpdateIdempotenceReportsZeroFileChanges (4.48s)
+=== CONT  TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills
+--- PASS: TestBaselineUpdateRefusesADigestWhoseCitationsChanged (3.62s)
+=== CONT  TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+--- PASS: TestBaselineUpdateKeepsARecordedBranchPrefix (3.71s)
+=== CONT  TestRunImplementPreflightClosesTerminalRunSessionsOnly
+--- PASS: TestBaselineUpdatePlansLineageAndLiveLinks (11.36s)
+=== CONT  TestRunImplementReportPrintsVerificationFailureReason
+=== RUN   TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve
+--- PASS: TestBaselineUpdateNamesTheMissingIncrementalDecision (3.09s)
+=== CONT  TestRunImplementPreflightTerminalUniqueChangedBranch
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/*
+--- PASS: TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion (2.89s)
+=== CONT  TestImplementStartRunsOnWhenTheTrimEventCannotBeJournaled
+--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion (34.45s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/core (3.14s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core (3.81s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/outside_units (3.36s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination (2.65s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/no_history (1.54s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/unclean (3.04s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/absolute (3.68s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/directory (2.59s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/missing (3.12s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/duplicate (3.80s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit (3.72s)
+=== CONT  TestRunImplementPreflightTerminalReachableChangedBranch
+--- PASS: TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills (3.83s)
+=== CONT  TestImplementStartWithoutASharedBuildCacheRecordsNoTrim
+--- PASS: TestBaselineUpdateSkillWarningKeepsApplyAxisVerified (3.86s)
+=== CONT  TestImplementSummaryPrintsRecordedUsage
+--- PASS: TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion (3.92s)
+=== CONT  TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees
+--- PASS: TestRunImplementReportPrintsVerificationFailureReason (1.71s)
+=== CONT  TestImplementSummaryEndsWithTheTokensLine
+=== RUN   TestImplementSummaryEndsWithTheTokensLine/clean
+=== RUN   TestBaselineUpdateFleetSweep/already-current
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a_b
+--- PASS: TestImplementStartRunsOnWhenTheTrimEventCannotBeJournaled (1.46s)
+=== CONT  TestImplementStartRunsOnWhenTheTrimDoesNot
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot/refused_cache
+--- PASS: TestRunImplementPreflightClosesTerminalRunSessionsOnly (3.36s)
+=== CONT  TestAgentSelectionProfilesMacro
+--- PASS: TestImplementStartWithoutASharedBuildCacheRecordsNoTrim (1.21s)
+=== CONT  TestImplementStartTrimsTheDeclaredSharedBuildCache
+--- PASS: TestRunImplementPreflightTerminalUniqueChangedBranch (2.17s)
+=== CONT  TestImplementStartRunsRunRetention
+=== RUN   TestImplementSummaryEndsWithTheTokensLine/unresolved
+--- PASS: TestImplementSummaryPrintsRecordedUsage (1.51s)
+=== CONT  TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/malformed
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/symlink
+=== RUN   TestImplementStartRunsOnWhenTheTrimDoesNot/budget_ends
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/directory
+--- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock (0.52s)
+    --- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/malformed (0.26s)
+    --- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/symlink (0.16s)
+    --- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/directory (0.09s)
+=== CONT  TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries
+--- PASS: TestBaselineUpdateFleetSweep (11.66s)
+    --- PASS: TestBaselineUpdateFleetSweep/manifest-predates-managed-regions (3.10s)
+    --- PASS: TestBaselineUpdateFleetSweep/structural-clauses-missing (5.27s)
+    --- PASS: TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve (1.73s)
+    --- PASS: TestBaselineUpdateFleetSweep/already-current (1.44s)
+=== CONT  TestSkillsInstallRewritesTheOwnedSkillLockHash
+--- PASS: TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries (0.05s)
+=== CONT  TestRunImplementReclaimsDeadOwnerActiveRun
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a//b
+--- PASS: TestSkillsInstallRewritesTheOwnedSkillLockHash (0.06s)
+=== CONT  TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks
+--- PASS: TestRunImplementPreflightTerminalReachableChangedBranch (2.39s)
+=== CONT  TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow
+=== RUN   TestImplementSummaryEndsWithTheTokensLine/stopped
+--- PASS: TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees (2.19s)
+=== CONT  TestRunImplementDetachSurvivesCallerProcessGroupKill
+--- PASS: TestImplementStartRunsRunRetention (1.11s)
+=== CONT  TestImplementTokenSummaryCoversSetupIntegrationAndPush
+=== RUN   TestImplementTokenSummaryCoversSetupIntegrationAndPush/setup_failure
+--- PASS: TestImplementStartTrimsTheDeclaredSharedBuildCache (1.17s)
+=== CONT  TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath
+=== RUN   TestImplementTokenSummaryCoversSetupIntegrationAndPush/integration_pending
+--- PASS: TestImplementStartRunsOnWhenTheTrimDoesNot (2.12s)
+    --- PASS: TestImplementStartRunsOnWhenTheTrimDoesNot/refused_cache (1.18s)
+    --- PASS: TestImplementStartRunsOnWhenTheTrimDoesNot/budget_ends (0.94s)
+=== CONT  TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks
+--- PASS: TestImplementSummaryEndsWithTheTokensLine (2.59s)
+    --- PASS: TestImplementSummaryEndsWithTheTokensLine/clean (1.13s)
+    --- PASS: TestImplementSummaryEndsWithTheTokensLine/unresolved (0.77s)
+    --- PASS: TestImplementSummaryEndsWithTheTokensLine/stopped (0.68s)
+=== CONT  TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit
+--- PASS: TestRunImplementReclaimsDeadOwnerActiveRun (0.99s)
+=== CONT  TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt
+--- PASS: TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks (1.01s)
+=== CONT  TestRunImplementInfrastructureFailureEndsFailed
+--- PASS: TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath (0.74s)
+=== CONT  TestRunImplementDirtyWorkingTreePrintsNoteAndRuns
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a?x
+=== RUN   TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream
+--- PASS: TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow (1.39s)
+=== CONT  TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord
+=== RUN   TestImplementTokenSummaryCoversSetupIntegrationAndPush/integration_budget
+--- PASS: TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit (1.05s)
+=== CONT  TestImplementRejectsInvalidTaskTypeBeforeSideEffects
+--- PASS: TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks (1.20s)
+=== CONT  TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict
+=== RUN   TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/pass_ends_Clean
+--- PASS: TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt (0.95s)
+=== CONT  TestImplementRunWindowCrossing
+=== RUN   TestImplementRunWindowCrossing/Run_may_cross_cutoff
+--- PASS: TestRunImplementDirtyWorkingTreePrintsNoteAndRuns (0.93s)
+=== CONT  TestRunImplementQAStepSkippedWhenAnyTaskFails
+--- PASS: TestRunImplementInfrastructureFailureEndsFailed (0.96s)
+=== CONT  TestImplementProceedsWhenNothingIsCarriable
+=== RUN   TestImplementProceedsWhenNothingIsCarriable/completed_Tasks_fail_their_carry-forward_proofs
+--- PASS: TestImplementRejectsInvalidTaskTypeBeforeSideEffects (0.24s)
+=== CONT  TestRunImplementQAVerdictMatrix
+=== RUN   TestRunImplementQAVerdictMatrix/pass
+--- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision (36.66s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/malformed_pair (2.53s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/empty_id (2.44s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/empty_value (1.84s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/unknown_decision (1.74s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/unselected_decision (1.53s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/profile-fixed_decision (1.56s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/same_profile-fixed_value (2.51s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/preservation_mode (1.69s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_typed_value (2.35s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/duplicate_declaration (2.14s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/atomic_refusal (2.15s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_auth (2.26s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/ (3.63s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/ (2.97s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/* (1.52s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a_b (1.47s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a//b (1.16s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a?x (1.14s)
+=== CONT  TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry
+=== RUN   TestImplementTokenSummaryCoversSetupIntegrationAndPush/push_failure
+--- PASS: TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord (1.18s)
+=== CONT  TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock
+=== RUN   TestImplementProceedsWhenNothingIsCarriable/inspection_failure_fails_open
+=== RUN   TestImplementRunWindowCrossing/maximum_duration_ends_at_cutoff
+=== CONT  TestImplementRefusesWhenCarryForwardIsAvailable
+--- PASS: TestRunImplementQAStepSkippedWhenAnyTaskFails (0.95s)
+=== RUN   TestImplementRefusesWhenCarryForwardIsAvailable/a_real_prior_Run_refuses_before_another_Run_or_Task_Agent_turn_exists
+=== RUN   TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/fail_ends_Unresolved
+=== CONT  TestImplementRunBudgetBoundsSetupAndIntegration
+--- PASS: TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry (0.82s)
+=== RUN   TestImplementRunBudgetBoundsSetupAndIntegration/bootstrap
+--- PASS: TestRunImplementDetachSurvivesCallerProcessGroupKill (3.10s)
+=== CONT  TestImplementRunWindow
+=== RUN   TestImplementRunWindow/closed_window_refuses_before_mutating_preflight_work
+=== RUN   TestImplementTokenSummaryCoversSetupIntegrationAndPush/push_success
+--- PASS: TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock (0.81s)
+=== CONT  TestBudgetClockCrossesAfterTheSettledTask
+=== RUN   TestRunImplementQAVerdictMatrix/qualifying_partial
+--- PASS: TestImplementProceedsWhenNothingIsCarriable (1.69s)
+    --- PASS: TestImplementProceedsWhenNothingIsCarriable/completed_Tasks_fail_their_carry-forward_proofs (0.81s)
+    --- PASS: TestImplementProceedsWhenNothingIsCarriable/inspection_failure_fails_open (0.87s)
+=== CONT  TestRunImplementStopRequestEndsStoppedWithInterruptMapping
+=== RUN   TestImplementRunWindow/future_window_permits_Run_creation
+--- PASS: TestImplementRunWindowCrossing (1.86s)
+    --- PASS: TestImplementRunWindowCrossing/Run_may_cross_cutoff (0.87s)
+    --- PASS: TestImplementRunWindowCrossing/maximum_duration_ends_at_cutoff (0.98s)
+=== CONT  TestRunImplementResumesStaleInProgressTask
+=== RUN   TestImplementRunBudgetBoundsSetupAndIntegration/integration_runs_under_the_Run's_deadline
+=== RUN   TestImplementRefusesWhenCarryForwardIsAvailable/one_prior_Run_exposes_every_recovery_detail
+--- PASS: TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict (2.18s)
+    --- PASS: TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/pass_ends_Clean (1.13s)
+    --- PASS: TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/fail_ends_Unresolved (1.05s)
+=== CONT  TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree
+--- PASS: TestRunImplementStopRequestEndsStoppedWithInterruptMapping (0.57s)
+=== CONT  TestRunImplementDeclinedQAGateReportsWithoutRun
+--- PASS: TestBudgetClockCrossesAfterTheSettledTask (0.83s)
+=== CONT  TestRunImplementSettledQAGateReportsWithoutRun
+--- PASS: TestImplementTokenSummaryCoversSetupIntegrationAndPush (4.19s)
+    --- PASS: TestImplementTokenSummaryCoversSetupIntegrationAndPush/setup_failure (0.43s)
+    --- PASS: TestImplementTokenSummaryCoversSetupIntegrationAndPush/integration_pending (0.86s)
+    --- PASS: TestImplementTokenSummaryCoversSetupIntegrationAndPush/integration_budget (0.87s)
+    --- PASS: TestImplementTokenSummaryCoversSetupIntegrationAndPush/push_failure (1.02s)
+    --- PASS: TestImplementTokenSummaryCoversSetupIntegrationAndPush/push_success (1.00s)
+=== CONT  TestRunImplementAllTasksCompletedReportsWithoutRun
+--- PASS: TestRunImplementSettledQAGateReportsWithoutRun (0.21s)
+=== CONT  TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad
+--- PASS: TestRunImplementDeclinedQAGateReportsWithoutRun (0.30s)
+=== CONT  TestRunImplementRejectsExplicitEmptySelectionOverrides
+=== RUN   TestRunImplementRejectsExplicitEmptySelectionOverrides/model
+=== RUN   TestImplementRefusesWhenCarryForwardIsAvailable/largest_carriable_set_wins_over_recency
+--- PASS: TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad (0.14s)
+=== CONT  TestRunImplementAcceptsExplicitEmptyReasoningEffort
+=== RUN   TestImplementRunWindow/absent_window_permits_Run_creation
+--- PASS: TestRunImplementRejectsExplicitEmptySelectionOverrides (0.14s)
+    --- PASS: TestRunImplementRejectsExplicitEmptySelectionOverrides/model (0.14s)
+=== CONT  TestRunImplementPersistsEffectiveSelection
+--- PASS: TestRunImplementAllTasksCompletedReportsWithoutRun (0.25s)
+=== CONT  TestRunImplementPassesOneRunSelectionOverridesToPreflight
+=== RUN   TestImplementRunBudgetBoundsSetupAndIntegration/push_runs_under_the_Run's_deadline
+--- PASS: TestRunImplementResumesStaleInProgressTask (1.04s)
+=== CONT  TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback
+=== RUN   TestRunImplementQAVerdictMatrix/non-qualifying_partial
+=== CONT  TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
+--- PASS: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree (1.08s)
+=== CONT  TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt
+--- PASS: TestRunImplementPassesOneRunSelectionOverridesToPreflight (0.48s)
+=== RUN   TestImplementRefusesWhenCarryForwardIsAvailable/newest_Run_wins_a_carriable-count_tie
+--- PASS: TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback (0.45s)
+=== CONT  TestRunImplementPreflightProbeFailureCreatesNoRun
+--- PASS: TestRunImplementPersistsEffectiveSelection (0.83s)
+=== CONT  TestImplementRunCeilingZeroDisables
+--- PASS: TestImplementRunWindow (2.21s)
+    --- PASS: TestImplementRunWindow/closed_window_refuses_before_mutating_preflight_work (0.47s)
+    --- PASS: TestImplementRunWindow/future_window_permits_Run_creation (0.90s)
+    --- PASS: TestImplementRunWindow/absent_window_permits_Run_creation (0.84s)
+=== CONT  TestRunImplementPreflightRejectsActiveRunInWorkingTree
+--- PASS: TestRunImplementAcceptsExplicitEmptyReasoningEffort (0.89s)
+=== CONT  TestRunImplementPreflightRetentionZeroSkipsPrune
+=== CONT  TestRunImplementPreflightRetentionPruneFailureIsNonFatal
+--- PASS: TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt (0.39s)
+--- PASS: TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun (0.51s)
+=== CONT  TestRunImplementPreflightPrunesRetainedRunStorage
+--- PASS: TestImplementRefusesWhenCarryForwardIsAvailable (2.82s)
+    --- PASS: TestImplementRefusesWhenCarryForwardIsAvailable/a_real_prior_Run_refuses_before_another_Run_or_Task_Agent_turn_exists (1.12s)
+    --- PASS: TestImplementRefusesWhenCarryForwardIsAvailable/one_prior_Run_exposes_every_recovery_detail (0.59s)
+    --- PASS: TestImplementRefusesWhenCarryForwardIsAvailable/largest_carriable_set_wins_over_recency (0.56s)
+    --- PASS: TestImplementRefusesWhenCarryForwardIsAvailable/newest_Run_wins_a_carriable-count_tie (0.54s)
+=== CONT  TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly
+--- PASS: TestRunImplementPreflightProbeFailureCreatesNoRun (0.46s)
+=== CONT  TestRunImplementClosesAgentSessionForTerminalOutcomes
+=== RUN   TestRunImplementClosesAgentSessionForTerminalOutcomes/clean
+=== RUN   TestImplementRunBudgetBoundsSetupAndIntegration/inside_budget
+--- PASS: TestRunImplementPreflightRejectsActiveRunInWorkingTree (0.70s)
+=== CONT  TestRunImplementUsesOneAgentSessionPerRunAndCloses
+=== RUN   TestRunImplementQAVerdictMatrix/fail
+=== CONT  TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs
+--- PASS: TestImplementRunCeilingZeroDisables (1.11s)
+=== RUN   TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs/repo_relative
+--- PASS: TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly (0.94s)
+=== CONT  TestRunImplementHasNoSpecCheckPrecondition
+--- PASS: TestImplementRunBudgetBoundsSetupAndIntegration (3.64s)
+    --- PASS: TestImplementRunBudgetBoundsSetupAndIntegration/bootstrap (0.72s)
+    --- PASS: TestImplementRunBudgetBoundsSetupAndIntegration/integration_runs_under_the_Run's_deadline (0.84s)
+    --- PASS: TestImplementRunBudgetBoundsSetupAndIntegration/push_runs_under_the_Run's_deadline (1.09s)
+    --- PASS: TestImplementRunBudgetBoundsSetupAndIntegration/inside_budget (0.97s)
+=== CONT  TestRunImplementAutoPushOutcomeMatrix
+=== RUN   TestRunImplementAutoPushOutcomeMatrix/clean_qa_pass_with_key_pushes
+=== RUN   TestRunImplementClosesAgentSessionForTerminalOutcomes/unresolved
+--- PASS: TestRunImplementPreflightRetentionZeroSkipsPrune (1.31s)
+=== CONT  TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork
+--- PASS: TestRunImplementPreflightRetentionPruneFailureIsNonFatal (1.40s)
+=== CONT  TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification
+--- PASS: TestRunImplementPreflightPrunesRetainedRunStorage (1.31s)
+=== CONT  TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork
+--- PASS: TestRunImplementUsesOneAgentSessionPerRunAndCloses (1.03s)
+=== CONT  TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit
+=== RUN   TestRunImplementClosesAgentSessionForTerminalOutcomes/failed
+=== RUN   TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs/home_relative
+--- PASS: TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork (0.70s)
+=== CONT  TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+--- PASS: TestRunImplementHasNoSpecCheckPrecondition (1.10s)
+=== CONT  TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+--- PASS: TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification (1.09s)
+=== CONT  TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== RUN   TestRunImplementQAVerdictMatrix/missing_report
+--- PASS: TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork (1.56s)
+=== CONT  TestRunImplementPassesVerificationCapacityIntoTaskCycle
+=== RUN   TestRunImplementClosesAgentSessionForTerminalOutcomes/stopped
+--- PASS: TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs (1.82s)
+    --- PASS: TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs/repo_relative (0.95s)
+    --- PASS: TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs/home_relative (0.86s)
+=== CONT  TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture
+=== RUN   TestRunImplementAutoPushOutcomeMatrix/clean_without_key_does_not_push
+--- PASS: TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair (1.04s)
+=== CONT  TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean
+--- PASS: TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree (1.12s)
+=== CONT  TestRunImplementAutoPushFailureEndsFailedAndJournalsPush
+--- PASS: TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair (0.98s)
+=== CONT  TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot
+--- PASS: TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit (1.82s)
+=== CONT  TestRunImplementAgentThatDoesNoWorkStillFailsVerification
+--- PASS: TestRunImplementClosesAgentSessionForTerminalOutcomes (3.41s)
+    --- PASS: TestRunImplementClosesAgentSessionForTerminalOutcomes/clean (1.05s)
+    --- PASS: TestRunImplementClosesAgentSessionForTerminalOutcomes/unresolved (0.68s)
+    --- PASS: TestRunImplementClosesAgentSessionForTerminalOutcomes/failed (0.94s)
+    --- PASS: TestRunImplementClosesAgentSessionForTerminalOutcomes/stopped (0.75s)
+=== CONT  TestRunImplementExecutesSpecEndToEnd
+--- PASS: TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture (0.79s)
+=== CONT  TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow
+--- PASS: TestRunImplementPassesVerificationCapacityIntoTaskCycle (0.84s)
+=== CONT  TestRunImplementInteractiveInputPersistsAgentButNotSpec
+--- PASS: TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean (0.84s)
+=== CONT  TestRunImplementInteractiveInputDoesNotChooseQAGate
+=== RUN   TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_add_a_gate_absent_from_the_graph
+=== RUN   TestRunImplementAutoPushOutcomeMatrix/unresolved_failed_task_does_not_push
+--- PASS: TestRunImplementAgentThatDoesNoWorkStillFailsVerification (0.70s)
+=== CONT  TestImplementDispatchesWithoutRecordWhenNoGovernedMutation
+=== RUN   TestRunImplementQAVerdictMatrix/unreadable_verdict
+--- PASS: TestRunImplementAutoPushFailureEndsFailedAndJournalsPush (1.00s)
+=== CONT  TestRunImplementUsesConfiguredExternalSpecRootEndToEnd
+--- PASS: TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot (0.96s)
+=== CONT  TestRunImplementInteractiveInputPicksSpecThroughCollector
+--- PASS: TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow (0.89s)
+=== CONT  TestRunImplementReportPrintsModelNotAdvertisedReason
+--- PASS: TestRunImplementExecutesSpecEndToEnd (0.99s)
+=== CONT  TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation
+=== RUN   TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/zero
+=== RUN   TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/negative
+--- PASS: TestRunImplementInteractiveInputPersistsAgentButNotSpec (1.07s)
+=== CONT  TestRunImplementValidationFailures
+=== RUN   TestRunImplementValidationFailures/missing_spec_without_active_Specs
+=== RUN   TestRunImplementValidationFailures/missing_spec_with_no-input
+=== RUN   TestRunImplementValidationFailures/interactive_without_active_Specs
+=== RUN   TestRunImplementValidationFailures/interactive_with_no-input
+=== RUN   TestRunImplementValidationFailures/interactive_with_no-agent-console
+=== RUN   TestRunImplementValidationFailures/explicitly_empty_agent_with_no-input
+=== RUN   TestRunImplementValidationFailures/unsupported_agent
+=== RUN   TestRunImplementValidationFailures/unexpected_argument
+=== CONT  TestRunImplementPreflightFailures
+--- PASS: TestRunImplementValidationFailures (0.04s)
+    --- PASS: TestRunImplementValidationFailures/missing_spec_without_active_Specs (0.00s)
+    --- PASS: TestRunImplementValidationFailures/missing_spec_with_no-input (0.00s)
+    --- PASS: TestRunImplementValidationFailures/interactive_without_active_Specs (0.00s)
+    --- PASS: TestRunImplementValidationFailures/interactive_with_no-input (0.00s)
+    --- PASS: TestRunImplementValidationFailures/interactive_with_no-agent-console (0.01s)
+    --- PASS: TestRunImplementValidationFailures/explicitly_empty_agent_with_no-input (0.01s)
+    --- PASS: TestRunImplementValidationFailures/unsupported_agent (0.00s)
+    --- PASS: TestRunImplementValidationFailures/unexpected_argument (0.00s)
+=== RUN   TestRunImplementPreflightFailures/spec_not_found
+=== RUN   TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_remove_a_gate_declared_by_the_graph
+=== RUN   TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/non-integer
+=== RUN   TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/unknown_key
+=== RUN   TestRunImplementPreflightFailures/spec_not_active
+=== RUN   TestRunImplementAutoPushOutcomeMatrix/stopped_does_not_push
+--- PASS: TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation (0.53s)
+    --- PASS: TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/zero (0.15s)
+    --- PASS: TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/negative (0.12s)
+    --- PASS: TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/non-integer (0.11s)
+    --- PASS: TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation/unknown_key (0.16s)
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit
+--- PASS: TestImplementDispatchesWithoutRecordWhenNoGovernedMutation (0.95s)
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git
+=== RUN   TestRunImplementPreflightFailures/task_without_verification
+--- PASS: TestRunImplementReportPrintsModelNotAdvertisedReason (0.74s)
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec
+=== RUN   TestRunImplementPreflightFailures/task_graph_cycle
+=== RUN   TestRunImplementPreflightFailures/default_branch_veto
+--- PASS: TestRunImplementInteractiveInputPicksSpecThroughCollector (1.37s)
+=== CONT  TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category
+=== CONT  TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category
+--- PASS: TestImplementProfileCategoriesDerivesQAFromGraphDeclaration (0.01s)
+    --- PASS: TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category (0.00s)
+    --- PASS: TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category (0.00s)
+--- PASS: TestRunImplementQAVerdictMatrix (9.81s)
+    --- PASS: TestRunImplementQAVerdictMatrix/pass (1.33s)
+    --- PASS: TestRunImplementQAVerdictMatrix/qualifying_partial (1.54s)
+    --- PASS: TestRunImplementQAVerdictMatrix/non-qualifying_partial (1.57s)
+    --- PASS: TestRunImplementQAVerdictMatrix/fail (1.72s)
+    --- PASS: TestRunImplementQAVerdictMatrix/missing_report (1.54s)
+    --- PASS: TestRunImplementQAVerdictMatrix/unreadable_verdict (2.11s)
+--- PASS: TestRunImplementPreflightFailures (1.73s)
+    --- PASS: TestRunImplementPreflightFailures/spec_not_found (0.17s)
+    --- PASS: TestRunImplementPreflightFailures/spec_not_active (0.18s)
+    --- PASS: TestRunImplementPreflightFailures/task_without_verification (0.17s)
+    --- PASS: TestRunImplementPreflightFailures/task_graph_cycle (0.30s)
+    --- PASS: TestRunImplementPreflightFailures/default_branch_veto (0.89s)
+--- PASS: TestRunImplementUsesConfiguredExternalSpecRootEndToEnd (2.20s)
+=== RUN   TestRunImplementAutoPushOutcomeMatrix/qa_fail_does_not_push
+--- PASS: TestRunImplementInteractiveInputDoesNotChooseQAGate (2.63s)
+    --- PASS: TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_add_a_gate_absent_from_the_graph (0.86s)
+    --- PASS: TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_remove_a_gate_declared_by_the_graph (1.77s)
+--- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate (0.00s)
+    --- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git (2.25s)
+    --- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit (2.33s)
+    --- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec (2.16s)
+--- PASS: TestRunImplementAutoPushOutcomeMatrix (6.63s)
+    --- PASS: TestRunImplementAutoPushOutcomeMatrix/clean_qa_pass_with_key_pushes (1.77s)
+    --- PASS: TestRunImplementAutoPushOutcomeMatrix/clean_without_key_does_not_push (1.03s)
+    --- PASS: TestRunImplementAutoPushOutcomeMatrix/unresolved_failed_task_does_not_push (1.00s)
+    --- PASS: TestRunImplementAutoPushOutcomeMatrix/stopped_does_not_push (1.60s)
+    --- PASS: TestRunImplementAutoPushOutcomeMatrix/qa_fail_does_not_push (1.23s)
+=== RUN   TestAgentSelectionProfilesMacro/invalid_task_type_blocks_every_proof_and_run_side_effect
+=== RUN   TestAgentSelectionProfilesMacro/a_selection_failure_activates_the_fallback_chain
+=== RUN   TestAgentSelectionProfilesMacro/agent_output_before_failure_keeps_the_chain_ineligible
+--- PASS: TestAgentSelectionProfilesMacro (41.87s)
+    --- PASS: TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream (21.97s)
+    --- PASS: TestAgentSelectionProfilesMacro/invalid_task_type_blocks_every_proof_and_run_side_effect (0.29s)
+    --- PASS: TestAgentSelectionProfilesMacro/a_selection_failure_activates_the_fallback_chain (9.25s)
+    --- PASS: TestAgentSelectionProfilesMacro/agent_output_before_failure_keeps_the_chain_ineligible (8.16s)
+PASS
+suiteguard: guard cost: measured 2846 paths; fingerprint took 194.251333ms before and 219.7125ms after
+ok  	roundfix/internal/cli	90.825s

@@ -1,0 +1,67 @@
+$ go test -count=1 -timeout 5m -v ./internal/cli -run ^TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed$
+=== RUN   TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed
+=== PAUSE TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed
+=== CONT  TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed
+    implement_settlement_checks_test.go:130: exit=0, want 1; stdout=task_01 completed — Build the first slice
+        task_02 completed — Build the second slice
+        Clean: all 2 Task(s) completed.
+        Tokens: none reported by 2 prompt(s); cost not reported
+         stderr=Run Worktree: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed500676547/001/.roundfix/worktrees/002-4c0f6746/run_20261027T205258Z_3ec37026784a0788
+        Roundfix implement
+        
+        Target:
+          Spec: 0001-widget-flow
+          Branch: ma/widget-flow
+          Agent: Codex
+          Agent Model: gpt-6.1-sol
+          Default Reasoning Effort: high
+          Selections:
+            per-scope history: unavailable
+          HEAD: e25620150f9b869bfceed219847d37b09b9faf43
+        
+        Run:
+          ID: run_20261027T205258Z_3ec37026784a0788
+          State: ResolvingWithAgent
+          Task Capacity: 2
+          Verification Capacity: 1
+          Run Worktree: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed500676547/001/.roundfix/worktrees/002-4c0f6746/run_20261027T205258Z_3ec37026784a0788
+          Git: clean, 0 unpushed commit(s), upstream no upstream
+          Auto-commit: on
+          Auto-push: off
+          Last push: disabled
+        
+        +-----------------------------------------+--------------------------------------------------------+
+        | Tasks                                   | Agent Console                                          |
+        +-----------------------------------------+--------------------------------------------------------+
+        | task_01 pending — Build the first ... | Agent and verification output will stream below.       |
+        | task_02 pending — Build the second... |                                                        |
+        +-----------------------------------------+--------------------------------------------------------+
+        Keys: Ctrl-C stop
+        
+        roundfix: implement selected Spec 0001-widget-flow with 2 Task(s); 2 to execute this Run.
+        Implement Run: run_20261027T205258Z_3ec37026784a0788
+        User checkout: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed500676547/002 on branch ma/widget-flow
+        Run Worktree: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed500676547/001/.roundfix/worktrees/002-4c0f6746/run_20261027T205258Z_3ec37026784a0788 on branch roundfix/run-run_20261027T205258Z_3ec37026784a0788
+        Agent: Codex
+        Agent Model: gpt-6.1-sol
+        Default Reasoning Effort: high
+        Task: task_02 (Batch 002) Build the second slice
+        Verification passed (attempt 1).
+        Task: task_01 (Batch 001) Build the first slice
+        Verification passed (attempt 1).
+        Task commit created: feat: build the second slice
+        roundfix: warning: Task task_02 completed with no changes outside the Spec Root (spec_root_only)
+        Task task_02 completed.
+        Task commit created: feat: build the first slice
+        roundfix: warning: Task task_01 completed with no changes outside the Spec Root (spec_root_only)
+        Task task_01 completed.
+        Verification failed (attempt 1); diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed500676547/001/.roundfix/artifacts/4c0f6746ee766a2a/runs/run_20261027T205258Z_3ec37026784a0788/verification/integrated-repository.log
+        Integrated Repository Verification failed: repository check; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed500676547/001/.roundfix/artifacts/4c0f6746ee766a2a/runs/run_20261027T205258Z_3ec37026784a0788/verification/integrated-repository.log
+        Implement Run run_20261027T205258Z_3ec37026784a0788 reached Clean.
+--- FAIL: TestImplementUngatedRunEndsUnresolvedWhenTheIntegratedTreeIsRed (0.42s)
+FAIL
+suiteguard: guard cost: measured 2841 paths; fingerprint took 138.32375ms before and 136.286667ms after
+FAIL	roundfix/internal/cli	1.094s
+FAIL
+
+exit: 1

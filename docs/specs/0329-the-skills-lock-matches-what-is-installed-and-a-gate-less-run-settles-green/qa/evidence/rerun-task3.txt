@@ -1,0 +1,244 @@
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== RUN   TestSettlementRefusesATaskThatPinsItsSpecPath
+=== PAUSE TestSettlementRefusesATaskThatPinsItsSpecPath
+=== RUN   TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== PAUSE TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== RUN   TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== PAUSE TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== RUN   TestSettlementCheckerErrorFailsTheCheck
+=== PAUSE TestSettlementCheckerErrorFailsTheCheck
+=== RUN   TestSettlementChecksRunAfterAFailedCommand
+=== PAUSE TestSettlementChecksRunAfterAFailedCommand
+=== RUN   TestSettlementChecksPublishVerificationEvents
+=== PAUSE TestSettlementChecksPublishVerificationEvents
+=== RUN   TestGatelessGraphNeverCallsTheSettlementChecker
+=== PAUSE TestGatelessGraphNeverCallsTheSettlementChecker
+=== RUN   TestSettlementChecksSkipAnUnobservedCommand
+=== PAUSE TestSettlementChecksSkipAnUnobservedCommand
+=== RUN   TestSettlementChecksSkipAnInfrastructureError
+=== PAUSE TestSettlementChecksSkipAnInfrastructureError
+=== RUN   TestSettlementChecksSkipAStopRequest
+=== PAUSE TestSettlementChecksSkipAStopRequest
+=== RUN   TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== PAUSE TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== RUN   TestSettlementChecksExcludePreexistingGovernedPaths
+=== PAUSE TestSettlementChecksExcludePreexistingGovernedPaths
+=== RUN   TestSettlementChecksRunAgainOnTemporaryRetry
+=== PAUSE TestSettlementChecksRunAgainOnTemporaryRetry
+=== RUN   TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands
+=== PAUSE TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands
+=== RUN   TestRepositoryVerificationFailureAtSettlementReturnsFeedback
+=== PAUSE TestRepositoryVerificationFailureAtSettlementReturnsFeedback
+=== RUN   TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+=== PAUSE TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+=== RUN   TestTaskDeclaringRepositoryVerificationRunsItOnce
+=== PAUSE TestTaskDeclaringRepositoryVerificationRunsItOnce
+=== RUN   TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification
+=== PAUSE TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification
+=== RUN   TestEmptySettlementRepositoryCommandAppendsNothing
+=== PAUSE TestEmptySettlementRepositoryCommandAppendsNothing
+=== RUN   TestUngatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestUngatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback
+=== PAUSE TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback
+=== RUN   TestUngatedGraphRunsNoInProcessSettlementCheck
+=== PAUSE TestUngatedGraphRunsNoInProcessSettlementCheck
+=== RUN   TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== PAUSE TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== RUN   TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== PAUSE TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== RUN   TestSettlementStillReportsALinkToADeletedFile
+=== PAUSE TestSettlementStillReportsALinkToADeletedFile
+=== RUN   TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== PAUSE TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== CONT  TestRepositoryVerificationFailureAtSettlementReturnsFeedback
+=== CONT  TestSettlementChecksSkipAnUnobservedCommand
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+=== CONT  TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== CONT  TestGatelessGraphNeverCallsTheSettlementChecker
+=== CONT  TestSettlementChecksExcludePreexistingGovernedPaths
+=== CONT  TestSettlementChecksPublishVerificationEvents
+=== CONT  TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands
+=== CONT  TestSettlementChecksRunAfterAFailedCommand
+=== CONT  TestSettlementCheckerErrorFailsTheCheck
+=== CONT  TestSettlementChecksRunAgainOnTemporaryRetry
+--- PASS: TestSettlementChecksExcludePreexistingGovernedPaths (0.83s)
+=== CONT  TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+--- PASS: TestSettlementChecksSkipAnUnobservedCommand (0.93s)
+=== CONT  TestSettlementChecksSkipAStopRequest
+--- PASS: TestRepositoryVerificationFailureAtSettlementReturnsFeedback (1.06s)
+=== CONT  TestSettlementRefusesATaskThatPinsItsSpecPath
+--- PASS: TestSettlementCheckerErrorFailsTheCheck (1.13s)
+=== CONT  TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+--- PASS: TestGatedGraphRunsRepositoryVerificationAfterDeclaredCommands (1.15s)
+=== CONT  TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+--- PASS: TestSettlementChecksRunAgainOnTemporaryRetry (1.18s)
+=== CONT  TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification
+--- PASS: TestSettlementChecksRunAfterAFailedCommand (1.18s)
+=== CONT  TestSettlementRefusesAnUnauthorizedGovernedDeletion
+--- PASS: TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason (1.18s)
+=== CONT  TestUngatedGraphRunsRepositoryVerificationAtSettlement
+--- PASS: TestSettlementChecksPublishVerificationEvents (1.19s)
+=== CONT  TestSettlementStillReportsALinkToADeletedFile
+--- PASS: TestGatelessGraphNeverCallsTheSettlementChecker (1.49s)
+=== CONT  TestEmptySettlementRepositoryCommandAppendsNothing
+--- PASS: TestSettlementRefusesAnUnauthorizedGovernedDeletion (0.40s)
+=== CONT  TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+--- PASS: TestSettlementRefusesATaskThatPinsItsSpecPath (0.57s)
+=== CONT  TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+--- PASS: TestSettlementChecksSkipAStopRequest (0.71s)
+=== CONT  TestUngatedGraphRunsNoInProcessSettlementCheck
+--- PASS: TestUngatedGraphRepositoryAtSettlementOffRunsOnlyDeclaredCommands (0.57s)
+=== CONT  TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback
+=== RUN   TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair
+=== PAUSE TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair
+=== RUN   TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure
+=== PAUSE TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure
+=== CONT  TestTaskDeclaringRepositoryVerificationRunsItOnce
+--- PASS: TestUngatedGraphRunsRepositoryVerificationAtSettlement (0.56s)
+=== CONT  TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+--- PASS: TestPreWorkProbeNeverRunsTheSettlementRepositoryVerification (0.77s)
+=== CONT  TestSettlementChecksSkipAnInfrastructureError
+--- PASS: TestSettlementAuditFindingReturnsFeedbackAndRepairSettles (1.29s)
+=== CONT  TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask
+--- PASS: TestSettlementChecksSkipGrantReadsForOrdinaryPaths (0.99s)
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+--- PASS: TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced (0.60s)
+=== CONT  TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair
+--- PASS: TestUngatedGraphRunsNoInProcessSettlementCheck (0.58s)
+--- PASS: TestSettlementIgnoresASpecConsistencyFindingPresentAtStart (0.70s)
+=== CONT  TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure
+--- PASS: TestEmptySettlementRepositoryCommandAppendsNothing (0.91s)
+--- PASS: TestSettlementStillReportsALinkToADeletedFile (1.27s)
+--- PASS: TestRepositoryAtSettlementOffRunsOnlyDeclaredCommands (0.77s)
+--- PASS: TestSettlementChecksSkipAnInfrastructureError (0.73s)
+--- PASS: TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback (0.00s)
+    --- PASS: TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/final-failure (0.38s)
+    --- PASS: TestUngatedGraphRepositoryFailureAtSettlementReturnsFeedback/repair (0.47s)
+--- PASS: TestTaskDeclaringRepositoryVerificationRunsItOnce (0.99s)
+--- PASS: TestRepositoryVerificationFailureOnFinalAttemptFailsTheTask (0.77s)
+--- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary (0.00s)
+    --- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing (1.08s)
+    --- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign (1.04s)
+PASS
+suiteguard: guard cost: measured 2876 paths; fingerprint took 162.604834ms before and 260.300125ms after
+ok  	roundfix/internal/daemon	3.983s
+=== RUN   TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestRunImplementDetachPrintsReportAndCompletesRun
+=== PAUSE TestRunImplementDetachPrintsReportAndCompletesRun
+=== RUN   TestRunImplementExecutesSpecEndToEnd
+=== PAUSE TestRunImplementExecutesSpecEndToEnd
+=== RUN   TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== PAUSE TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== RUN   TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== PAUSE TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== RUN   TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== PAUSE TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== RUN   TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification
+=== PAUSE TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification
+=== RUN   TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork
+=== PAUSE TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork
+=== RUN   TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt
+=== PAUSE TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt
+=== RUN   TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit
+=== PAUSE TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit
+=== RUN   TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks
+=== PAUSE TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks
+=== RUN   TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees
+=== PAUSE TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees
+=== RUN   TestRunImplementPreflightTerminalReachableChangedBranch
+=== PAUSE TestRunImplementPreflightTerminalReachableChangedBranch
+=== RUN   TestRunImplementPreflightTerminalUniqueChangedBranch
+=== PAUSE TestRunImplementPreflightTerminalUniqueChangedBranch
+=== RUN   TestRunImplementPreflightClosesTerminalRunSessionsOnly
+=== PAUSE TestRunImplementPreflightClosesTerminalRunSessionsOnly
+=== RUN   TestRunImplementPreflightPrunesRetainedRunStorage
+=== PAUSE TestRunImplementPreflightPrunesRetainedRunStorage
+=== RUN   TestRunImplementPreflightRetentionPruneFailureIsNonFatal
+=== PAUSE TestRunImplementPreflightRetentionPruneFailureIsNonFatal
+=== RUN   TestRunImplementPreflightRetentionZeroSkipsPrune
+=== PAUSE TestRunImplementPreflightRetentionZeroSkipsPrune
+=== RUN   TestBudgetClockCrossesAfterTheSettledTask
+=== PAUSE TestBudgetClockCrossesAfterTheSettledTask
+=== RUN   TestAgentSelectionProfilesMacro
+=== PAUSE TestAgentSelectionProfilesMacro
+=== RUN   TestRunImplementDetachSurvivesCallerProcessGroupKill
+=== PAUSE TestRunImplementDetachSurvivesCallerProcessGroupKill
+=== RUN   TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow
+=== PAUSE TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow
+=== CONT  TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== CONT  TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks
+=== CONT  TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== CONT  TestRunImplementPreflightRetentionPruneFailureIsNonFatal
+=== CONT  TestAgentSelectionProfilesMacro
+=== CONT  TestBudgetClockCrossesAfterTheSettledTask
+=== CONT  TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit
+=== CONT  TestRunImplementPreflightRetentionZeroSkipsPrune
+=== CONT  TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow
+=== CONT  TestRunImplementPreflightPrunesRetainedRunStorage
+--- PASS: TestRunImplementPreflightPrunesRetainedRunStorage (1.19s)
+=== CONT  TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+--- PASS: TestRunImplementPreflightRetentionPruneFailureIsNonFatal (1.20s)
+=== CONT  TestRunImplementExecutesSpecEndToEnd
+--- PASS: TestBudgetClockCrossesAfterTheSettledTask (1.20s)
+=== CONT  TestRunImplementDetachPrintsReportAndCompletesRun
+--- PASS: TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit (1.23s)
+=== CONT  TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement
+--- PASS: TestRunImplementPreflightRetentionZeroSkipsPrune (1.26s)
+=== CONT  TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+--- PASS: TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks (1.32s)
+=== CONT  TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork
+--- PASS: TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree (1.42s)
+=== CONT  TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt
+--- PASS: TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow (1.80s)
+=== CONT  TestRunImplementPreflightTerminalUniqueChangedBranch
+--- PASS: TestImplementGatedGraphRunsRepositoryVerificationAtSettlement (2.00s)
+=== CONT  TestRunImplementPreflightClosesTerminalRunSessionsOnly
+=== CONT  TestRunImplementPreflightTerminalReachableChangedBranch
+--- PASS: TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement (1.09s)
+--- PASS: TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair (1.21s)
+=== CONT  TestRunImplementDetachSurvivesCallerProcessGroupKill
+--- PASS: TestRunImplementExecutesSpecEndToEnd (1.23s)
+=== CONT  TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees
+--- PASS: TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt (1.29s)
+=== CONT  TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification
+--- PASS: TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands (1.65s)
+=== CONT  TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+--- PASS: TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork (1.64s)
+=== RUN   TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream
+--- PASS: TestRunImplementPreflightTerminalUniqueChangedBranch (1.58s)
+--- PASS: TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification (0.74s)
+--- PASS: TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair (0.64s)
+--- PASS: TestRunImplementPreflightClosesTerminalRunSessionsOnly (1.77s)
+--- PASS: TestRunImplementPreflightTerminalReachableChangedBranch (1.48s)
+--- PASS: TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees (1.48s)
+--- PASS: TestRunImplementDetachPrintsReportAndCompletesRun (2.75s)
+--- PASS: TestRunImplementDetachSurvivesCallerProcessGroupKill (2.28s)
+=== RUN   TestAgentSelectionProfilesMacro/invalid_task_type_blocks_every_proof_and_run_side_effect
+=== RUN   TestAgentSelectionProfilesMacro/a_selection_failure_activates_the_fallback_chain
+=== RUN   TestAgentSelectionProfilesMacro/agent_output_before_failure_keeps_the_chain_ineligible
+--- PASS: TestAgentSelectionProfilesMacro (21.18s)
+    --- PASS: TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream (9.65s)
+    --- PASS: TestAgentSelectionProfilesMacro/invalid_task_type_blocks_every_proof_and_run_side_effect (0.15s)
+    --- PASS: TestAgentSelectionProfilesMacro/a_selection_failure_activates_the_fallback_chain (4.35s)
+    --- PASS: TestAgentSelectionProfilesMacro/agent_output_before_failure_keeps_the_chain_ineligible (4.01s)
+PASS
+suiteguard: guard cost: measured 2876 paths; fingerprint took 141.570583ms before and 130.183083ms after
+ok  	roundfix/internal/cli	21.767s
+
+exit: 0

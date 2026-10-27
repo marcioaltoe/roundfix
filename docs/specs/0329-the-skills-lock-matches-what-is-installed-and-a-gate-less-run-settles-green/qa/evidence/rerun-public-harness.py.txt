@@ -1,0 +1,31 @@
+import subprocess,os,tempfile,pathlib,json,shutil
+r=pathlib.Path.cwd(); binary=r/'bin/roundfix'; e=next(r.glob('docs/specs/0329*/qa/evidence'))
+en=os.environ.copy();en.update(GOPROXY='off',GOSUMDB='off');en['GOMODCACHE']=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip();en['GOCACHE']=subprocess.check_output(['go','env','GOCACHE'],text=True).strip()
+log=[]
+def run(args,cwd,env=en):
+ p=subprocess.run(args,cwd=cwd,env=env,text=True,capture_output=True);log.append('$ '+' '.join(map(str,args))+'\n'+p.stdout+p.stderr+'\nexit: '+str(p.returncode));return p
+with tempfile.TemporaryDirectory() as d:
+ d=pathlib.Path(d);en.update(HOME=str(d/'home'),TMPDIR=str(d/'tmp'));(d/'home').mkdir();(d/'tmp').mkdir()
+ for case in ['stale','absent','symlink']:
+  root=d/case;root.mkdir();en.update(HOME=str(d/(case+'-home')),TMPDIR=str(d/(case+'-tmp')));pathlib.Path(en['HOME']).mkdir();pathlib.Path(en['TMPDIR']).mkdir();run(['git','init','-q'],root);lock=root/'skills-lock.json'
+  if case=='stale':
+   lock.write_text(json.dumps({'version':1,'skills':{'qa-gate':{'source':'example/skills','ref':'main','sourceType':'github','skillPath':'skills/qa-gate','computedHash':'0'*64,'extra':True},'external':{'computedHash':'1'*64,'extra':'keep'}}},indent=2)+'\n');before=lock.read_text();run(['git','add','skills-lock.json'],root);assert run(['git','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','fixture'],root).returncode==0
+  if case=='symlink':
+   target=d/'outside.json';target.write_text('{"version":1,"skills":{}}\n');before=target.read_bytes();lock.symlink_to(target)
+  p=run([str(binary),'skills','install','--target','project'],root)
+  if case=='stale':
+   assert p.returncode==0 and p.stdout.count('Updated skills-lock.json computedHash: qa-gate')==1
+   after=lock.read_text();a=json.loads(after);b=json.loads(before);b['skills']['qa-gate']['computedHash']=a['skills']['qa-gate']['computedHash'];assert a==b
+   diff=run(['git','diff','--','skills-lock.json'],root);assert len([x for x in diff.stdout.splitlines() if x.startswith('+') and not x.startswith('+++')])==1
+   run(['git','add','skills-lock.json'],root);run(['git','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','updated'],root)
+   p=run([str(binary),'skills','install','--target','project'],root);assert p.returncode==0 and 'Updated skills-lock.json' not in p.stdout;assert run(['git','diff','--quiet','--','skills-lock.json'],root).returncode==0
+  elif case=='absent':assert p.returncode==0 and not lock.exists()
+  else:assert p.returncode==2 and 'skills-lock.json' in p.stderr and target.read_bytes()==before
+ for k in list(en):
+  if k in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY','OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','OPENROUTER_API_KEY']:en.pop(k)
+ en.update(HOME=str(d/'archive-home'),TMPDIR=str(d/'archive-tmp'));pathlib.Path(en['HOME']).mkdir();pathlib.Path(en['TMPDIR']).mkdir()
+ p=run([str(binary),'archive',next(r.glob('docs/specs/0329*')).name,'--plan','--offline'],r)
+ assert p.returncode==0 and 'judge: skipped (offline)' in p.stdout
+ print('archive',p.returncode)
+ subprocess.run(['chmod','-R','u+w',str(d)],check=True)
+(e/'rerun-public-flows.txt').write_text('\n\n'.join(log));print('public flow assertions passed')

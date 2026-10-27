@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 5m -v ./internal/baseline -run ^TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock$
+=== RUN   TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock
+=== PAUSE TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock
+=== CONT  TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock
+    owned_skills_lock_test.go:106: names=[roundfix] err=<nil>
+--- FAIL: TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock (0.00s)
+FAIL
+suiteguard: guard cost: measured 2841 paths; fingerprint took 161.979ms before and 131.829875ms after
+FAIL	roundfix/internal/baseline	0.618s
+FAIL
+
+exit: 1
