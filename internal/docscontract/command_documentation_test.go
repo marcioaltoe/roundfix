@@ -22,8 +22,10 @@ import (
 	"testing"
 
 	"roundfix/internal/cli"
+	"roundfix/internal/delivery"
 	"roundfix/internal/runevent"
 	"roundfix/internal/secretscan"
+	"roundfix/internal/store"
 )
 
 // commandPaths returns command paths in root help's first-seen order.
@@ -117,6 +119,116 @@ func TestAnUndocumentedCommandIsReported(t *testing.T) {
 	if got, want := undocumentedCommands(commandPaths(stdout.String()), text), []string{"reopen"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("undocumentedCommands() = %v, want %v", got, want)
 	}
+}
+
+func TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem(t *testing.T) {
+	t.Parallel()
+
+	if err := checkParkActionDocumentation(parkActionDocuments(t, baselineDocumentationRepoRoot())); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTheParkActionContractReportsAnActionInTheClassTable(t *testing.T) {
+	t.Parallel()
+
+	doc := parkActionDocuments(t, baselineDocumentationRepoRoot())[0]
+	row, found := parkFindingRow(doc.content)
+	if !found {
+		t.Fatalf("%s: finding row is missing", doc.path)
+	}
+	joinedRow := strings.Replace(row, parkFindingBlockerCell(), parkFindingBlockerCell()+": "+parkActionNext(delivery.BlockerSecretFound), 1)
+	joined := documentedText{path: doc.path, content: strings.Replace(doc.content, row, joinedRow, 1)}
+	if err := checkParkActionDocumentation([]documentedText{joined}); err == nil || !strings.Contains(err.Error(), doc.path) || !strings.Contains(err.Error(), "finding row") {
+		t.Fatalf("joined finding row must be rejected for %s, got %v", doc.path, err)
+	}
+
+	rewordedSentence := strings.Replace(parkActionSentence(delivery.BlockerSecretFound), parkActionNext(delivery.BlockerSecretFound), "a different next action", 1)
+	reworded := documentedText{path: doc.path, content: strings.Replace(doc.content, parkActionSentence(delivery.BlockerSecretFound), rewordedSentence, 1)}
+	if err := checkParkActionDocumentation([]documentedText{reworded}); err == nil || !strings.Contains(err.Error(), doc.path) || !strings.Contains(err.Error(), delivery.BlockerSecretFound) {
+		t.Fatalf("reworded secret-found action must be rejected for %s, got %v", doc.path, err)
+	}
+}
+
+func parkActionDocuments(t *testing.T, root string) []documentedText {
+	t.Helper()
+	var documents []documentedText
+	for _, path := range []string{
+		"docs/user-guide/commands/deliver.md",
+		".agents/skills/roundfix/references/deliver.md",
+		"skills/roundfix/references/deliver.md",
+	} {
+		documents = append(documents, documentedText{path: path, content: readContractDocument(t, filepath.Join(root, path))})
+	}
+	return documents
+}
+
+func checkParkActionDocumentation(documents []documentedText) error {
+	for _, document := range documents {
+		row, found := parkFindingRow(document.content)
+		if !found {
+			return fmt.Errorf("%s: finding row is missing", document.path)
+		}
+		cells := strings.Split(row, "|")
+		if len(cells) < 4 || strings.Trim(strings.TrimSpace(cells[1]), "`") != string(delivery.ParkClassFinding) {
+			return fmt.Errorf("%s: malformed finding row %q", document.path, row)
+		}
+		if got, want := strings.TrimSpace(cells[2]), parkFindingBlockerCell(); got != want {
+			return fmt.Errorf("%s: finding row lists %q; want blocker names only %q", document.path, got, want)
+		}
+
+		normalized := strings.Join(strings.Fields(document.content), " ")
+		for _, blocker := range []string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound} {
+			want := parkActionSentence(blocker)
+			if count := strings.Count(normalized, want); count != 1 {
+				return fmt.Errorf("%s: documented action for %q occurred %d times; want exactly once: %q", document.path, blocker, count, want)
+			}
+		}
+	}
+	return nil
+}
+
+func parkFindingRow(content string) (string, bool) {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "| `"+string(delivery.ParkClassFinding)+"` |") {
+			return line, true
+		}
+	}
+	return "", false
+}
+
+func parkFindingBlockerCell() string {
+	blockers := []string{
+		delivery.BlockerRunUnresolved,
+		delivery.BlockerReviewFindings,
+		delivery.BlockerCorrectiveSpecRequired,
+		delivery.BlockerGateFailed,
+		delivery.BlockerChecksFailed,
+		delivery.BlockerRevalidationFailed,
+		delivery.BlockerArchivedItemUnproven,
+		delivery.BlockerSecretFound,
+	}
+	for i := range blockers {
+		blockers[i] = "`" + blockers[i] + "`"
+	}
+	return strings.Join(blockers, ", ")
+}
+
+func parkActionNext(blocker string) string {
+	return delivery.ClassifyPark(store.DeliveryQueue{}, store.DeliveryQueueItem{
+		SpecSlug: "<slug>",
+		Worktree: "<worktree>",
+		Blocker:  blocker,
+	}).Next
+}
+
+func parkActionSentence(blocker string) string {
+	article := "A"
+	if strings.HasPrefix(blocker, "a") {
+		article = "An"
+	}
+	return fmt.Sprintf("%s `%s` park's next action is `%s`.", article, blocker, parkActionNext(blocker))
 }
 
 func TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt(t *testing.T) {
