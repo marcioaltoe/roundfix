@@ -4,7 +4,7 @@ description: Work with project documentation and the central knowledge repositor
 metadata:
   category: setup
   tags: [workflow, documentation, git, repository-context, second-brain]
-  version: 0.6.1
+  version: 0.6.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -50,9 +50,9 @@ On top of the record, secondbrain hosts a Karpathy-style LLM wiki. The authorita
   qmd query "..." -c leis                            # statutory text; opt-in, never in unscoped searches
   ```
 
-- **Feeding business knowledge**: when a session outside secondbrain produces knowledge worth keeping (a comparison, an analysis, a decision rationale), capture it through the **research inbox**: run a `qmd query` duplicate check, then create `~/dev/secondbrain/inbox/secondbrain/YYYY-MM-DD-<slug>.md` from `templates/inbox-entry.md` (contract in `inbox/README.md`; `destination: secondbrain`) and follow the current session's commit and push authority. Ingestion into `raw/` and `wiki/` happens later, in a session at `~/dev/secondbrain`, following its AGENTS.md Ingest operation.
-- **Project coordination and continuity**: load `ai-memory-messaging` and use `memory_message_send` to send requests or reports to another project's inbox. Verify the recipient's existing workspace and project names, and include explicit sender scope for static MCP clients. Use `ai-memory-handoff` for same-project next-session context and `ai-memory-retrieval` for operational history. Keep cross-project requests out of the Secondbrain inbox; a durable wiki page is not a delivered message.
-- **Territories**: `inbox/` is the one create-only carve-out for outside sessions; `wiki/` is written by the LLM; `raw/` is immutable once filed; `projects/<p>/notes/`, `shared/`, and `areas/` (continuous life areas) are editorial; mirrors stay read-only as always.
+- **Feeding business knowledge**: load `ai-memory-messaging` and send research to `default/marcioaltoe-secondbrain` with `memory_message_send`. Include source provenance, dates, findings and limits. The filesystem inbox was retired by Marcio on 2026-10-25; outside sessions do not write to Secondbrain. Research is archived and compiled there through Ingest. A qmd duplicate check is useful before sending.
+- **Project coordination and continuity**: use `memory_message_*` for requests and responses between existing projects, and `ai-memory-handoff` for same-project continuity on request. Static clients name sender and recipient scopes. If a mailbox is absent, tell Marcio; do not create a filesystem substitute. Update stale local rules/automation and check the Roundfix Baseline when it still prescribes the old workflow.
+- **Territories**: `wiki/`, `raw/`, editorial notes, shared material and areas are maintained by Secondbrain sessions. Mirrors remain read-only; there is no outside-session write carve-out.
 
 ## Anti-patterns
 
