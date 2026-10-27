@@ -80,7 +80,7 @@
     "guide docs/user-guide/commands/init.md": "sha256:6e44fee83f2f7c08cf9b6a074d4fddc8293c4d065e6351d089692648a8178d3a",
     "guide docs/user-guide/commands/migrate.md": "sha256:9ef86066a0b47688dbb5fbfc35d805c0e9258b802aeb61eb7c2a7ffd09f44e03",
     "guide docs/user-guide/commands/profiles.md": "sha256:678d00544786b2a92caaf645562aec5fab0898159bd250b0fc9cfac61d404ff1",
-    "guide docs/user-guide/commands/qa-report.md": "sha256:431a904488f61152c4065b2e7b8c177dd1c7820e274062c739fbc896151337d4",
+    "guide docs/user-guide/commands/qa-report.md": "sha256:a48226d17c1ccfe5772dea85992dd76be217586a1bfaef473879a3071d4bf6b5",
     "guide docs/user-guide/commands/reconcile.md": "sha256:4faf9a573ca969e9ffc60e6a43791896f32fdf80aacdb1570c631a95eb84f8e9",
     "guide docs/user-guide/commands/reopen.md": "sha256:2af1c3a8246fcb1a5db1ab430eeb88d8395bb48a207f08876f9d078817160015",
     "guide docs/user-guide/commands/resolve.md": "sha256:30f9c10b3af94202961d828d8c38322094f680188d98f7678929bd6da5ec758b",

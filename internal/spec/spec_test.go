@@ -104,7 +104,8 @@ func TestUnreachableReadsDeclaredAcceptance(t *testing.T) {
 		t.Fatalf("Unreachable returned %d declarations, want one per fixture entry (%d): %+v", len(declarations), len(want), declarations)
 	}
 	for index := range want {
-		if declarations[index] != want[index] {
+		got, expected := declarations[index], want[index]
+		if got.Criterion != expected.Criterion || got.Reason != expected.Reason || got.SatisfiedBy != expected.SatisfiedBy || got.Line != expected.Line || len(got.Criteria) != 1 || got.Criteria[0] != expected.Criterion {
 			t.Errorf("declaration[%d] = %+v, want %+v", index, declarations[index], want[index])
 		}
 	}

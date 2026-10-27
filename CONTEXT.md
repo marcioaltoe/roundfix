@@ -307,7 +307,7 @@ Evidence for at least one named acceptance row that originates outside the Spec'
 _Avoid_: Self-authored rehearsal, internal fixture, passing suite
 
 **Unreachable Acceptance**:
-The `## Unreachable Acceptance` declaration a Spec authors with its QA rows, naming each acceptance row whose evidence needs the network, an open pull request or a credential the repository cannot hold. A row blocked for a declared reason can still qualify a declared `partial`; the pre-PR pull request row, a Network-Denied Row and a Network-Prohibited Row need no declaration.
+The `## Unreachable Acceptance` declaration a Spec authors with its QA rows, naming each acceptance row whose evidence needs the network, an open pull request or a credential the repository cannot hold. A row blocked for a declared reason can still qualify a declared `partial`; the pre-PR pull request row, a Network-Denied Row and a Network-Prohibited Row need no declaration. One declaration may name several criteria; each is its own QA row. A declared-blocked row matches the criterion by its text or leading label; the declaration count remains the fallback for reports accepted before this rule (ADR-0343).
 _Avoid_: Skipped row, waived criterion, known limitation
 
 **ACP Runtime**:

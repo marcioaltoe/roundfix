@@ -141,6 +141,9 @@ Run Worktree removed: <run worktree path>
 
 ## QA Report acceptance
 
+One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label.
+A report whose declared-blocked rows do not exceed its declarations is accepted as before.
+
 ```bash
 roundfix qa-report accept <path>
 ```

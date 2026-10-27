@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -156,3 +156,85 @@ reference, the `qa-report` guide, the QA prompt and `CONTEXT.md`.
 - `_prd.md` → Goals 1, 2 and 6; Core Features 1, 2 and 6; Success Metrics 1-3 and 7; Glossary
 - `_techspec.md` → Current behavior 1-4; API Contracts 1-4 and 8; Declared breaks 1-2; Invariants 1-2; Testing Approach; Build Order 1
 - ADR-0343, ADR-0240
+
+
+## Result
+
+Implemented the acceptance slice only; Task status remains Daemon-owned.
+The initial worktree had only this Task file changed (its Daemon-owned status).
+No other Task or manifest was edited.
+
+### Criterion 1: multiple criteria and named unmatched rows
+
+- `UnreachableDeclaration.Criteria` retains every repeated criterion in order;
+  continuations extend the last criterion, `Criterion` stays the first, and
+  a missing or empty criterion retains the existing refusal.
+- Report parsing collects declared row IDs and criterion text in the existing
+  Results-table pass. Eligibility accepts matched listed rows only when their
+  number covers the declared count; otherwise the original declaration-count
+  fallback applies. When both paths refuse, the original shortfall diagnostic
+  names every listed unmatched row.
+- `TestUnreachableDeclarationNamesEveryCriterion`,
+  `TestCriterionNamedMatchesTextOrLeadingLabel`,
+  `TestQAReportEligibilityMatchesEachDeclaredRow`, and CLI dispatch test
+  `TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion` exercised repeated
+  criteria, continuations, empty fields, normalization and label boundaries,
+  Q10/Q11 acceptance, Q12 refusal with shortfall 1, and an inflated count of 3.
+- Defect evidence: initial source inspection showed the second criterion
+  overwrote the first and eligibility compared only declaration count. A
+  temporary Go overlay restoring the count-only eligibility condition made
+  the CLI Quaestor-shape regression exit 1 with the original `shortfall is 1`
+  refusal. This expected negative probe changed no repository file.
+
+### Criterion 2: compatibility and shared classification
+
+- `QADeclaredRowCriterion` is used by report parsing and the mechanical stage;
+  it preserves the latter's case-insensitive prefix, optional space after
+  the colon, non-empty criterion and closing-parenthesis rules.
+- `TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow` accepts the
+  paraphrased Q09 row and the same metadata without a Results table.
+  Existing focused eligibility, skipped-row and environment exemption cases
+  also passed unchanged. Source review confirms CLI acceptance, settle,
+  Daemon settlement and archive still call `spec.QAReportEligibility`.
+- Only the two existing tests named in Requirement 7 were modified. Existing
+  archive, partial-policy and prohibited-subject tests were not edited.
+
+### Criterion 3: written rule and generated records
+
+- Added the exact API Contract 8 sentence and compatibility fallback to the
+  qa-gate section, PRD template, settle reference and qa-report guide. The
+  template demonstrates two criterion lines. The qa-gate non-waivable list
+  and QA prompt cover each named criterion, and the new section requires
+  the criterion or leading label rather than a paraphrase.
+- Revised **Unreachable Acceptance** through domain-modeling, citing ADR-0343
+  and preserving its `_Avoid_` line.
+- `make skills-sync`: exit 0. The sanctioned owned-skill recorder exited 0
+  and raised both canonical/mirrored version fields: qa-gate 0.0.21 to
+  0.0.22, write-prd 0.0.13 to 0.0.14, roundfix 0.1.151 to 0.1.152.
+- A Python byte comparison confirmed all files in these three canonical
+  skill directories agree with their mirrors, and both touched skills'
+  `### QA settlement` sections equal their HEAD versions.
+- After the final guide edit and skill recording,
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and regenerated the Behavior Surface fingerprint. No mirror,
+  version field or generated record was edited by hand.
+
+### Focused checks
+
+- `go test ./internal/spec ./internal/cli ./internal/agent ./internal/speccheck -run 'Test(UnreachableDeclarationNamesEveryCriterion|CriterionNamedMatchesTextOrLeadingLabel|QAReportEligibilityMatchesEachDeclaredRow|QAReportEligibilityKeepsTodaysCountForAParaphrasedRow|QAReportAcceptMatchesEachDeclaredRowToItsCriterion|UnreachableReadsDeclaredAcceptance|BuildQAPromptStatesTheDeclaredMatrix|QAReportEligibility|APartialWithASkippedRowNeverQualifies|ANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial|ANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial)$' -count=1`:
+  exit 0; runner reported 72 passing tests across four packages.
+- `go test ./internal/speccheck -run '^TestMechanicalReportShape$' -count=1`:
+  exit 0; runner reported four passing tests.
+- `go test -overlay "$(cat /tmp/roundfix-0330-count-overlay-path)" ./internal/cli -run '^TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion$/Quaestor_shape$' -count=1`:
+  exit 1 as expected with the temporary count-only mutation; the regression
+  detects the old refusal.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit 0.
+- `git diff --check`: exit 0 before Result recording.
+
+The executor rejected the configured symlinked writable root before launching
+sandboxed commands; escalated commands accessed the same assigned checkout.
+No declared Verification, repository Verification, commit, push or Pull Request
+was run. Full compatibility/replay and delivery gates remain Daemon-owned;
+these focused checks make no claim about their outcome. No follow-up scope
+was implemented.

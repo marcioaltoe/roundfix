@@ -2332,6 +2332,7 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 	for _, row := range report.rows {
 		status := strings.TrimSpace(row.status)
 		lower := strings.ToLower(status)
+		_, declared := spec.QADeclaredRowCriterion(status)
 		switch {
 		// The row a gate writes when a precondition stopped it before it built
 		// a matrix: the bare blocked status no typed cause covers, with
@@ -2371,7 +2372,7 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 				Fix:     "Add the required literal \" — waits on \" after the finding type.",
 				RowHint: row.id,
 			})
-		case typedBlockedStatus(lower, "declared"):
+		case declared:
 			actual["rows_blocked_declared"]++
 		case strings.HasPrefix(lower, "blocked"):
 			addMechanicalFinding(result, MechanicalFinding{
