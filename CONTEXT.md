@@ -497,7 +497,7 @@ A Run started with the detach flag: roundfix re-executes itself as a session lea
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
-The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome or after settle integrates it, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
+The isolated git worktree a Spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome or after settle integrates it, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees; settle fast-forwards it to the Run's branch when that branch changed the Spec folder.
 _Avoid_: Sandbox, scratch dir, user checkout
 
 **Worktree Root**:

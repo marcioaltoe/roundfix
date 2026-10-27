@@ -1,5 +1,13 @@
 ### settle
 
+When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
+
+```text
+Run Worktree advanced: <old short> -> <new short> (<branch>)
+```
+
+A later Verification failure keeps the advance and leaves the Task status unchanged.
+
 Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
 It exits `2` before writing anything, with this refusal:
 
@@ -23,7 +31,7 @@ After accepting the user checkout, settle reports the choice on stderr as
 candidate qualifies, the refusal names each candidate path, the status found
 there, and `no uncommitted work` for a surface that holds none. It re-runs the
 Task's Verification commands in the selected tree — verbatim, in task file
-order, with no Agent session — changes nothing on failure, and on pass prints
+order, with no Agent session — preserves the advance on failure, and on pass prints
 one sorted `commit <path>` line per committed path before the settled line. A
 path the commit removes — a file the Task deleted, or the old name of one it
 renamed — carries a `— deleted` qualifier, because the path alone no longer
@@ -38,7 +46,7 @@ settled task_01 completed — <short sha>
 ```
 
 The first command that does not pass ends the re-run and exits `1` with the
-Task status, the surface, and the Run left as they were:
+Task status unchanged and any preflight advance retained:
 
 ```text
 verify go test ./... — failed (diagnostics: <artifact-dir>/runs/settle-<slug>-<task_id>/verification/batch-001-attempt-1.log)

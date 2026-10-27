@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -120,3 +120,49 @@ the rule into the settle usage, the Roundfix `settle` reference, the
 - `_prd.md` → Goals 3 and 6; Core Features 3 and 6; Success Metrics 5 and 7; Acceptance evidence; Glossary
 - `_techspec.md` → Current behavior 6, 7 and 9; API Contracts 6 and 10; Declared breaks 4 and 6; Invariant 3; Testing Approach; Build Order 3
 - ADR-0343
+
+
+## Result
+
+Implemented the Task 03 branch-plan slice. Initial inspection found no branch
+comparison between commit-authority preflight and Verification; the five
+required regression tests were absent. The existing status-only change in
+this Task file was preserved.
+
+- Acceptance criterion 1: the final preflight step compares surface HEAD and
+  the Run's target branch at their merge base, scoped to branch changes in
+  this Spec folder. An ancestor Run Worktree advances through `git merge
+  --ff-only`, reports both short revisions on stderr, then reloads the Spec
+  and Task. The new QA regression uses one declaration and two declared rows;
+  adding the second criterion on the user branch allows settlement against
+  that amended plan, with the advance printed before removal.
+- Acceptance criterion 2: CLI regressions assert exit 2 and unchanged HEAD,
+  Task, changed-file bytes and Git status for overlapping local work,
+  diverged Run commits and a Task Worktree. A Verification failure after an
+  advance exits 1, retains the branch commit and leaves Task status unchanged.
+  Authorization remains the Run-start record. The existing pending-integration
+  test was left byte-identical and passes for branch changes outside the Spec.
+- Acceptance criterion 3: usage, the canonical settle reference and the user
+  guide contain API Contract 10 verbatim, the advance transcript and retained
+  advance on Verification failure. The Run Worktree definition includes the
+  requested rule and preserves its `_Avoid_` line. Generated skill mirrors
+  and both roundfix version fields are now 0.1.154; the Behavior Surface record
+  was regenerated after the last guide edit.
+
+Focused checks and required record commands:
+
+- `go test ./internal/cli -run 'TestSettle(AdvancesTheRun|RefusesWhenTheBranch|RefusesASpec|KeepsTheAdvance)' -count=1 -timeout 5m`
+  — exit 0, all five new CLI regressions exercised.
+- `go test ./internal/cli -run '^TestSettleNamesNoRemovalWhenIntegrationIsPending$' -count=1 -timeout 3m`
+  — exit 0.
+- `make skills-sync` — exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; recorder raised and recorded the roundfix version pair.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  — exit 0; last regeneration after guide edits.
+- `git diff --check` — exit 0.
+
+The Task's declared Verification and repository Verification were not run;
+those remain Daemon-owned. No Task status, other Task file, Task Graph,
+Carry-Forward implementation, Daemon, authorization reader or QA settlement
+section was changed. No commit, push or pull request was made.

@@ -40,6 +40,10 @@ Settle runs from the user checkout: inside a Run Worktree or Task Worktree it re
 Refusal (exit 2):
   settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
 
+When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
+Run Worktree advanced: <old short> -> <new short> (<branch>)
+A later Verification failure keeps the advance and leaves the Task status unchanged.
+
 Options:
   --spec  Spec slug under docs/specs/
   --task  Task id from the Spec Task Graph
@@ -361,7 +365,73 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 	if err := requireSettleCommitAuthority(plan, changed); err != nil {
 		return settlePlan{}, validationError{message: err.Error()}
 	}
+	if err := followSettleBranchPlan(ctx, &plan, stderr); err != nil {
+		return settlePlan{}, validationError{message: err.Error()}
+	}
 	return plan, nil
+}
+
+// followSettleBranchPlan is the last preflight step: only a Run Worktree
+// behind the target branch can advance, and only when that branch changed
+// this Spec. Authorization remains the record resolved at Run start.
+func followSettleBranchPlan(ctx context.Context, plan *settlePlan, stderr io.Writer) error {
+	if !plan.hasRun {
+		return nil
+	}
+	tipBytes, err := reconcileGitRaw(ctx, plan.userRoot, "rev-parse", "--verify", "refs/heads/"+plan.targetBranch)
+	if err != nil {
+		return nil // A target branch that no longer resolves keeps today's behavior.
+	}
+	tip := strings.TrimSpace(string(tipBytes))
+	headBytes, err := reconcileGitRaw(ctx, plan.workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return fmt.Errorf("read settle surface HEAD: %w", err)
+	}
+	head := strings.TrimSpace(string(headBytes))
+	if head == tip {
+		return nil
+	}
+	baseBytes, err := reconcileGitRaw(ctx, plan.workDir, "merge-base", head, tip)
+	if err != nil {
+		return fmt.Errorf("compare settle surface %s with %s: %w", plan.workDir, plan.targetBranch, err)
+	}
+	base := strings.TrimSpace(string(baseBytes))
+	folder, err := filepath.Rel(plan.workDir, plan.graph.Spec.Dir)
+	if err != nil {
+		return fmt.Errorf("resolve settle Spec folder: %w", err)
+	}
+	files, err := reconcileGitRaw(ctx, plan.workDir, "diff", "--name-only", "-z", base, tip, "--", filepath.ToSlash(folder))
+	if err != nil {
+		return fmt.Errorf("compare settle Spec folder: %w", err)
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	if plan.taskSurface || base != head {
+		return fmt.Errorf("Spec %s changed on %s after settle surface %s forked from it: %s; merge %s into that worktree, then settle again", plan.graph.Spec.Slug, plan.targetBranch, plan.workDir, strings.Join(strings.Split(strings.TrimRight(string(files), "\x00"), "\x00"), ", "), plan.targetBranch)
+	}
+	oldShort, err := reconcileGitRaw(ctx, plan.workDir, "rev-parse", "--short", head)
+	if err != nil {
+		return err
+	}
+	newShort, err := reconcileGitRaw(ctx, plan.workDir, "rev-parse", "--short", tip)
+	if err != nil {
+		return err
+	}
+	if _, err := reconcileGitRaw(ctx, plan.workDir, "merge", "--ff-only", tip); err != nil {
+		return fmt.Errorf("advance settle surface %s to %s: %w", plan.workDir, plan.targetBranch, err)
+	}
+	fmt.Fprintf(stderr, "Run Worktree advanced: %s -> %s (%s)\n", strings.TrimSpace(string(oldShort)), strings.TrimSpace(string(newShort)), plan.targetBranch)
+	graph, err := spec.Load(plan.specsRoot, plan.graph.Spec.Slug)
+	if err != nil {
+		return fmt.Errorf("reload advanced settle Spec: %w", err)
+	}
+	task, found := findSettleTask(graph.Tasks, plan.task.ID)
+	if !found {
+		return fmt.Errorf("reload advanced settle Task %s: task absent", plan.task.ID)
+	}
+	plan.graph, plan.task = graph, task
+	return nil
 }
 
 // settleUserCheckout reads the exact Run named by either a Run or Task Branch.

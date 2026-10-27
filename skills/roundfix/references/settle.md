@@ -32,6 +32,14 @@ neither stale nor above a proven Late Dependency.
 
 ## Settle Command
 
+When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
+
+```text
+Run Worktree advanced: <old short> -> <new short> (<branch>)
+```
+
+A later Verification failure keeps the advance and leaves the Task status unchanged.
+
 Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
 It exits `2` before writing anything, with this refusal:
 
