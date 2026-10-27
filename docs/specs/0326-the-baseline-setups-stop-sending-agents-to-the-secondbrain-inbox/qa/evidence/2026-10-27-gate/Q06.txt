@@ -1,3 +1,0 @@
-Source Baseline Task delta empty; no managedArtifacts path under internal/baseline/assets/source-baselines/
-docs/agents/secondbrain.md: prohibition regex matched; retired permissions absent from full directory.
-internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md: prohibition regex matched; retired permissions absent from full directory.

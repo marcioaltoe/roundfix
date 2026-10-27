@@ -1,8 +1,0 @@
-COMMAND: go test -timeout 20m -list '^TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox$' ./internal/baseline | grep -qx TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox || { echo 'missing test TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox' >&2; exit 1; }; go test -timeout 20m -count=1 ./internal/baseline ./skills
-exit: 0
-ok  	roundfix/internal/baseline	73.233s
-ok  	roundfix/skills	0.970s
-
-COMMAND: for f in go rust typescript python go-cli-typescript-bun; do grep -qF -- '"ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178"' "internal/baseline/assets/setups/$f.json" || { printf '%s is not at b56fc5ff\n' "$f" >&2; exit 1; }; if grep -qF -- 8d71fade68c54693bedbd917371f0514311af157 "internal/baseline/assets/setups/$f.json"; then printf '%s keeps 8d71fade\n' "$f" >&2; exit 1; fi; done; if grep -rlF --include='*_test.go' -- 8d71fade68c54693bedbd917371f0514311af157 internal/baseline; then echo 'a test still pins 8d71fade' >&2; exit 1; fi; tr -s '[:space:]' ' ' < .agents/skills/knowledge-workspace/SKILL.md | grep -qF -- 'version: 0.6.2' || { echo 'installed knowledge-workspace is not 0.6.2' >&2; exit 1; }; if tr -s '[:space:]' ' ' < .agents/skills/knowledge-workspace/SKILL.md | grep -qF -- 'dev/secondbrain/inbox/'; then echo 'installed knowledge-workspace still writes to the Secondbrain inbox' >&2; exit 1; fi; go test -timeout 20m -count=1 -tags docscontract -run '^TestTheSetupManifestIsCurrent$' ./internal/docscontract
-exit: 0
-ok  	roundfix/internal/docscontract	0.403s

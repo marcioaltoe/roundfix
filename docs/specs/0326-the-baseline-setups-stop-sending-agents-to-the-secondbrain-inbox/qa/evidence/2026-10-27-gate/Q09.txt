@@ -1,7 +1,0 @@
-normalized match: send research to
-normalized match: default/marcioaltoe-secondbrain
-normalized match: The filesystem inbox was retired
-normalized match: do not create a filesystem substitute
-normalized match: there is no outside-session write carve-out
-Offline outside source: marcioaltoe/skills#136, upstream skills/00-setup/knowledge-workspace/SKILL.md diff 8d71fade..b56fc5ff; quoted in docs/specs/0326-the-baseline-setups-stop-sending-agents-to-the-secondbrain-inbox/references/2026-10-26-the-knowledge-workspace-skill-still-writes-to-the-secondbrain-inbox.md
-Message 01a179b6-de08-7b43-9ff4-96ff9a4693d7, default/gesttione-solutions-pantheon, 2026-10-26 16:36 BRT; message 01a1795f-d2d0-7bf0-a85c-e94970373063 item 3, default/marcioaltoe-skills, 2026-10-26 15:01 BRT. Upstream merge 2026-10-26 15:02 BRT.

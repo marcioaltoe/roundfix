@@ -1,8 +1,0 @@
-COMMAND: go test -timeout 20m -count=1 -json -tags docscontract ./internal/docscontract
-exit: 0
-
-{"Time":"2026-10-27T02:47:11.178735-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestCheckActiveCorpusHasNoErrors","Output":"=== RUN   TestCheckActiveCorpusHasNoErrors\n"}
-{"Time":"2026-10-27T02:47:11.178873-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestCheckActiveCorpusHasNoErrors","Output":"--- PASS: TestCheckActiveCorpusHasNoErrors (0.00s)\n"}
-{"Time":"2026-10-27T02:47:15.484023-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestAStaleBehaviorSurfaceIsReported/stale","Output":"=== RUN   TestAStaleBehaviorSurfaceIsReported/stale\n"}
-{"Time":"2026-10-27T02:47:15.484024-03:00","Action":"output","Package":"roundfix/internal/docscontract","Test":"TestAStaleBehaviorSurfaceIsReported/stale","Output":"--- PASS: TestAStaleBehaviorSurfaceIsReported/stale (0.00s)\n"}
-{"Time":"2026-10-27T02:47:16.636688-03:00","Action":"output","Package":"roundfix/internal/docscontract","Output":"ok  \troundfix/internal/docscontract\t10.072s\n"}

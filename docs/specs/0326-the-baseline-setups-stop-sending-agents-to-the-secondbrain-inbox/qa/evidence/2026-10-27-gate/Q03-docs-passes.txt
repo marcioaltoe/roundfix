@@ -1,2 +1,0 @@
-{"Time":"2026-10-27T02:47:16.635716-03:00","Action":"pass","Package":"roundfix/internal/docscontract","Test":"TestTheSetupManifestIsCurrent","Elapsed":0.11}
-{"Time":"2026-10-27T02:47:16.636697-03:00","Action":"pass","Package":"roundfix/internal/docscontract","Elapsed":10.073}

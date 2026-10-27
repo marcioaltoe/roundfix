@@ -1,6 +1,0 @@
-Pull Request row: blocked (environment: no open Pull Request), supplied by Daemon.
-Approval: recorded maintainer cycle AQ delivery authority in _authorization.md, granted 2026-10-26; implementation authorization is not Merge-Ready acceptance.
-Checks: Daemon reports make verify-changed passed exit 0 at 164e2b1ce732afc0501947114007e91d23ea506e.
-Unresolved threads: none, no Pull Request exists.
-Merge-Ready acceptance: none yet; no reviewer/provider called.
-Review-artifact ancestry: no review artifact yet; claimed candidate 164e2b1ce732afc0501947114007e91d23ea506e; no acceptance of another head credited.

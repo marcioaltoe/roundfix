@@ -1,2 +1,0 @@
-PRD and TechSpec glossary declarations: None.
-git diff --name-only 4bfe61302f17f2757ca547cb3612ca925f04c90f 164e2b1ce732afc0501947114007e91d23ea506e -- CONTEXT.md: exit 0, empty.
