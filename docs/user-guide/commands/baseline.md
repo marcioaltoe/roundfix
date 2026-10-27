@@ -165,7 +165,8 @@ adds nothing to it; `roundfix doctor` reports that state.
 After the bundle install, an existing `skills-lock.json` entry naming an owned
 skill receives the installed folder's `computedHash`; every other field is
 kept. No entry or lock is created when none exists. The result reports
-`skills.lockUpdated` and prints `Skills lock updated: <name>` for each name.
+`skills.lockUpdated` and prints `Skills lock updated: <count>` followed by one
+`- lock updated <name>` line for each name.
 
 The history plan names every file it will remove before approval. Each pending
 unit carries sorted repository-relative `paths` in JSON: the files a removal
