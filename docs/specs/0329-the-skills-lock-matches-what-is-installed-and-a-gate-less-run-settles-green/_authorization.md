@@ -111,6 +111,17 @@ outputs:
   - docs/references/behavior-surfaces.json
 ```
 
+The repository coverage record is rewritten only by its record command,
+after task_03 replaces the old gate-less settlement test (amended
+2026-10-27 after the second delivery Run's settlement failed on
+`TestCoverageEquivalence`):
+
+```yaml
+command: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+outputs:
+  - docs/references/coverage-record.json
+```
+
 No version field, fingerprint or digest is hand-edited.
 
 ## Limits
