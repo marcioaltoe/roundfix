@@ -116,7 +116,10 @@ edits runtime-owned settings or credentials.
 `profiles validate` is read-only proof through disposable ACP Sessions. It
 deduplicates exact tuples, reports every category reference, closes every
 disposable session on success or error, sends no prompt, creates no Run, and
-returns `roundfix/profiles-validate/v1` JSON with tuple-level status.
+returns `roundfix/profiles-validate/v1` JSON with tuple-level status and an
+optional `warning` field. Text success output prints `warning: <text>` after
+that proof's reference lines. A close failure after a passing proof is a
+warning, not a proof failure.
 
 Non-interactive Agent-starting commands (`resolve`, `watch`, and `implement`)
 accept exactly two selection forms: omit every selection flag to use profiles,
@@ -247,10 +250,14 @@ proof timed out on 3 attempts is classified `temporary`; adjust
 time.
 
 `profiles validate`, operational Preflight, pre-PR review, Doctor, Setup and
-`profiles configure` pass the value to each attempt's setup context. Every
-configured tuple is still proven. An expired setup deadline stops the acpx
-command and closes the disposable Session. The cleanup deadline, the Fallback
-Chain probe after Run creation and Run sessions keep their existing deadlines.
+`profiles configure` pass the value to each attempt's setup and close context.
+Every configured tuple is still proven. An expired setup deadline stops the
+acpx command and closes the disposable Session, naming the step as
+`profile proof step "<step>"`. If setup passes but close fails, the proof still
+passes with a warning and an Unclosed Proof Session record under
+`~/.roundfix/unclosed-proof-sessions/`; the first proof of a later command
+closes that record. The Fallback Chain probe keeps the built-in setup deadline,
+and Run sessions and sealed prompts keep their cleanup deadlines.
 
 ## Full access
 

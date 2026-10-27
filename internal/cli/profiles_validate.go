@@ -40,6 +40,7 @@ type profileProofReport struct {
 	AdvertisedReasoning   []string                   `json:"advertised_reasoning,omitempty"`
 	NextAction            string                     `json:"next_action,omitempty"`
 	Error                 string                     `json:"error,omitempty"`
+	Warning               string                     `json:"warning,omitempty"`
 }
 
 type profileProofReference struct {
@@ -231,6 +232,9 @@ func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.C
 				Err:            err,
 			}}
 		}
+		if proof.Unclosed != nil {
+			proofs[index].Warning = proof.Unclosed.Warning
+		}
 		proofs[index].Status = "passed"
 		proofs[index].EffectiveAccessPolicy = proof.EffectiveAccessPolicy
 		proofs[index].Encoding = strings.TrimSpace(proof.Assignment.Encoding)
@@ -281,7 +285,30 @@ func profileProofSleep(ctx context.Context, wait time.Duration) error {
 }
 
 func profileProofSetupTimedOut(ctx context.Context, err error) bool {
-	return errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil
+	return ctx.Err() == nil && profileProofHasSetupDeadline(err)
+}
+
+// Ignore cleanup subtrees, including their wrapped deadlines, while retaining
+// independent setup deadlines in joined errors.
+func profileProofHasSetupDeadline(err error) bool {
+	if err == nil {
+		return false
+	}
+	if _, cleanup := err.(*agent.AgentSessionCleanupError); cleanup {
+		return false
+	}
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, child := range joined.Unwrap() {
+			if profileProofHasSetupDeadline(child) {
+				return true
+			}
+		}
+		return false
+	}
+	if wrapped, ok := err.(interface{ Unwrap() error }); ok {
+		return profileProofHasSetupDeadline(wrapped.Unwrap())
+	}
+	return errors.Is(err, context.DeadlineExceeded)
 }
 
 const (
@@ -324,6 +351,10 @@ func profileProofClassification(err error) string {
 	var timeout *profileProofTimeoutError
 	if errors.As(err, &timeout) {
 		return "temporary"
+	}
+	var cleanup *agent.AgentSessionCleanupError
+	if errors.As(err, &cleanup) {
+		return cleanup.Classification()
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return ""
@@ -452,6 +483,9 @@ func printProfilesValidateSuccess(req profilesValidateRequest, result profilePro
 		fmt.Fprintf(stdout, "%d. %s — %s\n", index+1, formatProfileSelection(proof.Selection), status)
 		for _, reference := range proof.References {
 			fmt.Fprintf(stdout, "   - %s\n", formatProfileProofReference(reference))
+		}
+		if proof.Warning != "" {
+			fmt.Fprintf(stdout, "   warning: %s\n", proof.Warning)
 		}
 	}
 	return nil

@@ -331,15 +331,22 @@ Proof that the effective ACP adapter command has the supported package lineage a
 _Avoid_: Adapter found, binary check, PATH readiness
 
 **Exact Agent Selection Proof**:
-The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, observes matching effective state, and closes the Session successfully.
+The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, and observes matching effective state. Its verdict rests on setup; the close follows, and a failed close leaves an Unclosed Proof Session ([ADR-0344](docs/adr/0344-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails-and-the-next-proof-closes-it.md)).
 _Avoid_: Model validity, catalog match, recommendation rank
 
 **Proof Setup Deadline**:
 The wall-clock bound on one attempt of an Exact Agent Selection Proof's
 disposable Agent Session setup, set by `defaults.profile_proof_setup_timeout`
 (default `30s`). An attempt that exceeds it is retried after 5 seconds and
-again after 10 seconds, and a third timeout is classified `temporary` ([ADR-0298](docs/adr/0298-a-timed-out-profile-proof-gets-a-third-attempt-and-its-setup-deadline-is-configurable.md)).
+again after 10 seconds, and a third timeout is classified `temporary`. The
+deadline also bounds the close of that attempt's disposable session ([ADR-0344](docs/adr/0344-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails-and-the-next-proof-closes-it.md)).
 _Avoid_: Run Budget, test deadline, arbitrary timeout
+
+**Unclosed Proof Session**:
+A record under `~/.roundfix/unclosed-proof-sessions/` for a disposable proof
+session whose setup passed but whose close failed. The first proof of a later
+command attempts to close it before proving its own selection ([ADR-0344](docs/adr/0344-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails-and-the-next-proof-closes-it.md)).
+_Avoid_: Run session, cleanup warning, open work session
 
 **Runtime Catalogue**:
 What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands ([ADR-0147](docs/adr/0147-the-adapters-refusal-fires-first-and-the-catalogue-is-the-net.md)).
