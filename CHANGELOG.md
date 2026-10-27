@@ -2,6 +2,48 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.125.0] - 2026-10-27
+
+### Runs keep the disk from filling
+
+- **Implement Runs and the Delivery Queue's repository gate trim every declared Shared Build Cache by themselves.** Each Run start and each gate apply the GC Command's rules under a thirty-second budget and record a `shared_cache_trim` Run Event; a trim never changes a Run's or the gate's result. `roundfix gc` still trims on demand.
+- **`roundfix doctor` warns on low disk.** A `disk-space:` line reports `DR-DISK-LOW` when less than 10,240 MiB is free where worktrees or a Shared Build Cache live, with `next: roundfix gc`, and `DR-DISK-UNREAD` when free space cannot be read. Both are warnings and never change the exit code.
+
+### Runs are not lost to an authorization row or a provider at capacity
+
+- **A qualifying QA partial accepts an outside-evidence row the Spec's own authorization keeps offline**, recorded as `blocked (environment: <subject> prohibited by Spec authorization)`, in settlement, `roundfix qa-report accept`, `roundfix archive` and the Delivery Queue alike. Nothing else about a qualifying partial loosens.
+- **A Provider System Error moves the work to the next Fallback Selection** in a Task's first turn, in its repair turn and anywhere in a QA turn; only an exhausted chain parks `runtime-infrastructure`. A QA fallback session never inherits a verdict the failed turn wrote.
+
+### The status and the guides say what to do next
+
+- `roundfix follow-up --status` prints no blank field when the release needs a manual classification: `Next release` says no version is proposed and how many commits need classifying, and `Waiting on the maintainer` names the `roundfix release plan` command.
+- The Park Class table maps each class to its own blockers, and the `secret-found` next action is stated as the queue prints it.
+- `write-tasks` tells authors to declare a shared test helper, fake, fixture or golden in every Task that changes it.
+
+### The follow-up mode consumes what it reads
+
+- **The `--follow-up` Skill Mode accepts the pending handoff and pops every ai-memory message** once its content is recorded, instead of only listing them; `--status` stays read-only and accepts no handoff.
+
+### A Spec delivers the executables it names and archives a declined QA gate
+
+- **A Task commit keeps an untracked executable file only when its exact path is listed under `executables` in the Spec's authorization record**; every other executable is refused, also inside new directories, and the refusal and `write-tasks` cite the rule.
+- **A Spec whose Task Graph declares `qa: declined` with a `qa_reason` archives once every Task is completed**, without a QA Report and without an override; its Archive Record has the disposition `no-qa`.
+- `roundfix settle` reports only the Run Worktrees it actually removed (reported by quaestor).
+
+### A profile change keeps the recorded decisions
+
+- **`baseline plan --profile <id>` carries every Setup Manifest decision the new profile still selects** and asks for every missing answer in one refusal. `baseline update --decision profile=…` refuses and names the plan command without writing.
+- An apply names each Root Backup it writes; a no-change `baseline skills reconcile` names the Setup Snapshot revision the binary carries; `baseline skills restore` writes Claude Skill Links where the repository keeps `.claude/skills` links (reported by quaestor).
+
+### The Baseline setups stop sending agents to the Secondbrain inbox
+
+- **Every upstream setup now carries `knowledge-workspace` 0.6.2 from marcioaltoe/skills `b56fc5ff`**, which sends cross-project exchanges through ai-memory messages instead of the retired Secondbrain inbox. After `roundfix baseline update`, adopters run `roundfix baseline skills restore --profile <id> --skill knowledge-workspace` (preview, then `--confirm-plan`) to install it.
+
+### Tests
+
+- The unreaped-group test waits for its member to be a zombie, and the Hard Link rule reports named, aliased and dot-imported hard links in every module test file.
+- The Roundfix skill is at version 0.1.151.
+
 ## [0.124.0] - 2026-10-26
 
 ### The Spec Check probe leaves completed Tasks alone
