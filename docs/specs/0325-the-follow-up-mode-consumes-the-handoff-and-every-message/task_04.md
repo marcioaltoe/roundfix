@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0325-the-follow-up-mode-consumes-the-handoff-and-every-message
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -89,3 +89,115 @@ None. The Task changes one test file and no contract another package reads.
 
 - `_techspec.md` → Testing Approach
 - `task_03.md` → Requirement 5
+
+## Result
+
+Corrected the `Optional sources` and `--status` checks in
+`TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage`
+(`skills/roundfix_modes_test.go`). No skill text, mirror, version record,
+guide, record or planning file was touched; only the one test file changed.
+
+### Requirement 1 — `Optional sources` requires the `memory_message_list` sentence and rejects "without consuming them" in any case
+
+The single old negative-only check
+
+```go
+if strings.Contains(optionalSources, roundfixWhitespace("list this project's messages without consuming them")) {
+    t.Error("Optional sources still leaves messages unconsumed")
+}
+```
+
+became
+
+```go
+if !strings.Contains(optionalSources, roundfixWhitespace("List this project's messages with `memory_message_list`")) ||
+    strings.Contains(strings.ToLower(optionalSources), "without consuming them") {
+    t.Error("Optional sources still lists messages only to leave them pending")
+}
+```
+
+Evidence: the positive phrase is whitespace-normalized like the other
+`Optional sources` phrases, the forbidden phrase is matched with
+`strings.ToLower` so any letter case (including the mutation's leading
+"List this project's messages without consuming them") is caught, and the
+diagnostic is exactly `Optional sources still lists messages only to leave
+them pending`. Every other `Optional sources` phrase check is unchanged, and
+no other assertion or diagnostic in the test changed.
+
+### Requirement 2 — `--status` diagnostic renamed
+
+The phrase checked is unchanged (`accepts no handoff, consumes no ai-memory
+message and arms nothing`); only the failure message changed from
+`--status omits its handoff refusal` to the exact
+`--status section does not say it accepts no handoff`.
+
+### Requirement 3 — both layouts, same checks
+
+The change sits inside the existing
+`for name, source := range roundfixLayoutSources()` loop, so `canonical`
+(`../.agents/skills`) and `embedded` (the `go:embed`ed `skills/roundfix`)
+run the identical corrected checks. No other loop, assertion or diagnostic
+was modified.
+
+### Requirement 4 — both negative controls proven in temporary `git archive` copies (outside the checkout)
+
+Both controls used a fresh `mktemp -d` directory under
+`/var/folders/.../T/opencode/`, populated with `git archive HEAD | tar -x`,
+with this Task's working-tree `skills/roundfix_modes_test.go` overlaid (the
+audited head carries the corrected test), and the mutation applied to
+`skills/roundfix/references/modes.md`. Both copies were removed afterwards;
+nothing was written under the checkout for these proofs.
+
+- F-01: replaced the `Optional sources` sentence
+  `List this project's messages with (memory_message_list)` with
+  `List this project's messages without consuming them`. Running
+  `go test -timeout 10m -count=1 -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' ./skills`
+  in the copy produced:
+
+  ```text
+  --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+      --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+          roundfix_modes_test.go:155: Optional sources still lists messages only to leave them pending
+  ```
+
+- F-02: removed `accepts no handoff, ` from `## --status`. The same command
+  in the copy produced:
+
+  ```text
+  --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+      --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+          roundfix_modes_test.go:159: --status section does not say it accepts no handoff
+  ```
+
+Both fail on the `embedded` layout with the exact declared message.
+
+### Acceptance Criteria
+
+- Delivered skill text passes in both layouts:
+  `go test -timeout 10m -count=1 -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' ./skills`
+  → `ok  roundfix/skills`.
+- F-01 mutation fails `embedded` with `Optional sources still lists messages
+  only to leave them pending` (evidence above).
+- F-02 mutation fails `embedded` with `--status section does not say it
+  accepts no handoff` (evidence above).
+
+### Focused checks run in the checkout
+
+- `go test -timeout 10m -count=1 -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' ./skills`
+  → `ok  roundfix/skills  0.292s`.
+- `go test -timeout 15m -count=1 ./skills` → `ok  roundfix/skills  1.139s`.
+
+Not run here (left to the Daemon): the task file's `## Verification`
+command, which also runs the whole `skills` package and the two `grep -qF`
+checks for the declared diagnostics; both declared diagnostics are now
+present in `skills/roundfix_modes_test.go`.
+
+### Changed files
+
+- `skills/roundfix_modes_test.go` — test only.
+- `docs/specs/0325-the-follow-up-mode-consumes-the-handoff-and-every-message/task_04.md` — this Result section.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T025147Z_96b54c79ec0f7eed`
+- Source commit: `f003fa82ce4b54ee729b9179f03a6959cd4c9971`

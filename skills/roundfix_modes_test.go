@@ -150,12 +150,13 @@ func TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage(t *testing.T) {
 					t.Errorf("Optional sources omits %q", phrase)
 				}
 			}
-			if strings.Contains(optionalSources, roundfixWhitespace("list this project's messages without consuming them")) {
-				t.Error("Optional sources still leaves messages unconsumed")
+			if !strings.Contains(optionalSources, roundfixWhitespace("List this project's messages with `memory_message_list`")) ||
+				strings.Contains(strings.ToLower(optionalSources), "without consuming them") {
+				t.Error("Optional sources still lists messages only to leave them pending")
 			}
 			status := roundfixWhitespace(roundfixSection(reference, "--status"))
 			if !strings.Contains(status, roundfixWhitespace("accepts no handoff, consumes no ai-memory message and arms nothing")) {
-				t.Error("--status omits its handoff refusal")
+				t.Error("--status section does not say it accepts no handoff")
 			}
 
 			skillData, err := fs.ReadFile(source, "roundfix/SKILL.md")
