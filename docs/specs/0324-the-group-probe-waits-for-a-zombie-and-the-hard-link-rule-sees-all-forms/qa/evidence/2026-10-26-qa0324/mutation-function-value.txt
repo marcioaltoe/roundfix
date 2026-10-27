@@ -1,0 +1,6 @@
+imported, name = imports[receiver.Name], node.Sel.Name
+=>
+isCall := false
+				ast.Inspect(file, func(n ast.Node) bool { if c, ok := n.(*ast.CallExpr); ok && c.Fun == node { isCall = true }; return true })
+				if !isCall { return true }
+				imported, name = imports[receiver.Name], node.Sel.Name

@@ -1,0 +1,4 @@
+CONTEXT.md byte-identical to Delivery Base: true
+Spec glossary sections declare None (no new terms).
+Existing bolded term: Single-Name Test Binary, CONTEXT.md:581.
+All bolded artifact phrases resolve to existing canonical glossary entries.

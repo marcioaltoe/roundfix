@@ -1,0 +1,324 @@
+$ go test -count=20 -timeout 15m -v -run ^(TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded|TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded|TestDetachFixtureZombieReadingRejectsAnExitingMember)$ ./internal/cli
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38461 state=2 flags=0x6004
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38459 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.00s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38462 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38463 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38465 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38466 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.00s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38468 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38469 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38471 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38472 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38474 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38475 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38477 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38478 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.02s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.02s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38480 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38481 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38483 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38484 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38486 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38487 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38489 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38491 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38492 state=2 flags=0x6004 probe=operation not permitted
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38493 state=2 flags=0x6004
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38495 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38497 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38498 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38499 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38501 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38502 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38504 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.00s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38505 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.01s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38507 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.01s)
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38508 state=2 flags=0x6004
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.02s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.02s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38510 state=2 flags=0x6004
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38511 state=2 flags=0x6004 probe=operation not permitted
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.01s)
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.02s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.02s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38513 state=2 flags=0x6004 probe=operation not permitted
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38514 state=2 flags=0x6004
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.01s)
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.02s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.02s)
+=== RUN   TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== RUN   TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== PAUSE TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== RUN   TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== PAUSE TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+=== CONT  TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded
+=== CONT  TestDetachFixtureZombieReadingRejectsAnExitingMember
+=== NAME  TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded
+    detach_fixture_group_darwin_test.go:96: observed exiting fixture group after 1 launches: pid=38516 state=2 flags=0x6004 probe=operation not permitted
+=== NAME  TestDetachFixtureZombieReadingRejectsAnExitingMember
+    detach_fixture_group_darwin_test.go:171: observed non-zombie exiting fixture after 1 launches: pid=38517 state=2 flags=0x6004
+--- PASS: TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded (0.01s)
+--- PASS: TestDetachFixtureZombieReadingRejectsAnExitingMember (0.02s)
+--- PASS: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.02s)
+PASS
+suiteguard: guard cost: measured 2829 paths; fingerprint took 359.070833ms before and 143.350334ms after
+ok  	roundfix/internal/cli	1.485s
+
+exit: 0

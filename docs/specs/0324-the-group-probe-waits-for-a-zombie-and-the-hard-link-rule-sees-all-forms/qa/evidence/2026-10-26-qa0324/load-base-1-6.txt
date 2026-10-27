@@ -1,0 +1,22 @@
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.00s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 70646: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.00s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 72417: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 73525: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 74535: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.00s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 77309: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.00s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 77777: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.04s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 79582: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 80533: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.00s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 84239: got <nil>, want EPERM
+--- FAIL: TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded (0.01s)
+    implement_detach_teardown_test.go:256: probe unreaped fixture group 85037: got <nil>, want EPERM
+FAIL
+suiteguard: guard cost: measured 2827 paths; fingerprint took 391.447958ms before and 178.701375ms after

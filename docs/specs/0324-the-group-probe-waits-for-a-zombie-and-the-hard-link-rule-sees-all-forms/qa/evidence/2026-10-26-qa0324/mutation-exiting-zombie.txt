@@ -1,0 +1,3 @@
+return process.Proc.P_stat == detachFixtureZombieState, nil
+=>
+return process.Proc.P_stat == detachFixtureZombieState || process.Proc.P_flag&detachFixtureExitingFlag != 0, nil

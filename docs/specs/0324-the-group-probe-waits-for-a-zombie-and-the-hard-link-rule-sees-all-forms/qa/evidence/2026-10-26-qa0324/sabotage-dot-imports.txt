@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink/(dot_import_of_os|dot_import_of_unix_Linkat|dot-imported_syscall_Link_as_a_value)$ ./internal/testfixture
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/dot_import_of_os
+    hard_link_rule_test.go:223: violations = [], want ["internal/seeded/fixture_test.go:3: os.Link"]
+=== RUN   TestNoTestCreatesAHardLink/dot_import_of_unix_Linkat
+    hard_link_rule_test.go:223: violations = [], want ["internal/seeded/fixture_test.go:3: unix.Linkat"]
+=== RUN   TestNoTestCreatesAHardLink/dot-imported_syscall_Link_as_a_value
+    hard_link_rule_test.go:223: violations = [], want ["internal/seeded/fixture_test.go:3: syscall.Link"]
+--- FAIL: TestNoTestCreatesAHardLink (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/dot_import_of_os (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/dot_import_of_unix_Linkat (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/dot-imported_syscall_Link_as_a_value (0.00s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.229s
+FAIL
+
+exit: 1

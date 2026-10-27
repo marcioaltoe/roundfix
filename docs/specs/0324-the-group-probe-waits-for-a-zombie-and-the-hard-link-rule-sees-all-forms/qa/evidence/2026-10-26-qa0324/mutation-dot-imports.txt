@@ -1,0 +1,3 @@
+dotImports = append(dotImports, imported)
+=>
+// sabotage: omit dot import

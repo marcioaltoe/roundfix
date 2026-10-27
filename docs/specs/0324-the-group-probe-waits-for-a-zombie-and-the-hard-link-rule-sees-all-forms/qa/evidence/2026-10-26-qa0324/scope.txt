@@ -1,0 +1,29 @@
+range: dfac7c1df067a10923eed8d32732b49482bc9c53..18441a42c42c7f42add969d25703999a7184e4e5
+[
+  [
+    "04c843fa4bec7c455e7f12b19bbd440cfc7ded8e",
+    [
+      "docs/specs/0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms/task_02.md",
+      "internal/testfixture/hard_link_rule_test.go"
+    ]
+  ],
+  [
+    "18441a42c42c7f42add969d25703999a7184e4e5",
+    [
+      "docs/specs/0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms/task_01.md",
+      "internal/cli/detach_fixture_group_darwin_test.go",
+      "internal/cli/detach_fixture_group_linux_test.go",
+      "internal/cli/detach_fixture_group_other_test.go",
+      "internal/cli/implement_detach_teardown_test.go"
+    ]
+  ]
+]
+All changed paths within exact declared test and assigned Task files. No Governed Path, production file, guide, skill, config or QA settlement section changes.
+ .../task_01.md                                     |  45 +++++-
+ .../task_02.md                                     |  39 +++++-
+ internal/cli/detach_fixture_group_darwin_test.go   |  85 ++++++++++++
+ internal/cli/detach_fixture_group_linux_test.go    |  16 +++
+ internal/cli/detach_fixture_group_other_test.go    |   4 +
+ internal/cli/implement_detach_teardown_test.go     |   7 +-
+ internal/testfixture/hard_link_rule_test.go        | 153 ++++++++++++++++++---
+ 7 files changed, 326 insertions(+), 23 deletions(-)

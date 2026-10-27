@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink/(a_test_outside_internal|a_test_under_skills)$ ./internal/testfixture
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/a_test_outside_internal
+    hard_link_rule_test.go:253: scan hard links: lstat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestNoTestCreatesAHardLinka_test_outside_internal3464563022/001/internal: no such file or directory
+=== RUN   TestNoTestCreatesAHardLink/a_test_under_skills
+    hard_link_rule_test.go:253: scan hard links: lstat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestNoTestCreatesAHardLinka_test_under_skills3084368121/001/internal: no such file or directory
+--- FAIL: TestNoTestCreatesAHardLink (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/a_test_outside_internal (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/a_test_under_skills (0.00s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.215s
+FAIL
+
+exit: 1

@@ -1,0 +1,11 @@
+$ go test -count=1 -timeout 15m -v -run ^TestNoTestCreatesAHardLink/os_Link_as_a_function_value$ ./internal/testfixture
+=== RUN   TestNoTestCreatesAHardLink
+=== RUN   TestNoTestCreatesAHardLink/os_Link_as_a_function_value
+    hard_link_rule_test.go:226: violations = [], want ["internal/seeded/fixture_test.go:3: os.Link" "internal/seeded/fixture_test.go:4: os.Link"]
+--- FAIL: TestNoTestCreatesAHardLink (0.00s)
+    --- FAIL: TestNoTestCreatesAHardLink/os_Link_as_a_function_value (0.00s)
+FAIL
+FAIL	roundfix/internal/testfixture	0.228s
+FAIL
+
+exit: 1

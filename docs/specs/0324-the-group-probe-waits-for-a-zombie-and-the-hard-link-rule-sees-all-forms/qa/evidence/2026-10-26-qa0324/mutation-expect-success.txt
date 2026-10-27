@@ -1,0 +1,3 @@
+if !errors.Is(probeErr, syscall.EPERM) {
+=>
+if probeErr != nil {

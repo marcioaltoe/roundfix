@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
