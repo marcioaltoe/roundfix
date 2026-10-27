@@ -1,7 +1,0 @@
-$ out="$(go test -count=1 -timeout 15m -v -run '^(TestSettleRefusesAnUnlistedExecutableInANewDirectory|TestSettleCommitsAListedExecutableWithItsMode|TestSettleCommitsATrackedFileMadeExecutable)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestSettleRefusesAnUnlistedExecutableInANewDirectory TestSettleCommitsAListedExecutableWithItsMode TestSettleCommitsATrackedFileMadeExecutable; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; out="$(go test -count=1 -timeout 15m -v -run '^TestTaskCycleCommitsATrackedFileMadeExecutable$' ./internal/daemon 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestTaskCycleCommitsATrackedFileMadeExecutable ' || { echo 'missing pass: TestTaskCycleCommitsATrackedFileMadeExecutable' >&2; exit 1; }; go test -count=1 -timeout 15m -run 'Settle|Executable' ./internal/cli ./internal/daemon
-exit: 0
-stdout:
-ok  	roundfix/internal/cli	14.167s
-ok  	roundfix/internal/daemon	14.160s
-
-stderr:

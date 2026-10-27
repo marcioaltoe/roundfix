@@ -1,7 +1,0 @@
-$ for file in .agents/skills/roundfix/references/settle.md skills/roundfix/references/settle.md docs/user-guide/commands/settle.md; do tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.' || { printf '%s lacks the branch rule\n' "$file" >&2; exit 1; }; grep -q 'Run Worktree advanced: ' "$file" || { printf '%s lacks the advance line\n' "$file" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'settle fast-forwards it to the Run' || { echo 'CONTEXT.md lacks the revised **Run Worktree**' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Run Worktree**:' || { echo 'CONTEXT.md lacks **Run Worktree**' >&2; exit 1; }; diff -r .agents/skills/roundfix skills/roundfix && go test -timeout 15m -count=1 -run '^(TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable)$' ./skills && go test -timeout 15m -count=1 -tags docscontract ./internal/docscontract
-exit: 0
-stdout:
-ok  	roundfix/skills	0.164s
-ok  	roundfix/internal/docscontract	10.077s
-
-stderr:

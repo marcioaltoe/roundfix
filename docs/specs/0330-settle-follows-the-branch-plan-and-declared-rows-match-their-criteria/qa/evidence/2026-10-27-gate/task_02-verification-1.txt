@@ -1,6 +1,0 @@
-$ out="$(go test -count=1 -timeout 15m -v -run '^(TestSettleRefusesInsideTheRunWorktree|TestSettleRefusesInsideATaskWorktree|TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestSettleRefusesInsideTheRunWorktree TestSettleRefusesInsideATaskWorktree TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < internal/cli/settle.go | grep -qF -- 'Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.' || { echo 'settle usage lacks the checkout rule' >&2; exit 1; }; go test -count=1 -timeout 15m -run 'Settle' ./internal/cli
-exit: 0
-stdout:
-ok  	roundfix/internal/cli	10.624s
-
-stderr:

@@ -1,9 +1,0 @@
-$ go test -count=1 -timeout 15m -v -run ^TestSettlementGuidanceIsOneTable$ ./skills
-exit: 0
-stdout:
-=== RUN   TestSettlementGuidanceIsOneTable
---- PASS: TestSettlementGuidanceIsOneTable (0.00s)
-PASS
-ok  	roundfix/skills	0.158s
-
-stderr:
