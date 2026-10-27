@@ -239,6 +239,7 @@ func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
 	}
 	// Do not Wait yet: this test owns the unreaped member and holds it
 	// through both the signal probe and the fixture-ended assertion.
+	// An empty live reading may still be an exiting member, not a zombie.
 	testwait.Poll(t, "fixture cat exited but unreaped", (<-chan error)(nil), func() (bool, string) {
 		live, err := detachFixtureGroupLiveMembers(pid)
 		if err != nil {
@@ -248,7 +249,11 @@ func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
 		if probeErr != nil {
 			t.Fatalf("probe unreaped fixture %d: %v", pid, probeErr)
 		}
-		return len(live) == 0, fmt.Sprintf("live group members=%v", live)
+		zombie, err := detachFixtureMemberIsZombie(pid)
+		if err != nil {
+			t.Fatalf("read fixture %d zombie state: %v", pid, err)
+		}
+		return len(live) == 0 && zombie, fmt.Sprintf("live group members=%v zombie=%t", live, zombie)
 	})
 	probeErr := syscall.Kill(-pid, 0)
 	if runtime.GOOS == "darwin" {

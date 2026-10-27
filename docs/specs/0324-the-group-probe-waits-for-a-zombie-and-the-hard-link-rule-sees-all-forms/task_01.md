@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0324-the-group-probe-waits-for-a-zombie-and-the-hard-link-rule-sees-all-forms
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -98,3 +98,46 @@ None. Only test files of `internal/cli` change; no production contract or shared
 
 - `_prd.md` → Goals 1-3; Core Features 1-2; Success Metrics 2, 3 and 5
 - `_techspec.md` → Current behavior 1-5; Interfaces; API Contracts 1-2; Invariants 1-3; Testing Approach; Build Order 1
+
+
+## Result
+
+Implemented API Contracts 1 and 2 within the four declared test files.
+The initial checkout had no zombie reader or exiting-member proof; the only
+pre-existing changed path was this Task's Daemon-owned `in_progress` status.
+
+- Acceptance criterion 1: the unreaped-member poll now requires both no live
+  group members and a positive per-PID zombie reading, fails on a reading
+  error, and observes both values. A byte comparison against HEAD, removing
+  only the authorized wait edits, confirmed the teardown file is otherwise
+  identical. The existing Darwin group reader and exiting-member test are
+  also byte-identical. Darwin checks only `P_stat == SZOMB`; Linux checks
+  the state after the last `)` with the existing parsing guards; other Unix
+  systems return a PID-specific unsupported error.
+- Acceptance criterion 2: the new parallel Darwin proof brackets its reader
+  with raw PID reads, retries launches when the window closes, then waits
+  for the zombie and asserts group-probe `EPERM`. Every started child is
+  reaped by a callback-local defer before another launch or on failure;
+  `/usr/bin/true` exits naturally, so no cleanup signal is needed. All waits
+  use the test deadline. Focused command:
+  `go test -count=10 -timeout 3m -v -run '^(TestDetachFixtureZombieReadingRejectsAnExitingMember|TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded)$' ./internal/cli`
+  exited 0: both tests passed ten times. The proof observed state `2`, flags
+  `0x6004`, in each run and reached the zombie `EPERM` assertion.
+- Negative focused check: a temporary Go overlay under
+  `/tmp/roundfix-zombie-probe-h2ya_f5i` made the Darwin reader also accept
+  `P_WEXIT`. `go test -overlay /tmp/roundfix-zombie-probe-h2ya_f5i/overlay.json -count=1 -timeout 3m -v -run '^TestDetachFixtureZombieReadingRejectsAnExitingMember$' ./internal/cli`
+  exited 1 as intended: `exiting fixture 92562 read as a zombie: state=2
+  flags=0x6004; before state=2 flags=0x6004`. The repository reader was
+  unchanged by this probe.
+- Acceptance criterion 3: focused cross-compilation exited 0 for each of
+  Windows, Linux and FreeBSD, using `GOOS=<os> go test -c -o
+  /tmp/roundfix-zombie-probe-h2ya_f5i/cli-<os>.test ./internal/cli` for
+  `windows`, `linux` and `freebsd`. These compile the package and its tests;
+  they do not establish runtime behavior on those systems. The declared
+  platform vets remain Daemon-owned.
+- `git diff --check` exited 0. Final changed-path inspection contains only
+  the four declared test files and this Task's Result record.
+
+The Task status and authored checkboxes are unchanged. Declared Verification,
+repository Verification and the full suite were not run. No follow-up work
+was added to this slice.

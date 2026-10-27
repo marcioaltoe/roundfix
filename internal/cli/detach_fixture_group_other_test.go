@@ -20,3 +20,7 @@ func detachFixtureGroupLiveMembers(pgid int) ([]int, error) {
 	}
 	return []int{pgid}, nil
 }
+
+func detachFixtureMemberIsZombie(pid int) (bool, error) {
+	return false, fmt.Errorf("read fixture process %d zombie state: unsupported on this system", pid)
+}

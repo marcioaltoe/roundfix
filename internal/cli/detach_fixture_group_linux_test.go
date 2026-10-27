@@ -52,3 +52,19 @@ func detachFixtureGroupLiveMembers(pgid int) ([]int, error) {
 	}
 	return live, nil
 }
+
+func detachFixtureMemberIsZombie(pid int) (bool, error) {
+	stat, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(pid), "stat"))
+	if err != nil {
+		return false, fmt.Errorf("read fixture process %d zombie state: %w", pid, err)
+	}
+	end := strings.LastIndexByte(string(stat), ')')
+	if end < 0 {
+		return false, fmt.Errorf("read fixture process %d zombie state: missing comm delimiter", pid)
+	}
+	fields := strings.Fields(string(stat[end+1:]))
+	if len(fields) < 3 || len(fields[0]) != 1 {
+		return false, fmt.Errorf("read fixture process %d zombie state: incomplete stat", pid)
+	}
+	return fields[0] == "Z", nil
+}
