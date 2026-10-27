@@ -89,9 +89,15 @@ preserves the target bytes.
 
 `profiles validate` is read-only, deduplicates exact tuples across category
 references, proves them through disposable ACP Runtime Sessions, sends no
-Agent prompt, and closes every Session on success or error. JSON schemas are
+Agent prompt, and closes every Session on success or error. A close failure
+after setup passes leaves the proof passed with a warning naming the recorded
+Unclosed Proof Session under `~/.roundfix/unclosed-proof-sessions/`; the first
+proof of a later command closes it. Its timeout names the setup step as
+`profile proof step "<step>"`. JSON schemas are
 `roundfix/profiles/v2`, `roundfix/profiles-configure/v1`, and
-`roundfix/profiles-validate/v1`.
+`roundfix/profiles-validate/v1`; that last schema optionally includes
+`warning`, and text success output prints `warning: <text>` after the proof's
+reference lines.
 
 `profiles validate` and `profiles configure` refuse a Cursor tuple without
 the maintainer's login as `cursor_login_required`, before any session opens.

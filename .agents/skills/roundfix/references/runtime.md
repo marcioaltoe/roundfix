@@ -31,7 +31,9 @@ effective Claude command to prove official
 executable presence and a matching name are not proof. The `profiles:` line is
 the selection authority: it exact-proves every distinct Preferred Selection
 and fallback through disposable ACP Sessions and reports affected category
-references plus one deterministic next action. A proof whose setup times out
+references plus one deterministic next action. A proof whose setup passes but
+whose close fails remains passed with a warning naming the recorded Unclosed
+Proof Session. A proof whose setup times out
 is retried after 5 seconds and again after 10 seconds. A proof timed out on 3
 attempts is classified `temporary`; rerun the command when load drops because
 the configured profile was not shown to be wrong. If the machine needs more

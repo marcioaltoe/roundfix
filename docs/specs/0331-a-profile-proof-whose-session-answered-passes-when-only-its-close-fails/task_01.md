@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -109,3 +109,25 @@ closing its disposable session under load).
 - `_prd.md` → Goals; Core Features 1-5; User Experience; Non-Goals / Out of Scope; Success Metric 6; Glossary
 - `_techspec.md` → API Contracts 2-7; Glossary; Build Order 3
 - ADR-0344
+
+## Result
+
+- Updated both user guides, the canonical `profiles` and `runtime` references,
+  and the synchronized skill mirrors to describe setup-based proof verdicts,
+  the shared setup/close deadline, named `profile proof step` timeouts,
+  `Unclosed Proof Session` records, and close warnings. The validate contract
+  now documents the optional `warning` field and `warning: <text>` output.
+- Updated `CONTEXT.md` with **Unclosed Proof Session** and revised
+  **Exact Agent Selection Proof** and **Proof Setup Deadline**, each citing
+  ADR-0344; the former no longer requires a successful close.
+- Focused checks run:
+  - `make skills-sync` — passed; canonical skill references synchronized.
+  - `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1` — passed (1 package); both skill version fields raised to `0.1.156` and the owned-skill record updated.
+  - `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed (1 package); Behavior Surface fingerprint re-recorded after the final guide edit.
+- The Task's declared Verification section and repository settlement checks
+  remain for the Daemon; no Task status or other Task file was changed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T180614Z_696bb6e78e893361`
+- Source commit: `3230c04c0b8e8173f63a9fe654fc6be272d28ea1`
