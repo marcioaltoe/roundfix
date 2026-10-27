@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-26
-spec: null
+spec: 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria
 reason: null
 ---
 

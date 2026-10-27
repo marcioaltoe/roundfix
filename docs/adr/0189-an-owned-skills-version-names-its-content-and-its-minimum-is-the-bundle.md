@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-09-30T00:00:00Z
+updated_at: 2026-10-27T15:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -49,3 +49,23 @@ owned skill is still Doctor's to report, because counting it changed the
 result of repositories that never installed skills. The setup snapshots keep a
 minimum that is lower than the binary's, and the two are no longer expected to
 agree.
+
+## Addendum — 2026-10-27
+
+The bundle install also keeps `skills-lock.json` true. An adopter's lock can
+carry an entry for an owned skill, written by the upstream skills tool when it
+installed that skill's upstream copy. `roundfix baseline update` and
+`roundfix skills install --target project` replace the tree with the bundle
+and left the entry's `computedHash` describing the replaced copy, so a
+repository test that compares the lock with the installed trees failed after
+every update (Quaestor, v0.124.0 and v0.125.0). After installing the bundle,
+both commands now rewrite `computedHash` of each existing entry that names an
+owned skill to the digest of the installed tree, computed as the external
+skills digest every other lock entry uses. They keep `source`, `ref`,
+`sourceType`, `skillPath` and every other field and key order, never add an
+entry for an owned skill the lock does not list, and never touch another
+entry. The entry's source stays the one the upstream tool recorded, because
+the lock format names a provider (`github`, `node_modules`, `local`) that can
+fetch the skill again, Roundfix is none of them, and the Setup Snapshot
+already marks owned skills `type: repo`; the hash is the field the format
+defines as the folder's content on disk.
