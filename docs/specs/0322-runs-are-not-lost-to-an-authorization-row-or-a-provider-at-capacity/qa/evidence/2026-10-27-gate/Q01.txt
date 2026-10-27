@@ -1,0 +1,4 @@
+make build: exit 0
+Daemon repository Verification: make verify-changed; pass; exit 0; diagnostics removed on success
+roundfix 0.124.0 (9d96ccb8-dirty, built 2026-10-27 00:42:05 -0300)
+spec check --strict: exit 0; No findings.

@@ -1,0 +1,13 @@
+**Network-Prohibited Row**:
+**Provider System Error**:
+**Fallback Chain**:
+**First Handoff**:
+$ rg -n authorization forbids network access|record the row exactly as|take the Task under the same condition docs/user-guide .agents/skills skills docs/agents internal/baseline/assets/modules CONTEXT.md
+exit: 1
+stdout:
+
+stderr:
+
+qa-gate versions ['0.0.21', '0.0.21']; mirror and record match: True
+archive-spec versions ['0.0.15', '0.0.15']; mirror and record match: True
+roundfix versions ['0.1.143', '0.1.143']; mirror and record match: True

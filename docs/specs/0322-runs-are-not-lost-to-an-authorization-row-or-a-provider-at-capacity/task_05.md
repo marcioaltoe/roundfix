@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

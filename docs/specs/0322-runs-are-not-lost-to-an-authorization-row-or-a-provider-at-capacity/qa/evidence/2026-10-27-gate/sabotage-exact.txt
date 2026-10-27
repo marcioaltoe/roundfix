@@ -1,0 +1,29 @@
+$ go test -timeout 15m -count=1 -v -run TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository|TestTheArchivedAuthorizationRowsQualify/Spec_0309 ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== RUN   TestTheArchivedAuthorizationRowsQualify
+=== PAUSE TestTheArchivedAuthorizationRowsQualify
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== CONT  TestTheArchivedAuthorizationRowsQualify
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+=== RUN   TestTheArchivedAuthorizationRowsQualify/Spec_0309
+=== PAUSE TestTheArchivedAuthorizationRowsQualify/Spec_0309
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+=== CONT  TestTheArchivedAuthorizationRowsQualify/Spec_0309
+=== NAME  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+    qa_prohibited_subject_test.go:42: prohibited/denied counts = 0/0, want 1/0
+=== NAME  TestTheArchivedAuthorizationRowsQualify/Spec_0309
+    qa_prohibited_subject_test.go:118: archived counts = {Verdict:partial Hollow:false AuditingBinary: AuditorStaleness: UserFlowBinary: RowsBlockedEnvironment:4 RowsBlockedPrePullRequest:1 RowsBlockedNetworkDenied:0 RowsBlockedNetworkProhibited:2 RowsSkipped:0 RowsBlockedFinding:0 RowsBlockedDeclared:1 RowsBlockedPrecondition:0 Precondition:{CheckName: Reason:}}; want 3 prohibited, one PR, no denied or override rows
+--- FAIL: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids (0.00s)
+    --- FAIL: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository (0.00s)
+--- FAIL: TestTheArchivedAuthorizationRowsQualify (0.00s)
+    --- FAIL: TestTheArchivedAuthorizationRowsQualify/Spec_0309 (0.00s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 168.013666ms before and 133.686542ms after
+FAIL	roundfix/internal/spec	0.578s
+FAIL
+
+stderr:

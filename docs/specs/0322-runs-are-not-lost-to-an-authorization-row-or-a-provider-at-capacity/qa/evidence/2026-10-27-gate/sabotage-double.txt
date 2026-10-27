@@ -1,0 +1,18 @@
+$ go test -timeout 15m -count=1 -v -run TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once
+    qa_prohibited_subject_test.go:42: prohibited/denied counts = 1/1, want 1/0
+--- FAIL: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids (0.00s)
+    --- FAIL: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once (0.00s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 147.996417ms before and 136.570834ms after
+FAIL	roundfix/internal/spec	0.531s
+FAIL
+
+stderr:

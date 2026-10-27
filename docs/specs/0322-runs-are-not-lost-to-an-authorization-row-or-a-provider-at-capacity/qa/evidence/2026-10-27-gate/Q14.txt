@@ -1,0 +1,12 @@
+$ ./bin/roundfix archive 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity --plan --offline
+exit: 0
+stdout:
+archive plan for 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity: removes 36 file(s) (300208 bytes) and writes docs/history/specs/0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-27.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 23 file(s) (165732 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-a-provider-at-capacity-parks-a-turn-the-fallback-chain-could-finish.md 3542 bytes: no advice (offline)
+candidate references/2026-10-26-an-outside-evidence-row-that-names-what-the-authorization-forbids-does-not-qualify.md 3790 bytes: no advice (offline)
+promote with: roundfix archive 0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity --promote <path>
+
+stderr:

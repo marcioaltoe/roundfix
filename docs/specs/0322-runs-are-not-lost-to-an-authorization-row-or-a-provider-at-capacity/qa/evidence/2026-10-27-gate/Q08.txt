@@ -1,0 +1,4 @@
+TAP 14
+https://testanything.org/tap-version-14-specification.html
+PRD-cited passage, not independently fetched: Directive := " # " ("todo" | "skip") (" " Reason)?; Reason := [^\n]+
+_authorization.md Limits: No test, Verification command or QA row reaches the network.

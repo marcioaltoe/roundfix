@@ -1,0 +1,184 @@
+$ zsh -c for file in docs/agents/spec-routing.md docs/agents/autonomous-work.md internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md; do tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'authorization forbids that lookup, recorded as' || { printf '%s lacks the subject form\n' "$file" >&2; exit 1; }; if tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'authorization forbids network access, recorded as'; then printf '%s keeps the old sentence\n' "$file" >&2; exit 1; fi; done; go test -timeout 15m -count=1 -run '^(TestTheGuidesExemptANetworkProhibitedOutsideEvidenceRow|TestEveryBaselineModuleVersionIsRecorded|TestCatalogCompatibility|TestCatalogDiagnosticCharacterization|TestBaselinePlanCharacterization|TestFormatterComposition|TestBaselineCompatibilityCorpus|TestNoTwoBaselineClausesShareText|TestBaselineClauseForceIsCharacterized)$' ./internal/baseline
+exit: 0
+stdout:
+ok  	roundfix/internal/baseline	2.213s
+
+stderr:
+
+$ zsh -c tr -s '[:space:]' ' ' < internal/baseline/assets/modules/autonomous-work.json | grep -q -- 'recorded as .blocked (environment: <subject> prohibited by Spec authorization)., where .<subject>. names what the authorization forbids' || { echo 'autonomous-work module lacks the subject form' >&2; exit 1; }; go test -timeout 15m -count=1 -tags docscontract -run '^TestTheSetupManifestIsCurrent$' ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/internal/docscontract	0.506s
+
+stderr:
+
+$ zsh -c for file in .agents/skills/qa-gate/SKILL.md .agents/skills/archive-spec/SKILL.md .agents/skills/roundfix/SKILL.md .agents/skills/roundfix/references/archive.md .agents/skills/roundfix/references/settle.md skills/qa-gate/SKILL.md skills/archive-spec/SKILL.md skills/roundfix/SKILL.md docs/user-guide/commands/settle.md docs/user-guide/commands/qa-report.md docs/user-guide/commands/archive.md docs/user-guide/context-driven-development.md CONTEXT.md; do tr -s '[:space:]' ' ' < "$file" | grep -qF -- '<subject> prohibited by Spec authorization)' || { printf '%s lacks the subject form\n' "$file" >&2; exit 1; }; if tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'authorization forbids network access'; then printf '%s keeps the network-only wording\n' "$file" >&2; exit 1; fi; done; if grep -qF -- 'record the row exactly as' .agents/skills/qa-gate/SKILL.md; then echo 'qa-gate still says exactly' >&2; exit 1; fi; for file in docs/user-guide/usage.md docs/user-guide/configuration.md .agents/skills/roundfix/references/profiles.md skills/roundfix/references/profiles.md; do tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'A Provider System Error lets the next Fallback Selection take the Task in any Task or QA turn' || { printf '%s lacks the fall-through sentence\n' "$file" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < docs/user-guide/usage.md | grep -qF -- '- discarded_verdict: <verdict>' || { echo 'usage guide lacks the discarded verdict line' >&2; exit 1; }; for phrase in '**Network-Prohibited Row**' '**Provider System Error**' '**Fallback Chain**' '**First Handoff**'; do grep -qF -- "$phrase" CONTEXT.md || { printf 'CONTEXT.md lacks %s\n' "$phrase" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'reopening a QA verdict the failed turn wrote' || { echo 'Provider System Error entry not revised' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'only a Provider System Error lets a Fallback Selection take over work a turn handed back' || { echo 'First Handoff entry not revised' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'and a Provider System Error in any Task or QA turn, let the next Fallback Selection take the Task' || { echo 'Fallback Chain entry not revised' >&2; exit 1; }
+exit: 0
+stdout:
+
+stderr:
+
+$ zsh -c tr -s '[:space:]' ' ' < skills/acceptance_rules_test.go | grep -qF -- 'forbids in 1 to 80 characters without parentheses (ADR-0276, ADR-0335).' || { echo 'skill contract test not updated' >&2; exit 1; }; go test -timeout 15m -count=1 -run '^(TestTheSettlementSkillsNameTheNetworkProhibitedRow|TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable)$' ./skills && go test -timeout 15m -count=1 -tags docscontract ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/skills	0.308s
+ok  	roundfix/internal/docscontract	15.676s
+
+stderr:
+
+$ go test -timeout 15m -count=1 ./skills
+exit: 0
+stdout:
+ok  	roundfix/skills	1.028s
+
+stderr:
+
+$ go test -timeout 20m -count=1 -tags docscontract ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/internal/docscontract	15.567s
+
+stderr:
+
+$ go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+exit: 1
+stdout:
+
+stderr:
+go: downloading golang.org/x/sys v0.47.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading charm.land/bubbletea/v2 v2.0.9
+go: downloading charm.land/lipgloss/v2 v2.0.6
+go: downloading modernc.org/sqlite v1.57.0
+go: downloading golang.org/x/text v0.41.0
+internal/cli/review_dispose_lock_unix.go:12:2: module lookup disabled by GOPROXY=off
+internal/cli/deliver_plan.go:16:2: module lookup disabled by GOPROXY=off
+internal/skillhash/hash.go:9:2: module lookup disabled by GOPROXY=off
+internal/skillhash/hash.go:10:2: module lookup disabled by GOPROXY=off
+internal/store/store.go:20:2: module lookup disabled by GOPROXY=off
+internal/tui/cockpit.go:18:2: module lookup disabled by GOPROXY=off
+internal/tui/cockpit.go:19:2: module lookup disabled by GOPROXY=off
+
+Independent git diff exit: 0
+
+Retry with existing GOMODCACHE preserved for fresh HOME (no downloads):
+$ go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+exit: 1
+stdout:
+Baseline update: failed
+Category: invalid
+Result: Baseline repository requires at least one commit: git rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}: fatal: Needed a single revision: exit status 128
+Prior catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+Current catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Next action: repair the repository or manifest input and rerun roundfix baseline update
+
+stderr:
+roundfix: baseline update failed: Baseline repository requires at least one commit: git rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}: fatal: Needed a single revision: exit status 128
+exit status 2
+
+Independent git diff exit: 0
+
+Final fixture correction: temporary archive refers to existing audited HEAD; no new commit created.
+$ go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+exit: 0
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+Current catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Plan Digest: sha256:7ccaa32486033b2c1ae2a2c0e28b2b9fcb298803350a1bb99c0f01c23f75f864
+Approved Plan Digest: sha256:7ccaa32486033b2c1ae2a2c0e28b2b9fcb298803350a1bb99c0f01c23f75f864
+
+stderr:
+
+Independent git diff exit: 0
+
+Independent git status:
+D  dist/npm/.gitignore
+D  dist/npm/packages/cli-darwin-arm64/package.json
+D  dist/npm/packages/cli-darwin-x64/package.json
+D  dist/npm/packages/cli-linux-arm64/package.json
+D  dist/npm/packages/cli-linux-x64/package.json
+D  dist/npm/packages/cli-win32-x64/package.json
+D  dist/npm/platforms.json
+D  dist/npm/roundfix/bin/roundfix.js
+D  dist/npm/roundfix/package.json
+
+Final fixture correction: temporary archive refers to existing audited HEAD; no new commit created.
+$ go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+exit: 0
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+Current catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Plan Digest: sha256:7ccaa32486033b2c1ae2a2c0e28b2b9fcb298803350a1bb99c0f01c23f75f864
+Approved Plan Digest: sha256:7ccaa32486033b2c1ae2a2c0e28b2b9fcb298803350a1bb99c0f01c23f75f864
+
+stderr:
+
+Independent git diff exit: 0
+
+Archive export-ignore baseline status (before):
+D  dist/npm/.gitignore
+D  dist/npm/packages/cli-darwin-arm64/package.json
+D  dist/npm/packages/cli-darwin-x64/package.json
+D  dist/npm/packages/cli-linux-arm64/package.json
+D  dist/npm/packages/cli-linux-x64/package.json
+D  dist/npm/packages/cli-win32-x64/package.json
+D  dist/npm/platforms.json
+D  dist/npm/roundfix/bin/roundfix.js
+D  dist/npm/roundfix/package.json
+
+After:
+D  dist/npm/.gitignore
+D  dist/npm/packages/cli-darwin-arm64/package.json
+D  dist/npm/packages/cli-darwin-x64/package.json
+D  dist/npm/packages/cli-linux-arm64/package.json
+D  dist/npm/packages/cli-linux-x64/package.json
+D  dist/npm/packages/cli-win32-x64/package.json
+D  dist/npm/platforms.json
+D  dist/npm/roundfix/bin/roundfix.js
+D  dist/npm/roundfix/package.json
+
+Status byte-identical: True

@@ -1,0 +1,83 @@
+65f86f9eceff90a638f916191d6957fe7583a324
+docs/specs/0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity/task_02.md
+internal/daemon/agent_session_owner.go
+internal/daemon/provider_system_error_recovery_test.go
+internal/daemon/provider_system_error_unfinished_qa_test.go
+Undeclared: []
+852952f5241c3749898678a033e3fcecdc1f1ce8
+.agents/skills/archive-spec/SKILL.md
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/profiles.md
+.agents/skills/roundfix/references/settle.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity/task_04.md
+docs/user-guide/commands/archive.md
+docs/user-guide/commands/qa-report.md
+docs/user-guide/commands/settle.md
+docs/user-guide/configuration.md
+docs/user-guide/context-driven-development.md
+docs/user-guide/usage.md
+skills/acceptance_rules_test.go
+skills/archive-spec/SKILL.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/archive.md
+skills/roundfix/references/profiles.md
+skills/roundfix/references/settle.md
+skills/testdata/owned-skill-versions.json
+Undeclared: []
+4f3a0da8ca8a79fd666ee942106a441ac5f0b334
+docs/agents/autonomous-work.md
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+docs/specs/0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity/task_03.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/autonomous-work.json
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/network_prohibited_row_clause_test.go
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+Undeclared: []
+9d96ccb81bd64d2fafcfba24bef0f65ef816a631
+docs/specs/0322-runs-are-not-lost-to-an-authorization-row-or-a-provider-at-capacity/task_01.md
+internal/cli/qa_partial_policy_test.go
+internal/daemon/qa_partial_policy_test.go
+internal/spec/qa.go
+internal/spec/qa_prohibited_subject_test.go
+Undeclared: []
+Changed measured Governed Paths, all authorized:
+.agents/skills/archive-spec/SKILL.md
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/archive.md
+.agents/skills/roundfix/references/profiles.md
+.agents/skills/roundfix/references/settle.md
+docs/agents/autonomous-work.md
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/autonomous-work.json
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+skills/archive-spec/SKILL.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+Protected changes: []
+.agents/skills/archive-spec/SKILL.md QA settlement identical: True
+.agents/skills/qa-gate/SKILL.md QA settlement identical: True
+.agents/skills/roundfix/SKILL.md QA settlement identical: True
+skills/archive-spec/SKILL.md QA settlement identical: True
+skills/qa-gate/SKILL.md QA settlement identical: True
+skills/roundfix/SKILL.md QA settlement identical: True

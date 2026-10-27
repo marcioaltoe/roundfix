@@ -1,0 +1,5 @@
+No open Pull Request (Daemon fact).
+Delivery authority: _authorization.md, granted 2026-10-26.
+Repository Verification: make verify-changed pass (exit 0), Daemon-supplied.
+No PR review threads. No Merge-Ready acceptance.
+Candidate: 9d96ccb81bd64d2fafcfba24bef0f65ef816a631

@@ -1,0 +1,630 @@
+$ go test -timeout 15m -count=1 -v -run Test(ANetworkProhibited|TheArchivedAuthorization|ANetworkDenied|APartial|AnotherEnvironmentRow|EnvironmentRowsNeedingOverride|ANoPullRequest|APullRequestRow) ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies
+=== PAUSE TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies
+=== RUN   TestAPullRequestRowWithANoteInItsProvenanceIsRecognized
+=== PAUSE TestAPullRequestRowWithANoteInItsProvenanceIsRecognized
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses
+=== RUN   TestAPartialWithAnotherEnvironmentRowBesideANetworkDeniedRowNamesBoth
+=== PAUSE TestAPartialWithAnotherEnvironmentRowBesideANetworkDeniedRowNamesBoth
+=== RUN   TestAPartialWithASkippedRowNeverQualifies
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence
+=== RUN   TestAnotherEnvironmentRowBesideANetworkProhibitedRowNamesBoth
+=== PAUSE TestAnotherEnvironmentRowBesideANetworkProhibitedRowNamesBoth
+=== RUN   TestAPartialQualifiesWhenItsOnlyEnvironmentRowIsThePrePullRequestRow
+=== PAUSE TestAPartialQualifiesWhenItsOnlyEnvironmentRowIsThePrePullRequestRow
+=== RUN   TestAPartialWithAnotherEnvironmentRowStillRefuses
+=== PAUSE TestAPartialWithAnotherEnvironmentRowStillRefuses
+=== RUN   TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses
+=== PAUSE TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== RUN   TestTheArchivedAuthorizationRowsQualify
+=== PAUSE TestTheArchivedAuthorizationRowsQualify
+=== CONT  TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence
+=== RUN   TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0213
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/prohibited_only
+=== PAUSE TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0213
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial
+=== CONT  TestAPullRequestRowWithANoteInItsProvenanceIsRecognized
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_only
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_only
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/PR_and_network
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/PR_and_network
+=== CONT  TestTheArchivedAuthorizationRowsQualify
+=== RUN   TestTheArchivedAuthorizationRowsQualify/Spec_0258
+=== PAUSE TestTheArchivedAuthorizationRowsQualify/Spec_0258
+=== RUN   TestTheArchivedAuthorizationRowsQualify/Spec_0309
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/without_outside_evidence
+=== CONT  TestAPartialWithAnotherEnvironmentRowBesideANetworkDeniedRowNamesBoth
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/without_outside_evidence
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/with_a_host
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/with_a_host
+=== CONT  TestAPartialWithASkippedRowNeverQualifies
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/PR_and_skipped
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/PR_and_skipped
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/prohibited_only
+=== RUN   TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0220
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Pull_Request_row
+=== PAUSE TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0220
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Pull_Request_row
+=== RUN   TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Oraculum
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Network-Denied_Row
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Network-Denied_Row
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_exempt_kinds_and_a_covered_declaration
+=== PAUSE TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Oraculum
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/Requirement_8
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/Requirement_8
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/empty_host
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/empty_host
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/blank_host
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Fluxus_PR_and_two_declarations
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Fluxus_PR_and_two_declarations
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/blank_host
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0317_QA-08_upstream_checkout_and_network
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/missing_closing_parenthesis
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/missing_closing_parenthesis
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/wrong_source_boundary
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0317_QA-08_upstream_checkout_and_network
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_the_canonical_network_form
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_the_canonical_network_form
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_a_subject_of_80_multibyte_characters
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/skipped_alone
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_environment_rows
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_exempt_kinds_and_a_covered_declaration
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_environment_rows
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_three_kinds
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/skipped_alone
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/skipped_precedes_declarations
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/skipped_precedes_declarations
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_three_kinds
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Spec_0258_network_prohibited_with_PR_and_declaration
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_and_declared
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Spec_0258_network_prohibited_with_PR_and_declaration
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/wrong_source_boundary
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/exemptions_exceed_frontmatter
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/embedded_source
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/embedded_source
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_a_subject_of_80_multibyte_characters
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/PR_only
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_an_empty_subject
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/PR_only
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/network_only
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/network_only
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/both_exemptions_and_another_environment
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/both_exemptions_and_another_environment
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/exemptions_exceed_frontmatter
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/exemptions_exceed_frontmatter
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/zero_frontmatter_clamps_exemptions
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/zero_frontmatter_clamps_exemptions
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_provenance
+=== PAUSE TestTheArchivedAuthorizationRowsQualify/Spec_0309
+=== RUN   TestTheArchivedAuthorizationRowsQualify/Spec_0317
+=== PAUSE TestTheArchivedAuthorizationRowsQualify/Spec_0317
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/finding_precedes_environment_and_skipped
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/finding_precedes_environment_and_skipped
+=== CONT  TestAPartialQualifiesWhenItsOnlyEnvironmentRowIsThePrePullRequestRow
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/trailing_host
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/trailing_host
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_case
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_source
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_source
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/exemptions_exceed_frontmatter
+=== RUN   TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_status
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/environment_precedes_skipped
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_provenance
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_case
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_status
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_and_declared
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_status
+=== PAUSE TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_status
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/zero_frontmatter_clamps_exemptions
+=== RUN   TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/declared_only
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/zero_frontmatter_clamps_exemptions
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/environment_precedes_skipped
+=== CONT  TestAPartialWithAnotherEnvironmentRowStillRefuses
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/wrong_source_boundary
+=== PAUSE TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/declared_only
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/wrong_source_boundary
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/outside_Results
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/embedded_source
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/outside_Results
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/embedded_source
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_an_empty_subject
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/fenced_tables
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/fenced_tables
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_source_case
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_source_case
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_blank_subject
+=== RUN   TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/missing_Provenance_column
+=== PAUSE TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/missing_Provenance_column
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_blank_subject
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_of_81_characters
+=== RUN   TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/multiple_tables_and_deeper_headings
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_of_81_characters
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_with_a_parenthesis
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/uncovered_declaration
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/uncovered_declaration
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row
+=== RUN   TestAPartialWithASkippedRowNeverQualifies/no_unmet_row
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_with_a_parenthesis
+=== CONT  TestAnotherEnvironmentRowBesideANetworkProhibitedRowNamesBoth
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_changed_suffix_case
+=== PAUSE TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/multiple_tables_and_deeper_headings
+=== CONT  TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses
+=== CONT  TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0213
+=== RUN   TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/another_provenance_item
+=== PAUSE TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/another_provenance_item
+=== RUN   TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/provenance_merely_contains_the_source_words
+=== PAUSE TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/provenance_merely_contains_the_source_words
+=== RUN   TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/status_differs_in_case
+=== PAUSE TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/status_differs_in_case
+=== RUN   TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_outside_Results
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7;_outside-evidence_row_(published_guide)
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7;_outside-evidence_row_(published_guide)
+=== PAUSE TestAPartialWithASkippedRowNeverQualifies/no_unmet_row
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7,_outside-evidence_row:_published_guide
+=== CONT  TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Oraculum
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_changed_suffix_case
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7,_outside-evidence_row:_published_guide
+=== PAUSE TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_outside_Results
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_row_without_outside_evidence
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_row_without_outside_evidence
+=== RUN   TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row(published_guide)
+=== PAUSE TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row(published_guide)
+=== RUN   TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_inside_a_fence
+=== CONT  TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0220
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once
+=== PAUSE TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_inside_a_fence
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once
+=== CONT  TestTheArchivedAuthorizationRowsQualify/Spec_0258
+=== RUN   TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_skipped_row_still_refuses
+=== PAUSE TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_skipped_row_still_refuses
+=== CONT  TestTheArchivedAuthorizationRowsQualify/Spec_0317
+--- PASS: TestAPartialWithAnotherEnvironmentRowBesideANetworkDeniedRowNamesBoth (0.00s)
+=== CONT  TestTheArchivedAuthorizationRowsQualify/Spec_0309
+--- PASS: TestAPullRequestRowWithANoteInItsProvenanceIsRecognized (0.00s)
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/Requirement_8
+--- PASS: TestAPartialWithAnotherEnvironmentRowStillRefuses (0.00s)
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/wrong_source_boundary
+--- PASS: TestAPartialQualifiesWhenItsOnlyEnvironmentRowIsThePrePullRequestRow (0.00s)
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_status
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_source
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/embedded_source
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/missing_closing_parenthesis
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/blank_host
+--- PASS: TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies (0.00s)
+    --- PASS: TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0213 (0.00s)
+    --- PASS: TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Spec_0220 (0.01s)
+    --- PASS: TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies/Oraculum (0.01s)
+=== CONT  TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/empty_host
+--- PASS: TestAnotherEnvironmentRowBesideANetworkProhibitedRowNamesBoth (0.01s)
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_only
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/declared_only
+--- PASS: TestTheArchivedAuthorizationRowsQualify (0.00s)
+    --- PASS: TestTheArchivedAuthorizationRowsQualify/Spec_0258 (0.00s)
+    --- PASS: TestTheArchivedAuthorizationRowsQualify/Spec_0309 (0.01s)
+    --- PASS: TestTheArchivedAuthorizationRowsQualify/Spec_0317 (0.01s)
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_and_declared
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_three_kinds
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Fluxus_PR_and_two_declarations
+=== CONT  TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/PR_and_network
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/without_outside_evidence
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/missing_Provenance_column
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_source_case
+--- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses (0.00s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/Requirement_8 (0.01s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/wrong_source_boundary (0.00s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/embedded_source (0.00s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_status (0.01s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/case_sensitive_source (0.01s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/empty_host (0.00s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/missing_closing_parenthesis (0.00s)
+    --- PASS: TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses/blank_host (0.01s)
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/embedded_source
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/wrong_source_boundary
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_case
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/trailing_host
+=== CONT  TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/with_a_host
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_environment_rows
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_provenance
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/both_exemptions_and_another_environment
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/zero_frontmatter_clamps_exemptions
+--- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial (0.00s)
+    --- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_only (0.01s)
+    --- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/network_and_declared (0.01s)
+    --- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/PR_and_network (0.00s)
+    --- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Fluxus_PR_and_two_declarations (0.01s)
+    --- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/declared_only (0.01s)
+    --- PASS: TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_three_kinds (0.01s)
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/exemptions_exceed_frontmatter
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/PR_only
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/network_only
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/fenced_tables
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/multiple_tables_and_deeper_headings
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/outside_Results
+=== CONT  TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_status
+--- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence (0.00s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_source_case (0.00s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/embedded_source (0.00s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/without_outside_evidence (0.01s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/missing_Provenance_column (0.01s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/changed_case (0.00s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/trailing_host (0.00s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/wrong_source_boundary (0.01s)
+    --- PASS: TestANetworkProhibitedRowNeedsItsExactStatusAndOutsideEvidence/with_a_host (0.01s)
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/PR_and_skipped
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/environment_precedes_skipped
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/no_unmet_row
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/uncovered_declaration
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/skipped_precedes_declarations
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/finding_precedes_environment_and_skipped
+=== CONT  TestAPartialWithASkippedRowNeverQualifies/skipped_alone
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/prohibited_only
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/zero_frontmatter_clamps_exemptions
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/exemptions_exceed_frontmatter
+--- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_environment_rows (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_provenance (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/PR_only (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/network_only (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/exemptions_exceed_frontmatter (0.01s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/zero_frontmatter_clamps_exemptions (0.01s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/both_exemptions_and_another_environment (0.01s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/fenced_tables (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/outside_Results (0.00s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/no_status (0.01s)
+    --- PASS: TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows/multiple_tables_and_deeper_headings (0.01s)
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Spec_0258_network_prohibited_with_PR_and_declaration
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_exempt_kinds_and_a_covered_declaration
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Network-Denied_Row
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Pull_Request_row
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7,_outside-evidence_row:_published_guide
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row(published_guide)
+=== CONT  TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7;_outside-evidence_row_(published_guide)
+=== CONT  TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/another_provenance_item
+--- PASS: TestAPartialWithASkippedRowNeverQualifies (0.00s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/environment_precedes_skipped (0.00s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/PR_and_skipped (0.01s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/finding_precedes_environment_and_skipped (0.00s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/uncovered_declaration (0.01s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/no_unmet_row (0.01s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/skipped_precedes_declarations (0.01s)
+    --- PASS: TestAPartialWithASkippedRowNeverQualifies/skipped_alone (0.01s)
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository
+=== CONT  TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_outside_Results
+=== CONT  TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_inside_a_fence
+=== CONT  TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/status_differs_in_case
+=== CONT  TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/provenance_merely_contains_the_source_words
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_row_without_outside_evidence
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_skipped_row_still_refuses
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_a_subject_of_80_multibyte_characters
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_blank_subject
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_an_empty_subject
+--- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial (0.00s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row (0.00s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/zero_frontmatter_clamps_exemptions (0.00s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/exemptions_exceed_frontmatter (0.00s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/prohibited_only (0.00s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/all_exempt_kinds_and_a_covered_declaration (0.01s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Spec_0258_network_prohibited_with_PR_and_declaration (0.01s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7,_outside-evidence_row:_published_guide (0.01s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Pull_Request_row (0.01s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/beside_a_Network-Denied_Row (0.01s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/outside-evidence_row(published_guide) (0.01s)
+    --- PASS: TestANetworkProhibitedOutsideEvidenceRowNeverDecidesAQualifyingPartial/Requirement_7;_outside-evidence_row_(published_guide) (0.01s)
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_changed_suffix_case
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_the_canonical_network_form
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0317_QA-08_upstream_checkout_and_network
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_with_a_parenthesis
+=== CONT  TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_of_81_characters
+--- PASS: TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses (0.00s)
+    --- PASS: TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/another_provenance_item (0.01s)
+    --- PASS: TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_outside_Results (0.01s)
+    --- PASS: TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/provenance_merely_contains_the_source_words (0.00s)
+    --- PASS: TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/matching_table_inside_a_fence (0.01s)
+    --- PASS: TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses/status_differs_in_case (0.01s)
+--- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0309_R07_another_repository (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_skipped_row_still_refuses (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/a_row_in_both_forms_counts_once (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_row_without_outside_evidence (0.01s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_an_empty_subject (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_a_subject_of_80_multibyte_characters (0.01s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_changed_suffix_case (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_the_canonical_network_form (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/accepts_Spec_0317_QA-08_upstream_checkout_and_network (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_blank_subject (0.01s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_with_a_parenthesis (0.00s)
+    --- PASS: TestANetworkProhibitedRowNamesWhatTheAuthorizationForbids/refuses_a_subject_of_81_characters (0.00s)
+PASS
+suiteguard: guard cost: measured 2847 paths; fingerprint took 209.691959ms before and 127.88925ms after
+ok  	roundfix/internal/spec	0.653s
+
+stderr:
+
+$ go test -timeout 15m -count=1 -v -run ^TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== PAUSE TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== CONT  TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle
+--- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape (7.63s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only (0.36s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_only/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0258_network_prohibited_with_PR_and_declaration/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0309_another_repository_prohibited_with_PR_and_declaration/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis (0.28s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis/archive (0.09s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/authorization_subject_with_a_parenthesis/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence/archive (0.08s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_without_outside_evidence/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_prohibited_with_a_host/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network_prohibited/settle (0.14s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only (0.36s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network (0.36s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds (0.37s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/archive (0.12s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only (0.35s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/archive (0.11s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/settle (0.19s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/settle (0.14s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/settle (0.14s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/settle (0.14s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/settle (0.14s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding (0.28s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive (0.08s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration (0.28s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive (0.08s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle (0.14s)
+PASS
+suiteguard: guard cost: measured 2847 paths; fingerprint took 146.514375ms before and 128.631083ms after
+ok  	roundfix/internal/cli	8.355s
+
+stderr:
+
+$ go test -timeout 15m -count=1 -v -run ^TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo$ ./internal/daemon
+exit: 0
+stdout:
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo
+=== PAUSE TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo
+=== CONT  TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0213_PR_only
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0220_PR_only
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Oraculum_PR_only
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0227_annotated_PR
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Fluxus_covered_declarations_and_PR
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_prohibited_only
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0258_network_prohibited_with_PR_and_declaration
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0309_another_repository_prohibited_with_PR_and_declaration
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/authorization_subject_with_a_parenthesis
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_prohibited_without_outside_evidence
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_prohibited_with_a_host
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/another_environment_beside_network_prohibited
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_only
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/PR_and_network
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/all_three_kinds
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/declared_only
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_without_outside_evidence
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/empty_network_host
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/another_environment_beside_network
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/PR_and_skipped
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/finding
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/uncovered_declaration
+=== RUN   TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/no_unmet_row
+--- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo (6.51s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0213_PR_only (0.32s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0220_PR_only (0.28s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Oraculum_PR_only (0.28s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0227_annotated_PR (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Fluxus_covered_declarations_and_PR (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_prohibited_only (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0258_network_prohibited_with_PR_and_declaration (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0309_another_repository_prohibited_with_PR_and_declaration (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/Spec_0317_upstream_checkout_and_network_prohibited_with_PR_and_declaration (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/authorization_subject_with_a_parenthesis (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_prohibited_without_outside_evidence (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_prohibited_with_a_host (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/another_environment_beside_network_prohibited (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_only (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/PR_and_network (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/all_three_kinds (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/declared_only (0.26s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/network_without_outside_evidence (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/empty_network_host (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/another_environment_beside_network (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/PR_and_skipped (0.27s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/finding (0.28s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/uncovered_declaration (0.28s)
+    --- PASS: TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo/no_unmet_row (0.28s)
+PASS
+suiteguard: guard cost: measured 2847 paths; fingerprint took 148.858792ms before and 128.305667ms after
+ok  	roundfix/internal/daemon	7.137s
+
+stderr:

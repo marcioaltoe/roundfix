@@ -1,0 +1,14 @@
+$ go test -timeout 15m -count=1 -v -run ^TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback$ ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback
+=== PAUSE TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback
+=== CONT  TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback
+    provider_system_error_recovery_test.go:203: result={Completed:0 Failed:1 Skipped:0 QAVerdict: QAAccepted:false QAReportPath: Outcomes:[{Task:task_01 Status:failed Reason:runtime infrastructure: task task_01 hit a provider system error: Selected model is at capacity. Please try a different model.}] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:} turns=2
+--- FAIL: TestProviderSystemErrorAfterFirstHandoffActivatesTheFallback (0.12s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 152.752584ms before and 131.43225ms after
+FAIL	roundfix/internal/daemon	0.762s
+FAIL
+
+stderr:

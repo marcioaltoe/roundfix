@@ -1,0 +1,12 @@
+
+
+- criterion: after release, a Delivery Queue item whose QA or repair turn
+  meets a real "Selected model is at capacity" reply completes on its
+  fallback selection without a `runtime-infrastructure` park.
+  reason: it needs a real provider at capacity, which no Verification or QA
+  row may reach or provoke.
+  satisfied-by: the operator's queue log and the Run Event Journal of the next
+  Run that meets the reply (event `provider_system_error` with recovery
+  `fallback` in a QA scope or after a First Handoff), recorded session
+  evidence.
+

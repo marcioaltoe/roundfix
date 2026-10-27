@@ -1,0 +1,101 @@
+$ go test -timeout 15m -count=1 -v -run TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt/pass ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt
+=== PAUSE TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt
+=== CONT  TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt
+=== RUN   TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt/pass
+=== PAUSE TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt/pass
+=== CONT  TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt/pass
+    provider_system_error_unfinished_qa_test.go:90: fallback report=---
+        verdict: pass
+        auditing_binary: "0.124.0"
+        auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"
+        rows_blocked_environment: 0
+        rows_blocked_finding: 0
+        rows_blocked_declared: 0
+        ---
+        
+        # QA Report
+        
+        ## Performed repairs
+        
+        None.
+        
+        ## Assigned repair failures
+        
+        None.
+        
+        ## Authorization audit inputs
+        
+        None.
+        
+        ## Mechanical findings
+        
+        None.
+        
+        ## Results
+        
+        | # | Status | Provenance |
+        | - | --- | --- |
+        
+        ## Mechanical skips
+        
+        None.
+        
+        ## Agent runtime fallback
+        
+        - provider_system_error: codex/preferred-model/high: Selected model is at capacity. Please try a different model.
+        - fallback: claude/fallback-model/high
+        - retry_spent: false
+        
+        want=---
+        verdict: pending
+        auditing_binary: "0.124.0"
+        auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"
+        rows_blocked_environment: 0
+        rows_blocked_finding: 0
+        rows_blocked_declared: 0
+        ---
+        
+        # QA Report
+        
+        ## Performed repairs
+        
+        None.
+        
+        ## Assigned repair failures
+        
+        None.
+        
+        ## Authorization audit inputs
+        
+        None.
+        
+        ## Mechanical findings
+        
+        None.
+        
+        ## Results
+        
+        | # | Status | Provenance |
+        | - | --- | --- |
+        
+        ## Mechanical skips
+        
+        None.
+        
+        ## Agent runtime fallback
+        
+        - provider_system_error: codex/preferred-model/high: Selected model is at capacity. Please try a different model.
+        - discarded_verdict: pass
+        - fallback: claude/fallback-model/high
+        - retry_spent: false
+--- FAIL: TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt (0.00s)
+    --- FAIL: TestQAProviderSystemErrorAfterAVerdictFallsBackAndReopensIt/pass (0.22s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 153.622917ms before and 134.298375ms after
+FAIL	roundfix/internal/daemon	0.849s
+FAIL
+
+stderr:
