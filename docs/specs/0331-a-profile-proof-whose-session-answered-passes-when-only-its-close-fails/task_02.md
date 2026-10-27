@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -149,3 +149,87 @@ load), the Vortex report of 2026-10-26.
 - `_prd.md` → Goals; Core Features 1-3; Core Feature 5; User Experience; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior 1-4, 6; Interfaces; Data Models; API Contracts 1-4; API Contract 8; Invariants 1-3, 5; Testing Approach; Build Order 1
 - ADR-0344; ADR-0298; ADR-0069
+
+## Result
+
+Implemented this Task's proof-close contract. Exact proofs and fallback
+candidates keep their setup verdict; their close contexts derive from
+`context.WithoutCancel(ctx)` and use the resolved setup deadline, with the
+existing positive `cleanupTimeout` override. Sealed prompts, EndSession and
+Run cleanup were not changed. Deadline errors name the contracted setup
+step; other setup diagnoses retain their bytes.
+
+Failed closes emit one warning and atomically record only the specified
+schema, session, working directory, runtime fields, timestamp and cause
+under the runner environment's HOME. The new directory is `0700` and the
+temporary file, renamed into place, is `0600`. Missing HOME and write
+failures emit the alternative warning with the acpx close arguments.
+Baseline analysis converts `SelectionProof.Unclosed` into the existing
+cleanup-unproven error before any sealed prompt or fallback proof starts.
+
+Acceptance evidence:
+
+- Passing setup with a blocked or failing close: the hanging-close and
+  setup-deadline tests retain a proven tuple, one warning and one record;
+  the latter observes `2h0m0s` with the cleanup override disabled. The
+  fallback test covers functional, rejected and error outcomes. The record
+  test checks environment-value exclusion, the variable name and private
+  permissions.
+- Rejected setup: `TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails`
+  covers both exact proof and Probe, asserts the original rejection bytes,
+  rejects any cleanup error in the chain and checks the warning and record.
+- Named deadline: `TestATimedOutProofStepIsNamed` blocks the first catalogue
+  inspection, expires the controlled parent context, and asserts both
+  `profile proof step "read runtime catalogue"` and `errors.Is` matching.
+- Analyzer stop: `TestAProofThatLeftItsSessionOpenStopsSemanticAnalysis`
+  covers segmentation, classification and revision, asserts their manual
+  proposals and that neither a fallback proof nor a sealed prompt starts;
+  it also checks the cleanup error's session and warning cause.
+
+Focused checks:
+
+- Before production edits,
+  `go test ./internal/agent -run '^TestAProofWhoseSessionAnsweredPassesWhenItsCloseHangs$' -count=1 -v`
+  characterized the old behavior: `*AgentSessionCleanupError` wrapping
+  `context.DeadlineExceeded` after the model-variant setup succeeded, with
+  `cleanupTimeout = 100 * time.Millisecond`. That characterization was
+  then changed to assert the new contract.
+- The six named agent tests plus the analyzer test passed together with an
+  exact-name `go test ./internal/agent ./internal/baselineacp -run ... -count=1 -v`
+  selection.
+- `go test ./internal/agent -run '^(TestProveExactSelection|TestACPXProbe|TestExactSelectionProofSetup|TestTimedOutProofSetup|TestMissingSession|TestAProofWhose|TestTheProofClose|TestASessionThat|TestATimedOutProof|TestAFallbackCandidate|TestAnUnclosedProof)' -count=1`
+  exited 0.
+- `go test ./internal/baselineacp -run '^(TestAProofThatLeftItsSessionOpenStopsSemanticAnalysis|TestPreferredFallback|TestManualClassification|TestRuleSegmentation|TestRevisionManualFallback)' -count=1`
+  exited 0.
+- `go test ./internal/testfixture -run '^(TestEveryRealTimeBudgetIsWithinItsFileCeiling|TestEveryTestInAParallelTestPackageRunsInParallel)$' -count=1`
+  exited 0. Only the required new ceiling of one was added; no existing
+  ceiling changed.
+- Seven temporary `go test -overlay` mutations independently removed the
+  unclosed proof field assignment, setup-derived close deadline, setup-only
+  error verdict, deadline step name, fallback verdict preservation,
+  environment-value exclusion and analyzer stop. Each named regression
+  test failed on its corresponding mutation. Overlays remained outside the
+  repository; production files were not mutated for these probes.
+
+Removed exactly the four declared old join tests, with no edits to other
+existing tests. Generated the coverage record only through
+`go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`.
+The recorder wrote the record and its test body passed, but its process
+exited 1 because suiteguard reported
+`modified: docs/references/coverage-record.json`. Inspection found that the
+recorder does not call `suiteguard.DeclareSanctionedRegeneration`, although
+this Spec's authorization already declares its command and output. No
+suiteguard bypass or recorder code change was made.
+
+The subsequent read-only
+`go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` exited 0.
+A structural comparison of the generated record against HEAD found exactly
+the four authorized removals, 318 common-test additions (including this
+Task and earlier Specs), three platform-test additions and an unchanged
+platform list.
+
+Follow-up outside this slice: make the existing coverage recorder declare
+its sanctioned regeneration before writing, so a first write can exit 0
+under suiteguard. Reaping and CLI warning propagation remain task_03's
+work. Task status and checkboxes are unchanged; declared Verification,
+repository Verification, commits, pushes and pull requests were not run.

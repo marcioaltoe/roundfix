@@ -81,6 +81,7 @@ type SelectionProof struct {
 	Catalogue             RuntimeCatalogue
 	Adapter               AdapterEvidence
 	Status                string
+	Unclosed              *UnclosedProofSession
 }
 
 // SessionSelectionRequest applies one canonical selection to an existing
@@ -122,7 +123,7 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 	adapter, err := checkAdapter(setupCtx, request.Runtime, runner.baseEnv())
 	if err != nil {
 		setupCancel()
-		return SelectionProof{}, err
+		return SelectionProof{}, profileProofStepError("check adapter", err)
 	}
 	sessionName, err := disposablePreflightSessionName()
 	if err != nil {
@@ -132,14 +133,16 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 	codexEnv, err := runner.codexEnvForSession(setupCtx, request.Runtime, sessionName)
 	if err != nil {
 		setupCancel()
-		return SelectionProof{}, err
+		return SelectionProof{}, profileProofStepError("start runtime", err)
 	}
 
 	session := SessionRef{Name: sessionName, WorkDir: workDir}
 	catalogue, setupErr := runner.readRuntimeCatalogueWithEvidence(setupCtx, request.Runtime, session, adapter, codexEnv)
+	setupErr = profileProofStepError("read runtime catalogue", setupErr)
 	var capabilities SelectionCapabilities
 	if setupErr == nil {
 		capabilities, setupErr = runner.startSessionSelection(setupCtx, request.Runtime, session, adapter, codexEnv, true)
+		setupErr = profileProofStepError("start session selection", setupErr)
 	}
 	var proof SelectionProof
 	if setupErr == nil {
@@ -149,6 +152,7 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 			Capabilities: capabilities,
 			Catalogue:    catalogue,
 		}, codexEnv)
+		setupErr = profileProofStepError("apply session selection", setupErr)
 	}
 	if setupErr == nil {
 		var effectiveAccessPolicy AccessPolicy
@@ -157,23 +161,21 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 			Session: session,
 			GitRoot: workDir,
 		}, capabilities, runevent.Discard, codexEnv)
+		setupErr = profileProofStepError("apply full access", setupErr)
 		if setupErr == nil {
 			proof.EffectiveAccessPolicy = effectiveAccessPolicy
 		}
 	}
 	setupCancel()
 
-	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), runner.disposableCleanupTimeout())
+	closeDeadline := runner.proofCloseTimeout(setupTimeout)
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), closeDeadline)
 	defer cleanupCancel()
-	cleanupErr := runner.closeDisposableSession(cleanupCtx, request.Runtime, sessionName, workDir)
-	if setupErr != nil && cleanupErr != nil {
-		return SelectionProof{}, errors.Join(setupErr, cleanupErr)
+	if cleanupErr := runner.closeDisposableSession(cleanupCtx, request.Runtime, sessionName, workDir); cleanupErr != nil {
+		proof.Unclosed = runner.recordUnclosedProofSession(request.Runtime, sessionName, workDir, closeDeadline, cleanupErr)
 	}
 	if setupErr != nil {
 		return SelectionProof{}, setupErr
-	}
-	if cleanupErr != nil {
-		return SelectionProof{}, cleanupErr
 	}
 	return proof, nil
 }
@@ -676,4 +678,12 @@ func effectiveSelectionError(assignment SelectionAssignment, state SelectionCapa
 		effectiveReasoning = state.ReasoningOption.CurrentValue
 	}
 	return &EffectiveSelectionError{Assignment: assignment, EffectiveModel: effectiveModel, EffectiveReasoning: effectiveReasoning}
+}
+
+// profileProofStepError preserves all non-deadline diagnoses byte for byte.
+func profileProofStepError(step string, err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("profile proof step %q: %w", step, err)
+	}
+	return err
 }

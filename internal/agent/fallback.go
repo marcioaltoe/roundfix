@@ -64,11 +64,11 @@ func (runner *ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime Ru
 	codexEnv, err := runner.codexEnvForSession(setupCtx, candidate, sessionName)
 	if err != nil {
 		setupCancel()
-		return FallbackSelection{}, false, err
+		return FallbackSelection{}, false, profileProofStepError("start runtime", err)
 	}
 	selection := FallbackSelection{Model: model}
 	functional := true
-	probeErr := runner.applyDisposableSelection(setupCtx, candidate, sessionName, workDir, codexEnv)
+	probeErr := profileProofStepError("apply session selection", runner.applyDisposableSelection(setupCtx, candidate, sessionName, workDir, codexEnv))
 	if probeErr != nil {
 		functional = false
 	} else {
@@ -84,7 +84,7 @@ func (runner *ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime Ru
 				break
 			}
 			if !isSelectionAssignmentRejection(effortErr) {
-				probeErr = effortErr
+				probeErr = profileProofStepError("apply reasoning effort", effortErr)
 				functional = false
 				break
 			}
@@ -92,14 +92,11 @@ func (runner *ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime Ru
 	}
 	setupCancel()
 
-	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), runner.disposableCleanupTimeout())
+	closeDeadline := runner.proofCloseTimeout(acpxPreflightSetupTimeout)
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), closeDeadline)
 	defer cleanupCancel()
-	cleanupErr := runner.closeDisposableSession(cleanupCtx, candidate, sessionName, workDir)
-	if cleanupErr != nil {
-		if probeErr != nil {
-			return FallbackSelection{}, false, errors.Join(probeErr, cleanupErr)
-		}
-		return FallbackSelection{}, false, cleanupErr
+	if cleanupErr := runner.closeDisposableSession(cleanupCtx, candidate, sessionName, workDir); cleanupErr != nil {
+		runner.recordUnclosedProofSession(candidate, sessionName, workDir, closeDeadline, cleanupErr)
 	}
 	if probeErr != nil && !isSelectionAssignmentRejection(probeErr) {
 		return FallbackSelection{}, false, probeErr
