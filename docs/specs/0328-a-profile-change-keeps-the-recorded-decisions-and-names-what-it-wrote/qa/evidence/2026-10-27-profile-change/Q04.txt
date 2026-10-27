@@ -1,0 +1,44 @@
+# Q04 apply names its Root Backup; managed refresh names none (Success Metric 3, Invariant 3)
+repo c: temp Git repo, fake skills, go-cli-tui adopted with bin/roundfix plan+apply and committed (as Q03); python plan with --decision preservation.mode=preservation
+plan exit=0
+$ bin/roundfix baseline apply --repo <c> --plan <python plan> --confirm-plan <planDigest>   (text)
+1:Baseline apply: verified
+13:Warning: baseline.preservation.backup.written: AGENTS.<digest>.md: exact copy of AGENTS.md before this apply; commit it with this change, Roundfix never deletes it
+exit=0
+backup warning lines: 1
+new root entries: [AGENTS.<digest>.md] count=1
+warning path equals the one new root file: yes
+backup bytes equal the committed AGENTS.md before this apply: yes
+
+repo d: fresh copy of the same setup; apply --format json
+plan exit=0
+$ bin/roundfix baseline apply --repo <d> --plan <python plan> --confirm-plan <planDigest> --format json
+exit=0 state=verified
+new root entries count=1
+warnings[] backup entries: [{"code":"baseline.preservation.backup.written","path":"AGENTS.<digest>.md","message":"exact copy of AGENTS.md before this apply; commit it with this change, Roundfix never deletes it"}]
+json warning path equals the one new root file: yes
+
+$ bin/roundfix baseline update --repo <c, python applied and committed> --yes --no-skills --no-history --format text
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:<digest>
+Current catalog: sha256:<digest>
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Plan Digest: sha256:<digest>
+Approved Plan Digest: sha256:<digest>
+exit=0
+baseline.preservation.backup.written lines: 0
+git status --porcelain <c> after update: []

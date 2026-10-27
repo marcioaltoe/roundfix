@@ -1,0 +1,31 @@
+# Q11 scope audit from repository history
+commit_range: a25af061eec8bb5ca076fe34d0115ff09e4cd879..060968908842f32100558eb8581d2d4beca9c4e9
+06096890 feat: the apply names each Root Backup and reconcile says what it compared | task_03
+aaca6997 feat: a restore keeps the repository's Claude Skill Links | task_04
+78f3fed6 feat: a profile change carries the recorded decisions and refuses once | task_02
+2e72cc31 docs: the guides, skills and glossary describe the profile change, the Root Backup and the Claude Skill Links | task_01
+
+## Each Task's changed files vs its declarations (interface:/creates:; no Task has a ## Recorded paths section; its own task file is its settlement)
+task_01 (2e72cc31): 12 files changed; outside declarations: []
+task_02 (78f3fed6): 8 files changed; outside declarations: []
+task_03 (06096890): 7 files changed; outside declarations: []
+task_04 (aaca6997): 6 files changed; outside declarations: []
+
+## Governed Paths changed in the range vs _authorization.md paths
+authorization paths: internal/cli/baseline_plan_test.go .agents/skills/roundfix/references/baseline.md .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md .agents/skills/setup-context-driven/SKILL.md skills/setup-context-driven/SKILL.md 
+governed set per the record (measured with speccheck.GovernedPath on 2026-10-26): the six listed paths; all other declared files are not governed
+  .agents/skills/roundfix/SKILL.md: listed
+  .agents/skills/roundfix/references/baseline.md: listed
+  .agents/skills/setup-context-driven/SKILL.md: listed
+  skills/roundfix/SKILL.md: listed
+  skills/setup-context-driven/SKILL.md: listed
+Independent governed-set check: a go test -overlay probe in internal/speccheck (probe file outside the checkout, -timeout 5m) called speccheck.GovernedPath on every file changed in the range; GOVERNED: .agents/skills/roundfix/SKILL.md, .agents/skills/roundfix/references/baseline.md, .agents/skills/setup-context-driven/SKILL.md, skills/roundfix/SKILL.md, skills/setup-context-driven/SKILL.md. No other changed file is governed. Every one is listed in paths; git status --porcelain identical before and after the probe.
+Daemon authorization audit input: task_01 2e72cc31 granted, operative grant (seeded report).
+
+## Forbidden paths changed in the range
+forbidden count: 0
+.agents/skills changes (all canonical files task_01 declares): .agents/skills/roundfix/SKILL.md .agents/skills/roundfix/references/baseline.md .agents/skills/setup-context-driven/SKILL.md 
+
+## ### QA settlement sections
+diff hunks touching '### QA settlement': 0
+occurrences in the tree at base vs head: 17 files / 17 files

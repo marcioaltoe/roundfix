@@ -1,0 +1,9 @@
+# Q07 task_01..task_04 Verification commands, executed verbatim
+Each command was extracted byte-for-byte from the task file's ## Verification bullet and run with bash from the Run Worktree root at the audited head.
+task_01: exit=0
+  ok  	roundfix/skills	<t>
+  ok  	roundfix/internal/docscontract	<t>
+task_02: exit=0
+task_03: exit=0
+task_04: exit=0
+Each go test in these commands carries -timeout 20m; task_04 also ran GOOS=windows go build -buildvcs=false ./internal/baseline ./internal/cli (exit 0).

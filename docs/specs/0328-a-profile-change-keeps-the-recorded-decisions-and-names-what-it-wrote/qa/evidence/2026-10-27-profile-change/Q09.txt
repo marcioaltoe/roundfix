@@ -1,0 +1,14 @@
+# Q09 Success Metric 6, declared unreachable
+Declaration (_prd.md -> ## Unreachable Acceptance, the single entry):
+  - criterion: Success Metric 6, after release, Quaestor or another adopter
+    changes a profile with `baseline plan` and confirms the recorded decisions
+    carried.
+    reason: it needs the released binary in another repository, which no
+    Verification or QA row may read.
+    satisfied-by: the release notice to `default/gesttione-solutions-quaestor`
+    and that project's next profile change, reported to this project through
+    ai-memory.
+Proof the gate cannot reach it: the criterion needs the released binary in another repository (Quaestor). task_05 forbids reading another repository, the network and the real ~/.roundfix; no release carrying this Spec exists (bin/roundfix reports 0.124.0 built from the Run Worktree head 06096890, unreleased).
+Observed constraint matches the declaration's reason: yes.
+Human action that satisfies it: the release notice to default/gesttione-solutions-quaestor and that project's next profile change, reported to this project through ai-memory.
+Pre-release equivalent observed here: Q03 shows the same profile change carrying all twelve recorded decisions in a temporary repository.

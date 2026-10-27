@@ -1,0 +1,7 @@
+# Q01 build and repository Verification
+$ make build
+exit 0
+$ ./bin/roundfix --version
+roundfix 0.124.0 (06096890-dirty, built 2026-10-27 05:03:13 -0300)
+audited head: 060968908842f32100558eb8581d2d4beca9c4e9
+repository Verification: make verify-changed run by the Daemon outside the Agent sandbox; verdict pass (exit 0); diagnostics removed on success; not re-run by the QA Agent.

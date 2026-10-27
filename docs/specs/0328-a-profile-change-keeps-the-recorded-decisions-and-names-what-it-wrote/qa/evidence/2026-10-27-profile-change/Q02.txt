@@ -1,0 +1,27 @@
+# Q02 baseline update --decision profile=python (Success Metric 1, Invariant 2)
+repo: <tmp>/repo holding a copy of the audited docs/agents/setup-context.json and a committed AGENTS.md; HOME and TMPDIR fresh temp dirs per invocation
+$ bin/roundfix baseline update --repo <repo> --decision profile=python --no-skills --no-history --format text
+roundfix: baseline update failed: "profile" is not a Baseline decision; baseline update keeps the recorded Baseline Profile go-cli-tui
+Baseline update: failed
+Category: invalid
+Result: "profile" is not a Baseline decision; baseline update keeps the recorded Baseline Profile go-cli-tui
+Prior catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+Current catalog: sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Next action: change the profile with roundfix baseline plan --repo <tmp>/repo --profile python --decision preservation.mode=preservation --format json, which carries the recorded decisions, then apply the reviewed plan with roundfix baseline apply --repo <tmp>/repo --plan <plan-file> --confirm-plan <planDigest>
+exit=2
+next action contains 'roundfix baseline plan --repo <repo> --profile python': yes
+git status --porcelain: []
+$ bin/roundfix baseline update --repo <repo> --decision profile=python --no-skills --no-history --format json
+roundfix: baseline update failed: "profile" is not a Baseline decision; baseline update keeps the recorded Baseline Profile go-cli-tui
+{"history":{"status":"skipped","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":false,"state":"failed","category":"invalid","message":"\"profile\" is not a Baseline decision; baseline update keeps the recorded Baseline Profile go-cli-tui","nextAction":"change the profile with roundfix baseline plan --repo <tmp>/repo --profile python --decision preservation.mode=preservation --format json, which carries the recorded decisions, then apply the reviewed plan with roundfix baseline apply --repo <tmp>/repo --plan \u003cplan-file\u003e --confirm-plan \u003cplanDigest\u003e","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:3733c8a4a4cddb6eb5ae04d7e04c26f805f5900bd020780a0144973203c340b5"},"fileChanges":[],"retention":[],"warnings":[],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[],"differing":[]}}
+exit=2
+next action contains 'roundfix baseline plan --repo <repo> --profile python': yes
+git status --porcelain: []

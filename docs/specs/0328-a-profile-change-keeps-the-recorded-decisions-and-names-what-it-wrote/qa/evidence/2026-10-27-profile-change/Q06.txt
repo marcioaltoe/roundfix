@@ -1,0 +1,94 @@
+# Q06 sabotages, each on its own git archive copy of the audited head
+Method: git archive HEAD | tar -x into a fresh temp dir; git init + commit there (the suites' guard fingerprints a Git repository); one scripted string edit, asserted to match exactly once; go test -count=1 -timeout 20m -v -run ^<named test>$ in the copy. The Run Worktree was never written. Subtest lines are recorded where the case matters.
+audited head: 060968908842f32100558eb8581d2d4beca9c4e9
+
+## Sabotage 1 recorded value wins over a flag in the carried-decision computation
+file: internal/baseline/recorded_decisions.go (1 file changed, 3 insertions(+), 4 deletions(-))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects$ ./internal/baseline
+exit=1
+    recorded_decisions_test.go:63: wrong closure: [autonomous.enabled branch.prefix domain.layout language.generated repository.extension.enabled runtime.backend runtime.design secondbrain.enabled spec.scaffold triage.external verification.gate verification.incremental]
+--- FAIL: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects (0.02s)
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/carry_closure (0.00s)
+    --- FAIL: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/flag_changes_closure (0.00s)
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/fixed_profile_answer (0.00s)
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/catalog_refuses_recorded_value (0.00s)
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/incompatible_recorded_profile (0.00s)
+FAIL	roundfix/internal/baseline	0.637s
+named test failed: yes
+
+## Sabotage 2 plan command stops setting CarryRecordedDecisions
+file: internal/cli/baseline_profile.go (1 file changed, 1 deletion(-))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange$ ./internal/cli
+exit=1
+    baseline_profile_change_test.go:89: profile change exit=3 stdout={
+--- FAIL: TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange (0.63s)
+FAIL	roundfix/internal/cli	1.346s
+  refusal: "message": "required Baseline decisions are missing: autonomous.enabled, domain.layout, language.generated, repository.extension.enabled, secondbrain.enabled, spec.scaffold, triage.external, verification.gate, verification.incremental; required when autonomous.enabled is true: runtime.backend, runtime.design"
+  refusal: "message": "nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"
+named test failed: yes
+
+## Sabotage 3 drop the conditional-dependent part of the refusal
+file: internal/baseline/recorded_decisions.go (1 file changed, 3 insertions(+))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestBaselinePlanNamesEveryMissingAnswerInOneRefusal$ ./internal/cli
+exit=1
+    baseline_profile_change_test.go:35: message missing "required when autonomous.enabled is true: runtime.backend, runtime.design": required Baseline decisions are missing: autonomous.enabled, domain.layout, language.generated, repository.extension.enabled, secondbrain.enabled, spec.scaffold, triage.external, verification.gate, verification.incremental; instruction-preservation mode is required
+--- FAIL: TestBaselinePlanNamesEveryMissingAnswerInOneRefusal (0.05s)
+FAIL	roundfix/internal/cli	0.860s
+named test failed: yes
+
+## Sabotage 4 remove the profile refusal from DeclareManifestDecisions
+file: internal/baseline/update.go (1 file changed, 1 insertion(+), 3 deletions(-))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand$ ./internal/cli
+exit=1
+    baseline_profile_change_test.go:52: message="declare Setup Manifest decisions: resolve Setup Manifest decisions: normalize Baseline decisions: unknown decision \"profile\""
+    baseline_profile_change_test.go:55: next action="correct the declared decisions and rerun roundfix baseline update"
+--- FAIL: TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand (0.57s)
+FAIL	roundfix/internal/cli	1.291s
+named test failed: yes
+
+## Sabotage 5 drop the backup warnings from ApplyPlan
+file: internal/baseline/apply.go (1 file changed, 1 insertion(+), 1 deletion(-))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestBaselineApplyNamesTheRootBackupItWrote$ ./internal/cli
+exit=1
+    baseline_root_backup_test.go:59: Baseline apply: verified
+    baseline_root_backup_test.go:76: backup warnings=0
+--- FAIL: TestBaselineApplyNamesTheRootBackupItWrote (1.16s)
+    --- FAIL: TestBaselineApplyNamesTheRootBackupItWrote/text (0.58s)
+    --- FAIL: TestBaselineApplyNamesTheRootBackupItWrote/json (0.57s)
+FAIL	roundfix/internal/cli	1.903s
+named test failed: yes
+
+## Sabotage 6 print the --revision value in place of the Setup Snapshot refs
+file: internal/cli/baseline_skills_reconcile.go (1 file changed, 1 insertion(+), 1 deletion(-))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision$ ./internal/cli
+exit=1
+    baseline_skills_reconcile_test.go:373: want prefix "Baseline skills reconcile: no changes\nReconcile removes only skills-lock.json entries absent at e5cfd939c2b6cdca01c8af848c9eb48eb8bb3c2f; it never moves an installed skill to that revision.\nInstalled skills from marcioaltoe/skills follow the Setup Snapshot this binary carries: 8d71fade68c54693bedbd917371f0514311af157.\nA newer revision reaches them with the Roundfix release whose Setup Snapshot names it; restore one with roundfix baseline skills restore --profile go-cli-tui --skill <name>.\n", got Baseline skills reconcile: no changes
+--- FAIL: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision (0.36s)
+    --- FAIL: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/marcioaltoe/skills (0.08s)
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/example/no-profile-skills (0.19s)
+FAIL	roundfix/internal/cli	1.085s
+named test failed: yes
+
+## Sabotage 7 plan a link whenever .claude/skills is a directory
+file: internal/baseline/skills_restore.go (1 file changed, 1 insertion(+))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestSkillsRestoreAddsNoLinkWithoutClaudeLinks$ ./internal/baseline
+exit=1
+    skills_restore_claude_link_test.go:130: unexpected link: {Action:create-link Path:.claude/skills/agentic-cli-design Skill:agentic-cli-design Target:../../.agents/skills/agentic-cli-design BeforeDigest:<nil> AfterDigest:<nil> Before:map[] After:map[]}
+    skills_restore_claude_link_test.go:130: unexpected link: {Action:create-link Path:.claude/skills/agentic-cli-design Skill:agentic-cli-design Target:../../.agents/skills/agentic-cli-design BeforeDigest:<nil> AfterDigest:<nil> Before:map[] After:map[]}
+--- FAIL: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks (1.82s)
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/absent (0.36s)
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/symbolic-link (0.35s)
+    --- FAIL: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/copies-only (0.38s)
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/claude-symbolic-link (0.36s)
+    --- FAIL: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/wrong-target (0.38s)
+FAIL	roundfix/internal/baseline	2.418s
+named test failed: yes
+
+## Sabotage 8 skip the symbolic-link postimage in the rollback
+file: internal/baseline/transaction.go (1 file changed, 1 insertion(+))
+$ (copy) go test -count=1 -timeout 20m -v -run ^TestSkillsRestoreRollsBackTheClaudeLinkWithTheTree$ ./internal/baseline
+exit=1
+    skills_restore_claude_link_test.go:207: rollback left .claude/skills/agentic-cli-design: <nil>
+--- FAIL: TestSkillsRestoreRollsBackTheClaudeLinkWithTheTree (0.43s)
+FAIL	roundfix/internal/baseline	1.034s
+named test failed: yes

@@ -1,0 +1,43 @@
+# Q05 Success Metrics 4 and 5; Invariants 1, 4, 5, 6 via named tests
+$ go test -count=1 -timeout 20m -v -run '^(TestCarryRecordedDecisions.*|TestBaselinePlan.*|TestBaselineUpdate.*Decision.*|TestBaselineUpdateDeclaresTheBetterAuthBasePath|TestBaselineApply.*|TestBaselinePlanTextLabelsTheRootBackup|TestBaselineUpdateWritesNoRootBackupWarning|TestBaselineSkillsReconcile.*|TestReconcileSkillsLock.*|TestApply.*|TestSkillsRestore.*|TestTransaction.*|TestHistoryMove.*|TestBaselineSkillsRestore.*|TestBaselineUpdatePreviewNamesAMissingRequiredSkill)$' ./internal/baseline ./internal/cli
+exit=0
+ok  	roundfix/internal/baseline	<t>
+ok  	roundfix/internal/cli	<t>
+total --- PASS lines: 256; --- FAIL lines: 0
+named tests (task_02, task_03, task_04 Verification):
+--- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects
+--- PASS: TestCarryRecordedDecisionsWithoutAManifestChangesNothing
+--- PASS: TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange
+--- PASS: TestBaselinePlanNamesEveryMissingAnswerInOneRefusal
+--- PASS: TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+--- PASS: TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus
+--- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision
+--- PASS: TestBaselineApplyNamesTheRootBackupItWrote
+--- PASS: TestBaselinePlanTextLabelsTheRootBackup
+--- PASS: TestBaselineUpdateWritesNoRootBackupWarning
+--- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+--- PASS: TestBaselineApplyCommand
+--- PASS: TestBaselineSkillsReconcilePreviewThenConfirm
+--- PASS: TestSkillsRestoreLinksARestoredSkillWhereClaudeLinksAreKept
+--- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks
+--- PASS: TestSkillsRestoreLeavesAnExistingClaudeEntry
+--- PASS: TestSkillsRestoreRollsBackTheClaudeLinkWithTheTree
+--- PASS: TestSkillsRestoreLinksAnInstalledSkillThatLacksItsLink
+--- PASS: TestTransactionWritesVerifiesAndRollsBackASymbolicLinkPostimage
+--- PASS: TestBaselineSkillsRestoreTextListsTheClaudeLink
+--- PASS: TestSkillsRestoreOfflinePreviewApplyAndIdempotence
+--- PASS: TestTransactionRollback
+subtests of TestSkillsRestoreAddsNoLinkWithoutClaudeLinks:
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/absent
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/symbolic-link
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/copies-only
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/claude-symbolic-link
+    --- PASS: TestSkillsRestoreAddsNoLinkWithoutClaudeLinks/wrong-target
+subtests of TestSkillsRestoreLinksARestoredSkillWhereClaudeLinksAreKept / TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision / TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects:
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/carry_closure
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/flag_changes_closure
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/fixed_profile_answer
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/catalog_refuses_recorded_value
+    --- PASS: TestCarryRecordedDecisionsTakesWhatTheProfileStillSelects/incompatible_recorded_profile
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/marcioaltoe/skills
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/example/no-profile-skills

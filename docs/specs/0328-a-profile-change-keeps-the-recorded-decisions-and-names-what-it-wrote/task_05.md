@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

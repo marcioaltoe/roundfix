@@ -1,0 +1,12 @@
+# Q13 Outcome for the Archive Record
+Judge Key Variables unset in the invoking shell: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set, TYPESAFE_API_KEY not set (also ROUNDFIX_JUDGE_ENVIRONMENT_CONTROL and ROUNDFIX_FAKE_JUDGE_ENVIRONMENT_PATH not set).
+$ HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bin/roundfix archive 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote --plan --offline
+exit=0
+archive plan for 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote: removes 22 file(s) (136627 bytes) and writes docs/history/specs/0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-27.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 10 file(s) (27967 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-a-baseline-profile-change-loses-the-recorded-decisions-and-writes-without-saying-so.md 3642 bytes: no advice (offline)
+promote with: roundfix archive 0328-a-profile-change-keeps-the-recorded-decisions-and-names-what-it-wrote --promote <path>
+git status --porcelain identical before and after: yes (the plan wrote nothing)
+Note: the plan ran before Q09, Q12 and Q13 evidence files were written; its evidence count (10 files) reflects that moment.
