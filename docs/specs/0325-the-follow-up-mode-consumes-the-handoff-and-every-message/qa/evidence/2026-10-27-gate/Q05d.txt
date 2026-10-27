@@ -1,0 +1,11 @@
+command: go test -timeout 10m -count=1 -run ^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$ ./skills
+exit: 1
+stdout:
+--- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+        roundfix_modes_test.go:136: step 4 omits "A message not yet handled becomes a Backlog Entry that records its sender, date and text, and is then consumed."
+FAIL
+FAIL	roundfix/skills	0.256s
+FAIL
+
+stderr:

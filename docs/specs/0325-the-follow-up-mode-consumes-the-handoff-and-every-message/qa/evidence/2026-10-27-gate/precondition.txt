@@ -1,0 +1,13 @@
+command: ./bin/roundfix spec check 0325-the-follow-up-mode-consumes-the-handoff-and-every-message --strict
+exit: 0
+stdout:
+Spec 0325-the-follow-up-mode-consumes-the-handoff-and-every-message
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0325-the-follow-up-mode-consumes-the-handoff-and-every-message/_techspec.md Vocabulary Contract
+
+stderr:

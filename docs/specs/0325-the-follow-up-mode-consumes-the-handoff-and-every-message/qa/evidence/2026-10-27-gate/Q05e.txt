@@ -1,0 +1,11 @@
+command: go test -timeout 10m -count=1 -run ^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$ ./skills
+exit: 1
+stdout:
+--- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+        roundfix_modes_test.go:172: Modes omits "- `--follow-up`: take the project's handoff, inventory pending work, plan, gather decisions, author and deliver the resulting work, and leave no handed-in message pending."
+FAIL
+FAIL	roundfix/skills	0.255s
+FAIL
+
+stderr:

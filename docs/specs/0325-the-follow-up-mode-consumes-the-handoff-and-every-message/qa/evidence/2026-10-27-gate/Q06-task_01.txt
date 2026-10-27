@@ -1,0 +1,8 @@
+command: /bin/sh -c grep -q 'func TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage' skills/roundfix_modes_test.go && go test -timeout 10m -count=1 ./skills && make skills-sync-check
+exit: 0
+stdout:
+ok  	roundfix/skills	0.917s
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.123s
+
+stderr:

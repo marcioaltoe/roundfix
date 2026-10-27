@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0325-the-follow-up-mode-consumes-the-handoff-and-every-message --plan --offline
+exit: 0
+stdout:
+archive plan for 0325-the-follow-up-mode-consumes-the-handoff-and-every-message: removes 33 file(s) (107997 bytes) and writes docs/history/specs/0325-the-follow-up-mode-consumes-the-handoff-and-every-message.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-27.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 22 file(s) (19328 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-the-follow-up-mode-leaves-the-handoff-and-handed-in-messages-pending.md 2448 bytes: no advice (offline)
+promote with: roundfix archive 0325-the-follow-up-mode-consumes-the-handoff-and-every-message --promote <path>
+
+stderr:

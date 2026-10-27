@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0325-the-follow-up-mode-consumes-the-handoff-and-every-message
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

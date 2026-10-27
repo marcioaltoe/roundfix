@@ -1,0 +1,11 @@
+command: go test -timeout 10m -count=1 -run ^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$ ./skills
+exit: 1
+stdout:
+--- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+        roundfix_modes_test.go:124: step 1 omits "when it names a `newer_unended_session`, read that session's newest observations with `memory_read_session_observations` before anything else, then accept the project's most recent open handoff with `memory_handoff_accept` and its `handoff_id`"
+FAIL
+FAIL	roundfix/skills	0.249s
+FAIL
+
+stderr:

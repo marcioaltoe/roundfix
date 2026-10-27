@@ -1,0 +1,6 @@
+command: /bin/sh -c tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Session Handoff**:' && tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Follow-up Item**: One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry' && go test -timeout 15m -count=1 -tags docscontract -run '^TestGlossary' ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/internal/docscontract	0.393s
+
+stderr:

@@ -1,0 +1,11 @@
+command: go test -timeout 10m -count=1 -run ^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$ ./skills
+exit: 1
+stdout:
+--- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- FAIL: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical (0.00s)
+        roundfix_modes_test.go:136: step 4 omits "No message the mode handed in stays pending when the turn ends, also when the mode stops early: at step 1, when the user stops it, or when step 3 brings no answer."
+FAIL
+FAIL	roundfix/skills	0.253s
+FAIL
+
+stderr:
