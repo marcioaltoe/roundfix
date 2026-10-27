@@ -88,6 +88,12 @@ ADR-0342's first decision.
    `TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit`.
    The full `./internal/cli` and `./internal/daemon` suites pass afterwards,
    with `-timeout` on every run.
+7. MUST re-record `docs/references/coverage-record.json` after replacing
+   `TestUngatedGraphIgnoresEnabledRepositorySettlementVerification`, only with
+   `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+   (`docs/agents/specific-repository.md`); `TestCoverageEquivalence` runs in
+   the repository Verification at settlement and fails while the record still
+   lists the replaced test.
 
 ## Subtasks
 
@@ -95,6 +101,7 @@ ADR-0342's first decision.
 - [ ] Change the settlement condition.
 - [ ] Replace the old gate-less test and add the new ones.
 - [ ] Migrate the 21 implement fixtures that relied on the gate scope.
+- [ ] Re-record the coverage record with its command.
 
 ## Acceptance Criteria
 
@@ -114,6 +121,7 @@ ADR-0342's first decision.
 - interface: `internal/cli/implement_settlement_checks_test.go`
 - interface: `internal/cli/implement_test.go`
 - interface: `internal/cli/implement_unix_test.go`
+- interface: `docs/references/coverage-record.json`
 
 ## Consumers
 
