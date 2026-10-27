@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.21
+  version: 0.0.22
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.21
+version: 0.0.22
 ---
 
 # QA Gate
@@ -59,6 +59,14 @@ of a command that prints the environment, including `env`, `printenv`, `set`,
 a secret-shaped sample into evidence. Record a Secret Match by path, line and
 kind only, and never reload a shell profile to obtain a key. The Daemon
 refuses to commit a QA Report whose files match a Secret Pattern.
+
+### Declared rows name their criterion
+
+One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label.
+A report whose declared-blocked rows do not exceed its declarations is accepted as before.
+
+Write each row as `blocked (declared: <criterion>)`, using the criterion or
+its leading label, never a paraphrase.
 
 ### QA settlement
 
@@ -316,7 +324,7 @@ Every matrix, declared or default, covers these non-waivable sources:
 - the outside-evidence row;
 - the Pull Request row, on its equivalent-evidence path;
 - the repository Verification;
-- each declaration under the PRD's `## Unreachable Acceptance` section;
+- each criterion a PRD Unreachable Acceptance declaration names;
 - the frontend sweep, when `frontend` is declared.
 
 A `qa` Task without a declared verification Requirement gets the bounded default.

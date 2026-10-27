@@ -36,6 +36,14 @@ Event Journal entries, and never pushes.
 After a successful integration, settle removes the kept Task Worktree and Run
 Worktree it integrated and names each on stderr.
 
+Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
+Refusal (exit 2):
+  settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
+
+When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
+Run Worktree advanced: <old short> -> <new short> (<branch>)
+A later Verification failure keeps the advance and leaves the Task status unchanged.
+
 Options:
   --spec  Spec slug under docs/specs/
   --task  Task id from the Spec Task Graph
@@ -272,6 +280,13 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 	if err != nil {
 		return settlePlan{}, validationError{message: fmt.Sprintf("repository resolves: %v", err)}
 	}
+	if strings.HasPrefix(gitState.Branch, store.RunBranchPrefix) {
+		checkout, err := settleUserCheckout(ctx, loadedConfig.HomeDir, gitState.Root, gitState.Branch)
+		if err != nil {
+			return settlePlan{}, validationError{message: fmt.Sprintf("resolve settle user checkout: %v", err)}
+		}
+		return settlePlan{}, validationError{message: fmt.Sprintf("settle runs from the user checkout, not from %s on branch %s; run it from %s: roundfix settle --spec %s --task %s", gitState.Root, gitState.Branch, checkout, req.specSlug, req.taskID)}
+	}
 	plan := settlePlan{
 		userRoot:     gitState.Root,
 		workDir:      gitState.Root,
@@ -350,7 +365,116 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 	if err := requireSettleCommitAuthority(plan, changed); err != nil {
 		return settlePlan{}, validationError{message: err.Error()}
 	}
+	untracked, err := reconcileGitRaw(ctx, plan.workDir, "ls-files", "--others", "--exclude-standard", "-z")
+	if err != nil {
+		return settlePlan{}, validationError{message: fmt.Sprintf("list settle untracked files: %v", err)}
+	}
+	var paths []string
+	if len(untracked) > 0 {
+		paths = strings.Split(strings.TrimSuffix(string(untracked), "\x00"), "\x00")
+	}
+	refused := daemon.UnauthorizedExecutables(ctx, plan.workDir, paths, plan.authorization)
+	if len(refused) > 0 {
+		details := make([]string, 0, len(refused))
+		for _, drop := range refused {
+			details = append(details, fmt.Sprintf("executable file %s (mode %s)", drop.Path, drop.Mode))
+		}
+		return settlePlan{}, validationError{message: "refuse Settle commit: " + strings.Join(details, ", ") + " is not valid Work Item output unless the Spec's _authorization.md lists the path under executables"}
+	}
+	if err := followSettleBranchPlan(ctx, &plan, stderr); err != nil {
+		return settlePlan{}, validationError{message: err.Error()}
+	}
 	return plan, nil
+}
+
+// followSettleBranchPlan is the last preflight step: only a Run Worktree
+// behind the target branch can advance, and only when that branch changed
+// this Spec. Authorization remains the record resolved at Run start.
+func followSettleBranchPlan(ctx context.Context, plan *settlePlan, stderr io.Writer) error {
+	if !plan.hasRun {
+		return nil
+	}
+	tipBytes, err := reconcileGitRaw(ctx, plan.userRoot, "rev-parse", "--verify", "refs/heads/"+plan.targetBranch)
+	if err != nil {
+		return nil // A target branch that no longer resolves keeps today's behavior.
+	}
+	tip := strings.TrimSpace(string(tipBytes))
+	headBytes, err := reconcileGitRaw(ctx, plan.workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return fmt.Errorf("read settle surface HEAD: %w", err)
+	}
+	head := strings.TrimSpace(string(headBytes))
+	if head == tip {
+		return nil
+	}
+	baseBytes, err := reconcileGitRaw(ctx, plan.workDir, "merge-base", head, tip)
+	if err != nil {
+		return fmt.Errorf("compare settle surface %s with %s: %w", plan.workDir, plan.targetBranch, err)
+	}
+	base := strings.TrimSpace(string(baseBytes))
+	folder, err := filepath.Rel(plan.workDir, plan.graph.Spec.Dir)
+	if err != nil {
+		return fmt.Errorf("resolve settle Spec folder: %w", err)
+	}
+	files, err := reconcileGitRaw(ctx, plan.workDir, "diff", "--name-only", "-z", base, tip, "--", filepath.ToSlash(folder))
+	if err != nil {
+		return fmt.Errorf("compare settle Spec folder: %w", err)
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	if plan.taskSurface || base != head {
+		return fmt.Errorf("Spec %s changed on %s after settle surface %s forked from it: %s; merge %s into that worktree, then settle again", plan.graph.Spec.Slug, plan.targetBranch, plan.workDir, strings.Join(strings.Split(strings.TrimRight(string(files), "\x00"), "\x00"), ", "), plan.targetBranch)
+	}
+	oldShort, err := reconcileGitRaw(ctx, plan.workDir, "rev-parse", "--short", head)
+	if err != nil {
+		return err
+	}
+	newShort, err := reconcileGitRaw(ctx, plan.workDir, "rev-parse", "--short", tip)
+	if err != nil {
+		return err
+	}
+	if _, err := reconcileGitRaw(ctx, plan.workDir, "merge", "--ff-only", tip); err != nil {
+		return fmt.Errorf("advance settle surface %s to %s: %w", plan.workDir, plan.targetBranch, err)
+	}
+	fmt.Fprintf(stderr, "Run Worktree advanced: %s -> %s (%s)\n", strings.TrimSpace(string(oldShort)), strings.TrimSpace(string(newShort)), plan.targetBranch)
+	graph, err := spec.Load(plan.specsRoot, plan.graph.Spec.Slug)
+	if err != nil {
+		return fmt.Errorf("reload advanced settle Spec: %w", err)
+	}
+	task, found := findSettleTask(graph.Tasks, plan.task.ID)
+	if !found {
+		return fmt.Errorf("reload advanced settle Task %s: task absent", plan.task.ID)
+	}
+	plan.graph, plan.task = graph, task
+	return nil
+}
+
+// settleUserCheckout reads the exact Run named by either a Run or Task Branch.
+// Without that record, Git's main worktree is the recovery destination.
+func settleUserCheckout(ctx context.Context, homeDir, root, branch string) (string, error) {
+	if _, err := os.Stat(store.DatabasePath(homeDir)); err == nil {
+		reader, err := store.OpenReader(ctx, homeDir)
+		if err != nil {
+			return "", fmt.Errorf("open Run Database: %w", err)
+		}
+		defer func() { _ = reader.Close() }()
+		runID, _, _ := strings.Cut(strings.TrimPrefix(branch, store.RunBranchPrefix), "-task_")
+		run, found, err := reader.Run(ctx, runID)
+		if err != nil {
+			return "", fmt.Errorf("read Run %s: %w", runID, err)
+		}
+		if found && strings.TrimSpace(run.GitRoot) != "" {
+			return run.GitRoot, nil
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("inspect Run Database: %w", err)
+	}
+	roots, err := roundconfig.RepositoryRoots(root)
+	if err != nil {
+		return "", fmt.Errorf("find repository roots: %w", err)
+	}
+	return roots[0], nil
 }
 
 func readSettleAuthorization(ctx context.Context, plan settlePlan) spec.AuthorizationResolution {

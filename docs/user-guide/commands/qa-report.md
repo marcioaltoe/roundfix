@@ -21,3 +21,6 @@ preparation. A `pending` verdict is never
 accepted, and a `pass` or otherwise-eligible `partial` that records no QA row
 is refused. A report whose front matter is empty or duplicated is unreadable
 and refused. The command writes no files.
+
+One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label.
+A report whose declared-blocked rows do not exceed its declarations is accepted as before.

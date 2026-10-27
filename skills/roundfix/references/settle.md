@@ -32,6 +32,28 @@ neither stale nor above a proven Late Dependency.
 
 ## Settle Command
 
+Settle refuses an untracked executable file that the Spec's authorization does not list under executables, as a Task commit does; a tracked file whose mode changes is committed by both.
+It exits `2` before writing anything, with this refusal:
+
+```text
+refuse Settle commit: executable file <path> (mode <mode>)[, …] is not valid Work Item output unless the Spec's _authorization.md lists the path under executables
+```
+
+When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
+
+```text
+Run Worktree advanced: <old short> -> <new short> (<branch>)
+```
+
+A later Verification failure keeps the advance and leaves the Task status unchanged.
+
+Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
+It exits `2` before writing anything, with this refusal:
+
+```text
+settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
+```
+
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
 command for one Task whose completed work is already in a kept Task Worktree, a
 kept Run Worktree, or the current repository. Settle resolves that surface by
@@ -140,6 +162,9 @@ Run Worktree removed: <run worktree path>
 ```
 
 ## QA Report acceptance
+
+One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label.
+A report whose declared-blocked rows do not exceed its declarations is accepted as before.
 
 ```bash
 roundfix qa-report accept <path>

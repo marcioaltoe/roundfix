@@ -1,5 +1,27 @@
 ### settle
 
+Settle refuses an untracked executable file that the Spec's authorization does not list under executables, as a Task commit does; a tracked file whose mode changes is committed by both.
+It exits `2` before writing anything, with this refusal:
+
+```text
+refuse Settle commit: executable file <path> (mode <mode>)[, …] is not valid Work Item output unless the Spec's _authorization.md lists the path under executables
+```
+
+When the Run's branch changed the Spec folder after the surface forked from it, settle fast-forwards a Run Worktree the branch is ahead of and refuses any other drift.
+
+```text
+Run Worktree advanced: <old short> -> <new short> (<branch>)
+```
+
+A later Verification failure keeps the advance and leaves the Task status unchanged.
+
+Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.
+It exits `2` before writing anything, with this refusal:
+
+```text
+settle runs from the user checkout, not from <root> on branch <branch>; run it from <checkout>: roundfix settle --spec <slug> --task <task_id>
+```
+
 ```bash
 roundfix settle --spec <slug> --task <task_id>
 ```
@@ -11,11 +33,12 @@ picks the first candidate, in that order, **where the task file is actually
 — the state a refusing commit hook leaves behind, where the Daemon settled the
 Task after its Verification passed and the commit never landed. A `completed`
 Task whose surfaces are all clean was committed already and settles nothing.
-Settle always reports the choice on stderr as `Settle surface: <path>`; when no
+After accepting the user checkout, settle reports the choice on stderr as
+`Settle surface: <path>`; when no
 candidate qualifies, the refusal names each candidate path, the status found
 there, and `no uncommitted work` for a surface that holds none. It re-runs the
 Task's Verification commands in the selected tree — verbatim, in task file
-order, with no Agent session — changes nothing on failure, and on pass prints
+order, with no Agent session — preserves the advance on failure, and on pass prints
 one sorted `commit <path>` line per committed path before the settled line. A
 path the commit removes — a file the Task deleted, or the old name of one it
 renamed — carries a `— deleted` qualifier, because the path alone no longer
@@ -30,7 +53,7 @@ settled task_01 completed — <short sha>
 ```
 
 The first command that does not pass ends the re-run and exits `1` with the
-Task status, the surface, and the Run left as they were:
+Task status unchanged and any preflight advance retained:
 
 ```text
 verify go test ./... — failed (diagnostics: <artifact-dir>/runs/settle-<slug>-<task_id>/verification/batch-001-attempt-1.log)
