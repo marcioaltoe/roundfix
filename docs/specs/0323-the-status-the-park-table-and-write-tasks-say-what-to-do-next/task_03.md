@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0323-the-status-the-park-table-and-write-tasks-say-what-to-do-next
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -75,3 +75,30 @@ no Go package reads them as a contract except the skill tests it runs.
 
 - `_prd.md` → Sources 3; Goal 4; Core Feature 3; Success Metric 4; Acceptance evidence; Glossary
 - `_techspec.md` → Current behavior 5-6; Shared test files in the Task Graph; Invariant 5; Decisions; Build Order 3
+
+## Result
+
+Implementation evidence:
+
+- Added the shared-test-file rule immediately after the existing
+  `Declaring every foreseeable path stays the rule.` paragraph in the
+  canonical `write-tasks` skill. It requires every Task that may change a
+  shared helper, fake, fixture or golden to declare the path and explains that
+  settlement commits become `SC-WAVE-COLLISION` evidence at the QA-gate
+  precondition.
+- Revised the **Recorded Path** glossary definition with the corresponding
+  settlement-collision sentence while preserving its earlier definition and
+  `_Avoid_` line.
+
+Focused checks:
+
+- `make skills-sync` ran before and after the sanctioned owned-skill version
+  recorder. The recorder passed and raised both `write-tasks` version fields
+  from `0.0.19` to `0.0.20`, adding the matching digest record to
+  `skills/testdata/owned-skill-versions.json`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'` — passed.
+- `git diff --check` — passed; SHA-256 comparison showed the canonical and
+  mirror `write-tasks` files are identical.
+
+The Task's declared Verification remains for the Daemon; Task status remains
+Daemon-owned.

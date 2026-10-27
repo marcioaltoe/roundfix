@@ -955,6 +955,10 @@
       {
         "version": "0.0.19",
         "digest": "598021cbb7bf09e0f818672bea545ada284dfbb959d649027b803807850597f3"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "f5bcfb3e54896fd20058243bc0a05dc8b820286cf36755f8dee4a2ed8a19a470"
       }
     ],
     "write-techspec": [
