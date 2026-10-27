@@ -557,8 +557,14 @@ The terminal outcome of a Fetch Run: Review Issues and their markdown artifacts 
 _Avoid_: Clean, downloaded, synced
 
 **Clean**:
-A terminal Run outcome where the cycle completed with nothing unresolved remaining: no Unresolved Review Issues for review work, or every Task completed — and a passing QA verdict when the graph authors a gate — for spec work.
+A terminal Run outcome where the cycle completed with nothing unresolved remaining: no Unresolved Review Issues for review work, or every Task completed — and a passing QA verdict when the graph authors a gate, or a passing Integrated Repository Verification when a Spec Run without a QA gate runs one — for spec work.
 _Avoid_: Success, done, green
+
+**Integrated Repository Verification**:
+A repository Verification run against the integrated tree of a Spec Run without
+a QA gate, when `verification.repository_at_settlement` is enabled. It is the
+final check before that Run can end Clean ([ADR-0342](docs/adr/0342-every-task-settles-on-the-repository-verification-and-a-run-without-a-qa-gate-checks-its-integrated-tree.md)).
+_Avoid_: Task Verification, Settlement Check, QA gate
 
 **Implement Clean**:
 A Spec Run's Clean: every Task completed and, when the graph authors a QA gate, a passing verdict. An archive, a QA Archive Override, a review verdict or a merge never establishes it.
@@ -637,7 +643,7 @@ The failure diagnostics returned to an Agent Session after the Daemon runs Verif
 _Avoid_: Full verification output, test log, progress stream
 
 **Settlement Check**:
-A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph with an authored QA gate. The checks cover the Spec Consistency Check, the repository Verification at settlement, and authorization of the prospective Task commit.
+A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph, with or without a QA gate. The repository Verification at settlement runs with or without a QA gate; the two in-process checks run only with one. The checks cover the Spec Consistency Check, the repository Verification at settlement, and authorization of the prospective Task commit.
 _Avoid_: QA settlement, archive check, post-Run check
 
 **Repeated Failure**:

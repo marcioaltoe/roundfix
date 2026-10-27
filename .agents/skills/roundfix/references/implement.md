@@ -1,5 +1,11 @@
 ## User-Facing Spec Runs
 
+Every non-QA Task settles on the repository Verification, with or without a QA
+gate. The two in-process settlement checks run only in a graph with an
+authored QA gate. A Run without a QA gate runs the Integrated Repository
+Verification under the conditions in API Contract 5 and ends `Unresolved` with
+the API Contract 6 failure line when it fails.
+
 The Implement Command executes a Spec's Task Graph on the current branch as
 one Run. Tasks whose dependencies are completed form the current Wave; the
 scheduler starts up to `worktree.concurrency` Tasks from that Wave at once.

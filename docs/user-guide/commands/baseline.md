@@ -162,6 +162,11 @@ is a Baseline defect to report, not a skill to keep restoring by hand.
 `--no-skills` skips the list, and an absent or unreadable `skills-lock.json`
 adds nothing to it; `roundfix doctor` reports that state.
 
+After the bundle install, an existing `skills-lock.json` entry naming an owned
+skill receives the installed folder's `computedHash`; every other field is
+kept. No entry or lock is created when none exists. The result reports
+`skills.lockUpdated` and prints `Skills lock updated: <name>` for each name.
+
 The history plan names every file it will remove before approval. Each pending
 unit carries sorted repository-relative `paths` in JSON: the files a removal
 or conversion deletes, the Archive Records `record-links` rewrites, or the live pages `live-links`

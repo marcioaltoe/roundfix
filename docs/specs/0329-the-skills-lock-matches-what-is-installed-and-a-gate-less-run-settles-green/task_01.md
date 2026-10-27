@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -129,3 +129,32 @@ documentation of the two adopted Backlog Entries (Quaestor, 2026-10-26 and
 - `_prd.md` → Goals; Core Features 1-3; User Experience; Non-Goals / Out of Scope; Success Metric 7; Glossary
 - `_techspec.md` → API Contracts 2-6; Glossary; Build Order 1
 - ADR-0342; ADR-0189
+
+## Result
+
+Implemented the documentation slice for settlement in every graph, the
+Integrated Repository Verification for gate-less Runs, the repository
+verification configuration switch, and the owned-skill lock hash rewrite.
+Added the glossary term and revised Settlement Check and Clean, then synced
+the canonical skills and recorded their versions and the Behavior Surface
+fingerprint.
+
+Focused checks:
+
+- `make skills-sync` — passed; canonical skills and `skills/` mirrors agree.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1` — passed (1 package).
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1` — passed (1 package).
+- Targeted phrase inspection confirmed the settlement, Integrated Repository Verification, lock-output, glossary, and every-Task wording is present; no declared Verification command was run.
+
+Acceptance evidence:
+
+- Guides and canonical skills now describe settlement with or without a QA gate and the Integrated Repository Verification; mirrors were regenerated.
+- Baseline/skills documentation describes preserving existing lock fields, updating owned-skill `computedHash`, creating no new lock entry, and reporting updated names.
+- `CONTEXT.md` defines Integrated Repository Verification and revises Settlement Check and Clean; the owned-skill version recorder and Behavior Surface recorder both passed.
+- Verification feedback repair: the glossary contract requires `_Avoid_` to be the final line and rejects a standalone `See ADR-0342` sentence; the ADR link is now in the definition and `_Avoid_` remains final. The declared Verification command was not rerun.
+- Focused repair check: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossary'` — passed (42 tests).
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T182924Z_39232f1ce158fe4d`
+- Source commit: `77161cdb4e0b46e650a069ffced42d2da4c09047`
