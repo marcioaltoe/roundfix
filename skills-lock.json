@@ -108,10 +108,10 @@
     },
     "knowledge-workspace": {
       "source": "marcioaltoe/skills",
-      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
       "sourceType": "github",
       "skillPath": "skills/00-setup/knowledge-workspace/SKILL.md",
-      "computedHash": "d108432a172da894de0270d4124417782bee4d72f7ab5a6ba0ef95e38857592a"
+      "computedHash": "7f1dcf893cc80b38a2ba165b842114850bcc3acbb69aed88d4e0515e7d3276ca"
     },
     "no-workarounds": {
       "source": "marcioaltoe/skills",

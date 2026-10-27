@@ -9,7 +9,7 @@
     ],
     "type": "composed"
   },
-  "digest": "b4ff778ce0dc53b7ddc2ce38fac2a4da9b872cc8ecdcfa014d8d9092cc3ba5ec",
+  "digest": "939761a80cac3fb616fcb969707eb1e2b2dc542625715115fdec6df8c459b9cc",
   "skills": [
     {
       "name": "find-skills",
@@ -17,7 +17,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/00-setup/find-skills"
       },
       "treeDigest": "5a99b2977e82cb952e4f4887ceccfa6dd62b8f36908d6667db13e2a756f93028"
@@ -28,10 +28,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/00-setup/knowledge-workspace"
       },
-      "treeDigest": "19cb0bd73c1a2429e902b5e5c0e951fdd38d396352e7b1dc007748fc11a7aa7c"
+      "treeDigest": "490af37df4faba388e560380df0863b88881716d96e6185858918681182f2a96"
     },
     {
       "name": "setup-context-driven",
@@ -66,7 +66,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/context7-cli"
       },
       "treeDigest": "896647588cca999be883e0733f937c6afa66a5d4d343d0cbb0b0b9324e61104b"
@@ -77,7 +77,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/exa-web-search"
       },
       "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
@@ -88,7 +88,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/grill-with-docs"
       },
       "treeDigest": "04ba6a6139df57e6a011eb79311212fa5f3dc47ec6177845d1defea19c68bb60"
@@ -99,7 +99,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/grilling"
       },
       "treeDigest": "f83e444cb16561fe266a8d34d5315e089f2580aed6822087dbb039a2fe151cd7"
@@ -128,7 +128,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/agentic-cli-design"
       },
       "treeDigest": "d261b7713dc1baa3136895904659bffffededfb9926d94f7c7ba030608a4ff79"
@@ -139,7 +139,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/domain-modeling"
       },
       "treeDigest": "c0bd13ce078a3c8eb5507fc9067165dad89b10f11b33b26e29a5c62f9c840bd2"
@@ -150,7 +150,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/tui-design"
       },
       "treeDigest": "1ec0cd0743492e6613975c41139fc33bec7703505a19212e2ef875ba68271a8d"
@@ -179,7 +179,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/bubbletea"
       },
       "treeDigest": "4c5a37b1f57f0af819ae8f6c916b91a83b1f1b0673cdf4f84d21e934053c6c29"
@@ -190,7 +190,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/coding-guidelines"
       },
       "treeDigest": "1ed1e711b511f8ea14e0e4f83949d3395e7b202e8344c52e586256c7959ce0a8"
@@ -201,7 +201,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-cli"
       },
       "treeDigest": "7c59d53011a9b641070f9eaf15c1053537dddcf05c49eefee188deab748d5ed0"
@@ -212,7 +212,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-concurrency"
       },
       "treeDigest": "540f4ffae6d90a39ab3f6cc3624925f68281a80a6c74f627a4f96c9bc3985752"
@@ -223,7 +223,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-context"
       },
       "treeDigest": "b75ea181b1ce1982e72201603f85f7bbf2798e28f22e83dc9bdb6c15b978d67d"
@@ -234,7 +234,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-dependency-management"
       },
       "treeDigest": "67cc5583c4286bfa1d9236895f7bb2b29d8d4f12eccbeee89d300411e0ff9011"
@@ -245,7 +245,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-error-handling"
       },
       "treeDigest": "aea1d43e29a7b12521429e9c0668c798b016e8a53b15e7a2ed74d40bf53cfb01"
@@ -256,7 +256,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-lint"
       },
       "treeDigest": "99e38fcd5c2ba0705ba4ec4f629151896cc8dc593bbfb793be54ff762df6c57f"
@@ -267,7 +267,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-safety"
       },
       "treeDigest": "e3ad218a70f8f0ce2e3a67331d0e17c398db1a9c624b381397abd23c85ad3fce"
@@ -278,7 +278,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-structs-interfaces"
       },
       "treeDigest": "f6133a44d7a7560b56f0f5f4e71de60610c3cf00449ebe54b85558d65e15f34b"
@@ -289,7 +289,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/golang-testing"
       },
       "treeDigest": "4d4f4c3c64f4055a81e59a4f371ff295f9326475ad950278f1e1ff52f9656e46"
@@ -318,7 +318,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/no-workarounds"
       },
       "treeDigest": "573cf5b80f28193816c79ee8b79ab9b7fe7f72f5acac061f424ac05993ede766"
@@ -329,7 +329,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/testing-boss"
       },
       "treeDigest": "f92c876c59ba91e4ca806a3c4321ecb14ce5b8b24aaf713ebd07dc2113acc3c1"
@@ -340,7 +340,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/typesafe-ai"
       },
       "treeDigest": "e87d9882708f283b6aedcc103b0767c9f3fe9b022e7783b2132ce676f6bd7ce6"
@@ -369,7 +369,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/systematic-debugging"
       },
       "treeDigest": "a6a0f1051a12abbf06fa94f900d0e41278d257efe537fd4b9eeb4c6b385a20cf"
@@ -398,7 +398,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/conventional-commits"
       },
       "treeDigest": "ef7a6718684adba3919e3211d470d95351f5e4949e9d3a9b290e4f2c77a8739c"
@@ -409,7 +409,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/crafting-effective-readmes"
       },
       "treeDigest": "b78ea092608753c2aac4266a1daa1e80a55b29c3b9f746c373681cd9c0cd8705"
@@ -420,7 +420,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/github-pr-workflow"
       },
       "treeDigest": "082906ba30c577d2ddb4fda1ef0c75bea42fb1ff139c898e377d7f9caba57d4a"
@@ -431,7 +431,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/ai-memory-durable-pages"
       },
       "treeDigest": "5cb7df1911f7ae5627ad9870886759b6b2cc1ecf8230002e302bd0ef3df693dd"
@@ -442,7 +442,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/ai-memory-handoff"
       },
       "treeDigest": "b749f505e9efbf97a8cd8e5c98b91c79f2b5fc9d496f9825f015cd4a5972359c"
@@ -453,7 +453,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance"
       },
       "treeDigest": "82f8e2afb9f6a0cb893bc9e394b4441471d67cbe5a2ea82ce23533dd05687b47"
@@ -464,7 +464,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/ai-memory-messaging"
       },
       "treeDigest": "69a2e6b7acb2112509bfebae5951de462c6909803daedab2f6ea95f60115c2d6"
@@ -475,7 +475,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/ai-memory-retrieval"
       },
       "treeDigest": "daa5e3ce9896deaa0e542fcb1bb7b7cb013c171f0b4169c8820f6f664c520428"
@@ -486,7 +486,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/ai-memory-routing-install"
       },
       "treeDigest": "41eed0d2998bb41a41f199c8e26892a1f9c0303f8c7e9d729f5699b1b67fafac"
@@ -497,7 +497,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/tech-writer"
       },
       "treeDigest": "18efb1105eebbd46e051d643830f1758f089cdf0f0a912a8be5d79fc657fd606"
@@ -508,7 +508,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/00-setup/find-rules"
       },
       "treeDigest": "195174052c5f5e3fe893911273287736bb2eb87c0376b90ddaa8dae39d37cda2"
@@ -519,7 +519,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/00-setup/turborepo"
       },
       "treeDigest": "e4ad323a5c546514785b59f35ebef40473c670b98c5c06747b0501c3082b08e5"
@@ -530,7 +530,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/architectural-analysis"
       },
       "treeDigest": "30f55bbed8c7a47ddaed6a6fb09db81b261d74a710a05efb8f871224379097b0"
@@ -541,7 +541,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/backend-docs"
       },
       "treeDigest": "8f15a67e96536b3d0162e420275c27ecdfae149c7d230a88238204dd3c004e47"
@@ -552,7 +552,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/clean-architecture"
       },
       "treeDigest": "44ee1b15595241a9880825388db924176537a2b5da7b9c4feee842d006c6686e"
@@ -563,7 +563,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/codebase-design"
       },
       "treeDigest": "216f66d2cf91aed33b2d6762f0059ba0e6fe8e885b2e8dc0b6567fdce9b80d73"
@@ -574,7 +574,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/data-sync-workflows"
       },
       "treeDigest": "6cbfcb860958e36b6d3acab150c854967cf348c71080216bdcffb8e42b01cc0a"
@@ -585,7 +585,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/design-patterns"
       },
       "treeDigest": "df9db840d6e7b4ef0dd93849198e4200fcc5106f34980141a80ca892be840c96"
@@ -596,7 +596,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/frontend-docs"
       },
       "treeDigest": "34753cabf8e877bfb9e1a42fd2dc7e62ad4ef4a82f5fe3ca4f17198b345d12ce"
@@ -607,7 +607,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/security-best-practices"
       },
       "treeDigest": "046ac4e5fe96d34686d72a554b7ee80090e7d894237b119db9696545b2014bd4"
@@ -618,7 +618,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/security-threat-model"
       },
       "treeDigest": "c26849057133bed892c607f7874d14630432b707c2b2ec00bdca8dc08a53e5d4"
@@ -629,7 +629,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/tactical-ddd"
       },
       "treeDigest": "ce5d09c33f4d09f08032be785405a6b7ed3f1b2bfdf40e5eb12ab4f5ada6653f"
@@ -640,7 +640,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/ui-ux-pro-max"
       },
       "treeDigest": "b13db828c6a7fbebf8612185dfde2e4cf20414f4c8fdaa33cc50b3b59f427d24"
@@ -651,7 +651,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/vertical-slice-architecture"
       },
       "treeDigest": "00e21d9bd70c4e673f8fdc8a6db5cc4f347f0a5fab23d24e7a48b90251fc7b0b"
@@ -662,7 +662,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/ai-sdk"
       },
       "treeDigest": "f4efbab87d5eebf4c99a7580c179e202e1591fe262d51198f4fe0ff5c81ec4bd"
@@ -673,7 +673,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/baseline-ui"
       },
       "treeDigest": "d0939105faab62e0ebd1a6ebb1a282c530d0ed028d4fc4ad8a6a641dd32e93bd"
@@ -684,7 +684,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/better-auth"
       },
       "treeDigest": "06525583c583a04a5ceb1302ecc4cc036c45c48fb1b1f5e9d21cacf2bd694250"
@@ -695,7 +695,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/bun"
       },
       "treeDigest": "19b7ba49998635afd6c9644a5fc7af73db199380cd0a4431911662cb51dd9fce"
@@ -706,7 +706,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/building-components"
       },
       "treeDigest": "745d6a4cbbd26ad19cabe8ae0df821320f1f920011ef9fceae3c3cda4b4e53e2"
@@ -717,7 +717,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/drizzle-orm"
       },
       "treeDigest": "31cf5cd60e2bc976c5d58251b153baa0b2e32267000c55df3293fe7fac202eaa"
@@ -728,7 +728,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/external-api-adapters"
       },
       "treeDigest": "c02f3627de69a49db8cb96388eb2bda89971b33fa6f2a94791aa8a53db9d6439"
@@ -739,7 +739,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/frontend-design"
       },
       "treeDigest": "21c7ba730486e780e3f0f159dd4ed92d3aba8c106fac797fdab27210f85b6c83"
@@ -750,7 +750,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/hono"
       },
       "treeDigest": "d3dc981fe77eb1286bdf37ebf7bef44bc140078a5ec948eb6ada04c746b96548"
@@ -761,7 +761,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/hono-api-best-practices"
       },
       "treeDigest": "7abc04034c9d710a45765e56425524ab3a7de82bce82b28e9e512de1e984ffa8"
@@ -772,7 +772,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/inngest"
       },
       "treeDigest": "c4f41c88ee8698d969353dfc0e41686df83eeeabff67f3ef97dda89562664742"
@@ -783,7 +783,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/integration-contract-testing"
       },
       "treeDigest": "adf2bfe3e4421155cc10f2eeffada5b0d23745b9d8ee4f9d618a19f74602e459"
@@ -794,7 +794,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/interface-design"
       },
       "treeDigest": "b2f98e94a96d43e1225bb2eacd426c6417ad8919fb2d2bcbe48102381f9cb1e0"
@@ -805,7 +805,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/interaction-design"
       },
       "treeDigest": "85ca228accb8782505ce79635341f9ed4ac895321a64437fed6addb5fd42d8bc"
@@ -816,7 +816,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/logtape"
       },
       "treeDigest": "67145ccaa2c5606daec89ba65ebf9f8b82c782fa5200392b3fb8b83996ea64ca"
@@ -827,7 +827,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/motion"
       },
       "treeDigest": "bd0c3c1967e645a8a1d8e3e4863a1eac09e1c3e53c53ad60b3f8f099a4e657e7"
@@ -838,7 +838,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/react"
       },
       "treeDigest": "1d27e18b6cf1cf1c11f92bf52f3b27fe8f4331919cc9a8f0756246cbc5a093ea"
@@ -849,7 +849,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/react-best-practices"
       },
       "treeDigest": "6919dd896196c0dcaa4c86af5fda7b27be3ae4e6ee6a7dcd87ffd6548efce196"
@@ -860,7 +860,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/react-composition-patterns"
       },
       "treeDigest": "ccc2ac65ffe42499946843aba4c5d24a8a4f75597c9850f81cdf3d57c4908375"
@@ -871,7 +871,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/react-hook-form-zod"
       },
       "treeDigest": "3a01d82ee45753b8917050aacadaf1da26b226c0e8afc94208507c7060abcd2a"
@@ -882,7 +882,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/shadcn"
       },
       "treeDigest": "d48e3dbc1b6ff212eb053cfb51b23bb24265a6b561bfa65f38b9631a54a0124e"
@@ -893,7 +893,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/solid"
       },
       "treeDigest": "7483db2e40f094bfd94d0d906ca6cb135c081464d5e2ef50ece3330296003dc8"
@@ -904,7 +904,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/tailwindcss"
       },
       "treeDigest": "4804b28c037f6c0d8b125bde52e554b19e3a6db414d2daa757e4b20e70c23c27"
@@ -915,7 +915,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/tanstack-query"
       },
       "treeDigest": "4b3935aac12ca97c5fd592eb6bd70a96663dae01f2412a06e1c4967620c4f2f2"
@@ -926,7 +926,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/tanstack-router"
       },
       "treeDigest": "2dbaa01fe42164f51401bc152c1a3ed4583dde38f9015802286e806186e55409"
@@ -937,7 +937,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/tanstack-table"
       },
       "treeDigest": "8f15e3e8c50f36d9cd10aeacc490015ebfefb7594e02c4ea1496511d533e8363"
@@ -948,7 +948,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/tdd"
       },
       "treeDigest": "bb489703746482dfa35d42352e71c582a600cc1d263bd912c8cd3f3bbaf95358"
@@ -959,7 +959,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/typescript-advanced"
       },
       "treeDigest": "54d7c0ce5a1f5e8b94c5c672df4fe6a2bdef22eea596a86c7feaa5d786df03d5"
@@ -970,7 +970,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/vite"
       },
       "treeDigest": "7139637c1b5e5ffcb5c2a78d8ed0ad5a89f1db7e806b0f2f99323fbe39d660cf"
@@ -981,7 +981,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/vitest"
       },
       "treeDigest": "677da699adc0d2120f5dd2999f5022115f85afc16960dae50629887cd21798e8"
@@ -992,7 +992,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/zod"
       },
       "treeDigest": "6846ef5b48be3b0e068feff7036d184f1063c8ff9aff18b4921ba51633697021"
@@ -1003,7 +1003,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/zustand"
       },
       "treeDigest": "fc995da192711de5e6518c8ab2c2ccf6f1e3a5b0a188bf24197c1e163be7f491"
@@ -1014,7 +1014,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/agent-browser"
       },
       "treeDigest": "638eab40529e45618c4f23416d9f38913c665e7a6125457a65e5efec4968b1e7"
@@ -1025,7 +1025,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/clean-code"
       },
       "treeDigest": "cc4abb7bb88596664c617ec6dda3a603f99709c9e607b1e0ca7f099dd6b69bbc"
@@ -1036,7 +1036,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/core-web-vitals"
       },
       "treeDigest": "fbcb69d7aed978f879ff7abb6665d8734840271f75dd8a395e65c1f4188e2709"
@@ -1047,7 +1047,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/diagnosing-bugs"
       },
       "treeDigest": "d4e28933e6a142aebfb6923e97a38988dde07e43fc32c679398f1af4ca0fc3c7"
@@ -1058,7 +1058,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/fixing-accessibility"
       },
       "treeDigest": "47e553ac1c56afab1390631de5b3362a075136cabcd3494c31e0878ccf327f93"
@@ -1069,7 +1069,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/fixing-metadata"
       },
       "treeDigest": "a0f4df92f1f2001e845c9bb6c3718307c3aaf57c7bdeb422de2baac40a9e67e3"
@@ -1080,7 +1080,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/fixing-motion-performance"
       },
       "treeDigest": "5f023d388394ad72a1f7a09aab28f40bbb7945d920e38b5dd63a94e437219370"
@@ -1091,7 +1091,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/git-rebase"
       },
       "treeDigest": "0e92a2c550960b32da35ae0bb95d6333802f0a8e73b3611f2ae6635a54673110"
@@ -1102,7 +1102,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/observability-audit"
       },
       "treeDigest": "ef3a3dfe9685d75de538bc4570273f8375a2f22ffeeae5da0743a771c199048a"
@@ -1113,7 +1113,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/onioncry"
       },
       "treeDigest": "be502b02544be90059c126e9b07bfeb6a4af115aada86455845b1407a5eab8b3"
@@ -1124,7 +1124,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/wcag-audit-patterns"
       },
       "treeDigest": "d16a922a75b8b1432fb448d28b95ca1bc117f64bd064a24132ef1c6ca63b116f"
@@ -1135,7 +1135,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/web-design-guidelines"
       },
       "treeDigest": "ece1136688d6570fb2a37d689f172c4c6a37952385137eb6c0737a6f1d2818d9"
@@ -1146,7 +1146,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/08-release/docker"
       },
       "treeDigest": "09c8c1c16a1f63a8c1e3c67b5cc0a5c61b57069ccdae7d2c3a29c2124115e170"
@@ -1157,7 +1157,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/10-marketing/business-storyteller"
       },
       "treeDigest": "0d4c5592f9b4c8557c1b93f892b68c25936bc974a17c341b8cd9a871e7fbed3b"
@@ -1168,7 +1168,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/03-engineering-design/app-renderer-systems"
       },
       "treeDigest": "5196bf0ea6661f4e0d6169bdab99486aea0c50afca41e377d64d16962cc7dbe6"
@@ -1179,7 +1179,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/firecrawl"
       },
       "treeDigest": "5c415db8202f33d3028db6f83baf44e59c4094515f2825e24a98d03a5969bc02"
@@ -1190,7 +1190,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/firecrawl-search"
       },
       "treeDigest": "49bb95f228a61a8e35fed5fded6636378cbebc95227d92b5924f835b3ec9aeee"
@@ -1201,7 +1201,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/01-discovery/game-changing-features"
       },
       "treeDigest": "c91dc17503916843ad70e80c7e1c1778ff2fb1090b15f1d07ed78f8fad4ad6f1"
@@ -1212,7 +1212,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/humanizer"
       },
       "treeDigest": "4f87fcd0dc5000383638691ca8144c58f031d8729ba1f82bdca79cda5c08e884"
@@ -1223,7 +1223,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/06-review-repair/refactoring-analysis"
       },
       "treeDigest": "93c71f3f91ab1f174c1156b96136ff31a4428457b183aab496483c29d1b587c1"
@@ -1234,7 +1234,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/05-implementation-loop/to-prompt"
       },
       "treeDigest": "23dd1e6db5dad24418eac91a0741869d7954799f806085e3840b47ea2f94aef8"
@@ -1245,7 +1245,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "8d71fade68c54693bedbd917371f0514311af157",
+        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
         "path": "skills/07-evidence-delivery/writing-clearly-and-concisely"
       },
       "treeDigest": "55d279a553cab2ddb9daa9b78d1ed58694508b8d48d2b029dcb581e8af81a0ac"

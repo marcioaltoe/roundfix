@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0326-the-baseline-setups-stop-sending-agents-to-the-secondbrain-inbox
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -114,3 +114,59 @@ test constant with a new test that pins the corrected tree
 - `_prd.md` → Goals; Core Features 1-4; Success Metrics 1-4
 - `_techspec.md` → Current behavior 1-7; Interfaces; API Contracts 1-5; Invariants 1-5; Testing Approach; Build Order 1
 - ADR-0191; ADR-0264
+
+
+## Result
+
+Implemented the assigned import and restore slice; status remains Daemon-owned.
+
+- Acceptance 1: the mandatory read-only `git cat-file -e` prerequisite exited
+  0 before any write. Built `/tmp/roundfix-0326.U1w9ei/roundfix` under the Run
+  environment, fetched the exact commit into an empty temporary repository
+  with `protocol.allow=never` and `protocol.file.allow=always`, checked out
+  detached, and added the provenance origin without contacting it. Asset sync
+  exited 0 with five updated snapshots; its `--check` exited 0 with
+  `setup-context-driven audit: ok`. Direct JSON comparison against HEAD proved
+  all github refs moved to b56fc5ff, ordered membership stayed identical,
+  only knowledge-workspace's tree changed, and the composed source stayed
+  identical. The new five-setup tree test passed with tree 490af37d….
+- Acceptance 2: rebuilt the binary after sync so restore read the new embedded
+  snapshots. Restore preview exited 3 with exactly `refresh
+  .agents/skills/knowledge-workspace/SKILL.md` and `update-lock-entry
+  skills-lock.json`. Applied plan
+  `394b7fd3e1cc71a1308e95847e7ab2f682f6e1e41d6c675ad0051df5c89c8092`:
+  exit 0, `restore.completed`. The installed skill is 0.6.2 and contains
+  neither the retired filesystem inbox path nor create-only carve-out.
+  JSON comparison proved every other lock entry unchanged.
+  `go test -count=1 ./skills -run '^TestCheckRepositoryMatchesRealRepository$'`
+  exited 0. The focused installed-to-snapshot contract
+  `go test -count=1 -tags docscontract ./internal/baseline -run '^TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot$'`
+  also exited 0.
+- Acceptance 3: `make baseline-digests` exited 0 and regenerated exactly the
+  seven declared derived files. Rebuilt the binary and ran `baseline update
+  --repo . --no-skills --no-history --yes --format text` twice, each with a
+  fresh temporary HOME: both exited 0; first changed only the catalogDigest
+  entry of docs/agents/setup-context.json, second reported `File changes: 0`.
+  Used the prebuilt binary rather than `go run` under fresh HOME as the Task
+  requires. Refresh reported nested-carrier warnings for existing fixture and
+  frozen Source Baseline AGENTS.md files; neither file changed.
+- Acceptance 4: moved the shared revision constant, extended the Invariant
+  header, and appended the specified tree constant and test. All other
+  pre-existing test-file bytes remain unchanged. The top-level test and
+  each setup subtest start with t.Parallel(). A direct test-file scan found
+  no old full revision pin. Focused `go test -count=1 ./internal/baseline
+  -run '^(TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox|TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree|TestEveryUpstreamSetupFollowsTheAiMemoryRevision|TestEveryUpstreamSetupFollowsThePythonPresetRevision|TestThePythonSetupIsThePublishedUpstreamPreset|TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill)$'`
+  exited 0.
+
+Every Roundfix invocation used a fresh temporary HOME. No network remote was
+contacted, no operator-clone write was made, and /Users/marcio/dev/skills was
+not read or written. No generated artifact was hand-edited. Initial Git status
+contained only this Task's status change. Scope inspection found only the
+Task-declared paths; `git diff --check` exited 0. No commit, push, or pull
+request was made. Declared Verification and terminal settlement were not run
+and remain Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T052800Z_9952f5f27c4d16d5`
+- Source commit: `164e2b1ce732afc0501947114007e91d23ea506e`
