@@ -2202,12 +2202,12 @@ func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task
 	if !authorizationBoundsProjectConfig(plan.Authorization) {
 		changed, projectConfigDrops = dropProjectConfigFromCommit(plan.WorkDir, changed, projectConfigOutsideAuthorizationReason, true)
 	}
-	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
-	dropped = append(projectConfigDrops, dropped...)
-	stageable, err = expandUntrackedCommitDirectories(ctx, plan.WorkDir, stageable)
+	changed, err = expandUntrackedCommitDirectories(ctx, plan.WorkDir, changed)
 	if err != nil {
 		return taskCommitPreparation{}, err
 	}
+	stageable, dropped := filterStageablePaths(ctx, plan.WorkDir, changed, authorizedExecutables(plan.Authorization))
+	dropped = append(projectConfigDrops, dropped...)
 	var recorded []string
 	if task.Type != spec.TaskTypeQA {
 		recorded = spec.UndeclaredTaskPaths(
@@ -2491,6 +2491,21 @@ func pathsWithoutProjectConfig(workDir string, paths []string) ([]string, bool) 
 // without crossing symlinks or staging untracked executable files. It reports
 // every omitted path with the reason.
 func FilterStageablePaths(ctx context.Context, workDir string, paths []string) ([]string, []DroppedStagePath) {
+	return filterStageablePaths(ctx, workDir, paths, nil)
+}
+
+func authorizedExecutables(resolution spec.AuthorizationResolution) map[string]bool {
+	if resolution.Outcome != spec.AuthorizationGranted {
+		return nil
+	}
+	executables := make(map[string]bool, len(resolution.Record.Executables))
+	for _, path := range resolution.Record.Executables {
+		executables[path] = true
+	}
+	return executables
+}
+
+func filterStageablePaths(ctx context.Context, workDir string, paths []string, executables map[string]bool) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
 	var dropped []DroppedStagePath
@@ -2511,7 +2526,7 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 			}
 			continue
 		}
-		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
+		if mode, executable := executableRegularFileMode(workDir, stagePath); executable && !executables[filepath.ToSlash(stagePath)] {
 			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode, Lost: true})
 			continue
 		}
@@ -2632,8 +2647,12 @@ func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string,
 		summary = fmt.Sprintf("Project Config %s omitted from the commit: %s.", drop.Path, drop.Reason)
 	} else if drop.Reason == executableStagePathReason {
 		payload["mode"] = drop.Mode
-		fmt.Fprintf(engine.deps.Progress, "roundfix: refused executable file %s (mode %s); build artifacts and deliberately executable repository files are not valid Work Item output\n", drop.Path, drop.Mode)
-		summary = fmt.Sprintf("Executable file %s refused with mode %s; build artifacts and deliberately executable repository files are not valid Work Item output.", drop.Path, drop.Mode)
+		suffix := ""
+		if taskID != "" {
+			suffix = " unless the Spec's _authorization.md lists the path under executables"
+		}
+		fmt.Fprintf(engine.deps.Progress, "roundfix: refused executable file %s (mode %s); build artifacts and deliberately executable repository files are not valid Work Item output%s\n", drop.Path, drop.Mode, suffix)
+		summary = fmt.Sprintf("Executable file %s refused with mode %s; build artifacts and deliberately executable repository files are not valid Work Item output%s.", drop.Path, drop.Mode, suffix)
 	} else if drop.Reason == absentStagePathReason {
 		fmt.Fprintf(engine.deps.Progress, "roundfix: path %s is absent from the worktree and index; omitted from the commit\n", drop.Path)
 		summary = fmt.Sprintf("Path %s omitted from the commit: %s.", drop.Path, drop.Reason)

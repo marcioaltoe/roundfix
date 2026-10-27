@@ -48,6 +48,10 @@ _Avoid_: Internal helper, implementation detail
 A non-QA Task between a contract-changing Task and the QA gate whose Verification runs the consuming suites ([ADR-0265](docs/adr/0265-a-spec-proves-what-it-claims-and-every-active-spec-is-held-to-it.md)).
 _Avoid_: Final QA, follow-up task
 
+**Authorized Executable**:
+A path the Spec's `_authorization.md` lists under `executables`, which a Task commit keeps with its execute bit; the list comes from the authorization the Run resolved at start. A QA Report or Batch commit never keeps an untracked executable ([ADR-0340](docs/adr/0340-an-untracked-executable-rides-a-task-commit-only-when-the-spec-authorization-names-it.md)).
+_Avoid_: Executable allowlist, approved script, build artifact exemption
+
 **Run**:
 A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job

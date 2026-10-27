@@ -76,7 +76,7 @@
     "guide docs/user-guide/commands/follow-up.md": "sha256:4642566ef826a951e9c0a952e6a81b1475f53476c38754bf6893356315c500b0",
     "guide docs/user-guide/commands/gc.md": "sha256:3ba3db7d7dfdf406f18f3a230c9f9f2efce8d33e7bc970aa2edea0c50a4eef39",
     "guide docs/user-guide/commands/history.md": "sha256:cf5c04ecc73c5c77b3488c2e1495148464aade0f18692e2f570be7359b1ebee6",
-    "guide docs/user-guide/commands/implement.md": "sha256:0491202e2c39f4a9938a07ce0ef31cef6346539bdb8432403210c3d5969abdf7",
+    "guide docs/user-guide/commands/implement.md": "sha256:0d81df5e38ae0dd412d89c359eb2992edc18dec69550da3cdf1880b26b9b8f15",
     "guide docs/user-guide/commands/init.md": "sha256:6e44fee83f2f7c08cf9b6a074d4fddc8293c4d065e6351d089692648a8178d3a",
     "guide docs/user-guide/commands/migrate.md": "sha256:9ef86066a0b47688dbb5fbfc35d805c0e9258b802aeb61eb7c2a7ffd09f44e03",
     "guide docs/user-guide/commands/profiles.md": "sha256:678d00544786b2a92caaf645562aec5fab0898159bd250b0fc9cfac61d404ff1",

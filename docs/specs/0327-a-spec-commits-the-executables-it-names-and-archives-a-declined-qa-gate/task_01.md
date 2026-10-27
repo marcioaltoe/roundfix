@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -151,3 +151,65 @@ Roundfix `implement` reference, the `implement` guide and `CONTEXT.md`.
 - `_prd.md` → Goals 1, 2 and 5; Core Features 1, 2 and 5; Success Metrics 1-4 and 7; Glossary
 - `_techspec.md` → Current behavior 1-3; Interfaces; Data Models; API Contracts 1-4 and 7; Declared breaks 1 and 3; Invariants 1-2; Testing Approach; Build Order 1
 - ADR-0340; ADR-0157
+
+
+## Result
+
+Implemented only task_01. The initial source inspection confirmed that the
+record had no `Executables` field, Task staging expanded directories after
+filtering, and Batch staging did not expand them. The pre-existing Task status
+change belongs to the Daemon and was preserved.
+
+### Acceptance evidence
+
+- Listed executable and new-directory refusal: the Task commit now passes the
+  executable paths from the Run's granted authorization into an unexported
+  stage filter. Task and Batch staging expand untracked directories after the
+  Project Config drop and before filtering. The new real-Git Task Cycle tests
+  observed `100755` for `scripts/launch.sh`, and failure naming
+  `newdir/helper.sh (executable file)` with nothing committed under `newdir/`
+  for an unlisted script. The preparation test keeps the listed file, marks
+  the unlisted file lost, and checks the complete suffixed progress line,
+  event summary, and unchanged payload keys. Only the required expected
+  refusal line changed in `task_engine_test.go`.
+- QA Report and Batch isolation: the public filter still supplies no executable
+  set. The new Batch cycle test stages only `newdir/fixed.go` from `newdir/`;
+  the QA Report test supplies a listed executable under `qa/evidence/` and
+  observes no staged paths. Both assert the unsuffixed refusal.
+- Malformed records: the parser reuses `authorizationStringSequence`,
+  `fieldShapeReason`, and `malformed_record` with `Field: "executables"`.
+  Tests cover the eight required malformed cases plus empty, dot, parent,
+  backslash and non-string entries; granted ordered paths and null/absent
+  fields are also exercised.
+- Written rule and records: the canonical write-tasks skill and template,
+  Roundfix implement reference and user guide carry API Contract 7's exact
+  sentence and delivery-target, QA/Batch and `core.fileMode` notes. The
+  glossary defines Authorized Executable with ADR-0340 and an Avoid line.
+  `make skills-sync` and the sanctioned owned-skill recorder exited 0;
+  write-tasks is now 0.0.21 and roundfix is now 0.1.148. The sanctioned
+  Behavior Surface recorder exited 0 after the last guide edit. A focused
+  Python inspection confirmed identical canonical/mirrored skill trees,
+  the exact sentence and notes in all four sources, the glossary entry,
+  and unchanged QA settlement section bytes.
+
+### Focused checks
+
+All of these exited 0:
+
+- `go test -count=1 -timeout 3m ./internal/authorization -run 'TestAuthorization(Read|RefusesA)'`
+- `go test -count=1 -timeout 3m ./internal/daemon -run 'Test(TaskCommitKeepsAnAuthorized|TaskCycleCommitsAnAuthorized|TaskCycleRefusesAnUnlisted|ResolveCycleRefusesAnExecutableInside|QAReportCommitRefusesAListed|TaskCommitNeverStagesAnIgnored)'`
+- `go test -count=1 -timeout 3m ./internal/daemon -run 'Test(TaskCommitDropsExecutableFileAndCommitsRemainingPaths|TaskCycleLostOutputRefusesCompletion|QAReportCommitKeepsAgentEvidenceInANewDirectory|GovernedMutationDetectionUsesTheUnfilteredSnapshot)$'`
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+- `git diff --check`
+
+The declared Verification commands and repository Verification remain
+Daemon-owned and were not run. No Task status, graph manifest, other Task,
+settle/archive code, Baseline module, agent guide, Makefile or CI workflow was
+edited. No commit, push or pull request was made.
+
+Automatic approval review rejected `make baseline-digests` before execution:
+it can mutate derived Baseline artifacts outside this Task's authorization.
+No indirect regeneration was attempted and no Baseline artifact was changed.
+The authorized skill and Behavior Surface recorders above ran successfully.

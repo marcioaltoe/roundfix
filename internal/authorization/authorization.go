@@ -99,6 +99,7 @@ type AuthorizationRecord struct {
 	GrantedAt           time.Time
 	Action              string
 	Consuming           []string
+	Executables         []string
 	Paths               []string
 	Operations          []AuthorizationOperation
 	PreconditionRepairs []string
@@ -466,6 +467,27 @@ func parseAuthorizationFrontmatter(
 			}
 			presence.pathsEmptySequence = node.Kind == yaml.SequenceNode && len(node.Content) == 0
 			record.Paths = append([]string{}, values...)
+		}
+	}
+	if node, ok := fields["executables"]; ok && node.Tag != "!!null" {
+		values, err := authorizationStringSequence(node)
+		if err != nil {
+			return record, fieldShapeReason("executables", err)
+		}
+		seen := make(map[string]bool, len(values))
+		for _, value := range values {
+			if value == "" || strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") ||
+				strings.HasSuffix(value, "/") || strings.ContainsAny(value, "*?[\\") ||
+				path.Clean(value) != value || value == "." || value == ".." || strings.HasPrefix(value, "../") {
+				return record, authorizationReason(AuthorizationReasonMalformedRecord, "executables", value,
+					fmt.Sprintf("executables entry %q is not an exact repository-relative file path", value))
+			}
+			if seen[value] {
+				return record, authorizationReason(AuthorizationReasonMalformedRecord, "executables", value,
+					fmt.Sprintf("executables repeats path %q", value))
+			}
+			seen[value] = true
+			record.Executables = append(record.Executables, value)
 		}
 	}
 	if node, ok := fields["operations"]; ok && node.Tag != "!!null" {

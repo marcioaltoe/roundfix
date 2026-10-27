@@ -138,13 +138,20 @@ the largest carriable Task set, breaking ties with the newest Run.
    Verification Feedback.
 
    Every Daemon Batch, Task, and QA commit filters stageable paths through the
-   same boundary. Repository-external paths, symlink crossings, and regular
-   files carrying any execute bit are omitted while remaining paths continue
-   to the commit. An executable refusal names its path and mode:
+   same boundary. Repository-external paths and symlink crossings are omitted.
+   Tracked files remain Work Item output whatever their mode. Task and Batch
+   commits expand a new directory into files before filtering.
+
+   A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
+   The list must be on the delivery target before the Run reads it. QA Report and Batch commits never keep an untracked executable. A repository with core.fileMode false records the file as 100644.
+
+   A Task commit's executable refusal names its path, mode and authorization rule:
 
    ```text
-   roundfix: refused executable file <path> (mode <mode>); build artifacts and deliberately executable repository files are not valid Work Item output
+   roundfix: refused executable file <path> (mode <mode>); build artifacts and deliberately executable repository files are not valid Work Item output unless the Spec's _authorization.md lists the path under executables
    ```
+
+   QA Report and Batch refusals omit the authorization suffix.
 
    A task file or QA Report outside the repository, or reached through a
    symlinked path, is dropped from staging with one Run Event Journal entry
