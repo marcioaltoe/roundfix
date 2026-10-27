@@ -1,7 +1,0 @@
-$ /bin/sh -c 'tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- '"'"'Its settlement commit is still collision evidence'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- '"'"'**Recorded Path**'"'"' && for skill in .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$skill" | grep -qF -- '"'"'A test helper, fake, fixture or golden that two Tasks may each change is a foreseeable path'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$skill" | grep -qF -- '"'"'precondition refuses the Run with'"'"' || { printf '"'"'missing shared test file rule: %s\n'"'"' "$skill" >&2; exit 1; }; done && go test -timeout 10m -count=1 ./skills'
-stdout:
-ok  	roundfix/skills	0.868s
-
-stderr:
-
-exit: 0

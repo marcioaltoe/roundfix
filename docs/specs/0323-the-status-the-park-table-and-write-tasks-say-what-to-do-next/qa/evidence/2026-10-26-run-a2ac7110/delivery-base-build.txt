@@ -1,6 +1,0 @@
-$ go build -buildvcs=false -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0323-9veb6une/roundfix-base ./cmd/roundfix
-stdout:
-
-stderr:
-
-exit: 0

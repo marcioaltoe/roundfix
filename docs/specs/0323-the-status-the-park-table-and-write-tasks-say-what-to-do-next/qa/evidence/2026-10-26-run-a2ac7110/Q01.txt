@@ -1,6 +1,0 @@
-Source: QA assignment, repository Verification supplied by Daemon
-command: make verify-changed
-verdict: pass
-exit: 0
-audited head: c8a2d0a03658dce7c81b990e69265a4240b1ddd8
-Agent execution: not run

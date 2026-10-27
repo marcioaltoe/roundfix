@@ -1,6 +1,0 @@
-PRD Unreachable Acceptance, single entry
-criterion: after release, the operator's next roundfix follow-up --status in the manual classification state shows the commit count and the classification command and no blank version.
-reason: released binary plus real repository release range; neither may be read here.
-satisfied-by: operator follow-up after the release carrying this Spec, recorded session evidence.
-state: unproven
-No released/operator repository read.

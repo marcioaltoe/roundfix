@@ -1,8 +1,0 @@
-Pull Request row
-Environment: no open Pull Request (assigned fact).
-approval: delivery authority recorded in _authorization.md, maintainer cycle AQ approval; this is implementation/delivery authority, not PR review acceptance.
-checks and status: Daemon make verify-changed, pass, exit 0 at c8a2d0a03658dce7c81b990e69265a4240b1ddd8; no CI PR checks yet.
-unresolved review threads: none, no Pull Request exists.
-Merge-Ready acceptance: none yet, no Review Source acceptance obtained.
-review-artifact ancestry: no review artifact for this candidate; claimed audited head c8a2d0a03658dce7c81b990e69265a4240b1ddd8.
-Unblock: later delivery phase opens PR and obtains current-head reviews/checks.

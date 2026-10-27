@@ -1,5 +1,0 @@
-Source comparison; evidence predates this Spec implementation, not a rehearsal.
-ADR-0166 (accepted): "Recording discloses a change after the fact, and it reserves nothing."
-Independent decision supports reserving foreseeable shared files through declarations; current guidance preserves non-reservation and adds declarations rather than altering Recorded Paths.
-Fluxus, ai-memory message 01a16a54, 2026-10-23, Run run_20261023T134436Z_a7dbc620803968fe, adopted source Evidence section: "QA gate recusou SC-WAVE-COLLISION quando task_01 e task_02 da mesma onda editaram fakes de teste não declarados (só em Recorded paths); spec check --strict não prevê. Avaliar: aviso no settlement ou orientação no write-tasks."
-Cross-check: the exact observed same-Wave/two-Task/Recorded-path refusal quoted in PRD matches adopted session evidence; the shared-file guidance requires declaration in each Task before execution. No cross-project tool or live repository accessed.

@@ -1,4 +1,0 @@
-Outside-evidence row. Source: https://clig.dev/
-Authorization: _authorization.md Limits, No test, Verification command or QA row ... reaches the network.
-Preserved PRD attribution (not reverified live): "Suggest commands the user should run. When several commands form a workflow, suggesting to the user commands they can run next helps them learn how to use your program and discover new functionality."
-No lookup attempted.
