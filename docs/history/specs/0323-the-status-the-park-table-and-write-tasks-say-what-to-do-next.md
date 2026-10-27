@@ -20,6 +20,7 @@ sources:
   - 2026-10-26-two-tasks-of-one-wave-that-change-an-undeclared-test-fake-lose-the-run-at-the-qa-gate.md
 regeneration: []
 promoted: []
+pull_request: "694"
 ---
 
 # The status, the Park Class table and write-tasks say what to do next
