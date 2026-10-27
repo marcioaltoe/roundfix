@@ -1,0 +1,53 @@
+$ go test -count=1 -timeout 15m -v -run ^TestCriterionNamedMatchesTextOrLeadingLabel$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel
+=== PAUSE TestCriterionNamedMatchesTextOrLeadingLabel
+=== CONT  TestCriterionNamedMatchesTextOrLeadingLabel
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/label
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/normalized
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/colon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/semicolon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/period
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/em_dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary
+    qa_declared_rows_test.go:64: CriterionNamed("Success Metric 10, evidence","Success Metric 1")=true; want false
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/empty
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion)
+--- FAIL: TestCriterionNamedMatchesTextOrLeadingLabel (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/label (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/normalized (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/colon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/semicolon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/period (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/em_dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/dash (0.00s)
+    --- FAIL: TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/empty (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion) (0.00s)
+FAIL
+suiteguard: guard cost: measured 2851 paths; fingerprint took 167.715583ms before and 133.290166ms after
+FAIL	roundfix/internal/spec	0.577s
+FAIL
+
+stderr:
+
+Mutation:
+strings.HasPrefix(declared, row+separator)
+=>
+strings.HasPrefix(declared, row) && separator != ""
+Expected failing case: digit_boundary
+Killed: True

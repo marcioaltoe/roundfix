@@ -1,0 +1,11 @@
+{
+  "Unreachable Acceptance": true,
+  "Settle Command": true,
+  "Run Worktree": true,
+  "Authorized Executable": true,
+  "One declaration may name several criteria; each is its own QA row.": true,
+  "It runs from the user checkout.": true,
+  "settle fast-forwards it to the Run": true,
+  "A settle commit keeps the same paths.": true
+}
+Strict Spec check exit 0: no Glossary Gap.

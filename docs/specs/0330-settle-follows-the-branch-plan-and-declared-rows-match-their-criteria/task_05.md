@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

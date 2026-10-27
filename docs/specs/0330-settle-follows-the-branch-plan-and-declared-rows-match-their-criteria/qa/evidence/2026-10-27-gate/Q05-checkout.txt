@@ -1,0 +1,21 @@
+$ go test -count=1 -timeout 15m -v -run ^TestSettleRefusesInsideTheRunWorktree$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestSettleRefusesInsideTheRunWorktree
+=== PAUSE TestSettleRefusesInsideTheRunWorktree
+=== CONT  TestSettleRefusesInsideTheRunWorktree
+    settle_checkout_test.go:18: settle exit = 1, want 2; stdout="verify test -f done.txt — ok\nintegration pending — git merge --ff-only roundfix/run-run_20261027T174057Z_091ec82c5314144e\n" stderr="Settle surface: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSettleRefusesInsideTheRunWorktree2791449659/001/worktrees/002-12cf74aa/run_20261027T174057Z_091ec82c5314144e\n"
+--- FAIL: TestSettleRefusesInsideTheRunWorktree (0.27s)
+FAIL
+suiteguard: guard cost: measured 2851 paths; fingerprint took 145.012917ms before and 132.740916ms after
+FAIL	roundfix/internal/cli	1.031s
+FAIL
+
+stderr:
+
+Mutation:
+if strings.HasPrefix(gitState.Branch, store.RunBranchPrefix) {
+=>
+if false && strings.HasPrefix(gitState.Branch, store.RunBranchPrefix) {
+Expected failing case: 
+Killed: True

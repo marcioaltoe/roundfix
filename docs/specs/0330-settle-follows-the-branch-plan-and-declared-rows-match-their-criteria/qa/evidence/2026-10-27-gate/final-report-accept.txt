@@ -1,0 +1,5 @@
+$ ./bin/roundfix qa-report accept docs/specs/0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria/qa/qa-report-2026-10-27.md
+exit: 0
+stdout:
+
+stderr:

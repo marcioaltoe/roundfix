@@ -1,0 +1,27 @@
+$ go test -count=1 -timeout 15m -v -run ^TestQAReportEligibilityMatchesEachDeclaredRow$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow
+=== PAUSE TestQAReportEligibilityMatchesEachDeclaredRow
+=== CONT  TestQAReportEligibilityMatchesEachDeclaredRow
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion
+    qa_declared_rows_test.go:118: eligibility = <nil>; want "declared-blocked row Q12"
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows
+--- FAIL: TestQAReportEligibilityMatchesEachDeclaredRow (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria (0.00s)
+    --- FAIL: TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows (0.00s)
+FAIL
+suiteguard: guard cost: measured 2851 paths; fingerprint took 164.308791ms before and 133.706917ms after
+FAIL	roundfix/internal/spec	0.567s
+FAIL
+
+stderr:
+
+Mutation:
+matched := len(report.DeclaredRows) > 0 && len(unmatched) == 0 && report.RowsBlockedDeclared <= len(report.DeclaredRows)
+=>
+criteriaCount := 0; for _, d := range declarations { criteriaCount += len(d.Criteria) }; matched := report.RowsBlockedDeclared <= criteriaCount
+Expected failing case: undeclared_criterion
+Killed: True

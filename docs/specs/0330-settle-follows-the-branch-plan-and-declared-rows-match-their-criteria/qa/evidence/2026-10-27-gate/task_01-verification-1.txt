@@ -1,0 +1,10 @@
+$ out="$(go test -count=1 -timeout 15m -v -run '^(TestUnreachableDeclarationNamesEveryCriterion|TestCriterionNamedMatchesTextOrLeadingLabel|TestQAReportEligibilityMatchesEachDeclaredRow|TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow|TestSpec0058ReplayRefusesUnmatchedBlockedRow|TestTheArchivedAuthorizationRowsQualify|TestUnreachableReadsDeclaredAcceptance)$' ./internal/spec 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestUnreachableDeclarationNamesEveryCriterion TestCriterionNamedMatchesTextOrLeadingLabel TestQAReportEligibilityMatchesEachDeclaredRow TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow TestSpec0058ReplayRefusesUnmatchedBlockedRow TestTheArchivedAuthorizationRowsQualify; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done; out="$(go test -count=1 -timeout 15m -v -run '^TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion ' || { echo 'missing pass: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion' >&2; exit 1; }; go test -count=1 -timeout 20m ./internal/spec ./internal/speccheck ./internal/agent ./internal/daemon && go test -count=1 -timeout 20m -run 'QA|Archive|Settle|Partial|Declared' ./internal/cli
+exit: 0
+stdout:
+ok  	roundfix/internal/spec	49.272s
+ok  	roundfix/internal/speccheck	33.531s
+ok  	roundfix/internal/agent	11.478s
+ok  	roundfix/internal/daemon	49.187s
+ok  	roundfix/internal/cli	23.621s
+
+stderr:

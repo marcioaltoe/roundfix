@@ -1,0 +1,32 @@
+$ go test -count=3 -timeout 15m -v -run ^TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== PAUSE TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== CONT  TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/Quaestor_shape
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/undeclared_row
+--- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion (0.00s)
+    --- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/Quaestor_shape (0.00s)
+    --- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/undeclared_row (0.00s)
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== PAUSE TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== CONT  TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/Quaestor_shape
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/undeclared_row
+--- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion (0.00s)
+    --- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/Quaestor_shape (0.00s)
+    --- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/undeclared_row (0.00s)
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== PAUSE TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== CONT  TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/Quaestor_shape
+=== RUN   TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/undeclared_row
+--- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion (0.00s)
+    --- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/Quaestor_shape (0.00s)
+    --- PASS: TestQAReportAcceptMatchesEachDeclaredRowToItsCriterion/undeclared_row (0.00s)
+PASS
+suiteguard: guard cost: measured 2864 paths; fingerprint took 145.288959ms before and 128.269917ms after
+ok  	roundfix/internal/cli	0.594s
+
+stderr:

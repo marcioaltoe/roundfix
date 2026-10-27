@@ -1,0 +1,13 @@
+$ ./bin/roundfix archive 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria --plan --offline
+exit: 0
+stdout:
+archive plan for 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria: removes 60 file(s) (215866 bytes) and writes docs/history/specs/0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-27.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 46 file(s) (77707 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-26-settle-and-a-tracked-mode-change-commit-an-executable-the-task-commit-refuses.md 1489 bytes: no advice (offline)
+candidate references/2026-10-26-settle-run-inside-the-run-worktree-takes-it-for-the-user-checkout.md 1425 bytes: no advice (offline)
+candidate references/2026-10-27-a-declaration-covering-two-criteria-is-refused-and-settle-reads-the-run-worktree-plan.md 2818 bytes: no advice (offline)
+promote with: roundfix archive 0330-settle-follows-the-branch-plan-and-declared-rows-match-their-criteria --promote <path>
+
+stderr:

@@ -1,0 +1,63 @@
+$ git init -b main
+exit: 0
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0330-git-ei_i874a/repo/.git/
+
+$ git config user.name QA Fixture
+exit: 0
+
+$ git config user.email qa@example.invalid
+exit: 0
+
+$ git add .
+exit: 0
+
+$ git commit -m fixture base
+exit: 0
+[main (root-commit) 9e140cd] fixture base
+ 2 files changed, 2 insertions(+)
+ create mode 100644 different
+ create mode 100644 edited
+
+$ git worktree add -b linked /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0330-git-ei_i874a/linked
+exit: 0
+HEAD is now at 9e140cd fixture base
+Preparing worktree (new branch 'linked')
+
+$ git add staged
+exit: 0
+
+$ git add .
+exit: 0
+
+$ git commit -m different file
+exit: 0
+[main 35ca348] different file
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+$ git merge --ff-only main
+exit: 0
+Updating 9e140cd..35ca348
+Fast-forward
+ different | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+$ git status --porcelain
+exit: 0
+ M edited
+A  staged
+
+$ git add .
+exit: 0
+
+$ git commit -m overlap
+exit: 0
+[main a6b5ad1] overlap
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+$ git merge --ff-only main
+exit: 1
+Updating 35ca348..a6b5ad1
+error: Your local changes to the following files would be overwritten by merge:
+	edited
+Please commit your changes or stash them before you merge.
+Aborting

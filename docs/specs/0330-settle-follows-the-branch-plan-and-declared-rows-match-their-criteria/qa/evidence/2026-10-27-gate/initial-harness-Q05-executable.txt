@@ -1,0 +1,15 @@
+$ go test -count=1 -timeout 15m -v -run ^TestSettleRefusesAnUnlistedExecutableInANewDirectory$ ./internal/cli
+exit: 1
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/cli	0.452s
+FAIL
+
+stderr:
+
+Mutation:
+if len(refused) > 0 {
+=>
+if false && len(refused) > 0 {
+Expected failing case: 
+Killed: False

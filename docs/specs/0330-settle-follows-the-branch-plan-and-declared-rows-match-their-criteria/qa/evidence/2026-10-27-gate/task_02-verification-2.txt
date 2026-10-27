@@ -1,0 +1,7 @@
+$ for file in .agents/skills/roundfix/references/settle.md skills/roundfix/references/settle.md .agents/skills/roundfix/references/spec-delivery.md skills/roundfix/references/spec-delivery.md docs/user-guide/commands/settle.md; do tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'Settle runs from the user checkout: inside a Run Worktree or Task Worktree it refuses and names the checkout.' || { printf '%s lacks the checkout rule\n' "$file" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'It runs from the user checkout.' || { echo 'CONTEXT.md lacks the revised **Settle Command**' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Settle Command**:' || { echo 'CONTEXT.md lacks **Settle Command**' >&2; exit 1; }; diff -r .agents/skills/roundfix skills/roundfix && go test -timeout 15m -count=1 -run '^(TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable)$' ./skills && go test -timeout 15m -count=1 -tags docscontract ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/skills	0.161s
+ok  	roundfix/internal/docscontract	10.017s
+
+stderr:

@@ -1,0 +1,7 @@
+$ for file in .agents/skills/roundfix/references/settle.md skills/roundfix/references/settle.md docs/user-guide/commands/settle.md; do tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'Settle refuses an untracked executable file that the Spec' || { printf '%s lacks the executables rule\n' "$file" >&2; exit 1; }; tr -s '[:space:]' ' ' < "$file" | grep -qF -- 'a tracked file whose mode changes is committed by both.' || { printf '%s lacks the tracked-mode rule\n' "$file" >&2; exit 1; }; done; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'A settle commit keeps the same paths.' || { echo 'CONTEXT.md lacks the revised **Authorized Executable**' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Authorized Executable**:' || { echo 'CONTEXT.md lacks **Authorized Executable**' >&2; exit 1; }; diff -r .agents/skills/roundfix skills/roundfix && go test -timeout 15m -count=1 -run '^(TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable)$' ./skills && go test -timeout 15m -count=1 -tags docscontract ./internal/docscontract
+exit: 0
+stdout:
+ok  	roundfix/skills	0.160s
+ok  	roundfix/internal/docscontract	10.033s
+
+stderr:

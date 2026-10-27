@@ -1,0 +1,206 @@
+$ go test -count=3 -timeout 15m -v -run ^(TestUnreachableDeclarationNamesEveryCriterion|TestCriterionNamedMatchesTextOrLeadingLabel|TestQAReportEligibilityMatchesEachDeclaredRow|TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow)$ ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion
+=== PAUSE TestUnreachableDeclarationNamesEveryCriterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel
+=== PAUSE TestCriterionNamedMatchesTextOrLeadingLabel
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow
+=== PAUSE TestQAReportEligibilityMatchesEachDeclaredRow
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== PAUSE TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== CONT  TestUnreachableDeclarationNamesEveryCriterion
+=== CONT  TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/repeated_and_continued
+=== CONT  TestQAReportEligibilityMatchesEachDeclaredRow
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria
+=== CONT  TestCriterionNamedMatchesTextOrLeadingLabel
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=true
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/label
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/normalized
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/colon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/semicolon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/period
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/em_dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/empty
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion)
+--- PASS: TestCriterionNamedMatchesTextOrLeadingLabel (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/label (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/normalized (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/colon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/semicolon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/period (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/em_dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/empty (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion) (0.00s)
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/empty_first
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=false
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/empty_last
+--- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow (0.00s)
+    --- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=true (0.00s)
+    --- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=false (0.00s)
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/missing
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows
+--- PASS: TestUnreachableDeclarationNamesEveryCriterion (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/repeated_and_continued (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/empty_first (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/empty_last (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/missing (0.00s)
+--- PASS: TestQAReportEligibilityMatchesEachDeclaredRow (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows (0.00s)
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion
+=== PAUSE TestUnreachableDeclarationNamesEveryCriterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel
+=== PAUSE TestCriterionNamedMatchesTextOrLeadingLabel
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow
+=== PAUSE TestQAReportEligibilityMatchesEachDeclaredRow
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== PAUSE TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== CONT  TestUnreachableDeclarationNamesEveryCriterion
+=== CONT  TestQAReportEligibilityMatchesEachDeclaredRow
+=== CONT  TestCriterionNamedMatchesTextOrLeadingLabel
+=== CONT  TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/label
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=true
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/repeated_and_continued
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/normalized
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/colon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/semicolon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/period
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/em_dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/empty
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion)
+--- PASS: TestCriterionNamedMatchesTextOrLeadingLabel (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/label (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/normalized (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/colon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/semicolon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/period (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/em_dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/empty (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion) (0.00s)
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/empty_first
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=false
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/empty_last
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/missing
+--- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow (0.00s)
+    --- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=true (0.00s)
+    --- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=false (0.00s)
+--- PASS: TestUnreachableDeclarationNamesEveryCriterion (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/repeated_and_continued (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/empty_first (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/empty_last (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/missing (0.00s)
+--- PASS: TestQAReportEligibilityMatchesEachDeclaredRow (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows (0.00s)
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion
+=== PAUSE TestUnreachableDeclarationNamesEveryCriterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel
+=== PAUSE TestCriterionNamedMatchesTextOrLeadingLabel
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow
+=== PAUSE TestQAReportEligibilityMatchesEachDeclaredRow
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== PAUSE TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== CONT  TestUnreachableDeclarationNamesEveryCriterion
+=== CONT  TestQAReportEligibilityMatchesEachDeclaredRow
+=== CONT  TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/repeated_and_continued
+=== CONT  TestCriterionNamedMatchesTextOrLeadingLabel
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/label
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=true
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/normalized
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/colon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/semicolon
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/period
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/em_dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/dash
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/empty
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_)
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion
+=== RUN   TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion)
+--- PASS: TestCriterionNamedMatchesTextOrLeadingLabel (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/label (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/normalized (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/colon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/semicolon (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/period (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/parenthesis (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/em_dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/dash (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/digit_boundary (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/paraphrase (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/empty (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_Success_Metric_5) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/BLOCKED_(DECLARED:Success_Metric_5_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_) (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(declared:_criterion (0.00s)
+    --- PASS: TestCriterionNamedMatchesTextOrLeadingLabel/blocked_(environment:_criterion) (0.00s)
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/empty_first
+=== RUN   TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=false
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/empty_last
+--- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow (0.00s)
+    --- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=true (0.00s)
+    --- PASS: TestQAReportEligibilityKeepsTodaysCountForAParaphrasedRow/table=false (0.00s)
+=== RUN   TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows
+=== RUN   TestUnreachableDeclarationNamesEveryCriterion/missing
+--- PASS: TestUnreachableDeclarationNamesEveryCriterion (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/repeated_and_continued (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/empty_first (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/empty_last (0.00s)
+    --- PASS: TestUnreachableDeclarationNamesEveryCriterion/missing (0.00s)
+--- PASS: TestQAReportEligibilityMatchesEachDeclaredRow (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/two_criteria (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/undeclared_criterion (0.00s)
+    --- PASS: TestQAReportEligibilityMatchesEachDeclaredRow/count_exceeds_listed_rows (0.00s)
+PASS
+suiteguard: guard cost: measured 2863 paths; fingerprint took 162.783542ms before and 130.454ms after
+ok  	roundfix/internal/spec	0.561s
+
+stderr:

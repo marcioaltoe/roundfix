@@ -1,0 +1,215 @@
+$ go test -count=3 -timeout 15m -v -run ^(TestSettleRefusesInsideTheRunWorktree|TestSettleRefusesInsideATaskWorktree|TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree|TestSettleCheckoutRecordAndFallback|TestSettleAdvancesTheRunWorktreeToTheBranchPlan|TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface|TestSettleRefusesASpecChangedOnADivergedBranch|TestSettleRefusesASpecChangedAfterATaskWorktreeForked|TestSettleKeepsTheAdvanceWhenVerificationFails|TestSettleRefusesAnUnlistedExecutableInANewDirectory|TestSettleCommitsAListedExecutableWithItsMode|TestSettleCommitsATrackedFileMadeExecutable|TestSettleNamesNoRemovalWhenIntegrationIsPending|TestTaskCycleCommitsATrackedFileMadeExecutable)$ ./internal/cli ./internal/daemon
+exit: 0
+stdout:
+=== RUN   TestSettleRefusesInsideTheRunWorktree
+=== PAUSE TestSettleRefusesInsideTheRunWorktree
+=== RUN   TestSettleRefusesInsideATaskWorktree
+=== PAUSE TestSettleRefusesInsideATaskWorktree
+=== RUN   TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== PAUSE TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== RUN   TestSettleCheckoutRecordAndFallback
+=== PAUSE TestSettleCheckoutRecordAndFallback
+=== RUN   TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== PAUSE TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== RUN   TestSettleCommitsAListedExecutableWithItsMode
+=== PAUSE TestSettleCommitsAListedExecutableWithItsMode
+=== RUN   TestSettleCommitsATrackedFileMadeExecutable
+=== PAUSE TestSettleCommitsATrackedFileMadeExecutable
+=== RUN   TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== PAUSE TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== RUN   TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+=== PAUSE TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+=== RUN   TestSettleRefusesASpecChangedOnADivergedBranch
+=== PAUSE TestSettleRefusesASpecChangedOnADivergedBranch
+=== RUN   TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== PAUSE TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== RUN   TestSettleKeepsTheAdvanceWhenVerificationFails
+=== PAUSE TestSettleKeepsTheAdvanceWhenVerificationFails
+=== RUN   TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== PAUSE TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleRefusesInsideTheRunWorktree
+=== CONT  TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== CONT  TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== CONT  TestSettleCommitsATrackedFileMadeExecutable
+=== CONT  TestSettleCommitsAListedExecutableWithItsMode
+=== CONT  TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== CONT  TestSettleCheckoutRecordAndFallback
+=== CONT  TestSettleRefusesInsideATaskWorktree
+=== RUN   TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== PAUSE TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== RUN   TestSettleCheckoutRecordAndFallback/missing_database
+=== CONT  TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== PAUSE TestSettleCheckoutRecordAndFallback/missing_database
+=== RUN   TestSettleCheckoutRecordAndFallback/unknown_run
+=== PAUSE TestSettleCheckoutRecordAndFallback/unknown_run
+=== CONT  TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleRefusesASpecChangedOnADivergedBranch
+--- PASS: TestSettleRefusesInsideTheRunWorktree (0.37s)
+=== CONT  TestSettleKeepsTheAdvanceWhenVerificationFails
+--- PASS: TestSettleRefusesAnUnlistedExecutableInANewDirectory (0.39s)
+=== CONT  TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+--- PASS: TestSettleRefusesInsideATaskWorktree (0.45s)
+=== CONT  TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+--- PASS: TestSettleCommitsATrackedFileMadeExecutable (0.48s)
+=== CONT  TestSettleCheckoutRecordAndFallback/unknown_run
+--- PASS: TestSettleCommitsAListedExecutableWithItsMode (0.53s)
+=== CONT  TestSettleCheckoutRecordAndFallback/missing_database
+--- PASS: TestSettleRefusesASpecChangedOnADivergedBranch (0.65s)
+--- PASS: TestSettleRefusesASpecChangedAfterATaskWorktreeForked (0.67s)
+--- PASS: TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree (0.73s)
+--- PASS: TestSettleNamesNoRemovalWhenIntegrationIsPending (0.75s)
+--- PASS: TestSettleAdvancesTheRunWorktreeToTheBranchPlan (0.82s)
+--- PASS: TestSettleCheckoutRecordAndFallback (0.00s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/unknown_run (0.35s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/recorded_linked_checkout (0.38s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/missing_database (0.31s)
+--- PASS: TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface (0.51s)
+--- PASS: TestSettleKeepsTheAdvanceWhenVerificationFails (0.53s)
+=== RUN   TestSettleRefusesInsideTheRunWorktree
+=== PAUSE TestSettleRefusesInsideTheRunWorktree
+=== RUN   TestSettleRefusesInsideATaskWorktree
+=== PAUSE TestSettleRefusesInsideATaskWorktree
+=== RUN   TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== PAUSE TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== RUN   TestSettleCheckoutRecordAndFallback
+=== PAUSE TestSettleCheckoutRecordAndFallback
+=== RUN   TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== PAUSE TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== RUN   TestSettleCommitsAListedExecutableWithItsMode
+=== PAUSE TestSettleCommitsAListedExecutableWithItsMode
+=== RUN   TestSettleCommitsATrackedFileMadeExecutable
+=== PAUSE TestSettleCommitsATrackedFileMadeExecutable
+=== RUN   TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== PAUSE TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== RUN   TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+=== PAUSE TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+=== RUN   TestSettleRefusesASpecChangedOnADivergedBranch
+=== PAUSE TestSettleRefusesASpecChangedOnADivergedBranch
+=== RUN   TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== PAUSE TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== RUN   TestSettleKeepsTheAdvanceWhenVerificationFails
+=== PAUSE TestSettleKeepsTheAdvanceWhenVerificationFails
+=== RUN   TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== PAUSE TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleRefusesInsideTheRunWorktree
+=== CONT  TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== CONT  TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== CONT  TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== CONT  TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== CONT  TestSettleRefusesInsideATaskWorktree
+=== CONT  TestSettleCheckoutRecordAndFallback
+=== RUN   TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== PAUSE TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== RUN   TestSettleCheckoutRecordAndFallback/missing_database
+=== PAUSE TestSettleCheckoutRecordAndFallback/missing_database
+=== RUN   TestSettleCheckoutRecordAndFallback/unknown_run
+=== PAUSE TestSettleCheckoutRecordAndFallback/unknown_run
+=== CONT  TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== CONT  TestSettleRefusesASpecChangedOnADivergedBranch
+=== CONT  TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleCommitsATrackedFileMadeExecutable
+--- PASS: TestSettleRefusesInsideTheRunWorktree (0.31s)
+=== CONT  TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+--- PASS: TestSettleRefusesAnUnlistedExecutableInANewDirectory (0.36s)
+=== CONT  TestSettleKeepsTheAdvanceWhenVerificationFails
+--- PASS: TestSettleRefusesInsideATaskWorktree (0.39s)
+=== CONT  TestSettleCommitsAListedExecutableWithItsMode
+=== CONT  TestSettleCheckoutRecordAndFallback/unknown_run
+--- PASS: TestSettleCommitsATrackedFileMadeExecutable (0.51s)
+=== CONT  TestSettleCheckoutRecordAndFallback/missing_database
+--- PASS: TestSettleRefusesASpecChangedOnADivergedBranch (0.60s)
+--- PASS: TestSettleRefusesASpecChangedAfterATaskWorktreeForked (0.65s)
+--- PASS: TestSettleNamesNoRemovalWhenIntegrationIsPending (0.68s)
+--- PASS: TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree (0.70s)
+--- PASS: TestSettleAdvancesTheRunWorktreeToTheBranchPlan (0.74s)
+--- PASS: TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface (0.46s)
+--- PASS: TestSettleCommitsAListedExecutableWithItsMode (0.38s)
+--- PASS: TestSettleCheckoutRecordAndFallback (0.00s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/recorded_linked_checkout (0.43s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/unknown_run (0.33s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/missing_database (0.28s)
+--- PASS: TestSettleKeepsTheAdvanceWhenVerificationFails (0.46s)
+=== RUN   TestSettleRefusesInsideTheRunWorktree
+=== PAUSE TestSettleRefusesInsideTheRunWorktree
+=== RUN   TestSettleRefusesInsideATaskWorktree
+=== PAUSE TestSettleRefusesInsideATaskWorktree
+=== RUN   TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== PAUSE TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== RUN   TestSettleCheckoutRecordAndFallback
+=== PAUSE TestSettleCheckoutRecordAndFallback
+=== RUN   TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== PAUSE TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== RUN   TestSettleCommitsAListedExecutableWithItsMode
+=== PAUSE TestSettleCommitsAListedExecutableWithItsMode
+=== RUN   TestSettleCommitsATrackedFileMadeExecutable
+=== PAUSE TestSettleCommitsATrackedFileMadeExecutable
+=== RUN   TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== PAUSE TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== RUN   TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+=== PAUSE TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+=== RUN   TestSettleRefusesASpecChangedOnADivergedBranch
+=== PAUSE TestSettleRefusesASpecChangedOnADivergedBranch
+=== RUN   TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== PAUSE TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== RUN   TestSettleKeepsTheAdvanceWhenVerificationFails
+=== PAUSE TestSettleKeepsTheAdvanceWhenVerificationFails
+=== RUN   TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== PAUSE TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleRefusesInsideTheRunWorktree
+=== CONT  TestSettleAdvancesTheRunWorktreeToTheBranchPlan
+=== CONT  TestSettleRefusesASpecChangedAfterATaskWorktreeForked
+=== CONT  TestSettleRefusesAnUnlistedExecutableInANewDirectory
+=== CONT  TestSettleCommitsATrackedFileMadeExecutable
+=== CONT  TestSettleCommitsAListedExecutableWithItsMode
+=== CONT  TestSettleRefusesASpecChangedOnADivergedBranch
+=== CONT  TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree
+=== CONT  TestSettleCheckoutRecordAndFallback
+=== RUN   TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== PAUSE TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+=== RUN   TestSettleCheckoutRecordAndFallback/missing_database
+=== PAUSE TestSettleCheckoutRecordAndFallback/missing_database
+=== RUN   TestSettleCheckoutRecordAndFallback/unknown_run
+=== PAUSE TestSettleCheckoutRecordAndFallback/unknown_run
+=== CONT  TestSettleNamesNoRemovalWhenIntegrationIsPending
+=== CONT  TestSettleKeepsTheAdvanceWhenVerificationFails
+--- PASS: TestSettleRefusesInsideTheRunWorktree (0.32s)
+=== CONT  TestSettleRefusesInsideATaskWorktree
+--- PASS: TestSettleRefusesAnUnlistedExecutableInANewDirectory (0.35s)
+=== CONT  TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface
+--- PASS: TestSettleCommitsAListedExecutableWithItsMode (0.46s)
+=== CONT  TestSettleCheckoutRecordAndFallback/recorded_linked_checkout
+--- PASS: TestSettleCommitsATrackedFileMadeExecutable (0.47s)
+=== CONT  TestSettleCheckoutRecordAndFallback/unknown_run
+--- PASS: TestSettleRefusesASpecChangedOnADivergedBranch (0.59s)
+=== CONT  TestSettleCheckoutRecordAndFallback/missing_database
+--- PASS: TestSettleRefusesASpecChangedAfterATaskWorktreeForked (0.61s)
+--- PASS: TestSettleKeepsTheAdvanceWhenVerificationFails (0.63s)
+--- PASS: TestSettleNamesNoRemovalWhenIntegrationIsPending (0.67s)
+--- PASS: TestSettleFromTheUserCheckoutStillSettlesTheRunWorktree (0.68s)
+--- PASS: TestSettleRefusesInsideATaskWorktree (0.37s)
+--- PASS: TestSettleAdvancesTheRunWorktreeToTheBranchPlan (0.74s)
+--- PASS: TestSettleRefusesWhenTheBranchChangeOverlapsTheSurface (0.44s)
+--- PASS: TestSettleCheckoutRecordAndFallback (0.00s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/unknown_run (0.30s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/recorded_linked_checkout (0.32s)
+    --- PASS: TestSettleCheckoutRecordAndFallback/missing_database (0.23s)
+PASS
+suiteguard: guard cost: measured 2868 paths; fingerprint took 131.524416ms before and 147.613166ms after
+ok  	roundfix/internal/cli	3.117s
+=== RUN   TestTaskCycleCommitsATrackedFileMadeExecutable
+=== PAUSE TestTaskCycleCommitsATrackedFileMadeExecutable
+=== CONT  TestTaskCycleCommitsATrackedFileMadeExecutable
+--- PASS: TestTaskCycleCommitsATrackedFileMadeExecutable (0.30s)
+=== RUN   TestTaskCycleCommitsATrackedFileMadeExecutable
+=== PAUSE TestTaskCycleCommitsATrackedFileMadeExecutable
+=== CONT  TestTaskCycleCommitsATrackedFileMadeExecutable
+--- PASS: TestTaskCycleCommitsATrackedFileMadeExecutable (0.32s)
+=== RUN   TestTaskCycleCommitsATrackedFileMadeExecutable
+=== PAUSE TestTaskCycleCommitsATrackedFileMadeExecutable
+=== CONT  TestTaskCycleCommitsATrackedFileMadeExecutable
+--- PASS: TestTaskCycleCommitsATrackedFileMadeExecutable (0.31s)
+PASS
+suiteguard: guard cost: measured 2868 paths; fingerprint took 131.180083ms before and 226.742167ms after
+ok  	roundfix/internal/daemon	1.489s
+
+stderr:

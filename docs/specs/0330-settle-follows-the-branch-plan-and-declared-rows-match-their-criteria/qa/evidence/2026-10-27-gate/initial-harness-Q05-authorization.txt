@@ -1,0 +1,15 @@
+$ go test -count=1 -timeout 15m -v -run ^TestSettleCommitsAListedExecutableWithItsMode$ ./internal/cli
+exit: 1
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/cli	0.449s
+FAIL
+
+stderr:
+
+Mutation:
+UnauthorizedExecutables(ctx, plan.workDir, paths, plan.authorization)
+=>
+UnauthorizedExecutables(ctx, plan.workDir, paths, spec.AuthorizationResolution{})
+Expected failing case: 
+Killed: False

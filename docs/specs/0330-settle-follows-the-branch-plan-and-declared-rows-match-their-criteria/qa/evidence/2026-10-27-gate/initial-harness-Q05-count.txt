@@ -1,0 +1,15 @@
+$ go test -count=1 -timeout 15m -v -run ^TestQAReportEligibilityMatchesEachDeclaredRow$ ./internal/spec
+exit: 1
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/spec	0.293s
+FAIL
+
+stderr:
+
+Mutation:
+matched := len(report.DeclaredRows) > 0 && len(unmatched) == 0 && report.RowsBlockedDeclared <= len(report.DeclaredRows)
+=>
+criteriaCount := 0; for _, d := range declarations { criteriaCount += len(d.Criteria) }; matched := report.RowsBlockedDeclared <= criteriaCount
+Expected failing case: undeclared_criterion
+Killed: False
