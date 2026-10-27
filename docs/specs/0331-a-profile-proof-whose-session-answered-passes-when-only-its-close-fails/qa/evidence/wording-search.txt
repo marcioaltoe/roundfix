@@ -1,0 +1,3 @@
+Whitespace-normalized repository search; excluded current Spec and docs/history.
+CHANGELOG.md: The cleanup deadline, the Fallback Chain probe after Run creation and Run sessions keep their existing deadlines
+No hits in CONTEXT.md, docs/user-guide or either skill copy.

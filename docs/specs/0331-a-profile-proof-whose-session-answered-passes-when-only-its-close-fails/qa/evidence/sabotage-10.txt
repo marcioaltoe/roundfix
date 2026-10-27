@@ -1,0 +1,22 @@
+$ go test -count=1 -timeout 20m -v -run ^TestProfilesValidateReportsAnUnclosedProofSession$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestProfilesValidateReportsAnUnclosedProofSession
+=== PAUSE TestProfilesValidateReportsAnUnclosedProofSession
+=== CONT  TestProfilesValidateReportsAnUnclosedProofSession
+=== RUN   TestProfilesValidateReportsAnUnclosedProofSession/text
+    profile_proof_close_test.go:49: warning must follow references: Profiles validate passed.
+        1. codex / gpt-6.1-sol / high — passed
+           - backend preferred source=built-in
+        2. claude / opus / high — passed
+           - backend fallback[1] source=built-in
+=== RUN   TestProfilesValidateReportsAnUnclosedProofSession/json
+--- FAIL: TestProfilesValidateReportsAnUnclosedProofSession (0.00s)
+    --- FAIL: TestProfilesValidateReportsAnUnclosedProofSession/text (0.00s)
+    --- PASS: TestProfilesValidateReportsAnUnclosedProofSession/json (0.00s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 188.046458ms before and 141.597375ms after
+FAIL	roundfix/internal/cli	0.751s
+FAIL
+
+stderr:

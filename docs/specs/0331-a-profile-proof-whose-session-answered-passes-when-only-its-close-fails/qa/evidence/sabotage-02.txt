@@ -1,0 +1,21 @@
+$ go test -count=1 -timeout 20m -v -run ^TestTheProofCloseDeadlineFollowsTheSetupDeadline$ ./internal/agent
+exit: 1
+stdout:
+=== RUN   TestTheProofCloseDeadlineFollowsTheSetupDeadline
+=== PAUSE TestTheProofCloseDeadlineFollowsTheSetupDeadline
+=== CONT  TestTheProofCloseDeadlineFollowsTheSetupDeadline
+=== RUN   TestTheProofCloseDeadlineFollowsTheSetupDeadline/recorded
+    proof_close_test.go:80: warnings=[disposable Agent Session "roundfix-preflight-91e61e3bcbc1fe41" was not closed within 5s after its profile proof: close disposable Agent Session "roundfix-preflight-91e61e3bcbc1fe41": close acpx Agent Session "roundfix-preflight-91e61e3bcbc1fe41": acpx infrastructure error after exit code 2: acpx command failed; recovery: rerun Agent Selection readiness after the Session can be closed; recorded in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheProofCloseDeadlineFollowsTheSetupDeadlinerecorded2942436241/001/home/.roundfix/unclosed-proof-sessions/roundfix-preflight-91e61e3bcbc1fe41.json for the next profile proof to close]
+=== RUN   TestTheProofCloseDeadlineFollowsTheSetupDeadline/no_HOME
+=== RUN   TestTheProofCloseDeadlineFollowsTheSetupDeadline/write_error
+    proof_close_test.go:80: warnings=[disposable Agent Session "roundfix-preflight-ac42f911f9352a3a" was not closed within 5s after its profile proof: close disposable Agent Session "roundfix-preflight-ac42f911f9352a3a": close acpx Agent Session "roundfix-preflight-ac42f911f9352a3a": acpx infrastructure error after exit code 2: acpx command failed; recovery: rerun Agent Selection readiness after the Session can be closed; it could not be recorded (mkdir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheProofCloseDeadlineFollowsTheSetupDeadlinewrite_error4245107645/001/home/.roundfix: not a directory); close it with: acpx --cwd /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheProofCloseDeadlineFollowsTheSetupDeadlinewrite_error4245107645/001 codex sessions close roundfix-preflight-ac42f911f9352a3a]
+--- FAIL: TestTheProofCloseDeadlineFollowsTheSetupDeadline (0.11s)
+    --- FAIL: TestTheProofCloseDeadlineFollowsTheSetupDeadline/recorded (0.04s)
+    --- PASS: TestTheProofCloseDeadlineFollowsTheSetupDeadline/no_HOME (0.04s)
+    --- FAIL: TestTheProofCloseDeadlineFollowsTheSetupDeadline/write_error (0.04s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 136.456333ms before and 135.381292ms after
+FAIL	roundfix/internal/agent	0.626s
+FAIL
+
+stderr:

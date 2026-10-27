@@ -1,0 +1,19 @@
+$ go test -count=1 -timeout 20m -v -run ^TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails$ ./internal/agent
+exit: 1
+stdout:
+=== RUN   TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails
+=== PAUSE TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails
+=== CONT  TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails
+=== RUN   TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails/exact_proof
+    proof_close_test.go:114: want setup rejection only, got <nil> <nil>
+=== RUN   TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails/probe
+    proof_close_test.go:114: want setup rejection only, got <nil> <nil>
+--- FAIL: TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails (0.09s)
+    --- FAIL: TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails/exact_proof (0.04s)
+    --- FAIL: TestASessionThatNeverAnsweredStillFailsWhenItsCloseFails/probe (0.04s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 139.808208ms before and 136.453959ms after
+FAIL	roundfix/internal/agent	0.683s
+FAIL
+
+stderr:

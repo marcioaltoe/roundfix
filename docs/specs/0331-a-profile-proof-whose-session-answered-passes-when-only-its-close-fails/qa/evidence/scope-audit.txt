@@ -1,0 +1,34 @@
+ac8f310d95067bafc774b351b8761755c5b8a633 .agents/skills/roundfix/SKILL.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 .agents/skills/roundfix/references/profiles.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 .agents/skills/roundfix/references/runtime.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 CONTEXT.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 docs/references/behavior-surfaces.json: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 docs/specs/0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails/task_01.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 docs/user-guide/commands/profiles.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 docs/user-guide/configuration.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 skills/roundfix/SKILL.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 skills/roundfix/references/profiles.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 skills/roundfix/references/runtime.md: declared
+ac8f310d95067bafc774b351b8761755c5b8a633 skills/testdata/owned-skill-versions.json: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 docs/references/coverage-record.json: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 docs/specs/0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails/task_02.md: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/agent/acpx_runner_test.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/agent/fallback.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/agent/proof_close_test.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/agent/selection_assignment.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/agent/unclosed_proof_sessions.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/baselineacp/analyzer.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/baselineacp/analyzer_test.go: declared
+d2fff87cab8c2bf945ae42e35339c3d96a64c377 internal/testfixture/real_time_budget_test.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 docs/specs/0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails/task_03.md: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/agent/acpx_runner.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/agent/fallback.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/agent/selection_assignment.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/agent/unclosed_proof_session_reaper.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/agent/unclosed_proof_sessions_test.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/cli/profile_proof_close_test.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/cli/profile_proof_retry_test.go: declared
+7f7ebede48fdfbae81b01d226259a4286f9d7a81 internal/cli/profiles_validate.go: declared
+Issues: []
+Governed set: .agents/skills/roundfix/references/profiles.md, .agents/skills/roundfix/references/runtime.md, .agents/skills/roundfix/SKILL.md, skills/roundfix/SKILL.md; each is in the prior committed approved authorization.
+Authorization predates all Task commits; seeded authorization audit records task_01 and task_02. task_03 changes no governed path.

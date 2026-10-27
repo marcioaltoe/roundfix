@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0331-a-profile-proof-whose-session-answered-passes-when-only-its-close-fails
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

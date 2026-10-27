@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 20m -v -run ^TestACloseDeadlineIsNotRetriedAsASetupTimeout$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestACloseDeadlineIsNotRetriedAsASetupTimeout
+=== PAUSE TestACloseDeadlineIsNotRetriedAsASetupTimeout
+=== CONT  TestACloseDeadlineIsNotRetriedAsASetupTimeout
+    profile_proof_retry_test.go:364: close deadline: exit=2 attempts=3 response={Schema:roundfix/profiles-validate/v1 OK:false Proofs:[{Selection:{Runtime:codex Model:gpt-6.1-sol ReasoningEffort:high} Status:failed References:[{Category:backend Source:built-in InheritedFrom: Role:preferred FallbackIndex:0}] EffectiveAccessPolicy: Classification:temporary Encoding: AdapterCommand: AdapterVersion: AdvertisedModels:[] AdvertisedReasoning:[] NextAction:rerun the command when load drops, or raise defaults.profile_proof_setup_timeout; the configured profile was not shown to be wrong Error:profile proof setup timed out on 3 attempts of 30s each: close disposable Agent Session "recorded-proof": context deadline exceeded; recovery: rerun Agent Selection readiness after the Session can be closed Warning:} {Selection:{Runtime:claude Model:opus ReasoningEffort:high} Status:pending References:[{Category:backend Source:built-in InheritedFrom: Role:fallback FallbackIndex:1}] EffectiveAccessPolicy: Classification: Encoding: AdapterCommand: AdapterVersion: AdvertisedModels:[] AdvertisedReasoning:[] NextAction: Error: Warning:}] Error:profile proof failed for runtime "codex", model "gpt-6.1-sol", reasoning_effort "high"; affected categories: backend preferred source=built-in; classification: temporary; adapter error: profile proof setup timed out on 3 attempts of 30s each: close disposable Agent Session "recorded-proof": context deadline exceeded; recovery: rerun Agent Selection readiness after the Session can be closed; next: rerun the command when load drops, or raise defaults.profile_proof_setup_timeout; the configured profile was not shown to be wrong; fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none}
+--- FAIL: TestACloseDeadlineIsNotRetriedAsASetupTimeout (0.00s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 141.455625ms before and 142.058458ms after
+FAIL	roundfix/internal/cli	0.719s
+FAIL
+
+stderr:
