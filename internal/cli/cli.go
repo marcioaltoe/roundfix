@@ -24,6 +24,7 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
+	"roundfix/internal/baseline"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	roundnotify "roundfix/internal/notify"
@@ -1367,6 +1368,14 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 		fmt.Fprintf(stdout, "Installed Roundfix skill for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
 	}
 	if targetValue == "project" && projectRoot != "" {
+		updated, err := baseline.RecordInstalledOwnedSkills(ctx, projectRoot, roundskills.Names())
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
+		for _, name := range updated {
+			fmt.Fprintf(stdout, "Updated skills-lock.json computedHash: %s\n", name)
+		}
 		if err := maybeCreateProjectClaudeSkillSymlink(ctx, projectRoot, stdout, stderr); err != nil {
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 			return exitPreflight

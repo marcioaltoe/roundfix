@@ -382,6 +382,7 @@ func TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation(t *testing.T) {
 	const planDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	var restoreRequests []baseline.SkillsRestoreRequest
 	dependencies := baselineUpdateSkillsDependencies{
+		recordLock:         func(context.Context, string, []string) ([]string, error) { return nil, nil },
 		resolveProjectRoot: func(context.Context, string) (string, error) { return "/repo", nil },
 		install: func(_ context.Context, request roundskills.InstallRequest) (roundskills.InstallResult, error) {
 			if request.Target != "project" || request.ProjectDir != "/repo" {
@@ -450,6 +451,7 @@ func TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill(t *testing.T
 	const restorableSkill = "testing-boss"
 	const planDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	dependencies := baselineUpdateSkillsDependencies{
+		recordLock:         func(context.Context, string, []string) ([]string, error) { return nil, nil },
 		resolveProjectRoot: func(context.Context, string) (string, error) { return "/repo", nil },
 		install: func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error) {
 			return roundskills.InstallResult{}, nil

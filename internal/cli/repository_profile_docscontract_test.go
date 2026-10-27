@@ -91,6 +91,7 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 	result, err := runBaselineUpdateSkillsStageWith(t.Context(), baselineUpdateSkillsRequest{
 		Repository: root, ProfileID: baselineRepositoryProfileTestID,
 	}, baselineUpdateSkillsDependencies{
+		recordLock:          baseline.RecordInstalledOwnedSkills,
 		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
 		install:             skills.Install,
 		ownedNames:          skills.Names,

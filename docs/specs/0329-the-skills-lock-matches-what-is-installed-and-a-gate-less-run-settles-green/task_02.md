@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0329-the-skills-lock-matches-what-is-installed-and-a-gate-less-run-settles-green
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -109,3 +109,75 @@ catalog" (Quaestor, 2026-10-26, repeated on v0.125.0 on 2026-10-27).
 - `_prd.md` → Goals; Core Feature 1; User Experience; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 1-3; Interfaces; API Contract 1; API Contract 2; API Contract 3; Invariants 1-2; Testing Approach; Build Order 2
 - ADR-0189
+
+## Result
+
+Implemented the owned bundle's lock recording in both project install paths.
+`RecordInstalledOwnedSkills` loads through the existing safe lock loader,
+reads installed folders through `inspectRestoreTarget`, and computes their
+external skills digest. JSON value offsets preserve every byte outside the
+changed `computedHash` values, including whitespace, escapes, numeric spelling,
+extra fields, external entries and key order. Changed documents are written
+through a repository-local temporary file and renamed with the original mode.
+No lock or entry is created; unchanged locks are not written. Rewritten names
+are deduplicated and sorted.
+
+The Baseline skills stage records the lock after installation, exposes optional
+`lockUpdated` JSON and the specified text lines, and propagates recording
+failures. Project `skills install` reports rewritten names and returns exit 2
+on unsafe locks. Explicit `--dir` bypasses lock recording. Preview planning and
+Plan Digest code are unchanged.
+
+Characterization: before the implementation,
+`go test ./internal/cli -run '^TestSkillsInstallRewritesTheOwnedSkillLockHash$' -count=1`
+failed because the installed folder's computed digest differed from the stale
+hash retained in the lock.
+
+Focused checks after implementation (all exit 0):
+
+- `go test ./internal/baseline -run '^TestRecordInstalledOwnedSkills' -count=1 -v`
+  — all five tests passed, including the four required tests and coverage for
+  missing/non-string hash values and sorted multi-entry results.
+- `go test ./internal/cli -run '^(TestSkillsInstallRewritesTheOwnedSkillLockHash|TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries|TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock|TestBaselineUpdateKeepsASetupSnapshotDifference|TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile|TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation|TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill|TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills|TestBaselineUpdatePassesOfflineSourceToSkillStage|TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory)$' -count=1 -v`
+  — nine untagged tests passed. The repository-profile test is build-tagged,
+  so it was exercised separately below.
+- `go test -tags=docscontract ./internal/cli -run '^TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile$' -count=1 -v`
+  — passed.
+- `git diff --check` — no whitespace errors.
+
+Acceptance evidence:
+
+- Hashes match installed folders through both entry points; tests derive each
+  expected hash from installed files. Full-byte comparisons prove unrelated
+  lock bytes remain unchanged; the Baseline unit test also checks file mode.
+- Matching-lock and second-stage tests verify unchanged file identity and
+  modification time; both CLI paths report no rewritten name on repeat runs,
+  and empty `lockUpdated` is omitted from JSON.
+- Absent-lock/entry tests prove neither is added. Symlink, directory and
+  malformed-lock cases reject recording through both CLI paths without
+  replacing or changing the lock. The Baseline unit test additionally rejects
+  an invalid schema; explicit directory installation succeeds beside unsafe
+  locks without reading them.
+
+Dependency compatibility also required one constructor update in each of
+`internal/cli/doctor_trailing_skills_test.go` and
+`internal/cli/repository_profile_docscontract_test.go`; both consume the changed
+skills-stage dependency and retain their existing assertions. These are the
+only additional implementation paths beyond the Task's listed interfaces.
+
+The pre-existing `status: in_progress` edit was left untouched. No Task Graph
+or other Task file was edited. Declared Task Verification and repository
+Verification were not run; settlement remains Daemon-owned. No commit, push
+or Pull Request was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/doctor_trailing_skills_test.go`
+- `internal/cli/repository_profile_docscontract_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261027T182924Z_39232f1ce158fe4d`
+- Source commit: `129d114b66688394e54284a2e58445e2cb3afcee`
