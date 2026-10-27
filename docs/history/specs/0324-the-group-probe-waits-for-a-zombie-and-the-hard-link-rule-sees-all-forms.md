@@ -20,6 +20,7 @@ sources:
   - 2026-10-26-the-hard-link-rule-misses-a-dot-import-and-a-function-value.md
 regeneration: []
 promoted: []
+pull_request: "699"
 ---
 
 # The group probe waits for a zombie, and the Hard Link rule sees all forms
