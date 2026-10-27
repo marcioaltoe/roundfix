@@ -20,6 +20,7 @@ sources:
   - 2026-10-26-the-shared-build-cache-fills-the-disk-between-manual-gc-runs.md
 regeneration: []
 promoted: []
+pull_request: "695"
 ---
 
 # Runs trim the shared build cache, and doctor warns on low disk
