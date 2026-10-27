@@ -1,7 +1,7 @@
 {
   "schemaVersion": "roundfix/behavior-surfaces/v1",
   "surfaces": {
-    "command archive": "sha256:42da2d138931eb109fc99512f659e25db3bc36fd8a3c0bfc48eeb701ac31cbb6",
+    "command archive": "sha256:fcef6939af59d9b6a4d91cb605b3c05895fc79f7c4efb24deb55b9e8308d4526",
     "command attach": "sha256:14d983efd7310a0d43d8bf05b595fa3230ccdaf817f10719deb443b82950098c",
     "command baseline apply": "sha256:d981a824a83163f519d2cb23248f54ab031b5ef585f112b92860bf30e6e70886",
     "command baseline assets sync": "sha256:8ecacd9e28d8fc9babeb232d2682ed7408776acd1dffce421b82a97f30d616aa",
@@ -64,7 +64,7 @@
     "config keys": "sha256:f4795f36bd253bc9368247361be89102fff89081ac84eddd519996c60ac36e11",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
     "guide docs/user-guide/commands.md": "sha256:662eee7721d6e23889211f0f1600c4bc9af89e0fdffdefbbe107a38f482ff3fb",
-    "guide docs/user-guide/commands/archive.md": "sha256:5f1ecc87be650d73d995a7b7bd77f02080d46244626d819f680c14e6d9c80c5b",
+    "guide docs/user-guide/commands/archive.md": "sha256:397f4e5735cff30544c98d8ecdd877ed41fc3a233aa194035b6365f0f17b8dc0",
     "guide docs/user-guide/commands/attach.md": "sha256:9439b3d9af405b2891440462b7947c94a41d3e34e31569a0e0d1ff2dcd2ea1a2",
     "guide docs/user-guide/commands/baseline.md": "sha256:35cbdf22c53915fe3e65f78eff44aa1884126a2d8dd987a20926e35e3e36c4a2",
     "guide docs/user-guide/commands/cancel.md": "sha256:0dc91c42c47a2540fbd47859636324ac742622f7b009c2df04f48ec6cb735df0",

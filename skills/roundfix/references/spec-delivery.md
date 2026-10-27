@@ -85,6 +85,9 @@ payload, command-runner, and event-stream evidence.
    declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
 
+   A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+   `--qa-override` is refused for such a Spec. Every other archive precondition still applies.
+
 Failure recovery stays clean when you keep two invariants: never edit
 Run-touched files while a Run is Active, and never reap sessions or Worktrees by
 hand — let automatic orphan reclamation, `roundfix stop --force`, and the
@@ -160,6 +163,9 @@ Per Spec, in order:
    now settles the terminal `qa` Task completed, because settlement applies the same
    declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
+
+   A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+   `--qa-override` is refused for such a Spec. Every other archive precondition still applies.
 
 7. **Resolve Pull Request feedback.** This applies only when the repository's
    Review Source gives feedback on the Pull Request. Run

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0327-a-spec-commits-the-executables-it-names-and-archives-a-declined-qa-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -117,3 +117,89 @@ writes the rule into the archive usage, the Roundfix `archive` and
 - `_prd.md` → Goals 4 and 5; Core Features 4 and 5; Success Metrics 5 and 7; Glossary
 - `_techspec.md` → Current behavior 7 and 9; API Contracts 5 and 8; Declared breaks 2 and 5; Invariant 3; Testing Approach; Build Order 2
 - ADR-0154
+
+
+## Result
+
+Implemented the task_02 slice; Task status and declared Verification remain
+Daemon-owned.
+
+- Declined-graph eligibility: `Archive` checks every Task for completion, then
+  skips `ReadQAReport` for `QADeclined`. The existing record builder writes
+  `disposition: no-qa` without override fields. The new CLI tests use committed
+  temporary implement workspaces and `declareImplementQADeclined`, assert the
+  successful confirmation and record, and assert that a pending `task_02`
+  refuses with the existing Task-status diagnostic and keeps the Spec folder.
+- Override refusal: a completed declined graph returns the existing
+  already-qualifies refusal before reading QA evidence. Its CLI regression
+  checks exit 2 and byte-identical documents after refusal. Existing override
+  and ordinary QA eligibility checks also passed as focused evidence.
+- Written contract: updated archive usage and only its help pin in
+  `archive_pull_request_test.go`; added the exact decline rule and override
+  refusal to both Roundfix references, the archive guide, and the new
+  `### Declared QA decline` section outside `### QA settlement`. Added the
+  Declared QA Decline glossary entry with ADR-0154 and an `_Avoid_` line, and
+  revised Archive Command while preserving its `_Avoid_` line.
+- Generated artifacts: `make skills-sync` exited 0; the sanctioned owned-skill
+  recorder exited 0 and raised archive-spec to 0.0.16 and roundfix to 0.1.149
+  in both copies. After the final guide edit, the sanctioned Behavior Surface
+  recorder exited 0, updating only the archive command and archive guide
+  fingerprints. No mirror, version field or record was hand-edited.
+
+Focused-check evidence:
+
+- Red: `go test -count=1 -timeout 3m ./internal/cli -run
+  '^TestArchiveAcceptsADeclaredQADecline$'` exited 1 before the implementation;
+  the new test observed exit 2 and `no passing QA verdict: no QA Report found`.
+- Green: `go test -count=1 -timeout 3m ./internal/cli -run
+  'TestArchive.*DeclaredQADecline'` exited 0, exercising all three new cases.
+- `go test -count=1 -timeout 3m ./internal/cli -run
+  '^TestArchiveHelpNames'` exited 0.
+- `go test -count=1 -timeout 3m ./internal/spec -run
+  '^TestArchive(QAOverride|StillRefuses|AppliesTheOneEligibilityDecision)'`
+  exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` exited 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0.
+- A focused Python inspection confirmed the required sentence and override
+  note, byte-identical archive-spec/roundfix mirrors, and unchanged
+  `### QA settlement` bytes against HEAD. `git diff --check` exited 0.
+
+Environment limitation: the default executor refused the symlinked writable
+root, including when called with its resolved path; approved elevated
+execution was used for scoped reads, edits and checks. Automatic approval
+review rejected the repository-rule `make baseline-digests` invocation because
+it could rewrite unrelated derived files outside this Task's slice. It did
+not execute and was not retried or bypassed. The Task-required synchronization
+and recorders above did execute successfully. No Baseline source or derived
+Baseline file was changed.
+
+The Task's declared Verification and repository Verification were not run.
+No Task status, other Task file, Task Graph, Archive Record schema,
+`BuildArchiveRecord`, settle, Daemon, Makefile or CI workflow was changed;
+no commit, push or pull request was made.
+
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261027T055139Z_328aa3cffda04432/verification/batch-002-attempt-1.log`.
+The glossary phrase contract rejected an undefined phrase in the new Declared
+QA Decline definition. Revised that entry to use the existing Task term with
+type `qa`, retained the decline, completion, no-report, `no-qa`, override
+refusal and ADR-0154 semantics, and adjusted its `_Avoid_` line. No test or
+contract expectation was weakened.
+
+Focused evidence after the repair:
+
+- `go test -count=1 -timeout 3m -tags docscontract ./internal/docscontract
+  -run '^TestGlossary'` exited 0.
+- After the glossary edit, the sanctioned Behavior Surface recorder
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0.
+- The repair changed only `CONTEXT.md` and this Result evidence; the recorder
+  introduced no further fingerprint changes.
+
+The Agent did not rerun the declared Verification sequence or edit Task
+status. The Daemon owns the next Verification run and settlement.

@@ -132,8 +132,9 @@ func TestArchiveHelpNamesThePullRequestOption(t *testing.T) {
 
 Archives a Spec after verifying either every Task is completed and the newest
 QA Report has verdict: pass (or a partial verdict covered only by declared
-Unreachable Acceptance), or a recorded supersession exists for a Spec without
-a Task Graph. Writes one Archive Record and removes the committed Spec folder.
+Unreachable Acceptance), every Task is completed and the Task Graph declares
+qa: declined with a qa_reason, or a recorded supersession exists for a Spec
+without a Task Graph. Writes one Archive Record and removes the committed Spec folder.
 The removed bytes stay in Git at the record's source_revision. The destination
 is docs/history/specs/<slug>.md for the built-in root, otherwise
 <spec-root>/_archived/<slug>.md.
@@ -143,7 +144,8 @@ Refuses, writing nothing, while the Spec folder has uncommitted changes or Git i
 The QA override requires an approval source and reason, still requires every
 non-QA Task completed, preserves the QA Task and Reports unchanged, and records
 the observed QA outcome and archived HEAD. It is refused when QA already
-qualifies for normal archive.
+qualifies for normal archive. It is also refused for a Task Graph that declares
+qa: declined once every Task is completed.
 
 Options:
   --offline      With --plan, skip Archive Advice and contact no judge

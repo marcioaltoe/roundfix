@@ -1047,7 +1047,7 @@ A check of the lines a Task commit would add, the files a QA Report commit would
 _Avoid_: Redaction, post-push scan, advisory check
 
 **Archive Command**:
-The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)). The normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
+The support command that performs an Archive Relink, then retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. It warns when `source_revision` is not an ancestor of the default branch, and `--pull-request <n>` stores the delivery pull request in the record, also in a record the current branch already added ([ADR-0261](docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md)). A Declared QA Decline archives on Task completion alone, without an override. The normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict ([ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Move command, retire run, cleanup command
 
 **Source Revision Recovery**:
@@ -1388,6 +1388,10 @@ another head. A Delivery Retry's correction proof reads it for the parked
 candidate, as described in
 [ADR-0272](docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md).
 _Avoid_: round record, review history
+
+**Declared QA Decline**:
+A Task Graph's `qa: declined` with a non-empty `qa_reason`, declaring no Task of type `qa`. The Spec archives once every Task is completed, without a QA Report, with the disposition `no-qa`, and a QA Archive Override is refused for it ([ADR-0154](docs/adr/0154-a-qa-archive-override-records-user-authority-not-a-pass.md)).
+_Avoid_: QA pass, QA Archive Override, skipped QA gate
 
 **QA Archive Override**:
 An explicit user request or applicable prior authorization to archive a covered

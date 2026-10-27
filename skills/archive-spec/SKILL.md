@@ -5,15 +5,15 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.15
+  version: 0.0.16
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.15
+version: 0.0.16
 ---
 
 # Archive Spec
 
-Archive a completed spec by writing `<slug>.md` under the resolved archive root and removing `<resolved-spec-root>/<slug>/`, which stays in Git at the record's `source_revision`. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
+Archive a completed spec by writing `<slug>.md` under the resolved archive root and removing `<resolved-spec-root>/<slug>/`, which stays in Git at the record's `source_revision`. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ — every task done, QA passed when the Task Graph authors a QA gate, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
 
@@ -45,6 +45,11 @@ file, line and target; the archive leaves those files unchanged.
 
 A squash merge keeps `source_revision` only in the pull request's head ref; the
 record names that pull request in `pull_request`.
+
+### Declared QA decline
+
+A Task Graph that declares qa: declined with a non-empty qa_reason archives once every Task is completed, without a QA Report and without an override, and its Archive Record has the disposition no-qa.
+`--qa-override` is refused for such a Spec. Every other archive precondition still applies.
 
 ### QA settlement
 
