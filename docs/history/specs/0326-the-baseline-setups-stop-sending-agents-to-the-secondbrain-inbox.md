@@ -36,8 +36,9 @@ regeneration:
     outputs:
       - docs/agents/setup-context.json
 promoted: []
+pull_request: "702"
 ---
 
 # The Baseline setups stop sending agents to the Secondbrain inbox
 
-The candidate carries the corrected upstream knowledge-workspace tree in all five Setup Snapshots and this repository's installed skill and lock. All runnable checks passed, regeneration and refresh were idempotent, and seven sabotage probes confirmed the named regression detectors.
+The candidate carries the corrected upstream knowledge-workspace tree in all five Setup Snapshots and this repository's installed skill and lock.
