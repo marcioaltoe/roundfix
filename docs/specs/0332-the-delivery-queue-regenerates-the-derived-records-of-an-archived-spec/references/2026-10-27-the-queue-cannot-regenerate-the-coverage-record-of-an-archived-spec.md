@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-27
-spec: null
+spec: 0332-the-delivery-queue-regenerates-the-derived-records-of-an-archived-spec
 reason: null
 ---
 
