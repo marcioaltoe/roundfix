@@ -1,6 +1,0 @@
-Source: Roundfix child-Agent prompt: Pull Request: none open.
-Candidate: fee28084441c0594f9d5b676c19adcd7c72cedb9
-Authority: 30590e30fe0552d2aa709a6572a4a0dd6bb37ffe:docs/specs/0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty/_authorization.md
-Checks: make verify-changed passed (Daemon, exit 0)
-Unresolved threads: none because no Pull Request exists
-Merge-Ready acceptance: none yet

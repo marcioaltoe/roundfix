@@ -1,6 +1,0 @@
-$ bash -c 'out="$(go test -count=1 -timeout 20m -v -run '"'"'^(TestResolveSpecsRoot.*|TestAnAbsentSpecRootReadsLikeAnEmptyOne|TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne|TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal|TestFollowUp.*|TestDeliverPlan.*|TestHistorySanitize.*|TestSpecCheckWithoutStageIsUnchanged)$'"'"' ./internal/config ./internal/cli 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; for name in TestResolveSpecsRootOrAbsentReadsAnAbsentRootInsideTheRepository TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot TestResolveSpecsRootOrAbsentStillRefusesADanglingLink TestResolveSpecsRootOrAbsentStillRefusesAFile TestResolveSpecsRootRejectsInvalidRoots TestAnAbsentSpecRootReadsLikeAnEmptyOne TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal TestFollowUpListsEveryPendingItemOnce TestDeliverPlanReportsAnApprovedAndABlockedSpec TestHistorySanitizeLeavesACancelledRecord; do printf '"'"'%s\n'"'"' "$out" | grep -q -- "--- PASS: $name " || { printf '"'"'missing pass: %s\n'"'"' "$name" >&2; exit 1; }; done; GOOS=windows go build -buildvcs=false ./internal/config ./internal/cli'
-exit: 0
-stdout:
-
-stderr:
-
