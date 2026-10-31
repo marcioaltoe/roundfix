@@ -95,6 +95,35 @@ func followUpFilenameDate(path string) string {
 	return ""
 }
 
+var followUpMessageTypes = []struct{ Name, Class string }{
+	{"feat", "feature"},
+	{"feature", "feature"},
+	{"finding", "health"},
+	{"fix", "health"},
+	{"information", "other"},
+	{"other", "other"},
+	{"perf", "health"},
+	{"refactor", "other"},
+}
+
+func followUpTypeClass(typ, kind string) int {
+	if kind == "finding" {
+		return 2
+	}
+	for _, entry := range followUpMessageTypes {
+		if entry.Name == typ {
+			switch entry.Class {
+			case "health":
+				return 2
+			case "feature":
+				return 3
+			}
+			break
+		}
+	}
+	return 4
+}
+
 func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 	items := []followUpItem{}
 	source := followUpSourceResult("ai-memory-messages", 0, nil)
@@ -146,12 +175,20 @@ func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 		}
 		ids[message.ID] = true
 		typ := message.Type
-		switch typ {
-		case "":
+		if typ == "" {
 			typ = "message"
-		case "feat", "fix", "perf", "refactor":
-		default:
-			return fail(fmt.Errorf("invalid type %q", typ))
+		} else {
+			accepted := false
+			names := make([]string, 0, len(followUpMessageTypes))
+			for _, entry := range followUpMessageTypes {
+				names = append(names, entry.Name)
+				if entry.Name == typ {
+					accepted = true
+				}
+			}
+			if !accepted {
+				return fail(fmt.Errorf("invalid type %q; use one of %s, or omit type", typ, strings.Join(names, ", ")))
+			}
 		}
 		title := followUpFirstLine(message.Subject)
 		if title == "" {
@@ -244,7 +281,7 @@ func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir s
 }
 
 func readFollowUpSpecs(loaded roundconfig.Loaded) (string, []spec.Spec, error) {
-	root, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	root, err := roundconfig.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	if err != nil {
 		return "", nil, err
 	}

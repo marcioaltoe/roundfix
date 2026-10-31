@@ -236,7 +236,7 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	if loaded.GitRoot == "" {
 		return fail(fmt.Errorf("history sanitize requires a git repository"))
 	}
-	root, err := config.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	root, err := config.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	if err != nil {
 		return fail(err)
 	}
@@ -447,7 +447,7 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 		}
 	}
 	archiveRel := spec.ArchiveDir(spec.ArchiveKindSpec)
-	specs, err := config.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	specs, err := config.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	if err != nil {
 		printPreflightFailure("history sanitize", err, stderr)
 		return exitPreflight

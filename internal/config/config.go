@@ -291,6 +291,7 @@ type SpecsRoot struct {
 	Path        string
 	External    bool
 	BuiltInRoot bool
+	Absent      bool // No filesystem entry, with its nearest existing ancestor inside the repository.
 }
 
 type LoadOptions struct {
@@ -1244,6 +1245,28 @@ func Validate(config Config) error {
 }
 
 func ResolveSpecsRoot(loaded Loaded, repoRoot string) (SpecsRoot, error) {
+	root, err := ResolveSpecsRootOrAbsent(loaded, repoRoot)
+	if err != nil {
+		return SpecsRoot{}, err
+	}
+	if err := root.RequirePresent(); err != nil {
+		return SpecsRoot{}, err
+	}
+	return root, nil
+}
+
+// RequirePresent preserves the refusal for commands that need a named Spec.
+func (root SpecsRoot) RequirePresent() error {
+	if root.Absent {
+		return fmt.Errorf("specs.root resolved to %q, which does not exist; create the directory or update specs.root", root.Path)
+	}
+	return nil
+}
+
+// ResolveSpecsRootOrAbsent also accepts a root with no entry whose nearest
+// existing ancestor resolves inside the repository. Existing entries retain
+// the strict resolver's validation, including dangling symbolic links.
+func ResolveSpecsRootOrAbsent(loaded Loaded, repoRoot string) (SpecsRoot, error) {
 	effectiveRepoRoot := strings.TrimSpace(repoRoot)
 	if effectiveRepoRoot == "" {
 		effectiveRepoRoot = strings.TrimSpace(loaded.GitRoot)
@@ -1267,7 +1290,27 @@ func ResolveSpecsRoot(loaded Loaded, repoRoot string) (SpecsRoot, error) {
 
 	info, err := os.Stat(resolved)
 	if errors.Is(err, os.ErrNotExist) {
-		return SpecsRoot{}, fmt.Errorf("specs.root resolved to %q, which does not exist; create the directory or update specs.root", resolved)
+		absent := SpecsRoot{Path: resolved, Absent: true}
+		// Stat also reports not-exist for dangling links; only Lstat can
+		// distinguish those configuration faults from an absent root.
+		if _, entryErr := os.Lstat(resolved); errors.Is(entryErr, os.ErrNotExist) {
+			for ancestor := filepath.Dir(resolved); ; ancestor = filepath.Dir(ancestor) {
+				_, ancestorErr := os.Lstat(ancestor)
+				if ancestorErr == nil {
+					evaluatedAncestor, ancestorErr := filepath.EvalSymlinks(ancestor)
+					evaluatedRepo, repoErr := filepath.EvalSymlinks(absoluteRepoRoot)
+					if ancestorErr == nil && repoErr == nil && pathInsideOrSame(evaluatedAncestor, evaluatedRepo) {
+						absent.BuiltInRoot = filepath.Clean(resolved) == filepath.Join(absoluteRepoRoot, filepath.FromSlash(defaultSpecsRoot))
+						return absent, nil
+					}
+					break
+				}
+				if !errors.Is(ancestorErr, os.ErrNotExist) || filepath.Dir(ancestor) == ancestor {
+					break
+				}
+			}
+		}
+		return SpecsRoot{}, absent.RequirePresent()
 	}
 	if err != nil {
 		return SpecsRoot{}, fmt.Errorf("stat specs.root %q: %w", resolved, err)

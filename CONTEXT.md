@@ -253,7 +253,7 @@ The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog 
 _Avoid_: Unadoption, restore, re-triage
 
 **Spec Root**:
-The configured directory holding Spec folders, `docs/specs` by default; it may resolve outside the repository working tree, such as a knowledge workspace repository.
+The configured directory holding Spec folders, `docs/specs` by default; it may resolve outside the repository working tree, such as a knowledge workspace repository. An absent Spec Root inside the repository holds no Spec ([ADR-0348](docs/adr/0348-an-absent-spec-root-inside-the-repository-holds-no-spec.md)).
 _Avoid_: Specs directory, docs folder, knowledge base
 
 **Task**:
