@@ -27,8 +27,9 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "715"
 ---
 
 # The follow-up command takes every documented message type, an absent Spec Root counts as empty, and the follow-up guides name the JSON fields
 
-Quaestor's run of `roundfix follow-up` on v0.126.0 hit three frictions. The `--messages` file was refused with exit 2 for the types `other` and `chore`, although the reference says the rest of the types are `other` and lists no accepted value. A repository whose last Spec was archived reported its `specs` source `unavailable`, because the archive removes the Spec folder and Git keeps no empty directory, so the Spec Root is gone from every fresh checkout. And the reference named the item fields `class`, `reference` and `requester`, while the JSON carries `priority_name`, `ref` and `requested_by`.
+Quaestor's run of `roundfix follow-up` on v0.126.0 hit three frictions. The `--messages` file was refused with exit 2 for the types `other` and `chore`, although the reference says the rest of the types are `other` and lists no accepted value. A repository whose last Spec was archived reported its `specs` source `unavailable`, because the archive removes the Spec folder and Git keeps no empty directory, so the Spec Root is gone from every fresh checkout.
