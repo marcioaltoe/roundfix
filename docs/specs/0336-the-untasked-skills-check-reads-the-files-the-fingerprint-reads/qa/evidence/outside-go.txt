@@ -1,0 +1,7 @@
+Outside source: Go command documentation (cmd/go), https://pkg.go.dev/cmd/go, section Compile packages and dependencies; consulted 2026-10-31 as recorded in PRD Acceptance evidence. Offline quoted source supplied by the PRD.
+
+When compiling packages, build ignores files that end in '_test.go'.
+
+Comparison: API Contract 1 excludes exactly basenames ending in _test.go. The implemented predicate applies that exact suffix to path.Base, and the lookup and config fingerprint use it. The documentation states that these files cannot enter the compiled command whose help is fingerprinted; this supports excluding Go test sources while retaining source names such as config_testing.go and test_helpers.go. Both latter cases passed in the named map regression test.
+
+No live lookup: Spec authorization forbids network access; the required source quote is available offline, so this row is checked rather than blocked. No broader claim about testdata or generated files is inferred from this passage.

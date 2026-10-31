@@ -1,0 +1,1 @@
+Report audit: 13 terminal rows; 12 pass, 1 pre-PR environment block; all 9 coverage sources named and closed. All row inputs predeclared; history rows include commit_range. Seeded auditor fields, mechanical skips and authorization audit preserved. All evidence is UTF-8 text and resolves. No tracked-file delta; only the Spec QA directory is untracked. No Task or manifest edit.

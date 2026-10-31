@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0336-the-untasked-skills-check-reads-the-files-the-fingerprint-reads
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

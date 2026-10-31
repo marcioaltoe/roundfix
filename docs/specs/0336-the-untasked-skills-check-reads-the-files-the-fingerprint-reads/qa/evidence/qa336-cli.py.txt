@@ -1,0 +1,27 @@
+from pathlib import Path
+exec(Path('/tmp/qa336-common.py').read_text())
+log=''
+with tempfile.TemporaryDirectory(prefix='qa336-clone-') as tmp:
+ clone=Path(tmp)/'repo'
+ p,out=run(['git','clone','--local','--no-hardlinks','--quiet',str(ROOT),str(clone)]);log+=out
+ p,out=run(['git','checkout','--detach',HEAD],cwd=clone);log+=out
+ (clone/'bin').mkdir(exist_ok=True)
+ shutil.copy2(ROOT/'bin/roundfix',clone/'bin/roundfix')
+ for slug,path in [('9001-test-only','internal/config/config_test.go'),('9002-source','internal/config/config.go')]:
+  d=clone/'docs/specs'/slug;d.mkdir(parents=True)
+  (d/'_prd.md').write_text('---\nstatus: active\n---\n\n# Fixture\n')
+  (d/'_tasks.md').write_text('---\nschema: spec-tasks/v1\nspec: '+slug+'\nqa: declined\nqa_reason: disposable local QA fixture\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n')
+  (d/'task_01.md').write_text('---\ntask: task_01\nspec: '+slug+'\nstatus: pending\ntype: backend\n---\n\n# Fixture\n\n## Context\n\n- interface: `'+path+'`\n\n## Verification\n\n- `true`\n')
+ p,out=run(['git','add','docs/specs/9001-test-only','docs/specs/9002-source'],cwd=clone);log+=out
+ p,out=run(['git','-c','user.name=QA Fixture','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','--quiet','-m','test: add disposable QA fixtures'],cwd=clone);log+=out
+ for repeat in range(2):
+  for slug,want in [('9001-test-only',False),('9002-source',True)]:
+   p,out=run(['./bin/roundfix','spec','check',slug],cwd=clone,expected=None,cli=True);print(out,flush=True);log+='Fresh CLI observation '+str(repeat+1)+'\n'+out
+   lines=[x for x in (p.stdout+p.stderr).splitlines() if 'SC-SKILLS-UNTASKED' in x]
+   assert bool(lines)==want,(slug,lines)
+   if want: assert len(lines)==1 and 'config keys' in lines[0] and 'internal/config/config.go' in lines[0],lines
+   assert p.returncode in (0,1),p.returncode
+ p,out=run(['git','status','--porcelain'],cwd=clone);log+=out
+ assert not p.stdout
+log+='Temporary clone, HOME and TMPDIR directories removed. Two independent processes for each fixture confirmed the same semantic outcome.\n'
+settle('Q03','pass','cli-fixtures.txt',log,'Committed test-only fixture emitted no SC-SKILLS-UNTASKED; source fixture emitted exactly one for config keys/config.go. Fresh isolated processes confirmed both; clone removed.')

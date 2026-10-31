@@ -1,0 +1,32 @@
+from pathlib import Path
+exec(Path('/tmp/qa336-common.py').read_text())
+import io,tarfile
+specname='TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask'
+mapname='TestAGoTestFileBelongsToNoBehaviorSurface'
+bytesname='TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent'
+variants=[('Q05a','true',[(specname,'speccheck','internal/cli/example_test.go'),(mapname,'skillcoverage','internal/config/config_test.go'),(bytesname,'docscontract','config_test.go')]),('Q05b','false',[(specname,'speccheck','internal/cli/example_testing.go'),(bytesname,'docscontract','config keys')]),('Q05c','contains',[(specname,'speccheck','internal/cli/example_testing.go'),(mapname,'skillcoverage','internal/config/config_testing.go')]),('Q05d','guard',[(specname,'speccheck','internal/cli/example_test.go'),(mapname,'skillcoverage','internal/cli/run_test.go')])]
+for row,variant,cases in variants:
+ log='Each sabotage starts from git archive '+HEAD+'; no audited-worktree source mutation.\n'
+ with tempfile.TemporaryDirectory(prefix='qa336-'+variant+'-') as tmp:
+  copy=Path(tmp)
+  archive=subprocess.run(['git','archive',HEAD],cwd=ROOT,capture_output=True,check=True)
+  with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tf: tf.extractall(copy,filter='data')
+  for args in [['git','init','--quiet'],['git','add','.']]:
+   p,out=run(args,cwd=copy);log+=out
+  f=copy/'internal/skillcoverage/skillcoverage.go';src=f.read_text()
+  before='return !strings.HasSuffix(path.Base(filePath), "_test.go")'
+  if variant in ['true','false']: mutated=src.replace(before,'return '+variant)
+  elif variant=='contains': mutated=src.replace(before,'return !strings.Contains(filePath, "_test")')
+  else: mutated=src.replace('\tif !FingerprintReads(filePath) {\n\t\treturn nil\n\t}\n','',1)
+  assert src!=mutated
+  f.write_text(mutated)
+  log+='Mutation: '+variant+'\n'+mutated[mutated.index('func FingerprintReads'):mutated.index('\tvar result []Surface')]+ '\n'
+  for name,pkg,anchor in cases:
+   args=['go','test','-count=1','-timeout','20m','-v']+(['-tags','docscontract'] if pkg=='docscontract' else [])+['-run','^'+name+'$','./internal/'+pkg]
+   p,out=run(args,cwd=copy,expected=None);log+=out
+   assert p.returncode==1,(variant,name,p.returncode,out)
+   assert '--- FAIL: '+name in p.stdout,(variant,name,out)
+   assert anchor in p.stdout+p.stderr,(variant,anchor,out)
+   assert '[build failed]' not in p.stdout+p.stderr
+  log+='Every named test failed at a behavior assertion containing its required case. Archive copy removed.\n'
+ settle(row,'pass','sabotage-'+variant+'.txt',log,str(len(cases))+' required test failures observed with the specified input/diagnostic; no build failure; disposable archive removed.')

@@ -1,0 +1,81 @@
+Each sabotage starts from git archive 53a17912dee16fe3b7b8fcc67ca695c1461448ef; no audited-worktree source mutation.
+$ git init --quiet
+stdout:
+stderr:
+exit: 0
+$ git add .
+stdout:
+stderr:
+exit: 0
+Mutation: false
+func FingerprintReads(filePath string) bool {
+	return false
+}
+
+func (m Map) SurfacesForPath(filePath string) []Surface {
+	if !FingerprintReads(filePath) {
+		return nil
+	}
+
+$ go test -count=1 -timeout 20m -v -run ^TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask$ ./internal/speccheck
+stdout:
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask
+=== PAUSE TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask
+=== CONT  TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/example_test.go
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/sub/other_test.go
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/example_testing.go
+    skills_declaration_test.go:123: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/sub/other.go
+    skills_declaration_test.go:123: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/example_test.go
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/sub/other_test.go
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/example_testing.go
+    skills_declaration_test.go:123: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/sub/other.go
+    skills_declaration_test.go:123: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/example_test.go
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/sub/other_test.go
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/example_testing.go
+    skills_declaration_test.go:123: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/sub/other.go
+    skills_declaration_test.go:123: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+=== RUN   TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/test-only_Task_beside_a_source_Task
+    skills_declaration_test.go:134: SC-SKILLS-UNTASKED findings = []speccheck.Finding(nil), want 1
+--- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask (1.40s)
+    --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface (0.33s)
+        --- PASS: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/example_test.go (0.07s)
+        --- PASS: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/sub/other_test.go (0.07s)
+        --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/example_testing.go (0.07s)
+        --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/interface/internal/cli/sub/other.go (0.07s)
+    --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates (0.41s)
+        --- PASS: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/example_test.go (0.07s)
+        --- PASS: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/sub/other_test.go (0.07s)
+        --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/example_testing.go (0.09s)
+        --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/creates/internal/cli/sub/other.go (0.12s)
+    --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes (0.55s)
+        --- PASS: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/example_test.go (0.16s)
+        --- PASS: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/sub/other_test.go (0.12s)
+        --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/example_testing.go (0.07s)
+        --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/deletes/internal/cli/sub/other.go (0.08s)
+    --- FAIL: TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask/test-only_Task_beside_a_source_Task (0.12s)
+FAIL
+suiteguard: guard cost: measured 2842 paths; fingerprint took 140.345041ms before and 164.898666ms after
+FAIL	roundfix/internal/speccheck	1.979s
+FAIL
+stderr:
+exit: 1
+$ go test -count=1 -timeout 20m -v -tags docscontract -run ^TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent$ ./internal/docscontract
+stdout:
+=== RUN   TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent
+    skill_coverage_test.go:475: config keys: fingerprint = sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b, want sha256:e49c81e2d2f84e259d40e2fb8192f3bcd198b355184845d76d8f58807d0d78ee
+--- FAIL: TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent (0.01s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.364s
+FAIL
+stderr:
+exit: 1
+Every named test failed at a behavior assertion containing its required case. Archive copy removed.

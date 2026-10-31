@@ -1,0 +1,40 @@
+import os, subprocess, tempfile, shutil, json, re
+from pathlib import Path
+ROOT=Path.cwd()
+SLUG='0336-the-untasked-skills-check-reads-the-files-the-fingerprint-reads'
+SPEC=ROOT/'docs/specs'/SLUG
+QA=SPEC/'qa'
+REPORT=QA/'qa-report-2026-10-31.md'
+EVIDENCE=QA/'evidence'
+HEAD='53a17912dee16fe3b7b8fcc67ca695c1461448ef'
+BASE='cbd68ce3ad5214592c773f5ac29a1690597bdb0d'
+KEYS=['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']
+def safeenv():
+ e=os.environ.copy()
+ for k in KEYS: e.pop(k,None)
+ e.update(GOPROXY='off',GOSUMDB='off')
+ return e
+ENV=safeenv()
+def run(args,cwd=ROOT,expected=0,cli=False):
+ e=ENV.copy()
+ if cli:
+  with tempfile.TemporaryDirectory(prefix='q336-h-') as h, tempfile.TemporaryDirectory(prefix='q336-t-') as t:
+   e.update(HOME=h,TMPDIR=t)
+   p=subprocess.run(args,cwd=cwd,env=e,text=True,capture_output=True)
+ else: p=subprocess.run(args,cwd=cwd,env=e,text=True,capture_output=True)
+ transcript='$ '+' '.join(args)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'exit: '+str(p.returncode)+'\n'
+ print('exit',p.returncode,':',' '.join(args),flush=True)
+ if expected is not None and p.returncode!=expected:
+  print(transcript,flush=True)
+  raise RuntimeError('unexpected command exit')
+ return p,transcript
+def settle(row,status,filename,transcript,observation):
+ (EVIDENCE/filename).write_text(transcript)
+ t=REPORT.read_text()
+ t=t.replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+ start=t.index('### '+row+'\n')
+ end=t.find('\n### ',start+1)
+ if end<0: end=len(t)
+ part=t[start:end].replace('Observation: pending.','Observation: '+observation)
+ REPORT.write_text(t[:start]+part+t[end:])
+ print(row+': '+status+' — '+observation,flush=True)
