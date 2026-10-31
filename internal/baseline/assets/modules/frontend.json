@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "frontend",
-  "version": 6,
+  "version": 7,
   "kind": "application-surface",
   "title": "Frontend application guidance",
   "dependsOn": [
@@ -14,7 +14,6 @@
     "building-components",
     "core-web-vitals",
     "fixing-accessibility",
-    "fixing-metadata",
     "fixing-motion-performance",
     "frontend-design",
     "frontend-docs",
@@ -79,15 +78,6 @@
         {
           "id": "trigger.frontend.fixing-accessibility",
           "when": "Diagnosing and fixing frontend accessibility defects."
-        }
-      ]
-    },
-    {
-      "skill": "fixing-metadata",
-      "triggers": [
-        {
-          "id": "trigger.frontend.fixing-metadata",
-          "when": "Changing frontend metadata and document discovery behavior."
         }
       ]
     },

@@ -1,12 +1,11 @@
 {
   "schemaVersion": "setup-context-driven/skill-activations-v1",
-  "version": 2,
+  "version": 3,
   "bundles": [
     {
       "id": "bundle.debugging",
       "skills": [
         "systematic-debugging",
-        "diagnosing-bugs",
         "no-workarounds"
       ]
     },
@@ -60,7 +59,7 @@
     },
     {
       "id": "bundle.testing",
-      "skills": ["testing-boss", "tdd", "vitest"]
+      "skills": ["testing-boss", "vitest"]
     }
   ],
   "activations": [

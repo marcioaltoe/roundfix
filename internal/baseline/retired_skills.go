@@ -2,7 +2,17 @@ package baseline
 
 import "sort"
 
-var retiredSkills = map[string]struct{}{"council": {}, "the-fool": {}}
+var retiredSkills = map[string]struct{}{
+	"council":                {},
+	"design-patterns":        {},
+	"diagnosing-bugs":        {},
+	"fixing-metadata":        {},
+	"game-changing-features": {},
+	"refactoring-analysis":   {},
+	"tdd":                    {},
+	"the-fool":               {},
+	"to-prompt":              {},
+}
 
 // RetiredSkills returns the Retired Skills in lexical order.
 func RetiredSkills() []string {

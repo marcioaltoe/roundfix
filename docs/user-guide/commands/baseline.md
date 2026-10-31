@@ -346,7 +346,10 @@ unsupported format exit 2.
 ### Retired skills
 
 A Retired Skill is a skill the Baseline no longer requires although the
-upstream catalog may still list it: `council` and `the-fool` since 0.52.0.
+upstream catalog may still list it: `council` and `the-fool` since 0.52.0;
+`design-patterns`, `diagnosing-bugs`, `fixing-metadata`,
+`game-changing-features`, `refactoring-analysis`, `tdd` and `to-prompt`
+since 0.127.0, which the catalog removed.
 No module requires or dispatches it, and the asset sync drops it from every
 Setup Snapshot. `roundfix baseline update` never deletes an installed copy.
 When the repository still holds one, the preview and the applied update list
@@ -357,11 +360,34 @@ list. To remove the copies:
 ```bash
 git rm -r -q --ignore-unmatch .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool
 rm -rf .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool
+git rm -r -q --ignore-unmatch \
+  .agents/skills/design-patterns .claude/skills/design-patterns \
+  .agents/skills/diagnosing-bugs .claude/skills/diagnosing-bugs \
+  .agents/skills/fixing-metadata .claude/skills/fixing-metadata \
+  .agents/skills/game-changing-features .claude/skills/game-changing-features \
+  .agents/skills/refactoring-analysis .claude/skills/refactoring-analysis \
+  .agents/skills/tdd .claude/skills/tdd \
+  .agents/skills/to-prompt .claude/skills/to-prompt
+rm -rf \
+  .agents/skills/design-patterns .claude/skills/design-patterns \
+  .agents/skills/diagnosing-bugs .claude/skills/diagnosing-bugs \
+  .agents/skills/fixing-metadata .claude/skills/fixing-metadata \
+  .agents/skills/game-changing-features .claude/skills/game-changing-features \
+  .agents/skills/refactoring-analysis .claude/skills/refactoring-analysis \
+  .agents/skills/tdd .claude/skills/tdd \
+  .agents/skills/to-prompt .claude/skills/to-prompt
 ```
 
-Then delete the `the-fool` entry from `skills-lock.json` by hand, because the
+Then delete their entries from `skills-lock.json` by hand, because the
 skills CLI's `remove` can leave a project lock entry behind, and commit. The
 next `roundfix baseline update` lists no retired skill.
+
+### Skills that run scripts
+
+The TypeScript setup's `ui-ux-pro-max` runs its searches through Python
+scripts in its own folder, so they need Python 3; the standard library is
+enough. Without Python, the skill still applies its `SKILL.md` rules and
+its quick reference. No Baseline command checks for Python.
 
 `baseline skills reconcile` removes only lock entries proven absent from one
 source repository at the exact 40-hex commit passed with `--revision`, and only

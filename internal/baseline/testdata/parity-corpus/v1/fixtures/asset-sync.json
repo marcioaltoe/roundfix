@@ -34,7 +34,7 @@
       "id": "rust"
     },
     {
-      "digest": "5a807caaab2ad3ced10e7ff6477f48aded00aec7f2bb268938ad4e8e6e5e2d26",
+      "digest": "ac828e0cb7d8676d3a77bc21d9123f31895abf618ee36da880d11e5636ab1844",
       "id": "typescript"
     }
   ],
@@ -1587,7 +1587,6 @@
             "id": "bundle.debugging",
             "skills": [
               "systematic-debugging",
-              "diagnosing-bugs",
               "no-workarounds"
             ]
           },
@@ -1660,12 +1659,11 @@
             "id": "bundle.testing",
             "skills": [
               "testing-boss",
-              "tdd",
               "vitest"
             ]
           }
         ],
-        "digest": "5a807caaab2ad3ced10e7ff6477f48aded00aec7f2bb268938ad4e8e6e5e2d26",
+        "digest": "ac828e0cb7d8676d3a77bc21d9123f31895abf618ee36da880d11e5636ab1844",
         "id": "typescript",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1829,17 +1827,6 @@
               "type": "github"
             },
             "treeDigest": "3dc664749884a9aaaa1820f75faf3ccfa91222dd0b37f5531e75ef22ade86b5c"
-          },
-          {
-            "name": "design-patterns",
-            "path": "skills/03-engineering-design/design-patterns",
-            "source": {
-              "path": "skills/03-engineering-design/design-patterns",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "48dfe2cec2018d7147de7cc4d249573f0e6fbc51ac044dfa16bdecbb6124adff"
           },
           {
             "name": "domain-modeling",
@@ -2263,17 +2250,6 @@
             "treeDigest": "7069d03166926807f5ef2f570423a65e20ad0df70b9b31ff366677f70e7d32eb"
           },
           {
-            "name": "tdd",
-            "path": "skills/05-implementation-loop/tdd",
-            "source": {
-              "path": "skills/05-implementation-loop/tdd",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "cbed0e0d59f27d4b4dc4136a8f686d78e0e2e3fd0fe837a9b585b8907da0c605"
-          },
-          {
             "name": "testing-boss",
             "path": "skills/05-implementation-loop/testing-boss",
             "source": {
@@ -2384,17 +2360,6 @@
             "treeDigest": "de5f4717439a9282dda26d1c3e8337068bc9ca0a4ad194578da456b85520113b"
           },
           {
-            "name": "diagnosing-bugs",
-            "path": "skills/06-review-repair/diagnosing-bugs",
-            "source": {
-              "path": "skills/06-review-repair/diagnosing-bugs",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "276429c91fdc0cc8eda8a57df17a54a7abfe43edf991fa4658a48ed0f60a05ac"
-          },
-          {
             "name": "fixing-accessibility",
             "path": "skills/06-review-repair/fixing-accessibility",
             "source": {
@@ -2404,17 +2369,6 @@
               "type": "github"
             },
             "treeDigest": "d8c9f5a14d34d2184e9a54c6f0d6b929568d61ac263bd86d938e763b2c708f74"
-          },
-          {
-            "name": "fixing-metadata",
-            "path": "skills/06-review-repair/fixing-metadata",
-            "source": {
-              "path": "skills/06-review-repair/fixing-metadata",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "151f1bae90d9f81567c4d292ae371928f88281772e33461d10fa47cdaa6e4008"
           },
           {
             "name": "fixing-motion-performance",
@@ -2715,17 +2669,6 @@
             "treeDigest": "c6a0946e90b5048edfb1abbd48301f7fa461449ff8d7f010937cf242fba16920"
           },
           {
-            "name": "game-changing-features",
-            "path": "skills/01-discovery/game-changing-features",
-            "source": {
-              "path": "skills/01-discovery/game-changing-features",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "d573f05dfe567c987e94cff11af2543a380b4227c79ec412bd8174c2c3918252"
-          },
-          {
             "name": "humanizer",
             "path": "skills/07-evidence-delivery/humanizer",
             "source": {
@@ -2735,17 +2678,6 @@
               "type": "github"
             },
             "treeDigest": "71b14520e8aca010d132de234df298502c2c9d91bc5a5c9d225cd0c84b5f9e5e"
-          },
-          {
-            "name": "refactoring-analysis",
-            "path": "skills/06-review-repair/refactoring-analysis",
-            "source": {
-              "path": "skills/06-review-repair/refactoring-analysis",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "cc7137c53d51fea605c0be017cf6eecdb72add7405e5c3c9f327dbc26d4572fa"
           },
           {
             "minimumVersion": "0.0.2",
@@ -2764,17 +2696,6 @@
               "name": "roundfix",
               "type": "repo"
             }
-          },
-          {
-            "name": "to-prompt",
-            "path": "skills/05-implementation-loop/to-prompt",
-            "source": {
-              "path": "skills/05-implementation-loop/to-prompt",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "96dcc3628f63b0b5298f3b33557764c607b120234f9e6f943c4425b1a97e140f"
           },
           {
             "name": "writing-clearly-and-concisely",

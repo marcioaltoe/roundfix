@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 8,
+  "version": 9,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -13,18 +13,13 @@
     "business-storyteller",
     "clean-code",
     "codebase-design",
-    "diagnosing-bugs",
     "docker",
     "app-renderer-systems",
     "find-rules",
     "find-skills",
-    "game-changing-features",
     "git-rebase",
     "humanizer",
     "onioncry",
-    "refactoring-analysis",
-    "tdd",
-    "to-prompt",
     "typescript-advanced",
     "vite",
     "vitest",
@@ -69,15 +64,6 @@
       ]
     },
     {
-      "skill": "diagnosing-bugs",
-      "triggers": [
-        {
-          "id": "trigger.typescript.diagnosing-bugs",
-          "when": "Diagnosing TypeScript or Bun defects and unexpected behavior."
-        }
-      ]
-    },
-    {
       "skill": "docker",
       "triggers": [
         {
@@ -114,15 +100,6 @@
       ]
     },
     {
-      "skill": "game-changing-features",
-      "triggers": [
-        {
-          "id": "trigger.typescript.game-changing-features",
-          "when": "Exploring high-impact product opportunities for the TypeScript application."
-        }
-      ]
-    },
-    {
       "skill": "git-rebase",
       "triggers": [
         {
@@ -146,33 +123,6 @@
         {
           "id": "trigger.typescript.onioncry",
           "when": "Auditing architectural dependency direction in the TypeScript repository."
-        }
-      ]
-    },
-    {
-      "skill": "refactoring-analysis",
-      "triggers": [
-        {
-          "id": "trigger.typescript.refactoring-analysis",
-          "when": "Planning a behavior-preserving TypeScript refactor."
-        }
-      ]
-    },
-    {
-      "skill": "tdd",
-      "triggers": [
-        {
-          "id": "trigger.typescript.tdd",
-          "when": "Developing TypeScript behavior through a red-green-refactor loop."
-        }
-      ]
-    },
-    {
-      "skill": "to-prompt",
-      "triggers": [
-        {
-          "id": "trigger.typescript.to-prompt",
-          "when": "Converting TypeScript repository context into a bounded implementation prompt."
         }
       ]
     },

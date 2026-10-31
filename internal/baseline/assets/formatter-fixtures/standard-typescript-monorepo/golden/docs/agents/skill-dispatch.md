@@ -19,7 +19,7 @@ may add stricter triggers.
 Exact activation bundles:
 
 - `trigger.debugging`: Diagnosing or fixing unexpected behavior.
-  - `bundle.debugging`: `systematic-debugging`, `diagnosing-bugs`, `no-workarounds`
+  - `bundle.debugging`: `systematic-debugging`, `no-workarounds`
 - `trigger.delivery`: Preparing commits or pull request delivery.
   - `bundle.delivery`: `conventional-commits`, `github-pr-workflow`
 - `trigger.frontend.react-feature`: Building or reviewing a React feature.
@@ -37,7 +37,7 @@ Exact activation bundles:
 - `trigger.security`: Reviewing authentication, authorization, data, or trust-boundary security.
   - `bundle.security`: `security-best-practices`, `security-threat-model`
 - `trigger.testing`: Writing or changing TypeScript tests.
-  - `bundle.testing`: `testing-boss`, `tdd`, `vitest`
+  - `bundle.testing`: `testing-boss`, `vitest`
 
 Individual skill triggers:
 
@@ -89,10 +89,6 @@ Individual skill triggers:
   - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
 - `data-sync-workflows`:
   - `trigger.backend.data-sync-workflows`: Designing backend data synchronization and reconciliation workflows.
-- `design-patterns`:
-  - `trigger.backend.design-patterns`: Selecting or applying backend design patterns.
-- `diagnosing-bugs`:
-  - `trigger.typescript.diagnosing-bugs`: Diagnosing TypeScript or Bun defects and unexpected behavior.
 - `docker`:
   - `trigger.typescript.docker`: Changing container packaging or local container workflows for the TypeScript stack.
 - `domain-modeling`:
@@ -111,16 +107,12 @@ Individual skill triggers:
   - `trigger.typescript.find-skills`: Discovering applicable skills for TypeScript repository work.
 - `fixing-accessibility`:
   - `trigger.frontend.fixing-accessibility`: Diagnosing and fixing frontend accessibility defects.
-- `fixing-metadata`:
-  - `trigger.frontend.fixing-metadata`: Changing frontend metadata and document discovery behavior.
 - `fixing-motion-performance`:
   - `trigger.frontend.fixing-motion-performance`: Diagnosing and fixing frontend motion performance.
 - `frontend-design`:
   - `trigger.frontend.frontend-design`: Designing or implementing frontend visual behavior.
 - `frontend-docs`:
   - `trigger.frontend.frontend-docs`: Writing frontend component or interaction documentation.
-- `game-changing-features`:
-  - `trigger.typescript.game-changing-features`: Exploring high-impact product opportunities for the TypeScript application.
 - `git-rebase`:
   - `trigger.typescript.git-rebase`: Rebasing TypeScript repository work when explicitly authorized.
 - `github-pr-workflow`:
@@ -172,8 +164,6 @@ Individual skill triggers:
   - `trigger.frontend.react-composition-patterns`: Designing React component composition and reuse.
 - `react-hook-form-zod`:
   - `trigger.frontend.react-hook-form-zod`: Building validated React forms with React Hook Form and Zod.
-- `refactoring-analysis`:
-  - `trigger.typescript.refactoring-analysis`: Planning a behavior-preserving TypeScript refactor.
 - `roundfix`:
   - `trigger.autonomous-work.roundfix`: Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output.
 - `security-best-practices`:
@@ -198,14 +188,10 @@ Individual skill triggers:
   - `trigger.frontend.tanstack-router`: Changing frontend routes and navigation with TanStack Router.
 - `tanstack-table`:
   - `trigger.frontend.tanstack-table`: Building or changing data tables with TanStack Table.
-- `tdd`:
-  - `trigger.typescript.tdd`: Developing TypeScript behavior through a red-green-refactor loop.
 - `tech-writer`:
   - `trigger.core.tech-writer`: Writing or revising technical documentation, Specs, findings, or delivery notes.
 - `testing-boss`:
   - `trigger.core.testing-boss`: Writing, changing, or reviewing tests and fixtures.
-- `to-prompt`:
-  - `trigger.typescript.to-prompt`: Converting TypeScript repository context into a bounded implementation prompt.
 - `turborepo`:
   - `trigger.monorepo.turborepo`: Changing Turborepo tasks, caching, package boundaries, or workspace orchestration.
 - `typesafe-ai`:

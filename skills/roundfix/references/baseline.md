@@ -98,6 +98,14 @@ semantic classification and preserves every non-managed byte exactly.
 `Skills retired` (`skills.retired` in JSON) with the paths to delete; it never
 deletes the copy and never changes the update's state.
 
+The Retired Skills are `council` and `the-fool` since 0.52.0, and
+`design-patterns`, `diagnosing-bugs`, `fixing-metadata`,
+`game-changing-features`, `refactoring-analysis`, `tdd` and `to-prompt`
+since 0.127.0, which the catalog removed. The TypeScript setup's
+`ui-ux-pro-max` searches need Python 3; the standard library is enough.
+Without Python, the skill still applies its `SKILL.md` rules and quick
+reference. No Baseline command checks for Python.
+
 When a plan includes History Relocations, it will report each tracked file whose
 citations its History Relocations would break. These warnings use
 `baseline.history.citation` for each citing file,
