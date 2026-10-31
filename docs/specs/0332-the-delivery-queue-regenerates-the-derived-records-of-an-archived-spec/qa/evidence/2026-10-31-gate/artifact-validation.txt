@@ -1,6 +1,0 @@
-Report closure: partial, closed; 11 terminal rows, 9 pass, 1 environment block, 1 declared block, no failures/skips/pending.
-Every row has fixed typed inputs; history-dependent rows name commit_range.
-Auditor identity, authorization audit table and all three mechanical skips preserved.
-Evidence links resolve; all evidence is text with no NUL bytes.
-Repository Secret Pattern expression scan: no matches (credential assignments additionally require both letter and digit).
-Only the seeded report was updated; no sibling report created.

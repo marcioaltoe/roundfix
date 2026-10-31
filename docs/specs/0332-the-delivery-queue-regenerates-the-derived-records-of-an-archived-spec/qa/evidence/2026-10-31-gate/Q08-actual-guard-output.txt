@@ -1,4 +1,0 @@
-coverage command exit: 1
-suiteguard: guard cost: measured 1860 paths; fingerprint took 126.858375ms before and 94.8355ms after
-suiteguard: repository boundary violated:
-suiteguard: modified: docs/references/coverage-record.json

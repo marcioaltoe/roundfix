@@ -1,5 +1,0 @@
-$ rg -n DeclareSanctionedRegeneration internal/config/
-exit: 1
-elapsed_seconds: 0.006
-stdout:
-stderr:

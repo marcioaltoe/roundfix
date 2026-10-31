@@ -1,9 +1,0 @@
-Tracing shim synchronously delegated each exact configured command to /bin/sh. Only command and exit status recorded.
-{"command": "go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests", "exit": 0}
-{"command": "go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests", "exit": 0}
-{"command": "go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests", "exit": 0}
-{"command": "go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text", "exit": 0}
-{"command": "go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions", "exit": 0}
-{"command": "go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1", "exit": 0}
-{"command": "go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage", "exit": 0}
-{"command": "go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1", "exit": 1}

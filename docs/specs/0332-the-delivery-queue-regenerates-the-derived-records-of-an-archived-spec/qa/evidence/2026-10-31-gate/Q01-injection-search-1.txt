@@ -1,5 +1,0 @@
-$ rg -n --hidden regeneration_fixture_test.go --glob '!.git/**' --glob '!docs/history/**' --glob '!docs/specs/0332-the-delivery-queue-regenerates-the-derived-records-of-an-archived-spec/**' .
-exit: 1
-elapsed_seconds: 0.059
-stdout:
-stderr:
