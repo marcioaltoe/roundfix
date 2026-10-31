@@ -34,6 +34,7 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "716"
 ---
 
 # The template's tooling row passes the Spec Check, and a Wave collision is refused before the Run
