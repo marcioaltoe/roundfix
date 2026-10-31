@@ -115,6 +115,14 @@ lists, and `baseline.history.citation.unscanned` when a tracked file could not
 be scanned. The Plan Digest covers these warnings. Planning never rewrites a
 citation, and apply writes the same files.
 
+An absent Spec Root inside the repository reads as an empty one. A root is
+absent when its resolved path has no filesystem entry and its nearest existing ancestor, after symbolic links are evaluated, lies inside
+or at the evaluated repository root.
+The history plan of `baseline update` uses the same Spec Root and archive
+root as for an empty root.
+A named Spec, a dangling link, a file, an unreadable root or a missing
+external root is still refused (ADR-0348).
+
 The history plan names every file it will remove before approval. Each pending
 unit carries sorted repository-relative `paths` in JSON: the files a removal
 or conversion deletes, the Archive Records `record-links` rewrites, or the live pages `live-links`

@@ -8,6 +8,13 @@ emitting a QA verdict:
 roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
 ```
 
+An absent Spec Root inside the repository reads as an empty one. A root is
+absent when its resolved path has no filesystem entry and its nearest existing ancestor, after symbolic links are evaluated, lies inside
+or at the evaluated repository root.
+`spec check` without slugs checks no Spec in that state.
+A named Spec, a dangling link, a file, an unreadable root or a missing
+external root is still refused (ADR-0348).
+
 With no slug, the command checks every active Spec in the Spec Root. Findings
 are `error` when the check locates both sides of a contradiction and `gap` when
 it surfaces a candidate it cannot settle; `--strict` promotes gaps to errors.

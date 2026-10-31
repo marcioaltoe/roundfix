@@ -721,6 +721,17 @@ Spec artifacts. When the resolved root is outside the repository working tree
 after symlink evaluation, Spec artifacts are external and are never staged
 into code-repository commits.
 
+An absent Spec Root inside the repository reads as an empty one. A root is
+absent when its resolved path has no filesystem entry and its nearest existing ancestor, after symbolic links are evaluated, lies inside
+or at the evaluated repository root.
+The follow-up list and status views, `spec check` and `deliver plan` without
+slugs, `deliver status`, `stop` and `resume`, `history sanitize` (plan and
+apply), and the history plan of `baseline update` read it as empty.
+A named Spec, a dangling link, a file, an unreadable root or a missing
+external root is still refused. Archive and Cancel keep removing only the
+Spec folder and write no placeholder
+([ADR-0348](../adr/0348-an-absent-spec-root-inside-the-repository-holds-no-spec.md)).
+
 ## Worktrees and bootstrap
 
 Spec Runs execute in Run Worktrees; concurrently executing Tasks get sibling

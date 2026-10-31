@@ -123,6 +123,11 @@ func runDeliverPlan(ctx context.Context, args []string, stdout, stderr io.Writer
 	}
 
 	slugs := request.slugs
+	if len(slugs) > 0 {
+		if err := specsRoot.RequirePresent(); err != nil {
+			return printDeliverFailure("plan", err, stderr)
+		}
+	}
 	if len(slugs) == 0 {
 		active, skipped, listErr := spec.ListActiveDetailed(specsRoot.Path)
 		if listErr != nil {

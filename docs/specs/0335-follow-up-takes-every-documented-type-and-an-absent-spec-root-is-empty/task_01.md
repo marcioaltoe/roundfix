@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -148,3 +148,103 @@ empty Spec Root).
 - `_techspec.md` → Current behavior 1-2; Interfaces; API Contracts 1-3; Invariants 1-4; Testing Approach; Build Order 1
 - ADR-0348
 - [Adopted Backlog Entry](references/2026-10-30-the-follow-up-command-rejects-documented-message-types-and-an-empty-spec-root.md)
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Implemented the absent-root value and opt-in resolver; the strict resolver
+still returns its original values or refusal bytes. Only the enumerating
+readers use the new resolver, and the four named-Spec entry points require
+presence. Archive, Cancel and all other strict callers are unchanged.
+
+Acceptance evidence:
+
+- Enumerating commands: `TestAnAbsentSpecRootReadsLikeAnEmptyOne` compares
+  stdout, stderr and exit code in the same repository before and after
+  creating its empty Spec Root. All six subtests pass; both follow-up views
+  assert `specs` is `checked` with count 0. `deliver status` preserves exit 2
+  and its no-Delivery-Queue diagnostic. The history case includes committed
+  retired history, exercising the history-plan reader as well as command
+  loading. `TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne`
+  passes, comparing the public report and resolved Spec/archive paths.
+- Refusals: all four required resolver tests and existing `TestResolveSpecsRoot*`
+  tests pass. Cases cover missing built-in and custom roots, missing `docs`,
+  absolute internal roots, repository and ancestor symlinks, an external
+  ancestor, dangling root/ancestor links and a file. The strict resolver and
+  `RequirePresent` retain the exact missing-root error. The named-Spec test
+  passes for `spec check`, `deliver plan`, `deliver start` and `deliver retry`,
+  asserting exit 2, empty stdout and the full stderr transcript.
+- Documentation: the configuration guide and all four canonical references
+  state the required sentence, absence boundary and preserved refusals with
+  ADR-0348. The Spec Root glossary entry cites ADR-0348. Glossary and user-guide
+  link checks pass. Canonical/mirror equality was checked after synchronization;
+  the sanctioned recorder raised both Roundfix version fields to `0.1.162`.
+
+Characterization before implementation:
+
+- `go test ./internal/cli -run '^TestAnAbsentSpecRootReadsLikeAnEmptyOne$' -count=1 -v`
+  exited 1 on the original production code. Both follow-up views reported
+  `specs` as `unavailable`; `spec check`, `deliver plan`, `deliver status` and
+  `history sanitize` exited 2 with `which does not exist`. The transcript was
+  captured in `/tmp/roundfix-0335-absent-red.log`.
+
+Focused implementation checks (each exited 0):
+
+- `go test ./internal/config ./internal/cli -run '^(TestResolveSpecsRoot|TestAnAbsentSpecRoot|TestBaselineUpdateHistoryPlansAnAbsent|TestANamedSpecInAnAbsent)' -count=1 -v`
+- `go test ./internal/cli -run '^(TestAnAbsentSpecRootReadsLikeAnEmptyOne|TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne|TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal|TestFollowUpListsEveryPendingItemOnce|TestDeliverPlanReportsAnApprovedAndABlockedSpec|TestHistorySanitizeLeavesACancelledRecord|TestSpecCheckWithoutStageIsUnchanged)$' -count=1`
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce|TestUserGuideLinksResolve)$' -count=1`
+- Ten `go test -overlay <temporary overlay> <changed package> -run <owning regression test> -count=1`
+  sabotage probes each exited 1 at the expected behavioral assertion, with no
+  compilation failures. They removed absence acceptance, external-root refusal,
+  dangling-link refusal, file refusal and named-Spec presence enforcement, or
+  restored the strict resolver independently in each of the five enumerating
+  reader files. Temporary overlays left the repository sources untouched;
+  transcripts are `/tmp/roundfix-0335-mutation-*.log`.
+
+Required regeneration (each exited 0):
+
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+- `make baseline-digests` — repository-required regeneration reported
+  `changed:false`; no Baseline artifact changed.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — last regeneration, after the final guide edit.
+
+Task status remains Daemon-owned. The declared Verification, repository gates
+and Windows build were not run; they remain for Daemon settlement. No commits,
+pushes, Pull Requests, Task Graph edits or other Task-file edits were made.
+
+
+### Verification feedback repair
+
+Inspected the Daemon's attempt-1 diagnostic artifact. Its repository check
+identified one existing CLI test whose fixture treated a missing internal
+Spec Root as unreadable, contrary to ADR-0348. A focused reproduction with
+`go test ./internal/cli -run '^TestRunSpecCheckUnreadableRootIsUsageError$' -count=1 -v`
+exited 1 before the repair.
+
+Changed only that fixture in `internal/cli/spec_check_test.go` to a missing
+external Spec Root. The test retains its name and every assertion: exit 2,
+empty stdout and a diagnostic naming the missing root. This related existing
+test is an additional ordinary code path changed within Task 01's contract
+migration; no production code or generated record changed in this repair.
+The new absent-root regression continues to cover the internal-root behavior.
+
+Focused check:
+`go test ./internal/cli -run '^(TestRunSpecCheckUnreadableRootIsUsageError|TestAnAbsentSpecRootReadsLikeAnEmptyOne|TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne|TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal|TestRunSpecCheckWithoutSlugChecksEveryActiveSpec|TestRunSpecCheckUnknownSlugIsUsageError)$' -count=1 -v`
+exited 0. All six selected tests and their subtests passed, covering the
+external-root refusal, internal absent/empty equivalence, Baseline history
+plan, all four named-command refusals and existing Spec-check enumeration.
+`git diff --check` also exited 0.
+
+The Agent did not rerun `make verify-changed`, the declared Verification or
+any repository gate. Task status is unchanged; the Daemon owns the next full
+Verification sequence and settlement.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/spec_check_test.go`

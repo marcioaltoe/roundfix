@@ -218,6 +218,15 @@ archives before Archive Records. It is a dry run unless invoked with
 next batch's candidate files, and `--promote <path>` copies an explicitly
 selected file to `docs/references/` while applying a batch.
 
+An absent Spec Root inside the repository reads as an empty one. A root is
+absent when its resolved path has no filesystem entry and its nearest existing ancestor, after symbolic links are evaluated, lies inside
+or at the evaluated repository root.
+`history sanitize` plans and applies with the same Spec Root and archive
+root as for an empty root. Archive and Cancel still remove only the Spec
+folder and write no placeholder.
+A named Spec, a dangling link, a file, an unreadable root or a missing
+external root is still refused (ADR-0348).
+
 The command converts each Legacy Archive Folder into an Archive Record,
 removes retired Findings, Rollups, Backlog Entries, ADRs, Review Artifacts and
 handoffs, including every Reduced History Entry left by an older version. A folder without a QA Report,

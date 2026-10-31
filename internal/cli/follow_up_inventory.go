@@ -244,7 +244,7 @@ func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir s
 }
 
 func readFollowUpSpecs(loaded roundconfig.Loaded) (string, []spec.Spec, error) {
-	root, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	root, err := roundconfig.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	if err != nil {
 		return "", nil, err
 	}
