@@ -2,6 +2,39 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.127.0] - 2026-10-31
+
+### Runs load the skills the dispatch selects, and the Baseline follows the curated catalog
+
+- **Every Task and QA prompt of a repository with a skill dispatch guide names the guide and tells the Agent to load only the skills that match its work**; `implement-task` and `qa-gate` carry the same rule, the Spec Context Bundle lists the guide, and a change to the guide refuses carry-forward. An implementation Agent names what it loaded on a `Skills loaded:` line in its Result (the Agent's own claim; the Daemon does not check it).
+- **The Setup Snapshots follow catalog commit `86df860`.** `design-patterns`, `diagnosing-bugs`, `fixing-metadata`, `game-changing-features`, `refactoring-analysis`, `tdd` and `to-prompt` are Retired Skills: no module, trigger, bundle or snapshot names them, and `baseline update` removes them from an adopter.
+- **The dispatch starts person-started skills only when the person asks** (`architectural-analysis`, `grill-with-docs`, `humanizer`, `writing-clearly-and-concisely`, `web-design-guidelines`), keeps `wcag-audit-patterns` for a formal audit, and gives product UI (`interface-design`) and public pages (`frontend-design`) separate bundles.
+- **`implement-spec` is retired.** The binary ships twelve owned skills; the Roundfix skill keeps the two delivery rules only `implement-spec` stated.
+
+### The Delivery Queue resolves derived-record conflicts after the archive
+
+- **A Pull Request conflict only in derived records resolves in the queue after the item is archived, the coverage record included.** The sanction is the delivered item's own Archive Record; without it the write is still refused and the item is left unchanged.
+
+### The template's tooling row passes, and a Wave collision is refused before the Run
+
+- **The templates' no-mutation Tooling authority row passes `roundfix spec check --strict`** when it cites a record whose `paths` is `[]` and ends with `bounded files: none`; a row citing a grant with Governed Paths, or declaring a mutation, without bounded files is still refused with `SC-TOOLING-UNBOUNDED` (reported by quaestor).
+- **A completed Task never forms a Wave collision** in the Spec Check, the QA gate's precondition, the settlement checks or the Daemon's pre-dispatch refusal; a Task reopened to `pending` counts again (reported by quaestor).
+- **`roundfix implement` refuses a Wave collision before it records a Run** when the Task Capacity is above 1, exiting `2` with each pair, its shared files and the `needs` edge that orders it.
+
+### Follow-up takes every documented message type, and an archived-out Spec Root is healthy
+
+- **`roundfix follow-up --messages` accepts an empty `type` or one of `feat`, `feature`, `finding`, `fix`, `information`, `other`, `perf` and `refactor`**, and a refused type's error lists them (reported by quaestor).
+- **An absent Spec Root inside the repository counts as an empty one** in every command that enumerates Specs: the follow-up `specs` source is `checked` with count `0`, and `spec check`, `deliver plan`, `deliver status`, `stop`, `resume`, `history sanitize` and `baseline update` behave as for an empty root. A named Spec, a broken link or a missing external root is still refused (reported by quaestor).
+- **The follow-up guide and the Roundfix skill name the JSON fields** of the list and status reports and the accepted message types, checked against the command by a contract test.
+
+### The untasked-skills check reads the files the fingerprint reads
+
+- **`SC-SKILLS-UNTASKED` no longer asks for a skills Task when a Task changes only a Go test file** under a covered Behavior Surface; the check and the skill coverage fingerprint share one predicate. A source file still triggers it.
+
+### Tests
+
+- The Roundfix skill is at version 0.1.165.
+
 ## [0.126.0] - 2026-10-27
 
 ### The skills lock describes what is installed
