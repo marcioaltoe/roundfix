@@ -1,18 +1,24 @@
 {
   "schemaVersion": "setup-context-driven/skill-activations-v1",
-  "version": 2,
+  "version": 3,
   "bundles": [
     {
       "id": "bundle.debugging",
       "skills": [
         "systematic-debugging",
-        "diagnosing-bugs",
         "no-workarounds"
       ]
     },
     {
       "id": "bundle.delivery",
       "skills": ["conventional-commits", "github-pr-workflow"]
+    },
+    {
+      "id": "bundle.frontend-public-pages",
+      "skills": [
+        "frontend-design",
+        "fixing-accessibility"
+      ]
     },
     {
       "id": "bundle.frontend-react",
@@ -25,12 +31,9 @@
     {
       "id": "bundle.frontend-ui-quality",
       "skills": [
-        "frontend-design",
         "interaction-design",
         "interface-design",
-        "fixing-accessibility",
-        "wcag-audit-patterns",
-        "web-design-guidelines"
+        "fixing-accessibility"
       ]
     },
     {
@@ -60,7 +63,7 @@
     },
     {
       "id": "bundle.testing",
-      "skills": ["testing-boss", "tdd", "vitest"]
+      "skills": ["testing-boss", "vitest"]
     }
   ],
   "activations": [
@@ -77,6 +80,12 @@
       "bundle": "bundle.delivery"
     },
     {
+      "id": "trigger.frontend.public-pages",
+      "owner": "frontend",
+      "when": "Designing or reviewing marketing or other public pages.",
+      "bundle": "bundle.frontend-public-pages"
+    },
+    {
       "id": "trigger.frontend.react-feature",
       "owner": "frontend",
       "when": "Building or reviewing a React feature.",
@@ -85,7 +94,7 @@
     {
       "id": "trigger.frontend.ui-quality",
       "owner": "frontend",
-      "when": "Designing or reviewing frontend UI and accessibility.",
+      "when": "Designing or reviewing product UI: application screens, forms, and dashboards.",
       "bundle": "bundle.frontend-ui-quality"
     },
     {

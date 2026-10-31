@@ -101,10 +101,10 @@
     },
     "grilling": {
       "source": "marcioaltoe/skills",
-      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
       "sourceType": "github",
       "skillPath": "skills/01-discovery/grilling/SKILL.md",
-      "computedHash": "ef1641a2047b71b60f1942cd35efb47d3afc9d584dff5a0b01f8c7db923aaa08"
+      "computedHash": "e40cc1d348f6d935e28f1e24474302d7368f0a400429271a43b35fe154891dc5"
     },
     "knowledge-workspace": {
       "source": "marcioaltoe/skills",
@@ -143,17 +143,17 @@
     },
     "tui-design": {
       "source": "marcioaltoe/skills",
-      "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+      "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
       "sourceType": "github",
       "skillPath": "skills/03-engineering-design/tui-design/SKILL.md",
-      "computedHash": "18309915f2d0a247fd727d207a77bcf6847fb428af37ab3996e0a94bb999d455"
+      "computedHash": "df5eb80ddb1b62b27a53eacf24634a62754ea40a655cf74eb5299b26f3e5cebe"
     },
     "context7-cli": {
       "source": "marcioaltoe/skills",
-      "ref": "65d5f365cace27c4b468db1723213723b10c870b",
+      "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
       "sourceType": "github",
       "skillPath": "skills/01-discovery/context7-cli/SKILL.md",
-      "computedHash": "93a9bd051b94a55b0e69054ab30bdc4343102872f69158bf8334fde578e7cf99"
+      "computedHash": "5b7e4068e8995830733e92088fcf58d72181c279e648e22e53207e5628b94feb"
     },
     "golang-dependency-management": {
       "source": "marcioaltoe/skills",

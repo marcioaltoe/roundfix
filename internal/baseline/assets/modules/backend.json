@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v2",
   "id": "backend",
-  "version": 6,
+  "version": 7,
   "kind": "application-surface",
   "title": "Backend application guidance",
   "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": [
@@ -10,7 +10,6 @@
     "better-auth",
     "clean-architecture",
     "data-sync-workflows",
-    "design-patterns",
     "drizzle-orm",
     "external-api-adapters",
     "hono",
@@ -67,15 +66,6 @@
         {
           "id": "trigger.backend.data-sync-workflows",
           "when": "Designing backend data synchronization and reconciliation workflows."
-        }
-      ]
-    },
-    {
-      "skill": "design-patterns",
-      "triggers": [
-        {
-          "id": "trigger.backend.design-patterns",
-          "when": "Selecting or applying backend design patterns."
         }
       ]
     },

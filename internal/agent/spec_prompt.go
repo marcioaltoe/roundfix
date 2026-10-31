@@ -33,6 +33,8 @@ type SpecContextBundle struct {
 // follow for one Spec Task. Every invariant lives in this one constant; the
 // dedicated authorial-Skill Task aligns the protected implement-task skill.
 const taskExecutionInvariants = `Execution invariants:
+- Before editing, when the Spec Context Bundle lists docs/agents/skill-dispatch.md, read it, select only the triggers and activation bundles that match this Task's type, its declared paths and the work it asks for, and load each selected skill; never load a skill that matches nothing, and do not load a skill only a person can start.
+- Name the skills you loaded in ## Result on one line, Skills loaded: <names>, or Skills loaded: none matched.
 - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
 - The Daemon owns Task status during Implement; do not edit the task file's status field.
 - Do not run commands from the task file's ## Verification section; the Daemon runs them after your turn.
@@ -50,6 +52,7 @@ const taskExecutionInvariants = `Execution invariants:
 // single place.
 const qaGateContract = `QA contract:
 - Run every command in the foreground and wait for it to exit; never end the turn while a command you started is still running. The end of the turn is the end of the gate.
+- Before building the matrix, when the Spec Context Bundle lists docs/agents/skill-dispatch.md, load the skills of its QA activation and of each trigger the Spec's declared surfaces match, and only those.
 - Run the qa-gate process for this Spec. Each numbered qa Task Requirement that starts with MUST verify or MUST run is a declared verification Requirement, and the declared Requirements with the non-waivable sources are the coverage sources; otherwise the coverage sources are the PRD user stories and Goals, each non-QA Task's Acceptance Criteria and the declared intentional breaks.
 - The non-waivable sources are the outside-evidence row, the Pull Request row, the repository Verification, each criterion a PRD Unreachable Acceptance declaration names and, when the PRD declares frontend, the frontend sweep.
 - Every row names in its provenance the sources it covers; every source appears in at least one row, and no row covers anything else.

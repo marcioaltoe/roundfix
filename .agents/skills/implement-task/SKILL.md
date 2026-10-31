@@ -4,10 +4,10 @@ description: Execute one task file from docs/specs/<slug>/ end-to-end — ground
 metadata:
   category: implementation
   tags: [workflow, coding, agents, testing]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Implement task
@@ -89,6 +89,18 @@ editing it.
 
 - Read the sections of `_prd.md` and `_techspec.md` named in the task's References, plus `CONTEXT.md` (use its vocabulary in code names and test names) and any referenced ADRs.
 - **If requirements contradict each other** — task vs spec, spec vs ADR — stop and report the conflict. Guessing buries a spec bug inside an implementation.
+
+## Skills for the Task
+
+Before editing, read `docs/agents/skill-dispatch.md` when the repository has
+it. Select only the triggers and activation bundles that match the assigned
+Task's type, its declared paths and the work it asks for, and load each
+selected skill. Never load a skill that matches nothing. Do not load a skill
+only a person can start; name it as skipped instead of blocking a Run.
+
+Write the Loaded Skill List in the Task's `## Result` on one line:
+`Skills loaded: <names>`, or `Skills loaded: none matched`. The list is the
+Agent's own claim; the Daemon never checks it or uses it to settle the Task.
 
 ## 2. Plan
 

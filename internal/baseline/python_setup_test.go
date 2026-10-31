@@ -51,7 +51,6 @@ func TestThePythonSetupIsThePublishedUpstreamPreset(t *testing.T) {
 		"write-techspec",
 		"write-tasks",
 		"coding-guidelines",
-		"implement-spec",
 		"implement-task",
 		"no-workarounds",
 		"testing-boss",

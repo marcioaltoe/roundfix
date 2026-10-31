@@ -2076,6 +2076,7 @@ func TestCarryForwardInputsIncludesSpecContractsAndTaskContext(t *testing.T) {
 		"AGENTS.md",
 		"CONTEXT.md",
 		".agents/skills/implement-task/SKILL.md",
+		"docs/agents/skill-dispatch.md",
 		"docs/agents/go.md",
 		"internal/widget/widget.go",
 	}

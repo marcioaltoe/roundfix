@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:c935ef409bc2588edc8085c3d3fdfe0e712fc1753257ad5857f941b2d8f4e292",
+  "catalogDigest": "sha256:6d37378bbb397c684e7670262844f0a73b2e839302396487c52363c0431938c7",
   "modules": [
     "core",
     "context-workflow",
@@ -66,7 +66,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "8cb51effb343414773834d3b52f290c6febcfc8bfb39b76169269d7059b68980"
+      "digest": "d1221ce4e5da9705c94309d289a48079c2deedbebbf10c30d2b5362e3dc8020b"
     },
     {
       "id": "root.core",
@@ -258,7 +258,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:b73abf588b3b2da6a1dd357915011a56dc1b020f5b93708c2d79e989804f3c17"
+      "declarationDigest": "sha256:c60e94fb0eb43fec507ae53686529a62f173af517430e4f27ad07db15b0624a1"
     },
     {
       "id": "verification.incremental",
@@ -267,7 +267,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:b73abf588b3b2da6a1dd357915011a56dc1b020f5b93708c2d79e989804f3c17"
+      "declarationDigest": "sha256:c60e94fb0eb43fec507ae53686529a62f173af517430e4f27ad07db15b0624a1"
     }
   ]
 }

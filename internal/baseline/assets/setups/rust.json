@@ -5,10 +5,10 @@
   "source": {
     "type": "github",
     "repository": "marcioaltoe/skills",
-    "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+    "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
     "path": "setups/rust.txt"
   },
-  "digest": "3d13a04fd3650292946ed2d29deea84fd35cc6b98f075cb07e2ffbe3fea369df",
+  "digest": "c6ee4db98b12039ddbc8a0d65e6ceff20891fb4c9ba1501351d2cf6691a19758",
   "skills": [
     {
       "name": "find-skills",
@@ -16,7 +16,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/00-setup/find-skills"
       },
       "treeDigest": "5a99b2977e82cb952e4f4887ceccfa6dd62b8f36908d6667db13e2a756f93028"
@@ -27,7 +27,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/00-setup/knowledge-workspace"
       },
       "treeDigest": "490af37df4faba388e560380df0863b88881716d96e6185858918681182f2a96"
@@ -65,10 +65,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/01-discovery/context7-cli"
       },
-      "treeDigest": "896647588cca999be883e0733f937c6afa66a5d4d343d0cbb0b0b9324e61104b"
+      "treeDigest": "db7a729c1b3a9c289baa4492b753d0c697dcf382fc43cc61da011ee5404bfbae"
     },
     {
       "name": "exa-web-search",
@@ -76,7 +76,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/01-discovery/exa-web-search"
       },
       "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
@@ -87,7 +87,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/01-discovery/grill-with-docs"
       },
       "treeDigest": "04ba6a6139df57e6a011eb79311212fa5f3dc47ec6177845d1defea19c68bb60"
@@ -98,10 +98,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/01-discovery/grilling"
       },
-      "treeDigest": "f83e444cb16561fe266a8d34d5315e089f2580aed6822087dbb039a2fe151cd7"
+      "treeDigest": "3a7559839f45dfa4491f045d56647148c2b90f0e5ce0b5355301ef0e6d1bc428"
     },
     {
       "name": "write-idea",
@@ -127,7 +127,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/03-engineering-design/agentic-cli-design"
       },
       "treeDigest": "d261b7713dc1baa3136895904659bffffededfb9926d94f7c7ba030608a4ff79"
@@ -138,7 +138,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/03-engineering-design/domain-modeling"
       },
       "treeDigest": "c0bd13ce078a3c8eb5507fc9067165dad89b10f11b33b26e29a5c62f9c840bd2"
@@ -167,7 +167,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/clap-rust"
       },
       "treeDigest": "da206d7c6ea85dba8b2d53479a5bf0ac0347d500c599c3fefedfa1d2f8e68ff0"
@@ -178,19 +178,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/coding-guidelines"
       },
       "treeDigest": "1ed1e711b511f8ea14e0e4f83949d3395e7b202e8344c52e586256c7959ce0a8"
-    },
-    {
-      "name": "implement-spec",
-      "path": "skills/05-implementation-loop/implement-spec",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
     },
     {
       "name": "implement-task",
@@ -207,7 +198,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/no-workarounds"
       },
       "treeDigest": "573cf5b80f28193816c79ee8b79ab9b7fe7f72f5acac061f424ac05993ede766"
@@ -218,7 +209,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/rust-cli"
       },
       "treeDigest": "67e04140a6cf5e6de0aa2a9a7f7423971b02c7953716e331ce23fb85c20da3b2"
@@ -229,10 +220,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/rust-expert"
       },
-      "treeDigest": "13a6428287f2d050d32cdebbe9f7e885b225b6731d30eb920af3244528ef5f72"
+      "treeDigest": "ee0fead5af840dd40d07583249b4f045dd28a226f42a0b05680f26627909d43b"
     },
     {
       "name": "testing-boss",
@@ -240,7 +231,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/testing-boss"
       },
       "treeDigest": "f92c876c59ba91e4ca806a3c4321ecb14ce5b8b24aaf713ebd07dc2113acc3c1"
@@ -251,7 +242,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/05-implementation-loop/typesafe-ai"
       },
       "treeDigest": "e87d9882708f283b6aedcc103b0767c9f3fe9b022e7783b2132ce676f6bd7ce6"
@@ -280,7 +271,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/06-review-repair/systematic-debugging"
       },
       "treeDigest": "a6a0f1051a12abbf06fa94f900d0e41278d257efe537fd4b9eeb4c6b385a20cf"
@@ -309,7 +300,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/conventional-commits"
       },
       "treeDigest": "ef7a6718684adba3919e3211d470d95351f5e4949e9d3a9b290e4f2c77a8739c"
@@ -320,7 +311,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/crafting-effective-readmes"
       },
       "treeDigest": "b78ea092608753c2aac4266a1daa1e80a55b29c3b9f746c373681cd9c0cd8705"
@@ -331,7 +322,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/github-pr-workflow"
       },
       "treeDigest": "082906ba30c577d2ddb4fda1ef0c75bea42fb1ff139c898e377d7f9caba57d4a"
@@ -342,7 +333,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/ai-memory-durable-pages"
       },
       "treeDigest": "5cb7df1911f7ae5627ad9870886759b6b2cc1ecf8230002e302bd0ef3df693dd"
@@ -353,7 +344,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/ai-memory-handoff"
       },
       "treeDigest": "b749f505e9efbf97a8cd8e5c98b91c79f2b5fc9d496f9825f015cd4a5972359c"
@@ -364,7 +355,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/ai-memory-learning-maintenance"
       },
       "treeDigest": "82f8e2afb9f6a0cb893bc9e394b4441471d67cbe5a2ea82ce23533dd05687b47"
@@ -375,7 +366,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/ai-memory-messaging"
       },
       "treeDigest": "69a2e6b7acb2112509bfebae5951de462c6909803daedab2f6ea95f60115c2d6"
@@ -386,7 +377,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/ai-memory-retrieval"
       },
       "treeDigest": "daa5e3ce9896deaa0e542fcb1bb7b7cb013c171f0b4169c8820f6f664c520428"
@@ -397,7 +388,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/ai-memory-routing-install"
       },
       "treeDigest": "41eed0d2998bb41a41f199c8e26892a1f9c0303f8c7e9d729f5699b1b67fafac"
@@ -408,7 +399,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/07-evidence-delivery/tech-writer"
       },
       "treeDigest": "18efb1105eebbd46e051d643830f1758f089cdf0f0a912a8be5d79fc657fd606"
@@ -419,7 +410,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "b56fc5ffcad1ab366fbc03839a6ce8c662401178",
+        "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
         "path": "skills/08-release/cut-release"
       },
       "treeDigest": "0320252020ae5b3fdcb4ccff9b122f1f2366c8b2e4ff7e0aab64e8b665300825"

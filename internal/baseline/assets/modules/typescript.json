@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 8,
+  "version": 10,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -13,18 +13,13 @@
     "business-storyteller",
     "clean-code",
     "codebase-design",
-    "diagnosing-bugs",
     "docker",
     "app-renderer-systems",
     "find-rules",
     "find-skills",
-    "game-changing-features",
     "git-rebase",
     "humanizer",
     "onioncry",
-    "refactoring-analysis",
-    "tdd",
-    "to-prompt",
     "typescript-advanced",
     "vite",
     "vitest",
@@ -37,7 +32,7 @@
       "triggers": [
         {
           "id": "trigger.typescript.architectural-analysis",
-          "when": "Analyzing TypeScript repository architecture and dependency boundaries."
+          "when": "When the person asks for an analysis of the TypeScript repository architecture and dependency boundaries."
         }
       ]
     },
@@ -65,15 +60,6 @@
         {
           "id": "trigger.typescript.codebase-design",
           "when": "Designing TypeScript codebase structure and component boundaries."
-        }
-      ]
-    },
-    {
-      "skill": "diagnosing-bugs",
-      "triggers": [
-        {
-          "id": "trigger.typescript.diagnosing-bugs",
-          "when": "Diagnosing TypeScript or Bun defects and unexpected behavior."
         }
       ]
     },
@@ -114,15 +100,6 @@
       ]
     },
     {
-      "skill": "game-changing-features",
-      "triggers": [
-        {
-          "id": "trigger.typescript.game-changing-features",
-          "when": "Exploring high-impact product opportunities for the TypeScript application."
-        }
-      ]
-    },
-    {
       "skill": "git-rebase",
       "triggers": [
         {
@@ -136,7 +113,7 @@
       "triggers": [
         {
           "id": "trigger.typescript.humanizer",
-          "when": "Revising generated prose in the TypeScript repository to sound natural and direct."
+          "when": "When the person asks to make TypeScript repository prose sound natural and direct."
         }
       ]
     },
@@ -146,33 +123,6 @@
         {
           "id": "trigger.typescript.onioncry",
           "when": "Auditing architectural dependency direction in the TypeScript repository."
-        }
-      ]
-    },
-    {
-      "skill": "refactoring-analysis",
-      "triggers": [
-        {
-          "id": "trigger.typescript.refactoring-analysis",
-          "when": "Planning a behavior-preserving TypeScript refactor."
-        }
-      ]
-    },
-    {
-      "skill": "tdd",
-      "triggers": [
-        {
-          "id": "trigger.typescript.tdd",
-          "when": "Developing TypeScript behavior through a red-green-refactor loop."
-        }
-      ]
-    },
-    {
-      "skill": "to-prompt",
-      "triggers": [
-        {
-          "id": "trigger.typescript.to-prompt",
-          "when": "Converting TypeScript repository context into a bounded implementation prompt."
         }
       ]
     },
@@ -208,7 +158,7 @@
       "triggers": [
         {
           "id": "trigger.typescript.writing-clearly-and-concisely",
-          "when": "Revising TypeScript repository prose for clarity and brevity."
+          "when": "When the person asks to tighten TypeScript repository prose for clarity and brevity."
         }
       ]
     },

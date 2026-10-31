@@ -220,6 +220,16 @@ Escalate with the blocking fact and a proposed resolution, never with an open
 "is this ok?". Everything else — granularity, ordering, recovery from a failed
 Task, re-running a gate — is inside the loop's authority.
 
+### Pending Questions and the planning files
+
+When the queue presents a Pending Question, ask the maintainer only that
+question. Preserve its wording and named action; add no confirmation,
+approval, recommendation or second question. Continue only after the
+maintainer answers through the explicit action the question names.
+
+The Supervisor never edits `_prd.md`, `_techspec.md` or `_tasks.md` of a Spec
+it delivers. Spec amendments are a maintainer decision outside this delivery.
+
 ### Recovering without breaking the loop
 
 - Read every QA finding before fixing any of them. One commit that closes four

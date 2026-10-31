@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.158
+  version: 0.1.161
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.158
+version: 0.1.161
 ---
 
 # Roundfix
@@ -131,8 +131,15 @@ Roundfix keeps lossless evidence while giving each reader a compact surface:
   Live Run View rendering never rewrites those payload bytes.
 - Spec Task prompts embed exactly one full assigned Task and one path-only Spec
   Context Bundle. The bundle includes standard Spec artifact paths, root
-  instructions, the canonical implement-task skill path, paths from the Task's
-  `## Context` section, and sorted files changed by prior integrated Tasks. It never
+  instructions, the canonical implement-task skill path, the skill dispatch guide
+  (`docs/agents/skill-dispatch.md`) when the repository has it, paths from the
+  Task's `## Context` section, and sorted files changed by prior integrated Tasks.
+  Before editing, the Agent reads the guide and loads only the skills whose
+  triggers and activation bundles match its Task's type, declared paths and
+  requested work, skipping skills only a person can start. It writes the Loaded
+  Skill List in `## Result` on one `Skills loaded:` line; the Daemon never checks
+  the list. The QA gate loads only the QA activation's and its declared surfaces'
+  matching skills before building its matrix, without a list. The bundle never
   embeds full PRDs, TechSpecs, Skill documents, source files, or prior diffs.
   Task-authored Context entries are capped at 50 unique repository-relative
   paths; the complete manifest is capped at 200 paths, reserving standard and

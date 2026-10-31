@@ -983,8 +983,8 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 
 // CarryForwardInputs returns the repository paths whose bytes declare the
 // Task Roundfix handed to the Agent: the Task and Spec contracts, the root
-// instructions, the canonical domain context, the implementation skill, and
-// every Task-authored Context reference.
+// instructions, the canonical domain context, the implementation skill, the
+// skill dispatch guide, and every Task-authored Context reference.
 func CarryForwardInputs(specDir string, taskFile string, taskContent []byte) ([]string, error) {
 	cleanSpecDir, err := cleanCarryForwardPath(specDir)
 	if err != nil {
@@ -1007,6 +1007,7 @@ func CarryForwardInputs(specDir string, taskFile string, taskContent []byte) ([]
 		"AGENTS.md",
 		"CONTEXT.md",
 		".agents/skills/implement-task/SKILL.md",
+		"docs/agents/skill-dispatch.md",
 	}
 	seen := make(map[string]bool, len(inputs)+len(document.Context))
 	unique := make([]string, 0, len(inputs)+len(document.Context))
