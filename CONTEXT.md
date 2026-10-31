@@ -265,9 +265,11 @@ A path the Daemon records under a Task file's `## Recorded paths` section when
 the Task changed it without declaring it. The QA scope audit counts it as
 declared and names it in the scope row; recording discloses a change and
 reserves nothing, while a Governed Path still needs its authorization.
-Its settlement commit is still collision evidence: two Tasks of one Wave that
-each change the same Recorded Path make the QA gate's precondition refuse with
-`SC-WAVE-COLLISION`, so a file two Tasks may each change is declared by both.
+Its settlement commit is still collision evidence while a Task is not
+completed: two Tasks of one Wave that each change the same Recorded Path, and
+that are not both completed (one reopened to `pending`, for instance), report
+`SC-WAVE-COLLISION`. A completed Task never collides, so a file two Tasks may
+each change is declared by both before they run.
 _Avoid_: Declared path, reserved path, authorized path
 
 **Task Type**:

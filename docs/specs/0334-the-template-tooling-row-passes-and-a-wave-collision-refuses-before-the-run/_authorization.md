@@ -11,12 +11,14 @@ paths:
   - .agents/skills/write-prd/references/prd-template.md
   - .agents/skills/write-techspec/SKILL.md
   - .agents/skills/write-techspec/references/techspec-template.md
+  - .agents/skills/write-tasks/SKILL.md
   - internal/speccheck/constraints.go
   - skills/roundfix/SKILL.md
   - skills/write-prd/SKILL.md
   - skills/write-prd/references/prd-template.md
   - skills/write-techspec/SKILL.md
   - skills/write-techspec/references/techspec-template.md
+  - skills/write-tasks/SKILL.md
 operations:
   - implement
   - commit
@@ -77,6 +79,27 @@ based on `35de7f74`, with `speccheck.GovernedPath`.
     templates;
   - the canonical Roundfix `implement` and `spec` references and the
     Roundfix `SKILL.md` pair.
+
+## QA repair grant (2026-10-31)
+
+The first QA gate (`run_20261031T173520Z_ca95397d60f28c1a`, report
+`qa/qa-report-2026-10-31.md` on that Run Branch) failed on F-01 only: the
+Recorded Path entry of `CONTEXT.md` and both copies of the `write-tasks`
+skill still promised that the QA gate's precondition refuses two Tasks of one
+Wave that changed the same undeclared file "after both Tasks have run", which
+the completed-Task rule of ADR-0347 no longer allows. The operator repaired
+those passages in one commit on the item branch after carrying task_01 and
+task_02 forward, raised the `write-tasks` version and re-recorded the owned
+skill versions with the sanctioned record command.
+
+On 2026-10-31 the maintainer answered through AskUserQuestion how the
+operator resolves a technical failure without him: "Consertar e seguir
+(Recommended)" — option text: "Diagnostico, emendo o plano ou crio uma Spec
+bloqueadora e entrego, sem teto fixo de corretivas. Só pulo a Spec se o
+conserto exigir uma decisão de produto ou arquitetura que contradiga o PRD
+aprovado; aí ela sai do ciclo e a release vai com as demais, ou espera se for
+a 0333." That answer grants the two `write-tasks` paths added above, for the
+F-01 wording only.
 
 ## What is not governed
 
