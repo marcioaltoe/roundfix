@@ -1,0 +1,18 @@
+$ go test -count=1 -timeout 20m -v -run '^(TestImplementRefusesAWaveCollisionBeforeTheRun|TestImplementRunsATaskThatSharesAFileWithACompletedTask|TestImplementAtTaskCapacityOneLeavesCollidingTasksToTheRun)$' ./internal/cli
+=== RUN   TestImplementRefusesAWaveCollisionBeforeTheRun
+=== PAUSE TestImplementRefusesAWaveCollisionBeforeTheRun
+=== RUN   TestImplementRunsATaskThatSharesAFileWithACompletedTask
+=== PAUSE TestImplementRunsATaskThatSharesAFileWithACompletedTask
+=== RUN   TestImplementAtTaskCapacityOneLeavesCollidingTasksToTheRun
+=== PAUSE TestImplementAtTaskCapacityOneLeavesCollidingTasksToTheRun
+=== CONT  TestImplementRefusesAWaveCollisionBeforeTheRun
+=== CONT  TestImplementAtTaskCapacityOneLeavesCollidingTasksToTheRun
+=== CONT  TestImplementRunsATaskThatSharesAFileWithACompletedTask
+--- PASS: TestImplementRefusesAWaveCollisionBeforeTheRun (0.18s)
+--- PASS: TestImplementRunsATaskThatSharesAFileWithACompletedTask (0.26s)
+--- PASS: TestImplementAtTaskCapacityOneLeavesCollidingTasksToTheRun (0.27s)
+PASS
+suiteguard: guard cost: measured 2868 paths; fingerprint took 137.091ms before and 131.391167ms after
+ok  	roundfix/internal/cli	0.950s
+
+exit: 0

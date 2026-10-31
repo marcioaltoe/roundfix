@@ -1,0 +1,5 @@
+$ ./bin/roundfix qa-report accept docs/specs/0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run/qa/qa-report-2026-10-31.md
+stdout:
+stderr:
+exit: 0
+Read-only eligibility validation; isolated HOME/TMPDIR removed.

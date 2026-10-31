@@ -1,0 +1,53 @@
+Audited HEAD: e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3
+Mutation: Remove implement preflight collision call
+Path: internal/cli/implement.go
+Temporary-copy-only diagnostic added before original transcript assertion: assertRunCount(..., 1), then log the exact count; original assertion unchanged.
+$ git diff -- internal/cli/implement.go internal/cli/implement_wave_collision_test.go
+diff --git a/internal/cli/implement.go b/internal/cli/implement.go
+index 58e2f53..7bee479 100644
+--- a/internal/cli/implement.go
++++ b/internal/cli/implement.go
+@@ -281,10 +281,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
+ 		printPreflightFailure("implement", err, stderr)
+ 		return exitPreflight
+ 	}
+-	if err := daemon.RefuseWaveCollisions(gitState.Root, graph, loadedConfig.Config.Worktree.Concurrency); err != nil {
+-		printPreflightFailure("implement", err, stderr)
+-		return exitPreflight
+-	}
+ 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, nil)
+ 	if defaultBranch.IsDefault(gitState.Branch) {
+ 		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
+diff --git a/internal/cli/implement_wave_collision_test.go b/internal/cli/implement_wave_collision_test.go
+index dc6514e..532b92d 100644
+--- a/internal/cli/implement_wave_collision_test.go
++++ b/internal/cli/implement_wave_collision_test.go
+@@ -25,6 +25,9 @@ func TestImplementRefusesAWaveCollisionBeforeTheRun(t *testing.T) {
+ 
+ 	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+ 
++	assertRunCount(t, store.DatabasePath(home), 1)
++	t.Log("sabotage observed exactly one recorded Run")
++
+ 	wantStderr := "Preflight failed\n\nReason:\n" +
+ 		"  Tasks would collide in one Wave at Task Capacity 2: Task task_01 and Task task_02 share repository files: shared/notes.txt (verification command); add a `needs` edge from Task task_02 to Task task_01\n\n" +
+ 		"No side effects:\n" +
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -v -run '^TestImplementRefusesAWaveCollisionBeforeTheRun$' ./internal/cli
+=== RUN   TestImplementRefusesAWaveCollisionBeforeTheRun
+=== PAUSE TestImplementRefusesAWaveCollisionBeforeTheRun
+=== CONT  TestImplementRefusesAWaveCollisionBeforeTheRun
+    implement_wave_collision_test.go:29: sabotage observed exactly one recorded Run
+    implement_wave_collision_test.go:38: transcript mismatch: exit=1 stdout="Failed: 0 completed, 0 failed, 0 skipped, 2 pending.\nTokens: no prompts recorded\n" stderr="Run Worktree: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/implement-wave-8719032/home/.roundfix/worktrees/repo-cebdbdb0/run_20261031T201342Z_a79120b3eed6f081\nRoundfix implement\n\nTarget:\n  Spec: 0001-widget-flow\n  Branch: ma/widget-flow\n  Agent: Codex\n  Agent Model: gpt-6.1-sol\n  Default Reasoning Effort: high\n  Selections:\n    per-scope history: unavailable\n  HEAD: fcf2c43cf54708b25ad7a36e5eedcc1419571cad\n\nRun:\n  ID: run_20261031T201342Z_a79120b3eed6f081\n  State: ResolvingWithAgent\n  Task Capacity: 2\n  Verification Capacity: 1\n  Run Worktree: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/implement-wave-8719032/home/.roundfix/worktrees/repo-cebdbdb0/run_20261031T201342Z_a79120b3eed6f081\n  Git: clean, 0 unpushed commit(s), upstream no upstream\n  Auto-commit: on\n  Auto-push: off\n  Last push: disabled\n\n+-----------------------------------------+--------------------------------------------------------+\n| Tasks                                   | Agent Console                                          |\n+-----------------------------------------+--------------------------------------------------------+\n| task_01 pending — Do the task_01 work | Agent and verification output will stream below.       |\n| task_02 pending — Do the task_02 work |                                                        |\n+-----------------------------------------+--------------------------------------------------------+\nKeys: Ctrl-C stop\n\nroundfix: implement selected Spec 0001-widget-flow with 2 Task(s); 2 to execute this Run.\nImplement Run: run_20261031T201342Z_a79120b3eed6f081\nUser checkout: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/implement-wave-8719032/repo on branch ma/widget-flow\nRun Worktree: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/implement-wave-8719032/home/.roundfix/worktrees/repo-cebdbdb0/run_20261031T201342Z_a79120b3eed6f081 on branch roundfix/run-run_20261031T201342Z_a79120b3eed6f081\nAgent: Codex\nAgent Model: gpt-6.1-sol\nDefault Reasoning Effort: high\nroundfix: implement failed after Run start: task cycle: refuse Wave before dispatch because Tasks collide: Task task_01 and Task task_02 share repository files: shared/notes.txt (verification command); add a `needs` edge from Task task_02 to Task task_01\nRoundfix did not push; completed Task commits and preserved working tree changes remain for inspection.\nRun Worktree kept: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/implement-wave-8719032/home/.roundfix/worktrees/repo-cebdbdb0/run_20261031T201342Z_a79120b3eed6f081\n"; want exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  Tasks would collide in one Wave at Task Capacity 2: Task task_01 and Task task_02 share repository files: shared/notes.txt (verification command); add a `needs` edge from Task task_02 to Task task_01\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+--- FAIL: TestImplementRefusesAWaveCollisionBeforeTheRun (0.26s)
+FAIL
+suiteguard: guard cost: measured 2861 paths; fingerprint took 224.588334ms before and 146.360125ms after
+FAIL	roundfix/internal/cli	1.064s
+FAIL
+
+exit: 1
+
+Observation checks: {'nonzero exit': True, 'named test failed': True, 'no compile failure': True, 'no timeout': True, 'transcript mismatch: exit=1': True, 'sabotage observed exactly one recorded Run': True}
+Isolated copy removed after all commands exited.

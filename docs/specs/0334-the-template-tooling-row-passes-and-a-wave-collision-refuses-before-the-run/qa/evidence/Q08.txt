@@ -1,0 +1,61 @@
+Audited HEAD: e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3
+Mutation: Return mutation for every citation
+Path: internal/speccheck/constraints.go
+$ git diff -- internal/speccheck/constraints.go
+diff --git a/internal/speccheck/constraints.go b/internal/speccheck/constraints.go
+index 1f0213a..a8e4880 100644
+--- a/internal/speccheck/constraints.go
++++ b/internal/speccheck/constraints.go
+@@ -693,7 +693,7 @@ func claimsOperativeAuthorization(value string) bool {
+ 
+ func declaresProtectedToolingMutation(row constraintRow, citesAuthorization, recordGrantsNoPath bool) bool {
+ 	reason := strings.ToLower(strings.Join(strings.Fields(row.Reason), " "))
+-	if strings.Contains(reason, "no protected tooling mutation") && (!citesAuthorization || recordGrantsNoPath) {
++	if strings.Contains(reason, "no protected tooling mutation") && !citesAuthorization {
+ 		return false
+ 	}
+ 	if citesAuthorization {
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheTemplateNoMutationToolingRowPassesTheSpecCheck$' ./internal/docscontract
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path
+=== NAME  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+    command_documentation_test.go:106: .agents/skills/write-prd/references/prd-template.md: CheckStage(prd) unbounded findings = []speccheck.Finding{speccheck.Finding{Code:"SC-TOOLING-UNBOUNDED", Severity:"error", Summary:"docs/specs/0114-tooling-row/_prd.md declares a protected tooling mutation without bounded files alongside docs/specs/0114-tooling-row/_authorization.md", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_prd.md", Line:8}, speccheck.Location{Path:"docs/specs/0114-tooling-row/_authorization.md", Line:1}}, Fix:"Add an exact bounded files list to the Tooling authority row in docs/specs/0114-tooling-row/_prd.md.", declaredVocabularySpec:""}}, want 0; all findings: []speccheck.Finding{speccheck.Finding{Code:"SC-METRIC-UNDECLARED", Severity:"gap", Summary:"docs/specs/0114-tooling-row/_prd.md has no declaration in its Success Metrics section", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_prd.md", Line:1}}, Fix:"Declare numbered Success Metrics in docs/specs/0114-tooling-row/_prd.md, or write None. followed by the reason none apply.", declaredVocabularySpec:""}, speccheck.Finding{Code:"SC-TOOLING-UNBOUNDED", Severity:"error", Summary:"docs/specs/0114-tooling-row/_prd.md declares a protected tooling mutation without bounded files alongside docs/specs/0114-tooling-row/_authorization.md", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_prd.md", Line:8}, speccheck.Location{Path:"docs/specs/0114-tooling-row/_authorization.md", Line:1}}, Fix:"Add an exact bounded files list to the Tooling authority row in docs/specs/0114-tooling-row/_prd.md.", declaredVocabularySpec:""}}
+=== NAME  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+    command_documentation_test.go:106: .agents/skills/write-techspec/references/techspec-template.md: CheckStage(techspec) unbounded findings = []speccheck.Finding{speccheck.Finding{Code:"SC-TOOLING-UNBOUNDED", Severity:"error", Summary:"docs/specs/0114-tooling-row/_techspec.md declares a protected tooling mutation without bounded files alongside docs/specs/0114-tooling-row/_authorization.md", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_techspec.md", Line:8}, speccheck.Location{Path:"docs/specs/0114-tooling-row/_authorization.md", Line:1}}, Fix:"Add an exact bounded files list to the Tooling authority row in docs/specs/0114-tooling-row/_techspec.md.", declaredVocabularySpec:""}}, want 0; all findings: []speccheck.Finding{speccheck.Finding{Code:"SC-METRIC-UNDECLARED", Severity:"gap", Summary:"docs/specs/0114-tooling-row/_prd.md has no declaration in its Success Metrics section", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_prd.md", Line:1}}, Fix:"Declare numbered Success Metrics in docs/specs/0114-tooling-row/_prd.md, or write None. followed by the reason none apply.", declaredVocabularySpec:""}, speccheck.Finding{Code:"SC-CONTRACT-UNDECLARED", Severity:"gap", Summary:"docs/specs/0114-tooling-row/_techspec.md has no declaration in its API Contracts section", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_techspec.md", Line:1}}, Fix:"Declare numbered API Contracts in docs/specs/0114-tooling-row/_techspec.md, or write None. followed by the reason none apply.", declaredVocabularySpec:""}, speccheck.Finding{Code:"SC-TOOLING-UNBOUNDED", Severity:"error", Summary:"docs/specs/0114-tooling-row/_techspec.md declares a protected tooling mutation without bounded files alongside docs/specs/0114-tooling-row/_authorization.md", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_techspec.md", Line:8}, speccheck.Location{Path:"docs/specs/0114-tooling-row/_authorization.md", Line:1}}, Fix:"Add an exact bounded files list to the Tooling authority row in docs/specs/0114-tooling-row/_techspec.md.", declaredVocabularySpec:""}, speccheck.Finding{Code:"SC-ABSENCE-UNPROVEN", Severity:"gap", Summary:"docs/specs/0114-tooling-row/_techspec.md has no Absence Evidence declaration", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_techspec.md", Line:1}}, Fix:"Add or repair ## Absence Evidence with None. and a reason, or numbered items with command: in backticks and result: text, following the write-techspec rule \"Absence evidence\".", declaredVocabularySpec:""}, speccheck.Finding{Code:"SC-COVERAGE-UNREAD", Severity:"gap", Summary:"docs/specs/0114-tooling-row/_techspec.md Coverage Map has no Deviations from the PRD: line", Where:[]speccheck.Location{speccheck.Location{Path:"docs/specs/0114-tooling-row/_techspec.md", Line:1}}, Fix:"Add or repair the Deviations from the PRD: line in ## Coverage Map with None. or bullets naming PRD units, following the write-techspec rule \"Coverage cross-read\".", declaredVocabularySpec:""}}
+--- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck (0.00s)
+    --- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path (0.00s)
+        --- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths (0.00s)
+    --- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md (0.00s)
+        --- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.365s
+FAIL
+
+exit: 1
+
+Observation checks: {'nonzero exit': True, 'named test failed': True, 'no compile failure': True, 'no timeout': True, '/empty_paths': True, 'SC-TOOLING-UNBOUNDED': True}
+Isolated copy removed after all commands exited.

@@ -1,0 +1,74 @@
+Audited HEAD: e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3
+Mutation: Remove both completed exclusions
+Path: internal/spec/collision.go
+$ git diff -- internal/spec/collision.go
+diff --git a/internal/spec/collision.go b/internal/spec/collision.go
+index f9944f1..0931b27 100644
+--- a/internal/spec/collision.go
++++ b/internal/spec/collision.go
+@@ -87,13 +87,7 @@ func Collisions(repoRoot string, graph *Graph) ([]WaveCollision, error) {
+ 	ordered := taskDependencyClosure(graph.Tasks)
+ 	var collisions []WaveCollision
+ 	for first := 0; first < len(sets); first++ {
+-		if graph.Tasks[first].Status == StatusCompleted {
+-			continue
+-		}
+ 		for second := first + 1; second < len(sets); second++ {
+-			if graph.Tasks[second].Status == StatusCompleted {
+-				continue
+-			}
+ 			firstID, secondID := sets[first].TaskID, sets[second].TaskID
+ 			if ordered[firstID][secondID] || ordered[secondID][firstID] {
+ 				continue
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -v -run '^TestACompletedTaskNeverCollides$' ./internal/spec
+=== RUN   TestACompletedTaskNeverCollides
+=== PAUSE TestACompletedTaskNeverCollides
+=== CONT  TestACompletedTaskNeverCollides
+=== RUN   TestACompletedTaskNeverCollides/completed
+=== PAUSE TestACompletedTaskNeverCollides/completed
+=== RUN   TestACompletedTaskNeverCollides/pending
+=== PAUSE TestACompletedTaskNeverCollides/pending
+=== RUN   TestACompletedTaskNeverCollides/failed
+=== PAUSE TestACompletedTaskNeverCollides/failed
+=== RUN   TestACompletedTaskNeverCollides/in_progress
+=== PAUSE TestACompletedTaskNeverCollides/in_progress
+=== CONT  TestACompletedTaskNeverCollides/completed
+=== CONT  TestACompletedTaskNeverCollides/failed
+=== CONT  TestACompletedTaskNeverCollides/in_progress
+=== CONT  TestACompletedTaskNeverCollides/pending
+=== NAME  TestACompletedTaskNeverCollides/completed
+    collision_test.go:43: Collisions with statuses completed, pending = [{First:task_01 Second:task_02 Paths:map[shared/notes.txt:verification command]}], want 0 pairs
+--- FAIL: TestACompletedTaskNeverCollides (0.00s)
+    --- PASS: TestACompletedTaskNeverCollides/failed (0.00s)
+    --- FAIL: TestACompletedTaskNeverCollides/completed (0.00s)
+    --- PASS: TestACompletedTaskNeverCollides/in_progress (0.00s)
+    --- PASS: TestACompletedTaskNeverCollides/pending (0.00s)
+FAIL
+suiteguard: guard cost: measured 2861 paths; fingerprint took 179.442292ms before and 153.124625ms after
+FAIL	roundfix/internal/spec	0.599s
+FAIL
+
+exit: 1
+
+Observation checks: {'nonzero exit': True, 'named test failed': True, 'no compile failure': True, 'no timeout': True, '/completed': True, 'want no collisions': False}
+$ go test -count=1 -timeout 20m -v -run '^TestImplementRunsATaskThatSharesAFileWithACompletedTask$' ./internal/cli
+=== RUN   TestImplementRunsATaskThatSharesAFileWithACompletedTask
+=== PAUSE TestImplementRunsATaskThatSharesAFileWithACompletedTask
+=== CONT  TestImplementRunsATaskThatSharesAFileWithACompletedTask
+    implement_wave_collision_test.go:51: expected Run to reach scripted Agent failure: exit=2 stderr="Preflight failed\n\nReason:\n  Tasks would collide in one Wave at Task Capacity 2: Task task_01 and Task task_02 share repository files: shared/notes.txt (verification command); add a `needs` edge from Task task_02 to Task task_01\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+--- FAIL: TestImplementRunsATaskThatSharesAFileWithACompletedTask (0.17s)
+FAIL
+suiteguard: guard cost: measured 2861 paths; fingerprint took 160.072083ms before and 206.4135ms after
+FAIL	roundfix/internal/cli	0.958s
+FAIL
+
+exit: 1
+
+Observation checks: {'nonzero exit': True, 'named test failed': True, 'no compile failure': True, 'no timeout': True, 'expected Run to reach scripted Agent failure': True, 'Tasks would collide': True}
+Isolated copy removed after all commands exited.
+
+Transcript review: The completed case reports one pair, want 0; the CLI completed-Task test fails on exit 2 and the collision diagnostic.
+Initial automation expected a different wording; the actual named product assertions prove the sabotage was caught. No command was rerun.

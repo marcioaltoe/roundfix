@@ -1,0 +1,12 @@
+$ ./bin/roundfix archive 0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run --plan --offline
+stdout:
+archive plan for 0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run: removes 30 file(s) (241838 bytes) and writes docs/history/specs/0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-31.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 19 file(s) (130842 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-27-a-wave-collision-with-a-completed-task-refuses-after-the-run-starts.md 1717 bytes: no advice (offline)
+candidate references/2026-10-27-the-authoring-templates-and-the-tooling-check-disagree-on-no-tooling-change.md 2068 bytes: no advice (offline)
+promote with: roundfix archive 0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run --promote <path>
+stderr:
+exit: 0
+Judge Key Variables and TYPESAFE_API_KEY unset. HOME and TMPDIR are isolated temporary directories; both removed after exit.

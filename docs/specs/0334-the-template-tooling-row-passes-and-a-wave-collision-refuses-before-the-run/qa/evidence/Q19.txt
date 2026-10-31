@@ -1,0 +1,7 @@
+Pull Request row: blocked (environment: no open Pull Request). This fact is supplied by the Daemon for the Spec target branch; the per-Run branch is never a PR candidate.
+Approval: maintainer cycle AS approval, 2026-10-30, preserved in _authorization.md; QA repair authority dated 2026-10-31. This is delivery authority, not Merge-Ready review acceptance.
+Checks/status: Daemon supplied make verify-changed pass (exit 0) at audited head e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3; diagnostics removed on success.
+Unresolved review threads: none because no Pull Request exists.
+Merge-Ready acceptance: none yet; cannot claim equivalent approval of the final candidate.
+Review-artifact ancestry: no Review Artifact or review acceptance was supplied. Claimed candidate is audited head e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3 on the target delivery branch after Run integration.
+Checks: {'candidate HEAD': True, 'delivery operations granted': True}

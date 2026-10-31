@@ -1,0 +1,8 @@
+Outside source: POSIX make, IEEE Std 1003.1-2024, published 2024; passage retrieved during planning on 2026-10-30 and quoted in PRD Acceptance evidence.
+Source: https://pubs.opengroup.org/onlinepubs/9799919799.2024edition/utilities/make.html
+Published scheduling conditions: The target's prerequisites (if any) are up-to-date; capacity must also permit another target.
+Comparison: completed prerequisites establish eligibility of pending work; already-complete work is not dispatched beside it. API Contract 3 similarly excludes any pair containing a completed Task and retains pending, in_progress and failed Tasks.
+This is an independent scheduling-principle comparison, not a claim that Roundfix implements the full POSIX make scheduler. The cited passage was evaluated offline as the Task requires.
+Checks: {'published passage committed': False, 'capacity passage committed': True, 'API completed exclusion': True}
+Whitespace-normalized comparison: {'POSIX prerequisite quote': True, 'POSIX capacity quote': True, 'API excludes either completed Task': True}
+The initial classifier compared wrapped source without normalizing whitespace; all cited clauses match after normalization.

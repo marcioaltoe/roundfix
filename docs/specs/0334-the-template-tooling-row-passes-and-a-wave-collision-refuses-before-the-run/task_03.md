@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

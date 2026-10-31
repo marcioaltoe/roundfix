@@ -1,0 +1,50 @@
+Audited HEAD: e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3
+Mutation: Ignore authorization record when reason says no mutation
+Path: internal/speccheck/constraints.go
+$ git diff -- internal/speccheck/constraints.go
+diff --git a/internal/speccheck/constraints.go b/internal/speccheck/constraints.go
+index 1f0213a..22666e0 100644
+--- a/internal/speccheck/constraints.go
++++ b/internal/speccheck/constraints.go
+@@ -693,7 +693,7 @@ func claimsOperativeAuthorization(value string) bool {
+ 
+ func declaresProtectedToolingMutation(row constraintRow, citesAuthorization, recordGrantsNoPath bool) bool {
+ 	reason := strings.ToLower(strings.Join(strings.Fields(row.Reason), " "))
+-	if strings.Contains(reason, "no protected tooling mutation") && (!citesAuthorization || recordGrantsNoPath) {
++	if strings.Contains(reason, "no protected tooling mutation") {
+ 		return false
+ 	}
+ 	if citesAuthorization {
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -v -run '^TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded$' ./internal/speccheck
+=== RUN   TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded
+=== PAUSE TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded
+=== CONT  TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded
+=== RUN   TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_an_empty_grant
+=== PAUSE TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_an_empty_grant
+=== RUN   TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_a_grant_listing_Makefile
+=== PAUSE TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_a_grant_listing_Makefile
+=== RUN   TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/declared_mutation_with_an_empty_grant
+=== PAUSE TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/declared_mutation_with_an_empty_grant
+=== CONT  TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_an_empty_grant
+=== CONT  TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/declared_mutation_with_an_empty_grant
+=== CONT  TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_a_grant_listing_Makefile
+    report_test.go:125: SC-TOOLING-UNBOUNDED findings = []speccheck.Finding(nil), want 1
+--- FAIL: TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded (0.00s)
+    --- PASS: TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_an_empty_grant (0.00s)
+    --- FAIL: TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/no_mutation_with_a_grant_listing_Makefile (0.00s)
+    --- PASS: TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded/declared_mutation_with_an_empty_grant (0.00s)
+FAIL
+suiteguard: guard cost: measured 2861 paths; fingerprint took 156.28325ms before and 324.37025ms after
+FAIL	roundfix/internal/speccheck	0.777s
+FAIL
+
+exit: 1
+
+Observation checks: {'nonzero exit': True, 'named test failed': True, 'no compile failure': True, 'no timeout': True, 'no_mutation_with_a_grant_listing_Makefile': True, 'want true': False}
+Isolated copy removed after all commands exited.
+
+Transcript review: The Makefile-grant case reports zero findings, want 1; the empty-grant and explicit-mutation cases still pass.
+Initial automation expected a different wording; the actual named product assertions prove the sabotage was caught. No command was rerun.

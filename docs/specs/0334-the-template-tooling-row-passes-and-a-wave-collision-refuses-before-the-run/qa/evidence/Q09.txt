@@ -1,0 +1,51 @@
+Audited HEAD: e0e6864ac5e9438d0a44974f8bb11b1e8d13b8f3
+Mutation: Delete canonical TechSpec row ending
+Path: .agents/skills/write-techspec/references/techspec-template.md
+$ git diff -- .agents/skills/write-techspec/references/techspec-template.md
+diff --git a/.agents/skills/write-techspec/references/techspec-template.md b/.agents/skills/write-techspec/references/techspec-template.md
+index d2db602..4f217a1 100644
+--- a/.agents/skills/write-techspec/references/techspec-template.md
++++ b/.agents/skills/write-techspec/references/techspec-template.md
+@@ -27,7 +27,7 @@ created: YYYY-MM-DD
+ - Tooling authority: <applicable | not applicable> — <effective constraint and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`; Spec-contained authorization record: `<spec-root>/<slug>/_authorization.md`; bounded files: <copy every exact repository-relative path from the record's `paths` list>.
+ 
+ <!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
+-     Still cite the Spec-contained authorization record and, when its `paths` is `[]`, end the row with `bounded files: none`.
++     Still cite the Spec-contained authorization record and, when its `paths` is `[]`, omit the row ending.
+      When protected tooling mutation is proposed, do not finish without
+      `express maintainer authorization: <approval>; bounded files: <exact repository paths>`.
+      citing the Spec-contained authorization record at
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheTemplateNoMutationToolingRowPassesTheSpecCheck$' ./internal/docscontract
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== NAME  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+    command_documentation_test.go:55: .agents/skills/write-techspec/references/techspec-template.md: missing bounded-files ending after end the row with
+--- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck (0.00s)
+    --- FAIL: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md (0.00s)
+    --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.358s
+FAIL
+
+exit: 1
+
+Observation checks: {'nonzero exit': True, 'named test failed': True, 'no compile failure': True, 'no timeout': True, 'write-techspec/references/techspec-template.md': True, 'missing bounded-files ending': True}
+Isolated copy removed after all commands exited.
