@@ -143,9 +143,10 @@ and keeps the moved-input refusal.
 Both bindings use the Task file at the settlement parent and compare that
 parent's planning text with the accumulating staged target. A changed Binding
 Text still refuses the whole remaining set. The Task file, `AGENTS.md`,
-`CONTEXT.md`, the `implement-task` skill and every explicit Context path still
-refuse on any change. This rule also serves Implement Preflight and Delivery
-Retry; their refusal reasons and recovery commands are unchanged.
+`CONTEXT.md`, the `implement-task` skill, `docs/agents/skill-dispatch.md` and
+every explicit Context path still refuse on any change. This rule also serves
+Implement Preflight and Delivery Retry; their refusal reasons and recovery
+commands are unchanged.
 
 Each candidate lists tolerated planning amendments separately. Text prints these
 lines in order (repository-relative paths replace the placeholders):

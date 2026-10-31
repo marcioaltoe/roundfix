@@ -16,6 +16,40 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
+func TestAssembleTaskContextBundleListsTheSkillDispatchGuideWhenPresent(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name         string
+		guide, skill bool
+		want         []string
+	}{
+		{"present", true, true, []string{"AGENTS.md", ".agents/skills/implement-task/SKILL.md", "docs/agents/skill-dispatch.md"}},
+		{"absent", false, true, []string{"AGENTS.md", ".agents/skills/implement-task/SKILL.md"}},
+		{"present without implementation skill", true, false, []string{"AGENTS.md", "docs/agents/skill-dispatch.md"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			workDir := t.TempDir()
+			specsRoot := filepath.Join(workDir, "docs", "specs")
+			writeBundleStandardFiles(t, workDir, specsRoot, taskCycleSlug)
+			if !tc.guide {
+				if err := os.Remove(filepath.Join(workDir, "docs/agents/skill-dispatch.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if !tc.skill {
+				if err := os.Remove(filepath.Join(workDir, ".agents/skills/implement-task/SKILL.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			bundle := assembleTaskContextBundle(TaskPlan{WorkDir: workDir, SpecsRoot: specsRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: filepath.Join(specsRoot, taskCycleSlug)}}, spec.Task{ID: "task_01"}, nil)
+			if got := strings.Join(bundle.Instructions, "|"); got != strings.Join(tc.want, "|") {
+				t.Fatalf("Instructions = %v, want %v", bundle.Instructions, tc.want)
+			}
+		})
+	}
+}
+
 func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles(t *testing.T) {
 	t.Parallel()
 	workDir := t.TempDir()
@@ -48,6 +82,7 @@ func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFile
 		"docs/specs/" + taskCycleSlug + "/_tasks.md",
 		"AGENTS.md",
 		".agents/skills/implement-task/SKILL.md",
+		"docs/agents/skill-dispatch.md",
 		".agents/skills/golang-testing/SKILL.md",
 		"internal/spec/task.go",
 		"internal/generated/client.go",
@@ -56,17 +91,17 @@ func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFile
 			t.Fatalf("expected reserved path %q in bundle, got %+v", expected, bundle)
 		}
 	}
-	if len(bundle.PriorChangedFiles) != specContextBundlePathLimit-8 {
-		t.Fatalf("prior file count = %d, want %d", len(bundle.PriorChangedFiles), specContextBundlePathLimit-8)
+	if len(bundle.PriorChangedFiles) != specContextBundlePathLimit-9 {
+		t.Fatalf("prior file count = %d, want %d", len(bundle.PriorChangedFiles), specContextBundlePathLimit-9)
 	}
-	if bundle.OmittedPriorFiles != 13 {
-		t.Fatalf("OmittedPriorFiles = %d, want 13", bundle.OmittedPriorFiles)
+	if bundle.OmittedPriorFiles != 14 {
+		t.Fatalf("OmittedPriorFiles = %d, want 14", bundle.OmittedPriorFiles)
 	}
 	if bundle.PriorChangedFiles[0] != "prior/file_000.go" {
 		t.Fatalf("prior files not sorted, first = %q", bundle.PriorChangedFiles[0])
 	}
-	if got := bundle.PriorChangedFiles[len(bundle.PriorChangedFiles)-1]; got != "prior/file_191.go" {
-		t.Fatalf("prior cap ended at %q, want prior/file_191.go", got)
+	if got := bundle.PriorChangedFiles[len(bundle.PriorChangedFiles)-1]; got != "prior/file_190.go" {
+		t.Fatalf("prior cap ended at %q, want prior/file_190.go", got)
 	}
 }
 
@@ -186,6 +221,7 @@ type: backend
 		"- Task Graph: docs/specs/" + taskCycleSlug + "/_tasks.md",
 		"  - AGENTS.md",
 		"  - .agents/skills/implement-task/SKILL.md",
+		"  - docs/agents/skill-dispatch.md",
 		"  - .agents/skills/golang-testing/SKILL.md",
 		"  - internal/source.go",
 		"  - internal/prior.go",
@@ -200,6 +236,7 @@ type: backend
 		"TECHSPEC BODY SENTINEL",
 		"AGENTS BODY SENTINEL",
 		"IMPLEMENT TASK SKILL SENTINEL",
+		"SKILL DISPATCH BODY SENTINEL",
 		"GOLANG TESTING SKILL SENTINEL",
 		"SOURCE BODY SENTINEL",
 		"diff --git",
@@ -220,6 +257,7 @@ func TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity(t *testing.
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Implement feature"}})
 	plan := fixture.qaPlan()
 	for path, content := range map[string]string{
+		filepath.Join(fixture.gitRoot, "docs", "agents", "skill-dispatch.md"):             "SKILL DISPATCH BODY SENTINEL\n",
 		filepath.Join(fixture.gitRoot, "AGENTS.md"):                                       "AGENTS BODY SENTINEL\n",
 		filepath.Join(fixture.gitRoot, ".agents", "skills", "implement-task", "SKILL.md"): "IMPLEMENT TASK SKILL SENTINEL\n",
 	} {
@@ -276,6 +314,7 @@ rows_blocked_declared: 0
 	for _, expected := range []string{
 		"Spec Context Bundle:",
 		"- PRD: docs/specs/" + taskCycleSlug + "/_prd.md",
+		"  - docs/agents/skill-dispatch.md",
 		"  - internal/changed.go",
 		"Previous QA Report: docs/specs/" + taskCycleSlug + "/qa/qa-report-2025-12-31.md",
 		"Previous QA Report head: previous-report-head",
@@ -402,6 +441,7 @@ func TestAssembleTaskContextBundleIsDeterministic(t *testing.T) {
 func writeBundleStandardFiles(t *testing.T, workDir string, specsRoot string, slug string) {
 	t.Helper()
 	for path, content := range map[string]string{
+		filepath.Join(workDir, "docs", "agents", "skill-dispatch.md"):             "SKILL DISPATCH BODY SENTINEL\n",
 		filepath.Join(workDir, "AGENTS.md"):                                       "AGENTS BODY SENTINEL\n",
 		filepath.Join(workDir, ".agents", "skills", "implement-task", "SKILL.md"): "IMPLEMENT TASK SKILL SENTINEL\n",
 		filepath.Join(specsRoot, slug, "_prd.md"):                                 "PRD BODY SENTINEL\n",
@@ -418,6 +458,7 @@ func writeBundleStandardFiles(t *testing.T, workDir string, specsRoot string, sl
 func writePromptReferenceFiles(t *testing.T, workDir string, specsRoot string) {
 	t.Helper()
 	for path, content := range map[string]string{
+		filepath.Join(workDir, "docs", "agents", "skill-dispatch.md"):             "SKILL DISPATCH BODY SENTINEL\n",
 		filepath.Join(workDir, "AGENTS.md"):                                       "AGENTS BODY SENTINEL\n",
 		filepath.Join(workDir, ".agents", "skills", "implement-task", "SKILL.md"): "IMPLEMENT TASK SKILL SENTINEL\n",
 		filepath.Join(specsRoot, taskCycleSlug, "_prd.md"):                        "---\nstatus: active\n---\n\nPRD BODY SENTINEL\n",

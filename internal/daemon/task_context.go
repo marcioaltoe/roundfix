@@ -16,6 +16,7 @@ import (
 const (
 	specContextBundlePathLimit = 200
 	implementTaskSkillPath     = ".agents/skills/implement-task/SKILL.md"
+	skillDispatchGuidePath     = "docs/agents/skill-dispatch.md"
 	rootAgentInstructionsPath  = "AGENTS.md"
 )
 
@@ -96,6 +97,9 @@ func assembleTaskContextBundle(plan TaskPlan, task spec.Task, priorFiles []strin
 		bundle.Instructions = append(bundle.Instructions, path)
 	}
 	if path, ok := add(existingRepoPath(plan.WorkDir, implementTaskSkillPath)); ok {
+		bundle.Instructions = append(bundle.Instructions, path)
+	}
+	if path, ok := add(existingRepoPath(plan.WorkDir, skillDispatchGuidePath)); ok {
 		bundle.Instructions = append(bundle.Instructions, path)
 	}
 	for _, ref := range task.Context {

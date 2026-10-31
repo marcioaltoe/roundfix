@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -133,3 +133,58 @@ glossary follow.
 - `_prd.md` → Goals; Core Features 1 and 5; Stories 1 and 2; Success Metric 3; Success Metric 6; Glossary; Decisions
 - `_techspec.md` → Data Model 4; API Contracts 4 to 7; Testing Approach; Build Order 3; Glossary
 - ADR-0346; ADR-0284
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate
+
+Implemented the Task's slice for Daemon Verification. The pre-existing worktree
+change was this Task's Daemon-written `status: in_progress`; it was preserved.
+No Task Graph or other Task file was edited.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Task prompt lists the guide, loads only matching skills and requests the Loaded Skill List | Added `skillDispatchGuidePath` immediately after the implementation skill in the existing bundle assembly. The guide is conditional on presence and consumes one of the 200 reserved paths. Added both verbatim invariants before the existing implementation invariant. `TestBuildTaskPromptTellsTheAgentToLoadOnlyTheDispatchedSkills` checks each exact line once and before the bundle; `TestAssembleTaskContextBundleListsTheSkillDispatchGuideWhenPresent` covers presence, absence and a missing implementation skill. The cap test now asserts nine reserved paths and fourteen omitted prior files. The Task-cycle test lists the guide while rejecting its body sentinel. All passed in the focused prompt/bundle check below. |
+| QA prompt loads the QA activation's and surfaces' skills | Added the verbatim rule before the existing qa-gate rule. `TestBuildQAPromptTellsTheGateToLoadItsDispatchedSkills` checks it exactly once inside the contract and rejects a Loaded Skill List requirement. The existing QA-cycle test now checks the guide comes through the reused bundle. Both passed in the focused prompt/bundle check. |
+| Changed guide refuses carry-forward | Added the guide immediately after the implementation skill in `CarryForwardInputs`, updated its comment and expected list, and added the `skill dispatch guide` refusal case with a committed disposable fixture guide. The input-list test and all binding-text refusal cases passed. Before the production change, the new guide case failed because carry-forward accepted the moved guide. |
+| Skills, reconcile guides and glossary state the rule | Added the two required skill sections, revised the Roundfix bundle bullet and both reconcile guides, defined Loaded Skill List with its Avoid line and ADR-0346 link, and revised Spec Context Bundle. Focused glossary checks passed. Mirror comparison and source inspection confirmed all four mirrors match, the existing prompt bytes are unchanged except the three required additions, and QA settlement is byte-identical to HEAD. |
+
+### Focused checks
+
+- Red signal: before the production edits, the new Task and QA prompt tests,
+  the input-list test, the guide-present bundle cases and the reserved-path
+  test failed on missing guide behavior. The isolated `skill_dispatch_guide`
+  refusal subtest also failed because the command returned success and carried
+  both Tasks forward.
+- `go test ./internal/agent ./internal/spec ./internal/daemon -run '^(TestBuildTaskPrompt.*|TestBuildQAPrompt.*|TestCarryForwardInputs.*|TestAssembleTaskContextBundle.*|TestTaskCyclePromptContainsBundleWithoutReferencedBodies|TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity)$' -count=1 -timeout=4m`
+  — exit 0 in all three packages.
+- `go test ./internal/cli -run '^(TestCarryForwardRefusesATaskWhoseBindingTextChanged|TestCarryForwardAllows.*|TestCarryForward.*Amend.*)$' -count=1 -timeout=4m`
+  — exit 0, including the new guide refusal case.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$' -count=1 -timeout=4m`
+  — exit 0.
+- `go test ./skills -run '^(TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded|TestRoundfixSkillEntryFileStaysWithinItsBudget)$' -count=1 -timeout=4m`
+  — exit 0.
+- `git diff --check` — exit 0. Read-only scope inspection found every changed
+  path declared by this Task; static comparisons preserved QA settlement and
+  the existing prompt bytes.
+
+### Sanctioned regeneration
+
+- `make skills-sync` — exit 0; copied the canonical skills to their mirrors.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  — exit 0; raised both version fields in canonical and mirrored
+  `implement-task` to `0.0.6`, `qa-gate` to `0.0.23` and `roundfix` to
+  `0.1.160`, appending their records without replacing history.
+- `make baseline-digests` — exit 0; reported `changed: false`, with every
+  derived Baseline artifact already matching its canonical source.
+- Last regeneration, after the final guide edit:
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  — exit 0; recorded the reconcile guide fingerprint in
+  `docs/references/behavior-surfaces.json`.
+
+The declared Verification and repository Verification were not run; the Daemon
+owns them and Task settlement. No commit, push or Pull Request was made. The
+Loaded Skill List remains an Agent claim, with no Daemon validation added.

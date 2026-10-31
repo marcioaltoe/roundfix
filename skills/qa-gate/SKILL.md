@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.22
+  version: 0.0.23
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.22
+version: 0.0.23
 ---
 
 # QA Gate
@@ -93,6 +93,14 @@ the network-denied row, it never decides a qualifying partial and needs no
 Unreachable Acceptance declaration, a row counts toward one exempt kind at
 most, and settlement, `roundfix qa-report accept` and `roundfix archive` read
 it through the same policy (ADR-0276, ADR-0335).
+
+### Skills the gate loads
+
+Before building the matrix, read `docs/agents/skill-dispatch.md` when the
+repository has it. Load the skills of its QA activation and of each trigger
+the Spec's declared surfaces match, and only those. Do not load a skill only
+a person can start; name it as skipped instead of blocking a Run. The gate's
+evidence stays its matrix; the QA Report needs no Loaded Skill List.
 
 ## 1. Resolve scope and preconditions
 

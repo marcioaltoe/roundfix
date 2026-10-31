@@ -67,6 +67,30 @@ func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
 	}
 }
 
+func TestBuildTaskPromptTellsTheAgentToLoadOnlyTheDispatchedSkills(t *testing.T) {
+	t.Parallel()
+	req := sampleTaskPromptRequest()
+	req.Context.Instructions = []string{"docs/agents/skill-dispatch.md"}
+	prompt, err := BuildTaskPrompt(req)
+	if err != nil {
+		t.Fatalf("BuildTaskPrompt: %v", err)
+	}
+	invariants := strings.Index(prompt, "Execution invariants:\n")
+	bundle := strings.Index(prompt, "Spec Context Bundle:")
+	implement := strings.Index(prompt, "- Implement only this Task's slice")
+	for _, line := range []string{
+		"- Before editing, when the Spec Context Bundle lists docs/agents/skill-dispatch.md, read it, select only the triggers and activation bundles that match this Task's type, its declared paths and the work it asks for, and load each selected skill; never load a skill that matches nothing, and do not load a skill only a person can start.",
+		"- Name the skills you loaded in ## Result on one line, Skills loaded: <names>, or Skills loaded: none matched.",
+	} {
+		if got := strings.Count(prompt, line+"\n"); got != 1 {
+			t.Fatalf("line %q appears %d times, want once:\n%s", line, got, prompt)
+		}
+		if at := strings.Index(prompt, line); at <= invariants || at >= implement || at >= bundle {
+			t.Fatalf("skill invariant is outside the start of execution invariants:\n%s", prompt)
+		}
+	}
+}
+
 func TestBuildTaskPromptEmbedsTaskContentVerbatim(t *testing.T) {
 	t.Parallel()
 
@@ -191,6 +215,27 @@ func sampleQAPromptRequest() QAPromptRequest {
 		TargetBranch: "ma/widget-flow",
 		UserCheckout: "/repo",
 		PullRequest:  "#40 (owner/repo)",
+	}
+}
+
+func TestBuildQAPromptTellsTheGateToLoadItsDispatchedSkills(t *testing.T) {
+	t.Parallel()
+	req := sampleQAPromptRequest()
+	req.Context.Instructions = []string{"docs/agents/skill-dispatch.md"}
+	prompt, err := BuildQAPrompt(req)
+	if err != nil {
+		t.Fatalf("BuildQAPrompt: %v", err)
+	}
+	const line = "- Before building the matrix, when the Spec Context Bundle lists docs/agents/skill-dispatch.md, load the skills of its QA activation and of each trigger the Spec's declared surfaces match, and only those."
+	if got := strings.Count(prompt, line+"\n"); got != 1 {
+		t.Fatalf("QA rule appears %d times, want once:\n%s", got, prompt)
+	}
+	at := strings.Index(prompt, line)
+	if at <= strings.Index(prompt, "QA contract:\n") || at >= strings.Index(prompt, "- Run the qa-gate process for this Spec.") {
+		t.Fatalf("skill rule is outside the start of the QA contract:\n%s", prompt)
+	}
+	if strings.Contains(prompt, "Skills loaded:") {
+		t.Fatalf("QA prompt requests a Loaded Skill List:\n%s", prompt)
 	}
 }
 

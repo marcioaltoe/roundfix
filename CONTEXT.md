@@ -278,8 +278,12 @@ _Avoid_: Task category, work type, inferred type
 The Spec's manifest that declares its Tasks and their dependencies as a directed acyclic graph. Dependencies live only in the Task Graph, never in task files.
 _Avoid_: Task list, backlog, roadmap
 
+**Loaded Skill List**:
+The `Skills loaded:` line an Agent writes in a Task's `## Result` after loading the skills the dispatch selects for that Task; it is the Agent's own claim, never checked by the Daemon ([ADR-0346](docs/adr/0346-a-run-agent-loads-the-skills-the-dispatch-selects-for-its-task.md)).
+_Avoid_: Skill inventory, verified skill load, Daemon gate
+
 **Spec Context Bundle**:
-The bounded Task-start context that gives an Agent the full assigned Task and paths to larger Spec artifacts, relevant interfaces, and files changed by prior Tasks.
+The bounded Task-start context that gives an Agent the full assigned Task and paths to larger Spec artifacts, the skill dispatch guide when present, relevant interfaces, and files changed by prior Tasks ([ADR-0346](docs/adr/0346-a-run-agent-loads-the-skills-the-dispatch-selects-for-its-task.md)).
 _Avoid_: Repository dump, full Spec payload, cold-start exploration
 
 **Project Constraint**:

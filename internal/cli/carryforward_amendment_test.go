@@ -96,6 +96,7 @@ func TestCarryForwardRefusesATaskWhoseBindingTextChanged(t *testing.T) {
 		{name: "root instructions", path: "AGENTS.md"},
 		{name: "domain context", path: "CONTEXT.md"},
 		{name: "implementation skill", path: ".agents/skills/implement-task/SKILL.md"},
+		{name: "skill dispatch guide", path: "docs/agents/skill-dispatch.md"},
 		{name: "Context path", path: "shared.txt"},
 		{name: "explicit planning Context path", path: specDir + "/_prd.md", context: specDir + "/_prd.md"},
 		{name: "another Spec planning file", path: "docs/specs/other/_prd.md", context: "docs/specs/other/_prd.md"},
@@ -168,7 +169,7 @@ func newPlanningAmendmentFixture(t *testing.T, seeds []implementSeed, extraConte
 		mustWrite(t, path, task)
 	}
 	mustWrite(t, filepath.Join(dir, "_tasks.md"), manifest)
-	for _, path := range []string{"AGENTS.md", "CONTEXT.md", ".agents/skills/implement-task/SKILL.md", "shared.txt", "docs/specs/other/_prd.md"} {
+	for _, path := range []string{"AGENTS.md", "CONTEXT.md", ".agents/skills/implement-task/SKILL.md", "docs/agents/skill-dispatch.md", "shared.txt", "docs/specs/other/_prd.md"} {
 		mustMkdir(t, filepath.Dir(filepath.Join(repo, path)))
 		mustWrite(t, filepath.Join(repo, path), "Unchanged input.\n")
 	}
