@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -134,3 +134,78 @@ and an empty Spec Root) and documents the second for the `specs` source.
 - `_techspec.md` → Current behavior 3-5; Interfaces; API Contracts 4-6; Invariants 5-6; Testing Approach; Build Order 2
 - ADR-0319; ADR-0348
 - [Adopted Backlog Entry](references/2026-10-30-the-follow-up-command-rejects-documented-message-types-and-an-empty-spec-root.md)
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Implemented this Task's message-type and guide-contract slice. Task status and
+checkboxes remain Daemon-owned. The initial worktree change was this Task's
+`pending` → `in_progress` status; this turn preserved it.
+
+### Acceptance evidence
+
+- Every documented type is accepted with its class, and `chore` is refused
+  with the accepted list: `followUpMessageTypes` now supplies the parser,
+  refusal list and `followUpTypeClass`. The fallback preserves the Finding
+  kind override and assigns unlisted types to `other`; accepted names are
+  retained and omitted/empty types remain `message`.
+  `TestFollowUpAcceptsEveryDocumentedMessageType` asserts literal expectations
+  for all eight names and an omitted type through the CLI without a judge
+  key. `TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes` asserts
+  empty stdout, exit 2 and the entire table-derived error and usage line.
+- Both follow-up guides name the emitted JSON fields and accepted types:
+  the new docscontract test reads the user guide, canonical reference and
+  mirror, requires all six sentences, and compares their ordered backticked
+  names against reflected JSON tags or the shared type table. Both guides
+  describe each type's fallback class and absent Spec Root `specs: checked 0`.
+  The reference names `cost_usd` and no longer names the old prose item fields.
+- The modes reference tells the agent to omit an undocumented type: step 1
+  now permits only type hints listed by the Follow-up Command reference and
+  says `and omit the type field otherwise`. A focused Python inspection
+  confirmed this rule within step 1 in both copies. Existing mode order and
+  handoff/message-settlement tests still pass. No QA settlement text changed.
+
+### Characterization and focused checks
+
+- Before production edits:
+  `go test ./internal/cli -run '^TestFollowUpAcceptsEveryDocumentedMessageType$/other$' -count=1 -v`
+  failed at the new test with command exit 2, empty stdout and
+  `invalid type "other"`, followed by the usage line.
+- Before guide edits:
+  `go test -tags docscontract ./internal/cli -run '^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$' -count=1 -v`
+  failed for all three copies, identifying the six missing sentences.
+- After implementation:
+  `go test ./internal/cli -run '^TestFollowUp(AcceptsEveryDocumentedMessageType|RefusesAnUnknownMessageTypeNamingTheAcceptedOnes|OrdersByTypeWithoutTheJudge|RefusesAnInvalidMessagesFile|OrdersItemsByTheFourAnswers)$' -count=1 -v`
+  exited 0; the two new command tests and all three selected existing tests
+  passed, including the nine accepted/omitted-type cases.
+- After guide edits and synchronization, the focused docscontract command
+  above exited 0 for all three copies.
+- Negative probes used a temporary compiled docscontract test binary,
+  isolated Git fixtures, and `go test -overlay` source mutations; repository
+  inputs were not mutated. All 18 probes failed at the intended assertions:
+  five per guide copy (missing/added item field, missing/added message type,
+  missing judge sentence), plus parser rejection of `other`, loss of the
+  `finding` type's `health` fallback, and loss of the accepted list in the
+  refusal. Isolated guide baselines passed before and after the mutations.
+- `go test ./skills -run '^TestTheFollowUpMode(RunsItsStepsInOrder|TakesTheHandoffAndSettlesEveryMessage)$' -count=1 -v`
+  exited 0 for canonical and embedded layouts. Focused Python inspection also
+  confirmed byte equality of both SKILL.md files and both changed references,
+  both version fields at `0.1.163`, and absence of the old prose field names.
+
+### Sanctioned regeneration
+
+- `make skills-sync` copied the canonical references to `skills/`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exited 0, raised both version fields in both SKILL.md files from `0.1.162`
+  to `0.1.163`, and appended the skill digest to the owned-skill version record.
+- The repository-required `make baseline-digests` exited 0 with
+  `changed: false`; no Baseline artifact changed.
+- As the final implementation/regeneration step after the last guide edit,
+  `go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`
+  exited 0 and recorded `docs/references/behavior-surfaces.json`.
+
+Declared Verification, Windows build and repository-wide gates were not run;
+they remain with the Daemon. No commit, push or pull request was performed.
+No follow-up implementation was added outside this slice.

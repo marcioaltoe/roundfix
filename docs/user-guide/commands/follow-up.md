@@ -39,7 +39,8 @@ unavailable source does not fail the command.
 - `backlog` reads open Backlog Entries.
 - `findings` reads pending or partial Findings.
 - `repository-inbox` reads every file in `docs/_inbox/`.
-- `specs` reads active Specs.
+- `specs` reads active Specs. When the repository's Spec Root is absent,
+  this source is `checked` with count `0` (ADR-0348).
 - `runs` reads active Runs for this Git root; no Run Database is `checked`
   with count zero.
 - `delivery-queue` reads unfinished Delivery Queue items.
@@ -48,17 +49,21 @@ unavailable source does not fail the command.
 - `git` reads the branch, head, upstream, changed paths and unpushed commits;
   inspection failure is `unavailable`.
 
-The item fields are its `kind`, `ref`, `type`, `date`, `title` and
-`requested_by`. A source-reading error can make the affected sources
-`unavailable`; the report still lists the other sources.
+Each source carries these JSON fields: `name`, `state`, `count`, `detail`.
+A source-reading error can make the affected sources `unavailable`; the
+report still lists the other sources.
 
 ## Messages file
 
 The file passed to `--messages` is at most 1 MiB and must have this schema:
 `roundfix/follow-up-messages/v1`. Each message needs a unique `id`, an RFC
 3339 or `YYYY-MM-DD` `created_at`, and `text`; `from`, `subject` and `type`
-are also supported, with `type` empty or one of `feat`, `fix`, `perf` and
-`refactor`.
+are also supported.
+
+A message type is empty or one of `feat`, `feature`, `finding`, `fix`,
+`information`, `other`, `perf`, `refactor`. An empty or omitted type is stored
+as `message`; a listed type keeps its given name. A refused type's error
+lists the accepted types and says that `type` can be omitted.
 
 ```json
 {"schema":"roundfix/follow-up-messages/v1","messages":[{"id":"m-17","from":"billing","created_at":"2026-10-21","subject":"Fix export","text":"The export blocks billing.","type":"fix"}]}
@@ -78,8 +83,10 @@ Small items come first inside a class, then the oldest dated item, then the
 reference in byte order.
 
 Without an answer, an item's declared type orders it, and nothing is unblocking.
-Types `fix`, `perf` and Findings are `health`, `feat` is `feature`, and other
-types are `other`. The report identifies whether its basis was `judge` or
+Types `finding`, `fix` and `perf`, and any item whose kind is `finding`, are
+`health`; `feat` and `feature` are `feature`; `information`, `other` and
+`refactor` are `other`. An omitted type (`message`) and any unlisted type are
+also `other`. The report identifies whether its basis was `judge` or
 `type` and gives the reason when the fallback was used.
 
 The judge sends nothing inside a Run, without a key, at the monthly ceiling,
@@ -96,8 +103,16 @@ Nothing to do: no pending item and nothing in progress.
 ```
 
 Its JSON `state` is `nothing_to_do`; otherwise it is `work_found`. The JSON
-report has schema `roundfix/follow-up/v1` and contains `view: "follow-up"`,
-`repository`, the ordered `sources`, `judge`, `items` and `in_progress`.
+report has schema `roundfix/follow-up/v1` and `view: "follow-up"`.
+
+The list report carries these JSON fields: `schema`, `view`, `state`,
+`repository`, `sources`, `judge`, `items`, `in_progress`.
+The judge carries these JSON fields: `state`, `reason`, `model`, `calls`,
+`cost_usd`.
+Each item carries these JSON fields: `rank`, `priority`, `priority_name`,
+`kind`, `ref`, `type`, `date`, `title`, `requested_by`, `blocks`, `basis`,
+`answers`, `reason`.
+
 For example:
 
 ```json
@@ -125,8 +140,12 @@ The JSON carries the first sentence in `release.reason` and the second in the
 `release.proposed_version` stays empty, as in every state that proposes no
 version.
 
-Its JSON adds `view: "status"`, `pending_specs`, `release`, `blockers` and
-`maintainer` to the shared report fields. For example:
+Its JSON has `view: "status"`.
+The status report carries these JSON fields: `schema`, `view`, `state`,
+`repository`, `sources`, `in_progress`, `pending_specs`, `release`, `blockers`,
+`maintainer`.
+
+For example:
 
 ```json
 {"schema":"roundfix/follow-up/v1","view":"status","state":"nothing_to_do","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"runs","state":"checked","count":0}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}},"pending_specs":[],"release":{"state":"no_unreleased_changes","base":"","proposed_version":"","changes":[],"reason":null},"blockers":[],"maintainer":[]}
