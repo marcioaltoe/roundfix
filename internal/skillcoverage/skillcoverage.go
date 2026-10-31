@@ -221,7 +221,16 @@ func EncodeRecord(record Record) []byte {
 
 func Fingerprint(content []byte) string { return fmt.Sprintf("sha256:%x", sha256.Sum256(content)) }
 
+// FingerprintReads reports whether a Behavior Surface fingerprint can depend
+// on the file at the slash-separated filePath. No fingerprint reads a Go test file.
+func FingerprintReads(filePath string) bool {
+	return !strings.HasSuffix(path.Base(filePath), "_test.go")
+}
+
 func (m Map) SurfacesForPath(filePath string) []Surface {
+	if !FingerprintReads(filePath) {
+		return nil
+	}
 	var result []Surface
 	for _, s := range m.Surfaces {
 		for _, source := range s.Sources {

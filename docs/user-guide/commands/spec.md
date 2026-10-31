@@ -187,6 +187,9 @@ adding commit does not descend from the oldest commit that added the map.
 An uncommitted PRD is held. The Skills Declaration is optional; omit it when
 no surface is excused. Every excuse needs a non-QA Task declaring the map
 under `interface:` or `creates:` to record its Coverage Review.
+A Go test file, whose name ends in `_test.go`, is never a Behavior Surface source,
+because no fingerprint reads it, so declaring one needs no skills Task even
+when a source pattern matches it.
 
 | Code | Reported when |
 | --- | --- |
