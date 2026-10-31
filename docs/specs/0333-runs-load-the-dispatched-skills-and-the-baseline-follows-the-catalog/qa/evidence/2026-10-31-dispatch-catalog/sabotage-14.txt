@@ -1,0 +1,11 @@
+$ go test -count=1 -timeout 20m -v -run '^TestImplementSpecIsNotARoundfixOwnedSkill$' ./skills
+=== RUN   TestImplementSpecIsNotARoundfixOwnedSkill
+=== PAUSE TestImplementSpecIsNotARoundfixOwnedSkill
+=== CONT  TestImplementSpecIsNotARoundfixOwnedSkill
+    retired_owned_skill_test.go:31: implement-spec remains a Roundfix-owned skill
+--- FAIL: TestImplementSpecIsNotARoundfixOwnedSkill (0.00s)
+FAIL
+FAIL	roundfix/skills	0.287s
+FAIL
+
+exit: 1

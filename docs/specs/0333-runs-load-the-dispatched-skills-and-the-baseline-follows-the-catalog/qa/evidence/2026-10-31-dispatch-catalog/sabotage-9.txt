@@ -1,0 +1,33 @@
+$ go test -count=1 -timeout 20m -v -run '^TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks$' ./internal/baseline
+=== RUN   TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks
+=== PAUSE TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks
+=== CONT  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks
+=== RUN   TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/architectural-analysis
+=== PAUSE TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/architectural-analysis
+=== RUN   TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/humanizer
+=== PAUSE TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/humanizer
+=== RUN   TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/writing-clearly-and-concisely
+=== PAUSE TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/writing-clearly-and-concisely
+=== RUN   TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/grill-with-docs
+=== PAUSE TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/grill-with-docs
+=== RUN   TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/web-design-guidelines
+=== PAUSE TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/web-design-guidelines
+=== CONT  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/architectural-analysis
+=== CONT  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/grill-with-docs
+=== CONT  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/web-design-guidelines
+=== CONT  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/writing-clearly-and-concisely
+=== CONT  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/humanizer
+=== NAME  TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/grill-with-docs
+    skill_dispatch_review_test.go:39: trigger trigger.context-workflow.grill-with-docs = "Stress-testing a plan or decision against repository documents.", want prefix "When the person asks"
+--- FAIL: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks (0.00s)
+    --- PASS: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/architectural-analysis (0.00s)
+    --- PASS: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/web-design-guidelines (0.00s)
+    --- PASS: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/humanizer (0.00s)
+    --- PASS: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/writing-clearly-and-concisely (0.00s)
+    --- FAIL: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/grill-with-docs (0.00s)
+FAIL
+suiteguard: guard cost: measured 2864 paths; fingerprint took 142.344875ms before and 140.285ms after
+FAIL	roundfix/internal/baseline	0.582s
+FAIL
+
+exit: 1

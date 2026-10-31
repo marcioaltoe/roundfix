@@ -1,0 +1,46 @@
+$ go test -count=1 -timeout 20m -v -run '^TestCarryForwardRefusesATaskWhoseBindingTextChanged$' ./internal/cli
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/named_section
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/named_section
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/Task_file
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/Task_file
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/root_instructions
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/root_instructions
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/domain_context
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/domain_context
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/implementation_skill
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/implementation_skill
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/Context_path
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/Context_path
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/explicit_planning_Context_path
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/explicit_planning_Context_path
+=== RUN   TestCarryForwardRefusesATaskWhoseBindingTextChanged/another_Spec_planning_file
+=== PAUSE TestCarryForwardRefusesATaskWhoseBindingTextChanged/another_Spec_planning_file
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/named_section
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/domain_context
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/implementation_skill
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/explicit_planning_Context_path
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/another_Spec_planning_file
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/root_instructions
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/Task_file
+=== CONT  TestCarryForwardRefusesATaskWhoseBindingTextChanged/Context_path
+--- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged (0.00s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/root_instructions (2.21s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/named_section (2.21s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/domain_context (2.24s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/explicit_planning_Context_path (2.26s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide (2.27s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/Context_path (2.27s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/another_Spec_planning_file (2.29s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/implementation_skill (2.29s)
+    --- PASS: TestCarryForwardRefusesATaskWhoseBindingTextChanged/Task_file (2.30s)
+PASS
+suiteguard: guard cost: measured 2880 paths; fingerprint took 141.098042ms before and 149.985459ms after
+ok  	roundfix/internal/cli	3.029s
+
+exit: 0

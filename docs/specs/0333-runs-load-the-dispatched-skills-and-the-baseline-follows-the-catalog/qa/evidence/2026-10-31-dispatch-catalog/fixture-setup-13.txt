@@ -1,0 +1,6 @@
+$ go test -count=1 -timeout 20m -v -run '^TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide$' ./internal/cli
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/cli	0.434s
+FAIL
+
+exit: 1

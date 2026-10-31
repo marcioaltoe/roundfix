@@ -1,0 +1,18 @@
+$ ./bin/roundfix baseline update --repo . --no-history --format text
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:6d37378bbb397c684e7670262844f0a73b2e839302396487c52363c0431938c7
+Current catalog: sha256:6d37378bbb397c684e7670262844f0a73b2e839302396487c52363c0431938c7
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Plan Digest: sha256:b46712f2ec78ae9962cf720d20faa192c56f7baeb9dc5f79326f8646ac6acc5d
+
+exit: 0

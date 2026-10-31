@@ -1,0 +1,75 @@
+$ make verify-docs GO=/tmp/qa0333/go-timeout BUILD_COMMIT=95133cf3-dirty 'BUILD_TIME=2026-10-31 13:53:29 -0300'
+/tmp/qa0333/go-timeout build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=95133cf3-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-31 13:53:29 -0300'" -o bin/roundfix ./cmd/roundfix
+/tmp/qa0333/go-timeout test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	10.929s
+/tmp/qa0333/go-timeout test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows)$' ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	0.964s
+ok  	roundfix/internal/app	0.450s
+ok  	roundfix/internal/authorization	0.963s
+ok  	roundfix/internal/baseline	71.337s
+ok  	roundfix/internal/baselineacp	0.797s
+ok  	roundfix/internal/childexit	0.446s [no tests to run]
+ok  	roundfix/internal/cli	1.341s
+ok  	roundfix/internal/codex	0.785s
+ok  	roundfix/internal/config	1.286s
+ok  	roundfix/internal/daemon	1.198s
+ok  	roundfix/internal/delivery	0.957s [no tests to run]
+ok  	roundfix/internal/docscontract	0.804s
+ok  	roundfix/internal/gittest	1.286s
+ok  	roundfix/internal/judge	0.358s [no tests to run]
+ok  	roundfix/internal/lighttier	0.312s [no tests to run]
+ok  	roundfix/internal/mdtree	0.218s [no tests to run]
+ok  	roundfix/internal/notify	0.623s
+ok  	roundfix/internal/openrouterkey	0.204s [no tests to run]
+ok  	roundfix/internal/preflight	0.948s
+ok  	roundfix/internal/releaseplan	0.558s
+ok  	roundfix/internal/reviewsource	0.547s
+ok  	roundfix/internal/reviewsource/coderabbit	0.700s
+ok  	roundfix/internal/rounds	0.599s
+ok  	roundfix/internal/runcause	0.313s [no tests to run]
+ok  	roundfix/internal/runevent	0.558s
+ok  	roundfix/internal/secretscan	0.202s [no tests to run]
+ok  	roundfix/internal/sharedcache	0.199s [no tests to run]
+ok  	roundfix/internal/skillcoverage	0.201s [no tests to run]
+ok  	roundfix/internal/skillhash	0.560s
+ok  	roundfix/internal/spec	1.295s
+ok  	roundfix/internal/specaudit	1.441s
+ok  	roundfix/internal/speccheck	2.784s
+ok  	roundfix/internal/store	1.383s
+ok  	roundfix/internal/suiteguard	1.272s
+ok  	roundfix/internal/suiteguardcontract	0.221s [no tests to run]
+ok  	roundfix/internal/testfixture	0.232s [no tests to run]
+ok  	roundfix/internal/testwait	0.211s [no tests to run]
+ok  	roundfix/internal/tui	0.817s
+ok  	roundfix/internal/verifyselect	25.984s
+ok  	roundfix/internal/watch	0.779s
+ok  	roundfix/internal/worktree	1.213s
+ok  	roundfix/skills	32.692s
+/tmp/qa0333/go-timeout test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	4.868s
+bin/roundfix spec check
+Spec 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/_techspec.md Vocabulary Contract
+Spec 0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run/_techspec.md Vocabulary Contract
+Spec 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty/_techspec.md Vocabulary Contract
+
+exit: 0

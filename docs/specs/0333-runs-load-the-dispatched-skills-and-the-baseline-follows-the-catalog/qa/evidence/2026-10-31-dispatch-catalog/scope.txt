@@ -1,0 +1,152 @@
+History audit b098f74e1e70908b5e6921c2686498b2484ae5db..95133cf3c91c7885bc27484b47759e76fe95376b
+Operative record: docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/_authorization.md at b098f74e1e70908b5e6921c2686498b2484ae5db
+Authority is already in each Task parent; the record is unchanged across all Task commits.
+No prerequisite/consequent fix declared; mechanical consequent-order skip retained.
+
+$ git diff-tree --no-commit-id --name-only -r 79650bbca40ccc4c813ae3cc5e7b7c57a9e3d116
+.agents/skills/context7-cli/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/context7-cli/references/docs.md | declared=True | governed=True | bounded
+.agents/skills/grilling/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/references/baseline.md | declared=True | governed=True | bounded
+.agents/skills/tui-design/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/tui-design/references/evidence.md | declared=True | governed=True | bounded
+docs/agents/setup-context.json | declared=True | governed=True | bounded
+docs/references/behavior-surfaces.json | declared=True | governed=False | ordinary
+docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/task_01.md | declared=True | governed=False | ordinary
+docs/user-guide/commands/baseline.md | declared=True | governed=False | ordinary
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md | declared=True | governed=True | bounded
+internal/baseline/assets/modules/backend.json | declared=True | governed=True | bounded
+internal/baseline/assets/modules/frontend.json | declared=True | governed=True | bounded
+internal/baseline/assets/modules/typescript.json | declared=True | governed=True | bounded
+internal/baseline/assets/profiles/standard-typescript-monorepo.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/go-cli-typescript-bun.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/go.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/python.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/rust.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/typescript.json | declared=True | governed=True | bounded
+internal/baseline/assets/skill-activations.json | declared=True | governed=True | bounded
+internal/baseline/module-versions.json | declared=True | governed=False | ordinary
+internal/baseline/retired_skills.go | declared=True | governed=False | ordinary
+internal/baseline/retired_skills_test.go | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.diagnostics.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.digest | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.normalized.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/parity-corpus/v1/manifest.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json | declared=True | governed=False | ordinary
+internal/baseline/upstream_setup_revision_test.go | declared=True | governed=False | ordinary
+skills-lock.json | declared=True | governed=False | ordinary
+skills/roundfix/SKILL.md | declared=True | governed=True | bounded
+skills/roundfix/references/baseline.md | declared=True | governed=False | ordinary
+skills/testdata/owned-skill-versions.json | declared=True | governed=False | ordinary
+
+$ git diff-tree --no-commit-id --name-only -r d2778997db36049c4b20d31af1d812e091879d60
+docs/agents/setup-context.json | declared=True | governed=True | bounded
+docs/agents/skill-dispatch.md | declared=True | governed=True | bounded
+docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/task_02.md | declared=True | governed=False | ordinary
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md | declared=True | governed=True | bounded
+internal/baseline/assets/modules/context-workflow.json | declared=True | governed=True | bounded
+internal/baseline/assets/modules/frontend.json | declared=True | governed=True | bounded
+internal/baseline/assets/modules/typescript.json | declared=True | governed=True | bounded
+internal/baseline/assets/profiles/standard-typescript-monorepo.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/go-cli-typescript-bun.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/typescript.json | declared=True | governed=True | bounded
+internal/baseline/assets/skill-activations.json | declared=True | governed=True | bounded
+internal/baseline/module-versions.json | declared=True | governed=False | ordinary
+internal/baseline/skill_dispatch_review_test.go | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.diagnostics.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.digest | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.normalized.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/parity-corpus/v1/manifest.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json | declared=True | governed=False | ordinary
+
+$ git diff-tree --no-commit-id --name-only -r 162b5b0a80317342e54349270eb384fb0c29176e
+.agents/skills/implement-task/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/qa-gate/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/references/reconcile.md | declared=True | governed=True | bounded
+CONTEXT.md | declared=True | governed=False | ordinary
+docs/references/behavior-surfaces.json | declared=True | governed=False | ordinary
+docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/task_03.md | declared=True | governed=False | ordinary
+docs/user-guide/commands/reconcile.md | declared=True | governed=False | ordinary
+internal/agent/spec_prompt.go | declared=True | governed=False | ordinary
+internal/agent/spec_prompt_test.go | declared=True | governed=False | ordinary
+internal/cli/carryforward_amendment_test.go | declared=True | governed=False | ordinary
+internal/daemon/task_context.go | declared=True | governed=False | ordinary
+internal/daemon/task_context_test.go | declared=True | governed=False | ordinary
+internal/spec/spec.go | declared=True | governed=False | ordinary
+internal/spec/spec_test.go | declared=True | governed=False | ordinary
+skills/implement-task/SKILL.md | declared=True | governed=True | bounded
+skills/qa-gate/SKILL.md | declared=True | governed=True | bounded
+skills/roundfix/SKILL.md | declared=True | governed=True | bounded
+skills/roundfix/references/reconcile.md | declared=True | governed=False | ordinary
+skills/testdata/owned-skill-versions.json | declared=True | governed=False | ordinary
+
+$ git diff-tree --no-commit-id --name-only -r 95133cf3c91c7885bc27484b47759e76fe95376b
+.agents/skills/archive-spec/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/implement-spec/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/SKILL.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/references/baseline.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/references/setup.md | declared=True | governed=True | bounded
+.agents/skills/roundfix/references/spec-delivery.md | declared=True | governed=True | bounded
+.agents/skills/write-tasks/SKILL.md | declared=True | governed=True | bounded
+Makefile | declared=True | governed=True | bounded
+docs/agents/setup-context.json | declared=True | governed=True | bounded
+docs/agents/skill-dispatch.md | declared=True | governed=True | bounded
+docs/references/behavior-surfaces.json | declared=True | governed=False | ordinary
+docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/task_04.md | declared=True | governed=False | ordinary
+docs/user-guide/commands/baseline.md | declared=True | governed=False | ordinary
+docs/user-guide/commands/skills.md | declared=True | governed=False | ordinary
+docs/user-guide/context-driven-development.md | declared=True | governed=False | ordinary
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md | declared=True | governed=True | bounded
+internal/baseline/assets/modules/context-workflow.json | declared=True | governed=True | bounded
+internal/baseline/assets/profiles/standard-typescript-monorepo.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/go-cli-typescript-bun.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/go.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/python.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/rust.json | declared=True | governed=True | bounded
+internal/baseline/assets/setups/typescript.json | declared=True | governed=True | bounded
+internal/baseline/assets_sync.go | declared=True | governed=False | ordinary
+internal/baseline/module-versions.json | declared=True | governed=False | ordinary
+internal/baseline/python_setup_test.go | declared=True | governed=False | ordinary
+internal/baseline/retired_skills.go | declared=True | governed=False | ordinary
+internal/baseline/retired_skills_test.go | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.diagnostics.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.digest | declared=True | governed=False | ordinary
+internal/baseline/testdata/catalog.normalized.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/parity-corpus/v1/manifest.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json | declared=True | governed=False | ordinary
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json | declared=True | governed=False | ordinary
+skills/archive-spec/SKILL.md | declared=True | governed=True | bounded
+skills/implement-spec/SKILL.md | declared=True | governed=True | bounded
+skills/retired_owned_skill_test.go | declared=True | governed=False | ordinary
+skills/roundfix/SKILL.md | declared=True | governed=True | bounded
+skills/roundfix/references/baseline.md | declared=True | governed=False | ordinary
+skills/roundfix/references/setup.md | declared=True | governed=False | ordinary
+skills/roundfix/references/spec-delivery.md | declared=True | governed=False | ordinary
+skills/setup_skill_invocation_test.go | declared=True | governed=False | ordinary
+skills/skills.go | declared=True | governed=False | ordinary
+skills/testdata/owned-skill-versions.json | declared=True | governed=False | ordinary
+skills/write-tasks/SKILL.md | declared=True | governed=True | bounded
+
+Makefile line diff:
+- # roundfix skill plus the 12 authorial workflow skills. Everything else is
++ # roundfix skill plus the 11 authorial workflow skills. Everything else is
+- OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming business-analyst archive-spec qa-gate evidence-gate
++ OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task brainstorming business-analyst archive-spec qa-gate evidence-gate
+
+QA settlement sections: unchanged
+Total Task commits: 4; changed paths: 78
+Current checkout delta: QA report/evidence only; no tracked source change.
+Errors: []

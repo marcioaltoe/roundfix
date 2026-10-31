@@ -1,0 +1,50 @@
+import sys,re,tarfile,io
+sys.path.insert(0,'/tmp/qa0333')
+from runner import *
+def archive():
+ d=pathlib.Path(tempfile.mkdtemp(prefix='q333-m-'))
+ data=subprocess.check_output(['git','archive',head],cwd=root)
+ with tarfile.open(fileobj=io.BytesIO(data)) as t: t.extractall(d,filter='data')
+ subprocess.run(['git','init','--quiet',str(d)],check=True)
+ subprocess.run(['git','-C',str(d),'add','--all'],check=True)
+ return d
+def change(d,path,old,new):
+ p=d/path;s=p.read_text();assert old in s,(path,old);p.write_text(s.replace(old,new,1))
+def jsonchange(d,path,fn):
+ p=d/path;o=json.loads(p.read_text());fn(o);p.write_text(json.dumps(o,indent=2)+'\n')
+def bundle(o,id): return next(x for x in o['bundles'] if x['id']==id)
+def snapshot(d):
+ old=json.loads(subprocess.check_output(['git','show',base+':internal/baseline/assets/setups/typescript.json'],cwd=root,text=True))
+ jsonchange(d,'internal/baseline/assets/setups/typescript.json',lambda o:o.update(activationBundles=old['activationBundles']))
+def retired(d): jsonchange(d,'internal/baseline/assets/skill-activations.json',lambda o:bundle(o,'bundle.testing')['skills'].append('tdd'))
+def trigger(d): change(d,'internal/baseline/assets/modules/context-workflow.json','When the person asks to stress-test a plan or decision against repository documents.','Stress-testing a plan or decision against repository documents.')
+def mixed(d): jsonchange(d,'internal/baseline/assets/skill-activations.json',lambda o:bundle(o,'bundle.frontend-ui-quality')['skills'].append('frontend-design'))
+def guide(d): change(d,'internal/daemon/task_context.go','\tif path, ok := add(existingRepoPath(plan.WorkDir, skillDispatchGuidePath)); ok {\n\t\tbundle.Instructions = append(bundle.Instructions, path)\n\t}\n','')
+def invariant(d):
+ p=d/'internal/agent/spec_prompt.go';s=p.read_text();line=next(x for x in s.splitlines(True) if x.startswith('- Before editing, when the Spec Context Bundle'));p.write_text(s.replace(line,'',1))
+def carry(d): change(d,'internal/spec/spec.go','\t\t"docs/agents/skill-dispatch.md",\n','')
+def owned(d):
+ change(d,'skills/skills.go','var skillNames = []string{','var skillNames = []string{\n\t"implement-spec",')
+ for p in ['skills/implement-spec/SKILL.md','.agents/skills/implement-spec/SKILL.md']:
+  target=d/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(subprocess.check_output(['git','show',base+':'+p],cwd=root))
+cases=[
+ (7,snapshot,'./internal/baseline','^(TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles|TestNoCatalogEntryNamesARetiredSkill)$',['--- FAIL: TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles','bundle.testing','--- FAIL: TestNoCatalogEntryNamesARetiredSkill','tdd']),
+ (8,retired,'./internal/baseline','^TestNoCatalogEntryNamesARetiredSkill$',['--- FAIL: TestNoCatalogEntryNamesARetiredSkill','tdd']),
+ (9,trigger,'./internal/baseline','^TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks$',['--- FAIL: TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks/grill-with-docs','want prefix']),
+ (10,mixed,'./internal/baseline','^TestTheFrontendBundlesSeparateProductUIFromPublicPages$',['--- FAIL: TestTheFrontendBundlesSeparateProductUIFromPublicPages','combines public-page and product-UI design']),
+ (11,guide,'./internal/daemon','^TestAssembleTaskContextBundleListsTheSkillDispatchGuideWhenPresent$',['--- FAIL: TestAssembleTaskContextBundleListsTheSkillDispatchGuideWhenPresent/present']),
+ (12,invariant,'./internal/agent','^TestBuildTaskPromptTellsTheAgentToLoadOnlyTheDispatchedSkills$',['--- FAIL: TestBuildTaskPromptTellsTheAgentToLoadOnlyTheDispatchedSkills']),
+ (13,carry,'./internal/cli','^TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide$',['--- FAIL: TestCarryForwardRefusesATaskWhoseBindingTextChanged/skill_dispatch_guide','exit=0']),
+ (14,owned,'./skills','^TestImplementSpecIsNotARoundfixOwnedSkill$',['--- FAIL: TestImplementSpecIsNotARoundfixOwnedSkill','implement-spec remains a Roundfix-owned skill'])]
+results=[]
+for n,mut,pkg,pattern,signals in cases:
+ if len(sys.argv)>1 and n not in [int(x) for x in sys.argv[1:]]: continue
+ d=archive()
+ try:
+  mut(d)
+  code,out=run('sabotage-'+str(n),['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg],cwd=d)
+  missing=[x for x in signals if x not in out]
+  results.append(dict(row=n,exit=code,missing=missing,rejected=(code!=0 and not missing)))
+  print(json.dumps(results[-1]),flush=True)
+ finally: clean(d)
+(work/'sabotage-results.json').write_text(json.dumps(results,indent=2)+'\n')

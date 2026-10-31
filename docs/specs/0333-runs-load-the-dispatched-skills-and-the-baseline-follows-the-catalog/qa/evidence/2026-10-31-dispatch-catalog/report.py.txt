@@ -1,0 +1,13 @@
+import sys,re
+sys.path.insert(0,'/tmp/qa0333')
+from runner import *
+report=spec/'qa/qa-report-2026-10-31.md'
+ev=spec/'qa/evidence/2026-10-31-dispatch-catalog'
+ev.mkdir(parents=True,exist_ok=True)
+def copylog(name):
+ src=work/name;target=ev/name;shutil.copyfile(src,target)
+ return 'evidence/2026-10-31-dispatch-catalog/'+name
+def update(n,status,text):
+ s=report.read_text();s=re.sub(r'(?m)^\| '+str(n)+r' \| [^|]+ \|', '| '+str(n)+' | '+status+' |',s)
+ pattern=r'(### Row '+str(n)+r' — [^\n]+\n\ninputs:\n  repository_path: [^\n]+\n(?:  commit_range: [^\n]+\n)?\n).*?(?=### Row |\Z)'
+ s,count=re.subn(pattern,lambda m:m.group(1)+text+'\n\n',s,flags=re.S);assert count==1,n;report.write_text(s)

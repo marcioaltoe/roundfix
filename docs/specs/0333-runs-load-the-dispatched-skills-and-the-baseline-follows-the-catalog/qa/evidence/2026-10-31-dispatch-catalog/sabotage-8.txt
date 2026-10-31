@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 20m -v -run '^TestNoCatalogEntryNamesARetiredSkill$' ./internal/baseline
+=== RUN   TestNoCatalogEntryNamesARetiredSkill
+=== PAUSE TestNoCatalogEntryNamesARetiredSkill
+=== CONT  TestNoCatalogEntryNamesARetiredSkill
+    retired_skills_test.go:24: [bundle.testing names retired skill tdd]
+--- FAIL: TestNoCatalogEntryNamesARetiredSkill (0.00s)
+FAIL
+suiteguard: guard cost: measured 2864 paths; fingerprint took 156.005417ms before and 140.908ms after
+FAIL	roundfix/internal/baseline	0.620s
+FAIL
+
+exit: 1

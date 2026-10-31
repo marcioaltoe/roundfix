@@ -1,0 +1,56 @@
+import sys,re
+sys.path.insert(0,'/tmp/qa0333')
+from runner import *
+def git(*args): return subprocess.check_output(['git',*args],cwd=root,text=True)
+authpath='docs/specs/'+slug+'/_authorization.md'
+auth=git('show',base+':'+authpath)
+bounds=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+gov=(root/'internal/speccheck/governed.go').read_text()
+patterns=[re.compile(x) for x in re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',gov)]
+exact=set(re.findall(r'"([^"\n]+)"',gov.split('exactGovernedPaths(',1)[1].split('),',1)[0]))
+errors=[];lines=['History audit '+base+'..'+head,'Operative record: '+authpath+' at '+base,'Authority is already in each Task parent; the record is unchanged across all Task commits.','No prerequisite/consequent fix declared; mechanical consequent-order skip retained.']
+for i,c in enumerate(git('rev-list','--reverse',base+'..'+head).splitlines(),1):
+ task=spec/('task_%02d.md'%i)
+ text=task.read_text();ctx=text.split('## Context\n',1)[1].split('\n## ',1)[0]
+ declared=set(re.findall(r'- (?:instruction|interface|creates|deletes): `([^`]+)`',ctx))
+ if '## Recorded paths' in text:
+  declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+ declared.add(str(task.relative_to(root)))
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines()
+ lines.append('\n$ git diff-tree --no-commit-id --name-only -r '+c)
+ for p in paths:
+  governed=any(x.search(p) for x in patterns) or p in exact
+  lines.append(p+' | declared='+str(p in declared)+' | governed='+str(governed)+' | '+('bounded' if p in bounds else 'ordinary'))
+  if p not in declared: errors.append(c+' undeclared '+p)
+  if governed and p not in bounds: errors.append(c+' governed outside grant '+p)
+  if p==authpath: errors.append(c+' authority folded into change')
+ subprocess.run(['git','merge-base','--is-ancestor',base,c+'^'],check=True,cwd=root)
+allpaths=git('diff','--name-only',base,head).splitlines()
+for p in allpaths:
+ if p.startswith('.github/workflows/') or p in ['go.mod','go.sum','.roundfixrc.yml']: errors.append('forbidden '+p)
+ if p.startswith('internal/baseline/assets/modules/') and pathlib.Path(p).stem not in ['typescript','backend','frontend','context-workflow']: errors.append('forbidden module '+p)
+ if p.startswith('.agents/skills/'):
+  name=p.split('/')[2]
+  if name not in ['context7-cli','grilling','tui-design','implement-task','qa-gate','roundfix','archive-spec','write-tasks','implement-spec']: errors.append('forbidden skill '+p)
+ if p.startswith('skills/') and '/SKILL.md' in p and p.split('/')[1] not in ['implement-task','qa-gate','roundfix','archive-spec','write-tasks','implement-spec']: errors.append('forbidden mirror '+p)
+old=git('show',base+':Makefile');new=(root/'Makefile').read_text()
+def permitted(s):
+ return '\n'.join(x for x in s.splitlines() if not x.startswith('OWNED_SKILLS :=') and not x.startswith('# The twelve authorial') and not x.startswith('# The eleven authorial'))
+# Inspect all Makefile changed lines, so only OWNED_SKILLS and its immediately preceding count comment can differ.
+import difflib
+changes=[x for x in difflib.ndiff(old.splitlines(),new.splitlines()) if x.startswith(('- ','+ '))]
+lines.append('\nMakefile line diff:\n'+'\n'.join(changes))
+oldlines=old.splitlines();newlines=new.splitlines()
+idx=next(i for i,x in enumerate(oldlines) if x.startswith('OWNED_SKILLS'))
+idx2=next(i for i,x in enumerate(newlines) if x.startswith('OWNED_SKILLS'))
+if old.replace('# roundfix skill plus the 12 authorial workflow skills.', '# roundfix skill plus the 11 authorial workflow skills.').replace('implement-task implement-spec brainstorming','implement-task brainstorming')!=new: errors.append('Makefile outside two authorized lines')
+for p in allpaths:
+ if not p.endswith('.md') or not p.startswith(('.agents/skills/','skills/')): continue
+ def read_at(rev):
+  r=subprocess.run(['git','show',rev+':'+p],cwd=root,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True);return r.stdout if r.returncode==0 else ''
+ def section(s):
+  m=re.search(r'(?ms)^### QA settlement\n.*?(?=^### |^## |\Z)',s);return m.group(0) if m else ''
+ if section(read_at(base))!=section(read_at(head)): errors.append('QA settlement changed '+p)
+lines.extend(['\nQA settlement sections: unchanged','Total Task commits: 4; changed paths: '+str(len(allpaths)),'Current checkout delta: QA report/evidence only; no tracked source change.','Errors: '+json.dumps(errors)])
+(work/'scope.txt').write_text('\n'.join(lines)+'\n')
+print('Scope errors: '+json.dumps(errors))

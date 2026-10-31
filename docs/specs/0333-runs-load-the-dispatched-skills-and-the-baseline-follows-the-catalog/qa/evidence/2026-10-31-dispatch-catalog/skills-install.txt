@@ -1,0 +1,4 @@
+$ ./bin/roundfix skills install --target project --dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q333-cli-07vepufn/install
+Installed Roundfix skill for project: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q333-cli-07vepufn/install (41 file(s))
+
+exit: 0

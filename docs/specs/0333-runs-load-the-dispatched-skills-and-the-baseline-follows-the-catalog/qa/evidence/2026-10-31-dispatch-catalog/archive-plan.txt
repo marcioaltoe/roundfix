@@ -1,0 +1,10 @@
+$ ./bin/roundfix archive 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog --plan --offline
+archive plan for 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog: removes 25 file(s) (199288 bytes) and writes docs/history/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-31.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 12 file(s) (35762 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-30-the-baseline-follows-the-curated-skills-catalog.md 3618 bytes: no advice (offline)
+candidate references/2026-10-30-the-completed-ui-ux-pro-max-updates-automatically.md 1984 bytes: no advice (offline)
+promote with: roundfix archive 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog --promote <path>
+
+exit: 0

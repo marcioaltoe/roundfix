@@ -1,0 +1,50 @@
+$ ./bin/roundfix skills list
+Bundled skills (install with 'roundfix skills install'):
+  roundfix
+  write-idea
+  write-prd
+  write-techspec
+  write-tasks
+  setup-context-driven
+  implement-task
+  brainstorming
+  business-analyst
+  archive-spec
+  qa-gate
+  evidence-gate
+Recommended skills (managed by your skills tooling, not shipped):
+  agentic-cli-design
+  ai-memory-durable-pages
+  ai-memory-handoff
+  ai-memory-learning-maintenance
+  ai-memory-messaging
+  ai-memory-retrieval
+  ai-memory-routing-install
+  bubbletea
+  coding-guidelines
+  context7-cli
+  conventional-commits
+  crafting-effective-readmes
+  domain-modeling
+  exa-web-search
+  github-pr-workflow
+  golang-cli
+  golang-concurrency
+  golang-context
+  golang-dependency-management
+  golang-error-handling
+  golang-lint
+  golang-safety
+  golang-structs-interfaces
+  golang-testing
+  grill-with-docs
+  grilling
+  knowledge-workspace
+  no-workarounds
+  systematic-debugging
+  tech-writer
+  testing-boss
+  tui-design
+  typesafe-ai
+
+exit: 0

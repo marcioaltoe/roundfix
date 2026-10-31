@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

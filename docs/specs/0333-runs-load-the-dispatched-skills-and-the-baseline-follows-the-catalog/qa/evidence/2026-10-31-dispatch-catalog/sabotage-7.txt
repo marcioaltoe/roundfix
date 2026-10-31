@@ -1,0 +1,31 @@
+$ go test -count=1 -timeout 20m -v -run '^(TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles|TestNoCatalogEntryNamesARetiredSkill)$' ./internal/baseline
+=== RUN   TestNoCatalogEntryNamesARetiredSkill
+=== PAUSE TestNoCatalogEntryNamesARetiredSkill
+=== RUN   TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles
+=== PAUSE TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles
+=== CONT  TestNoCatalogEntryNamesARetiredSkill
+=== CONT  TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles
+=== RUN   TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/typescript
+=== PAUSE TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/typescript
+=== RUN   TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/go-cli-typescript-bun
+=== PAUSE TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/typescript
+=== CONT  TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/go-cli-typescript-bun
+=== NAME  TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/typescript
+    retired_skills_test.go:67: setup typescript bundles = 10, want 11
+    retired_skills_test.go:81: setup typescript bundle bundle.debugging skills = [systematic-debugging diagnosing-bugs no-workarounds], want [systematic-debugging no-workarounds]
+    retired_skills_test.go:77: setup typescript bundle bundle.frontend-public-pages occurs 0 times, want 1
+    retired_skills_test.go:81: setup typescript bundle bundle.frontend-ui-quality skills = [frontend-design interaction-design interface-design fixing-accessibility wcag-audit-patterns web-design-guidelines], want [interaction-design interface-design fixing-accessibility]
+    retired_skills_test.go:81: setup typescript bundle bundle.testing skills = [testing-boss tdd vitest], want [testing-boss vitest]
+--- FAIL: TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles (0.00s)
+    --- FAIL: TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/typescript (0.00s)
+    --- PASS: TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles/go-cli-typescript-bun (0.00s)
+=== NAME  TestNoCatalogEntryNamesARetiredSkill
+    retired_skills_test.go:24: [bundle.debugging names retired skill diagnosing-bugs bundle.testing names retired skill tdd]
+--- FAIL: TestNoCatalogEntryNamesARetiredSkill (0.00s)
+FAIL
+suiteguard: guard cost: measured 2864 paths; fingerprint took 182.278583ms before and 143.214417ms after
+FAIL	roundfix/internal/baseline	0.662s
+FAIL
+
+exit: 1

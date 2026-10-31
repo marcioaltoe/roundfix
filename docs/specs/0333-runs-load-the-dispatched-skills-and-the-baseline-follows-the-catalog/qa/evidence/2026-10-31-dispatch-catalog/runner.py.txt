@@ -1,0 +1,33 @@
+import os, subprocess, tempfile, shutil, pathlib, json, shlex
+root=pathlib.Path.cwd()
+work=pathlib.Path('/tmp/qa0333')
+slug='0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog'
+spec=root/'docs/specs'/slug
+head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+base='b098f74e1e70908b5e6921c2686498b2484ae5db'
+cache={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE']}
+def clean(path):
+ subprocess.run(['chmod','-R','u+w',str(path)],check=True)
+ shutil.rmtree(path)
+def run(name,args,cwd=None,isolated=False):
+ dirs=[]; e=os.environ.copy();e.update(cache);e.update(GOPROXY='off',GOSUMDB='off')
+ for k in list(e):
+  if any(x in k for x in ['API_KEY','ACCESS_TOKEN','AUTH_TOKEN']): e.pop(k,None)
+ if isolated:
+  for k in ['HOME','TMPDIR']:
+   d=tempfile.mkdtemp(prefix='q333-');dirs.append(d);e[k]=d
+ log=work/(name+'.txt')
+ with log.open('w') as f:
+  f.write('$ '+shlex.join(args)+'\n');f.flush()
+  try:
+   r=subprocess.run(args,cwd=cwd or root,env=e,stdout=f,stderr=subprocess.STDOUT)
+   code=r.returncode
+  finally:
+   for d in dirs: clean(d)
+  f.write('\nexit: '+str(code)+'\n')
+ print(name+': exit '+str(code),flush=True)
+ return code,log.read_text()
+def cli(name,args): return run(name,['./bin/roundfix']+args,isolated=True)
+if __name__=='__main__':
+ cli('version',['--version'])
+ cli('precondition',['spec','check',slug,'--strict'])
