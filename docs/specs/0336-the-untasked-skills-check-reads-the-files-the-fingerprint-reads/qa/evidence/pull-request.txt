@@ -1,9 +1,0 @@
-Pull Request fact: none open, supplied by the Roundfix QA assignment for target branch roundfix/deliver-0336-the-untasked-skills-check-reads-the-files-the-fingerprint-reads-edf2f25f66c82873. No lookup on the Run branch.
-
-Approval: approved delivery authority is recorded in docs/specs/0336-the-untasked-skills-check-reads-the-files-the-fingerprint-reads/_authorization.md; maintainer cycle AS batch 2 answers dated 2026-10-31, preserving cycle AS/AJ grants. This is delivery authority, not a current Review Source acceptance.
-Checks/status: Daemon reports make verify-changed passed, exit 0, at audited head 53a17912dee16fe3b7b8fcc67ca695c1461448ef; successful diagnostics removed.
-Unresolved threads: none, because no Pull Request exists.
-Merge-Ready acceptance: none yet; no provider/reviewer request made.
-Review-artifact ancestry/candidate: 53a17912dee16fe3b7b8fcc67ca695c1461448ef is the claimed and audited candidate; no Merge-Ready artifact exists to claim as its acceptance.
-
-Cause: no open Pull Request. Unblocking action: normal authorized delivery opens the target-branch Pull Request and obtains its review/required-check controls. Those delivery operations are outside this child QA turn.

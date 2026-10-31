@@ -1,4 +1,0 @@
-make build: exit 0
-roundfix 0.126.0 (53a17912-dirty, built 2026-10-31 18:21:32 -0300)
-
-exit: 0
