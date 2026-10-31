@@ -6,6 +6,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -39,6 +40,33 @@ func TestRegenerationIsDeclared(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("an_unsanctioned_coverage_write_is_refused", func(t *testing.T) {
+		fixture := filepath.Join(t.TempDir(), "repository")
+		copyRepository(t, root, fixture)
+		writeArchivedItemRecord(t, fixture, false)
+		editBaselineModule(t, fixture)
+		staleCoverageRecord(t, fixture)
+		gitFixture(t, fixture, "record the unsanctioned coverage fixture")
+
+		for _, declaration := range declarations {
+			if !declaration.Matches("docs/references/coverage-record.json") {
+				continue
+			}
+			command := exec.Command("sh", "-c", declaration.Regenerate)
+			command.Dir = fixture
+			command.Env = os.Environ()
+			output, err := command.CombinedOutput()
+			if err == nil {
+				t.Fatalf("unsanctioned coverage regeneration succeeded:\n%s", output)
+			}
+			if !bytes.Contains(output, []byte("suiteguard: modified: docs/references/coverage-record.json")) {
+				t.Fatalf("unsanctioned coverage regeneration did not name the refused record: %v\n%s", err, output)
+			}
+			return
+		}
+		t.Fatal("coverage regeneration declaration not found")
+	})
 }
 
 func runRegenerationFixture(t *testing.T, sourceRoot string, removeIndex int) []changedFile {
@@ -48,7 +76,8 @@ func runRegenerationFixture(t *testing.T, sourceRoot string, removeIndex int) []
 	if removeIndex >= 0 {
 		removeDeclarationFromFile(t, filepath.Join(fixture, ".roundfixrc.yml"), removeIndex)
 	}
-	addFixtureRegenerationAuthorization(t, fixture)
+	writeArchivedItemRecord(t, fixture, true)
+	staleCoverageRecord(t, fixture)
 	editBaselineModule(t, fixture)
 	gitFixture(t, fixture, "record the module edit")
 
@@ -66,7 +95,24 @@ func runRegenerationFixture(t *testing.T, sourceRoot string, removeIndex int) []
 			t.Fatalf("regeneration declaration %d (%q): %v\n%s", index, declaration.Regenerate, err, output)
 		}
 	}
-	return changedFiles(t, fixture)
+	changed := changedFiles(t, fixture)
+	coverageChanged := false
+	for _, file := range changed {
+		if file.path == "docs/references/coverage-record.json" {
+			coverageChanged = true
+		}
+	}
+	if !coverageChanged {
+		t.Fatal("regeneration did not change the stale coverage record")
+	}
+	coverage, err := os.ReadFile(filepath.Join(fixture, "docs/references/coverage-record.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(coverage, []byte("TestRegenerationFixtureStaleEntry")) {
+		t.Fatal("regenerated coverage record still contains the stale entry")
+	}
+	return changed
 }
 
 type changedFile struct {
@@ -230,26 +276,91 @@ func editBaselineModule(t *testing.T, repository string) {
 	}
 }
 
-func addFixtureRegenerationAuthorization(t *testing.T, repository string) {
+func writeArchivedItemRecord(t *testing.T, repository string, sanctionCoverage bool) {
 	t.Helper()
-	path := filepath.Join(repository, "docs/workflow/authorizations/regeneration-fixture.md")
+	for _, path := range []string{"docs/specs", "docs/workflow/authorizations"} {
+		if err := os.RemoveAll(filepath.Join(repository, path)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records, err := filepath.Glob(filepath.Join(repository, "docs/history/specs/*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, record := range records {
+		if err := os.Remove(record); err != nil {
+			t.Fatal(err)
+		}
+	}
+	path := filepath.Join(repository, "docs/history/specs/0001-the-archived-item.md")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	content := "## Sanctioned regeneration\n\n```yaml\ncommand: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1\noutputs:\n  - internal/baseline/assets/modules/context-workflow.json\n  - internal/baseline/module-versions.json\n```\n\n```yaml\ncommand: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1\noutputs:\n  - docs/references/coverage-record.json\n```\n"
+	content := `---
+schema: roundfix/archive-record/v1
+spec: 0001-the-archived-item
+title: The archived item
+status: archived
+created: "2026-10-30"
+archived: "2026-10-30"
+source: docs/specs/0001-the-archived-item
+source_revision: 0123456789012345678901234567890123456789
+disposition: pass
+qa_task: task_01
+qa_report: qa/2026-10-30.md
+qa_verdict: pass
+unproven: []
+adrs: []
+sources: []
+promoted: []
+regeneration:
+  - command: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+    outputs:
+      - internal/baseline/assets/modules/context-workflow.json
+      - internal/baseline/module-versions.json
+  - command: make baseline-digests
+`
+	if sanctionCoverage {
+		content += `  - command: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+    outputs:
+      - docs/references/coverage-record.json
+`
+	}
+	content += "---\n\n# The archived item\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	fixtureTest := filepath.Join(repository, "internal/spec/regeneration_fixture_test.go")
-	const source = `package spec
-
-import "roundfix/internal/suiteguard"
-
-func init() {
-	suiteguard.DeclareSanctionedRegeneration("go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1")
 }
-`
-	if err := os.WriteFile(fixtureTest, []byte(source), 0o644); err != nil {
+
+func staleCoverageRecord(t *testing.T, repository string) {
+	t.Helper()
+	path := filepath.Join(repository, "docs/references/coverage-record.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var record map[string]json.RawMessage
+	if err := json.Unmarshal(data, &record); err != nil {
+		t.Fatal(err)
+	}
+	var packages map[string][]string
+	if err := json.Unmarshal(record["packages"], &packages); err != nil {
+		t.Fatal(err)
+	}
+	names := packages["roundfix/internal/spec"]
+	if len(names) == 0 {
+		t.Fatal("coverage record has no internal/spec tests to replace")
+	}
+	names[0] = "TestRegenerationFixtureStaleEntry"
+	record["packages"], err = json.Marshal(packages)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

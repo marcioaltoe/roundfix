@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0332-the-delivery-queue-regenerates-the-derived-records-of-an-archived-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -132,3 +132,51 @@ adopted Backlog Entry of 2026-10-27,
 - `_prd.md` → Goals; Core Features 1, 2, 4; Skills; Success Metric 1; Success Metric 2; Success Metric 4; Glossary
 - `_techspec.md` → Current behavior; API Contracts 1-3; Data Models; Invariants 1-3, 5; Build Order 1
 - ADR-0345, ADR-0149
+
+
+## Result
+
+Implemented this Task's slice. Task status remains Daemon-owned.
+
+- Acceptance criterion 1: the coverage writer now declares
+  `coverageRecordCommand` only inside the update-flag branch and before writing.
+  A focused run of the regeneration contract passed both the sanctioned parent
+  fixture and `an_unsanctioned_coverage_write_is_refused`. The latter requires a
+  non-zero coverage-command exit and the exact refused-record diagnostic.
+- Acceptance criterion 2: both fixtures use the existing in-process repository
+  copy, remove active Specs, legacy authorizations and existing Archive Record
+  files, and write the archived item's record with the required regeneration
+  list. Both retain the module edit and commit a stale, valid coverage record.
+  The positive fixture runs all seven declarations, requires every command to
+  exit zero, requires the coverage record among changed paths, and rejects a
+  remaining stale entry. No declaration is injected; the three ablation bodies
+  retain their bytes.
+- Acceptance criterion 3: the added repository-rule bullet and the expanded
+  **Archive Record** definition both link ADR-0345. Existing repository-rule
+  lines and glossary sentences were retained. The `config keys` Coverage Review
+  is dated `2026-10-30`; every other byte of the map was retained.
+
+Focused checks:
+
+- Before changing the writer, the revised fixture reproduced the nested coverage
+  command's exit 1 and `suiteguard: modified: docs/references/coverage-record.json`.
+  The outer guard also reported documentation edited during that initial run;
+  the subsequent passing run used the stable, final source and documentation.
+- `go test -tags docscontract ./internal/config -run '^TestRegenerationIsDeclared$/^an_unsanctioned_coverage_write_is_refused$' -count=1 -timeout 15m -v`
+  exited 0 (`roundfix/internal/config`, 56.666 s). The parent exercised all
+  regenerations; the selected unsanctioned subtest passed. The three ablation
+  subtests were outside this focused selection.
+- `go test ./internal/spec -run '^(TestMarshalCoverageRecordIsDeterministic|TestCoverageRecordCountsNoPackageUnderDocs)$' -count=1 -timeout 5m -v`
+  exited 0 (`roundfix/internal/spec`, 1.155 s).
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1 -timeout 5m -v`
+  exited 0 (`roundfix/internal/docscontract`, 0.418 s).
+- Python inspections confirmed byte equality between the command constant and
+  the Project Config declaration, flag/declaration/write ordering, unchanged
+  ablation bodies, no injected declaration or source file, exactly one top-level
+  config contract test, the bounded documentation edits, and untouched protected
+  paths. `gofmt` was applied to both Go files; `git diff --check` exited 0.
+
+The Task's declared Verification and both repository Verification commands were
+not run; they remain Daemon-owned. The coverage record re-record belongs to
+`task_02` and was not run in this worktree. No commit, push, Pull Request, other
+Task-file edit or Task Graph edit was made.

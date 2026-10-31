@@ -804,7 +804,7 @@
         "internal/config/*.go",
         "docs/user-guide/configuration.md"
       ],
-      "review": "2026-10-22 — the two new secondbrain keys are described by the new follow-up reference, which task_01 adds to this surface's covering files; no existing reference described them."
+      "review": "2026-10-30 — only the regeneration contract test in internal/config changed; no configuration key, default, validation or message changed."
     },
     {
       "id": "exit codes",
