@@ -78,6 +78,59 @@ func TestToolingRowStatesApplicability(t *testing.T) {
 	}
 }
 
+func TestANoMutationRowCitingAnEmptyGrantIsNotUnbounded(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	tests := []struct {
+		name          string
+		reason        string
+		paths         string
+		wantUnbounded bool
+	}{
+		{
+			name:   "no mutation with an empty grant",
+			reason: "applicable — no protected tooling mutation proposed or authorized",
+			paths:  "[]",
+		},
+		{
+			name:          "no mutation with a grant listing Makefile",
+			reason:        "applicable — no protected tooling mutation proposed or authorized",
+			paths:         "\n  - Makefile",
+			wantUnbounded: true,
+		},
+		{
+			name:          "declared mutation with an empty grant",
+			reason:        "applicable — protected tooling mutation proposed and authorized",
+			paths:         "[]",
+			wantUnbounded: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			row := "Tooling authority: " + tt.reason + "; Spec-contained authorization record: `" + recordPath + "`; bounded files: none."
+			record := "---\nstatus: approved\ngranted: 2026-10-30\naction: deliver this Spec\noperations: [implement, commit, push, pull_request, merge]\npaths: " + tt.paths + "\nconsuming: 0114-tooling-row\n---\n"
+			repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+			if err != nil {
+				t.Fatalf("CheckStage(StagePRD): %v", err)
+			}
+			wantCount := 0
+			if tt.wantUnbounded {
+				wantCount = 1
+			}
+			if findings := findingsWithCode(result, speccheck.CodeToolingUnbounded); len(findings) != wantCount {
+				t.Fatalf("%s findings = %#v, want %d", speccheck.CodeToolingUnbounded, findings, wantCount)
+			}
+			if len(result.Findings) != wantCount {
+				t.Fatalf("StagePRD findings = %#v, want only %d unbounded findings", result.Findings, wantCount)
+			}
+		})
+	}
+}
+
 func writeToolingRowFixture(t *testing.T, toolingRow, recordPath, record string) (string, string, string) {
 	t.Helper()
 
