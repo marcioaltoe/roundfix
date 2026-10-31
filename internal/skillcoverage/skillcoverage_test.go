@@ -147,6 +147,46 @@ func TestRecordRoundTripsByteForByte(t *testing.T) {
 	}
 }
 
+func TestAGoTestFileBelongsToNoBehaviorSurface(t *testing.T) {
+	t.Parallel()
+	m := skillcoverage.Map{Surfaces: []skillcoverage.Surface{
+		{ID: "directory", Sources: []string{"internal/cli/"}},
+		{ID: "wildcard", Sources: []string{"internal/config/*.go"}},
+		{ID: "exact", Sources: []string{"internal/cli/run_test.go"}},
+	}}
+	for _, tc := range []struct {
+		path string
+		read bool
+		ids  []string
+	}{
+		{"internal/config/config_test.go", false, nil},
+		{"internal/cli/deep/run_test.go", false, nil},
+		{"internal/cli/run_test.go", false, nil},
+		{"internal/config/config.go", true, []string{"wildcard"}},
+		{"internal/config/test_helpers.go", true, []string{"wildcard"}},
+		{"internal/config/config_testing.go", true, []string{"wildcard"}},
+		{"internal/cli/deep/run.go", true, []string{"directory"}},
+		{"docs/user-guide/commands/spec.md", true, nil},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			if got := skillcoverage.FingerprintReads(tc.path); got != tc.read {
+				t.Errorf("FingerprintReads(%q) = %t, want %t", tc.path, got, tc.read)
+			}
+			surfaces := m.SurfacesForPath(tc.path)
+			if !tc.read && surfaces != nil {
+				t.Errorf("SurfacesForPath(%q) = %v, want nil", tc.path, surfaces)
+			}
+			var ids []string
+			for _, surface := range surfaces {
+				ids = append(ids, surface.ID)
+			}
+			if !reflect.DeepEqual(ids, tc.ids) {
+				t.Errorf("surface ids = %v, want %v", ids, tc.ids)
+			}
+		})
+	}
+}
+
 func TestSurfacesForPathFollowTheSourceGrammar(t *testing.T) {
 	m := skillcoverage.Map{Surfaces: []skillcoverage.Surface{
 		{ID: "directory", Sources: []string{"internal/cli/", "internal/cli/run.go"}},

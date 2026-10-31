@@ -65,6 +65,9 @@ or `creates:`, or an unchanged entry plus a non-QA Task declaring the Skill
 Coverage Map to record the Coverage Review. Both detectors skip a repository
 without `docs/references/skill-coverage.json` and a PRD committed before the
 oldest commit that added it; an uncommitted PRD is held.
+A Go test file, whose name ends in `_test.go`, is never a Behavior Surface source,
+because no fingerprint reads it, so declaring one needs no skills Task even
+when a source pattern matches it.
 
 - `SC-SKILLS-MALFORMED` — a Skills Declaration line has another shape, names
   an unknown surface or gives a blank reason. Runs from the PRD stage.

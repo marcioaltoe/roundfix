@@ -104,6 +104,42 @@ func TestSkillsTaskIsRequiredForAChangedSurface(t *testing.T) {
 	}
 }
 
+func TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []string{"interface", "creates", "deletes"} {
+		t.Run(kind, func(t *testing.T) {
+			root := skillsRepo(t, "", true)
+			for _, tc := range []struct {
+				path string
+				want int
+			}{
+				{"internal/cli/example_test.go", 0},
+				{"internal/cli/sub/other_test.go", 0},
+				{"internal/cli/example_testing.go", 1},
+				{"internal/cli/sub/other.go", 1},
+			} {
+				t.Run(tc.path, func(t *testing.T) {
+					skillsTasks(t, root, kind+": "+tc.path)
+					findings := skillsCount(t, skillsCheck(t, root, StageTasks), CodeSkillsUntasked, tc.want)
+					if tc.want == 1 && !strings.Contains(findings[0].Summary, tc.path) {
+						t.Fatalf("summary %q omits %q", findings[0].Summary, tc.path)
+					}
+				})
+			}
+		})
+	}
+	t.Run("test-only Task beside a source Task", func(t *testing.T) {
+		root := skillsRepo(t, "", true)
+		skillsTasks(t, root, "interface: internal/cli/example_test.go", "interface: internal/cli/example.go")
+		f := skillsCount(t, skillsCheck(t, root, StageTasks), CodeSkillsUntasked, 1)[0]
+		for _, text := range []string{"task_02", "internal/cli/example.go"} {
+			if !strings.Contains(f.Summary, text) {
+				t.Fatalf("summary %q omits %q", f.Summary, text)
+			}
+		}
+	})
+}
+
 func TestAnUnchangedDeclarationExcusesASurface(t *testing.T) {
 	t.Parallel()
 	root := skillsRepo(t, "## Skills\n\n- unchanged: "+skillsFixtureSurface+" — help is unchanged\n", true)

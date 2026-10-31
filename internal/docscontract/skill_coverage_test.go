@@ -113,7 +113,7 @@ func computeBehaviorSurfaces(t *testing.T, root string) map[string]string {
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || !skillcoverage.FingerprintReads(entry.Name()) {
 			continue
 		}
 		file, err := parser.ParseFile(token.NewFileSet(), filepath.Join(root, "internal/config", entry.Name()), nil, 0)

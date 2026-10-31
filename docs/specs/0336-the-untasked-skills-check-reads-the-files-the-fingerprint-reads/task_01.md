@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0336-the-untasked-skills-check-reads-the-files-the-fingerprint-reads
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -124,3 +124,58 @@ fingerprint ignores"
 
 - `_prd.md` → Goals; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior 1-5; API Contracts 1-4; Invariants 1-4; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, systematic-debugging, no-workarounds, golang-testing, testing-boss, tech-writer, evidence-gate, knowledge-workspace.
+
+Added `skillcoverage.FingerprintReads`, which refuses exactly basenames ending
+in `_test.go`, and an early nil return in `Map.SurfacesForPath`. The config-key
+fingerprint now calls the same predicate. Added both regression tests and the
+specified sentence to each target paragraph; synchronized the reference mirror
+and recorded Roundfix skill version `0.1.165` above `0.1.164`.
+
+### Focused evidence
+
+- Characterization before the production change:
+  `go test ./internal/speccheck -run '^TestAGoTestFileUnderACoveredSourceNeedsNoSkillsTask$/interface/internal/cli/example_test.go$' -count=1 -v`
+  exited 1 with exactly one `SC-SKILLS-UNTASKED` for
+  `internal/cli/example_test.go`, where the regression expects zero.
+- `go test -count=1 -run '^TestAGoTestFile' ./internal/skillcoverage ./internal/speccheck`
+  exited 0 for both packages. The eight map cases assert the predicate and
+  surface ids, including nil for excluded files; the Spec Check covers all
+  twelve declaration/path combinations and the finding belonging to `task_02`
+  when `task_01` declares only a test file.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent$'`
+  exited 0, preserving the fixture's exclusion of an unparsable Go test file
+  and its parsed config-key, exit-code and guide fingerprints.
+- `make skills-sync` exited 0, followed by
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exiting 0. A subsequent read-only
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -count=1`
+  exited 0 against the regenerated version fields and record.
+- As the final implementation mutation after the last guide edit,
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0. Only the Result evidence was written afterward.
+- `git diff --check` exited 0. A read-only Python audit against `HEAD` confirmed
+  that the detector is byte-identical, the fingerprint reader has only the
+  required one-line replacement, and every pre-existing test is byte-identical.
+  It also checked that each documentation edit adds only the requested sentence,
+  both mirror files equal their canonical copies, both version fields equal
+  `0.1.165`, all previous version history is preserved, and only
+  `guide docs/user-guide/commands/spec.md` changes fingerprint. Exactly the
+  eleven declared implementation paths and this Task file are changed; no
+  untracked files were introduced.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Go test files need no skills Task; other covered sources still do | Both new regression tests pass; the Spec Check asserts zero findings for test files and exactly one naming each non-test path across `interface`, `creates` and `deletes`, plus the correct `task_02` binding. |
+| Shared predicate and unchanged-source fingerprints | The lookup and config-key reader use `FingerprintReads`; the existing fingerprint fixture passes, and the regenerated record changes only the edited spec guide. |
+| Written rule, matching mirrors, version and Behavior Surface records | The guide and both references contain the rule; mirror equality and version history were checked, the version recorder and subsequent focused version check pass, and the final Behavior Surface recorder passes. |
+
+Task status remains Daemon-owned and unchanged. No declared Verification,
+repository Verification, commit, push or pull request was run. No follow-up
+outside this slice was identified; Daemon Verification and settlement remain
+outstanding.
