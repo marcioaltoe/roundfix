@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-30
-spec: null
+spec: 0336-the-untasked-skills-check-reads-the-files-the-fingerprint-reads
 reason: null
 ---
 
