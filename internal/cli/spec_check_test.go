@@ -538,7 +538,8 @@ func TestRunSpecCheckWithoutSlugChecksEveryActiveSpec(t *testing.T) {
 func TestRunSpecCheckUnreadableRootIsUsageError(t *testing.T) {
 	t.Parallel()
 	_, repoDir := newSpecCheckWorkspace(t, "clean")
-	missingRoot := filepath.Join(repoDir, "missing-spec-root")
+	// An absent internal root is empty; a missing external root remains refused.
+	missingRoot := filepath.Join(t.TempDir(), "missing-spec-root")
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "specs:\n  root: "+missingRoot+"\n")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

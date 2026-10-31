@@ -17,6 +17,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -426,5 +428,64 @@ func copyReleaseCheckSkills(t *testing.T, repo string) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes(t *testing.T) {
+	t.Parallel()
+	contracts := []struct {
+		sentence string
+		typ      reflect.Type
+	}{
+		{"The list report carries these JSON fields:", reflect.TypeOf(followUpDocument{})},
+		{"The status report carries these JSON fields:", reflect.TypeOf(followUpStatusDocument{})},
+		{"Each source carries these JSON fields:", reflect.TypeOf(followUpSource{})},
+		{"The judge carries these JSON fields:", reflect.TypeOf(followUpJudge{})},
+		{"Each item carries these JSON fields:", reflect.TypeOf(followUpItem{})},
+		{"A message type is empty or one of", nil},
+	}
+	namesPattern := regexp.MustCompile("`([^`]+)`")
+	for _, path := range []string{
+		"docs/user-guide/commands/follow-up.md",
+		".agents/skills/roundfix/references/follow-up.md",
+		"skills/roundfix/references/follow-up.md",
+	} {
+		t.Run(path, func(t *testing.T) {
+			t.Parallel()
+			content := readBaselineDocumentation(t, filepath.Join(baselineDocumentationRepoRoot(), path))
+			content = strings.Join(strings.Fields(content), " ")
+			for _, contract := range contracts {
+				_, rest, found := strings.Cut(content, contract.sentence)
+				if !found {
+					t.Errorf("missing sentence %q", contract.sentence)
+					continue
+				}
+				sentence, _, ended := strings.Cut(rest, ".")
+				if !ended {
+					t.Errorf("sentence %q has no ending period", contract.sentence)
+					continue
+				}
+				var got, want []string
+				for _, match := range namesPattern.FindAllStringSubmatch(sentence, -1) {
+					got = append(got, match[1])
+				}
+				if contract.typ == nil {
+					for _, entry := range followUpMessageTypes {
+						want = append(want, entry.Name)
+					}
+				} else {
+					for index := 0; index < contract.typ.NumField(); index++ {
+						field := contract.typ.Field(index)
+						name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+						if field.IsExported() && name != "" && name != "-" {
+							want = append(want, name)
+						}
+					}
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Errorf("%s names=%q, want %q", contract.sentence, got, want)
+				}
+			}
+		})
 	}
 }

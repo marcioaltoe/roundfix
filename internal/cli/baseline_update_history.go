@@ -104,7 +104,7 @@ func planBaselineUpdateHistory(ctx context.Context, repo string, environment com
 	if err != nil {
 		return blocked(err)
 	}
-	specs, err := config.ResolveSpecsRoot(loaded, root)
+	specs, err := config.ResolveSpecsRootOrAbsent(loaded, root)
 	if err != nil {
 		return blocked(err)
 	}

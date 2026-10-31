@@ -30,6 +30,15 @@ implementation or delivery authority. A `shared` row predicts the later
 item's `premise-changed` warning after the earlier item merges; it never blocks
 the Spec or stops a queue.
 
+An absent Spec Root inside the repository reads as an empty one. A root is
+absent when its resolved path has no filesystem entry and its nearest existing ancestor, after symbolic links are evaluated, lies inside
+or at the evaluated repository root.
+`deliver plan` without slugs reports no Spec in that state; `deliver status`,
+`stop`, `resume` and the queue owner load as with an empty root. Named
+`deliver plan`, `start` and `retry` keep their existing refusal.
+A named Spec, a dangling link, a file, an unreadable root or a missing
+external root is still refused (ADR-0348).
+
 For each queued Spec, `roundfix deliver` advances from the Run to merge in
 this order: Run, pre-PR review, archive on the branch, repository gate, push,
 pull request, Pull Request Record Commit, current-head checks, and squash merge. With pre-PR review set to

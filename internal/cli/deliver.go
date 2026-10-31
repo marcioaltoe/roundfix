@@ -115,6 +115,9 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("retry", err, stderr)
 	}
+	if err := specsRoot.RequirePresent(); err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
 	archiveRoot := spec.ArchiveSpecRoot(specsRoot.Path, specsRoot.BuiltInRoot)
 	recordPath := spec.ArchiveRecordPath(archiveRoot, specSlug)
 	if _, err := os.Lstat(recordPath); err == nil {
@@ -265,6 +268,9 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	loaded, specsRoot, err := loadDeliveryCommand(ctx, environment, stderr)
 	if err != nil {
+		return printDeliverFailure("start", err, stderr)
+	}
+	if err := specsRoot.RequirePresent(); err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
 	graphs := make([]*spec.Graph, 0, len(options.Slugs))
@@ -710,7 +716,7 @@ func loadDeliveryCommand(
 	if strings.TrimSpace(loaded.GitRoot) == "" {
 		return roundconfig.Loaded{}, roundconfig.SpecsRoot{}, errors.New("deliver requires a git repository working tree")
 	}
-	specsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	specsRoot, err := roundconfig.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	if err != nil {
 		return roundconfig.Loaded{}, roundconfig.SpecsRoot{}, err
 	}

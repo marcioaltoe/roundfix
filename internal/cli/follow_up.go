@@ -259,12 +259,7 @@ func followUpOrder(items []followUpItem, answers map[string]judge.FollowUpAnswer
 				item.Blocks = item.RequestedBy
 			}
 		} else {
-			switch {
-			case item.Type == "fix" || item.Type == "perf" || item.Kind == "finding":
-				item.Priority = 2
-			case item.Type == "feat":
-				item.Priority = 3
-			}
+			item.Priority = followUpTypeClass(item.Type, item.Kind)
 			if item.Reason == nil {
 				item.Reason = followUpString("no answer")
 			}

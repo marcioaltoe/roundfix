@@ -290,6 +290,41 @@ func TestFollowUpOrdersItemsByTheFourAnswers(t *testing.T) {
 	}
 }
 
+func TestFollowUpAcceptsEveryDocumentedMessageType(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ typ, storedType, priority string }{
+		{"other", "other", "other"},
+		{"feat", "feat", "feature"},
+		{"feature", "feature", "feature"},
+		{"finding", "finding", "health"},
+		{"fix", "fix", "health"},
+		{"information", "information", "other"},
+		{"perf", "perf", "health"},
+		{"refactor", "refactor", "other"},
+		{"", "message", "other"},
+	} {
+		t.Run(tc.storedType, func(t *testing.T) {
+			t.Parallel()
+			f := newFollowUpFixture(t)
+			message := map[string]string{"id": "one", "created_at": "2026-10-01", "text": "Pending work."}
+			if tc.typ != "" {
+				message["type"] = tc.typ
+			}
+			doc := followUpJSON(t, "--messages", followUpWriteMessages(t, []map[string]string{message}))
+			if len(doc.Items) != 1 {
+				t.Fatalf("items=%+v, want one message", doc.Items)
+			}
+			item := doc.Items[0]
+			if item.Ref != "message:one" || item.Kind != "message" || item.Type != tc.storedType || item.PriorityName != tc.priority || item.Basis != "type" {
+				t.Fatalf("item=%+v, want type=%q priority_name=%q basis=type", item, tc.storedType, tc.priority)
+			}
+			if f.judge.calls != 0 || doc.Judge.State != "unavailable" {
+				t.Fatalf("judge calls=%d report=%+v, want unavailable without a key", f.judge.calls, doc.Judge)
+			}
+		})
+	}
+}
+
 func TestFollowUpOrdersByTypeWithoutTheJudge(t *testing.T) {
 	t.Parallel()
 	for _, mode := range []string{"no key", "Run", "ceiling"} {
@@ -477,6 +512,21 @@ func TestFollowUpRefusesAnUnknownFormat(t *testing.T) {
 	want := "roundfix: follow-up failed: unknown --format \"yaml\"; use text or json\nRun 'roundfix follow-up --help' for usage.\n"
 	if out != "" || stderr != want || code != 2 {
 		t.Fatalf("stdout=%q stderr=%q exit=%d", out, stderr, code)
+	}
+}
+
+func TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes(t *testing.T) {
+	t.Parallel()
+	newFollowUpFixture(t)
+	path := followUpWriteMessages(t, []map[string]string{{"id": "one", "created_at": "2026-10-01", "text": "Pending work.", "type": "chore"}})
+	names := make([]string, 0, len(followUpMessageTypes))
+	for _, entry := range followUpMessageTypes {
+		names = append(names, entry.Name)
+	}
+	want := fmt.Sprintf("roundfix: follow-up failed: messages file %q: invalid type %q; use one of %s, or omit type\nRun 'roundfix follow-up --help' for usage.\n", path, "chore", strings.Join(names, ", "))
+	out, stderr, code := followUpRunCLI(t, "--messages", path)
+	if out != "" || code != 2 || stderr != want {
+		t.Fatalf("stdout=%q stderr=%q exit=%d, want empty stdout, stderr=%q exit=2", out, stderr, code, want)
 	}
 }
 

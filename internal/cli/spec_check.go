@@ -247,13 +247,19 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printSpecCheckFailure(errors.New("spec check requires a git repository working tree"), stderr)
 		return exitPreflight
 	}
-	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	if err != nil {
 		printSpecCheckFailure(err, stderr)
 		return exitPreflight
 	}
 
 	slugs := req.slugs
+	if len(slugs) > 0 {
+		if err := resolvedSpecsRoot.RequirePresent(); err != nil {
+			printSpecCheckFailure(err, stderr)
+			return exitPreflight
+		}
+	}
 	if len(slugs) == 0 {
 		active, skipped, err := spec.ListActiveDetailed(resolvedSpecsRoot.Path)
 		if err != nil {
