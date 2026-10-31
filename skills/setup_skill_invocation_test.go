@@ -1,6 +1,6 @@
 // Suite: setup-context-driven skill invocation contract
 // Invariant: an Agent may start the setup skill while Plan Digest approval remains required
-// Boundary: person-only skills keep their invocation lock
+// Boundary: canonical and shipped setup guidance retain Plan Digest approval
 
 package skills
 
@@ -45,19 +45,6 @@ func TestAnAgentMayStartTheSetupSkill(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("person-only-skills-keep-the-lock", func(t *testing.T) {
-		t.Parallel()
-		path := filepath.Join("..", ".agents", "skills", "implement-spec", "SKILL.md")
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		frontmatter, _ := setupSkillFrontmatterAndBody(string(data))
-		if !strings.Contains(frontmatter, "disable-model-invocation: true") {
-			t.Fatalf("%s no longer keeps the person-only invocation lock", path)
-		}
-	})
 }
 
 func setupSkillFrontmatterAndBody(content string) (string, string) {

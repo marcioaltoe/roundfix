@@ -1052,7 +1052,7 @@ agent work as composable skills built on software-engineering fundamentals:
   validate quality.
 
 Roundfix adapts those ideas into this repository's pipeline (`write-idea`,
-`write-prd`, `write-techspec`, `write-tasks`, `implement-spec`/`implement-task`,
+`write-prd`, `write-techspec`, `write-tasks`, `implement-task`,
 `qa-gate`, `archive-spec`) and ships the authorial skill bundle in the binary.
 The skills are maintained as an adaptation at
 [`marcioaltoe/skills`](https://github.com/marcioaltoe/skills) and pinned through

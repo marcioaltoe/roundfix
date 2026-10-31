@@ -5,15 +5,15 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.22
+  version: 0.0.23
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.22
+version: 0.0.23
 ---
 
 # Write Tasks
 
-Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the executable task graph: one `task_NN.md` per task plus `_tasks.md`, the manifest that `implement-task`, `implement-spec`, and any future daemon schedule from. The artifacts are the contract — a fresh agent session must be able to pick up one task file and build it with no other context than the spec folder.
+Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the executable task graph: one `task_NN.md` per task plus `_tasks.md`, the manifest that `implement-task` and the Roundfix Daemon schedule from. The artifacts are the contract — a fresh agent session must be able to pick up one task file and build it with no other context than the spec folder.
 
 ## Light tier planning
 

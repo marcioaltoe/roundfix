@@ -61,6 +61,10 @@
       {
         "version": "0.0.16",
         "digest": "753f1e913ae2f3e189936e18d2b462855a700a74f7dbc75f6877c625d3b01000"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "2c2920830ebe60f20c68f01f35f0063253b98fa21d9b8a63174fc0fab6d78e9e"
       }
     ],
     "brainstorming": [
@@ -87,16 +91,6 @@
       {
         "version": "0.0.2",
         "digest": "7eddbc92d97536787c7dc03b3fcc64f1780024a6b2ce63f69eaa6522dd855a8e"
-      }
-    ],
-    "implement-spec": [
-      {
-        "version": "0.1.0",
-        "digest": "1ccc6352d8e18fe86a37cf06853fe955471efe7b8970dc8df52f958fa3ef4a5c"
-      },
-      {
-        "version": "0.1.1",
-        "digest": "0b86c78d2c2a1c5e1fdd73a8c6fb97a61cd5c9bdda017e36aa47b08eac89c7a1"
       }
     ],
     "implement-task": [
@@ -871,6 +865,10 @@
       {
         "version": "0.1.160",
         "digest": "58f5a37b8cc84616d83148798b98f69579329c777529646df43b3cf4c48ff4b4"
+      },
+      {
+        "version": "0.1.161",
+        "digest": "50f4c518c653961389bb824b315cc0d8bba7ef8a34f0421712d24e8111092007"
       }
     ],
     "setup-context-driven": [
@@ -1059,6 +1057,10 @@
       {
         "version": "0.0.22",
         "digest": "73de481ab0938aa4fbe86da6c2fed433b6065de4f0ee9daaa0996dc9771b7da4"
+      },
+      {
+        "version": "0.0.23",
+        "digest": "57bfac277bf5ab922999e860f803fad03408f76c4708dd1b14b389c03420b5a7"
       }
     ],
     "write-techspec": [

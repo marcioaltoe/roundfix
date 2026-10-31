@@ -8,7 +8,7 @@
     "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
     "path": "setups/go.txt"
   },
-  "digest": "9b124691f7774ab0781fe8f61f51c542d086b8a69d06fe8bd6bc700af5882619",
+  "digest": "c2cacd6a3703c905b203e7fdc14c75a67e638bb639666f42d60b1d43641c5b4c",
   "skills": [
     {
       "name": "find-skills",
@@ -292,15 +292,6 @@
         "path": "skills/05-implementation-loop/golang-testing"
       },
       "treeDigest": "4d4f4c3c64f4055a81e59a4f371ff295f9326475ad950278f1e1ff52f9656e46"
-    },
-    {
-      "name": "implement-spec",
-      "path": "skills/05-implementation-loop/implement-spec",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
     },
     {
       "name": "implement-task",

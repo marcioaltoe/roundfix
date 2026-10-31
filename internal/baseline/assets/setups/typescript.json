@@ -8,7 +8,7 @@
     "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
     "path": "setups/typescript.txt"
   },
-  "digest": "23c48c2ff39235c270b9d603403dd222c47d69946cdd79d2bd115e28f4a6a064",
+  "digest": "cb0349df8465dc7b7e53f4eb4d0479b613611f34d024983dfc153c9c21657790",
   "skills": [
     {
       "name": "find-rules",
@@ -386,15 +386,6 @@
         "path": "skills/05-implementation-loop/hono-api-best-practices"
       },
       "treeDigest": "7abc04034c9d710a45765e56425524ab3a7de82bce82b28e9e512de1e984ffa8"
-    },
-    {
-      "name": "implement-spec",
-      "path": "skills/05-implementation-loop/implement-spec",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
     },
     {
       "name": "implement-task",

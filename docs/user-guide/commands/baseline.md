@@ -349,7 +349,8 @@ A Retired Skill is a skill the Baseline no longer requires although the
 upstream catalog may still list it: `council` and `the-fool` since 0.52.0;
 `design-patterns`, `diagnosing-bugs`, `fixing-metadata`,
 `game-changing-features`, `refactoring-analysis`, `tdd` and `to-prompt`
-since 0.127.0, which the catalog removed.
+since 0.127.0, which the catalog removed; and the Roundfix-owned
+`implement-spec` since 0.127.0.
 No module requires or dispatches it, and the asset sync drops it from every
 Setup Snapshot. `roundfix baseline update` never deletes an installed copy.
 When the repository still holds one, the preview and the applied update list
@@ -365,6 +366,7 @@ git rm -r -q --ignore-unmatch \
   .agents/skills/diagnosing-bugs .claude/skills/diagnosing-bugs \
   .agents/skills/fixing-metadata .claude/skills/fixing-metadata \
   .agents/skills/game-changing-features .claude/skills/game-changing-features \
+  .agents/skills/implement-spec .claude/skills/implement-spec \
   .agents/skills/refactoring-analysis .claude/skills/refactoring-analysis \
   .agents/skills/tdd .claude/skills/tdd \
   .agents/skills/to-prompt .claude/skills/to-prompt
@@ -373,6 +375,7 @@ rm -rf \
   .agents/skills/diagnosing-bugs .claude/skills/diagnosing-bugs \
   .agents/skills/fixing-metadata .claude/skills/fixing-metadata \
   .agents/skills/game-changing-features .claude/skills/game-changing-features \
+  .agents/skills/implement-spec .claude/skills/implement-spec \
   .agents/skills/refactoring-analysis .claude/skills/refactoring-analysis \
   .agents/skills/tdd .claude/skills/tdd \
   .agents/skills/to-prompt .claude/skills/to-prompt

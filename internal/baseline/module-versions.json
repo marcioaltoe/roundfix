@@ -73,6 +73,10 @@
       {
         "version": 28,
         "digest": "sha256:644bc48c0bec97a1abbfa45df96b791bf899a58cb25356d48f452cdc00c4f608"
+      },
+      {
+        "version": 29,
+        "digest": "sha256:9976155def4de65394706a9da0af2387d5771c924265cc9ac59ef882d2b161cc"
       }
     ],
     "core": [

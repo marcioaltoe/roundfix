@@ -8,7 +8,7 @@
     "ref": "86df8608726979064a8fe46003dfaf403ffe0087",
     "path": "setups/python.txt"
   },
-  "digest": "c3b8f6a5d9f7de7e7a0065c76cbd2a0bcbcb07dffecbc7e7ad2f95b9e9aa923d",
+  "digest": "9038e5678f13e2d87419996468a813e1b3ed1ea8b05b190092117e924845bb7e",
   "skills": [
     {
       "name": "find-skills",
@@ -171,15 +171,6 @@
         "path": "skills/05-implementation-loop/coding-guidelines"
       },
       "treeDigest": "1ed1e711b511f8ea14e0e4f83949d3395e7b202e8344c52e586256c7959ce0a8"
-    },
-    {
-      "name": "implement-spec",
-      "path": "skills/05-implementation-loop/implement-spec",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
     },
     {
       "name": "implement-task",

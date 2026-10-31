@@ -101,7 +101,8 @@ deletes the copy and never changes the update's state.
 The Retired Skills are `council` and `the-fool` since 0.52.0, and
 `design-patterns`, `diagnosing-bugs`, `fixing-metadata`,
 `game-changing-features`, `refactoring-analysis`, `tdd` and `to-prompt`
-since 0.127.0, which the catalog removed. The TypeScript setup's
+since 0.127.0, which the catalog removed; and the Roundfix-owned
+`implement-spec` since 0.127.0. The TypeScript setup's
 `ui-ux-pro-max` searches need Python 3; the standard library is enough.
 Without Python, the skill still applies its `SKILL.md` rules and quick
 reference. No Baseline command checks for Python.

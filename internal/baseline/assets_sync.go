@@ -137,7 +137,6 @@ var assetsSyncRepoOwnedSkills = map[string]struct{}{
 	"brainstorming":        {},
 	"business-analyst":     {},
 	"evidence-gate":        {},
-	"implement-spec":       {},
 	"implement-task":       {},
 	"qa-gate":              {},
 	"roundfix":             {},

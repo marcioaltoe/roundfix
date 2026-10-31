@@ -9,7 +9,7 @@
     ],
     "type": "composed"
   },
-  "digest": "3c4f51500abb76d9639d1dbe6d7764e36c158fe866c680da4810625750173ff2",
+  "digest": "485d4cc42277280e2514bafbf64ff7fc32e4938fbcc98f17aa13078f2e60a925",
   "skills": [
     {
       "name": "find-skills",
@@ -293,15 +293,6 @@
         "path": "skills/05-implementation-loop/golang-testing"
       },
       "treeDigest": "4d4f4c3c64f4055a81e59a4f371ff295f9326475ad950278f1e1ff52f9656e46"
-    },
-    {
-      "name": "implement-spec",
-      "path": "skills/05-implementation-loop/implement-spec",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
     },
     {
       "name": "implement-task",

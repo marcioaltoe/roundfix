@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -138,8 +138,8 @@ Roundfix skill's delivery reference. The guides follow.
 - interface: `skills/retired_owned_skill_test.go`
 - interface: `skills/setup_skill_invocation_test.go`
 - interface: `skills/testdata/owned-skill-versions.json`
-- interface: `.agents/skills/implement-spec/SKILL.md`
-- interface: `skills/implement-spec/SKILL.md`
+- deletes: `.agents/skills/implement-spec/SKILL.md`
+- deletes: `skills/implement-spec/SKILL.md`
 - interface: `.agents/skills/archive-spec/SKILL.md`
 - interface: `skills/archive-spec/SKILL.md`
 - interface: `.agents/skills/write-tasks/SKILL.md`
@@ -170,3 +170,107 @@ Roundfix skill's delivery reference. The guides follow.
 - `_prd.md` → Goals; Core Features 4 and 5; Stories 3, 4 and 5; Success Metric 4; Success Metric 7; Decisions; Open Questions
 - `_techspec.md` → Data Model 1; API Contracts 2, 8 and 9; Testing Approach; Build Order 4
 - ADR-0246
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, setup-context-driven, roundfix, evidence-gate, knowledge-workspace, systematic-debugging
+
+The person-only `implement-spec` workflow was not invoked; its text was read
+only as the retirement source. The Task status and checkboxes remain
+Daemon-owned. Entry status showed only this Task's existing
+`pending` to `in_progress` transition.
+
+### Implementation
+
+- Added `implement-spec` to the Retired Skills and removed its owned bundle,
+  sync membership, required-skill line, both dispatch triggers, canonical
+  tree and mirror. The Makefile changes only its owned list and the
+  authorial count, from twelve to eleven (twelve owned skills total).
+- Deleted only the retired key from the owned-version record through
+  `jq --indent 2 'del(.skills["implement-spec"])'` and a temporary copy.
+  Subsequent record changes came from the version recorder.
+- Moved the Pending Question and planning-file rules into the Roundfix
+  delivery reference before its recovery section; updated archive and task
+  authoring guidance, the owned counts and retirement removal commands.
+  All canonical and mirrored QA settlement sections remain byte-identical.
+- Updated the existing Python setup, retired catalog, owned-count and setup
+  invocation tests, and added `TestImplementSpecIsNotARoundfixOwnedSkill`.
+  No top-level test was removed or renamed.
+
+### Regeneration evidence
+
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`: exit 0; context-workflow recorded at version 29.
+- Fetched catalog commit `86df8608726979064a8fe46003dfaf403ffe0087` from
+  the authorized local checkout into a temporary repository. Built a
+  temporary binary with `go build -buildvcs=false`; applied the prescribed
+  TypeScript bundle assignment; ran `baseline assets sync --source-dir
+  <fetched>/setups --format text` with a fresh HOME: five updated snapshots.
+  Its `--check --format text` invocation exited 0 with `audit: ok`.
+- Applied the TechSpec's parity transform through a temporary copy.
+  The first `make baseline-digests` stopped at `TestAuthorialSkillSync`
+  because the canonical edits had not yet been mirrored. Ran the required
+  `make skills-sync` and the owned-version recorder, then reran
+  `make baseline-digests`: exit 0, `ok:true`, `changed:true`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: exit 0; both fields in both trees now record archive-spec 0.0.17, write-tasks 0.0.23 and roundfix 0.1.161.
+- Rebuilt the temporary binary after regeneration. Ran
+  `baseline update --repo . --no-skills --no-history --yes --format text`
+  twice with a distinct fresh HOME each time: exits 0; first updated
+  setup-context.json and skill-dispatch.md, second reported
+  `File changes: 0` and `Idempotence: verified`.
+
+### Focused checks and acceptance evidence
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Twelve owned skills; retired name absent from catalog and bundle | Built CLI `skills list` lists twelve bundled names without the retired skill. `TestImplementSpecIsNotARoundfixOwnedSkill`, `TestCouncilIsNotARoundfixOwnedSkill`, `TestNoCatalogEntryNamesARetiredSkill` and the Python setup check pass. All five snapshots omit it; both deleted trees are absent. |
+| Synchronization without the retired skill | `TestAuthorialSkillSync` passes for all twelve names and five snapshots. A Python tree comparison independently confirms every canonical/mirror path and byte, plus matching version fields. The declared `make skills-sync-check` remains for the Daemon. |
+| Delivery reference carries both rules | Inspected the new section before recovery: it requires only the queue's Pending Question, its wording and explicit action, and forbids Supervisor edits to `_prd.md`, `_techspec.md` and `_tasks.md`. Both mirrors match. |
+| Live guides and skills no longer direct execution to the retired skill | Python sweep of `.agents/skills`, `skills`, `docs/agents` and `docs/user-guide` finds the name only in the canonical/mirrored Baseline retirement paragraph and the Baseline guide's retirement paragraph/removal commands. |
+
+Focused commands, each exit 0:
+
+- `go test ./skills -run '^(TestImplementSpecIsNotARoundfixOwnedSkill|TestCouncilIsNotARoundfixOwnedSkill|TestAnAgentMayStartTheSetupSkill|TestEveryOwnedSkillVersionIsRecorded|TestAuthorialSkillSync)$' -count=1 -v`
+- `go test ./internal/baseline -run '^(TestNoCatalogEntryNamesARetiredSkill|TestThePythonSetupIsThePublishedUpstreamPreset|TestARetiredSkillNameInTheCatalogIsReported|TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles|TestAssetSyncDropsARetiredSkillTheUpstreamListNames|TestInstalledRetiredSkillsListsTreesLinksAndLockEntries)$' -count=1 -v`
+- `go test -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestUserGuideLinksResolve)$' -count=1`
+
+The new owned-retirement test was red before the implementation with
+`implement-spec remains a Roundfix-owned skill`, and passed afterwards.
+The catalog negative cases reject that name in required skills, dispatch,
+triggers, bundles and snapshots. `git diff --check` passed. The scope
+postflight matched every changed path to this Task's interfaces, found no
+untracked files, and confirmed that the Makefile has exactly the two
+permitted line changes.
+
+Behavior Surface fingerprint: after the last guide edit, ran
+`go test -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage -count=1`:
+exit 0; recorded `docs/references/behavior-surfaces.json`. Final scope
+postflight found 48 changed files, all declared by this Task, no untracked
+paths, and the exact Makefile grant and Daemon-owned status preserved.
+
+No declared Verification command, repository Verification, commit, push or
+Pull Request operation was run by this Agent. No follow-up outside this slice was added.
+
+
+### Verification Feedback repair (attempt 1)
+
+Inspected both supplied diagnostic artifacts. The full-command corpus checks
+and the settlement consistency check traced to the same two Context entries:
+the retired skill's deleted canonical file and mirror were still declared
+as live interfaces.
+
+Changed those two entries in this Task from `interface` to `deletes`.
+`detectTaskContextReferences` explicitly accepts deletion declarations,
+and `TestDeletingAGovernedPathNeedsItsGrant` shows that a deletion still
+requires its grant. The paths remain declared and both trees remain absent.
+
+Focused check:
+`go test -tags docscontract ./internal/docscontract -run '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors)$' -count=1 -v`
+exited 0, with both previously failing tests passing.
+
+A projection check against the committed Task confirms that only these two
+Context labels and the Result evidence changed, apart from the pre-existing
+Daemon-owned status transition. `git diff --check` exited 0; the other Tasks
+and `_tasks.md` remain untouched. The repair changes no guide content or
+Behavior Surface fingerprint input. Full configured Verification and
+settlement remain for the Daemon's retry.

@@ -129,9 +129,6 @@ Individual skill triggers:
   - `trigger.backend.hono-api-best-practices`: Reviewing Hono API contracts and implementation practices.
 - `humanizer`:
   - `trigger.typescript.humanizer`: When the person asks to make TypeScript repository prose sound natural and direct.
-- `implement-spec`:
-  - `trigger.autonomous-work.implement-spec`: Delegating a complete autonomous Spec Task Graph.
-  - `trigger.context-workflow.implement-spec`: Executing every pending Task in a Spec Task Graph.
 - `implement-task`:
   - `trigger.autonomous-work.implement-task`: Delegating one autonomous Task to an ACP Runtime.
   - `trigger.context-workflow.implement-task`: Executing exactly one assigned Spec Task.

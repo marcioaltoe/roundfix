@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 28,
+  "version": 29,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -15,7 +15,6 @@
     "domain-modeling",
     "grill-with-docs",
     "grilling",
-    "implement-spec",
     "implement-task",
     "knowledge-workspace",
     "qa-gate",
@@ -77,19 +76,6 @@
         {
           "id": "trigger.context-workflow.grilling",
           "when": "Stress-testing an idea or plan through direct questions."
-        }
-      ]
-    },
-    {
-      "skill": "implement-spec",
-      "triggers": [
-        {
-          "id": "trigger.context-workflow.implement-spec",
-          "when": "Executing every pending Task in a Spec Task Graph."
-        },
-        {
-          "id": "trigger.autonomous-work.implement-spec",
-          "when": "Delegating a complete autonomous Spec Task Graph."
         }
       ]
     },
