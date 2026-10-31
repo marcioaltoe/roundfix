@@ -11,6 +11,8 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 
 ## Repository rules
 
+- A test that rewrites a derived record under its record flag calls `suiteguard.DeclareSanctionedRegeneration` with the exact command that runs it, only while that flag is set and before it writes. The suite guard then exempts only the outputs that an authorization record or an Archive Record in the tree lists for that command ([ADR-0345](../adr/0345-a-derived-record-writer-names-its-command-to-the-suite-guard.md)).
+
 - A test that runs an External Test Tool, a tool outside the Base Test Tools, resolves it with `testfixture.RequireTool`, which skips naming the tool when it is absent; the External Test Tool rule in `internal/testfixture` enforces it.
 
 - `make` shares `roundfix-go-build-<uid>` under `$TMPDIR` (or `/tmp`), falls back to `$(CURDIR)/.gocache` when it cannot create and write the shared cache, and exports an explicit `GOCACHE` unchanged; a sandboxed Agent sets nothing.

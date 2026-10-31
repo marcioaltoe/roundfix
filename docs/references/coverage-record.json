@@ -922,6 +922,8 @@
       "TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter",
       "TestAgentSelectionAttachReplayRendersPerScopeSelectionState",
       "TestAgentSelectionProfilesMacro",
+      "TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict",
+      "TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated",
       "TestArchiveAcceptsADeclaredQADecline",
       "TestArchiveAcceptsARecordedSupersession",
       "TestArchiveAcceptsASpecWhoseGlossaryIsCurrent",

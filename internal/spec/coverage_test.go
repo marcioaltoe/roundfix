@@ -22,6 +22,8 @@ import (
 	"testing"
 	"unicode"
 	"unicode/utf8"
+
+	"roundfix/internal/suiteguard"
 )
 
 var updateCoverageRecord = flag.Bool(
@@ -31,6 +33,7 @@ var updateCoverageRecord = flag.Bool(
 )
 
 const coverageRecordPath = "docs/references/coverage-record.json"
+const coverageRecordCommand = "go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1"
 
 // CoverageRecord lists top-level tests across the release platforms. Packages
 // holds common tests; PlatformTests holds each limited test's platform set.
@@ -55,6 +58,7 @@ func TestCoverageEquivalence(t *testing.T) {
 
 	recordPath := filepath.Join(repoRoot, coverageRecordPath)
 	if *updateCoverageRecord {
+		suiteguard.DeclareSanctionedRegeneration(coverageRecordCommand)
 		if err := writeCoverageRecord(recordPath, actual); err != nil {
 			t.Fatalf("re-record coverage at %s: %v", recordPath, err)
 		}
