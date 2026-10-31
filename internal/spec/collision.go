@@ -27,8 +27,8 @@ const (
 	TouchFromPriorRun     TouchSource = "prior Run settlement commit"
 )
 
-// WaveCollision is two Tasks the Task Graph permits in one Wave that are
-// known to touch at least one common repository file.
+// WaveCollision is two non-completed Tasks the Task Graph permits in one Wave
+// that are known to touch at least one common repository file.
 type WaveCollision struct {
 	First  string
 	Second string
@@ -50,8 +50,8 @@ func (collision WaveCollision) ResolvingEdge() string {
 	return fmt.Sprintf("add a `needs` edge from Task %s to Task %s", collision.Second, collision.First)
 }
 
-// Collisions reports every pair the Task Graph permits in one Wave that is
-// known to touch a common repository file.
+// Collisions reports every non-completed pair the Task Graph permits in one
+// Wave that is known to touch a common repository file.
 //
 // It never executes an authored Verification: a command written to be run when
 // the work exists must not run to decide whether the work may start. It does
@@ -87,7 +87,13 @@ func Collisions(repoRoot string, graph *Graph) ([]WaveCollision, error) {
 	ordered := taskDependencyClosure(graph.Tasks)
 	var collisions []WaveCollision
 	for first := 0; first < len(sets); first++ {
+		if graph.Tasks[first].Status == StatusCompleted {
+			continue
+		}
 		for second := first + 1; second < len(sets); second++ {
+			if graph.Tasks[second].Status == StatusCompleted {
+				continue
+			}
 			firstID, secondID := sets[first].TaskID, sets[second].TaskID
 			if ordered[firstID][secondID] || ordered[secondID][firstID] {
 				continue

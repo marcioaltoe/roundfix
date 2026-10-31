@@ -25,8 +25,91 @@ import (
 	"roundfix/internal/delivery"
 	"roundfix/internal/runevent"
 	"roundfix/internal/secretscan"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 )
+
+func TestTheTemplateNoMutationToolingRowPassesTheSpecCheck(t *testing.T) {
+	t.Parallel()
+
+	root := baselineDocumentationRepoRoot()
+	for _, template := range []struct {
+		path     string
+		stage    speccheck.Stage
+		artifact string
+	}{
+		{".agents/skills/write-prd/references/prd-template.md", speccheck.StagePRD, "_prd.md"},
+		{".agents/skills/write-techspec/references/techspec-template.md", speccheck.StageTechSpec, "_techspec.md"},
+	} {
+		t.Run(template.path, func(t *testing.T) {
+			t.Parallel()
+
+			content := readContractDocument(t, filepath.Join(root, template.path))
+			normalized := strings.Join(strings.Fields(content), " ")
+			reason := regexp.MustCompile("With no protected tooling mutation, record: `([^`]+)`").FindStringSubmatch(normalized)
+			if len(reason) != 2 {
+				t.Fatalf("%s: missing no-mutation reason after With no protected tooling mutation, record:", template.path)
+			}
+			ending := regexp.MustCompile("end the row with `(bounded files: [^`]+)`").FindStringSubmatch(normalized)
+			if len(ending) != 2 {
+				t.Fatalf("%s: missing bounded-files ending after end the row with", template.path)
+			}
+			for _, grant := range []struct {
+				name          string
+				paths         string
+				wantUnbounded int
+			}{
+				{"empty paths", "[]", 0},
+				{"Makefile path", "\n  - Makefile", 1},
+			} {
+				t.Run(grant.name, func(t *testing.T) {
+					t.Parallel()
+
+					const slug = "0114-tooling-row"
+					const specPath = "docs/specs/" + slug
+					const recordPath = specPath + "/_authorization.md"
+					repoRoot := t.TempDir()
+					write := func(path, content string) {
+						t.Helper()
+						fullPath := filepath.Join(repoRoot, filepath.FromSlash(path))
+						if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+							t.Fatal(err)
+						}
+						if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+							t.Fatal(err)
+						}
+					}
+					write("docs/agents/agent-instructions.md", "# Agent instructions\n")
+					constraints := "## Project Constraints\n\n" +
+						"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n" +
+						"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n" +
+						"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"
+					if template.stage == speccheck.StageTechSpec {
+						write(specPath+"/_prd.md", "# Tooling row\n\n"+constraints+
+							"- Tooling authority: applicable — no protected tooling mutation proposed or authorized. Source: `docs/agents/agent-instructions.md`.\n")
+					}
+					row := "- Tooling authority: " + reason[1] + ". Source: `docs/agents/agent-instructions.md`; Spec-contained authorization record: `" + recordPath + "`; " + ending[1] + ".\n"
+					write(specPath+"/"+template.artifact, "# Tooling row\n\n"+constraints+row)
+					write(recordPath, "---\nstatus: approved\ngranted: 2026-10-30\naction: deliver this Spec\noperations: [implement, commit, push, pull_request, merge]\nconsuming: "+slug+"\npaths: "+grant.paths+"\n---\n")
+
+					result, err := speccheck.CheckStage(filepath.Join(repoRoot, "docs", "specs"), repoRoot, slug, template.stage)
+					if err != nil {
+						t.Fatalf("%s: CheckStage(%s): %v", template.path, template.stage, err)
+					}
+					var unbounded []speccheck.Finding
+					for _, finding := range result.Findings {
+						if finding.Code == speccheck.CodeToolingUnbounded {
+							unbounded = append(unbounded, finding)
+						}
+					}
+					if len(unbounded) != grant.wantUnbounded {
+						t.Fatalf("%s: CheckStage(%s) unbounded findings = %#v, want %d; all findings: %#v", template.path, template.stage, unbounded, grant.wantUnbounded, result.Findings)
+					}
+				})
+			}
+		})
+	}
+}
 
 // commandPaths returns command paths in root help's first-seen order.
 func commandPaths(help string) []string {

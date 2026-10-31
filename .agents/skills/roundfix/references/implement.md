@@ -134,6 +134,16 @@ the largest carriable Task set, breaking ties with the newest Run.
    checkout no longer blocks `implement`; stderr prints a note shaped like
    `roundfix: note: working tree <path> has N uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.`
 
+   A completed Task never collides; a Task reopened to `pending` counts again.
+   When the Task Capacity (`worktree.concurrency`) is above 1, `roundfix implement`
+   refuses a Wave Collision before it records a Run. Preflight Validation
+   checks the committed Task Graph before the default-branch check and exits
+   `2`, leaving stdout empty and starting no Agent. The refusal starts with
+   `Tasks would collide in one Wave at Task Capacity` and names each Task pair,
+   its shared repository files and their sources, and the `needs` edge that
+   orders the pair. At a Task Capacity of 1 the serial Run proceeds. The Daemon
+   keeps its pre-dispatch refusal.
+
    Before creating an Agent Session for a Task whose declared Verification
    contains the configured repository Verification command exactly, the Daemon
    runs that command once through shared Verification Capacity. Failure starts

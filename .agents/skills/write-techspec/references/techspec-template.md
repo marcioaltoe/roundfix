@@ -27,6 +27,7 @@ created: YYYY-MM-DD
 - Tooling authority: <applicable | not applicable> — <effective constraint and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`; Spec-contained authorization record: `<spec-root>/<slug>/_authorization.md`; bounded files: <copy every exact repository-relative path from the record's `paths` list>.
 
 <!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
+     Still cite the Spec-contained authorization record and, when its `paths` is `[]`, end the row with `bounded files: none`.
      When protected tooling mutation is proposed, do not finish without
      `express maintainer authorization: <approval>; bounded files: <exact repository paths>`.
      citing the Spec-contained authorization record at

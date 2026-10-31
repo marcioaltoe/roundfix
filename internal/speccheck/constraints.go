@@ -607,6 +607,7 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 	rowLocation := Location{Path: artifact.displayPath, Line: row.Line}
 	recordLocation := sourceLocation(row)
 	selection := row.Authorization
+	recordGrantsNoPath := false
 	if selection.Ambiguous {
 		locations := []Location{rowLocation}
 		for _, reference := range selection.Candidates {
@@ -637,10 +638,17 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 			})
 		default:
 			detectAuthorizationResolution(result, slug, artifact, row, reference, content, requireImplement)
+			resolution := spec.ReadAuthorization(context.Background(), spec.AuthorizationReadRequest{
+				RepoRoot:   reference.ReadRoot,
+				RecordPath: reference.ReadPath,
+				Role:       authorizationRole(reference.Path),
+				AskingSpec: slug,
+			})
+			recordGrantsNoPath = resolution.Outcome == spec.AuthorizationGranted && len(resolution.Record.Paths) == 0
 		}
 	}
 
-	if declaresProtectedToolingMutation(row, len(selection.Candidates) != 0) && !row.BoundedFiles {
+	if declaresProtectedToolingMutation(row, len(selection.Candidates) != 0, recordGrantsNoPath) && !row.BoundedFiles {
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeToolingUnbounded,
 			Severity: SeverityError,
@@ -683,13 +691,13 @@ func claimsOperativeAuthorization(value string) bool {
 		strings.Contains(lower, "authorized at")
 }
 
-func declaresProtectedToolingMutation(row constraintRow, citesAuthorization bool) bool {
+func declaresProtectedToolingMutation(row constraintRow, citesAuthorization, recordGrantsNoPath bool) bool {
+	reason := strings.ToLower(strings.Join(strings.Fields(row.Reason), " "))
+	if strings.Contains(reason, "no protected tooling mutation") && (!citesAuthorization || recordGrantsNoPath) {
+		return false
+	}
 	if citesAuthorization {
 		return true
-	}
-	reason := strings.ToLower(strings.Join(strings.Fields(row.Reason), " "))
-	if strings.Contains(reason, "no protected tooling mutation") {
-		return false
 	}
 	return strings.Contains(reason, "protected tooling mutation") ||
 		strings.Contains(reason, "express maintainer authorization")

@@ -145,15 +145,17 @@ oldest commit that added it; an uncommitted PRD is held.
 - `SC-CONSUMERS-UNPROVEN` — a pending non-QA Task lacks a valid Consumer
   Declaration, or names a suite no Verification or valid checkpoint runs.
   Runs from the Tasks stage.
-- `SC-WAVE-COLLISION` — two Tasks the current Task Graph lets run in one Wave
+- `SC-WAVE-COLLISION` — two Tasks that are not completed and that the current
+  Task Graph lets run in one Wave
   touch a common repository file: a Verification operand, a declared
   `creates:`, `interface:` or `deletes:` path the tree holds, or a path the
   Task's newest settlement commit on any branch changed. The summary ends
   with the one edge that orders the pair, ``add a `needs` edge from Task
-  <later> to Task <earlier>``. The QA gate's precondition, the settlement
-  checks and the pre-dispatch refusal read the same working-tree Task Graph
-  and settlement history, so a corrective Task given that edge passes all of
-  them.
+  <later> to Task <earlier>``. A completed Task never collides; a Task reopened
+  to `pending` counts again. The QA gate's precondition, the settlement checks
+  and the pre-dispatch refusal share this rule. When the Task Capacity is
+  above 1, `roundfix implement` refuses a Wave Collision before it records a Run,
+  using the committed Task Graph in Preflight Validation.
 
 The missing-receipt gap starts at the oldest commit that added
 `.agents/skills/write-techspec/references/concrete-contracts.md`. A PRD

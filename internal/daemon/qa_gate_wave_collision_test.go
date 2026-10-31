@@ -21,8 +21,10 @@ func TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph(t *testing.T) {
 	for _, tc := range []struct {
 		name, need string
 		settled    bool
+		colliding  bool
 	}{
-		{name: "unordered corrective Task", need: "task_01"},
+		{name: "corrective Task beside a completed Task", need: "task_01"},
+		{name: "two unordered corrective Tasks", need: "task_01", colliding: true},
 		{name: "ordered corrective Task with another Run settlement", need: "task_02", settled: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -74,15 +76,22 @@ func TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph(t *testing.T) {
 			}
 			seeds = append(seeds, taskSpecSeed{id: "task_05", needs: []string{tc.need}})
 			seeds[3].needs = []string{"task_03", "task_05"}
+			if tc.colliding {
+				seeds = append(seeds, taskSpecSeed{id: "task_06", needs: []string{"task_01"}})
+				seeds[3].needs = append(seeds[3].needs, "task_06")
+			}
 			// Adding a corrective dependency reopens the previously completed gate.
 			seeds[3].status = "pending"
 			writeSpecDirAtRootForTestWithQA(t, specsRoot, slug, seeds, qaDeclarationForTest{taskID: "task_04"})
 			taskPath := filepath.Join(dir, "task_05.md")
-			body, err := os.ReadFile(taskPath)
-			if err != nil {
-				t.Fatal(err)
+			for _, seed := range seeds[4:] {
+				path := filepath.Join(dir, seed.id+".md")
+				body, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				mustWriteForTest(t, path, string(body)+"\n## Context\n\n- interface: `pkg/versions.test.ts`\n\n## Consumers\n\nNone. This fixture changes a test file with no shared contract.\n")
 			}
-			mustWriteForTest(t, taskPath, string(body)+"\n## Context\n\n- interface: `pkg/versions.test.ts`\n\n## Consumers\n\nNone. This fixture changes a test file with no shared contract.\n")
 			gittest.Run(t, root, "add", ".")
 			gittest.Run(t, root, "commit", "-m", "fix: declare corrective Task")
 			if tc.settled {
@@ -122,14 +131,14 @@ func TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			const reason = "SC-WAVE-COLLISION: Task task_02 and Task task_05 can run in the same Wave and share repository files: pkg/versions.test.ts (declared context; prior Run settlement commit); add a `needs` edge from Task task_05 to Task task_02"
+			const reason = "SC-WAVE-COLLISION: Task task_05 and Task task_06 can run in the same Wave and share repository files: pkg/versions.test.ts (declared context); add a `needs` edge from Task task_06 to Task task_05"
 			for _, reader := range []struct {
 				name     string
 				findings []speccheck.Finding
 			}{
 				{"gate", gate.Findings}, {"strict", strict.Findings}, {"settlement", settlement},
 			} {
-				if tc.settled {
+				if !tc.colliding {
 					if len(reader.findings) != 0 {
 						t.Fatalf("%s findings = %+v, want none", reader.name, reader.findings)
 					}
@@ -138,19 +147,19 @@ func TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph(t *testing.T) {
 				}
 			}
 			refusal, refused := speccheck.PreconditionRefusal(gate)
-			if !tc.settled && (!refused || refusal.Reason != reason) {
+			if tc.colliding && (!refused || refusal.Reason != reason) {
 				t.Fatalf("refusal = %+v, %v", refusal, refused)
 			}
-			if tc.settled && (refused || gate.Blocking || strict.Blocking) {
-				t.Fatalf("ordered graph refused: gate %+v, strict %+v", gate, strict)
+			if !tc.colliding && (refused || gate.Blocking || strict.Blocking) {
+				t.Fatalf("non-colliding graph refused: gate %+v, strict %+v", gate, strict)
 			}
 			dispatch := refuseTaskPlanWaveCollisions(TaskPlan{WorkDir: root, SpecsRoot: specsRoot, Spec: graph.Spec, Tasks: graph.Tasks, Concurrency: 2})
-			if tc.settled {
+			if !tc.colliding {
 				if dispatch != nil {
 					t.Fatal(dispatch)
 				}
 			} else {
-				const want = "task cycle: refuse Wave before dispatch because Tasks collide: Task task_02 and Task task_05 share repository files: pkg/versions.test.ts (declared context; prior Run settlement commit); add a `needs` edge from Task task_05 to Task task_02"
+				const want = "task cycle: refuse Wave before dispatch because Tasks collide: Task task_05 and Task task_06 share repository files: pkg/versions.test.ts (declared context); add a `needs` edge from Task task_06 to Task task_05"
 				if dispatch == nil || dispatch.Error() != want {
 					t.Fatalf("dispatch = %v, want %s", dispatch, want)
 				}

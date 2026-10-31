@@ -28,6 +28,7 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
 <!-- When a paragraph attributes behavior to a decision record, add a Claim Receipt in that paragraph: its source and a verbatim quote. -->
 
 <!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
+     Still cite the Spec-contained authorization record and, when its `paths` is `[]`, end the row with `bounded files: none`.
      When protected tooling mutation is proposed, do not finish without
      `express maintainer authorization: <approval>; bounded files: <exact repository paths>`.
      citing the Spec-contained authorization record at
