@@ -1,0 +1,12 @@
+$ ./bin/roundfix archive 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty --plan --offline
+exit: 0
+stdout:
+archive plan for 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty: removes 33 file(s) (1421105 bytes) and writes docs/history/specs/0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-31.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 23 file(s) (1307445 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-10-30-the-follow-up-command-rejects-documented-message-types-and-an-empty-spec-root.md 2887 bytes: no advice (offline)
+promote with: roundfix archive 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty --promote <path>
+
+stderr:
+

@@ -1,0 +1,52 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-eywamcm6/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/cli/follow_up.go
+Before:
+`json:"requested_by"`
+After:
+`json:"requested_by_changed"`
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== NAME  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+    live_documents_docscontract_test.go:486: Each item carries these JSON fields: names=["rank" "priority" "priority_name" "kind" "ref" "type" "date" "title" "requested_by" "blocks" "basis" "answers" "reason"], want ["rank" "priority" "priority_name" "kind" "ref" "type" "date" "title" "requested_by_changed" "blocks" "basis" "answers" "reason"]
+=== NAME  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+    live_documents_docscontract_test.go:486: Each item carries these JSON fields: names=["rank" "priority" "priority_name" "kind" "ref" "type" "date" "title" "requested_by" "blocks" "basis" "answers" "reason"], want ["rank" "priority" "priority_name" "kind" "ref" "type" "date" "title" "requested_by_changed" "blocks" "basis" "answers" "reason"]
+=== NAME  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+    live_documents_docscontract_test.go:486: Each item carries these JSON fields: names=["rank" "priority" "priority_name" "kind" "ref" "type" "date" "title" "requested_by" "blocks" "basis" "answers" "reason"], want ["rank" "priority" "priority_name" "kind" "ref" "type" "date" "title" "requested_by_changed" "blocks" "basis" "answers" "reason"]
+--- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes (0.00s)
+    --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md (0.00s)
+    --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md (0.00s)
+    --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md (0.00s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 157.338542ms before and 143.326ms after
+FAIL	roundfix/internal/cli	0.716s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes; diagnostic Each item carries these JSON fields:

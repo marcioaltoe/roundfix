@@ -1,0 +1,15 @@
+$ go test -count=1 -timeout 20m -v -overlay /tmp/qa0335/overlay.json -run '^TestQA0335FinalReport$' ./internal/spec
+exit: 0
+stdout:
+=== RUN   TestQA0335FinalReport
+=== PAUSE TestQA0335FinalReport
+=== CONT  TestQA0335FinalReport
+    zz_qa0335_validation_test.go:17: QAReportEligibility: accepted qualifying partial
+    zz_qa0335_validation_test.go:27: Secret Patterns: scanned 34 text QA artifacts
+--- PASS: TestQA0335FinalReport (0.23s)
+PASS
+suiteguard: guard cost: measured 2899 paths; fingerprint took 623.182167ms before and 146.260917ms after
+ok  	roundfix/internal/spec	1.130s
+
+stderr:
+

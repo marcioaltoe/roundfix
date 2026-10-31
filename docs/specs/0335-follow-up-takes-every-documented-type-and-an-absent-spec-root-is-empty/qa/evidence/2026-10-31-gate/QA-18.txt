@@ -1,0 +1,4 @@
+PRD criterion: Success Metric 6
+Reason: released binary and another repository required; neither is reachable under this gate authority.
+satisfied-by: release notice to default/gesttione-solutions-quaestor and Quaestor reply through ai-memory
+Satisfaction: unproven

@@ -1,0 +1,39 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-gf68tjux/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/config/config.go
+Before:
+if _, entryErr := os.Lstat(resolved);
+After:
+if _, entryErr := os.Stat(resolved);
+$ go test -count=1 -timeout 20m -v -run '^TestResolveSpecsRootOrAbsentStillRefusesADanglingLink$' ./internal/config
+exit: 1
+stdout:
+=== RUN   TestResolveSpecsRootOrAbsentStillRefusesADanglingLink
+=== PAUSE TestResolveSpecsRootOrAbsentStillRefusesADanglingLink
+=== CONT  TestResolveSpecsRootOrAbsentStillRefusesADanglingLink
+=== RUN   TestResolveSpecsRootOrAbsentStillRefusesADanglingLink/root_link
+    specs_root_absent_test.go:114: OrAbsent = {Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-gf68tjux/tmp/TestResolveSpecsRootOrAbsentStillRefusesADanglingLinkroot_link7309130/001/docs/specs External:false BuiltInRoot:true Absent:true}, <nil>; want zero value, specs.root resolved to "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-gf68tjux/tmp/TestResolveSpecsRootOrAbsentStillRefusesADanglingLinkroot_link7309130/001/docs/specs", which does not exist; create the directory or update specs.root
+=== RUN   TestResolveSpecsRootOrAbsentStillRefusesADanglingLink/ancestor_link
+--- FAIL: TestResolveSpecsRootOrAbsentStillRefusesADanglingLink (0.00s)
+    --- FAIL: TestResolveSpecsRootOrAbsentStillRefusesADanglingLink/root_link (0.00s)
+    --- PASS: TestResolveSpecsRootOrAbsentStillRefusesADanglingLink/ancestor_link (0.00s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 157.701375ms before and 188.519125ms after
+FAIL	roundfix/internal/config	0.631s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestResolveSpecsRootOrAbsentStillRefusesADanglingLink/root_link; diagnostic want

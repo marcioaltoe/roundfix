@@ -1,0 +1,65 @@
+from common import *
+def flow(repo,baseenv,allcases=True):
+ log=''; binary=repo/'bin';binary.mkdir();(binary/'roundfix').symlink_to(ROOT/'bin/roundfix')
+ (repo/'.git/info/exclude').write_text('bin/\nmessages.json\n')
+ def cli(args,want=0):
+  nonlocal log
+  r,transcript=run(['./bin/roundfix',*args],cwd=repo,env=baseenv,timeout=120);log+=transcript
+  assert r.returncode==want,(args,r.returncode,r.stderr)
+  return r
+ def checked(r):
+  doc=json.loads(r.stdout); source=next(s for s in doc['sources'] if s['name']=='specs');assert (source['state'],source['count'])==('checked',0),source;return doc
+ try:
+  before=run(['git','status','--porcelain'],cwd=repo,env=baseenv)[0].stdout
+  checked(cli(['follow-up','--format','json']));checked(cli(['follow-up','--status','--format','json']))
+  cli(['spec','check']);cli(['history','sanitize'])
+  missing=cli(['spec','check','0001-missing'],2);assert 'which does not exist' in missing.stderr and not missing.stdout
+  types=[('other','other'),('feat','feature'),('feature','feature'),('finding','health'),('fix','health'),('information','other'),('perf','health'),('refactor','other'),('','other')] if allcases else [('other','other')]
+  for typ,priority in types:
+   m={'id':'one','created_at':'2026-10-01','text':'Pending work.'}
+   if typ:m['type']=typ
+   (repo/'messages.json').write_text(json.dumps({'schema':'roundfix/follow-up-messages/v1','messages':[m]}))
+   doc=checked(cli(['follow-up','--messages','messages.json','--format','json']));assert len(doc['items'])==1;item=doc['items'][0];assert (item['type'],item['priority_name'],item['basis'])==(typ or 'message',priority,'type'),item
+   assert doc['judge']['calls']==0
+  if allcases:
+   m['type']='chore';(repo/'messages.json').write_text(json.dumps({'schema':'roundfix/follow-up-messages/v1','messages':[m]}))
+   refused=cli(['follow-up','--messages','messages.json','--format','json'],2)
+   want='roundfix: follow-up failed: messages file "'+str(repo/'messages.json')+'": invalid type "chore"; use one of feat, feature, finding, fix, information, other, perf, refactor, or omit type\nRun \'roundfix follow-up --help\' for usage.\n'
+   assert not refused.stdout and refused.stderr==want,refused.stderr
+   for args in [['follow-up','--format','json'],['follow-up','--status','--format','json'],['spec','check'],['deliver','plan'],['deliver','status'],['deliver','stop'],['deliver','resume'],['history','sanitize']]:
+    a=cli(args,2 if args[:2] in [['deliver','status'],['deliver','stop'],['deliver','resume']] else 0)
+    (repo/'docs/specs').mkdir(parents=True)
+    b=cli(args,a.returncode)
+    assert (a.stdout,a.stderr,a.returncode)==(b.stdout,b.stderr,b.returncode),args
+    (repo/'docs/specs').rmdir()
+    assert 'which does not exist' not in a.stdout+a.stderr
+  after=run(['git','status','--porcelain'],cwd=repo,env=baseenv)[0].stdout;assert before==after
+  log+='Independent confirmation: list and status both report specs checked/0; fresh CLI processes; absent/empty streams and exits compared; git status unchanged.\n'
+  return 'pass',log
+ except Exception as ex:return 'fail',log+'HARNESS ASSERTION: '+repr(ex)+'\n'
+for row,external in [('QA-04',False)]:
+ with tempfile.TemporaryDirectory(prefix='qa0335-flow-') as td:
+  tmp=Path(td);h=tmp/'home';t=tmp/'tmp';h.mkdir();t.mkdir();e=cleanenv(h,t)
+  fake=tmp/'fake';fake.mkdir();(fake/'gh').write_text('#!/bin/sh\nprintf "[]\\n"\n');(fake/'gh').chmod(0o755);e['PATH']=str(fake)+os.pathsep+e['PATH']
+  repo=tmp/'repo';repo.mkdir();repo=repo.resolve();log=''
+  def git(args,cwd=None):
+   global log
+   r,trans=run(['git',*args],cwd=cwd or repo,env=e);log+=trans;assert r.returncode==0,r.stderr
+  git(['init','--initial-branch=main']);(repo/'README.md').write_text('# QA fixture\n');(repo/'docs/history/specs').mkdir(parents=True);(repo/'docs/history/specs/keep.md').write_text('# Existing archive history\n')
+  if external:
+   (repo/'docs/specs/0001-x').mkdir(parents=True);(repo/'docs/specs/0001-x/_prd.md').write_text('# Last Spec\n')
+  git(['add','.']);git(['commit','-m','docs: seed fixture'])
+  if external:
+   git(['rm','docs/specs/0001-x/_prd.md']);git(['commit','-m','docs: remove last Spec'])
+   clone=tmp/'clone';git(['clone','--no-hardlinks',str(repo),str(clone)],cwd=tmp);repo=clone
+   assert not (repo/'docs/specs').exists();log+='Fresh local clone has no docs/specs: confirmed.\n'
+  git(['remote','remove','origin']) if external else None
+  git(['remote','add','origin','https://example.invalid/qa/widget.git'])
+  status,trans=flow(repo,e,not external);log+=trans
+  if external:
+   log+='Outside source: Git SCM Wiki GitFaq, Can I add empty directories?, archived https://web.archive.org/web/20120723224559/https:/git.wiki.kernel.org/index.php/GitFaq (retrieved 2026-10-30, offline quotation provided in PRD).\n'
+   log+='"Directories are added automatically when adding files inside them. That is, directories never have to be added to the repository, and are not tracked on their own."\n"If you really need a directory to exist in checkouts you should create a file in it."\n'
+   source=ROOT/'docs/specs'/SLUG/'references/2026-10-30-the-follow-up-command-rejects-documented-message-types-and-an-empty-spec-root.md'
+   log+='Quaestor report: ai-memory message 01a18c1a-90b6-7ca0-b720-b5c8672092b5, default/gesttione-solutions-quaestor, 2026-10-30 06:18 BRT. Preserved original report:\n'+source.read_text()+'\nComparison: Git drops the last directory in a fresh clone as the quoted passage says; the delivered binary accepts other and reports specs checked/0, addressing the two reported frictions offline. No claim of a released Quaestor run.\n'
+  finish(row,status,'Public CLI observables and independent reads passed; no persistent tracked or untracked input change.' if status=='pass' else 'Public journey assertion failed; see full transcript.',log)
+  print(row,status,flush=True)

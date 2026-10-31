@@ -1,0 +1,22 @@
+from common import *
+log=''
+try:
+ with tempfile.TemporaryDirectory(prefix='qa0335-home-') as h,tempfile.TemporaryDirectory(prefix='qa0335-tmp-') as t:
+  e=cleanenv(h,t)
+  # Run task_02 phrase checks without duplicating the shared package suites.
+  second=Path('/tmp/qa0335/task_02-verification2.sh').read_text().split(' && go test',1)[0]
+  r,txt=run(['bash','-c',second],env=e);log+=txt;assert r.returncode==0
+  # Task_01's second command includes both shared suites and all its phrase checks.
+  r,txt=run(['bash','-c',Path('/tmp/qa0335/task_01-verification2.sh').read_text()],env=e);log+=txt;assert r.returncode==0
+  paths=['.agents/skills/roundfix/references/follow-up.md','skills/roundfix/references/follow-up.md','docs/user-guide/commands/follow-up.md']
+  r,txt=run(['rg','-n','requester|blocking project',*paths],env=e);log+=txt;assert r.returncode==1 and not r.stdout
+  context=(ROOT/'CONTEXT.md').read_text();entry=context.split('**Spec Root**:',1)[1].split('_Avoid_',1)[0];assert 'ADR-0348' in entry and 'docs/specs/' not in entry;log+='Spec Root glossary entry:\n'+entry+'\n'
+  for path in ['.agents/skills/roundfix/references/modes.md','skills/roundfix/references/modes.md']:
+   modes=' '.join((ROOT/path).read_text().split());assert 'and omit the type field otherwise' in modes;log+=path+': unknown type omission rule confirmed.\n'
+  versions=[]
+  for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+   found=re.findall(r'^\s*version: (.+)$',(ROOT/path).read_text(),re.M);assert found==['0.1.163','0.1.163'];versions+=found;log+=path+': both version fields 0.1.163.\n'
+ status='pass';result='Shared skills and documentation suites passed once; both Tasks\' phrase/mirror commands passed. All three guide copies contain neither obsolete phrase. The Spec Root definition cites ADR-0348 and no Spec; both mode references require omission of unknown types, and both skill copies carry 0.1.163 in both version fields.'
+except Exception as ex:
+ status='fail';result='Documentation/skill check failed; inspect transcript.';log+='HARNESS ASSERTION '+repr(ex)+'\n'
+finish('QA-15',status,result,log);print('QA-15',status,flush=True)

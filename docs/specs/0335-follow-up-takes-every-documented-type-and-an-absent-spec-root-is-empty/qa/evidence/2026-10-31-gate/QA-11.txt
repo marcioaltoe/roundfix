@@ -1,0 +1,35 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-hjx9vy1i/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/cli/follow_up_inventory.go
+Before:
+typ, strings.Join(names, ", "))
+After:
+typ, "feat, feature, finding, fix, other, perf, refactor")
+$ go test -count=1 -timeout 20m -v -run '^TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+=== PAUSE TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+=== CONT  TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+    follow_up_test.go:529: stdout="" stderr="roundfix: follow-up failed: messages file \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-hjx9vy1i/tmp/TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes813664691/004/messages.json\": invalid type \"chore\"; use one of feat, feature, finding, fix, other, perf, refactor, or omit type\nRun 'roundfix follow-up --help' for usage.\n" exit=2, want empty stdout, stderr="roundfix: follow-up failed: messages file \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-hjx9vy1i/tmp/TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes813664691/004/messages.json\": invalid type \"chore\"; use one of feat, feature, finding, fix, information, other, perf, refactor, or omit type\nRun 'roundfix follow-up --help' for usage.\n" exit=2
+--- FAIL: TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes (0.04s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 146.194583ms before and 139.85675ms after
+FAIL	roundfix/internal/cli	0.761s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes; diagnostic chore

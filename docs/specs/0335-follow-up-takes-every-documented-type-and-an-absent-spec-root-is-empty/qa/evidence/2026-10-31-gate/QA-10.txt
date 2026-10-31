@@ -1,0 +1,106 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-auotkbtp/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/cli/follow_up_inventory.go
+Before:
+	{"other", "other"},
+
+After:
+
+$ go test -count=1 -timeout 20m -v -run '^TestFollowUpAcceptsEveryDocumentedMessageType$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== NAME  TestFollowUpAcceptsEveryDocumentedMessageType/other
+    follow_up_test.go:313: exit=2 stderr="roundfix: follow-up failed: messages file \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-auotkbtp/tmp/TestFollowUpAcceptsEveryDocumentedMessageTypeother1060023830/004/messages.json\": invalid type \"other\"; use one of feat, feature, finding, fix, information, perf, refactor, or omit type\nRun 'roundfix follow-up --help' for usage.\n" stdout=
+--- FAIL: TestFollowUpAcceptsEveryDocumentedMessageType (0.00s)
+    --- FAIL: TestFollowUpAcceptsEveryDocumentedMessageType/other (0.09s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/finding (0.13s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/refactor (0.13s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/information (0.14s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/message (0.14s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/feature (0.14s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/perf (0.14s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/fix (0.14s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/feat (0.14s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 170.397875ms before and 153.874625ms after
+FAIL	roundfix/internal/cli	0.913s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestFollowUpAcceptsEveryDocumentedMessageType/other; diagnostic invalid type
+$ go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== NAME  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+    live_documents_docscontract_test.go:486: A message type is empty or one of names=["feat" "feature" "finding" "fix" "information" "other" "perf" "refactor"], want ["feat" "feature" "finding" "fix" "information" "perf" "refactor"]
+=== NAME  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+    live_documents_docscontract_test.go:486: A message type is empty or one of names=["feat" "feature" "finding" "fix" "information" "other" "perf" "refactor"], want ["feat" "feature" "finding" "fix" "information" "perf" "refactor"]
+=== NAME  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+    live_documents_docscontract_test.go:486: A message type is empty or one of names=["feat" "feature" "finding" "fix" "information" "other" "perf" "refactor"], want ["feat" "feature" "finding" "fix" "information" "perf" "refactor"]
+--- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes (0.00s)
+    --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md (0.00s)
+    --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md (0.00s)
+    --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md (0.00s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 146.403792ms before and 137.073709ms after
+FAIL	roundfix/internal/cli	0.712s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes; diagnostic A message type is empty or one of

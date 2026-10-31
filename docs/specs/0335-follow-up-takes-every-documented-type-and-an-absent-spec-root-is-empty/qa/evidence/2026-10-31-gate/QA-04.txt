@@ -1,0 +1,298 @@
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+$ git commit -m 'docs: seed fixture'
+exit: 0
+stdout:
+[main (root-commit) f7299e6] docs: seed fixture
+ 2 files changed, 2 insertions(+)
+ create mode 100644 README.md
+ create mode 100644 docs/history/specs/keep.md
+
+stderr:
+
+$ git remote add origin https://example.invalid/qa/widget.git
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix follow-up --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"nothing_to_do","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"missing","count":0,"detail":"no --messages file"},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"not_asked","reason":"no item","model":null,"calls":0,"cost_usd":0},"items":[],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --status --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"release-plan","state":"unavailable","count":0,"detail":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[],"release":{"state":"unavailable","base":"","proposed_version":"","changes":[],"reason":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},"blockers":[],"maintainer":[]}
+
+stderr:
+
+$ ./bin/roundfix spec check
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix history sanitize
+exit: 0
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr:
+
+$ ./bin/roundfix spec check 0001-missing
+exit: 2
+stdout:
+
+stderr:
+roundfix: spec check failed: specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo/docs/specs", which does not exist; create the directory or update specs.root
+Run 'roundfix spec check --help' for usage.
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":4,"priority_name":"other","kind":"message","ref":"message:one","type":"other","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":3,"priority_name":"feature","kind":"message","ref":"message:one","type":"feat","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":3,"priority_name":"feature","kind":"message","ref":"message:one","type":"feature","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":2,"priority_name":"health","kind":"message","ref":"message:one","type":"finding","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":2,"priority_name":"health","kind":"message","ref":"message:one","type":"fix","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":4,"priority_name":"other","kind":"message","ref":"message:one","type":"information","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":2,"priority_name":"health","kind":"message","ref":"message:one","type":"perf","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":4,"priority_name":"other","kind":"message","ref":"message:one","type":"refactor","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":4,"priority_name":"other","kind":"message","ref":"message:one","type":"message","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 2
+stdout:
+
+stderr:
+roundfix: follow-up failed: messages file "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo/messages.json": invalid type "chore"; use one of feat, feature, finding, fix, information, other, perf, refactor, or omit type
+Run 'roundfix follow-up --help' for usage.
+
+$ ./bin/roundfix follow-up --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"nothing_to_do","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"missing","count":0,"detail":"no --messages file"},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"not_asked","reason":"no item","model":null,"calls":0,"cost_usd":0},"items":[],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"nothing_to_do","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"missing","count":0,"detail":"no --messages file"},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"not_asked","reason":"no item","model":null,"calls":0,"cost_usd":0},"items":[],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --status --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"release-plan","state":"unavailable","count":0,"detail":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[],"release":{"state":"unavailable","base":"","proposed_version":"","changes":[],"reason":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},"blockers":[],"maintainer":[]}
+
+stderr:
+
+$ ./bin/roundfix follow-up --status --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo","namespace":"widget"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"release-plan","state":"unavailable","count":0,"detail":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f7299e6","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[],"release":{"state":"unavailable","base":"","proposed_version":"","changes":[],"reason":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},"blockers":[],"maintainer":[]}
+
+stderr:
+
+$ ./bin/roundfix spec check
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix spec check
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix deliver plan
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix deliver plan
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix deliver status
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  open Run Database reader "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/home/.roundfix/roundfix.db": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/home/.roundfix/roundfix.db: no such file or directory
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+$ ./bin/roundfix deliver status
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  open Run Database reader "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/home/.roundfix/roundfix.db": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/home/.roundfix/roundfix.db: no such file or directory
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+
+$ ./bin/roundfix deliver stop
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  Delivery Queue for repository "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo" does not exist
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver stop --help' for usage.
+
+$ ./bin/roundfix deliver stop
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  Delivery Queue for repository "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo" does not exist
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver stop --help' for usage.
+
+$ ./bin/roundfix deliver resume
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  Delivery Queue for repository "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo" does not exist
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver resume --help' for usage.
+
+$ ./bin/roundfix deliver resume
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  Delivery Queue for repository "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-ot11k9u1/repo" does not exist
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver resume --help' for usage.
+
+$ ./bin/roundfix history sanitize
+exit: 0
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr:
+
+$ ./bin/roundfix history sanitize
+exit: 0
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr:
+
+Independent confirmation: list and status both report specs checked/0; fresh CLI processes; absent/empty streams and exits compared; git status unchanged.

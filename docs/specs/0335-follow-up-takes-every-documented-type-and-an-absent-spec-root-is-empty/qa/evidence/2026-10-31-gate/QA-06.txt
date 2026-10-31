@@ -1,0 +1,60 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/config/config.go
+Before:
+return absent, nil
+After:
+return SpecsRoot{}, absent.RequirePresent()
+$ go test -count=1 -timeout 20m -v -run '^TestAnAbsentSpecRootReadsLikeAnEmptyOne$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne
+=== PAUSE TestAnAbsentSpecRootReadsLikeAnEmptyOne
+=== CONT  TestAnAbsentSpecRootReadsLikeAnEmptyOne
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne/follow-up
+    absent_spec_root_test.go:52: absent Spec Root was refused
+    absent_spec_root_test.go:66: specs source = {Name:specs State:unavailable Count:0 Detail:specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up1005405826/001/docs/specs", which does not exist; create the directory or update specs.root}, want checked with count 0
+    absent_spec_root_test.go:83: absent: exit=0 stdout="{\"schema\":\"roundfix/follow-up/v1\",\"view\":\"follow-up\",\"state\":\"nothing_to_do\",\"repository\":{\"root\":\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up1005405826/001\",\"namespace\":\"widget\"},\"sources\":[{\"name\":\"ai-memory-messages\",\"state\":\"missing\",\"count\":0,\"detail\":\"no --messages file\"},{\"name\":\"backlog\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"findings\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"repository-inbox\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"specs\",\"state\":\"unavailable\",\"count\":0,\"detail\":\"specs.root resolved to \\\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up1005405826/001/docs/specs\\\", which does not exist; create the directory or update specs.root\"},{\"name\":\"runs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"delivery-queue\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"pull-requests\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"git\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"}],\"judge\":{\"state\":\"not_asked\",\"reason\":\"no item\",\"model\":null,\"calls\":0,\"cost_usd\":0},\"items\":[],\"in_progress\":{\"runs\":[],\"delivery_queue\":[],\"pull_requests\":[],\"git\":{\"branch\":\"main\",\"head\":\"70e261b\",\"upstream\":\"\",\"unpushed_commits\":0,\"changed_paths\":[]}}}\n" stderr=""; empty: exit=0 stdout="{\"schema\":\"roundfix/follow-up/v1\",\"view\":\"follow-up\",\"state\":\"nothing_to_do\",\"repository\":{\"root\":\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up1005405826/001\",\"namespace\":\"widget\"},\"sources\":[{\"name\":\"ai-memory-messages\",\"state\":\"missing\",\"count\":0,\"detail\":\"no --messages file\"},{\"name\":\"backlog\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"findings\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"repository-inbox\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"specs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"runs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"delivery-queue\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"pull-requests\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"git\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"}],\"judge\":{\"state\":\"not_asked\",\"reason\":\"no item\",\"model\":null,\"calls\":0,\"cost_usd\":0},\"items\":[],\"in_progress\":{\"runs\":[],\"delivery_queue\":[],\"pull_requests\":[],\"git\":{\"branch\":\"main\",\"head\":\"70e261b\",\"upstream\":\"\",\"unpushed_commits\":0,\"changed_paths\":[]}}}\n" stderr=""
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne/follow-up_--status
+    absent_spec_root_test.go:52: absent Spec Root was refused
+    absent_spec_root_test.go:66: specs source = {Name:specs State:unavailable Count:0 Detail:specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up_--status3815180567/001/docs/specs", which does not exist; create the directory or update specs.root}, want checked with count 0
+    absent_spec_root_test.go:83: absent: exit=0 stdout="{\"schema\":\"roundfix/follow-up/v1\",\"view\":\"status\",\"state\":\"work_found\",\"repository\":{\"root\":\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up_--status3815180567/001\",\"namespace\":\"widget\"},\"sources\":[{\"name\":\"runs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"delivery-queue\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"pull-requests\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"git\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"specs\",\"state\":\"unavailable\",\"count\":0,\"detail\":\"specs.root resolved to \\\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up_--status3815180567/001/docs/specs\\\", which does not exist; create the directory or update specs.root\"},{\"name\":\"release-plan\",\"state\":\"unavailable\",\"count\":0,\"detail\":\"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag\"}],\"in_progress\":{\"runs\":[],\"delivery_queue\":[],\"pull_requests\":[],\"git\":{\"branch\":\"main\",\"head\":\"70e261b\",\"upstream\":\"\",\"unpushed_commits\":0,\"changed_paths\":[]}},\"pending_specs\":[],\"release\":{\"state\":\"unavailable\",\"base\":\"\",\"proposed_version\":\"\",\"changes\":[],\"reason\":\"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag\"},\"blockers\":[],\"maintainer\":[]}\n" stderr=""; empty: exit=0 stdout="{\"schema\":\"roundfix/follow-up/v1\",\"view\":\"status\",\"state\":\"work_found\",\"repository\":{\"root\":\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnefollow-up_--status3815180567/001\",\"namespace\":\"widget\"},\"sources\":[{\"name\":\"runs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"delivery-queue\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"pull-requests\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"git\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"specs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"release-plan\",\"state\":\"unavailable\",\"count\":0,\"detail\":\"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag\"}],\"in_progress\":{\"runs\":[],\"delivery_queue\":[],\"pull_requests\":[],\"git\":{\"branch\":\"main\",\"head\":\"70e261b\",\"upstream\":\"\",\"unpushed_commits\":0,\"changed_paths\":[]}},\"pending_specs\":[],\"release\":{\"state\":\"unavailable\",\"base\":\"\",\"proposed_version\":\"\",\"changes\":[],\"reason\":\"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag\"},\"blockers\":[],\"maintainer\":[]}\n" stderr=""
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne/spec_check
+    absent_spec_root_test.go:52: absent Spec Root was refused
+    absent_spec_root_test.go:83: absent: exit=2 stdout="" stderr="roundfix: spec check failed: specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnespec_check883106224/001/docs/specs\", which does not exist; create the directory or update specs.root\nRun 'roundfix spec check --help' for usage.\n"; empty: exit=0 stdout="" stderr=""
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne/deliver_plan
+    absent_spec_root_test.go:52: absent Spec Root was refused
+    absent_spec_root_test.go:83: absent: exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnedeliver_plan3453996973/001/docs/specs\", which does not exist; create the directory or update specs.root\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver plan --help' for usage.\n"; empty: exit=0 stdout="" stderr=""
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne/deliver_status
+    absent_spec_root_test.go:52: absent Spec Root was refused
+    absent_spec_root_test.go:83: absent: exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnedeliver_status1867835084/001/docs/specs\", which does not exist; create the directory or update specs.root\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver status --help' for usage.\n"; empty: exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  Delivery Queue for repository \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnedeliver_status1867835084/001\" does not exist\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver status --help' for usage.\n"
+=== RUN   TestAnAbsentSpecRootReadsLikeAnEmptyOne/history_sanitize
+    absent_spec_root_test.go:52: absent Spec Root was refused
+    absent_spec_root_test.go:83: absent: exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-995ryze6/tmp/TestAnAbsentSpecRootReadsLikeAnEmptyOnehistory_sanitize2756858352/001/docs/specs\", which does not exist; create the directory or update specs.root\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix history sanitize --help' for usage.\n"; empty: exit=0 stdout="history sanitize plan: 1 unit(s) pending; 1 file(s) (67 bytes) leave docs/history\nfindings: removes 1 file(s) (67 bytes)\napply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)\n" stderr=""
+--- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne (0.58s)
+    --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/follow-up (0.12s)
+    --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/follow-up_--status (0.17s)
+    --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/spec_check (0.05s)
+    --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/deliver_plan (0.07s)
+    --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/deliver_status (0.04s)
+    --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/history_sanitize (0.13s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 171.4ms before and 158.5255ms after
+FAIL	roundfix/internal/cli	1.332s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestAnAbsentSpecRootReadsLikeAnEmptyOne/follow-up; diagnostic unavailable

@@ -1,0 +1,28 @@
+$ bash -c 'for phrase in '"'"'Each item carries these JSON fields:'"'"' '"'"'The judge carries these JSON fields:'"'"' '"'"'A message type is empty or one of'"'"'; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/user-guide/commands/follow-up.md | grep -qF -- "$phrase" || { printf '"'"'missing phrase in the follow-up guide: %s\n'"'"' "$phrase" >&2; exit 1; }; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < .agents/skills/roundfix/references/follow-up.md | grep -qF -- "$phrase" || { printf '"'"'missing phrase in the follow-up reference: %s\n'"'"' "$phrase" >&2; exit 1; }; done; if grep -qE '"'"'requester|blocking project'"'"' .agents/skills/roundfix/references/follow-up.md; then echo '"'"'the follow-up reference still names prose item fields'"'"' >&2; exit 1; fi; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < .agents/skills/roundfix/references/modes.md | grep -qF -- '"'"'and omit the type field otherwise'"'"' || { echo '"'"'missing phrase in the modes reference'"'"' >&2; exit 1; }; for ref in follow-up modes; do cmp ".agents/skills/roundfix/references/$ref.md" "skills/roundfix/references/$ref.md" || exit 1; done; cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md'
+exit: 0
+stdout:
+
+stderr:
+
+$ bash -c 'phrase='"'"'An absent Spec Root inside the repository reads as an empty one'"'"'; for file in docs/user-guide/configuration.md .agents/skills/roundfix/references/spec.md .agents/skills/roundfix/references/deliver.md .agents/skills/roundfix/references/archive.md .agents/skills/roundfix/references/baseline.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$file" | grep -qF -- "$phrase" || { printf '"'"'missing phrase in %s: %s\n'"'"' "$file" "$phrase" >&2; exit 1; }; done; awk '"'"'index($0, "**Spec Root**:") == 1 { f=1; next } f && index($0, "_Avoid_") == 1 { exit } f { print }'"'"' CONTEXT.md | tr -s '"'"'[:space:]'"'"' '"'"' '"'"' | grep -qF '"'"'ADR-0348'"'"' || { echo '"'"'CONTEXT.md **Spec Root** does not cite ADR-0348'"'"' >&2; exit 1; }; for ref in spec deliver archive baseline; do cmp ".agents/skills/roundfix/references/$ref.md" "skills/roundfix/references/$ref.md" || exit 1; done; cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md && go test -count=1 -timeout 20m ./skills && go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract'
+exit: 0
+stdout:
+ok  	roundfix/skills	1.379s
+ok  	roundfix/internal/docscontract	11.930s
+
+stderr:
+
+$ rg -n 'requester|blocking project' .agents/skills/roundfix/references/follow-up.md skills/roundfix/references/follow-up.md docs/user-guide/commands/follow-up.md
+exit: 1
+stdout:
+
+stderr:
+
+Spec Root glossary entry:
+
+The configured directory holding Spec folders, `docs/specs` by default; it may resolve outside the repository working tree, such as a knowledge workspace repository. An absent Spec Root inside the repository holds no Spec ([ADR-0348](docs/adr/0348-an-absent-spec-root-inside-the-repository-holds-no-spec.md)).
+
+.agents/skills/roundfix/references/modes.md: unknown type omission rule confirmed.
+skills/roundfix/references/modes.md: unknown type omission rule confirmed.
+.agents/skills/roundfix/SKILL.md: both version fields 0.1.163.
+skills/roundfix/SKILL.md: both version fields 0.1.163.

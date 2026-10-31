@@ -1,0 +1,35 @@
+from common import *
+import tarfile,io
+CF='internal/config/config.go';IN='internal/cli/follow_up_inventory.go';SC='internal/cli/spec_check.go';FU='internal/cli/follow_up.go';REF='.agents/skills/roundfix/references/follow-up.md'
+DOC='TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes';ACC='TestFollowUpAcceptsEveryDocumentedMessageType'
+cases=[
+ ('QA-06',CF,'return absent, nil','return SpecsRoot{}, absent.RequirePresent()', [('internal/cli','TestAnAbsentSpecRootReadsLikeAnEmptyOne','follow-up','unavailable',False)]),
+ ('QA-07',CF,'if _, entryErr := os.Lstat(resolved);','if _, entryErr := os.Stat(resolved);', [('internal/config','TestResolveSpecsRootOrAbsentStillRefusesADanglingLink','root_link','want',False)]),
+ ('QA-08',CF,'pathInsideOrSame(evaluatedAncestor, evaluatedRepo)','(pathInsideOrSame(evaluatedAncestor, evaluatedRepo) || true)', [('internal/config','TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot','absolute_external_root','want',False)]),
+ ('QA-09',SC,'\t\tif err := resolvedSpecsRoot.RequirePresent(); err != nil {\n\t\t\tprintSpecCheckFailure(err, stderr)\n\t\t\treturn exitPreflight\n\t\t}\n','', [('internal/cli','TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal','spec_check','which does not exist',False)]),
+ ('QA-10',IN,'\t{"other", "other"},\n','', [('internal/cli',ACC,'other','invalid type',False),('internal/cli',DOC,'','A message type is empty or one of',True)]),
+ ('QA-11',IN,'typ, strings.Join(names, ", "))','typ, "feat, feature, finding, fix, other, perf, refactor")', [('internal/cli','TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes','','chore',False)]),
+ ('QA-12',IN,'{"feature", "feature"}','{"feature", "other"}', [('internal/cli',ACC,'feature','priority_name',False)]),
+ ('QA-13',FU,'`json:"requested_by"`','`json:"requested_by_changed"`', [('internal/cli',DOC,'','Each item carries these JSON fields:',True)]),
+ ('QA-14',REF,'`calls`,\n`cost_usd`.','`calls`.', [('internal/cli',DOC,'','The judge carries these JSON fields:',True)])
+]
+for row,path,old,new,checks in cases:
+ log='$ git archive '+HEAD+' | extract to a new isolated copy\n';ok=True
+ with tempfile.TemporaryDirectory(prefix='qa0335-sabotage-') as td:
+  td=Path(td);repo=td/'repo';repo.mkdir();h=td/'home';h.mkdir();t=td/'tmp';t.mkdir();e=cleanenv(h,t)
+  data=subprocess.check_output(['git','archive',HEAD],cwd=ROOT,env=e)
+  with tarfile.open(fileobj=io.BytesIO(data)) as ar:ar.extractall(repo,filter='data')
+  for args in [['git','init','--initial-branch=main'],['git','add','.']]:
+   r,txt=run(args,cwd=repo,env=e);log+=txt;assert r.returncode==0
+  p=repo/path;s=p.read_text();assert s.count(old)==1,(row,s.count(old));p.write_text(s.replace(old,new,1))
+  log+='Mutation path: '+path+'\nBefore:\n'+old+'\nAfter:\n'+new+'\n'
+  for pkg,name,sub,diagnostic,docs in checks:
+   args=['go','test','-count=1','-timeout','20m','-v']
+   if docs:args+=['-tags','docscontract']
+   args+=['-run','^'+name+'$','./'+pkg]
+   r,txt=run(args,cwd=repo,env=e);log+=txt;combined=r.stdout+r.stderr
+   targeted='--- FAIL: '+name+('/'+sub if sub else '')
+   detected=(r.returncode==1 and targeted in combined and diagnostic in combined and '[build failed]' not in combined and 'setup failed' not in combined and 'panic:' not in combined)
+   log+='Behavioral detection accepted: '+str(detected)+'; required failure '+targeted+'; diagnostic '+diagnostic+'\n';ok=ok and detected
+ finish(row,'pass' if ok else 'fail','Named test(s) failed at the required behavioral assertion in an independent git archive copy; no compilation or infrastructure failure.' if ok else 'Sabotage did not produce all required behavioral failures; inspect transcript.',log)
+ print(row,'detected' if ok else 'NOT DETECTED',flush=True)

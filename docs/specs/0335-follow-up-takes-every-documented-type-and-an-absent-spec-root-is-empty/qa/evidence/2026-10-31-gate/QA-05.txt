@@ -1,0 +1,158 @@
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+$ git commit -m 'docs: seed fixture'
+exit: 0
+stdout:
+[main (root-commit) e9b24f3] docs: seed fixture
+ 3 files changed, 3 insertions(+)
+ create mode 100644 README.md
+ create mode 100644 docs/history/specs/keep.md
+ create mode 100644 docs/specs/0001-x/_prd.md
+
+stderr:
+
+$ git rm docs/specs/0001-x/_prd.md
+exit: 0
+stdout:
+rm 'docs/specs/0001-x/_prd.md'
+
+stderr:
+
+$ git commit -m 'docs: remove last Spec'
+exit: 0
+stdout:
+[main f2a90fe] docs: remove last Spec
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 docs/specs/0001-x/_prd.md
+
+stderr:
+
+$ git clone --no-hardlinks /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/clone
+exit: 0
+stdout:
+
+stderr:
+Cloning into '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/clone'...
+done.
+
+Fresh local clone has no docs/specs: confirmed.
+$ git remote remove origin
+exit: 0
+stdout:
+
+stderr:
+
+$ git remote add origin https://example.invalid/qa/widget.git
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix follow-up --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"nothing_to_do","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/clone","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"missing","count":0,"detail":"no --messages file"},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"not_asked","reason":"no item","model":null,"calls":0,"cost_usd":0},"items":[],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f2a90fe","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+$ ./bin/roundfix follow-up --status --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/clone","namespace":"widget"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"release-plan","state":"unavailable","count":0,"detail":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f2a90fe","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[],"release":{"state":"unavailable","base":"","proposed_version":"","changes":[],"reason":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},"blockers":[],"maintainer":[]}
+
+stderr:
+
+$ ./bin/roundfix spec check
+exit: 0
+stdout:
+
+stderr:
+
+$ ./bin/roundfix history sanitize
+exit: 0
+stdout:
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr:
+
+$ ./bin/roundfix spec check 0001-missing
+exit: 2
+stdout:
+
+stderr:
+roundfix: spec check failed: specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/clone/docs/specs", which does not exist; create the directory or update specs.root
+Run 'roundfix spec check --help' for usage.
+
+$ ./bin/roundfix follow-up --messages messages.json --format json
+exit: 0
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"follow-up","state":"work_found","repository":{"root":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-flow-gamgc9lo/clone","namespace":"widget"},"sources":[{"name":"ai-memory-messages","state":"checked","count":1,"detail":""},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"findings","state":"checked","count":0,"detail":""},{"name":"repository-inbox","state":"checked","count":0,"detail":""},{"name":"specs","state":"checked","count":0,"detail":""},{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"checked","count":0,"detail":""},{"name":"git","state":"checked","count":0,"detail":""}],"judge":{"state":"unavailable","reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set","model":null,"calls":0,"cost_usd":0},"items":[{"rank":1,"priority":4,"priority_name":"other","kind":"message","ref":"message:one","type":"other","date":"2026-10-01","title":"Pending work.","requested_by":null,"blocks":null,"basis":"type","answers":null,"reason":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set"}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"main","head":"f2a90fe","upstream":"","unpushed_commits":0,"changed_paths":[]}}}
+
+stderr:
+
+Independent confirmation: list and status both report specs checked/0; fresh CLI processes; absent/empty streams and exits compared; git status unchanged.
+Outside source: Git SCM Wiki GitFaq, Can I add empty directories?, archived https://web.archive.org/web/20120723224559/https:/git.wiki.kernel.org/index.php/GitFaq (retrieved 2026-10-30, offline quotation provided in PRD).
+"Directories are added automatically when adding files inside them. That is, directories never have to be added to the repository, and are not tracked on their own."
+"If you really need a directory to exist in checkouts you should create a file in it."
+Quaestor report: ai-memory message 01a18c1a-90b6-7ca0-b720-b5c8672092b5, default/gesttione-solutions-quaestor, 2026-10-30 06:18 BRT. Preserved original report:
+---
+type: fix
+status: promoted
+created: 2026-10-30
+spec: 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty
+reason: null
+---
+
+# The follow-up command rejects documented message types, misreads an archived-everything repository and documents the wrong JSON fields
+
+## Symptom
+
+Três atritos novos do `roundfix follow-up` (v0.126.0), vistos hoje:
+1. `--messages` rejeita com exit 2 os tipos "other" e "chore" (`invalid type "other"`), e a referência da skill (follow-up.md) não lista os tipos aceitos. Só passou omitindo `type`. Sugestão: aceitar "other" (a referência diz que "the rest are other") ou listar os valores válidos na referência e no erro.
+2. A fonte `specs` aparece `unavailable` ("specs.root resolved to .../docs/specs, which does not exist") num repositório saudável. O archive removeu a última pasta de Spec, e o Git não guarda diretório vazio, então todo repositório que arquivou tudo cai nesse estado. Sugestão: tratar a raiz ausente como `checked`, contagem 0, ou o archive deixar um `.gitkeep`.
+3. A referência follow-up.md nomeia os campos dos itens como class, reference e requester, mas o JSON emite `priority_name`, `ref` e `requested_by`, além de `priority`, `basis` e `reason`. Um consumidor que segue a referência lê null.
+
+## Where
+
+- `roundfix follow-up --messages <path>`: the message parser in
+  `internal/cli/follow_up_inventory.go` (`followUpMessages`) accepts only an
+  empty `type` or `feat`, `fix`, `perf` and `refactor`, and its error names
+  neither the accepted values nor the reference that should list them.
+- The `specs` source of `roundfix follow-up` and `roundfix follow-up --status`
+  (`readFollowUpSpecs`), through `config.ResolveSpecsRoot`, which refuses a
+  Spec Root that does not exist.
+- `.agents/skills/roundfix/references/follow-up.md` (and its mirror under
+  `skills/`), which names the item fields with prose words instead of the
+  JSON names the command emits.
+
+## Expected
+
+- Every message type the reference documents is accepted, the reference and
+  the error list the same accepted set, and `other` is one of them.
+- A repository whose last Spec was archived, so Git no longer holds its Spec
+  Root, reports the `specs` source `checked` with count `0`.
+- The reference names the JSON fields the command emits.
+
+## Evidence
+
+- Quaestor (ai-memory message `01a18c1a-90b6-7ca0-b720-b5c8672092b5` from
+  `default/gesttione-solutions-quaestor`, 2026-10-30 06:18 BRT), Roundfix
+  v0.126.0. The message also carried proof results of other Specs; only the
+  three frictions above belong to this entry.
+- Reproduced by the operator on 2026-10-30 in this repository: with types
+  `fix` or omitted the command passes, and the JSON items carry
+  `priority_name`, `ref`, `basis` and `reason`. Here `docs/specs/` exists
+  (it holds a `.gitkeep`), so the second friction needs a fixture without it.
+
+Comparison: Git drops the last directory in a fresh clone as the quoted passage says; the delivered binary accepts other and reports specs checked/0, addressing the two reported frictions offline. No claim of a released Quaestor run.

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

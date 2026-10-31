@@ -1,0 +1,47 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-c22k5a5y/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/cli/spec_check.go
+Before:
+		if err := resolvedSpecsRoot.RequirePresent(); err != nil {
+			printSpecCheckFailure(err, stderr)
+			return exitPreflight
+		}
+
+After:
+
+$ go test -count=1 -timeout 20m -v -run '^TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal
+=== PAUSE TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal
+=== CONT  TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal
+=== RUN   TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/spec_check
+    absent_spec_root_test.go:133: exit=2 stdout="" stderr="roundfix: spec check failed: unknown Spec slug \"0001-widget\"\nRun 'roundfix spec check --help' for usage.\n"; want exit=2, no stdout, stderr="roundfix: spec check failed: specs.root resolved to \"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-c22k5a5y/tmp/TestANamedSpecInAnAbsentSpecRootKeepsTheRefusalspec_check2167887328/001/docs/specs\", which does not exist; create the directory or update specs.root\nRun 'roundfix spec check --help' for usage.\n"
+=== RUN   TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/deliver_plan
+=== RUN   TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/deliver_start
+=== RUN   TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/deliver_retry
+--- FAIL: TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal (0.14s)
+    --- FAIL: TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/spec_check (0.04s)
+    --- PASS: TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/deliver_plan (0.04s)
+    --- PASS: TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/deliver_start (0.03s)
+    --- PASS: TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/deliver_retry (0.03s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 156.601209ms before and 138.695458ms after
+FAIL	roundfix/internal/cli	0.847s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal/spec_check; diagnostic which does not exist

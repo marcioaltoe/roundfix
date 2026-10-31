@@ -1,0 +1,40 @@
+$ git archive fee28084441c0594f9d5b676c19adcd7c72cedb9 | extract to a new isolated copy
+$ git init --initial-branch=main
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-p4czbv5z/repo/.git/
+
+stderr:
+
+$ git add .
+exit: 0
+stdout:
+
+stderr:
+
+Mutation path: internal/config/config.go
+Before:
+pathInsideOrSame(evaluatedAncestor, evaluatedRepo)
+After:
+(pathInsideOrSame(evaluatedAncestor, evaluatedRepo) || true)
+$ go test -count=1 -timeout 20m -v -run '^TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot$' ./internal/config
+exit: 1
+stdout:
+=== RUN   TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot
+=== PAUSE TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot
+=== CONT  TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot
+=== RUN   TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot/absolute_external_root
+    specs_root_absent_test.go:93: OrAbsent = {Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-p4czbv5z/tmp/TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRootabs1175096106/002/missing/specs External:false BuiltInRoot:false Absent:true}, <nil>; want zero value, specs.root resolved to "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-p4czbv5z/tmp/TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRootabs1175096106/002/missing/specs", which does not exist; create the directory or update specs.root
+=== RUN   TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot/external_linked_ancestor
+    specs_root_absent_test.go:93: OrAbsent = {Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-p4czbv5z/tmp/TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRootext510738505/001/docs/specs External:false BuiltInRoot:true Absent:true}, <nil>; want zero value, specs.root resolved to "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0335-sabotage-p4czbv5z/tmp/TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRootext510738505/001/docs/specs", which does not exist; create the directory or update specs.root
+--- FAIL: TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot (0.00s)
+    --- FAIL: TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot/absolute_external_root (0.00s)
+    --- FAIL: TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot/external_linked_ancestor (0.00s)
+FAIL
+suiteguard: guard cost: measured 2862 paths; fingerprint took 159.234875ms before and 136.842125ms after
+FAIL	roundfix/internal/config	0.566s
+FAIL
+
+stderr:
+
+Behavioral detection accepted: True; required failure --- FAIL: TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot/absolute_external_root; diagnostic want

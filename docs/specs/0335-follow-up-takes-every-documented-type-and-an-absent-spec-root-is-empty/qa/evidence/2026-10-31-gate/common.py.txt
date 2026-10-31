@@ -1,0 +1,62 @@
+import os,sys,subprocess,tempfile,json,re,shlex,shutil
+from pathlib import Path
+ROOT=Path.cwd()
+SLUG='0335-follow-up-takes-every-documented-type-and-an-absent-spec-root-is-empty'
+QA=ROOT/'docs/specs'/SLUG/'qa'
+REPORT=QA/'qa-report-2026-10-31.md'
+EVID=QA/'evidence/2026-10-31-gate'
+STATE=Path('/tmp/qa0335/state.json')
+CACHES=json.loads(Path('/tmp/qa0335/caches.json').read_text())
+BASE='30590e30fe0552d2aa709a6572a4a0dd6bb37ffe'
+HEAD='fee28084441c0594f9d5b676c19adcd7c72cedb9'
+def cleanenv(h,t):
+ return {'PATH':os.environ['PATH'],'HOME':str(h),'TMPDIR':str(t),'GOMODCACHE':CACHES['GOMODCACHE'],'GOCACHE':CACHES['GOCACHE'],'GOPROXY':'off','GOSUMDB':'off','GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':'/dev/null','GIT_AUTHOR_NAME':'QA','GIT_AUTHOR_EMAIL':'qa@example.invalid','GIT_COMMITTER_NAME':'QA','GIT_COMMITTER_EMAIL':'qa@example.invalid','LANG':'C','TZ':'America/Sao_Paulo'}
+def run(args,cwd=ROOT,env=None,timeout=1500):
+ r=subprocess.run(args,cwd=cwd,env=env,text=True,capture_output=True,timeout=timeout)
+ return r, '$ '+shlex.join(args)+'\nexit: '+str(r.returncode)+'\nstdout:\n'+r.stdout+'\nstderr:\n'+r.stderr+'\n'
+def state(): return json.loads(STATE.read_text())
+def render():
+ d=state(); text=d['seed']; text=text.replace('verdict: pending','verdict: '+d.get('verdict','pending'),1)
+ front='spec: '+SLUG+'\ndate: 2026-10-31\nbuild: "'+HEAD+'"\nstatus: '+d.get('status','in-progress')+'\nuser_flow_binary: '+json.dumps(d['version'])+'\nsurfaces: [backend]\n'
+ text=text.replace('---\n','---\n'+front,1)
+ for kind in ['environment','finding','declared']:
+  n=sum(x['status'].startswith('blocked ('+kind+':') for x in d['rows'])
+  text=text.replace('rows_blocked_'+kind+': 0','rows_blocked_'+kind+': '+str(n),1)
+ table='\n'.join('| '+x['id']+' | '+x['status']+' | '+x['sources']+' |' for x in d['rows'])
+ text=text.replace('| - | --- | --- |','| - | --- | --- |\n'+table,1)
+ text+='\n## Scope and environment\n\nAudited head `'+HEAD+'`; both implementation Tasks are completed, and terminal `task_03` depends transitively on both. The declared backend surface is exercised through its public CLI. No Surface Transcripts or frontend are declared. The strict precondition passed; its skipped authoring detectors lack applicable artifacts, and the vocabulary contract is absent as declared.\n\n`make build` passed. The dirty suffix reflects the seeded, untracked QA directory, present before this Agent changed any file; tracked product inputs match HEAD. Every public CLI invocation uses the Run-built `./bin/roundfix` with fresh temporary HOME and TMPDIR, existing Go caches, no credentials, and no live provider. GitHub is replaced by a local fake returning an empty list. Environment variable names only: HOME, TMPDIR, GOMODCACHE, GOCACHE, GOPROXY, GOSUMDB, PATH, LANG, TZ, GIT_CONFIG_GLOBAL, GIT_CONFIG_NOSYSTEM; all Judge Key Variables and TYPESAFE_API_KEY are omitted from the child environment. No other repository or real user Roundfix state is accessed.\n\nThe command runner rejected the symlinked writable root before launching commands, including with a physical working directory. Authorized commands therefore use the escalation mechanism and the physical Run checkout.\n\n## Static gate\n\nThe Daemon reports `make verify-changed`: pass, exit 0, diagnostics removed on success. It was not rerun. Built binary version and strict precondition evidence: [version](evidence/2026-10-31-gate/version.txt), [precondition](evidence/2026-10-31-gate/precondition.txt).\n\n## Row evidence\n'
+ for x in d['rows']:
+  text+='\n### '+x['id']+'\n\n```yaml\ninputs:\n'
+  for ref in x['inputs']: text+='  - kind: repository_path\n    ref: '+json.dumps(ref)+'\n'
+  if x.get('commits'): text+='  - kind: commit_range\n    ref: '+BASE+'..'+HEAD+'\n'
+  text+='```\n\n'+x['plan']+'\n\n'
+  if x.get('result'): text+=x['result']+'\n'
+  if x.get('evidence'): text+='\nEvidence: ['+x['evidence']+'](evidence/2026-10-31-gate/'+x['evidence']+').\n'
+ text+='\n## Findings\n\n'+d.get('findings','None observed.')+'\n'
+ if d.get('final'): text+='\n'+d['final']+'\n'
+ REPORT.write_text(text)
+def finish(row,status,result,log=None):
+ d=state(); x=next(x for x in d['rows'] if x['id']==row); x['status']=status;x['result']=result
+ if log is not None:
+  name=row+'.txt';(EVID/name).write_text(log);x['evidence']=name
+ STATE.write_text(json.dumps(d,indent=2));render()
+def initialize():
+ EVID.mkdir(parents=True,exist_ok=True)
+ for f in ['version.txt','precondition.txt']: shutil.copyfile('/tmp/qa0335/'+f,EVID/f)
+ version=Path('/tmp/qa0335/version.txt').read_text().split('stdout:\n')[1].split('\nstderr:')[0].strip()
+ rows=[]
+ runtime=['cmd/**','internal/**','skills/**','.agents/skills/roundfix/**','docs/**','CONTEXT.md','Makefile','go.mod','go.sum','.roundfixrc.yml']
+ def row(i,sources,plan,inputs=runtime,commits=False): rows.append(dict(id='QA-'+str(i).zfill(2),sources=sources,status='pending',plan=plan,inputs=inputs,commits=commits))
+ row(1,'repository Verification','Actor: gate reviewer. Entry: supplied Daemon verification. Expect exit 0 at the audited head; independently confirm the build and strict Spec precondition. No persistent change expected.')
+ row(2,'Requirement 2','Actor: operator. Run task_01 named config/CLI regressions, verify explicit PASS markers, and build both packages for Windows. Absent/empty runs independently compare stdout, stderr and exit; named, dangling, file and external-root failures retain their diagnostics. No persistent change expected.')
+ row(3,'Requirement 3','Actor: operator and guide reader. Run every task_02 FollowUp test plus the docscontract guide test. Assert every named PASS and the accepted classes/refusal transcript. Independent confirmation is through QA-04 and the mutation probes; no persistent change expected.')
+ row(4,'Requirement 2; Requirement 3','Actor: operator. Use ./bin/roundfix in a temporary repository holding archive history and no Spec Root. Run follow-up list/status, spec check, history sanitize, named-Spec refusal and accepted/invalid message files; repeat after creating the empty root. Compare independent public reads and Git status for read-only persistence.')
+ row(5,'outside-evidence row','Actor: operator. Compare the PRD-quoted Git SCM Wiki GitFaq passages and adopted Quaestor message 01a18c1a (2026-10-30) to two local Git commits and a fresh local clone with no docs/specs. Run the built follow-up with other and confirm checked/0 through status. No network lookup; the outside source is available offline.')
+ mutations=['Restore missing-root error; TestAnAbsentSpecRootReadsLikeAnEmptyOne must fail on follow-up/unavailable.','Use os.Stat for absence; TestResolveSpecsRootOrAbsentStillRefusesADanglingLink must fail.','Drop ancestor containment; TestResolveSpecsRootOrAbsentStillRefusesAMissingExternalRoot must fail.','Remove named spec-check RequirePresent; TestANamedSpecInAnAbsentSpecRootKeepsTheRefusal must fail on spec check.','Remove other from the table; accepted-type test must fail on other and the guide contract must fail on the type sentence.','Hardcode the error list without information; unknown-type test must fail on chore.','Class feature as other; accepted-type test must fail on feature priority_name.','Rename requested_by JSON tag; guide contract must fail on the item sentence.','Delete cost_usd in the canonical skill judge sentence; guide contract must fail on the judge sentence.']
+ for i,m in enumerate(mutations,6): row(i,'Requirement 5','Actor: regression auditor. '+m+' Each probe uses its own git archive copy of HEAD, initialized/staged for Git-reading contracts, with bounded go test; inspect the actual failing assertion and reject compile/infrastructure errors. Audited tree remains unchanged.',runtime,True)
+ row(15,'Requirement 2; Requirement 3','Actor: guide reader. Execute task_01/task_02 phrase and mirror checks, skills suite and docscontract suite once for shared Verification; search all three follow-up guides for obsolete field names, assert modes step 1 omits unknown types, and validate the Spec Root glossary cites ADR-0348 with no Spec citation. Independent contracts check versions, coverage and link integrity.')
+ row(16,'Requirement 11','Actor: scope auditor. Use diff-tree for each Task commit plus current delta; compare every changed path to Context/Recorded paths and GovernedPath authorization. Prove no prohibited path or QA settlement text changes and authorization predates both Tasks. Mechanical table already supplies granted shape; this row tests authored scope promises.',runtime,True)
+ row(17,'Pull Request row','Actor: maintainer. Supplied fact: no open Pull Request. Record blocked environment with pre-PR equivalent authority, Daemon checks, no unresolved threads, no Merge-Ready acceptance, and audited candidate head.',runtime,True)
+ row(18,'Success Metric 6','Actor: Quaestor after release. PRD Unreachable Acceptance names Success Metric 6. Release and another repository are outside this gate authorization; one declared-blocked row records the release notice and reply still required.',runtime)
+ STATE.write_text(json.dumps(dict(seed=REPORT.read_text(),rows=rows,version=version),indent=2));render()
+if __name__=='__main__': initialize()
