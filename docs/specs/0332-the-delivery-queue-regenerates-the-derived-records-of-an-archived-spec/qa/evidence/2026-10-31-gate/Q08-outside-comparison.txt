@@ -1,0 +1,14 @@
+Outside sources checked offline; no new lookup authorized.
+1. Go command documentation, cmd/go/internal/test, https://pkg.go.dev/cmd/go/internal/test, retrieval quoted by PRD: 2026-10-30.
+Tests that open files within the package's module or that consult environment variables only match future runs in which the files and environment variables are unchanged.
+2. Pull Request #709 incident, 2026-10-27 about 18:10 BRT, preserved in the adopted backlog entry. It records derived-regeneration-6.log refusing modified docs/references/coverage-record.json and a delivery-error park, followed by operator merge. Its diagnosis blaming an active-Spec-only reader was superseded by characterization and ADR-0345; the refusal remains historical evidence.
+
+Fresh observation:
+coverage command exit: 1
+suiteguard: guard cost: measured 1860 paths; fingerprint took 126.858375ms before and 94.8355ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/references/coverage-record.json
+
+Comparison: both identify the same modified record and nonzero regeneration. The historical backlog renders the boundary violation and modification in one parenthesized phrase; current output has a boundary heading followed by a separate modified-path line. This is a semantic comparison, not a byte-for-byte comparison of command outputs. The passing queue test independently reads the actual regeneration log after verifying unchanged HEAD, clean worktree and absent MERGE_HEAD.
+
+Both fixture copy functions use filepath.WalkDir with os.ReadFile/os.WriteFile inside the Go test process, and contain no exec.Command. Under the quoted Go caching rule these reads are visible to the test cache. This explains cache input visibility; QA uses -count=1 and does not claim a separate cache-hit experiment.

@@ -1,0 +1,14 @@
+--- internal/suiteguard/suiteguard.go
++++ internal/suiteguard/suiteguard.go
+@@ -116,6 +116,11 @@
+ 		return violations, nil
+ 	}
+ 
++	// QA sabotage: an unrelated declaration wrongly exempts all writes.
++	if len(declarations) > 0 {
++		return nil, nil
++	}
++
+ 	command := declaredSanctionedRegenerationCommand()
+ 	if command == "" {
+ 		return violations, nil

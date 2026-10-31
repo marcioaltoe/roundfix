@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 20m ./internal/cli -run '^TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated$' -v
+exit: 1
+elapsed_seconds: 10.263
+stdout:
+=== RUN   TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated
+=== PAUSE TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated
+=== CONT  TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated
+    deliver_derived_archived_item_test.go:206: regenerate derived paths: verification command "go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1" failed; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated4148565724/001/artifacts/delivery/0001-the-archived-item/derived-regeneration-6.log: exit status 1
+--- FAIL: TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated (4.34s)
+FAIL
+suiteguard: guard cost: measured 2876 paths; fingerprint took 145.398917ms before and 135.024708ms after
+FAIL	roundfix/internal/cli	5.061s
+FAIL
+stderr:

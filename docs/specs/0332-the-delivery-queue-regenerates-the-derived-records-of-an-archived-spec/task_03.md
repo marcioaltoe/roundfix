@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0332-the-delivery-queue-regenerates-the-derived-records-of-an-archived-spec
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

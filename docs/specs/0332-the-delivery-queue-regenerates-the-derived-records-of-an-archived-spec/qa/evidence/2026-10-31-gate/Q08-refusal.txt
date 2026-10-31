@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 20m ./internal/cli -run '^TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict$' -v
+exit: 0
+elapsed_seconds: 6.729
+stdout:
+=== RUN   TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict
+=== PAUSE TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict
+=== CONT  TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict
+--- PASS: TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict (4.56s)
+PASS
+suiteguard: guard cost: measured 2899 paths; fingerprint took 464.485333ms before and 130.363292ms after
+ok  	roundfix/internal/cli	5.621s
+stderr:

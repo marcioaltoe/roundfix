@@ -1,0 +1,11 @@
+--- internal/config/regeneration_declared_test.go
++++ internal/config/regeneration_declared_test.go
+@@ -278,7 +278,7 @@
+ 
+ func writeArchivedItemRecord(t *testing.T, repository string, sanctionCoverage bool) {
+ 	t.Helper()
+-	for _, path := range []string{"docs/specs", "docs/workflow/authorizations"} {
++	for _, path := range []string{"docs/workflow/authorizations"} {
+ 		if err := os.RemoveAll(filepath.Join(repository, path)); err != nil {
+ 			t.Fatal(err)
+ 		}

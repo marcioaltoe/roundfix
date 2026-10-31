@@ -1,0 +1,15 @@
+$ go test -count=1 -timeout 30m -tags docscontract ./internal/config -run '^TestRegenerationIsDeclared$/^an_unsanctioned_coverage_write_is_refused$' -v
+exit: 1
+elapsed_seconds: 55.692
+stdout:
+=== RUN   TestRegenerationIsDeclared
+=== RUN   TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused
+    regeneration_declared_test.go:61: unsanctioned coverage regeneration succeeded:
+        ok  	roundfix/internal/spec	1.269s
+--- FAIL: TestRegenerationIsDeclared (54.39s)
+    --- FAIL: TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused (4.01s)
+FAIL
+suiteguard: guard cost: measured 2876 paths; fingerprint took 156.916291ms before and 137.681833ms after
+FAIL	roundfix/internal/config	54.941s
+FAIL
+stderr:

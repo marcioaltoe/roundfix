@@ -1,0 +1,18 @@
+$ go test -count=1 -timeout 30m -tags docscontract ./internal/config -run '^TestRegenerationIsDeclared$' -v
+exit: 0
+elapsed_seconds: 59.045
+stdout:
+=== RUN   TestRegenerationIsDeclared
+=== RUN   TestRegenerationIsDeclared/declaration_1_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_2_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_3_is_required
+=== RUN   TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused
+--- PASS: TestRegenerationIsDeclared (56.84s)
+    --- PASS: TestRegenerationIsDeclared/declaration_1_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/declaration_2_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/declaration_3_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused (4.20s)
+PASS
+suiteguard: guard cost: measured 2881 paths; fingerprint took 566.130875ms before and 132.892667ms after
+ok  	roundfix/internal/config	58.073s
+stderr:

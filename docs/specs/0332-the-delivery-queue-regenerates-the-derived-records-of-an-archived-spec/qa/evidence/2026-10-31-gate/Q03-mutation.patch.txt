@@ -1,0 +1,18 @@
+--- internal/spec/coverage_test.go
++++ internal/spec/coverage_test.go
+@@ -23,7 +23,6 @@
+ 	"unicode"
+ 	"unicode/utf8"
+ 
+-	"roundfix/internal/suiteguard"
+ )
+ 
+ var updateCoverageRecord = flag.Bool(
+@@ -58,7 +57,6 @@
+ 
+ 	recordPath := filepath.Join(repoRoot, coverageRecordPath)
+ 	if *updateCoverageRecord {
+-		suiteguard.DeclareSanctionedRegeneration(coverageRecordCommand)
+ 		if err := writeCoverageRecord(recordPath, actual); err != nil {
+ 			t.Fatalf("re-record coverage at %s: %v", recordPath, err)
+ 		}

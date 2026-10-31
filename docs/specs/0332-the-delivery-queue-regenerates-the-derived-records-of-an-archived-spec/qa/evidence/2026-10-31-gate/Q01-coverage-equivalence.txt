@@ -1,0 +1,6 @@
+$ go test -count=1 -timeout 20m ./internal/spec -run '^TestCoverageEquivalence$'
+exit: 0
+elapsed_seconds: 2.371
+stdout:
+ok  	roundfix/internal/spec	1.780s
+stderr:

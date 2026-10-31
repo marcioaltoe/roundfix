@@ -1,0 +1,7 @@
+Pull Request fact: none open (provided by Daemon).
+Approval: maintainer cycle AS plan/authorization accepted 2026-10-30, preserved in the earlier approved _authorization.md. No Merge-Ready acceptance obtained.
+Checks/status: Daemon make verify-changed pass exit 0 at fe13e8fd953580d3b77b190330da63d195de6fce; named tests, sabotage observations and strict precondition recorded. Live PR required checks do not exist yet.
+Threads: no unresolved PR threads because no PR exists, not a claim that a provider reviewed this candidate.
+Merge-Ready: no acceptance yet.
+Candidate: fe13e8fd953580d3b77b190330da63d195de6fce on the Run branch; target branch is roundfix/deliver-0332-the-delivery-queue-regenerates-the-derived-records-of-an-archived-spec-320638b33f4e3096. Run branch has no PR of its own.
+No GitHub lookup, publication, review request, commit, push or merge performed by QA.
