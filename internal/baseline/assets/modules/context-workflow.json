@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 27,
+  "version": 28,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -67,7 +67,7 @@
       "triggers": [
         {
           "id": "trigger.context-workflow.grill-with-docs",
-          "when": "Stress-testing a plan or decision against repository documents."
+          "when": "When the person asks to stress-test a plan or decision against repository documents."
         }
       ]
     },

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -100,3 +100,63 @@ Decisions.
 
 - `_prd.md` → Goals; Core Feature 3; Stories 1 and 4; Success Metric 2; Decisions
 - `_techspec.md` → Data Models 2 and 3; API Contract 2; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, testing-boss, golang-testing, evidence-gate, setup-context-driven, roundfix, knowledge-workspace, tech-writer.
+
+The eight dispatch triggers now use Data Model 3's exact text. The five
+person-started or polish skills require a request and belong to no activation
+bundle. Product UI uses `interaction-design`, `interface-design` and
+`fixing-accessibility`; public pages use `frontend-design` and
+`fixing-accessibility`. Neither audit nor web-guideline review joins a bundle.
+The activation document remains version 3, with bundles and activations in ID
+order. `ui-ux-pro-max` and every other module trigger retain their text.
+
+Regeneration, in the required order:
+
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+  exited 0. The recorder raised TypeScript 9 → 10, frontend 7 → 8 and context
+  workflow 27 → 28, and wrote the module version record.
+- Fetched catalog commit `86df8608726979064a8fe46003dfaf403ffe0087` from
+  the authorized local checkout into a temporary repository and built the
+  task binary with `go build -buildvcs=false`.
+- Applied the prescribed `jq` bundle assignment to `typescript.json`, then
+  ran `baseline assets sync --source-dir <fetched>/setups --format text`
+  and its `--check` with an isolated HOME. Both exited 0; sync reported
+  updates to the TypeScript and composed TypeScript snapshots, and check
+  reported `setup-context-driven audit: ok`.
+- Applied API Contract 1's parity transform with the composed-snapshot
+  filter, then ran `make baseline-digests`: exit 0, `ok: true`. The command
+  regenerated the declared formatter, profile, catalog, parity and plan
+  artifacts.
+- Rebuilt the task binary and ran
+  `baseline update --repo . --no-skills --no-history --yes --format text`
+  twice, each with a fresh HOME. The first rendered two files; the second
+  reported `File changes: 0` and `Idempotence: verified`. The generated
+  repository guide carries the new `grill-with-docs` trigger. Both refreshes
+  reported the two existing nested fixture carriers as unchanged warnings.
+
+Focused evidence:
+
+- Before the catalog edits, both new tests failed on the five old trigger
+  prefixes, the combined frontend bundle and its missing public-pages
+  counterpart.
+- `go test ./internal/baseline -run '^(TestPersonStartedSkillsAreDispatchedOnlyWhenThePersonAsks|TestTheFrontendBundlesSeparateProductUIFromPublicPages|TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles|TestNoCatalogEntryNamesARetiredSkill|TestEveryBaselineModuleVersionIsRecorded|TestCatalogCompatibility|TestCatalogDiagnosticCharacterization|TestBaselinePlanCharacterization|TestBaselineCompatibilityCorpus|TestFormatterComposition)$' -count=1 -v`
+  exited 0; all ten selected tests passed. These cover acceptance criteria
+  1 and 2, snapshot consistency and the regenerated artifacts.
+- Six temporary Go overlays changed no repository source: five independently
+  removed `When the person asks`, and one added `frontend-design` beside
+  `interface-design`. Each focused test invocation exited 1 at its intended
+  assertion, confirming both regression tests reject those changes.
+- Parsed inspection compared the three modules with HEAD after allowing
+  only the eight specified trigger changes and recorded version increments;
+  it also confirmed activation version/order and the rendered guide text.
+  `gofmt -d internal/baseline/skill_dispatch_review_test.go` produced no diff.
+- `git diff --check` exited 0. The scope audit found all 22 changed or
+  untracked paths declared by this Task, with its authored content and
+  Daemon-written `in_progress` status preserved.
+
+Declared Verification and repository Verification were not run; the Daemon
+owns both and Task status. No other Task or Task Graph file was edited, and
+no commit, push or pull request was made.

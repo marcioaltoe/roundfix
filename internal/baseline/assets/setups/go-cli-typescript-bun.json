@@ -9,7 +9,7 @@
     ],
     "type": "composed"
   },
-  "digest": "2edae2fdbdd632fafb89f80e5556ef7da54505ef921418843ea3e4bab3623684",
+  "digest": "3c4f51500abb76d9639d1dbe6d7764e36c158fe866c680da4810625750173ff2",
   "skills": [
     {
       "name": "find-skills",
@@ -1197,6 +1197,13 @@
       ]
     },
     {
+      "id": "bundle.frontend-public-pages",
+      "skills": [
+        "frontend-design",
+        "fixing-accessibility"
+      ]
+    },
+    {
       "id": "bundle.frontend-react",
       "skills": [
         "react",
@@ -1207,12 +1214,9 @@
     {
       "id": "bundle.frontend-ui-quality",
       "skills": [
-        "frontend-design",
         "interaction-design",
         "interface-design",
-        "fixing-accessibility",
-        "wcag-audit-patterns",
-        "web-design-guidelines"
+        "fixing-accessibility"
       ]
     },
     {

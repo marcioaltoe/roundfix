@@ -74,7 +74,7 @@ Individual skill triggers:
 - `golang-testing`:
   - `trigger.go.golang-testing`: Writing or reviewing Go tests, fixtures, fuzz tests, or integration tests.
 - `grill-with-docs`:
-  - `trigger.context-workflow.grill-with-docs`: Stress-testing a plan or decision against repository documents.
+  - `trigger.context-workflow.grill-with-docs`: When the person asks to stress-test a plan or decision against repository documents.
 - `grilling`:
   - `trigger.context-workflow.grilling`: Stress-testing an idea or plan through direct questions.
 - `implement-spec`:

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "frontend",
-  "version": 7,
+  "version": 8,
   "kind": "application-surface",
   "title": "Frontend application guidance",
   "dependsOn": [
@@ -95,7 +95,7 @@
       "triggers": [
         {
           "id": "trigger.frontend.frontend-design",
-          "when": "Designing or implementing frontend visual behavior."
+          "when": "Designing or implementing the visual design of marketing or other public pages."
         }
       ]
     },
@@ -122,7 +122,7 @@
       "triggers": [
         {
           "id": "trigger.frontend.interface-design",
-          "when": "Designing frontend interface hierarchy and controls."
+          "when": "Designing product UI hierarchy and controls: application screens, forms, and dashboards."
         }
       ]
     },
@@ -239,7 +239,7 @@
       "triggers": [
         {
           "id": "trigger.frontend.wcag-audit-patterns",
-          "when": "Auditing frontend behavior against WCAG patterns."
+          "when": "Running a formal WCAG conformance audit of the frontend."
         }
       ]
     },
@@ -248,7 +248,7 @@
       "triggers": [
         {
           "id": "trigger.frontend.web-design-guidelines",
-          "when": "Reviewing frontend design against web interface guidelines."
+          "when": "When the person asks for a review of the frontend against web interface guidelines."
         }
       ]
     },

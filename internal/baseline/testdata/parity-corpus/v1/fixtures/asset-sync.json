@@ -34,7 +34,7 @@
       "id": "rust"
     },
     {
-      "digest": "ac828e0cb7d8676d3a77bc21d9123f31895abf618ee36da880d11e5636ab1844",
+      "digest": "778646c7f0d5148ba6a0c879ba8175290a7ffa8f27a1978f82fcec21f30bb9ca",
       "id": "typescript"
     }
   ],
@@ -1598,6 +1598,13 @@
             ]
           },
           {
+            "id": "bundle.frontend-public-pages",
+            "skills": [
+              "frontend-design",
+              "fixing-accessibility"
+            ]
+          },
+          {
             "id": "bundle.frontend-react",
             "skills": [
               "react",
@@ -1608,12 +1615,9 @@
           {
             "id": "bundle.frontend-ui-quality",
             "skills": [
-              "frontend-design",
               "interaction-design",
               "interface-design",
-              "fixing-accessibility",
-              "wcag-audit-patterns",
-              "web-design-guidelines"
+              "fixing-accessibility"
             ]
           },
           {
@@ -1663,7 +1667,7 @@
             ]
           }
         ],
-        "digest": "ac828e0cb7d8676d3a77bc21d9123f31895abf618ee36da880d11e5636ab1844",
+        "digest": "778646c7f0d5148ba6a0c879ba8175290a7ffa8f27a1978f82fcec21f30bb9ca",
         "id": "typescript",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [

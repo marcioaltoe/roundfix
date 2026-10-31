@@ -22,10 +22,12 @@ Exact activation bundles:
   - `bundle.debugging`: `systematic-debugging`, `no-workarounds`
 - `trigger.delivery`: Preparing commits or pull request delivery.
   - `bundle.delivery`: `conventional-commits`, `github-pr-workflow`
+- `trigger.frontend.public-pages`: Designing or reviewing marketing or other public pages.
+  - `bundle.frontend-public-pages`: `frontend-design`, `fixing-accessibility`
 - `trigger.frontend.react-feature`: Building or reviewing a React feature.
   - `bundle.frontend-react`: `react`, `react-best-practices`, `react-composition-patterns`
-- `trigger.frontend.ui-quality`: Designing or reviewing frontend UI and accessibility.
-  - `bundle.frontend-ui-quality`: `frontend-design`, `interaction-design`, `interface-design`, `fixing-accessibility`, `wcag-audit-patterns`, `web-design-guidelines`
+- `trigger.frontend.ui-quality`: Designing or reviewing product UI: application screens, forms, and dashboards.
+  - `bundle.frontend-ui-quality`: `interaction-design`, `interface-design`, `fixing-accessibility`
 - `trigger.hono.endpoint`: Creating, modifying, or reviewing a Hono endpoint without persistence behavior.
   - `bundle.hono-endpoint`: `hono-api-best-practices`, `hono`, `zod`
 - `trigger.hono.endpoint-persistence`: Creating, modifying, or reviewing a Hono endpoint with persistence behavior.
@@ -52,7 +54,7 @@ Individual skill triggers:
 - `app-renderer-systems`:
   - `trigger.typescript.app-renderer-systems`: Designing a feature system within the TypeScript application.
 - `architectural-analysis`:
-  - `trigger.typescript.architectural-analysis`: Analyzing TypeScript repository architecture and dependency boundaries.
+  - `trigger.typescript.architectural-analysis`: When the person asks for an analysis of the TypeScript repository architecture and dependency boundaries.
 - `archive-spec`:
   - `trigger.context-workflow.archive-spec`: Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed.
 - `backend-docs`:
@@ -110,7 +112,7 @@ Individual skill triggers:
 - `fixing-motion-performance`:
   - `trigger.frontend.fixing-motion-performance`: Diagnosing and fixing frontend motion performance.
 - `frontend-design`:
-  - `trigger.frontend.frontend-design`: Designing or implementing frontend visual behavior.
+  - `trigger.frontend.frontend-design`: Designing or implementing the visual design of marketing or other public pages.
 - `frontend-docs`:
   - `trigger.frontend.frontend-docs`: Writing frontend component or interaction documentation.
 - `git-rebase`:
@@ -118,7 +120,7 @@ Individual skill triggers:
 - `github-pr-workflow`:
   - `trigger.core.github-pr-workflow`: Preparing, opening, updating, or handing off a pull request.
 - `grill-with-docs`:
-  - `trigger.context-workflow.grill-with-docs`: Stress-testing a plan or decision against repository documents.
+  - `trigger.context-workflow.grill-with-docs`: When the person asks to stress-test a plan or decision against repository documents.
 - `grilling`:
   - `trigger.context-workflow.grilling`: Stress-testing an idea or plan through direct questions.
 - `hono`:
@@ -126,7 +128,7 @@ Individual skill triggers:
 - `hono-api-best-practices`:
   - `trigger.backend.hono-api-best-practices`: Reviewing Hono API contracts and implementation practices.
 - `humanizer`:
-  - `trigger.typescript.humanizer`: Revising generated prose in the TypeScript repository to sound natural and direct.
+  - `trigger.typescript.humanizer`: When the person asks to make TypeScript repository prose sound natural and direct.
 - `implement-spec`:
   - `trigger.autonomous-work.implement-spec`: Delegating a complete autonomous Spec Task Graph.
   - `trigger.context-workflow.implement-spec`: Executing every pending Task in a Spec Task Graph.
@@ -140,7 +142,7 @@ Individual skill triggers:
 - `interaction-design`:
   - `trigger.frontend.interaction-design`: Designing frontend states, transitions, and interaction flows.
 - `interface-design`:
-  - `trigger.frontend.interface-design`: Designing frontend interface hierarchy and controls.
+  - `trigger.frontend.interface-design`: Designing product UI hierarchy and controls: application screens, forms, and dashboards.
 - `knowledge-workspace`:
   - `trigger.context-workflow.knowledge-workspace`: Consulting the configured knowledge workspace for relevant prior context.
   - `trigger.context-workflow.knowledge-workspace-secondbrain-authoring`: Consulting the Secondbrain before authoring an Idea, PRD, or TechSpec.
@@ -207,9 +209,9 @@ Individual skill triggers:
 - `vitest`:
   - `trigger.typescript.vitest`: Writing or changing Vitest suites and configuration.
 - `wcag-audit-patterns`:
-  - `trigger.frontend.wcag-audit-patterns`: Auditing frontend behavior against WCAG patterns.
+  - `trigger.frontend.wcag-audit-patterns`: Running a formal WCAG conformance audit of the frontend.
 - `web-design-guidelines`:
-  - `trigger.frontend.web-design-guidelines`: Reviewing frontend design against web interface guidelines.
+  - `trigger.frontend.web-design-guidelines`: When the person asks for a review of the frontend against web interface guidelines.
 - `write-idea`:
   - `trigger.context-workflow.write-idea`: Expanding a product-level idea into a researched opportunity artifact.
 - `write-prd`:
@@ -219,7 +221,7 @@ Individual skill triggers:
 - `write-techspec`:
   - `trigger.context-workflow.write-techspec`: Settling implementation architecture and technical contracts.
 - `writing-clearly-and-concisely`:
-  - `trigger.typescript.writing-clearly-and-concisely`: Revising TypeScript repository prose for clarity and brevity.
+  - `trigger.typescript.writing-clearly-and-concisely`: When the person asks to tighten TypeScript repository prose for clarity and brevity.
 - `zod`:
   - `trigger.typescript.zod`: Designing or changing Zod schemas and validation boundaries.
 - `zustand`:

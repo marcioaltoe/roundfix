@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 9,
+  "version": 10,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
       "triggers": [
         {
           "id": "trigger.typescript.architectural-analysis",
-          "when": "Analyzing TypeScript repository architecture and dependency boundaries."
+          "when": "When the person asks for an analysis of the TypeScript repository architecture and dependency boundaries."
         }
       ]
     },
@@ -113,7 +113,7 @@
       "triggers": [
         {
           "id": "trigger.typescript.humanizer",
-          "when": "Revising generated prose in the TypeScript repository to sound natural and direct."
+          "when": "When the person asks to make TypeScript repository prose sound natural and direct."
         }
       ]
     },
@@ -158,7 +158,7 @@
       "triggers": [
         {
           "id": "trigger.typescript.writing-clearly-and-concisely",
-          "when": "Revising TypeScript repository prose for clarity and brevity."
+          "when": "When the person asks to tighten TypeScript repository prose for clarity and brevity."
         }
       ]
     },
