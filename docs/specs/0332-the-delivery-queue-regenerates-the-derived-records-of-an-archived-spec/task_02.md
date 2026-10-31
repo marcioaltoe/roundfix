@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0332-the-delivery-queue-regenerates-the-derived-records-of-an-archived-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -112,3 +112,49 @@ adds two top-level tests.
 - `_prd.md` → Goals; Core Feature 3; Success Metric 3
 - `_techspec.md` → API Contracts 4-6; Data Models; Invariants 2-4; Testing Approach; Build Order 2
 - ADR-0345, ADR-0192
+
+## Result
+
+Added the archived-item conflict fixture and both parallel queue tests in
+`internal/cli/deliver_derived_archived_item_test.go`. The fixture copies source
+inputs in-process, skips `.git`, `.gocache`, `bin`, `docs` and `.agents`, and
+copies only the coverage record from `docs`. It builds the base, item edit,
+archive and default-branch edit as real commits against a local bare origin.
+The coverage command comes from the copied `.roundfixrc.yml`; the fixture's
+Archive Record is its only sanction. Workflow home and artifacts stay under
+`t.TempDir()`, and nested Go inherits HOME and both Go caches.
+
+Focused evidence for the acceptance criteria:
+
+- Sanctioned recovery: `TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated`
+  passed. It asserts a new HEAD, no source paths, the exact configured
+  regeneration command, the committed original coverage entry with neither
+  fake entry nor conflict markers, both ordered merge parents, the
+  `Roundfix-Delivery: derived-merge` trailer and a clean worktree.
+- Unsanctioned recovery:
+  `TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict` passed.
+  Its record lists only `make baseline-digests`. It asserts the
+  `regenerate derived paths` error, unchanged item HEAD, a clean worktree,
+  no `MERGE_HEAD`, and exactly one regeneration log containing
+  `suiteguard: modified: docs/references/coverage-record.json`.
+- Coverage: the sanctioned recorder ran as the last implementation step and
+  exited 0. Inspection of the generated diff shows exactly the two new test
+  names added to `docs/references/coverage-record.json`; the record was not
+  edited by hand.
+
+Commands and outcomes:
+
+- Starting inspection found the new test file absent; the only pre-existing
+  change was the Daemon's `status: in_progress` in this Task file.
+- `GOPROXY=off GOSUMDB=off go test -count=1 -timeout 10m ./internal/cli -run '^TestAnArchivedItem' -v`
+  exited 0; both new tests passed (package time 6.335 s), with the suite guard
+  active. Module downloads were disabled and the origin was local.
+- `GOPROXY=off GOSUMDB=off go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+  exited 0 (package time 1.506 s).
+- `gofmt -l internal/cli/deliver_derived_archived_item_test.go` exited 0
+  with no output.
+
+Declared Verification and repository Verification remain Daemon-owned and
+were not run. Task status, the Task Graph and other Task files were not
+edited. No production code, existing conflict test, suite guard or Project
+Config was changed. No follow-up was identified.
