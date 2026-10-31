@@ -1,3 +1,0 @@
-$ ./bin/roundfix qa-report accept docs/specs/0333-runs-load-the-dispatched-skills-and-the-baseline-follows-the-catalog/qa/qa-report-2026-10-31.md
-
-exit: 0

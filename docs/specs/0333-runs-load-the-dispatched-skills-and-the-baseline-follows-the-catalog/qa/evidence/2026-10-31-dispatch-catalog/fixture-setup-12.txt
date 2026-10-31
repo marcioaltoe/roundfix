@@ -1,6 +1,0 @@
-$ go test -count=1 -timeout 20m -v -run '^TestBuildTaskPromptTellsTheAgentToLoadOnlyTheDispatchedSkills$' ./internal/agent
-suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
-FAIL	roundfix/internal/agent	0.273s
-FAIL
-
-exit: 1
