@@ -23,6 +23,7 @@ regeneration:
     outputs:
       - docs/references/coverage-record.json
 promoted: []
+pull_request: "712"
 ---
 
 # The Delivery Queue regenerates the derived records of an archived Spec
