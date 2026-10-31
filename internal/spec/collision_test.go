@@ -14,6 +14,39 @@ import (
 	"roundfix/internal/gittest"
 )
 
+func TestACompletedTaskNeverCollides(t *testing.T) {
+	t.Parallel()
+	for _, status := range []Status{StatusCompleted, StatusPending, StatusFailed, StatusInProgress} {
+		t.Run(string(status), func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			writeCollisionFile(t, root, "shared/notes.txt", "shared\n")
+			// Either side being completed excludes the pair.
+			for _, reverse := range []bool{false, true} {
+				firstStatus, secondStatus := status, StatusPending
+				if reverse {
+					firstStatus, secondStatus = secondStatus, firstStatus
+				}
+				graph := &Graph{Tasks: []Task{
+					{ID: "task_01", Status: firstStatus, Verification: []string{"test -f shared/notes.txt"}},
+					{ID: "task_02", Status: secondStatus, Verification: []string{"test -f shared/notes.txt"}},
+				}}
+				collisions, err := Collisions(root, graph)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := 1
+				if status == StatusCompleted {
+					want = 0
+				}
+				if len(collisions) != want {
+					t.Fatalf("Collisions with statuses %s, %s = %+v, want %d pairs", firstStatus, secondStatus, collisions, want)
+				}
+			}
+		})
+	}
+}
+
 func TestCollisionsFindsTheMeasuredShape(t *testing.T) {
 	t.Parallel()
 	repoRoot := t.TempDir()

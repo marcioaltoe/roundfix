@@ -663,6 +663,22 @@ func budgetExceededReason(maximum time.Duration, elapsed time.Duration, renewedT
 	)
 }
 
+// RefuseWaveCollisions rejects a graph that would share files within a Wave
+// when taskCapacity permits parallel execution, before a Run is recorded.
+func RefuseWaveCollisions(repoRoot string, graph *spec.Graph, taskCapacity int) error {
+	if taskCapacity <= 1 {
+		return nil
+	}
+	collisions, err := spec.Collisions(repoRoot, graph)
+	if err != nil {
+		return fmt.Errorf("inspect Task Graph Wave collisions before Run: %w", err)
+	}
+	if len(collisions) == 0 {
+		return nil
+	}
+	return fmt.Errorf("Tasks would collide in one Wave at Task Capacity %d: %s", taskCapacity, waveCollisionDetails(collisions))
+}
+
 func refuseTaskPlanWaveCollisions(plan TaskPlan) error {
 	collisions, err := spec.Collisions(plan.WorkDir, &spec.Graph{
 		Spec:  plan.Spec,
@@ -674,7 +690,10 @@ func refuseTaskPlanWaveCollisions(plan TaskPlan) error {
 	if len(collisions) == 0 {
 		return nil
 	}
+	return fmt.Errorf("task cycle: refuse Wave before dispatch because Tasks collide: %s", waveCollisionDetails(collisions))
+}
 
+func waveCollisionDetails(collisions []spec.WaveCollision) string {
 	details := make([]string, 0, len(collisions))
 	for _, collision := range collisions {
 		details = append(details, fmt.Sprintf(
@@ -685,7 +704,7 @@ func refuseTaskPlanWaveCollisions(plan TaskPlan) error {
 			collision.ResolvingEdge(),
 		))
 	}
-	return fmt.Errorf("task cycle: refuse Wave before dispatch because Tasks collide: %s", strings.Join(details, "; "))
+	return strings.Join(details, "; ")
 }
 
 func taskPlanWithoutQAGate(plan TaskPlan) (TaskPlan, *spec.Task, error) {

@@ -21,6 +21,18 @@ Runs never push.
 A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused.
 The list must be on the delivery target before the Run reads it. QA Report and Batch commits never keep an untracked executable. A repository with core.fileMode false records the file as 100644.
 
+#### Preflight Validation
+
+A completed Task never collides; a Task reopened to `pending` counts again.
+When the Task Capacity (`worktree.concurrency`) is above 1, `roundfix implement`
+refuses a Wave Collision before it records a Run. It checks the committed
+Task Graph before the default-branch check and exits `2`, leaving stdout
+empty and starting no Agent. The refusal starts with
+`Tasks would collide in one Wave at Task Capacity` and names each Task pair,
+its shared repository files and their sources, and the `needs` edge that
+orders the pair. At a Task Capacity of 1 it leaves the Tasks to the serial
+Run. The Daemon keeps its pre-dispatch refusal.
+
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. It considers Runs with outcome Stopped or
 Unresolved when their recorded Run Worktree is present. Preflight Validation

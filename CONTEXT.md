@@ -491,6 +491,10 @@ _Avoid_: mergeable, green check, approved
 The set of Tasks whose dependencies are all completed and that may execute concurrently; the scheduler draws from the current Wave up to the configured concurrency.
 _Avoid_: Batch, stage, phase
 
+**Wave Collision**:
+A pair of Tasks that are not completed, that the Task Graph lets run in one Wave and that are known to touch a common repository file. `roundfix spec check` reports it as `SC-WAVE-COLLISION`, and `roundfix implement` refuses it before it records a Run when the Task Capacity is above 1 ([ADR-0347](docs/adr/0347-a-row-citing-an-empty-grant-declares-no-mutation-and-a-completed-task-never-collides.md)).
+_Avoid_: File conflict, completed Task collision
+
 **Task Capacity**:
 The maximum number of Task Worktree lifecycles one Implement Run may execute concurrently, configured by `worktree.concurrency`; it limits Agent work and Task Worktree ownership independently from Verification Capacity.
 _Avoid_: Verification concurrency, worker count, Agent pool

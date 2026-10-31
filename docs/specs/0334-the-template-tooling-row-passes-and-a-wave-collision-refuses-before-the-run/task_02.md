@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0334-the-template-tooling-row-passes-and-a-wave-collision-refuses-before-the-run
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -154,3 +154,84 @@ completed Task refuses after the Run starts"
 - `_prd.md` → Goals 4-6; Core Features 3-5; Success Metric 4; Success Metric 5; Success Metric 6; Success Metric 7; Glossary
 - `_techspec.md` → Current behavior 4-5; API Contract 3; API Contract 4; Surface Transcript 1; Invariants 3-6; Declared breaks; Testing Approach; Build Order 2
 - ADR-0347
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, evidence-gate.
+
+Implemented only task_02's slice. Task status remains Daemon-owned; no Task
+Graph or other Task file was edited.
+
+- Completed Tasks are excluded from either position of a collision pair.
+  The new status regression checks completed, pending, failed and in_progress
+  in both graph positions. Touch-source collection and ResolvingEdge bytes
+  are unchanged.
+- RefuseWaveCollisions bypasses capacities of 1 or less and supplies the
+  preflight refusal above 1. Its pair details and the unchanged Daemon
+  dispatch refusal use one formatter. Implement calls it on the committed
+  graph after precondition-repair validation and before the default-branch
+  check.
+- All four readers accept a corrective Task beside a completed Task. The
+  additional pending task_06 case makes all four refuse exactly task_05 and
+  task_06; the ordered corrective Task with another Run settlement remains.
+- The CLI regression asserts Surface Transcript 1 in full, zero Run records,
+  and zero Agent calls or probes. The completed-Task and capacity-one cases
+  each create one Run and reach the fake Agent without collision diagnostics.
+  Their fake Agent deliberately returns a scripted error after dispatch:
+  these tests prove admission, not successful settlement. Temporary repository
+  and home paths use a neutral prefix so the word Colliding in the serial
+  test name cannot masquerade as a product diagnostic.
+- All six guide/reference files state both rules. Both implement sources
+  quote the refusal prefix. Wave Collision is defined beside Wave with
+  ADR-0347 and no Spec citation. The canonical references and mirrors match.
+  The sanctioned recorder raised both Roundfix skill version fields and
+  mirrors from 0.1.161 to 0.1.162 and recorded the digest. The Behavior Surface
+  fingerprint was recorded after the last guide/glossary edit.
+
+Characterization before production edits:
+
+- `go test ./internal/spec -run '^TestACompletedTaskNeverCollides$/completed$' -count=1`
+  exited 1: completed task_01 still paired with pending task_02.
+- `go test ./internal/cli -run '^TestImplementRefusesAWaveCollisionBeforeTheRun$' -count=1`
+  exited 1: the transcript showed a recorded Run and dispatch refusal with
+  command exit 1 instead of the required preflight exit 2.
+
+Focused checks after implementation:
+
+- `go test ./internal/spec -run '^TestACompletedTaskNeverCollides/' -count=1`
+  exited 0; all four statuses and both pair positions exercised.
+- `go test ./internal/daemon -run '^TestQAGateJudgesACorrectiveTaskOnTheCurrentGraph/' -count=1`
+  exited 0; all three cases and four readers exercised.
+- `go test ./internal/cli -run '^TestImplement(RefusesAWaveCollision|RunsATaskThatShares|AtTaskCapacityOne)' -count=1`
+  exited 0 after correcting the fixture-path false positive described above.
+- `go test ./internal/daemon -run '^TestTaskCycle(RefusesAWaveCollision|DispatchesSerializedCollisionGraph)$' -count=1`
+  exited 0.
+- `go test ./internal/speccheck -run '^TestWaveCollision(FindingNamesTheResolvingEdge|CheckIgnoresASharedInstructionPath|CheckStillReportsASharedInterfacePath)$' -count=1`
+  exited 0.
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1`
+  exited 0 after changing the accidental undefined capitalized phrase
+  Two Tasks to A pair of Tasks.
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exited 0; this is the Task-required sanctioned recorder.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0; this is the Task-required final sanctioned recorder.
+- A read-only Python inspection confirmed the three changed Roundfix mirror
+  files equal their canonical sources, both version fields in each SKILL.md
+  are 0.1.162, all six guides/references carry both rules, and every one of
+  the 18 changed paths belongs to this Task. `git diff --check` exited 0.
+
+The initial command sandbox could not initialize through the assigned
+symlinked writable root; scoped elevated commands and physical paths provided
+access. No repository or global permission configuration was changed.
+
+Declared Verification, repository Verification and incremental Verification
+were not run; the Daemon owns them. No broader Baseline regeneration was run:
+this Spec explicitly excludes Baseline derived files and sanctions only the
+skill sync, owned-skill version and Behavior Surface recorders. No commit,
+push, pull request, real Agent session or network request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261031T173520Z_ca95397d60f28c1a`
+- Source commit: `9cb54cbfe6119b421f8a278863f355c0ffa06645`

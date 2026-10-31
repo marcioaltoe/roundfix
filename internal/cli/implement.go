@@ -281,6 +281,10 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	if err := daemon.RefuseWaveCollisions(gitState.Root, graph, loadedConfig.Config.Worktree.Concurrency); err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, nil)
 	if defaultBranch.IsDefault(gitState.Branch) {
 		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
