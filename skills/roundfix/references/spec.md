@@ -24,6 +24,13 @@ The authoring-honesty contract includes these stable identifiers:
   invariant and a commit-shaped hexadecimal token together; compare with the
   Delivery Base instead. A gap that runs from the Tasks stage.
 
+- `SC-QA-VERIFICATION-AUTHORED` — a pending QA Task's `## Verification`
+  renders a command other than the one Roundfix derives. An error from the
+  Tasks stage. After its `fix:` line the text report prints `expected block:`
+  and the exact section as a fenced `markdown` block; JSON carries it in the
+  finding's `expected` field, present only on a finding that has one. Replace
+  the whole section with it, unchanged.
+
 These four gaps hold every active Spec, whatever its age. Before an active
 Spec's next Run, add the sections and lines each finding names; the fix of every
 finding names the section or line and the skill rule that requires it.

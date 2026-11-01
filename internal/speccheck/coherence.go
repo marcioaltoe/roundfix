@@ -424,6 +424,19 @@ func UndeclaredRehearsal(task spec.Task) (Finding, bool) {
 	return Finding{}, false
 }
 
+// ExpectedQAVerificationBlock renders the ## Verification section a qa Task
+// must carry for the derived commands.
+func ExpectedQAVerificationBlock(derived []string) string {
+	var block strings.Builder
+	block.WriteString("## Verification\n\n")
+	for _, command := range derived {
+		block.WriteString("- `")
+		block.WriteString(command)
+		block.WriteString("`\n")
+	}
+	return block.String()
+}
+
 // AuthoredQAVerification reports a qa Task whose file tries to control the
 // Verification that Roundfix derives. The effective command is never the
 // authored one; this finding makes the refusal visible instead of overwriting
@@ -437,7 +450,8 @@ func AuthoredQAVerification(task spec.Task) (Finding, bool) {
 		Severity: SeverityError,
 		Summary:  task.File + " names qa Task " + task.ID + " with an authored Verification command",
 		Where:    []Location{{Path: task.File, Line: 1}},
-		Fix:      "Regenerate the qa Task so its ## Verification renders Roundfix's derived command unchanged.",
+		Fix:      "Replace the qa Task's ## Verification section with the expected block this finding prints, unchanged.",
+		Expected: ExpectedQAVerificationBlock(task.Verification),
 	}, true
 }
 

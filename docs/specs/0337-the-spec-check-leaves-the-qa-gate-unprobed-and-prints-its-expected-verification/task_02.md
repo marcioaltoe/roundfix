@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -139,3 +139,63 @@ the Quaestor report of 2026-11-01.
 
 - `_prd.md` → Goals; Core Features 3 and 4; Success Metric 4; Success Metric 5; Success Metric 6
 - `_techspec.md` → Current behavior 5-7; API Contracts 4-6; Invariants 4 and 5; Declared breaks; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-structs-interfaces, golang-testing, testing-boss, agentic-cli-design, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Implemented the expected Verification section on `SC-QA-VERIFICATION-AUTHORED`.
+The finding derives it from the loaded Task's effective Verification, preserves
+its code, severity, summary and location, and uses the specified replacement
+instruction. Text prints the section immediately after `fix:` in the required
+fenced block; JSON includes `expected` only when non-empty.
+
+Acceptance evidence:
+
+- Expected section and copying: added
+  `TestAuthoredQAVerificationPrintsTheExpectedBlock`, exercising the Tasks-stage
+  checker against an authored QA command and then the same file with the
+  returned section copied in. It asserts the exact derived block and that
+  copying removes the finding. It also covers zero and multiple commands.
+- Unchanged findings: added `TestAFindingRendersItsExpectedBlock`, asserting
+  the complete text of consecutive findings with and without a block, the
+  decoded JSON replacement, omission of `expected` on the second finding,
+  and that second finding's original serialized bytes. Existing tests in
+  both files were left unchanged.
+- Authoring guidance and records: the guide row and Roundfix reference bullet
+  explain text/JSON output and unchanged whole-section replacement. The
+  write-tasks template comment and new `## QA Task Verification` section teach
+  the placeholder/check/copy step, Requirements ownership and the unprobed
+  `qa_gate` command. No other guidance passage was changed.
+
+Focused checks and generation:
+
+- Before connecting the finding and renderer, the new tests failed because
+  `Expected` was empty and `RenderText` omitted the fenced block. The first
+  compile also demonstrated the previously absent field and block helper.
+- `go test ./internal/speccheck -run 'Test(AuthoredQAVerification|DerivedQAVerification|AFindingRenders|RenderResultTextAndJSON|VerdictLineStatesProbeCoverage)' -count=1`
+  — exit 0; both new regressions and the selected existing checks passed.
+- `go test ./internal/cli -run '^(TestRunSpecCheckErrorText|TestRunSpecCheckJSONWritesOneObjectPerSpec|TestSpecCheckNeverProbesTheQAGate)$' -count=1`
+  — exit 0.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestUserGuideLinksResolve)$' -count=1`
+  — exit 0.
+- `make skills-sync` — exit 0. A recursive byte comparison of each complete
+  Roundfix and write-tasks canonical directory against its mirror matched.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  — exit 0; the recorder raised both version fields in both copies to
+  Roundfix `0.1.167` and write-tasks `0.0.25` and updated the version record.
+- `go test ./skills -run '^(TestTheOwnedSkillMinimumIsTheEmbeddedVersion|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical)$' -count=1`
+  — exit 0.
+- Last implementation/generation step, after the final guide and skill edits:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  — exit 0; only the spec command guide fingerprint changed in the Behavior
+  Surface Record.
+- `git diff --check` — exit 0. Changes are confined to this Task's declared
+  interfaces and this Result; the incoming Task status change belongs to the
+  Daemon.
+
+The Task's declared Verification commands and repository Verification were
+not run; settlement remains Daemon-owned. No commit, push, PR, Task Graph,
+other Task, loader, derived QA command, Baseline or agent-guide edit was made.
+No follow-up work was identified in this slice.
