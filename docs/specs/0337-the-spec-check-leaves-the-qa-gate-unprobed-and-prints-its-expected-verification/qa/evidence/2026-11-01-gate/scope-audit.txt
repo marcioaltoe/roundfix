@@ -1,0 +1,38 @@
+task_01 1459fa2cba7127520bd982861f1456488a20ec38 all 15 paths declared:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+CONTEXT.md
+docs/adr/0148-one-verification-prober-refuses-vacuous-tasks-before-agent-and-at-authoring.md
+docs/references/behavior-surfaces.json
+docs/specs/0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification/task_01.md
+docs/user-guide/commands/spec.md
+internal/cli/spec_check.go
+internal/cli/spec_check_completed_tasks_test.go
+internal/daemon/task_engine.go
+internal/daemon/verification_probe.go
+internal/speccheck/report.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+
+task_02 be1e1e7344118048fc7218c96fd3f13480819a04 all 16 paths declared:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-tasks/references/task-template.md
+docs/references/behavior-surfaces.json
+docs/specs/0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification/task_02.md
+docs/user-guide/commands/spec.md
+internal/speccheck/coherence.go
+internal/speccheck/coherence_test.go
+internal/speccheck/report.go
+internal/speccheck/report_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+skills/write-tasks/SKILL.md
+skills/write-tasks/references/task-template.md
+
+Governed paths: .agents/skills/roundfix/SKILL.md, .agents/skills/roundfix/references/spec.md, .agents/skills/write-tasks/SKILL.md, .agents/skills/write-tasks/references/task-template.md, internal/speccheck/coherence.go, skills/roundfix/SKILL.md, skills/write-tasks/SKILL.md
+
+Authorization exists byte-identically in each Task parent; base is ancestor of each parent. Mechanical authorization table grants both commits. No forbidden paths or QA settlement changes.

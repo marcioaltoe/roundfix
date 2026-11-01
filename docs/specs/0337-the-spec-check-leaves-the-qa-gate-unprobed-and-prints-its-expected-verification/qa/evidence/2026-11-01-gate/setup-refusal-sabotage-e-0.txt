@@ -1,0 +1,6 @@
+copy: git archive HEAD; isolated mutation e
+command: go test -count=1 -timeout 20m -v -run ^TestAuthoredQAVerificationPrintsTheExpectedBlock$ ./internal/speccheck
+exit: 1
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/speccheck	0.335s
+FAIL

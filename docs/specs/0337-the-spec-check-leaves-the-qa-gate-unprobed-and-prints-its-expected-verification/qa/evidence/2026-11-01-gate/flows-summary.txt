@@ -1,0 +1,3 @@
+Fluxus text/JSON: corrective task honest, QA not probed, qa_gate, no vacuous Verification line.
+Quaestor text/JSON: one authored finding; fenced replacement after fix; copying JSON expected and committing clears finding on fresh text and JSON reads.
+Other minimal-PRD findings expected. Temporary local clone and isolated HOME/TMPDIR removed.

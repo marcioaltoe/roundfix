@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,37 @@
+import pathlib,subprocess,tempfile,tarfile,io,re
+root=pathlib.Path.cwd();s=next((root/'docs/specs').glob('0337*'));ev=s/'qa/evidence/2026-11-01-gate'
+archive=subprocess.check_output(['git','archive','HEAD']);results=[]
+for case in 'abcdef':
+ with tempfile.TemporaryDirectory(prefix='qa0337-sabotage-') as d:
+  repo=pathlib.Path(d);tarfile.open(fileobj=io.BytesIO(archive)).extractall(repo,filter='data')
+  subprocess.run(['git','init','--quiet'],cwd=repo,check=True)
+  subprocess.run(['git','add','.'],cwd=repo,check=True)
+  def mutate(path,old,new):
+   p=repo/path;t=p.read_text();assert t.count(old)==1,(case,path,t.count(old));p.write_text(t.replace(old,new))
+  tests=[('./internal/cli','^TestSpecCheckNeverProbesTheQAGate$')]
+  if case=='a':
+   mutate('internal/daemon/verification_probe.go','return task.Type == spec.TaskTypeQA','return false')
+   tests.append(('./internal/daemon',''))
+  elif case=='b':
+   p=repo/'internal/cli/spec_check.go';t=p.read_text();start=t.index('\t\t\tif daemon.TaskIsQAGate(task) {');end=t.index('\t\t\tverdicts, err :=',start);p.write_text(t[:start]+t[end:])
+  elif case=='c':mutate('internal/cli/spec_check.go','Task: task.ID, Command: command, Reason: "qa_gate"','Task: task.ID, Command: command, Reason: "completed"')
+  elif case=='d':
+   mutate('internal/speccheck/coherence.go','Expected: ExpectedQAVerificationBlock(task.Verification),','Expected: "",')
+   tests=[('./internal/speccheck','^TestAuthoredQAVerificationPrintsTheExpectedBlock$')]
+  elif case=='e':
+   mutate('internal/speccheck/coherence.go','block.WriteString("- `")','block.WriteString("- ")')
+   mutate('internal/speccheck/coherence.go','block.WriteString("`\\n")','block.WriteString("\\n")')
+   tests=[('./internal/speccheck','^TestAuthoredQAVerificationPrintsTheExpectedBlock$')]
+  else:
+   mutate('internal/speccheck/report.go','json:"expected,omitempty"','json:"expected"')
+   tests=[('./internal/speccheck','^TestAFindingRendersItsExpectedBlock$')]
+  for n,(pkg,pattern) in enumerate(tests):
+   cmd=['go','test','-count=1','-timeout','20m','-v']+(['-run',pattern] if pattern else [])+[pkg]
+   p=subprocess.run(cmd,cwd=repo,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+   txt='copy: git archive HEAD; isolated mutation '+case+'\ncommand: '+' '.join(cmd)+'\nexit: '+str(p.returncode)+'\n'+p.stdout
+   # Persist only after this test exits, no concurrent suite writes.
+   (ev/(f'sabotage-{case}-{n}.txt')).write_text(txt)
+   fail=[line for line in p.stdout.splitlines() if '--- FAIL:' in line]
+   print(case,pkg,'exit',p.returncode,'\n'.join(fail[:12]),flush=True)
+   results.append((case,pkg,p.returncode,fail))
+(ev/'sabotage-summary.txt').write_text('\n'.join(str(x) for x in results)+'\n')

@@ -1,0 +1,99 @@
+copy: git archive HEAD; isolated mutation a
+command: go test -count=1 -timeout 20m -v -run ^TestSpecCheckNeverProbesTheQAGate$ ./internal/cli
+exit: 1
+=== RUN   TestSpecCheckNeverProbesTheQAGate
+=== PAUSE TestSpecCheckNeverProbesTheQAGate
+=== CONT  TestSpecCheckNeverProbesTheQAGate
+=== RUN   TestSpecCheckNeverProbesTheQAGate/a_preserved_failed_QA_report_beside_an_honest_corrective_Task
+    spec_check_completed_tasks_test.go:267: exit=1, want 0; output=Spec clean
+        No findings. Authored Verification commands executed: 2; not probed (completed Tasks): 1.
+        Skipped:
+          SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+          SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+          SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+          SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+          SC-FINDING-LIFECYCLE: missing docs/findings
+          SC-ROLLUP-MEMBER: missing docs/findings
+          SC-ARCHIVE-LICENSE: missing docs/history/findings
+          SC-BACKLOG-UNMOVED: missing docs/backlog
+          SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+          vocabulary documentation detector: missing docs/specs/clean/_techspec.md Vocabulary Contract
+          SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+          SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+          SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+          SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+          SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+          SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+          SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+          SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+          SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+          SC-REF-UNRESOLVED: missing docs/specs/clean/references/_index.md
+        Verification tree: HEAD
+        - task_01: not probed — "true" (Task completed)
+        - task_02: honest — "test -f corrective-output" (exited non-zero before work)
+        - task_03: vacuous — "newest=\"$(find 'docs/specs/clean/qa' -type f -name \"qa-report-*.md\" -print 2>/dev/null | awk \"{ report=\\$0; name=\\$0; parts=split(name, path, \\\"/\\\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \\\"-\\\" && substr(date, 8, 1) == \\\"-\\\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\\\"0123456789\\\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\\\"\\\"; if (suffix == \\\"\\\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \\\"-\\\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\\\"0123456789\\\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \\\"%s\\\\t%s\\\\t%s\\\\t%s\\\\t%s\\\\n\\\", dated, date, sequenced, sequence, report }\" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)\"; test -n \"$newest\" || exit 1; awk \"BEGIN { whitespace=\\\" \\t\\r\\n\\f\\v\\\" } NR == 1 && \\$0 == \\\"---\\\" { frontmatter=1; next } frontmatter && \\$0 == \\\"---\\\" { closed=1; exit } frontmatter && index(\\$0, \\\"verdict:\\\") == 1 { verdict=substr(\\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }\" \"$newest\"" (exited zero before work)
+=== RUN   TestSpecCheckNeverProbesTheQAGate/no_QA_report_yet
+    spec_check_completed_tasks_test.go:270: verdict line missing: Spec clean
+        No findings. Authored Verification commands executed: 2; not probed (completed Tasks): 1.
+        Skipped:
+          SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+          SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+          SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+          SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+          SC-FINDING-LIFECYCLE: missing docs/findings
+          SC-ROLLUP-MEMBER: missing docs/findings
+          SC-ARCHIVE-LICENSE: missing docs/history/findings
+          SC-BACKLOG-UNMOVED: missing docs/backlog
+          SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+          vocabulary documentation detector: missing docs/specs/clean/_techspec.md Vocabulary Contract
+          SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+          SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+          SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+          SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+          SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+          SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+          SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+          SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+          SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+          SC-REF-UNRESOLVED: missing docs/specs/clean/references/_index.md
+        Verification tree: HEAD
+        - task_01: not probed — "true" (Task completed)
+        - task_02: honest — "test -f corrective-output" (exited non-zero before work)
+        - task_03: honest — "newest=\"$(find 'docs/specs/clean/qa' -type f -name \"qa-report-*.md\" -print 2>/dev/null | awk \"{ report=\\$0; name=\\$0; parts=split(name, path, \\\"/\\\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \\\"-\\\" && substr(date, 8, 1) == \\\"-\\\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\\\"0123456789\\\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\\\"\\\"; if (suffix == \\\"\\\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \\\"-\\\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\\\"0123456789\\\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \\\"%s\\\\t%s\\\\t%s\\\\t%s\\\\t%s\\\\n\\\", dated, date, sequenced, sequence, report }\" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)\"; test -n \"$newest\" || exit 1; awk \"BEGIN { whitespace=\\\" \\t\\r\\n\\f\\v\\\" } NR == 1 && \\$0 == \\\"---\\\" { frontmatter=1; next } frontmatter && \\$0 == \\\"---\\\" { closed=1; exit } frontmatter && index(\\$0, \\\"verdict:\\\") == 1 { verdict=substr(\\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }\" \"$newest\"" (exited non-zero before work)
+        ; want=No findings. Authored Verification commands executed: 1; not probed (completed Tasks): 1; not probed (QA gate): 1.
+=== RUN   TestSpecCheckNeverProbesTheQAGate/a_vacuous_corrective_Task_beside_the_QA_gate_still_fails
+    spec_check_completed_tasks_test.go:270: verdict line missing: Spec clean
+        No findings. Authored Verification commands executed: 2.
+        Skipped:
+          SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+          SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+          SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+          SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+          SC-FINDING-LIFECYCLE: missing docs/findings
+          SC-ROLLUP-MEMBER: missing docs/findings
+          SC-ARCHIVE-LICENSE: missing docs/history/findings
+          SC-BACKLOG-UNMOVED: missing docs/backlog
+          SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+          vocabulary documentation detector: missing docs/specs/clean/_techspec.md Vocabulary Contract
+          SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+          SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+          SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+          SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+          SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+          SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+          SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+          SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+          SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+          SC-REF-UNRESOLVED: missing docs/specs/clean/references/_index.md
+        Verification tree: HEAD
+        - task_01: vacuous — "true" (exited zero before work)
+        - task_02: honest — "newest=\"$(find 'docs/specs/clean/qa' -type f -name \"qa-report-*.md\" -print 2>/dev/null | awk \"{ report=\\$0; name=\\$0; parts=split(name, path, \\\"/\\\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \\\"-\\\" && substr(date, 8, 1) == \\\"-\\\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\\\"0123456789\\\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\\\"\\\"; if (suffix == \\\"\\\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \\\"-\\\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\\\"0123456789\\\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \\\"%s\\\\t%s\\\\t%s\\\\t%s\\\\t%s\\\\n\\\", dated, date, sequenced, sequence, report }\" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)\"; test -n \"$newest\" || exit 1; awk \"BEGIN { whitespace=\\\" \\t\\r\\n\\f\\v\\\" } NR == 1 && \\$0 == \\\"---\\\" { frontmatter=1; next } frontmatter && \\$0 == \\\"---\\\" { closed=1; exit } frontmatter && index(\\$0, \\\"verdict:\\\") == 1 { verdict=substr(\\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }\" \"$newest\"" (exited non-zero before work)
+        ; want=No findings. Authored Verification commands executed: 1; not probed (QA gate): 1.
+--- FAIL: TestSpecCheckNeverProbesTheQAGate (0.61s)
+    --- FAIL: TestSpecCheckNeverProbesTheQAGate/a_preserved_failed_QA_report_beside_an_honest_corrective_Task (0.21s)
+    --- FAIL: TestSpecCheckNeverProbesTheQAGate/no_QA_report_yet (0.21s)
+    --- FAIL: TestSpecCheckNeverProbesTheQAGate/a_vacuous_corrective_Task_beside_the_QA_gate_still_fails (0.20s)
+FAIL
+suiteguard: guard cost: measured 2849 paths; fingerprint took 437.485792ms before and 162.317167ms after
+FAIL	roundfix/internal/cli	1.707s
+FAIL

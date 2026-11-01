@@ -1,0 +1,7 @@
+PRD and TechSpec declare changes: Vacuous Verification. Exactly that one glossary line changed across 619cff66f7511110ca4ed9b120d1198e18e033f9..be1e1e7344118048fc7218c96fd3f13480819a04.
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 4976ebd9..2c6abf28 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -411,0 +412 @@ A Task whose status is already `completed` is never probed, by the Daemon or by
++The QA gate is never probed either, whatever its status: the Daemon routes it to the QA step and its derived Verification would pass on a kept QA Report; the check reports it `not probed` with reason `qa_gate`.

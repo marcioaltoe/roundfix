@@ -1,0 +1,9 @@
+docs/user-guide/commands/spec.md: all required phrases present; superseded pending-QA refusal absent
+.agents/skills/roundfix/references/spec.md: all required phrases present; superseded pending-QA refusal absent
+skills/roundfix/references/spec.md: all required phrases present; superseded pending-QA refusal absent
+.agents/skills/write-tasks/SKILL.md: placeholder, check, expected block, unchanged replacement documented
+.agents/skills/write-tasks/references/task-template.md: placeholder, check, expected block, unchanged replacement documented
+skills/write-tasks/SKILL.md: placeholder, check, expected block, unchanged replacement documented
+skills/write-tasks/references/task-template.md: placeholder, check, expected block, unchanged replacement documented
+roundfix: full canonical and mirror trees equal; version 0.1.167
+write-tasks: full canonical and mirror trees equal; version 0.0.25

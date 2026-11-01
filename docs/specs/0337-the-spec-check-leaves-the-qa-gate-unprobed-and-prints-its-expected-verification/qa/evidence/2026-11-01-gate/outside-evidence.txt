@@ -1,0 +1,4 @@
+Fluxus report, 2026-11-01, messages 01a1987b/01a1987c: honest corrective Task + preserved failed report made QA vacuous. Q03 reproduces those inputs and observes honest + qa_gate, no vacuous line.
+Quaestor report, 2026-11-01, message 01a19861: template-authored QA command produced finding without learnable replacement. Q04 reproduces it, copies expected, and confirms removal through fresh text/JSON checks.
+rustc book JSON Output, passage quoted in PRD, read 2026-11-01: optional suggested_replacement carries exact replacement. API Contract 5 follows this published shape; Q04 confirms exact replacement clears the finding; TestAFindingRendersItsExpectedBlock confirms omission when absent. Offline published quote; no network.
+No Unreachable Acceptance declared; zero declared-blocked rows.

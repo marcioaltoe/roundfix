@@ -1,0 +1,10 @@
+command: ./bin/roundfix archive 0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification --plan --offline
+Judge Key Variables and TYPESAFE_API_KEY unset; HOME/TMPDIR isolated.
+exit: 0
+archive plan for 0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification: removes 30 file(s) (654682 bytes) and writes docs/history/specs/0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-01.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 19 file(s) (555272 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-01-no-authoring-path-shows-the-qa-gates-derived-verification.md 2027 bytes: no advice (offline)
+candidate references/2026-11-01-the-spec-check-probe-judges-the-qa-gates-derived-verification-vacuous.md 2937 bytes: no advice (offline)
+promote with: roundfix archive 0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification --promote <path>
