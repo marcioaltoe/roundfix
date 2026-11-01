@@ -70,7 +70,8 @@ type VerificationCoverage struct {
 	Ran        bool
 	Executed   int
 	Unexecuted int
-	NotProbed  int
+	NotProbed  int // completed Tasks
+	QAGate     int // pending, in-progress or failed QA gate commands
 }
 
 // PromoteGaps applies the strictness of `spec check --strict` to one result:
@@ -250,6 +251,9 @@ func RenderText(result Result, coverage VerificationCoverage) string {
 			}
 			if coverage.NotProbed > 0 {
 				fmt.Fprintf(&report, "; not probed (completed Tasks): %d", coverage.NotProbed)
+			}
+			if coverage.QAGate > 0 {
+				fmt.Fprintf(&report, "; not probed (QA gate): %d", coverage.QAGate)
 			}
 			report.WriteString(".\n")
 		} else {

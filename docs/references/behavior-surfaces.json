@@ -91,7 +91,7 @@
     "guide docs/user-guide/commands/setup.md": "sha256:73fcdeef8a20c910798f4cd33967a5548545f6dea538e2d48692a02b244530ac",
     "guide docs/user-guide/commands/skills.md": "sha256:4aaa3e53e9716f7a7f6f4ab4c1f34311dd4dd05f7b19021c7c12d7a6775fdd23",
     "guide docs/user-guide/commands/spec-audit.md": "sha256:bf0a7bac7acfca7c69fcabe0756db5452e9d2bb77026903535814422bb9dd80c",
-    "guide docs/user-guide/commands/spec.md": "sha256:9734e9b2817354920f571c340fe49ec56678df6bc667a0ea6e7df6bec5bcb6b8",
+    "guide docs/user-guide/commands/spec.md": "sha256:8971f0a2e46769909e6dbda6d1d4025573376d63b7970e2ecfa9ce2f6f3d73a6",
     "guide docs/user-guide/commands/stop.md": "sha256:49af0109d4ab0c31daf6ad1e26f8c12e4584f245d0cfb76d6d460d3ee06b6a94",
     "guide docs/user-guide/commands/storage-report.md": "sha256:ef49ea0282fe2a0a6c570ad5ea11e825f4f34f7df3fa11b849de846921199f73",
     "guide docs/user-guide/commands/supersede.md": "sha256:200fa30dfab0e06372da85c078fafc34101dee4fc8546d823fbc11217e8ec9f3",

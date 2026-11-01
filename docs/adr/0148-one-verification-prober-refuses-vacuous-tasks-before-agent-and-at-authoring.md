@@ -1,7 +1,7 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-26T00:00:00Z
-updated_at: 2026-10-26T00:00:00Z
+updated_at: 2026-11-01T00:00:00Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
 superseded_by: null # null or ADR-NNNN
 ---
@@ -18,3 +18,10 @@ Daemon schedules and the Tasks `roundfix spec check --run-verification`
 probes. A completed Task's command passes because its work exists, so the
 authoring check reports it `not probed` with its reason and never fails on it;
 the vacuous, honest, unknown and malformed classification is unchanged.
+
+Amendment (2026-11-01): neither caller probes the QA gate. The Daemon's
+`daemon.TaskIsQAGate` identifies the Task of type `qa`, which the Daemon
+routes to its QA step and never probes. Roundfix derives its Verification,
+which would pass on a kept QA Report even when its verdict is fail, so the
+check reports an unfinished gate `not probed` with reason `qa_gate`;
+a completed gate keeps reason `completed`.

@@ -91,7 +91,7 @@ type specCheckVerificationReport struct {
 type specCheckVerificationNotProbed struct {
 	Task    string `json:"task"`
 	Command string `json:"command"`
-	Reason  string `json:"reason"` // "completed"
+	Reason  string `json:"reason"` // "completed" or "qa_gate"
 }
 
 type specCheckVerificationSource struct {
@@ -469,6 +469,15 @@ func probeSpecVerifications(
 				}
 				continue
 			}
+			if daemon.TaskIsQAGate(task) {
+				for _, command := range task.Verification {
+					report.NotProbed = append(report.NotProbed, specCheckVerificationNotProbed{
+						Task: task.ID, Command: command, Reason: "qa_gate",
+					})
+					report.textLines = append(report.textLines, fmt.Sprintf("- %s: not probed — %q (QA gate)\n", task.ID, command))
+				}
+				continue
+			}
 			verdicts, err := daemon.ProbeCommands(ctx, verifier, checkoutDir, task.Verification, func(commandIndex int) string {
 				return filepath.Join(
 					diagnosticDir,
@@ -524,11 +533,21 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 		}
 		executed++
 	}
+	notProbed, qaGate := 0, 0
+	for _, command := range verification.NotProbed {
+		switch command.Reason {
+		case "completed":
+			notProbed++
+		case "qa_gate":
+			qaGate++
+		}
+	}
 	report.WriteString(speccheck.RenderText(outcome.result, speccheck.VerificationCoverage{
 		Ran:        verification.Executed,
 		Executed:   executed,
 		Unexecuted: unexecuted,
-		NotProbed:  len(verification.NotProbed),
+		NotProbed:  notProbed,
+		QAGate:     qaGate,
 	}))
 	if len(outcome.repairInputs) > 0 {
 		report.WriteString("Repair inputs:\n")

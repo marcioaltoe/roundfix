@@ -712,7 +712,7 @@ func taskPlanWithoutQAGate(plan TaskPlan) (TaskPlan, *spec.Task, error) {
 	taskPlan.Tasks = make([]spec.Task, 0, len(plan.Tasks))
 	var qaTask *spec.Task
 	for _, task := range plan.Tasks {
-		if task.Type != spec.TaskTypeQA {
+		if !TaskIsQAGate(task) {
 			taskPlan.Tasks = append(taskPlan.Tasks, task)
 			continue
 		}

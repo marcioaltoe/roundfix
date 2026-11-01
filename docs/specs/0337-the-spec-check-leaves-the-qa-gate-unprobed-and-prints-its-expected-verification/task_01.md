@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0337-the-spec-check-leaves-the-qa-gate-unprobed-and-prints-its-expected-verification
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -140,3 +140,67 @@ the Fluxus report of 2026-11-01.
 
 - `_prd.md` → Goals; Core Features 1, 2 and 4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 6; Glossary
 - `_techspec.md` → Current behavior 1-4; API Contracts 1-3 and 6; Invariants 1-3; Declared breaks; Testing Approach; Build Order 1
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, evidence-gate.
+
+Implemented the assigned QA-gate selection and reporting slice. The Daemon
+exports `TaskIsQAGate`; its routing reads that predicate with only one line
+changed in `task_engine.go`. Spec Check checks completed status first, then
+reports every unfinished QA gate command `not probed` with reason `qa_gate`
+instead of executing it. The text renderer counts completed and QA gate
+commands separately and preserves the old output when no QA gate entry exists.
+
+Acceptance evidence from focused checks:
+
+- Honest corrective Task beside a pending gate: the new regression uses
+  committed temporary repositories, with and without a kept failed QA Report,
+  and asserts exit 0, the exact verdict line, ordered command lines, and exact
+  JSON `commands` and `notProbed` entries. The vacuous corrective case asserts
+  exit 1 while the gate remains `qa_gate`. Before the implementation,
+  `go test -count=1 -timeout 5m ./internal/cli -run
+  '^TestSpecCheckNeverProbesTheQAGate$/a_preserved_failed_QA_report'` reproduced
+  exit 1 with `task_03: vacuous` and two executed commands. The first fixture
+  attempt lacked the QA directory; adding its explicit creation allowed the
+  reproduction to reach the product behavior.
+- Focused CLI check: `go test -count=1 -timeout 5m ./internal/cli -run
+  '^TestSpecCheck(NeverProbesTheQAGate|LeavesCompletedTasksAlone)$'` exited 0.
+  This covers all three new subtests and retained non-QA vacuous, unknown,
+  malformed, completed-status and source-provenance cases. Only the explicitly
+  superseded pending-QA subtest was removed; a source comparison confirmed every
+  other subtest remains byte-identical.
+- Shared Daemon routing: `go test -count=1 -timeout 5m ./internal/daemon -run
+  '^(TestAQATaskRecordsNoPaths|TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted|TestTaskSchedulerRefusesQATaskAsAgentWork)$'`
+  exited 0. Source inspection confirmed that both routing and Spec Check read
+  the exported predicate.
+- Existing renderer output: `go test -count=1 -timeout 5m ./internal/speccheck
+  -run '^(TestVerdictLineStatesProbeCoverage|TestRenderResultTextAndJSON)$'`
+  exited 0; the CLI regression checks the new QA gate count and its position
+  after the completed count.
+- Rule documentation: changed only the probe paragraph of the guide and
+  canonical Roundfix spec reference; revised **Vacuous Verification** through
+  domain-modeling and appended the ADR-0148 amendment with its requested
+  `updated_at`. `go test -count=1 -timeout 5m -tags docscontract
+  ./internal/docscontract -run
+  '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|StatesEachRuleOnce)$'`
+  exited 0. Source comparisons confirmed the bounded paragraph edits and
+  equality of both canonical/mirror pairs.
+- Generated artifacts: `make skills-sync` exited 0, followed by
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions -count=1` (exit 0). The sanctioned recorder raised both
+  Roundfix version fields in both copies from `0.1.165` to `0.1.166` and
+  recorded the new digest. No mirror or version field was hand-edited.
+- Final implementation regeneration, after the last guide edit:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 and
+  changed only the spec guide fingerprint in the Behavior Surface Record.
+  `git diff --check` also exited 0. Commands above were invoked through
+  `rtk proxy` to preserve exact output.
+
+The pre-existing Daemon-written `status: in_progress` is preserved. No Task
+Graph, other Task, forbidden QA implementation, Baseline, tooling configuration,
+or skill-coverage map was changed. Declared Verification and repository gates
+remain for the Daemon; no terminal Task verdict is claimed. No follow-up work
+was added to this slice.
