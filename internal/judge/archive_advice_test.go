@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func archiveAdviceResponse(t *testing.T, q Questions) http.RoundTripper {
@@ -66,7 +67,7 @@ func TestArchiveAdviceStopsAtTheCeiling(t *testing.T) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(logDir, "2026-10.jsonl"), []byte(`{"cost_usd":1}`+"\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(logDir, time.Now().UTC().Format("2006-01")+".jsonl"), []byte(`{"cost_usd":1}`+"\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	got, err := AdviseArchive(context.Background(), q, ArchiveAdviceRequest{SpecDir: t.TempDir(), Files: []string{"candidate.md"}, Keys: map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": "key"}, HomeDir: home, Transport: neverRequest(t)})
