@@ -112,3 +112,24 @@ func TestArchiveRecordCarriesThePRDDeliveryType(t *testing.T) {
 		})
 	}
 }
+
+func TestArchiveRecordRefusesAMalformedType(t *testing.T) {
+	t.Parallel()
+	head := "---\nschema: roundfix/archive-record/v1\nspec: 0001-example\ntitle: Example\nstatus: archived\ncreated: \"2026-11-01\"\narchived: \"2026-11-01\"\ndisposition: no-qa\nsource: docs/specs/0001-example\nsource_revision: " + strings.Repeat("a", 40) + "\nqa_task: \"\"\nqa_report: \"\"\nqa_verdict: \"\"\nunproven: []\nadrs: []\nsources: []\nregeneration: []\npromoted: []\ndelivery_commit: abc123\n"
+	for name, line := range map[string]string{
+		"empty":       "type: \"\"\n",
+		"null":        "type:\n",
+		"sequence":    "type: [fix]\n",
+		"unsupported": "type: docs\n",
+		"number":      "type: 1\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseArchiveRecord([]byte(head + line + "---\n\n# Example\n\nA useful outcome.\n"))
+			var unsupported *UnsupportedDeliveryTypeError
+			if !errors.As(err, &unsupported) {
+				t.Fatalf("err=%v, want UnsupportedDeliveryTypeError", err)
+			}
+		})
+	}
+}

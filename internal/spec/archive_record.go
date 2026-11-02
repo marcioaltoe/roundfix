@@ -771,7 +771,15 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 	if get("status") != "archived" {
 		return ArchiveRecord{}, errors.New("archive record status must be archived")
 	}
-	r := ArchiveRecord{Type: get("type"), Spec: get("spec"), Title: get("title"), Created: get("created"), Archived: get("archived"), Disposition: ArchiveDisposition(get("disposition")), Source: get("source"), SourceRevision: get("source_revision"), QATask: get("qa_task"), QAReport: get("qa_report"), QAVerdict: get("qa_verdict"), SupersededBy: get("superseded_by"), PullRequest: get("pull_request"), DeliveryCommit: get("delivery_commit"), Outcome: archiveParagraph(string(body), "# ")}
+	var recordType string
+	if node, ok := m["type"]; ok {
+		deliveryType, err := deliveryTypeFromNode(node)
+		if err != nil {
+			return ArchiveRecord{}, fmt.Errorf("archive record type: %w", err)
+		}
+		recordType = string(deliveryType)
+	}
+	r := ArchiveRecord{Type: recordType, Spec: get("spec"), Title: get("title"), Created: get("created"), Archived: get("archived"), Disposition: ArchiveDisposition(get("disposition")), Source: get("source"), SourceRevision: get("source_revision"), QATask: get("qa_task"), QAReport: get("qa_report"), QAVerdict: get("qa_verdict"), SupersededBy: get("superseded_by"), PullRequest: get("pull_request"), DeliveryCommit: get("delivery_commit"), Outcome: archiveParagraph(string(body), "# ")}
 	for _, key := range []string{"cancel_reason", "completed_tasks", "pending_tasks", "returned_sources"} {
 		_, present := m[key]
 		if r.Disposition != ArchiveCancelled && present {

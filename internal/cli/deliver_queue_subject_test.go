@@ -291,7 +291,7 @@ func TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustWrite(t, customPath, string(invalid))
-	if _, err := w.Publication(t.Context(), repo, slug, branch); err == nil || err.Error() != "plan publication: PRD type \"docs\" is not one of feat, fix, perf, refactor" {
+	if _, err := w.Publication(t.Context(), repo, slug, branch); err == nil || err.Error() != "plan publication: read Spec type: archive record type: PRD type \"docs\" is not one of feat, fix, perf, refactor" {
 		t.Fatalf("unsupported record error=%v", err)
 	}
 	if err := os.Remove(customPath); err != nil {

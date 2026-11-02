@@ -49,10 +49,20 @@ func ParsePRDDeliveryType(prd []byte) (deliveryType DeliveryType, present bool, 
 	if !present {
 		return "", false, nil
 	}
+	deliveryType, err = deliveryTypeFromNode(node)
+	if err != nil {
+		return "", true, err
+	}
+	return deliveryType, true, nil
+}
+
+// deliveryTypeFromNode accepts only a string scalar in the supported set;
+// any other node, the empty string included, is UnsupportedDeliveryTypeError.
+func deliveryTypeFromNode(node yaml.Node) (DeliveryType, error) {
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" {
 		for _, supported := range DeliveryTypes() {
 			if DeliveryType(node.Value) == supported {
-				return supported, true, nil
+				return supported, nil
 			}
 		}
 	}
@@ -60,9 +70,9 @@ func ParsePRDDeliveryType(prd []byte) (deliveryType DeliveryType, present bool, 
 	if node.Kind != yaml.ScalarNode {
 		encoded, err := yaml.Marshal(&node)
 		if err != nil {
-			return "", true, fmt.Errorf("read PRD type value: %w", err)
+			return "", fmt.Errorf("read type value: %w", err)
 		}
 		value = strings.TrimSpace(string(encoded))
 	}
-	return "", true, &UnsupportedDeliveryTypeError{Value: value}
+	return "", &UnsupportedDeliveryTypeError{Value: value}
 }
