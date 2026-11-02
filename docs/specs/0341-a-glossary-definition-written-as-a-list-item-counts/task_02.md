@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0341-a-glossary-definition-written-as-a-list-item-counts
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -96,3 +96,24 @@ message `01a19a04`, adopted as
 
 - `_prd.md` → Goals; Core Features 3 and 4; Success Metric 5
 - `_techspec.md` → Current behavior 4-5; API Contracts 2 and 4; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, tech-writer, coding-guidelines, golang-testing, testing-boss, evidence-gate
+
+- Replaced the `write-tasks` Glossary requirement in the canonical skill with the line-anchored command rendered by `speccheck.GlossaryVerificationCommand("<Term>", "CONTEXT.md")`, including regex-metacharacter escaping, glossary-path replacement, line-based matching, and the exact accepted forms from `speccheck.GlossaryDefinitionForms`.
+- Added the accepted forms and the non-definition cases to the canonical `write-prd` glossary guide and Roundfix `spec` reference.
+- Added `skills/glossary_definition_test.go` with `TestTheGlossaryGuidesStateTheDefinitionForms`; `t.Parallel()` is its first statement and the test covers all canonical/mirror guide pairs.
+- `gofmt -w skills/glossary_definition_test.go`: passed.
+- `make skills-sync`: passed after the canonical guide edits; the mirrors were regenerated from canonical sources.
+- `git diff --check`: passed before the final version-recording step.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed (`1 passed in 1 packages`); raised both version fields and recorded `skills/testdata/owned-skill-versions.json` for `roundfix`, `write-prd` and `write-tasks`.
+
+Acceptance evidence:
+
+- Both copies of `write-tasks`, `write-prd`'s glossary guide and the Roundfix `spec` reference now contain the shared forms; both `write-tasks` copies contain the rendered command and its line/strictness guidance.
+- `make skills-sync` and the version recorder completed successfully; the final status inspection shows only the declared skill files, version record, new test, and this Task's existing status/result record changed.
+
+Not run:
+
+- The commands in `## Verification`, including `TestTheGlossaryGuidesStateTheDefinitionForms` and the full `./skills` suite, were not run because the Daemon owns declared Verification and settlement.
