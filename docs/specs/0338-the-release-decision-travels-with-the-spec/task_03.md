@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0338-the-release-decision-travels-with-the-spec
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -119,3 +119,70 @@ whose Expected section asks the Baseline wording to change together.
 - `_prd.md` → Sources 2; Goals; Core Feature 5; Success Metric 7
 - `_techspec.md` → Current behavior 7; API Contract 11; Testing Approach; Build Order 3
 - ADR-0349
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, setup-context-driven, roundfix, evidence-gate.
+
+The two Baseline clauses now carry API Contract 11's Release Ceiling wording.
+The core guidance appends the full sentence; the authorization guidance inserts
+both keys immediately after the operations list. The owning rule versions rose
+once (git-delivery 8 → 9; project-constraints 7 → 8). The sanctioned recorder
+raised the module versions (core 25 → 26; spec-workflow 22 → 23) and appended
+their digests. No generated output was edited by hand.
+
+Acceptance evidence:
+
+- Clause wording and preservation: added
+  `TestTheReleaseClauseLetsACeilingAnswerTheApproval`, with `t.Parallel()` as
+  its first statement and named core/spec-workflow subtests reading the
+  embedded catalog. It asserts the full new sentence or phrase in the exact
+  clause and its corresponding formatter golden. Before the module edits,
+  `go test ./internal/baseline -run '^TestTheReleaseClauseLetsACeilingAnswerTheApproval/(core|spec-workflow)$' -count=1`
+  exited 1 with all four expected missing-wording assertions. After
+  regeneration, the focused clause/catalog command below exited 0.
+  A structural comparison against HEAD confirmed that only each module's
+  guidance, owning rule version and recorded module version changed; removing
+  the inserted words recovers the previous authorization guidance exactly,
+  and the core guidance preserves its previous bytes as a prefix. Clause
+  identities, enforcement and replaces are unchanged. A byte-prefix comparison
+  confirmed the existing release test is untouched. The generated local guides
+  were inspected and carry the same wording.
+- Refresh idempotence and Setup Manifest: ran
+  `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  twice, after the generators, with HOME set to a temporary directory. The
+  existing module cache was reused with network access disabled. Both runs
+  exited 0. The first reported three file changes, exclusively the two
+  declared guides and Setup Manifest. The second reported `File changes: 0`,
+  `Idempotence: verified`, and approved postimages verified. SHA-256 snapshots
+  of every declared Task path were identical across the second refresh. The
+  temporary HOME was removed. The focused Setup Manifest test below passed.
+- Catalog, characterization, clause and module records: ran the required
+  sanctioned regeneration in order:
+  1. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+     — exit 0; only the two modules and their version record changed.
+  2. `make baseline-digests` — exit 0, `ok: true`; regenerated exactly the
+     ten declared derived files: the two formatter goldens, profile, three
+     catalog files and four plan characterization goldens. Its regeneration
+     and strict catalog validation steps all passed.
+  3. The two Managed Refresh invocations described above — exit 0 each.
+  The full Baseline suite and authored Verification remain for the Daemon.
+
+Additional focused checks:
+
+- `go test -count=1 ./internal/baseline -run '^(TestTheReleaseClause.*|TestAuthorizationClauses.*|TestEmbeddedCatalog|TestCatalogDigest)$'`
+  — exit 0, including the new ceiling test and existing release/authorization
+  sentence checks.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheSetupManifestIsCurrent$' -count=1`
+  — exit 0.
+- `gofmt -l internal/baseline/release_clause_test.go` — exit 0, no output.
+- Changed-path postflight against this Task's exact interface list — all
+  18 changed paths declared, including this Task file; no other Task or
+  Task Graph mutation.
+
+The Managed Refresh reported the existing nested-carrier warnings for the
+formatter fixture and Source Baseline corpus AGENTS.md; both carriers remained
+unchanged. No follow-up implementation or blocker was identified. Task status
+and the Subtasks/Acceptance Criteria checkboxes remain Daemon-owned. No declared
+Verification command, repository Verification, full suite, commit, push or pull
+request was performed in this turn.
