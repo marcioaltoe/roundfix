@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-01
-spec: null
+spec: 0339-an-approved-baseline-update-deletes-the-retired-skills
 reason: null
 ---
 
