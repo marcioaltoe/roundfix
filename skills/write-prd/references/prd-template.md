@@ -8,6 +8,7 @@ spec: <NNNN-feature-slug> # numbered folder slug, e.g. 0001-implement-command
 status: active
 created: YYYY-MM-DD
 surfaces: [backend] # every surface touched: frontend | backend | cli | data | infra | docs
+type: feat # Delivery Type: feat | fix | perf | refactor; a feature Spec writes feat or perf
 ---
 
 # <Feature name, in glossary vocabulary>

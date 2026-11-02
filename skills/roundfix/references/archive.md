@@ -141,6 +141,10 @@ completed, it also carries `qa_override_qa_task_status`. It does
 not change the QA Task or report verdict.
 ### Archive Record
 
+The record's optional `type` key is copied from the PRD's frontmatter `type`,
+the Spec's Delivery Type (`feat`, `fix`, `perf` or `refactor`). It is omitted
+when the PRD has no type.
+
 The summary is the QA Report's Outcome paragraph or the PRD's title paragraph.
 A summary paragraph that ends with a colon carries the list or paragraph that follows it, on the same line.
 

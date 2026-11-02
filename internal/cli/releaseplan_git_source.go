@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"roundfix/internal/preflight"
 	"roundfix/internal/releaseplan"
+	"roundfix/internal/spec"
 )
 
 type releasePlanGitSource struct {
@@ -413,6 +415,75 @@ func (source releasePlanGitSource) Commits(ctx context.Context, releaseRange rel
 	return commits, nil
 }
 
+// ReleaseGrants reads each delivered Spec's record at the delivery's first parent.
+func (source releasePlanGitSource) ReleaseGrants(ctx context.Context, _ releaseplan.Range, commits []releaseplan.Commit) ([]releaseplan.ReleaseGrant, error) {
+	root, err := source.git(ctx, source.workDir, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return nil, fmt.Errorf("resolve release grant repository: %w", err)
+	}
+	root = filepath.Clean(strings.TrimSpace(root))
+	var grants []releaseplan.ReleaseGrant
+	for _, commit := range commits {
+		changes, err := source.git(ctx, root, "diff-tree", "--no-commit-id", "--name-status", "--no-renames", "-r", commit.SHA)
+		if err != nil {
+			return nil, fmt.Errorf("read release deliveries at %s: %w", commit.SHA, err)
+		}
+		var records []string
+		archives := make(map[string]bool)
+		for _, line := range strings.Split(changes, "\n") {
+			status, name, ok := strings.Cut(line, "\t")
+			if !ok {
+				continue
+			}
+			// Git quotes unusual path names in its line-oriented output.
+			if strings.HasPrefix(name, `"`) {
+				decoded, err := strconv.Unquote(name)
+				if err != nil {
+					return nil, fmt.Errorf("decode release delivery path %q: %w", name, err)
+				}
+				name = decoded
+			}
+			if status == "D" && path.Base(name) == "_authorization.md" {
+				records = append(records, name)
+			}
+			if status == "A" {
+				archives[path.Base(name)] = true
+			}
+		}
+		for _, record := range records {
+			slug := path.Base(path.Dir(record))
+			if !archives[slug+".md"] {
+				continue
+			}
+			resolution := spec.ReadAuthorization(ctx, spec.AuthorizationReadRequest{
+				RepoRoot: root, RecordPath: record, Revision: commit.SHA + "^",
+				Role: spec.AuthorizationRoleSpec, AskingSpec: slug,
+			})
+			if err := ctx.Err(); err != nil {
+				return nil, fmt.Errorf("read release authorization: %w", err)
+			}
+			grant := releaseplan.ReleaseGrant{
+				Spec: slug, CommitSHA: commit.SHA, Record: record,
+				Revision: resolution.Record.Source.Revision, Ceiling: releaseplan.ImpactNone,
+				Paths: append([]string(nil), resolution.Record.ReleasePaths...),
+			}
+			switch {
+			case resolution.Outcome != spec.AuthorizationGranted:
+				grant.Detail = fmt.Sprintf("record %s: %s", resolution.Outcome, resolution.Reason.Code)
+			case !resolution.Permits(spec.AuthorizationOperationRelease):
+				grant.Detail = "record grants no release"
+			case resolution.Record.ReleaseCeiling == "":
+				grant.Detail = "record grants release without a ceiling"
+			default:
+				grant.Granted = true
+				grant.Ceiling = releaseplan.Impact(resolution.Record.ReleaseCeiling)
+			}
+			grants = append(grants, grant)
+		}
+	}
+	return grants, nil
+}
+
 func (source releasePlanGitSource) requireCleanWorktree(ctx context.Context, root string) error {
 	status, err := source.git(ctx, root, "--no-optional-locks", "status", "--porcelain=v1", "-z")
 	if err != nil {
@@ -629,4 +700,5 @@ func splitNonEmptyLines(text string) []string {
 }
 
 var _ releaseplan.GitSource = releasePlanGitSource{}
+var _ releaseplan.ReleaseGrantSource = releasePlanGitSource{}
 var _ releaseplan.ResetInventorySource = releasePlanResetSource{}

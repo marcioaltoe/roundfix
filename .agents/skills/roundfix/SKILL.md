@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.170
+  version: 0.1.171
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.170
+version: 0.1.171
 ---
 
 # Roundfix
@@ -29,6 +29,21 @@ A request names a Skill Mode with the first word after the skill's name: `follow
 - `--unattended`: gather every decision in calls of up to three questions.
 
 Read [Skill Modes](references/modes.md) before running a mode.
+
+## Release planning
+
+A generic release request authorizes only a conclusive patch plan.
+A Release Ceiling in the approved authorization record of every Spec the range
+delivers answers `approval_required` within every ceiling when each grants
+`release` and every impact-setting change is such a delivery. The decision
+becomes `ready` with the same proposed version.
+A Release Ceiling never answers a breaking plan or a manual classification.
+Text adds `Release authorization: answered` or
+`Release authorization: not answered — <reason>` and the records; JSON adds
+`releaseAuthorization`. Backlog Entries are planning evidence. A `refactor:`
+delivery changing released code is a commit to classify by hand.
+See the [release reference](references/release.md) for the read-only command,
+record paths, refusal reasons and checks.
 
 ## Archive Relink and History Citations
 

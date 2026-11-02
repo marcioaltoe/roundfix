@@ -54,6 +54,7 @@ type ArchiveRecord struct {
 	Relinked                                      []string
 	Regeneration                                  []ArchiveRegeneration
 	PullRequest, DeliveryCommit                   string
+	Type                                          string
 	Outcome                                       string
 }
 type ArchiveRecordInput struct {
@@ -115,6 +116,10 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	if err != nil {
 		return ArchiveRecord{}, fmt.Errorf("read archive PRD: %w", err)
 	}
+	deliveryType, _, err := ParsePRDDeliveryType(content)
+	if err != nil {
+		return ArchiveRecord{}, err
+	}
 	fm, body, err := splitFrontmatter(content)
 	if err != nil {
 		return ArchiveRecord{}, err
@@ -140,7 +145,7 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	if err != nil {
 		return ArchiveRecord{}, err
 	}
-	r := ArchiveRecord{Spec: in.Slug, Created: meta.Created, Archived: in.Archived, Source: in.Source, SourceRevision: in.SourceRevision, Unproven: in.Unproven, QAOverride: in.QAOverride, Promoted: in.Promoted}
+	r := ArchiveRecord{Type: string(deliveryType), Spec: in.Slug, Created: meta.Created, Archived: in.Archived, Source: in.Source, SourceRevision: in.SourceRevision, Unproven: in.Unproven, QAOverride: in.QAOverride, Promoted: in.Promoted}
 	if r.Spec == "" {
 		r.Spec = meta.Spec
 	}
@@ -693,6 +698,9 @@ func archiveRecordMapping(r ArchiveRecord) *yaml.Node {
 	if r.DeliveryCommit != "" {
 		add("delivery_commit", r.DeliveryCommit)
 	}
+	if r.Type != "" {
+		add("type", r.Type)
+	}
 	return n
 }
 func RenderArchiveRecord(r ArchiveRecord) ([]byte, error) {
@@ -763,7 +771,15 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 	if get("status") != "archived" {
 		return ArchiveRecord{}, errors.New("archive record status must be archived")
 	}
-	r := ArchiveRecord{Spec: get("spec"), Title: get("title"), Created: get("created"), Archived: get("archived"), Disposition: ArchiveDisposition(get("disposition")), Source: get("source"), SourceRevision: get("source_revision"), QATask: get("qa_task"), QAReport: get("qa_report"), QAVerdict: get("qa_verdict"), SupersededBy: get("superseded_by"), PullRequest: get("pull_request"), DeliveryCommit: get("delivery_commit"), Outcome: archiveParagraph(string(body), "# ")}
+	var recordType string
+	if node, ok := m["type"]; ok {
+		deliveryType, err := deliveryTypeFromNode(node)
+		if err != nil {
+			return ArchiveRecord{}, fmt.Errorf("archive record type: %w", err)
+		}
+		recordType = string(deliveryType)
+	}
+	r := ArchiveRecord{Type: recordType, Spec: get("spec"), Title: get("title"), Created: get("created"), Archived: get("archived"), Disposition: ArchiveDisposition(get("disposition")), Source: get("source"), SourceRevision: get("source_revision"), QATask: get("qa_task"), QAReport: get("qa_report"), QAVerdict: get("qa_verdict"), SupersededBy: get("superseded_by"), PullRequest: get("pull_request"), DeliveryCommit: get("delivery_commit"), Outcome: archiveParagraph(string(body), "# ")}
 	for _, key := range []string{"cancel_reason", "completed_tasks", "pending_tasks", "returned_sources"} {
 		_, present := m[key]
 		if r.Disposition != ArchiveCancelled && present {

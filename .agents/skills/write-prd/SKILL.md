@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.15
+  version: 0.0.16
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.15
+version: 0.0.16
 ---
 
 # Write PRD
@@ -259,6 +259,21 @@ retain those classes. Treat the checker's named skipped detectors as omitted,
 not as clean findings.
 
 Reply with the file path, any open questions that survived clarification, and the next step: `write-techspec` for features with architectural decisions to make, `write-tasks` directly when the technical approach is already obvious.
+
+## Delivery Type and release decision
+
+The PRD declares its Delivery Type in `type`: `feat` for a feature or `perf`
+for a performance change. The Archive Record and the Delivery Queue's pull
+request title carry it.
+
+When the maintainer asks for a release with the Spec, ask the release question
+with the structured question tool, including the Release Ceiling (`patch`,
+`minor` or `major`) and the version-only paths the release may change. Then
+record `release` in `operations`, `release_ceiling` and `release_paths` in
+`_authorization.md`, and quote the answer verbatim in its body. Without that
+request, never add `release`.
+
+Ask the release question at planning time, never after the merge.
 
 ## Advisory judgment
 

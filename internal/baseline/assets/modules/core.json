@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 25,
+  "version": 26,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -609,7 +609,7 @@
     },
     {
       "id": "rule.core.git-delivery",
-      "version": 8,
+      "version": 9,
       "coverage": [
         "coverage.git-delivery"
       ],
@@ -645,7 +645,7 @@
         {
           "id": "clause.core.plan-the-release-first",
           "enforcement": "mandatory",
-          "guidance": "Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook. Before the release Pull Request, confirm that the skills and guides the repository ships describe the behavior being released; the repository's release runbook owns that check."
+          "guidance": "Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook. Before the release Pull Request, confirm that the skills and guides the repository ships describe the behavior being released; the repository's release runbook owns that check. A Release Ceiling the maintainer recorded in the `_authorization.md` of every Spec the release delivers answers a minor or major plan at or below that ceiling, never a breaking or manually classified one."
         }
       ]
     },

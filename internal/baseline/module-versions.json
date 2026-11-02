@@ -111,6 +111,10 @@
       {
         "version": 25,
         "digest": "sha256:3ff3b009cd17c9bb645b62d0dba1d248ceb97333ad205962bd78bdc5751694aa"
+      },
+      {
+        "version": 26,
+        "digest": "sha256:8300245f9a2b0a9b02f77fb0bf006df688af261069e711ba41921725cb20b501"
       }
     ],
     "external-triage": [
@@ -229,6 +233,10 @@
       {
         "version": 22,
         "digest": "sha256:7824573a5e1a6617b8e37e96a7a64737d785677f0b91001e7e7d3ceb376eb3ed"
+      },
+      {
+        "version": 23,
+        "digest": "sha256:465c5438256ee13dcaddda14ff2265e7fcad36dd0fc6361dae35411f465ec9e5"
       }
     ],
     "tui-surface": [

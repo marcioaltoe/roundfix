@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-21T04:00:00Z
-updated_at: 2026-10-21T04:00:00Z
+updated_at: 2026-11-01T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -69,3 +69,10 @@ request by its head branch, never by its title.
   branch and never renames it.
 - A slug of 78 to 86 units, whose title fits 100 but whose squash subject did
   not, now gets the number form.
+
+Amendment (2026-11-01): the title's type is the Spec's Delivery Type. The
+`feat` in every pull request title form becomes the Archive Record's `type`,
+`feat` when absent, copied from the PRD's `type` (`feat`, `fix`, `perf` or
+`refactor`). The same 91 UTF-16-unit budget, cut rules and squash reserve
+apply, measured with that type's prefix. Archive and record commit subjects
+keep their bytes.

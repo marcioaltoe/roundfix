@@ -76,7 +76,7 @@ func TestQueuePullRequestTitleKeepsTheSlugWhileItFits(t *testing.T) {
 	for _, tc := range queuePullRequestTitleCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
-			got, err := pullRequestTitle(tc.slug, func() (string, error) {
+			got, err := pullRequestTitle(tc.slug, "", func() (string, error) {
 				calls++
 				if tc.want == "feat: deliver "+tc.slug {
 					t.Fatal("fitting slug called title reader")
@@ -94,8 +94,45 @@ func TestQueuePullRequestTitleKeepsTheSlugWhileItFits(t *testing.T) {
 	}
 	t.Run("reader error", func(t *testing.T) {
 		failure := errors.New("missing archive")
-		got, err := pullRequestTitle(strings.Repeat("x", 100), func() (string, error) { return "", failure })
+		got, err := pullRequestTitle(strings.Repeat("x", 100), "", func() (string, error) { return "", failure })
 		if got != "" || !errors.Is(err, failure) || err.Error() != "read Spec title: missing archive" {
+			t.Fatalf("title=%q err=%v", got, err)
+		}
+	})
+}
+
+func TestQueuePullRequestTitleFollowsTheDeliveryType(t *testing.T) {
+	t.Parallel()
+	for _, deliveryType := range spec.DeliveryTypes() {
+		for _, tc := range []struct {
+			name, slug, title, want string
+			reads                   int
+		}{
+			{"fitting", "0296-example", "", string(deliveryType) + ": deliver 0296-example", 0},
+			{"long", "0296-" + strings.Repeat("x", 95), strings.Repeat("x", 100), string(deliveryType) + ": deliver 0296: " + strings.Repeat("x", 91-len(string(deliveryType)+": deliver 0296: ")), 1},
+			{"long words", "0296-" + strings.Repeat("x", 95), "A useful title.", string(deliveryType) + ": deliver 0296: A useful title", 1},
+			{"empty numbered", "0296-" + strings.Repeat("x", 95), " .,:; ", string(deliveryType) + ": deliver 0296", 1},
+			{"empty unnumbered", strings.Repeat("x", 100), "", string(deliveryType) + ": deliver the Spec", 1},
+		} {
+			t.Run(string(deliveryType)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				calls := 0
+				got, err := pullRequestTitle(tc.slug, deliveryType, func() (string, error) { calls++; return tc.title, nil })
+				if err != nil || got != tc.want || calls != tc.reads || !utf8.ValidString(got) || len(utf16.Encode([]rune(got))) > 91 {
+					t.Fatalf("title=%q err=%v reads=%d, want %q reads=%d within 91 units", got, err, calls, tc.want, tc.reads)
+				}
+				evidence := releaseplan.ClassifyCommit(releaseplan.Commit{Subject: got + " (#575)"})
+				if evidence.ConventionalType != string(deliveryType) || evidence.Breaking {
+					t.Fatalf("classification=%+v", evidence)
+				}
+			})
+		}
+	}
+	t.Run("unsupported", func(t *testing.T) {
+		t.Parallel()
+		got, err := pullRequestTitle("0296-example", "docs", func() (string, error) { t.Fatal("unsupported type read title"); return "", nil })
+		var unsupported *spec.UnsupportedDeliveryTypeError
+		if got != "" || !errors.As(err, &unsupported) || unsupported.Value != "docs" {
 			t.Fatalf("title=%q err=%v", got, err)
 		}
 	})
@@ -105,7 +142,7 @@ func TestQueueMessagesStayReadableBySquashReaders(t *testing.T) {
 	t.Parallel()
 	for _, tc := range queuePullRequestTitleCases() {
 		t.Run("title/"+tc.name, func(t *testing.T) {
-			title, err := pullRequestTitle(tc.slug, func() (string, error) { return tc.title, nil })
+			title, err := pullRequestTitle(tc.slug, "", func() (string, error) { return tc.title, nil })
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -224,6 +261,7 @@ func TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug(t *testing.T) {
 	w, repo, _, path := queueRecordHookFixture(t, slug)
 	record := archiveRecordAt(t, filepath.Join(repo, path))
 	record.Title = "A known Archive Record title."
+	record.Type = "fix"
 	data, err := spec.RenderArchiveRecord(record)
 	if err != nil {
 		t.Fatal(err)
@@ -231,7 +269,7 @@ func TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug(t *testing.T) {
 	mustWrite(t, filepath.Join(repo, path), string(data))
 	branch := strings.TrimSpace(gittest.Run(t, repo, "branch", "--show-current"))
 	publication, err := w.Publication(t.Context(), repo, slug, branch)
-	if err != nil || publication.Title != "feat: deliver 0296: A known Archive Record title" || publication.Body != "Delivers Spec "+slug+"." {
+	if err != nil || publication.Title != "fix: deliver 0296: A known Archive Record title" || publication.Body != "Delivers Spec "+slug+"." {
 		t.Fatalf("publication=%+v err=%v", publication, err)
 	}
 	// A configured Spec root stores its archive under _archived, not docs/history.
@@ -247,10 +285,19 @@ func TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug(t *testing.T) {
 	if err != nil || configured != publication {
 		t.Fatalf("configured archive publication=%+v err=%v, want %+v", configured, err, publication)
 	}
+	record.Type = "docs"
+	invalid, err := spec.RenderArchiveRecord(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, customPath, string(invalid))
+	if _, err := w.Publication(t.Context(), repo, slug, branch); err == nil || err.Error() != "plan publication: read Spec type: archive record type: PRD type \"docs\" is not one of feat, fix, perf, refactor" {
+		t.Fatalf("unsupported record error=%v", err)
+	}
 	if err := os.Remove(customPath); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := w.Publication(t.Context(), repo, slug, branch); err == nil || !strings.HasPrefix(err.Error(), "plan publication: read Spec title:") {
+	if _, err := w.Publication(t.Context(), repo, slug, branch); err == nil || !strings.HasPrefix(err.Error(), "plan publication: read Spec type:") {
 		t.Fatalf("missing record error=%v", err)
 	}
 }

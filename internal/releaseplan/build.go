@@ -45,5 +45,13 @@ func Build(ctx context.Context, request Request, source GitSource) (Plan, error)
 	if err != nil {
 		return Plan{}, fmt.Errorf("calculate release proposal: %w", err)
 	}
-	return NewPlan(releaseRange.Base, releaseRange.Target, classification.Classification, proposal, classification.Changes), nil
+	plan := NewPlan(releaseRange.Base, releaseRange.Target, classification.Classification, proposal, classification.Changes)
+	if grantSource, ok := source.(ReleaseGrantSource); ok && proposal.State == StateApprovalRequired {
+		grants, err := grantSource.ReleaseGrants(ctx, releaseRange, commits)
+		if err != nil {
+			return Plan{}, fmt.Errorf("load release grants: %w", err)
+		}
+		plan = AnswerApproval(plan, grants)
+	}
+	return plan, nil
 }

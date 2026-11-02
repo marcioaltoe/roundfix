@@ -149,6 +149,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	if err := detectClarificationRecord(&result, repoRoot, filepath.Join(specDir, "_prd.md")); err != nil {
 		return result, err
 	}
+	if err := detectPRDDeliveryType(&result, repoRoot, filepath.Join(specDir, "_prd.md")); err != nil {
+		return result, err
+	}
 	prd, present, err := readConstraintArtifact(repoRoot, filepath.Join(specDir, "_prd.md"))
 	if err != nil {
 		return result, err

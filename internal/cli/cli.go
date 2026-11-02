@@ -5552,6 +5552,8 @@ Decision states:
   manual_classification_required  Ambiguous commits need --impact and --reason.
   no_release                      Maintenance-only changes require no release.
 
+approval_required is answered when every Spec the range delivers has an approved authorization record whose release_ceiling is at or above the impact, nothing is breaking or classified by hand, and every change that sets the impact is such a delivery; the decision is then ready and the plan names the records.
+
 Exit codes:
   0  ready or no_release
   2  invalid flags, dirty tree, invalid range, or repository failure

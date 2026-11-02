@@ -354,6 +354,27 @@ plan reports `manual_classification_required`, rerun it with
 `--impact <none|patch|minor|major> --reason <text>`; that classification records
 the impact and reason, but it does not approve the resulting version.
 
+A Release Ceiling recorded in the approved authorization record of every
+Spec the range delivers answers `approval_required` within every ceiling when
+each record grants `release` and every change that sets the impact is such a
+delivery. The decision becomes `ready` with the same proposed version.
+A Release Ceiling never answers a breaking plan or a manual classification.
+A missing grant, an impact above a ceiling, or an impact-setting change outside
+those deliveries keeps the approval question.
+
+Text prints `Release authorization: answered` or
+`Release authorization: not answered — <reason>`, followed by each Spec's
+ceiling, record and revision, and release paths. JSON adds
+`releaseAuthorization` with `answered`, optional `reason`, and `grants`.
+When no delivered record grants a ceiling, both outputs keep their bytes and
+omit this authorization evidence. The `skill-coverage` check can still block
+an answered plan.
+
+Backlog Entries under `docs/backlog/` are planning evidence alongside
+`docs/specs/`, `docs/adr/`, `docs/findings/` and `docs/handoffs/`; commits
+changing only those paths are maintenance-only. A `refactor:` delivery that
+changes released code is a commit to classify by hand.
+
 The range plan's `skill-coverage` check reads the Skill Coverage Map and
 Behavior Surface Record from the base and target commits, including a past
 `--to` revision. It lists each Lagging Surface: a changed, added or removed
