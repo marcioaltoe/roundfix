@@ -1,4 +1,0 @@
-command: ['go', 'test', '-count=1', '-timeout', '20m', '-run', 'ReleasePlan|FollowUp', './internal/cli']
-ok  	roundfix/internal/cli	6.279s
-
-exit: 0

@@ -1,4 +1,0 @@
-Same repository repeated: identical bytes.
-Historical record differs only by release operation, through Git replacement retaining displayed commit IDs.
-With/without release operation: identical bytes.
-SHA256: f02d525847f59b7c1589138581a774267892b23026352c4a935673ec9fdcc3f5

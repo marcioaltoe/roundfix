@@ -1,1 +1,0 @@
-{"command": ["go", "test", "-count=1", "-timeout", "20m", "-v", "-run", "^(TestQueuePullRequestTitleFollowsTheDeliveryType|TestQueuePullRequestTitleKeepsTheSlugWhileItFits|TestQueueMessagesStayReadableBySquashReaders|TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug|TestReleasePlanAnswersApprovalFromTheReleaseCeiling)$", "./internal/cli"], "exit": 0}

@@ -1,1 +1,0 @@
-{"command": ["go", "test", "-count=1", "-timeout", "20m", "-v", "-run", "^TestReleasePlanAnswersApprovalFromTheReleaseCeiling$/ceiling_minor$", "./internal/cli"], "exit": 1, "expected_test_failure": true}

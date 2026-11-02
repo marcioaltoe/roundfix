@@ -1,1 +1,0 @@
-{"command": ["go", "test", "-count=1", "-timeout", "20m", "./internal/releaseplan", "./internal/authorization", "./internal/spec"], "exit": 0}

@@ -1,4 +1,0 @@
-command: ['go', 'test', '-count=1', '-timeout', '20m', './internal/baseline']
-ok  	roundfix/internal/baseline	70.736s
-
-exit: 0
