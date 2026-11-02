@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -61,6 +63,7 @@ type baselineUpdateSkillOutdated struct {
 type baselineUpdateSkillsResult struct {
 	LockUpdated    []string                         `json:"lockUpdated,omitempty"`
 	Retired        []baseline.InstalledRetiredSkill `json:"retired,omitempty"`
+	Deleted        []baseline.InstalledRetiredSkill `json:"deleted,omitempty"`
 	Outdated       []baselineUpdateSkillOutdated    `json:"outdated,omitempty"`
 	Missing        []baselineUpdateSkillDrift       `json:"missing,omitempty"`
 	Status         string                           `json:"status"`
@@ -282,6 +285,19 @@ func runBaselineUpdateCommandWithSkillsStage(
 	if err != nil {
 		return writeBaselineUpdateOperationFailure(result, err, jsonOutput, stdout, stderr)
 	}
+	var retiredDeletions []baseline.InstalledRetiredSkill
+	if !request.skipSkills {
+		result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
+		if err != nil {
+			return writeBaselineUpdateFailure(result, err, "execution", "repair skills-lock.json and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+		}
+		for _, entry := range result.Skills.Retired {
+			if entry.Action == baseline.RetiredSkillDelete {
+				retiredDeletions = append(retiredDeletions, entry)
+			}
+		}
+		result.PlanDigest = retiredSkillsPlanDigest(result.PlanDigest, retiredDeletions)
+	}
 	result.CurrentCatalog = plan.Catalog
 	result.FileChanges = append(result.FileChanges, plan.FileChanges...)
 	result.UnrecordedManagedRegions = append(
@@ -329,16 +345,19 @@ func runBaselineUpdateCommandWithSkillsStage(
 				}
 				result.Skills.Differing = baselineUpdateSnapshotDifferences(input.Manifest.Profile, differing)
 			}
-			result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
-			if err != nil {
-				return writeBaselineUpdateFailure(result, err, "execution", "repair skills-lock.json and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
-			}
 		}
 		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
 			if len(historyPlan.selected) != 0 {
 				result.State = "plan_ready"
 				result.Category = "approval"
 				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d history unit(s) pending sanitize", len(historyPlan.selected))
+				result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
+				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
+			}
+			if len(retiredDeletions) != 0 {
+				result.State = "plan_ready"
+				result.Category = "approval"
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; the approved update deletes %d Retired Skill(s)", len(retiredDeletions))
 				result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
 				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
 			}
@@ -418,6 +437,10 @@ func runBaselineUpdateCommandWithSkillsStage(
 				stdout,
 				stderr,
 			)
+		}
+		result.Skills.Deleted, err = baseline.DeleteRetiredSkills(ctx, request.repo, retiredDeletions)
+		if err != nil {
+			return writeBaselineUpdateFailure(result, err, "skills", "delete the remaining Retired Skills by hand or rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
 		}
 		result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
 		if err != nil {
@@ -928,18 +951,29 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 			fmt.Fprintf(stdout, "- missing %s: %s\n", missing.Skill, missing.Reason)
 		}
 	}
+	if len(result.Skills.Deleted) != 0 {
+		fmt.Fprintf(stdout, "Skills deleted: %d\n", len(result.Skills.Deleted))
+		for _, deleted := range result.Skills.Deleted {
+			fmt.Fprintf(stdout, "- deleted %s: %s\n", deleted.Skill, retiredSkillTargets(deleted))
+		}
+	}
 	if len(result.Skills.Retired) != 0 {
 		fmt.Fprintf(stdout, "Skills retired: %d\n", len(result.Skills.Retired))
 		for _, retired := range result.Skills.Retired {
-			targets := append([]string(nil), retired.Paths...)
-			if retired.LockEntry {
-				targets = append(targets, "its skills-lock.json entry")
+			if retired.Action == baseline.RetiredSkillDelete {
+				fmt.Fprintf(stdout, "- retired %s: no longer required by the Baseline; the approved update deletes %s\n", retired.Skill, retiredSkillTargets(retired))
+				continue
 			}
-			deletion := targets[0]
-			if len(targets) > 1 {
-				deletion = strings.Join(targets[:len(targets)-1], ", ") + " and " + targets[len(targets)-1]
+			var reason string
+			switch retired.Reason {
+			case baseline.RetiredSkillEdited:
+				reason = "its copy differs from its skills-lock.json computedHash"
+			case baseline.RetiredSkillUnrecorded:
+				reason = "skills-lock.json records no computedHash to prove its copy unedited"
+			case baseline.RetiredSkillUnsafe:
+				reason = "an entry is not a skill folder or a link to .agents/skills"
 			}
-			fmt.Fprintf(stdout, "- retired %s: no longer required by the Baseline; delete %s\n", retired.Skill, deletion)
+			fmt.Fprintf(stdout, "- retired %s: kept, %s; delete %s by hand if the repository no longer uses it\n", retired.Skill, reason, retiredSkillTargets(retired))
 		}
 	}
 	fmt.Fprintf(stdout, "Skills differing: %d\n", len(result.Skills.Differing))
@@ -979,4 +1013,37 @@ func baselineUpdateJSONRequested(args []string) bool {
 		}
 	}
 	return false
+}
+
+func retiredSkillsPlanDigest(digest string, retired []baseline.InstalledRetiredSkill) string {
+	var deletions []baseline.InstalledRetiredSkill
+	for _, entry := range retired {
+		if entry.Action == baseline.RetiredSkillDelete {
+			deletions = append(deletions, entry)
+		}
+	}
+	if len(deletions) == 0 {
+		return digest
+	}
+	// This payload contains only strings, bools and slices, so JSON encoding cannot fail.
+	data, _ := json.Marshal(struct {
+		PlanDigest    string                           `json:"planDigest"`
+		RetiredSkills []baseline.InstalledRetiredSkill `json:"retiredSkills"`
+	}{digest, deletions})
+	hash := sha256.Sum256(data)
+	return "sha256:" + hex.EncodeToString(hash[:])
+}
+
+func retiredSkillTargets(entry baseline.InstalledRetiredSkill) string {
+	targets := append([]string(nil), entry.Paths...)
+	if entry.LockEntry {
+		targets = append(targets, "its skills-lock.json entry")
+	}
+	if len(targets) == 0 {
+		return ""
+	}
+	if len(targets) == 1 {
+		return targets[0]
+	}
+	return strings.Join(targets[:len(targets)-1], ", ") + " and " + targets[len(targets)-1]
 }

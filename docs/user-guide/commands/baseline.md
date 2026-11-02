@@ -352,11 +352,33 @@ upstream catalog may still list it: `council` and `the-fool` since 0.52.0;
 since 0.127.0, which the catalog removed; and the Roundfix-owned
 `implement-spec` since 0.127.0.
 No module requires or dispatches it, and the asset sync drops it from every
-Setup Snapshot. `roundfix baseline update` never deletes an installed copy.
-When the repository still holds one, the preview and the applied update list
-it under `Skills retired` (`skills.retired` in JSON) with the paths to
-delete; the state and exit code do not change, and `--no-skills` skips the
-list. To remove the copies:
+Setup Snapshot.
+
+An approved update deletes each Retired Skill it proves unedited. It removes
+its `.agents/skills/<skill>` folder, `.claude/skills/<skill>` entry (a link
+or a folder copy), and `skills-lock.json` entry. Each folder must match the
+lock entry's `computedHash`, and a `.claude/skills/<skill>` link must point
+exactly to `../../.agents/skills/<skill>`. A lock entry or that link with no
+folder is also deletable. Nothing outside the Retired Skills set is deleted:
+`context7-cli`, `exa-web-search` and repository-installed skills stay.
+
+The preview lists each planned deletion under `Skills retired`
+(`skills.retired` in JSON), and the Plan Digest binds the deletion set. When
+a deletion is the only pending change, the preview reports `plan_ready` and
+exit 3. Approve with `--confirm-plan <digest>` or `--yes`; after the skills
+stage the update re-inspects the planned copies and deletes nothing if one
+changed. It reports deletions under `Skills deleted` (`skills.deleted` in
+JSON). A preview with no deletion keeps its Plan Digest unchanged.
+`--no-skills` skips both inspection and deletion.
+
+A copy the update cannot prove unedited is kept and listed with its reason:
+
+- `edited`: its copy differs from its skills-lock.json computedHash.
+- `unrecorded`: skills-lock.json records no computedHash to prove its copy unedited.
+- `unsafe`: an entry is not a skill folder or a link to .agents/skills.
+
+Kept copies do not change the update's state or exit code. If the repository
+no longer uses a kept copy, remove it by hand with these commands:
 
 ```bash
 git rm -r -q --ignore-unmatch .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool
@@ -381,9 +403,10 @@ rm -rf \
   .agents/skills/to-prompt .claude/skills/to-prompt
 ```
 
-Then delete their entries from `skills-lock.json` by hand, because the
-skills CLI's `remove` can leave a project lock entry behind, and commit. The
-next `roundfix baseline update` lists no retired skill.
+Then delete the kept copies' corresponding entries from `skills-lock.json`
+by hand, because the skills CLI's `remove` can leave a project lock entry
+behind, and commit. The next `roundfix baseline update` no longer lists
+those skills.
 
 ### Skills that run scripts
 

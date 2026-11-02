@@ -94,9 +94,13 @@ optional `unrecordedManagedRegions` field only when at least one exists. The
 same report remains in the applied result. Managed refresh never invokes
 semantic classification and preserves every non-managed byte exactly.
 
-`baseline update` lists each Retired Skill the repository still holds under
-`Skills retired` (`skills.retired` in JSON) with the paths to delete; it never
-deletes the copy and never changes the update's state.
+An approved update deletes each Retired Skill it proves unedited. It deletes
+the `.agents/skills/<skill>` folder, the `.claude/skills/<skill>` entry and the
+`skills-lock.json` entry, with every planned deletion bound by the Plan Digest.
+The preview reports `plan_ready` when a deletion is the only pending change. It
+keeps and lists copies it cannot prove unedited with one of the `edited`,
+`unrecorded` or `unsafe` reasons, and reports deletions under `Skills deleted`
+(`skills.deleted` in JSON). Nothing outside the Retired Skills set is deleted.
 
 The Retired Skills are `council` and `the-fool` since 0.52.0, and
 `design-patterns`, `diagnosing-bugs`, `fixing-metadata`,
