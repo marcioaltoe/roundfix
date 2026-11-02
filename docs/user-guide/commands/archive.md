@@ -49,6 +49,9 @@ reached through a symbolic link and an external Spec Root keep working.
 The original folder's bytes stay in Git at the record's `source_revision`. The
 Archive Record is the small `<slug>.md` file under the archive root; it names
 the disposition, QA Report and verdict, source revision, and promoted files.
+Its optional `type` key is copied from the PRD's frontmatter `type`, the
+Spec's Delivery Type (`feat`, `fix`, `perf` or `refactor`); it is omitted when
+the PRD has no type.
 Its summary is the QA Report's Outcome paragraph or the PRD's title paragraph.
 A summary paragraph that ends with a colon carries the list or paragraph that follows it, on the same line.
 After a successful archive, the command warns when `source_revision` is not an

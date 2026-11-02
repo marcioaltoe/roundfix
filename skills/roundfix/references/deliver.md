@@ -59,11 +59,12 @@ existing record commit by its change, whatever its subject.
 
 The archive commit's subject is `docs: archive <slug>` while that is at most
 100 characters, and otherwise `docs: archive the <spec number> Spec`, or
-`docs: archive the Spec` for a slug without a Spec number. The pull request
-title is `feat: deliver <slug>` while that is at most 91 characters, which
+`docs: archive the Spec` for a slug without a Spec number. The pull request title starts with the Spec's Delivery Type.
+The type is the Archive Record's optional `type` (`feat`, `fix`, `perf` or
+`refactor`), or `feat` when absent. The title is `<type>: deliver <slug>` while that is at most 91 characters, which
 leaves room for the ` (#<number>)` a squash merge appends for any pull request
-number below 100000; otherwise it is `feat: deliver <spec number>: <Spec
-title>`, or `feat: deliver <Spec title>` for a slug without a Spec number,
+number below 100000; otherwise it is `<type>: deliver <spec number>: <Spec
+title>`, or `<type>: deliver <Spec title>` for a slug without a Spec number,
 where the Spec title is the Archive Record's title cut at a word to fit. Lengths
 count UTF-16 code units, as commitlint does. The pull request body still names
 the full slug, and the queue accepts an existing archive commit by its change,

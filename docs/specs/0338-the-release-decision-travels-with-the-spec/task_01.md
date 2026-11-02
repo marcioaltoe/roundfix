@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0338-the-release-decision-travels-with-the-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -157,3 +157,90 @@ the Argus report of 2026-10-31.
 
 - `_prd.md` → Sources 1; Goals; Core Features 1, 2 and 5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 8; Glossary
 - `_techspec.md` → Current behavior 1-3; Interfaces; Data Models; API Contracts 1-4 and 12; Invariants 1-2; Declared breaks; Testing Approach; Build Order 1
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/deliver_publication_scope_test.go`
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, evidence-gate, golang-error-handling, golang-structs-interfaces, golang-cli, golang-testing, testing-boss, tech-writer, agentic-cli-design, systematic-debugging, no-workarounds.
+
+Implemented the Delivery Type slice. Task status remains Daemon-owned; no
+Task Graph or other Task file was changed, and nothing was committed or
+published. The initial tree differed only in this Task's status field.
+
+Acceptance evidence:
+
+- The parser accepts exactly `feat`, `fix`, `perf` and `refactor`, distinguishes
+  an absent key, and returns `UnsupportedDeliveryTypeError` for unsupported
+  strings and non-string declarations. Archive building carries a declared
+  type, refuses unsupported values, writes the optional key immediately after
+  `delivery_commit`, and reads it back. The absent-type case asserts the
+  entire rendered record against its original bytes.
+- Queue titles use the declared type for fitting slugs, numbered titles,
+  truncation and empty-title fallbacks. Tests cover every supported type and
+  its release-plan classification, the 91 UTF-16-unit budget and lazy title
+  reads. Publication reads its Archive Record once, uses its type, rejects
+  unsupported values and reports the required missing-record prefix. Archive
+  and record commit subjects were unchanged.
+- `SC-PRD-TYPE` is called immediately after `detectClarificationRecord` in
+  `Check`; those three inserted lines are the only change to `constraints.go`.
+  The test compares the full finding and proves removing `type: docs` leaves
+  every other finding unchanged; supported and absent types add none.
+- The three command guides and canonical references state the new rule;
+  `CONTEXT.md` defines Delivery Type with ADR-0309, whose only changes are its
+  `updated_at` and appended amendment. `make skills-sync` copied every
+  canonical reference. The sanctioned version recorder raised both Roundfix
+  skill version fields to `0.1.169` and updated the version record. The
+  Behavior Surface recorder ran after the last guide edit and changed only
+  the three affected guide fingerprints.
+
+Focused checks (all final invocations exited 0):
+
+- Before implementation: `go test -count=1 -timeout 5m ./internal/spec -run
+  '^TestArchiveRecordRoundTrips$'` and `go test -count=1 -timeout 5m
+  ./internal/cli -run
+  '^TestQueuePullRequestTitleKeepsTheSlugWhileItFits$/^(0278|77_units|78_units)$'`
+  characterized existing behavior. The first new parser probe then failed to
+  compile on the missing Delivery Type API before its implementation.
+- `go test -count=1 -timeout 5m ./internal/spec ./internal/speccheck -run
+  'DeliveryType|PRDTypeFinding'` — parser, archive and Spec Check cases passed.
+- `go test -count=1 -timeout 5m ./internal/cli -run
+  'TestQueuePullRequestTitle|TestQueueMessagesStayReadable|TestDeliveryPublicationTitle'`
+  — type prefixes, default bytes, squash readers and record failures passed.
+- `go test -count=1 -timeout 5m ./internal/cli -run
+  '^TestDeliveryPublicationRequestsNoCodeRabbitReview$'` — all four provider
+  cases passed after supplying the now-required archive fixture and its
+  parent directory; absent-type titles remain `feat: deliver <slug>`.
+- `go test -count=1 -timeout 5m ./internal/spec -run
+  '^TestArchiveRecordRoundTrips$|^TestReadArchivedSpecReadsRecordAndLegacyFolder$|DeliveryType'`
+  — new record behavior and existing record/legacy readers passed.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract
+  -run 'TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)|TestUserGuideLinksResolve'`
+  — focused glossary and guide-link contracts passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions -count=1` — generated version fields and record;
+  `go test -count=1 -timeout 5m ./skills -run
+  '^TestCheckValidatesRoundfixSkillArtifacts$'` passed afterward.
+- Read-only inspection confirmed all three reference mirrors and the skill
+  mirror equal their canonical copies, the title rule and `SC-PRD-TYPE` appear
+  in each copy, and ADR-0309 preserves its original text except `updated_at`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — sanctioned
+  final implementation-generation step, exited 0 after all guide edits.
+- `git diff --check` — no whitespace errors.
+
+Limits and follow-up:
+
+- Automatic approval review rejected `make baseline-digests` before execution:
+  it may rewrite derived Baseline artifacts outside task_01's allowed slice.
+  No Baseline files were changed and the rejection was not bypassed.
+- Early `--stage prd` and `--stage techspec` checks use a separate
+  `checkAuthoringStage` path. This Task's specified API wires the full `Check`
+  sweep only; extending that authoring-stage path is a follow-up, and the new
+  guide entries make no early-stage claim.
+- Declared Task Verification, the selected repository Verification and full
+  suites were not run; they remain the Daemon's settlement work.

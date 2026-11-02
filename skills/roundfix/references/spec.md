@@ -118,6 +118,10 @@ when a source pattern matches it.
   and executes no command. Name the selector alone and run its containing path
   in a separate command (ADR-0315).
 
+- `SC-PRD-TYPE` — the PRD's optional frontmatter `type` is not one of
+  `feat`, `fix`, `perf` or `refactor`. An error; remove
+  the key to deliver as `feat`.
+
 - `SC-DECISIONS-UNRECORDED` — a PRD's `## Decisions` section lacks both a
   dated answer and the autonomous-route line naming its decision source. A gap
   from the PRD stage that reads shape only. Its horizon is the oldest commit

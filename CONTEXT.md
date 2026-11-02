@@ -792,6 +792,13 @@ _Avoid_: item-level binding, whole-Spec binding
 The explicit act that hands a settled Task from a terminal Spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped, Unresolved or Budget Exceeded ([ADR-0158](docs/adr/0158-a-budget-expired-run-settles-budget-exceeded-and-stays-recoverable.md)) and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement except planning amendments that preserve its Binding Text ([ADR-0284](docs/adr/0284-carry-forward-binds-a-task-to-the-planning-text-it-references.md)), a clean checkout, and a repository-local Spec Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic. A Task already completed on the target is nothing to carry, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
 
+**Delivery Type**:
+The Conventional Commits type a Spec delivers as (`feat`, `fix`, `perf` or
+`refactor`), declared in the PRD's `type`, kept in the Archive Record and used
+in the Delivery Queue's pull request title. It is `feat` when absent
+([ADR-0309](docs/adr/0309-a-queue-archive-subject-and-pull-request-title-keep-the-slug-while-it-fits-100-characters.md)).
+_Avoid_: Pull request type override, release impact
+
 **Delivery Queue**:
 The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
