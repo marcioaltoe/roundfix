@@ -1,0 +1,34 @@
+command: go test -count=1 -timeout 20m -v -run ^TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies
+=== PAUSE TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies
+=== CONT  TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/deletes_the_unedited_retired_copy_and_keeps_every_other_skill
+    retired_skills_installed_test.go:239: deleted = [], <nil>; want [{Skill:tdd Paths:[.agents/skills/tdd .claude/skills/tdd] LockEntry:true Action:delete Reason: LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a}]
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/refuses_a_copy_edited_after_the_plan
+    retired_skills_installed_test.go:301: refusal = [], <nil>; want "retired skill \"tdd\" changed after the plan; rerun roundfix baseline update"
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/refuses_a_name_outside_the_Retired_Skills
+    retired_skills_installed_test.go:301: refusal = [], <nil>; want "refuse to delete \"context7-cli\": it is not a Retired Skill"
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/refuses_a_later_planned_entry_before_deleting_anything
+    retired_skills_installed_test.go:301: refusal = [], <nil>; want "retired skill \"the-fool\" changed after the plan; rerun roundfix baseline update"
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/honors_cancellation
+    retired_skills_installed_test.go:301: refusal = [], <nil>; want ""
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/deletes_only_the_selected_copy
+    retired_skills_installed_test.go:295: selected deletion = [], <nil>
+=== RUN   TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/deletes_a_claude_tree_and_orphaned_links_and_lock_entries
+    retired_skills_installed_test.go:332: orphaned deletion = [], <nil>
+--- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies (0.02s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/deletes_the_unedited_retired_copy_and_keeps_every_other_skill (0.00s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/refuses_a_copy_edited_after_the_plan (0.00s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/refuses_a_name_outside_the_Retired_Skills (0.00s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/refuses_a_later_planned_entry_before_deleting_anything (0.00s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/honors_cancellation (0.00s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/deletes_only_the_selected_copy (0.00s)
+    --- FAIL: TestDeleteRetiredSkillsDeletesOnlyThePlannedCopies/deletes_a_claude_tree_and_orphaned_links_and_lock_entries (0.00s)
+FAIL
+suiteguard: guard cost: measured 2873 paths; fingerprint took 139.70175ms before and 124.741167ms after
+FAIL	roundfix/internal/baseline	0.565s
+FAIL
+
+stderr:

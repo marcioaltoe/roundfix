@@ -1,0 +1,6 @@
+command: go test -count=1 -timeout 20m -run BaselineUpdate|Retired ./internal/cli
+exit: 0
+stdout:
+ok  	roundfix/internal/cli	57.540s
+
+stderr:

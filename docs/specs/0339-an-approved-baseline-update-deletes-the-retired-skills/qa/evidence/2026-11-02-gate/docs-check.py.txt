@@ -1,0 +1,32 @@
+from pathlib import Path
+import re
+roots=[Path('docs/user-guide'),Path('docs/adr'),Path('.agents/skills/roundfix'),Path('skills/roundfix'),Path('CONTEXT.md')]
+files=[]
+for root in roots:files.extend([root] if root.is_file() else sorted(root.rglob('*.md')))
+old='0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md'
+links=[];stale=[]
+for f in files:
+ s=f.read_text()
+ for n,line in enumerate(s.splitlines(),1):
+  if old in line:links.append(f'{f}:{n}: {line}')
+ for para in re.split(r'\n\s*\n',s):
+  flat=' '.join(para.split())
+  if re.search(r'(?:never deletes? (?:an installed|the) cop|without deleting it)',flat,re.I) and 'retired' in flat.lower():stale.append(f'{f}: {flat}')
+assert not links,links;assert not stale,stale;assert not Path('docs/adr/'+old).exists()
+adr=Path('docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md').read_text()
+assert 'Amendment (2026-11-01): ADR-0350 lets an approved Baseline update delete a Retired Skill it proves unedited.' in ' '.join(adr.split());assert 'updated_at: 2026-11-01T00:00:00Z' in adr
+for name in ['references/baseline.md','SKILL.md']:assert (Path('.agents/skills/roundfix')/name).read_bytes()==(Path('skills/roundfix')/name).read_bytes()
+for f in [Path('docs/user-guide/commands/baseline.md'),Path('.agents/skills/roundfix/references/baseline.md'),Path('skills/roundfix/references/baseline.md')]:
+ flat=' '.join(f.read_text().split());assert 'An approved update deletes each Retired Skill it proves unedited' in flat
+ for token in ['plan_ready','Plan Digest','Skills deleted','skills.deleted','edited','unrecorded','unsafe']:assert token in flat,(f,token)
+version=re.findall(r'version: ([0-9.]+)',Path('.agents/skills/roundfix/SKILL.md').read_text());assert len(version)==2 and version[0]==version[1]
+claude=Path('.claude/skills/roundfix');copies='canonical .agents/skills/roundfix and mirror skills/roundfix'
+if claude.exists():
+ assert (claude/'references/baseline.md').read_bytes()==Path('.agents/skills/roundfix/references/baseline.md').read_bytes();copies+=', plus .claude/skills/roundfix alias'
+print(f'Searched {len(files)} Markdown files under docs/user-guide, docs/adr, {copies}, and CONTEXT.md.')
+print('ADR-0246 is absent; no live filename citation/link found. No stale retired-copy never-delete sentence remains.')
+print('ADR-0191 amendment and updated_at match the declared contract.')
+print('Guide and every reference copy contain deletion wording, preview state, Plan Digest, deletion report and all keep reasons.')
+print('Canonical/mirror baseline reference and SKILL.md compare equal. Both version fields:',version[0])
+print('ADR-0350 names its superseded predecessor by number as accepted lineage, with no broken filename link.')
+print('Earlier Task Result names a pre-final skill version; committed current bytes and the skills suite establish the current version.')

@@ -1,0 +1,7 @@
+archive: git archive cf27929684f83a75dfc4d8e06e735de4050d4924
+file: internal/baseline/retired_skills_installed.go
+replace:
+func DeleteRetiredSkills(ctx context.Context, repoRoot string, planned []InstalledRetiredSkill) ([]InstalledRetiredSkill, error) {
+with:
+func DeleteRetiredSkills(ctx context.Context, repoRoot string, planned []InstalledRetiredSkill) ([]InstalledRetiredSkill, error) {
+ return nil, nil

@@ -1,0 +1,20 @@
+command: go test -count=1 -timeout 20m -v -run ^TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/json
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/yes
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/reinspects_after_the_skills_stage
+--- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills (2.74s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text (0.84s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/json (0.71s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/yes (0.62s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/reinspects_after_the_skills_stage (0.58s)
+PASS
+suiteguard: guard cost: measured 2882 paths; fingerprint took 139.474292ms before and 125.626709ms after
+ok  	roundfix/internal/cli	3.314s
+
+stderr:

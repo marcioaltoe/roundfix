@@ -1,0 +1,20 @@
+command: go test -count=1 -timeout 20m -v -run ^TestInstalledRetiredSkillsListsTreesLinksAndLockEntries$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestInstalledRetiredSkillsListsTreesLinksAndLockEntries
+=== PAUSE TestInstalledRetiredSkillsListsTreesLinksAndLockEntries
+=== CONT  TestInstalledRetiredSkillsListsTreesLinksAndLockEntries
+=== RUN   TestInstalledRetiredSkillsListsTreesLinksAndLockEntries/trees_links_and_lock
+    retired_skills_installed_test.go:74: inspection = [{Skill:council Paths:[.agents/skills/council .claude/skills/council] LockEntry:true Action:keep Reason:unrecorded LockHash:} {Skill:the-fool Paths:[.agents/skills/the-fool] LockEntry:true Action:keep Reason:unrecorded LockHash:}], <nil>; want [{Skill:council Paths:[.agents/skills/council .claude/skills/council] LockEntry:true Action:keep Reason:unsafe LockHash:} {Skill:the-fool Paths:[.agents/skills/the-fool] LockEntry:true Action:keep Reason:unrecorded LockHash:}]
+=== RUN   TestInstalledRetiredSkillsListsTreesLinksAndLockEntries/lock_only
+=== RUN   TestInstalledRetiredSkillsListsTreesLinksAndLockEntries/missing_lock
+--- FAIL: TestInstalledRetiredSkillsListsTreesLinksAndLockEntries (0.00s)
+    --- FAIL: TestInstalledRetiredSkillsListsTreesLinksAndLockEntries/trees_links_and_lock (0.00s)
+    --- PASS: TestInstalledRetiredSkillsListsTreesLinksAndLockEntries/lock_only (0.00s)
+    --- PASS: TestInstalledRetiredSkillsListsTreesLinksAndLockEntries/missing_lock (0.00s)
+FAIL
+suiteguard: guard cost: measured 2873 paths; fingerprint took 160.302ms before and 145.306959ms after
+FAIL	roundfix/internal/baseline	0.591s
+FAIL
+
+stderr:

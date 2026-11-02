@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0339-an-approved-baseline-update-deletes-the-retired-skills --plan --offline
+exit: 0
+stdout:
+archive plan for 0339-an-approved-baseline-update-deletes-the-retired-skills: removes 46 file(s) (265088 bytes) and writes docs/history/specs/0339-an-approved-baseline-update-deletes-the-retired-skills.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-02.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 36 file(s) (154599 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-01-an-approved-baseline-update-deletes-the-retired-skills.md 2210 bytes: no advice (offline)
+promote with: roundfix archive 0339-an-approved-baseline-update-deletes-the-retired-skills --promote <path>
+
+stderr:

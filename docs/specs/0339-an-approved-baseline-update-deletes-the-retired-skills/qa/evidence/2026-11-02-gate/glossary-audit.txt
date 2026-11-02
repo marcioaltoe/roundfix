@@ -1,0 +1,18 @@
+PRD and TechSpec each declare changes: **Retired Skill**.
+The current entry defines approved deletion against skills-lock.json and keeps edited/unrecorded copies.
+ADR-0350 link resolves.
+Replacing only the old Retired Skill entry with the new entry reproduces the entire current CONTEXT.md exactly; no other glossary bytes changed.
+Audited range: 0eb0cde9a6252da05905bf343c8ed64a7e679016..cf27929684f83a75dfc4d8e06e735de4050d4924
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 2c6abf28..9fb5b855 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -877,7 +877,7 @@ A repository tooling file, such as a Makefile, a Project Config or a CI workflow
+ _Avoid_: Scaffold, template file, managed tooling
+ 
+ **Retired Skill**:
+-A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it ([ADR-0246](docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md)).
++A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and an approved `roundfix baseline update` deletes a copy it proves unedited against `skills-lock.json` and keeps an edited or unrecorded copy for the adopter ([ADR-0350](docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md)).
+ _Avoid_: Deprecated skill, obsolete skill
+ 
+ **Missing Required Skill**:

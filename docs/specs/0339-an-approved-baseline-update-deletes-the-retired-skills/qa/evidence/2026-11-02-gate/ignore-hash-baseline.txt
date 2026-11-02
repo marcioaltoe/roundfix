@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run ^TestRetiredSkillDispositionsProveACopyUnedited$ ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestRetiredSkillDispositionsProveACopyUnedited
+=== PAUSE TestRetiredSkillDispositionsProveACopyUnedited
+=== CONT  TestRetiredSkillDispositionsProveACopyUnedited
+    retired_skills_installed_test.go:168: dispositions = [{Skill:council Paths:[.agents/skills/council] LockEntry:false Action:keep Reason:unrecorded LockHash:} {Skill:design-patterns Paths:[.agents/skills/design-patterns] LockEntry:true Action:delete Reason: LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a} {Skill:fixing-metadata Paths:[.claude/skills/fixing-metadata] LockEntry:true Action:delete Reason: LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a} {Skill:tdd Paths:[.agents/skills/tdd .claude/skills/tdd] LockEntry:true Action:delete Reason: LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a} {Skill:the-fool Paths:[] LockEntry:true Action:delete Reason: LockHash:} {Skill:to-prompt Paths:[.claude/skills/to-prompt] LockEntry:false Action:keep Reason:unsafe LockHash:}], <nil>; want [{Skill:council Paths:[.agents/skills/council] LockEntry:false Action:keep Reason:unrecorded LockHash:} {Skill:design-patterns Paths:[.agents/skills/design-patterns] LockEntry:true Action:keep Reason:edited LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a} {Skill:fixing-metadata Paths:[.claude/skills/fixing-metadata] LockEntry:true Action:delete Reason: LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a} {Skill:tdd Paths:[.agents/skills/tdd .claude/skills/tdd] LockEntry:true Action:delete Reason: LockHash:b01aad43c8f716bbe4cbce753a09d2b63d4607e0a91d6d1dd1cb82895484cc1a} {Skill:the-fool Paths:[] LockEntry:true Action:delete Reason: LockHash:} {Skill:to-prompt Paths:[.claude/skills/to-prompt] LockEntry:false Action:keep Reason:unsafe LockHash:}]
+--- FAIL: TestRetiredSkillDispositionsProveACopyUnedited (0.00s)
+FAIL
+suiteguard: guard cost: measured 2873 paths; fingerprint took 145.549208ms before and 125.916042ms after
+FAIL	roundfix/internal/baseline	0.584s
+FAIL
+
+stderr:

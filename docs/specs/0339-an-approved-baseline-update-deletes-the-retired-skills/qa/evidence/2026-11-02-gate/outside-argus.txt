@@ -1,0 +1,4 @@
+Source authored outside this Spec: Argus project default/gesttione-solutions-argus, message 01a19718, 2026-11-01, roundfix 0.127.0; adopted reference Evidence section.
+Historical approved --confirm-plan apply printed Skills retired: 7 and deleted nothing; Argus removed copies by hand in PR #15, 72929f5.
+Current captured public CLI text apply prints Skills deleted: 1 for the controlled one-copy replica, removes tdd folder/link/lock and preserves required/custom/edited skills. JSON exposes skills.deleted.
+This is a local representative reproduction; no Argus repository was accessed and no claim of replaying its seven installed copies is made.

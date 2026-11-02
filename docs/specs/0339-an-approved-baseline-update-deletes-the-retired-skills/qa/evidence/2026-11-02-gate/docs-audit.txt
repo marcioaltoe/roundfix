@@ -1,0 +1,7 @@
+Searched 371 Markdown files under docs/user-guide, docs/adr, canonical .agents/skills/roundfix and mirror skills/roundfix, plus .claude/skills/roundfix alias, and CONTEXT.md.
+ADR-0246 is absent; no live filename citation/link found. No stale retired-copy never-delete sentence remains.
+ADR-0191 amendment and updated_at match the declared contract.
+Guide and every reference copy contain deletion wording, preview state, Plan Digest, deletion report and all keep reasons.
+Canonical/mirror baseline reference and SKILL.md compare equal. Both version fields: 0.1.169
+ADR-0350 names its superseded predecessor by number as accepted lineage, with no broken filename link.
+Earlier Task Result names a pre-final skill version; committed current bytes and the skills suite establish the current version.

@@ -1,0 +1,46 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills|TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan|TestBaselineUpdateAppliesAndListsRetiredSkills|TestBaselineUpdateWithoutSkillsOmitsRetiredSkills|TestBaselineUpdateRetiredSkillDeletionTargets)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets
+=== PAUSE TestBaselineUpdateRetiredSkillDeletionTargets
+=== RUN   TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== PAUSE TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== RUN   TestBaselineUpdateAppliesAndListsRetiredSkills
+=== PAUSE TestBaselineUpdateAppliesAndListsRetiredSkills
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== RUN   TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan
+=== PAUSE TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan
+=== CONT  TestBaselineUpdateRetiredSkillDeletionTargets
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/lock_only
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== CONT  TestBaselineUpdateAppliesAndListsRetiredSkills
+=== CONT  TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan
+=== CONT  TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/two_paths
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/digest_binds_only_planned_deletions
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/kept_unsafe_copy
+--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/lock_only (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/two_paths (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/digest_binds_only_planned_deletions (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/kept_unsafe_copy (0.00s)
+--- PASS: TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan (1.97s)
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/json
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/yes
+--- PASS: TestBaselineUpdateAppliesAndListsRetiredSkills (3.58s)
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/reinspects_after_the_skills_stage
+--- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills (5.36s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text (2.01s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/json (1.44s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/yes (0.88s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/reinspects_after_the_skills_stage (1.02s)
+--- PASS: TestBaselineUpdateWithoutSkillsOmitsRetiredSkills (5.37s)
+PASS
+suiteguard: guard cost: measured 2881 paths; fingerprint took 138.891709ms before and 128.952416ms after
+ok  	roundfix/internal/cli	6.080s
+
+stderr:

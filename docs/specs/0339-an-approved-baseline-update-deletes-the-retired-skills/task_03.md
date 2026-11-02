@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0339-an-approved-baseline-update-deletes-the-retired-skills
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
