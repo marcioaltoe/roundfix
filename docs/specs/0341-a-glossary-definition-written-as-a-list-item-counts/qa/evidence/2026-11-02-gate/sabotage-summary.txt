@@ -1,0 +1,50 @@
+[
+  {
+    "id": "R04a",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04b",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04c",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04d",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04e",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04f",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04g",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  },
+  {
+    "id": "R04h",
+    "exit": 1,
+    "intended_failure": true,
+    "cleanup": "scratch repository, HOME, TMPDIR removed"
+  }
+]

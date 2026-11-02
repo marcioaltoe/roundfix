@@ -1,0 +1,10 @@
+{
+  "source": "CommonMark 0.31.2 section 5.2 List items; https://spec.commonmark.org/0.31.2/#list-items",
+  "quoted_by": "PRD Acceptance evidence; fetched during authoring 2026-11-02; compared offline at gate 2026-11-02",
+  "passage": "A bullet list marker is a `-`, `+`, or `*` character.",
+  "marker_cases": {
+    "dash": "passed definition and bold-coverage cases",
+    "star": "passed definition and bold-coverage cases",
+    "plus": "passed definition and bold-coverage cases"
+  }
+}

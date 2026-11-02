@@ -1,0 +1,25 @@
+{
+  "id": "R04h",
+  "title": "remove guide fenced command",
+  "archive": "git archive HEAD",
+  "git_setup": [
+    "git init -b main",
+    "git add ."
+  ],
+  "edits": [
+    {
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "removed": "grep -F -- '**<Term>**' < CONTEXT.md | grep -qE '^([-*+] )?\\*\\*<Term>\\*\\*(:| —( |$))'"
+    },
+    {
+      "path": "skills/write-tasks/SKILL.md",
+      "removed": "grep -F -- '**<Term>**' < CONTEXT.md | grep -qE '^([-*+] )?\\*\\*<Term>\\*\\*(:| —( |$))'"
+    }
+  ],
+  "command": "go test -count=1 -timeout 20m -v -run '^TestTheGlossaryGuidesStateTheDefinitionForms$' ./skills",
+  "exit": 1,
+  "intended_failure": true,
+  "stdout": "=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms\n=== PAUSE TestTheGlossaryGuidesStateTheDefinitionForms\n=== CONT  TestTheGlossaryGuidesStateTheDefinitionForms\n=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-tasks/SKILL.md\n    glossary_definition_test.go:44: .agents/skills/write-tasks/SKILL.md does not show the rendered glossary Verification command\n=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-tasks/SKILL.md\n    glossary_definition_test.go:44: skills/write-tasks/SKILL.md does not show the rendered glossary Verification command\n=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-prd/references/glossary.md\n=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-prd/references/glossary.md\n=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/roundfix/references/spec.md\n=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/roundfix/references/spec.md\n--- FAIL: TestTheGlossaryGuidesStateTheDefinitionForms (0.00s)\n    --- FAIL: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-tasks/SKILL.md (0.00s)\n    --- FAIL: TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-tasks/SKILL.md (0.00s)\n    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-prd/references/glossary.md (0.00s)\n    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-prd/references/glossary.md (0.00s)\n    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/roundfix/references/spec.md (0.00s)\n    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/roundfix/references/spec.md (0.00s)\nFAIL\nFAIL\troundfix/skills\t0.278s\nFAIL\n",
+  "stderr": "",
+  "classification_note": "The collection helper expected different diagnostic wording. Direct transcript inspection proves both intended guide-command assertions failed. No product test rerun or assertion change."
+}

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0341-a-glossary-definition-written-as-a-list-item-counts
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

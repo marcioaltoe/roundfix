@@ -1,0 +1,12 @@
+Command: ./bin/roundfix archive 0341-a-glossary-definition-written-as-a-list-item-counts --plan --offline
+Exit: 0
+Judge Key Variables and TYPESAFE_API_KEY unset. Fresh HOME and TMPDIR removed after exit.
+stdout:
+archive plan for 0341-a-glossary-definition-written-as-a-list-item-counts: removes 33 file(s) (394073 bytes) and writes docs/history/specs/0341-a-glossary-definition-written-as-a-list-item-counts.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-02.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 23 file(s) (302214 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-02-a-glossary-definition-written-as-a-list-item-is-not-read.md 3211 bytes: no advice (offline)
+promote with: roundfix archive 0341-a-glossary-definition-written-as-a-list-item-counts --promote <path>
+
+stderr:

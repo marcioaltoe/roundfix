@@ -1,0 +1,6 @@
+Daemon-supplied repository Verification: make verify-changed
+Verdict: pass
+Exit: 0
+Diagnostics: removed on success
+Audited head: 32dbf20862018765e1985dc5b4d2c1465daece0c
+Not rerun by the Agent.

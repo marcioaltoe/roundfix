@@ -1,0 +1,158 @@
+{
+  "printed_command": "grep -F -- '**Acervo Term**' < CONTEXT.md | grep -qE '^([-*+] )?\\*\\*Acervo Term\\*\\*(:| —( |$))'",
+  "cases": [
+    {
+      "case": "colon",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "dash list colon",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "star list colon",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "plus list colon",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "em dash",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "dash list em dash",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "em dash at line end",
+      "defined": true,
+      "missing": 0,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 0
+    },
+    {
+      "case": "heading",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "indented list item",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "tab indented list item",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "ordered list item",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "ascii hyphen",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "double hyphen",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "en dash",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "unspaced em dash",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "unspaced list marker",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "bold prose",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "bold sentence",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    },
+    {
+      "case": "inside sentence",
+      "defined": false,
+      "missing": 1,
+      "json_exit": 1,
+      "text_exit": 1,
+      "printed_command_exit": 1
+    }
+  ],
+  "cleanup": "removed"
+}

@@ -1,0 +1,31 @@
+{
+  "source": "docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/references/2026-11-02-a-glossary-definition-written-as-a-list-item-is-not-read.md",
+  "origin": "Pantheon gesttione-solutions-pantheon; message 01a19a04; 2026-11-02; roundfix 0.128.0; Spec 0055",
+  "comparison": [
+    {
+      "form": "colon",
+      "Pantheon_original_findings": 0,
+      "fixture_findings": 0,
+      "expected_change": false
+    },
+    {
+      "form": "dash list colon",
+      "Pantheon_original_findings": 2,
+      "fixture_findings": 0,
+      "expected_change": true
+    },
+    {
+      "form": "heading",
+      "Pantheon_original_findings": 2,
+      "fixture_findings": 1,
+      "expected_change": false
+    },
+    {
+      "form": "em dash",
+      "Pantheon_original_findings": 2,
+      "fixture_findings": 0,
+      "expected_change": true
+    }
+  ],
+  "cardinality_note": "Original declared term in both PRD and TechSpec: two findings. Fixture declares it only in PRD: one finding. Compare defined/undefined, not raw cardinality."
+}

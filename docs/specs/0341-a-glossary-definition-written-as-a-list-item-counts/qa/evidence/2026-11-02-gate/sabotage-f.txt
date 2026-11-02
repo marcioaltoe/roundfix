@@ -1,0 +1,21 @@
+{
+  "id": "R04f",
+  "title": "command reads a file operand",
+  "archive": "git archive HEAD",
+  "git_setup": [
+    "git init -b main",
+    "git add ."
+  ],
+  "edits": [
+    {
+      "path": "internal/speccheck/glossary.go",
+      "old": "\" < \" + shellQuoteWrapFile(glossary)",
+      "new": "\" \" + shellQuoteWrapFile(glossary)"
+    }
+  ],
+  "command": "go test -count=1 -timeout 20m -v -run '^TestGlossaryFindingsNameTheDefinitionForms$' ./internal/speccheck",
+  "exit": 1,
+  "intended_failure": true,
+  "stdout": "=== RUN   TestGlossaryFindingsNameTheDefinitionForms\n=== PAUSE TestGlossaryFindingsNameTheDefinitionForms\n=== CONT  TestGlossaryFindingsNameTheDefinitionForms\n=== RUN   TestGlossaryFindingsNameTheDefinitionForms/missing\n=== RUN   TestGlossaryFindingsNameTheDefinitionForms/CONTEXT.md\n    glossary_test.go:431: rendered command is wrap-fragile: []speccheck.Finding{speccheck.Finding{Code:\"SC-VERIFY-WRAP-FRAGILE\", Severity:\"error\", Summary:\"task_01.md declares wrap-fragile phrase \\\"**New Term**\\\" against Markdown file CONTEXT.md\", Where:[]speccheck.Location{speccheck.Location{Path:\"task_01.md\", Line:1}}, Fix:\"tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**New Term**' || { printf 'missing phrase in %s: %s\\\\n' CONTEXT.md '**New Term**' >&2; exit 1; }\", Expected:\"\", declaredVocabularySpec:\"\"}}\n=== RUN   TestGlossaryFindingsNameTheDefinitionForms/GLOSSARY.md\n    glossary_test.go:431: rendered command is wrap-fragile: []speccheck.Finding{speccheck.Finding{Code:\"SC-VERIFY-WRAP-FRAGILE\", Severity:\"error\", Summary:\"task_01.md declares wrap-fragile phrase \\\"**New Term**\\\" against Markdown file GLOSSARY.md\", Where:[]speccheck.Location{speccheck.Location{Path:\"task_01.md\", Line:1}}, Fix:\"tr -s '[:space:]' ' ' < GLOSSARY.md | grep -qF -- '**New Term**' || { printf 'missing phrase in %s: %s\\\\n' GLOSSARY.md '**New Term**' >&2; exit 1; }\", Expected:\"\", declaredVocabularySpec:\"\"}}\n=== RUN   TestGlossaryFindingsNameTheDefinitionForms/a/CONTEXT.md\n    glossary_test.go:431: rendered command is wrap-fragile: []speccheck.Finding{speccheck.Finding{Code:\"SC-VERIFY-WRAP-FRAGILE\", Severity:\"error\", Summary:\"task_01.md declares wrap-fragile phrase \\\"**New Term**\\\" against Markdown file a/CONTEXT.md\", Where:[]speccheck.Location{speccheck.Location{Path:\"task_01.md\", Line:1}}, Fix:\"tr -s '[:space:]' ' ' < a/CONTEXT.md | grep -qF -- '**New Term**' || { printf 'missing phrase in %s: %s\\\\n' a/CONTEXT.md '**New Term**' >&2; exit 1; }\", Expected:\"\", declaredVocabularySpec:\"\"}}\n--- FAIL: TestGlossaryFindingsNameTheDefinitionForms (0.20s)\n    --- PASS: TestGlossaryFindingsNameTheDefinitionForms/missing (0.05s)\n    --- FAIL: TestGlossaryFindingsNameTheDefinitionForms/CONTEXT.md (0.05s)\n    --- FAIL: TestGlossaryFindingsNameTheDefinitionForms/GLOSSARY.md (0.05s)\n    --- FAIL: TestGlossaryFindingsNameTheDefinitionForms/a/CONTEXT.md (0.05s)\nFAIL\nsuiteguard: guard cost: measured 2862 paths; fingerprint took 158.664334ms before and 136.305083ms after\nFAIL\troundfix/internal/speccheck\t0.809s\nFAIL\n",
+  "stderr": ""
+}

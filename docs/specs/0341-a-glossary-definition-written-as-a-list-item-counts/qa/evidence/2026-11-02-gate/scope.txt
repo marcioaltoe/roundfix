@@ -1,0 +1,116 @@
+{
+  "range": "d7e1430a9e56793a47913e953a36d70673548184..32dbf20862018765e1985dc5b4d2c1465daece0c",
+  "tasks": [
+    {
+      "task": "task_01.md",
+      "commit": "4638fd51e4c9e51cf5fb5ccd226edadcd389cb81",
+      "paths": [
+        "CONTEXT.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/_techspec.md",
+        "docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/task_01.md",
+        "docs/user-guide/commands/spec.md",
+        "internal/speccheck/glossary.go",
+        "internal/speccheck/glossary_test.go"
+      ],
+      "recorded_paths": [
+        "docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/_techspec.md"
+      ],
+      "governed": [],
+      "scope": "all declared or Recorded paths",
+      "authority": "no governed changes"
+    },
+    {
+      "task": "task_02.md",
+      "commit": "32dbf20862018765e1985dc5b4d2c1465daece0c",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/write-prd/SKILL.md",
+        ".agents/skills/write-prd/references/glossary.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        "docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/task_02.md",
+        "skills/glossary_definition_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-prd/SKILL.md",
+        "skills/write-prd/references/glossary.md",
+        "skills/write-tasks/SKILL.md"
+      ],
+      "recorded_paths": [],
+      "governed": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/write-prd/SKILL.md",
+        ".agents/skills/write-prd/references/glossary.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/write-prd/SKILL.md",
+        "skills/write-tasks/SKILL.md"
+      ],
+      "scope": "all declared or Recorded paths",
+      "authority": "grant at d7e1430a9e56793a47913e953a36d70673548184"
+    }
+  ],
+  "protected_paths": "unchanged",
+  "QA_settlement": "no changed hunks intersect sections",
+  "glossary": "only Glossary Definition added; no previous entry modified",
+  "tracked_delta": [],
+  "commands": [
+    {
+      "command": "git rev-list --reverse d7e1430a9e56793a47913e953a36d70673548184..32dbf20862018765e1985dc5b4d2c1465daece0c",
+      "exit": 0,
+      "stdout": "4638fd51e4c9e51cf5fb5ccd226edadcd389cb81\n32dbf20862018765e1985dc5b4d2c1465daece0c\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff-tree --no-commit-id --name-only -r 4638fd51e4c9e51cf5fb5ccd226edadcd389cb81",
+      "exit": 0,
+      "stdout": "CONTEXT.md\ndocs/references/behavior-surfaces.json\ndocs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/_techspec.md\ndocs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/task_01.md\ndocs/user-guide/commands/spec.md\ninternal/speccheck/glossary.go\ninternal/speccheck/glossary_test.go\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff-tree --no-commit-id --name-only -r 32dbf20862018765e1985dc5b4d2c1465daece0c",
+      "exit": 0,
+      "stdout": ".agents/skills/roundfix/SKILL.md\n.agents/skills/roundfix/references/spec.md\n.agents/skills/write-prd/SKILL.md\n.agents/skills/write-prd/references/glossary.md\n.agents/skills/write-tasks/SKILL.md\ndocs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/task_02.md\nskills/glossary_definition_test.go\nskills/roundfix/SKILL.md\nskills/roundfix/references/spec.md\nskills/testdata/owned-skill-versions.json\nskills/write-prd/SKILL.md\nskills/write-prd/references/glossary.md\nskills/write-tasks/SKILL.md\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --name-only d7e1430a9e56793a47913e953a36d70673548184..32dbf20862018765e1985dc5b4d2c1465daece0c",
+      "exit": 0,
+      "stdout": ".agents/skills/roundfix/SKILL.md\n.agents/skills/roundfix/references/spec.md\n.agents/skills/write-prd/SKILL.md\n.agents/skills/write-prd/references/glossary.md\n.agents/skills/write-tasks/SKILL.md\nCONTEXT.md\ndocs/references/behavior-surfaces.json\ndocs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/_techspec.md\ndocs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/task_01.md\ndocs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/task_02.md\ndocs/user-guide/commands/spec.md\ninternal/speccheck/glossary.go\ninternal/speccheck/glossary_test.go\nskills/glossary_definition_test.go\nskills/roundfix/SKILL.md\nskills/roundfix/references/spec.md\nskills/testdata/owned-skill-versions.json\nskills/write-prd/SKILL.md\nskills/write-prd/references/glossary.md\nskills/write-tasks/SKILL.md\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --unified=0 d7e1430a9e56793a47913e953a36d70673548184..32dbf20862018765e1985dc5b4d2c1465daece0c -- .agents/skills/roundfix/SKILL.md",
+      "exit": 0,
+      "stdout": "diff --git a/.agents/skills/roundfix/SKILL.md b/.agents/skills/roundfix/SKILL.md\nindex 15d1367b..824c86b2 100644\n--- a/.agents/skills/roundfix/SKILL.md\n+++ b/.agents/skills/roundfix/SKILL.md\n@@ -8 +8 @@ metadata:\n-  version: 0.1.171\n+  version: 0.1.172\n@@ -11 +11 @@ metadata:\n-version: 0.1.171\n+version: 0.1.172\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --unified=0 d7e1430a9e56793a47913e953a36d70673548184..32dbf20862018765e1985dc5b4d2c1465daece0c -- skills/roundfix/SKILL.md",
+      "exit": 0,
+      "stdout": "diff --git a/skills/roundfix/SKILL.md b/skills/roundfix/SKILL.md\nindex 15d1367b..824c86b2 100644\n--- a/skills/roundfix/SKILL.md\n+++ b/skills/roundfix/SKILL.md\n@@ -8 +8 @@ metadata:\n-  version: 0.1.171\n+  version: 0.1.172\n@@ -11 +11 @@ metadata:\n-version: 0.1.171\n+version: 0.1.172\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --unified=0 d7e1430a9e56793a47913e953a36d70673548184..32dbf20862018765e1985dc5b4d2c1465daece0c -- CONTEXT.md",
+      "exit": 0,
+      "stdout": "diff --git a/CONTEXT.md b/CONTEXT.md\nindex 3abce6f3..286f00e2 100644\n--- a/CONTEXT.md\n+++ b/CONTEXT.md\n@@ -1468,0 +1469,4 @@ _Avoid_: Vocabulary Contract, term list, glossary candidates\n+**Glossary Definition**:\n+A line of the glossary that defines a term: the bolded term at the start of the line followed by a colon or by a spaced em dash, bare or as a top-level list item marked `-`, `*` or `+`. A heading, an indented or ordered list item and bold text inside a sentence define nothing.\n+_Avoid_: Glossary Declaration, bold mention, glossary heading\n+\n",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --name-only HEAD",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --cached --name-only",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

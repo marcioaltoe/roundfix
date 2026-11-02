@@ -1,0 +1,7 @@
+{
+  "secret_patterns": "all 10 repository patterns scanned; no matches",
+  "scope": "seeded QA report and all evidence files",
+  "tracked_delta": [],
+  "ignored": "none; git check-ignore validated in report-validation.txt",
+  "report_only_changes": "untracked Spec qa directory; no commits, pushes or PR operations"
+}
