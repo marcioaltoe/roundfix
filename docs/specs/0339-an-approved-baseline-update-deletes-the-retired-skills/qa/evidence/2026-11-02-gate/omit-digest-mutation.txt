@@ -1,7 +1,0 @@
-archive: git archive cf27929684f83a75dfc4d8e06e735de4050d4924
-file: internal/cli/baseline_update.go
-replace:
-func retiredSkillsPlanDigest(digest string, retired []baseline.InstalledRetiredSkill) string {
-with:
-func retiredSkillsPlanDigest(digest string, retired []baseline.InstalledRetiredSkill) string {
- return digest

@@ -1,5 +1,0 @@
-command: ./bin/roundfix qa-report accept docs/specs/0339-an-approved-baseline-update-deletes-the-retired-skills/qa/qa-report-2026-11-02.md
-exit: 0
-stdout:
-
-stderr:

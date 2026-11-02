@@ -1,6 +1,0 @@
-archive: git archive cf27929684f83a75dfc4d8e06e735de4050d4924
-file: internal/baseline/retired_skills_installed.go
-replace:
-if target != "../../.agents/skills/"+name {
-with:
-if false && target != "../../.agents/skills/"+name {

@@ -1,7 +1,0 @@
-Pull Request fact supplied by Daemon: none open.
-approval: maintainer cycle AU authority in _authorization.md, approved at delivery base 0eb0cde9a6252da05905bf343c8ed64a7e679016, authorizes this implementation and later delivery operations; QA child does not publish.
-checks/status: Daemon make verify-changed pass, exit 0, diagnostics removed on success at audited candidate. No remote PR checks exist.
-unresolved threads: none because no Pull Request exists.
-Merge-Ready acceptance: none yet; no current-candidate Review Source approval is claimed.
-review-artifact ancestry/candidate: audited head cf27929684f83a75dfc4d8e06e735de4050d4924. No review artifact yet.
-Unblocking: normal operator delivery/review opens PR on Spec target branch; the Run branch is never published.

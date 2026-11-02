@@ -1,4 +1,0 @@
-Externally authored source: FreeBSD pkg FAQ, https://github.com/freebsd/pkg/blob/main/FAQ.md, passage quoted in PRD Acceptance evidence, read on 2026-11-01.
-Quoted checksum refusal: fails original SHA256 checksum, not removing.
-Compared offline with the actual built CLI kept design-patterns line: its copy differs from its skills-lock.json computedHash. The independent filesystem checks in the binary flow preserve that edited tree, link and lock entry while deleting the unedited tdd.
-The comparison uses the supplied dated quotation, with no claim of a fresh network fetch.
