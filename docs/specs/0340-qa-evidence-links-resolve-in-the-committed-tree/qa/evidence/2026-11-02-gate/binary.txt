@@ -1,0 +1,7 @@
+COMMAND: ./bin/roundfix --version
+EXIT: 0
+STDOUT:
+roundfix 0.128.0 (2fc6c65c-dirty, built 2026-11-02 03:03:05 -0300)
+STDERR:
+
+make build: exit 0; built from audited Run Worktree; initial delta: seeded qa directory only.

@@ -1,0 +1,12 @@
+COMMAND: ./bin/roundfix spec check 0340-qa-evidence-links-resolve-in-the-committed-tree --strict
+EXIT: 0
+STDOUT:
+Spec 0340-qa-evidence-links-resolve-in-the-committed-tree
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/_techspec.md Vocabulary Contract
+STDERR:

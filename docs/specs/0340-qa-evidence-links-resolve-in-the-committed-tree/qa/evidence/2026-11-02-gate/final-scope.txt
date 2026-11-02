@@ -1,0 +1,36 @@
+HEAD unchanged: 2fc6c65c0d5cdf93de918f45b7e073804a971060
+Tracked and staged deltas: none. All untracked paths are under the assigned Spec qa directory.
+19 terminal matrix rows, each with typed inputs. 18 pass, one prescribed no-open-PR environment block. All QA filenames unignored.
+$ git diff --check
+exit: 0
+stdout:
+
+stderr:
+
+Untracked QA paths:
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/archive-plan.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/argus-cli.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/binary.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/cli-tests-result.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/cli-tests.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/daemon-tests.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/glossary-audit.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/integrity-secret-scan.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/outside-argus.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/outside-git-manuals.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/pre-pr-controls.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/precondition.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/report-acceptance.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-daemon-no-boundary.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-daemon-no-repair.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-daemon-repeat-repair.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-drop-cached.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-existing-resolves.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-include-code-span.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/sabotage-settle-no-check.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/scope-audit.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/spec-tests.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/speccheck-tests.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/verification-contracts.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/evidence/2026-11-02-gate/wording-and-mirrors.txt
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/qa-report-2026-11-02.md

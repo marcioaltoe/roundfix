@@ -1,0 +1,9 @@
+Pull Request: none open, supplied by the Daemon for the Spec target branch. No network lookup authorized or attempted.
+Approval: recorded delivery authority _authorization.md, granted 2026-11-01, implement/commit/push/pull_request/merge; this Agent is separately forbidden to commit/push/open a PR.
+Checks: Daemon make verify-changed, exit 0, at 2fc6c65c0d5cdf93de918f45b7e073804a971060.
+Unresolved threads: none, because there is no Pull Request.
+Merge-Ready acceptance: not yet available; no review or Merge-Ready approval inferred.
+Claimed candidate: 2fc6c65c0d5cdf93de918f45b7e073804a971060.
+Spec target branch: roundfix/deliver-0340-qa-evidence-links-resolve-in-the-committed-tree-303b466e72afd6cf.
+Run branch has no Pull Request of its own.
+Unblock: after normal delivery opens the Spec-target Pull Request, observe current-head checks, threads and Merge-Ready acceptance.

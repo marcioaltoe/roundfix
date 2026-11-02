@@ -1,0 +1,37 @@
+Audited head: 2fc6c65c0d5cdf93de918f45b7e073804a971060
+Source: git archive of audited head; separate initialized/staged temporary repository; no real checkout mutation.
+diff --git a/internal/spec/qa_evidence_links.go b/internal/spec/qa_evidence_links.go
+index e32196f..b6f702f 100644
+--- a/internal/spec/qa_evidence_links.go
++++ b/internal/spec/qa_evidence_links.go
+@@ -62,7 +62,7 @@ func UnresolvedEvidenceLinks(ctx context.Context, reportPath string) ([]Unresolv
+ 	relative := make([]string, len(links))
+ 	exists := make([]bool, len(links))
+ 	directories := make([]bool, len(links))
+-	args := []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--"}
++	args := []string{"ls-files", "-z", "--others", "--exclude-standard", "--"}
+ 	pathspecStart := len(args)
+ 	for i, link := range links {
+ 		if root != "" {
+
+$ go test -count=1 -timeout 5m -v -run ^TestUnresolvedEvidenceLinksNameTheReason$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestUnresolvedEvidenceLinksNameTheReason
+=== PAUSE TestUnresolvedEvidenceLinksNameTheReason
+=== CONT  TestUnresolvedEvidenceLinksNameTheReason
+    qa_evidence_links_test.go:21: isolated test: exit status 1
+        --- FAIL: TestUnresolvedEvidenceLinksNameTheReason (0.13s)
+            --- FAIL: TestUnresolvedEvidenceLinksNameTheReason/document_order_and_lines (0.01s)
+                qa_evidence_links_test.go:63: links = [{Line:1 Destination:evidence/a.log Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/a.log Reason:ignored} {Line:2 Destination:evidence/b.txt Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/b.txt Reason:missing} {Line:3 Destination:evidence/c.log Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/c.log Reason:ignored} {Line:6 Destination:../../../../../outside.txt Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/outside.txt Reason:missing} {Line:12 Destination:evidence/reference.txt Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/reference.txt Reason:missing}], err <nil>; want [{Line:1 Destination:evidence/a.log Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/a.log Reason:ignored} {Line:2 Destination:evidence/b.txt Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/b.txt Reason:missing} {Line:6 Destination:../../../../../outside.txt Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/outside.txt Reason:missing} {Line:12 Destination:evidence/reference.txt Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/reference.txt Reason:missing}]
+            --- FAIL: TestUnresolvedEvidenceLinksNameTheReason/single_tracked_ignored_target (0.01s)
+                qa_evidence_links_test.go:63: links = [{Line:1 Destination:evidence/c.log Target:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUnresolvedEvidenceLinksNameTheReason2760041038/001/docs/specs/x/qa/evidence/c.log Reason:ignored}], err <nil>; want []
+        FAIL
+        suiteguard: guard cost: measured 2877 paths; fingerprint took 134.76ms before and 133.836167ms after
+--- FAIL: TestUnresolvedEvidenceLinksNameTheReason (0.41s)
+FAIL
+suiteguard: guard cost: measured 2877 paths; fingerprint took 162.857167ms before and 135.064209ms after
+FAIL	roundfix/internal/spec	0.971s
+FAIL
+
+stderr:

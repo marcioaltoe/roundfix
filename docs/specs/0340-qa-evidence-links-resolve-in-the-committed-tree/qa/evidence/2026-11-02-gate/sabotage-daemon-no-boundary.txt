@@ -1,0 +1,38 @@
+Audited head: 2fc6c65c0d5cdf93de918f45b7e073804a971060
+Source: git archive of audited head; separate initialized/staged temporary repository; no real checkout mutation.
+diff --git a/internal/daemon/task_engine.go b/internal/daemon/task_engine.go
+index 2653333..c4fd4ea 100644
+--- a/internal/daemon/task_engine.go
++++ b/internal/daemon/task_engine.go
+@@ -3301,7 +3301,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
+ 		qaReason = "QA evidence carries a secret: " + strings.Join(details, "; ")
+ 	}
+ 	var unresolvedLinks []spec.UnresolvedEvidenceLink
+-	if len(matches) == 0 && len(binaryPaths) == 0 {
++	if false && len(matches) == 0 && len(binaryPaths) == 0 {
+ 		_, unresolvedLinks, err = unresolvedQAEvidenceLinks(ctx, plan.Spec.Dir)
+ 		if err != nil {
+ 			return "", "", false, err
+
+$ go test -count=1 -timeout 5m -v -run ^TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed$ ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed
+=== PAUSE TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed
+=== CONT  TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed
+    qa_evidence_links_test.go:98: unresolved QA must settle failed: {IntegratedVerificationFailure: Completed:0 Failed:0 Skipped:0 QAVerdict:pass QAAccepted:true QAReportPath:docs/specs/0001-sample-feature/qa/qa-report-2026-01-01.md Outcomes:[] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:}; committed files: .gitignore
+        docs/agents/agent-instructions.md
+        docs/agents/domain.md
+        docs/specs/0001-sample-feature/_authorization.md
+        docs/specs/0001-sample-feature/_prd.md
+        docs/specs/0001-sample-feature/_tasks.md
+        docs/specs/0001-sample-feature/qa/qa-report-2026-01-01.md
+        docs/specs/0001-sample-feature/task_01.md
+        docs/specs/0001-sample-feature/task_02.md
+--- FAIL: TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed (0.28s)
+FAIL
+suiteguard: guard cost: measured 2877 paths; fingerprint took 144.676ms before and 133.456708ms after
+FAIL	roundfix/internal/daemon	0.895s
+FAIL
+
+stderr:

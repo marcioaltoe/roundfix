@@ -1,0 +1,30 @@
+Audited head: 2fc6c65c0d5cdf93de918f45b7e073804a971060
+Source: git archive of audited head; separate initialized/staged temporary repository; no real checkout mutation.
+diff --git a/internal/cli/settle.go b/internal/cli/settle.go
+index 0cd5118..b60c7dc 100644
+--- a/internal/cli/settle.go
++++ b/internal/cli/settle.go
+@@ -236,7 +236,7 @@ func requireSettleQAReportEligibility(plan settlePlan) error {
+ 	}
+ 	eligibilityErr := spec.QAReportEligibility(plan.graph.Spec.Dir, report)
+ 	if eligibilityErr == nil {
+-		eligibilityErr = spec.RequireResolvedEvidenceLinks(context.Background(), path)
++		eligibilityErr = nil
+ 	}
+ 	if err := eligibilityErr; err != nil {
+ 		relative, pathErr := filepath.Rel(plan.workDir, path)
+
+$ go test -count=1 -timeout 5m -v -run ^TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink
+=== PAUSE TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink
+=== CONT  TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink
+    qa_report_test.go:208: settle = 0, stdout "verify newest=\"$(find 'docs/specs/0001-widget-flow/qa' -type f -name \"qa-report-*.md\" -print 2>/dev/null | awk \"{ report=\\$0; name=\\$0; parts=split(name, path, \\\"/\\\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \\\"-\\\" && substr(date, 8, 1) == \\\"-\\\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\\\"0123456789\\\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\\\"\\\"; if (suffix == \\\"\\\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \\\"-\\\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\\\"0123456789\\\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \\\"%s\\\\t%s\\\\t%s\\\\t%s\\\\t%s\\\\n\\\", dated, date, sequenced, sequence, report }\" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)\"; test -n \"$newest\" || exit 1; awk \"BEGIN { whitespace=\\\" \\t\\r\\n\\f\\v\\\" } NR == 1 && \\$0 == \\\"---\\\" { frontmatter=1; next } frontmatter && \\$0 == \\\"---\\\" { closed=1; exit } frontmatter && index(\\$0, \\\"verdict:\\\") == 1 { verdict=substr(\\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }\" \"$newest\" — ok\ncommit docs/specs/0001-widget-flow/qa/qa-report-2026-11-01.md\ncommit docs/specs/0001-widget-flow/task_qa.md\nsettled task_qa completed — 2d35645\n", stderr "Settle surface: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink1889633625/002\n"; want exit 1, stderr "Settle surface: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink1889633625/002\nroundfix: settle QA Report is ineligible: QA Report evidence links do not resolve in the committed tree: evidence/consumer-tests.log (line 9, ignored) (report docs/specs/0001-widget-flow/qa/qa-report-2026-11-01.md)\n"
+--- FAIL: TestSettleRefusesAQAReportWithAnIgnoredEvidenceLink (0.20s)
+FAIL
+suiteguard: guard cost: measured 2877 paths; fingerprint took 151.54975ms before and 133.544042ms after
+FAIL	roundfix/internal/cli	1.171s
+FAIL
+
+stderr:

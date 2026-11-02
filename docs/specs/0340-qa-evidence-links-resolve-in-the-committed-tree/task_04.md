@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0340-qa-evidence-links-resolve-in-the-committed-tree
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

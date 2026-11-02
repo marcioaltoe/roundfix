@@ -1,0 +1,51 @@
+Task scope audit 0eb0cde9a6252da05905bf343c8ed64a7e679016..2fc6c65c0d5cdf93de918f45b7e073804a971060
+Governed classifier: regex patterns and historical exact paths from internal/speccheck/governed.go. Mechanical authorization table independently grants all three Task commits.
+
+task_01 d6f80505bcc234050508ddde2eb64b8cf4ac9296
+$ git diff-tree --no-commit-id --name-only -r d6f80505bcc234050508ddde2eb64b8cf4ac9296
+.agents/skills/roundfix/SKILL.md | declared | governed, granted
+.agents/skills/roundfix/references/settle.md | declared | governed, granted
+CONTEXT.md | declared | ordinary
+docs/references/behavior-surfaces.json | declared | ordinary
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/task_01.md | declared | ordinary
+docs/user-guide/commands/qa-report.md | declared | ordinary
+docs/user-guide/commands/settle.md | declared | ordinary
+internal/cli/qa_report.go | declared | ordinary
+internal/cli/qa_report_test.go | declared | ordinary
+internal/cli/settle.go | declared | ordinary
+internal/spec/qa_evidence_links.go | declared | ordinary
+internal/spec/qa_evidence_links_test.go | declared | ordinary
+internal/spec/record_links.go | declared | ordinary
+skills/roundfix/SKILL.md | declared | governed, granted
+skills/roundfix/references/settle.md | declared | ordinary
+skills/testdata/owned-skill-versions.json | declared | ordinary
+Recorded paths: none; none needed
+Authorization predates Task; unchanged at Task parent; not folded into Task. No prerequisite-fix or consequent-fix declarations; seeded mechanical skip retained.
+
+task_02 07a5c6390691d3af67fd6f4143bb6f8c3fe92e3e
+$ git diff-tree --no-commit-id --name-only -r 07a5c6390691d3af67fd6f4143bb6f8c3fe92e3e
+.agents/skills/roundfix/SKILL.md | declared | governed, granted
+.agents/skills/roundfix/references/implement.md | declared | governed, granted
+docs/references/behavior-surfaces.json | declared | ordinary
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/task_02.md | declared | ordinary
+docs/user-guide/commands/implement.md | declared | ordinary
+internal/daemon/qa_evidence_links_test.go | declared | ordinary
+internal/daemon/task_engine.go | declared | ordinary
+skills/roundfix/SKILL.md | declared | governed, granted
+skills/roundfix/references/implement.md | declared | ordinary
+skills/testdata/owned-skill-versions.json | declared | ordinary
+Recorded paths: none; none needed
+Authorization predates Task; unchanged at Task parent; not folded into Task. No prerequisite-fix or consequent-fix declarations; seeded mechanical skip retained.
+
+task_03 2fc6c65c0d5cdf93de918f45b7e073804a971060
+$ git diff-tree --no-commit-id --name-only -r 2fc6c65c0d5cdf93de918f45b7e073804a971060
+.agents/skills/qa-gate/SKILL.md | declared | governed, granted
+docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/task_03.md | declared | ordinary
+skills/qa-gate/SKILL.md | declared | governed, granted
+skills/testdata/owned-skill-versions.json | declared | ordinary
+Recorded paths: none; none needed
+Authorization predates Task; unchanged at Task parent; not folded into Task. No prerequisite-fix or consequent-fix declarations; seeded mechanical skip retained.
+
+Forbidden-path sweep passed; every ### QA settlement section remains byte-identical.
+internal/cli/settle.go: changed functions requireSettleQAReportEligibility
+internal/daemon/task_engine.go: changed functions qaEvidenceLinkRepairPrompt, qaEvidenceLinksPayload, runQAGate, unresolvedQAEvidenceLinks

@@ -1,0 +1,14 @@
+exit: 0
+ --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive (0.09s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle (0.17s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration (0.31s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive (0.09s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle (0.16s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row (0.29s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive (0.08s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle (0.16s)
+PASS
+suiteguard: guard cost: measured 2884 paths; fingerprint took 152.44825ms before and 128.161375ms after
+ok  	roundfix/internal/cli	12.205s
