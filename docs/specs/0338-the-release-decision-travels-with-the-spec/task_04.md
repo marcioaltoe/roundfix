@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0338-the-release-decision-travels-with-the-spec
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -108,3 +108,33 @@ release question.
 - `_prd.md` → Sources; Goals; Core Features 1 and 5; Success Metric 8; Decisions
 - `_techspec.md` → API Contract 12; Build Order 4
 - ADR-0349
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+Implementation:
+
+- Added the `type: feat` Delivery Type line to the PRD template.
+- Added the `write-prd` and `write-techspec` Delivery Type and release-decision
+  sections, including planning-time release questions, authorization fields,
+  verbatim answer recording, and the correction-route `fix`/`refactor` rules.
+- Added the `write-tasks` Release decision section prohibiting release work in
+  Tasks and refusing malformed Release Ceiling records.
+- Ran `make skills-sync`; canonical skills and mirrors are equal.
+- Ran the owned-skill version recorder, which recorded the new version/digest
+  entries for `write-prd`, `write-techspec`, and `write-tasks`.
+- Ran the Behavior Surface Record recorder as the final mutation; it passed and
+  produced no diff to `docs/references/behavior-surfaces.json`.
+
+Focused checks:
+
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -count=1` —
+  passed: 1 package.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'` — passed: 1 package.
+- `git diff --check` — passed.
+- Contract-presence checks and `cmp` across all four canonical/mirror pairs —
+  passed.
+
+The Task's authored `## Verification` commands were not run; the Daemon owns
+that verification and settlement.
