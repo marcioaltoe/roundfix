@@ -67,5 +67,9 @@ func runQAReportCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		fmt.Fprintf(stderr, "%s: QA Report eligibility refused: %v\n", app.Name, err)
 		return exitRunFailed
 	}
+	if err := spec.RequireResolvedEvidenceLinks(ctx, reportPath); err != nil {
+		fmt.Fprintf(stderr, "%s: QA Report eligibility refused: %v\n", app.Name, err)
+		return exitRunFailed
+	}
 	return exitOK
 }
