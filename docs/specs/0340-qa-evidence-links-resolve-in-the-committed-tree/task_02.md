@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0340-qa-evidence-links-resolve-in-the-committed-tree
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -119,3 +119,66 @@ whose report settled `completed` in a Daemon Run.
 
 - `_prd.md` → Goals; Core Feature 3; Core Feature 4; Success Metric 4; Success Metric 5; Success Metric 7
 - `_techspec.md` → Current behavior 1-2; API Contracts 6-8; Invariants 1, 4 and 5; Testing Approach; Risks & Considerations; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+The QA Agent branch now checks the newest report after its background-task
+check and returns the same session once with the report path, link, line,
+reason and evidence-preservation instructions. The repair turn uses the
+initial turn's Agent-error, deadline, Stop and unfinished-background handling.
+After formatting, the Secret Scan and binary check, the commit boundary checks
+again; unresolved links settle the QA Task `failed` with the shared error,
+emit `evidence_links` with outcome `refused`, and leave the report and evidence
+uncommitted. Mechanically closed reports reach that boundary without a repair
+turn. Read and Git errors propagate as infrastructure errors; absent reports
+keep the existing missing-verdict settlement.
+
+Acceptance evidence:
+
+- Repair and retained evidence: `TestQAEvidenceLinkRepairTurnKeepsTheEvidence`
+  checks exactly one repair request in the same session and Batch, its report,
+  destination, line, reason and preservation instructions, the exact repair
+  event/progress, accepted QA settlement and the committed `.txt` bytes and
+  updated link. The ignored `.log` is gone after the scripted rename.
+- Refusal: `TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed` checks one
+  repair, the exact shared settled reason and repair/refused event payloads,
+  failed QA settlement, no QA Report commit or commit event, and the original
+  report link and `.log` bytes still present. The resolved `.txt` case checks
+  acceptance with no repair request or evidence-link event.
+- Guides and records: added the rule immediately after the non-image binary
+  paragraph in the implement guide and canonical reference. `make skills-sync`
+  exited 0; the version recorder raised both fields of both Roundfix skill
+  copies from `0.1.168` to `0.1.169` and recorded the new content. Both mirror
+  comparisons exited 0. The Behavior Surface Record was regenerated after the
+  final guide edit with its sanctioned recorder, which exited 0.
+
+Focused checks (not the Task's declared Verification):
+
+- Before the production edit,
+  `go test -count=1 -timeout 5m ./internal/daemon -run '^TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed$'`
+  exited 1 at the behavioral assertion: the report was accepted and committed,
+  while `git ls-tree -r --name-only HEAD` held no linked `.log` evidence.
+- `go test -count=1 -timeout 5m ./internal/daemon -run '^(TestQAEvidenceLink|TestQAReportWithResolvedLinks)'`
+  exited 0 after implementation.
+- `go test -count=1 -timeout 5m ./internal/daemon -run '^TestQA'` exited 0,
+  covering the new tests and adjacent QA, formatter, Secret Scan and binary
+  settlement behavior.
+- Two temporary `go test -overlay` probes, leaving repository source intact,
+  each exited 1 at the intended assertion: disabling the repair made
+  `TestQAEvidenceLinkRepairTurnKeepsTheEvidence` refuse the report; disabling
+  the commit-boundary check made
+  `TestQAEvidenceLinkUnresolvedAfterRepairSettlesFailed` accept and commit it.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exited 0.
+- `go test -count=1 -timeout 5m ./skills -run '^(TestCheckRepositoryMatchesRealRepository|TestCheckValidatesRoundfixSkillArtifacts|TestSettlementGuidanceIsOneTable|TestRoundfixSkillIndexLinksResolve)$'`
+  exited 0.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestUserGuideLinksResolve|TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt)$'`
+  exited 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 as the final implementation regeneration after all guide edits.
+
+Declared Verification and repository Verification remain Daemon-owned. No
+Task status, graph manifest or other Task file was edited; no commit, push or
+pull request was made. No follow-up scope was added.

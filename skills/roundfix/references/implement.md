@@ -213,6 +213,12 @@ the largest carriable Task set, breaking ties with the newest Run.
    QA Report commit. The reason and the `evidence_binary` event carry paths
    only; the report and evidence stay uncommitted in the Run Worktree.
 
+   The Daemon checks every local link of the newest QA Report. On an
+   unresolved link, the Daemon returns the QA turn once, naming each link and
+   its reason. A remaining link settles the QA Task `failed` with
+   `QA Report evidence links do not resolve in the committed tree: <link> (line <n>, <reason>)`,
+   publishes the `evidence_links` event and creates no QA Report commit.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent
