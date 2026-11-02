@@ -21,20 +21,38 @@ type MissingLink struct {
 	Self                bool
 }
 
-// MissingRelativeLinks uses the archive scanner, which excludes code and URLs.
-func MissingRelativeLinks(repositoryRoot, path string, content []byte) []MissingLink {
-	var links []MissingLink
+// RelativeLink is a Markdown link outside code whose destination is a relative
+// path. Target is resolved against the linking file and may leave the repository.
+type RelativeLink struct {
+	Line                int
+	Destination, Target string
+}
+
+// RelativeLinks lists relative Markdown links in document order, excluding code
+// and URLs through the same scanner used by MissingRelativeLinks.
+func RelativeLinks(path string, content []byte) []RelativeLink {
+	var links []RelativeLink
 	for _, span := range scanArchiveMarkdown(content) {
 		destination := string(content[span.start:span.end])
 		target, _, relative := archiveLinkTarget(destination, filepath.Dir(path))
-		target = filepath.ToSlash(target)
-		if !relative || !historyRepositoryPath(target) {
+		if relative {
+			links = append(links, RelativeLink{Line: bytes.Count(content[:span.start], []byte("\n")) + 1, Destination: destination, Target: filepath.ToSlash(target)})
+		}
+	}
+	return links
+}
+
+// MissingRelativeLinks uses the archive scanner, which excludes code and URLs.
+func MissingRelativeLinks(repositoryRoot, path string, content []byte) []MissingLink {
+	var links []MissingLink
+	for _, link := range RelativeLinks(path, content) {
+		if !historyRepositoryPath(link.Target) {
 			continue
 		}
-		self := target == path
-		_, err := os.Stat(filepath.Join(repositoryRoot, target))
+		self := link.Target == path
+		_, err := os.Stat(filepath.Join(repositoryRoot, link.Target))
 		if self || os.IsNotExist(err) {
-			links = append(links, MissingLink{Path: path, Line: bytes.Count(content[:span.start], []byte("\n")) + 1, Destination: destination, Target: target, Self: self})
+			links = append(links, MissingLink{Path: path, Line: link.Line, Destination: link.Destination, Target: link.Target, Self: self})
 		}
 	}
 	return links

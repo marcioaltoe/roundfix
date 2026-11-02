@@ -193,3 +193,21 @@ what the authorization forbids in 1 to 80 characters without parentheses
 blocked outside-evidence row still blocks Pull Request preparation. When this eligibility check refuses,
 `qa-report accept` prints the reason alone. Only the Settle Command appends
 `(report <path>)` to its refusal, naming the report it judged.
+
+Every local link of the report must resolve in the committed tree. A local
+link is an inline Markdown link or reference definition outside code whose
+destination is a relative path, resolved against the report's directory;
+URLs, anchors and absolute paths are excluded. An existing target resolves
+when Git tracks it or would add it, including a directory containing such a
+file. A tracked target resolves even when it matches an ignore pattern.
+Outside Git, an existing target resolves.
+
+An Unresolved Evidence Link is `ignored` when the target exists but Git ignores
+it and does not track it, or `missing` when it is absent or outside the
+repository. Keep logs and command output under an unignored name such as
+`.txt`, then update the link. The command exits `1` with no stdout and this
+stderr line, joining multiple links with `; `:
+
+```text
+roundfix: QA Report eligibility refused: QA Report evidence links do not resolve in the committed tree: <destination> (line <n>, <reason>)
+```
