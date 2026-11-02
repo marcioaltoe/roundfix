@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0340-qa-evidence-links-resolve-in-the-committed-tree
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -78,3 +78,34 @@ whose gate saved `.log` evidence that `.gitignore` excluded.
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 7
 - `_techspec.md` → Current behavior 6; API Contract 8; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate.
+
+Added `### Evidence links resolve in the committed tree` to the canonical
+`qa-gate` skill immediately after `### Evidence carries no secret` and before
+`### Declared rows name their criterion`. The section requires repository-safe
+evidence names, `.txt` logs and command output, a `git check-ignore` check for
+new names, the verbatim rule `Never cite a file you did not keep.`, the
+committed-tree link rule and repair/refusal behavior, and preservation of
+verdicts and row statuses. No existing section text was changed.
+
+Acceptance evidence:
+
+- Before the edit, a heading scan showed neither skill copy had the requested
+  section and both copies reported version `0.0.23`.
+- `make skills-sync`: exited 0 and copied the canonical skill to the mirror.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`:
+  exited 0; both `qa-gate` version fields are `0.0.24` and the new digest is
+  recorded in `skills/testdata/owned-skill-versions.json`.
+- Focused post-edit checks: canonical/mirror `cmp`, the extracted
+  `### QA settlement` section against its pre-edit `HEAD` bytes, `git diff
+  --check`, and version-field assertions all passed. The focused
+  `TestSettlementGuidanceIsOneTable` and
+  `TestEveryOwnedSkillVersionIsRecorded` run exited 0.
+
+The Task status remains Daemon-owned `in_progress`. The Task's declared
+Verification and repository Verification were not run. No other Task, Task
+Graph, Roundfix skill, guide, Go code, commit, push or Pull Request was changed
+or created.

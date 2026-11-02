@@ -199,6 +199,10 @@
       {
         "version": "0.0.23",
         "digest": "6ff39933c1b4368c3a14d0052fcbf7260323e8b3e92664ce2ce336dbf172b5d6"
+      },
+      {
+        "version": "0.0.24",
+        "digest": "c1894b512799b927f0e006aa0c0a588a33ce1ff3bfa62afae35ba3153256517e"
       }
     ],
     "roundfix": [
