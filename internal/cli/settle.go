@@ -234,7 +234,11 @@ func requireSettleQAReportEligibility(plan settlePlan) error {
 	if err != nil {
 		return fmt.Errorf("read newest QA Report: %w", err)
 	}
-	if err := spec.QAReportEligibility(plan.graph.Spec.Dir, report); err != nil {
+	eligibilityErr := spec.QAReportEligibility(plan.graph.Spec.Dir, report)
+	if eligibilityErr == nil {
+		eligibilityErr = spec.RequireResolvedEvidenceLinks(context.Background(), path)
+	}
+	if err := eligibilityErr; err != nil {
 		relative, pathErr := filepath.Rel(plan.workDir, path)
 		if pathErr != nil {
 			return fmt.Errorf("resolve QA Report path: %w", pathErr)

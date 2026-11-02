@@ -235,7 +235,7 @@ func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
 		beforePreview := baselinePlanTestTree(t, root)
 		_, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
 		wantOwned := fmt.Sprintf("Skills drifted: 0\nSkills outdated: 1\n- outdated qa-gate: found %s, requires %s\n", found, required)
-		wantRetired := "Skills retired: 1\n- retired council: no longer required by the Baseline; delete .agents/skills/council\n"
+		wantRetired := "Skills retired: 1\n- retired council: kept, skills-lock.json records no computedHash to prove its copy unedited; delete .agents/skills/council by hand if the repository no longer uses it\n"
 		wantDifference := "Skills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n"
 		if code != exitUnverified || stderr != "" || !strings.Contains(out, wantOwned+wantRetired+wantDifference) {
 			t.Fatalf("combined preview exit=%d stdout=%s stderr=%s", code, out, stderr)

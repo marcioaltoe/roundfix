@@ -77,6 +77,18 @@ after Verification passes. A `pending` verdict is never accepted, and a report
 that records no QA row is refused even when it says `pass` or would otherwise
 qualify as declared-only `partial`.
 
+Every local link of the report must resolve in the committed tree. For a `qa`
+Task, the Settle Command applies the same evidence-link rule as
+`qa-report accept` after report eligibility accepts: local Markdown links
+outside code must name existing tracked or addable targets. An existing
+untracked ignored target is `ignored`; an absent target or one outside the
+repository is `missing`. A refusal exits `1`, leaves the Task file unchanged,
+and names the report relative to the selected surface:
+
+```text
+roundfix: settle QA Report is ineligible: QA Report evidence links do not resolve in the committed tree: <destination> (line <n>, <reason>) (report <path>)
+```
+
 If the newest report in the selected surface is ineligible, settle exits `1`
 and leaves the Task file unchanged. Its stderr refusal names that report with
 `(report <path>)`, relative to the surface's working tree:

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-09-30T00:00:00Z
+updated_at: 2026-11-01T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -46,3 +46,8 @@ future rename is one Spec with one sync run. An adopter's first update after a
 rename keeps the old directory until the repository removes it, and a second
 update reports `current`. The Baseline's frozen parity evidence keeps the old
 Context7 path, which the prior-name rule still satisfies.
+
+Amendment (2026-11-01): ADR-0350 lets an approved Baseline update delete a
+Retired Skill it proves unedited. The rule that Roundfix never deletes an
+installed skill tree still holds for every other skill, renamed skills
+included.
