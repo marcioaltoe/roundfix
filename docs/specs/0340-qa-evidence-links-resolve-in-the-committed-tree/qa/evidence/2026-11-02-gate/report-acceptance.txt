@@ -1,7 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0340-qa-evidence-links-resolve-in-the-committed-tree-303b466e72afd6cf-4f7004cd-aec752d9/run_20261102T051421Z_87ff898cca7a272c/bin/roundfix qa-report accept docs/specs/0340-qa-evidence-links-resolve-in-the-committed-tree/qa/qa-report-2026-11-02.md
-exit: 0
-stdout:
-
-stderr:
-
-Final report including integrity links accepted; no report mutation performed by acceptance.

@@ -1,7 +1,0 @@
-Outside published sources; passages quoted in PRD Acceptance evidence, consulted by planning 2026-11-01; this gate compares the retained quotations offline.
-https://git-scm.com/docs/git-check-ignore
-Quoted passage: tracked files are not shown at all since they are not subject to exclude rules.
-Comparison: forced-add c.log resolves in the positive test; removing --cached causes c.log to be wrongly marked ignored and the named test fails. Confirms Invariant 2.
-https://git-scm.com/docs/gitignore
-Quoted passage: specifies intentionally untracked files to ignore.
-Comparison: present untracked a.log is ignored; existing-resolves mutant omits it, causing the named test to fail. Confirms the ignored reason of API Contract 2.
