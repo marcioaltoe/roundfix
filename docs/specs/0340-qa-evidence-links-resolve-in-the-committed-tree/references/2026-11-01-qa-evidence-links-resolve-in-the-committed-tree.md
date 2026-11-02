@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-01
-spec: null
+spec: 0340-qa-evidence-links-resolve-in-the-committed-tree
 reason: null
 ---
 

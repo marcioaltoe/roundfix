@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-01
-spec: null
+spec: 0338-the-release-decision-travels-with-the-spec
 reason: null
 ---
 
