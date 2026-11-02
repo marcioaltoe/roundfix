@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0339-an-approved-baseline-update-deletes-the-retired-skills
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -85,7 +85,7 @@ the Argus report of 2026-11-01.
 - instruction: `docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md`
 - instruction: `.agents/skills/domain-modeling/SKILL.md`
 - instruction: `docs/agents/docs-layout.md`
-- interface: `docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md`
+- interface: `docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md`
 - interface: `docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md`
 - interface: `CONTEXT.md`
 - interface: `.agents/skills/roundfix/references/baseline.md`
@@ -108,3 +108,69 @@ the Argus report of 2026-11-01.
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 6; Glossary
 - `_techspec.md` → API Contract 7; Declared breaks; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer
+
+Implementation:
+
+- Deleted ADR-0246 and appended the ADR-0350 amendment to ADR-0191, including
+  the `2026-11-01T00:00:00Z` update timestamp and the exception preserving the
+  never-delete rule for every other skill, including renamed skills.
+- Updated only the **Retired Skill** entry in `CONTEXT.md` to describe deletion
+  of a copy proved unedited against `skills-lock.json`, retention of edited or
+  unrecorded copies, and the ADR-0350 link.
+- Rewrote the canonical Roundfix baseline reference paragraph with the
+  deletion sentence, the `.agents/skills`, `.claude/skills` and lock targets,
+  Plan Digest binding, the `plan_ready` preview state, `Skills deleted` /
+  `skills.deleted`, the `edited`, `unrecorded` and `unsafe` keep reasons, and
+  the Retired Skills boundary.
+- Ran `make skills-sync`; the canonical and mirror references compare equal.
+- Ran the sanctioned owned-skill recorder. Both `roundfix/SKILL.md` copies are
+  now version `0.1.168`, and `skills/testdata/owned-skill-versions.json` records
+  the digest.
+- As the last skill-related step, ran the sanctioned Behavior Surface recorder;
+  it reported one focused test passed and left
+  `docs/references/behavior-surfaces.json` current with no content delta.
+
+Focused checks:
+
+- `git diff --check`: exit 0.
+- `cmp .agents/skills/roundfix/references/baseline.md skills/roundfix/references/baseline.md`:
+  exit 0.
+- `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`: exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`:
+  `Go test: 1 passed in 1 packages`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  `Go test: 1 passed in 1 packages`.
+
+Acceptance evidence:
+
+- ADR-0246 is absent; ADR-0191 contains the required amendment; and the
+  glossary contains the required deletion phrase and ADR-0350 link.
+- Both reference copies contain the required deletion/report wording and the
+  three keep reasons, with no stale never-delete sentence.
+- The owned-skill version and Behavior Surface record commands each reported
+  one focused test passed, and both canonical/mirror pairs compare equal.
+
+The Daemon should run the Task's declared Verification and settle status.
+
+Verification feedback repair:
+
+- Inspected the Daemon diagnostic artifacts. The owned-skill package check had
+  passed; the docscontract check found one `SC-REF-UNRESOLVED` finding because
+  this Task still declared the ADR-0246 path after deleting that file.
+- Replaced that stale Task Context interface with the accepted ADR-0350
+  successor. No production or unrelated Task artifact was changed.
+- Focused evidence after the repair: the ADR-0350 path exists, the retired
+  ADR-0246 path is absent, and `git diff --check` is clean.
+
+The declared Verification was not rerun; the Daemon should rerun it and the
+settlement consistency check.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md`

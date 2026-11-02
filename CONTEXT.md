@@ -877,7 +877,7 @@ A repository tooling file, such as a Makefile, a Project Config or a CI workflow
 _Avoid_: Scaffold, template file, managed tooling
 
 **Retired Skill**:
-A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it ([ADR-0246](docs/adr/0246-a-retired-skill-leaves-the-baseline-and-the-adopter-removes-its-copy.md)).
+A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and an approved `roundfix baseline update` deletes a copy it proves unedited against `skills-lock.json` and keeps an edited or unrecorded copy for the adopter ([ADR-0350](docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md)).
 _Avoid_: Deprecated skill, obsolete skill
 
 **Missing Required Skill**:
