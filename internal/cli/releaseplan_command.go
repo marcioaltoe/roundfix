@@ -246,6 +246,24 @@ func printReleasePlanText(plan releaseplan.Plan, checks releasePlanChecks, stdou
 		}
 	}
 
+	if authorization := plan.ReleaseAuthorization; authorization != nil {
+		if authorization.Answered {
+			fmt.Fprintln(stdout, "Release authorization: answered")
+		} else {
+			fmt.Fprintf(stdout, "Release authorization: not answered — %s\n", authorization.Reason)
+		}
+		for _, grant := range authorization.Grants {
+			ceiling := "none"
+			if grant.Granted {
+				ceiling = string(grant.Ceiling)
+			}
+			paths := strings.Join(grant.Paths, ",")
+			if paths == "" {
+				paths = "none"
+			}
+			fmt.Fprintf(stdout, "- %s ceiling=%s record=%s@%s paths=%s\n", grant.Spec, ceiling, grant.Record, shortReleasePlanSHA(grant.Revision), paths)
+		}
+	}
 	printReleasePlanChecksText(checks, stdout)
 
 	changes := releasePlanTextChanges(plan)
@@ -379,16 +397,34 @@ func printReleaseResetPlanJSON(plan releaseplan.ResetPlan, stdout io.Writer) err
 	return nil
 }
 
+type releasePlanAuthorizationJSON struct {
+	Answered bool                   `json:"answered"`
+	Reason   string                 `json:"reason,omitempty"`
+	Grants   []releasePlanGrantJSON `json:"grants"`
+}
+
+type releasePlanGrantJSON struct {
+	Spec      string             `json:"spec"`
+	CommitSHA string             `json:"commitSHA"`
+	Record    string             `json:"record"`
+	Revision  string             `json:"revision"`
+	Granted   bool               `json:"granted"`
+	Ceiling   releaseplan.Impact `json:"ceiling,omitempty"`
+	Paths     []string           `json:"paths"`
+	Detail    string             `json:"detail,omitempty"`
+}
+
 type releasePlanJSON struct {
-	SchemaVersion   string                        `json:"schemaVersion"`
-	State           releaseplan.State             `json:"state"`
-	Base            releasePlanVersionRefJSON     `json:"base"`
-	Target          releasePlanRevisionRefJSON    `json:"target"`
-	Classification  releasePlanClassificationJSON `json:"classification"`
-	ProposedVersion string                        `json:"proposedVersion,omitempty"`
-	Approval        releasePlanApprovalJSON       `json:"approval"`
-	Checks          releasePlanChecks             `json:"checks"`
-	Changes         []releasePlanChangeJSON       `json:"changes"`
+	SchemaVersion        string                        `json:"schemaVersion"`
+	State                releaseplan.State             `json:"state"`
+	Base                 releasePlanVersionRefJSON     `json:"base"`
+	Target               releasePlanRevisionRefJSON    `json:"target"`
+	Classification       releasePlanClassificationJSON `json:"classification"`
+	ProposedVersion      string                        `json:"proposedVersion,omitempty"`
+	Approval             releasePlanApprovalJSON       `json:"approval"`
+	Checks               releasePlanChecks             `json:"checks"`
+	Changes              []releasePlanChangeJSON       `json:"changes"`
+	ReleaseAuthorization *releasePlanAuthorizationJSON `json:"releaseAuthorization,omitempty"`
 }
 
 type releasePlanVersionRefJSON struct {
@@ -469,6 +505,22 @@ func releasePlanJSONFromPlan(plan releaseplan.Plan) releasePlanJSON {
 			CrossesMaintenanceOnlyBoundary: change.CrossesMaintenanceOnlyBoundary,
 		})
 	}
+	var authorization *releasePlanAuthorizationJSON
+	if a := plan.ReleaseAuthorization; a != nil {
+		authorization = &releasePlanAuthorizationJSON{Answered: a.Answered, Reason: a.Reason, Grants: make([]releasePlanGrantJSON, 0, len(a.Grants))}
+		for _, grant := range a.Grants {
+			g := releasePlanGrantJSON{
+				Spec: grant.Spec, CommitSHA: grant.CommitSHA, Record: grant.Record,
+				Revision: grant.Revision, Granted: grant.Granted,
+				Paths: append([]string{}, grant.Paths...), Detail: grant.Detail,
+			}
+			if grant.Granted {
+				g.Ceiling = grant.Ceiling
+			}
+			authorization.Grants = append(authorization.Grants, g)
+		}
+	}
+
 	return releasePlanJSON{
 		SchemaVersion: releaseplan.SchemaVersion,
 		State:         plan.State,
@@ -496,7 +548,8 @@ func releasePlanJSONFromPlan(plan releaseplan.Plan) releasePlanJSON {
 			ProposedVersion: plan.Approval.ProposedVersion,
 			Question:        plan.Approval.Question,
 		},
-		Changes: changes,
+		Changes:              changes,
+		ReleaseAuthorization: authorization,
 	}
 }
 

@@ -37,7 +37,7 @@
     "command profiles validate": "sha256:ee2f8cf0d7fb6dec558e094e97cee64ae98b2e423327f0a8e569675dfbc80923",
     "command qa-report accept": "sha256:f8f8c0d4c750a1ab663583c29dce8ca121b81ad7fcc8d1057da69de2ade228ce",
     "command reconcile": "sha256:b5dfbad0837c92e64d41b3c82d6df9d95200b9e00f94c881f5bb51f8e0695b90",
-    "command release plan": "sha256:05366a478f27e5cc172f2357f9de27cc7466ddc0f658d1bbd94d6430bcbf25b0",
+    "command release plan": "sha256:6f626ad3b5272445fb05aaaef3a00d465ebd85d1cd7beea5b3b32e814e7b0e59",
     "command reopen": "sha256:5f0658d9bcb19062fa9c372cd885adaaf7fa337235769d453045e94664ff1b18",
     "command resolve": "sha256:d2d74e0ca17dc5367b0001a1613d6c412ceccce6ac40e99d7796e0bc8f9a7885",
     "command review": "sha256:9665f888e9efb3dd0c3aa40fcd15d11692921cc3c0ecd3a8e74cdbdcff757bbc",
@@ -100,8 +100,8 @@
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
     "guide docs/user-guide/configuration.md": "sha256:6fa66d5ef947823ad981b4cb6739196c83cf2d860587c457ef91115bb48049f0",
     "guide docs/user-guide/context-driven-development.md": "sha256:ad317faf7da7f3d61e6d399f6be0d21e448c8c264388bd7c2e44d2b3b805098b",
-    "guide docs/user-guide/release-runbook.md": "sha256:81b4fab4871437122e93b05bd771f4660a660159b2b5756f30c7334156df6bee",
+    "guide docs/user-guide/release-runbook.md": "sha256:41151ace89cb57f1e76e3c8875d4dd188afa6f257b1b309dfdb8718d6fd8ac2d",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:f1525e00f9be7aad470bc3f1d635f65c07ce1aae230c01a836a55d10215a4f14",
-    "guide docs/user-guide/usage.md": "sha256:bd1cd12a83ed9477b93f97ff0982ce4aded86078e3e42aea5cc7965a29708871"
+    "guide docs/user-guide/usage.md": "sha256:b1adcd955eea85d76e49a072c4010715123811c4ce5d2c8f73e6375ad00fac84"
   }
 }

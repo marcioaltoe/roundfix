@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0338-the-release-decision-travels-with-the-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -167,3 +167,113 @@ the Argus request of 2026-11-01.
 - `_prd.md` → Sources 2; Goals; Core Features 3-5; Success Metric 4; Success Metric 5; Success Metric 6; Success Metric 8; Glossary; Decisions
 - `_techspec.md` → Current behavior 4-6; Interfaces; Data Models; API Contracts 5-10 and 12; Invariants 3-6; Declared breaks; Testing Approach; Build Order 2
 - ADR-0349; ADR-0143; ADR-0256; ADR-0340
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, domain-modeling, evidence-gate, roundfix, systematic-debugging, no-workarounds.
+
+Implemented API Contracts 5–10 in this Task's declared paths. Approved records
+read and validate the ceiling/path pair through the same exact-path reader as
+`executables`; missing keys preserve existing classification. The optional Git
+source capability discovers delivery pairs without configuration and reads each
+record through `spec.ReadAuthorization` at the delivering commit's first parent.
+`AnswerApproval` checks all five conditions in order and retains the proposal
+and classification. Text and JSON expose the inspected grants only when at
+least one operative ceiling exists. Backlog Entries are planning evidence.
+
+Acceptance evidence from focused checks:
+
+- Sufficient ceiling and refusal cases: the six public CLI subtests exercise
+  text and JSON in temporary repositories. `ceiling minor` observes exit 0,
+  `Decision: ready`, unchanged `v0.2.0`, and the record/revision/paths. Patch,
+  direct feature, breaking footer and manual classification retain exit 3 and
+  their specified reasons. The unit cases separately assert all five ordered
+  conditions, unchanged proposal/classification, and an approval with no
+  question. A mixed-delivery test confirms that another Spec without a ceiling
+  prevents the answer, and checks refusal details, custom Spec roots and
+  unmatched delivery pairs. Optional-capability tests cover lookup only for
+  approval proposals and propagation of lookup errors.
+- No-ceiling compatibility: the CLI `no ceiling` subtest compares the complete
+  text and JSON bytes against the same repository with a historical record
+  omitting `release`. A disposable Git replacement preserves commit identities
+  while changing that record, so no output normalization hides a difference.
+  Both omit the authorization evidence and exit 3. Authorization tests cover
+  all supported ceilings, the four required refusals with code and field,
+  absent keys, and malformed exact paths.
+- Documentation and records: release-runbook, usage, the release reference and
+  the new Release planning section retain their prior sentences and add the
+  ceiling rule, output evidence, Backlog Entries and manual `refactor:` rule.
+  CONTEXT defines Release Ceiling and extends Release Plan through
+  domain-modeling. A focused Python inspection confirmed all prior guide/skill
+  lines remain (apart from generated version fields), both mirror pairs match
+  byte for byte, and all changed paths belong to this Task. Roundfix's two
+  version fields are now `0.1.171`. The Behavior Surface Record was regenerated
+  after the final guide/help edit.
+
+Focused commands and observed outcomes:
+
+- Before implementation, `go test ./internal/cli -run
+  '^TestReleasePlanAnswersApprovalFromTheReleaseCeiling$/ceiling_minor$'
+  -count=1 -timeout 5m` exited 1: the output showed impact minor and
+  `manual_classification_required`, with both Backlog Entry planning commits
+  blocking. Inspection of the original Build showed proposal calculation was
+  its final step, with no authorization lookup.
+- `go test -count=1 -timeout 5m -run
+  'TestRelease(Ceiling|Paths|Grants)|TestReleasePlanAnswersApprovalFromTheReleaseCeiling/|TestAnswerApprovalFollowsEveryCeiling/|TestBuildLooksForGrants'
+  ./internal/authorization ./internal/releaseplan ./internal/cli` exited 0.
+- `go test ./internal/cli -run
+  'TestReleaseGrantsReadEveryDeliveryAtItsParent|TestReleasePlanAnswersApprovalFromTheReleaseCeiling/|TestReleasePlanCommandMatchesPRDOutcomes|TestReleasePlanReadOnlyPreservesRepositoryForOutcomes|TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary'
+  -count=1 -timeout 5m` exited 0.
+- `go test ./internal/authorization ./internal/releaseplan -run
+  'TestRelease(Ceiling|Paths)|TestAuthorization(ReadsExecutables|RefusesAMalformedExecutablesEntry)|TestAnswerApprovalFollowsEveryCeiling/|TestBuildLooksForGrants|TestMaintenanceOnly/docs/backlog'
+  -count=1 -timeout 5m` exited 0.
+- `go test -tags docscontract ./internal/docscontract -run
+  'TestGlossary|TestReleasePlanDocumentationContract|TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck|TestEveryCommandIsNamedInTheRoundfixSkill'
+  -count=1 -timeout 5m` exited 0.
+- Required regeneration: `make skills-sync` and
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions -count=1` exited 0; then
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 after
+  the final guide/help edit.
+- `git diff --check` exited 0; the changed-file inspection found only declared
+  task_02 paths, including its assigned Result and generated records.
+
+ADR-0349 remains unchanged. No Baseline module, managed guide, write-* skill,
+reset-mode implementation, follow_up_status.go, QA settlement section,
+Makefile, workflow or Go module file was edited. Declared Verification and
+repository Verification were not run by the Agent; both remain Daemon-owned. Task status
+and checkboxes remain unchanged. No commit, push or Pull Request was made.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon's diagnostic artifact and the owning layout contract.
+The new Release planning section exceeded the Roundfix skill entry byte budget.
+Condensed only that Task-added section and retained the detailed release
+reference, every pre-Task entry sentence, and all required ceiling rules and
+output field names. Both entry copies now measure 19,909 bytes against the
+existing 20,000-byte limit. The contract test and its budget remain unchanged.
+
+Focused repair evidence:
+
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions -count=1` exited 0 and recorded `0.1.171` in both
+  Roundfix entry files and the owned-skill record.
+- `go test ./skills -run
+  '^TestRoundfixSkill(EntryFileStaysWithinItsBudget|IndexNamesEveryReference|IndexLinksResolve)$'
+  -count=1 -timeout 5m` exited 0, including the original failing budget test
+  for canonical and embedded copies.
+- A focused Python inspection confirmed the byte count, identical mirrors,
+  retention of pre-Task entry lines, and the required release rule and fields.
+
+- `go test -tags docscontract ./internal/docscontract -run
+  '^(TestReleasePlanDocumentationContract|TestEveryCommandIsNamedInTheRoundfixSkill)$'
+  -count=1 -timeout 5m` exited 0.
+- After the last guide edit, the required Behavior Surface recorder
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0.
+- `git diff --check` exited 0.
+
+The Agent did not rerun declared Verification. The Daemon owns its next
+attempt and Task settlement; status and checkboxes remain unchanged.

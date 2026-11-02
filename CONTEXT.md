@@ -993,7 +993,12 @@ _Avoid_: Stale skill, undocumented commit
 
 **Release Plan**:
 A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required. A Lagging Surface blocks a plan that proposes a version without changing its decision state or proposed version ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+The authorization records of the Specs a range delivers can answer its approval within their Release Ceilings ([ADR-0349](docs/adr/0349-a-spec-release-ceiling-answers-the-release-plan-approval.md)).
 _Avoid_: Release execution, automatic release, version guess
+
+**Release Ceiling**:
+The highest impact (`patch`, `minor` or `major`) an approved Spec authorization record that grants `release` answers in the Release Plan without a second approval, together with its exact release paths ([ADR-0349](docs/adr/0349-a-spec-release-ceiling-answers-the-release-plan-approval.md)).
+_Avoid_: Release permission, automatic release approval
 
 **Release Plan Command**:
 The support command that produces a Release Plan without editing release files, creating or pushing tags, publishing packages, or creating a GitHub release.

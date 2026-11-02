@@ -100,6 +100,8 @@ type AuthorizationRecord struct {
 	Action              string
 	Consuming           []string
 	Executables         []string
+	ReleaseCeiling      string
+	ReleasePaths        []string
 	Paths               []string
 	Operations          []AuthorizationOperation
 	PreconditionRepairs []string
@@ -386,11 +388,38 @@ func splitAuthorizationFrontmatter(content []byte) ([]byte, []byte, error) {
 	return nil, nil, errors.New("missing YAML frontmatter closing marker")
 }
 
+func authorizationExactPaths(field string, node *yaml.Node) ([]string, AuthorizationReason) {
+	values, err := authorizationStringSequence(node)
+	if err != nil {
+		return nil, fieldShapeReason(field, err)
+	}
+	seen := make(map[string]bool, len(values))
+	for _, value := range values {
+		if value == "" || strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") ||
+			strings.HasSuffix(value, "/") || strings.ContainsAny(value, "*?[\\") ||
+			path.Clean(value) != value || value == "." || value == ".." || strings.HasPrefix(value, "../") {
+			return nil, authorizationReason(AuthorizationReasonMalformedRecord, field, value,
+				fmt.Sprintf("%s entry %q is not an exact repository-relative file path", field, value))
+		}
+		if seen[value] {
+			return nil, authorizationReason(AuthorizationReasonMalformedRecord, field, value,
+				fmt.Sprintf("%s repeats path %q", field, value))
+		}
+		seen[value] = true
+	}
+	if len(values) == 0 {
+		return nil, AuthorizationReason{}
+	}
+	return values, AuthorizationReason{}
+}
+
 type authorizationFrontmatterPresence struct {
 	status             bool
 	granted            bool
 	grantedNil         bool
 	pathsEmptySequence bool
+	releaseCeiling     bool
+	releasePaths       bool
 }
 
 func parseAuthorizationFrontmatter(
@@ -470,24 +499,28 @@ func parseAuthorizationFrontmatter(
 		}
 	}
 	if node, ok := fields["executables"]; ok && node.Tag != "!!null" {
-		values, err := authorizationStringSequence(node)
-		if err != nil {
-			return record, fieldShapeReason("executables", err)
+		values, reason := authorizationExactPaths("executables", node)
+		if reason.Code != "" {
+			return record, reason
 		}
-		seen := make(map[string]bool, len(values))
-		for _, value := range values {
-			if value == "" || strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") ||
-				strings.HasSuffix(value, "/") || strings.ContainsAny(value, "*?[\\") ||
-				path.Clean(value) != value || value == "." || value == ".." || strings.HasPrefix(value, "../") {
-				return record, authorizationReason(AuthorizationReasonMalformedRecord, "executables", value,
-					fmt.Sprintf("executables entry %q is not an exact repository-relative file path", value))
+		record.Executables = values
+	}
+	if node, ok := fields["release_ceiling"]; ok {
+		presence.releaseCeiling = true
+		value, err := authorizationScalar(node)
+		if err != nil {
+			return record, fieldShapeReason("release_ceiling", err)
+		}
+		record.ReleaseCeiling = value
+	}
+	if node, ok := fields["release_paths"]; ok {
+		presence.releasePaths = true
+		if node.Tag != "!!null" {
+			values, reason := authorizationExactPaths("release_paths", node)
+			if reason.Code != "" {
+				return record, reason
 			}
-			if seen[value] {
-				return record, authorizationReason(AuthorizationReasonMalformedRecord, "executables", value,
-					fmt.Sprintf("executables repeats path %q", value))
-			}
-			seen[value] = true
-			record.Executables = append(record.Executables, value)
+			record.ReleasePaths = values
 		}
 	}
 	if node, ok := fields["operations"]; ok && node.Tag != "!!null" {
@@ -630,6 +663,27 @@ func classifyAuthorizationRecord(
 			"paths must contain at least one exact repository-relative path",
 		)
 	}
+	if presence.releaseCeiling {
+		permitsRelease := false
+		for _, operation := range record.Operations {
+			permitsRelease = permitsRelease || operation == AuthorizationOperationRelease
+		}
+		if !permitsRelease {
+			return record, authorizationReason(AuthorizationReasonContradictory, "release_ceiling", record.ReleaseCeiling,
+				"release_ceiling requires release in operations")
+		}
+		switch record.ReleaseCeiling {
+		case "patch", "minor", "major":
+		default:
+			return record, authorizationReason(AuthorizationReasonMalformedRecord, "release_ceiling", record.ReleaseCeiling,
+				"release_ceiling must be patch, minor or major")
+		}
+	}
+	if (presence.releaseCeiling && len(record.ReleasePaths) == 0) || (presence.releasePaths && !presence.releaseCeiling) {
+		return record, authorizationReason(AuthorizationReasonMalformedRecord, "release_paths", "",
+			"release_paths requires a release_ceiling and at least one exact repository-relative file path")
+	}
+
 	return record, AuthorizationReason{}
 }
 

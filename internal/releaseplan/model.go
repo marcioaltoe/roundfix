@@ -193,14 +193,15 @@ type Approval struct {
 
 // Plan is the versioned Release Plan schema shared by text and JSON renderers.
 type Plan struct {
-	SchemaVersion   string
-	State           State
-	Base            VersionRef
-	Target          RevisionRef
-	Classification  Classification
-	ProposedVersion string
-	Approval        Approval
-	Changes         []ChangeEvidence
+	SchemaVersion        string
+	State                State
+	Base                 VersionRef
+	Target               RevisionRef
+	Classification       Classification
+	ProposedVersion      string
+	Approval             Approval
+	Changes              []ChangeEvidence
+	ReleaseAuthorization *ReleaseAuthorization // nil when no delivered record grants a ceiling
 }
 
 // NewPlan returns a Release Plan with the supported schema identifier and a

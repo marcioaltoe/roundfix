@@ -141,6 +141,7 @@ func TestMaintenanceOnly(t *testing.T) {
 		want bool
 	}{
 		{path: "docs/specs/0034-release-plan/task_02.md", want: true},
+		{path: "docs/backlog/2026-11-01-example.md", want: true},
 		{path: "docs/adr/0048-release-planning-is-read-only-and-confirmation-gated.md", want: true},
 		{path: "docs/findings/2026-07-16-release-version-strategy-and-approval-gates.md", want: true},
 		{path: "docs/handoffs/2026-07-16-release-plan.md", want: true},

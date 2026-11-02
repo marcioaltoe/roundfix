@@ -220,6 +220,7 @@ func cleanChangedPath(changedPath string) string {
 func isPlanningEvidencePath(changedPath string) bool {
 	for _, prefix := range []string{
 		"docs/specs/",
+		"docs/backlog/",
 		"docs/adr/",
 		"docs/findings/",
 		"docs/handoffs/",

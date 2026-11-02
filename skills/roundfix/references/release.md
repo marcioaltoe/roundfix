@@ -53,6 +53,34 @@ records the impact and reason, but it does not approve a resulting minor,
 major, or version-zero breaking version. State `no_release` means no release
 is required for the committed range.
 
+A Release Ceiling recorded in the approved authorization record of every
+Spec the range delivers answers `approval_required` within every ceiling when
+each record grants `release` and every change that sets the impact is such a
+delivery. The decision becomes `ready` with the same proposed version.
+A Release Ceiling never answers a breaking plan or a manual classification.
+A missing grant, an impact above a ceiling, or an impact-setting change outside
+those deliveries keeps the approval question.
+
+Text prints `Release authorization: answered` or
+`Release authorization: not answered — <reason>`, followed by each Spec's
+ceiling, record and revision, and release paths. JSON adds
+`releaseAuthorization` with `answered`, optional `reason`, and `grants`.
+When no delivered record grants a ceiling, both outputs keep their bytes and
+omit this authorization evidence. The `skill-coverage` check can still block
+an answered plan.
+
+Backlog Entries under `docs/backlog/` are planning evidence alongside
+`docs/specs/`, `docs/adr/`, `docs/findings/` and `docs/handoffs/`; commits
+changing only those paths are maintenance-only. A `refactor:` delivery that
+changes released code is a commit to classify by hand.
+
+The record carries `release_ceiling: patch | minor | major` and
+`release_paths`, a list of exact repository-relative version-only file paths,
+using the same path rules as `executables`. A ceiling requires `release` in
+`operations` and non-empty release paths; paths require a ceiling. The plan
+reads the record at the delivering commit's first parent and reports those
+paths; the release runbook governs which files the later release changes.
+
 For the exceptional `0.0.1` release-history reset, require a clean committed
 target and run:
 
