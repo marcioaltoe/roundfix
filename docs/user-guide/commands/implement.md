@@ -203,6 +203,12 @@ with `QA evidence carries a non-image binary: <path>; <path>` and creates no
 QA Report commit. The reason and the `evidence_binary` event carry paths
 only; the report and evidence stay uncommitted in the Run Worktree.
 
+The Daemon checks every local link of the newest QA Report. On an
+unresolved link, the Daemon returns the QA turn once, naming each link and
+its reason. A remaining link settles the QA Task `failed` with
+`QA Report evidence links do not resolve in the committed tree: <link> (line <n>, <reason>)`,
+publishes the `evidence_links` event and creates no QA Report commit.
+
 The `Tokens:` line follows the outcome on every terminal Implement Run,
 before any `pushed` line. It reads the Run's recorded sums after the Run ends,
 using the same phrases as `runs show`: `<tokens> from <reported> of <n>

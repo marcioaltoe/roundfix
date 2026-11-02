@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.23
+  version: 0.0.24
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.23
+version: 0.0.24
 ---
 
 # QA Gate
@@ -59,6 +59,19 @@ of a command that prints the environment, including `env`, `printenv`, `set`,
 a secret-shaped sample into evidence. Record a Secret Match by path, line and
 kind only, and never reload a shell profile to obtain a key. The Daemon
 refuses to commit a QA Report whose files match a Secret Pattern.
+
+### Evidence links resolve in the committed tree
+
+Save evidence under names the repository does not ignore. Use a `.txt`
+extension for logs and command output, and check a new name with
+`git check-ignore` before linking it. Never cite a file you did not keep.
+
+Every local link of the QA Report must resolve in the committed tree. An
+ignored or missing target gets one repair turn; after that, the QA Task settles
+`failed` with the link as written, its line and the reason `ignored` or
+`missing`. `roundfix qa-report accept` and the Settle Command refuse the same
+report. Keep every verdict and row status the evidence supports; never change
+one to hide lost evidence.
 
 ### Declared rows name their criterion
 

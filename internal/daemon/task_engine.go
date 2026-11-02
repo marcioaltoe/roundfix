@@ -3170,6 +3170,69 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				return spec.VerdictPending, reportPath, false, nil
 			}
 		}
+		newestReport, links, linkErr := unresolvedQAEvidenceLinks(ctx, plan.Spec.Dir)
+		if linkErr != nil {
+			return "", "", false, linkErr
+		}
+		if len(links) > 0 {
+			message := fmt.Sprintf("QA evidence links unresolved: %d; returning the QA turn once.", len(links))
+			if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+				message, qaEvidenceLinksPayload("repair", links)); err != nil {
+				return "", "", false, err
+			}
+			fmt.Fprintln(engine.deps.Progress, message)
+			agentCtx, cancelAgent := context.WithCancel(ctx)
+			turn, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
+				Runtime:     plan.Runtime,
+				Session:     plan.Session,
+				RunID:       plan.RunID,
+				Batch:       rounds.Batch{Number: ordinal},
+				LogPath:     logPath,
+				ArtifactDir: plan.ArtifactDir,
+				Prompt:      qaEvidenceLinkRepairPrompt(newestReport, links),
+				GitRoot:     plan.WorkDir,
+			})
+			cancelAgent()
+			if runErr != nil {
+				var lost *lostRolloutExhaustedError
+				var provider *providerSystemErrorExhaustedError
+				if errors.As(runErr, &lost) || errors.As(runErr, &provider) {
+					if settleErr := engine.settleTask(ctx, plan, qaTask, ordinal, spec.StatusFailed, agentFailureReason(runErr, "")); settleErr != nil {
+						return "", "", false, settleErr
+					}
+					return spec.VerdictPending, reportPath, false, nil
+				}
+				return "", "", false, fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
+			}
+			if plan.runBudget.expiredAt(engine.deps.Now()) {
+				return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, context.DeadlineExceeded)
+			}
+			if err := ctx.Err(); err != nil {
+				if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+					return "", "", false, fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
+				}
+				return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
+			}
+			if len(turn.BackgroundTasks) > 0 {
+				report, readErr := spec.ReadQAReportFile(seededReportPath)
+				if readErr == nil && report.Verdict == spec.VerdictPending {
+					names := make([]string, len(turn.BackgroundTasks))
+					for index, task := range turn.BackgroundTasks {
+						names[index] = fmt.Sprintf("%s (%s: %s)", task.ID, task.Tool, task.Description)
+					}
+					reason := "unfinished turn: the QA turn ended with its report pending after starting background task " + strings.Join(names, "; ")
+					if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, qaTask.ID, runevent.KindDaemonTask, reason,
+						map[string]any{"phase": "turn_unfinished", "scope_kind": "qa", "scope_id": qaTask.ID, "background_tasks": turn.BackgroundTasks},
+					); err != nil {
+						return "", "", false, err
+					}
+					if err := engine.settleTask(ctx, plan, qaTask, ordinal, spec.StatusFailed, reason); err != nil {
+						return "", "", false, err
+					}
+					return spec.VerdictPending, reportPath, false, nil
+				}
+			}
+		}
 	}
 	var eligibilityErr error
 	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(
@@ -3237,6 +3300,18 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		qaReason = "QA evidence carries a secret: " + strings.Join(details, "; ")
 	}
+	var unresolvedLinks []spec.UnresolvedEvidenceLink
+	if len(matches) == 0 && len(binaryPaths) == 0 {
+		_, unresolvedLinks, err = unresolvedQAEvidenceLinks(ctx, plan.Spec.Dir)
+		if err != nil {
+			return "", "", false, err
+		}
+		if len(unresolvedLinks) > 0 {
+			qaStatus, accepted = spec.StatusFailed, false
+			qaReason = spec.EvidenceLinksError{Links: unresolvedLinks}.Error()
+		}
+	}
+
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
@@ -3263,10 +3338,55 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		fmt.Fprintln(engine.deps.Progress, message)
 		return verdict, reportPath, false, nil
 	}
+	if len(unresolvedLinks) > 0 {
+		message := fmt.Sprintf("QA Report refused: %d unresolved evidence link(s)", len(unresolvedLinks))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+			message, qaEvidenceLinksPayload("refused", unresolvedLinks)); err != nil {
+			return "", "", false, err
+		}
+		fmt.Fprintln(engine.deps.Progress, message)
+		return verdict, reportPath, false, nil
+	}
+
 	if err := engine.commitPreparedQAReport(ctx, plan, ordinal, verdict, reportPath, qaTask, prepared); err != nil {
 		return "", "", false, err
 	}
 	return verdict, reportPath, accepted, nil
+}
+
+// A missing report keeps the existing missing-verdict settlement. Other read
+// and Git errors halt the Run rather than becoming an evidence refusal.
+func unresolvedQAEvidenceLinks(ctx context.Context, specDir string) (string, []spec.UnresolvedEvidenceLink, error) {
+	reportPath, err := spec.NewestQAReport(specDir)
+	if errors.Is(err, spec.ErrNoQAReport) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("find QA Report for evidence link check: %w", err)
+	}
+	links, err := spec.UnresolvedEvidenceLinks(ctx, reportPath)
+	if err != nil {
+		return "", nil, fmt.Errorf("check QA Report evidence links: %w", err)
+	}
+	return reportPath, links, nil
+}
+
+func qaEvidenceLinkRepairPrompt(reportPath string, links []spec.UnresolvedEvidenceLink) string {
+	var prompt strings.Builder
+	fmt.Fprintf(&prompt, "QA evidence links do not resolve in the committed tree.\nReport: %s\n", reportPath)
+	for _, link := range links {
+		fmt.Fprintf(&prompt, "- %s (line %d, %s)\n", link.Destination, link.Line, link.Reason)
+	}
+	prompt.WriteString("Save evidence under a name the repository does not ignore, such as a .txt extension, and update the link; restore a missing file or stop citing a file you did not keep; never change a verdict or a row to hide lost evidence.\n")
+	return prompt.String()
+}
+
+func qaEvidenceLinksPayload(outcome string, links []spec.UnresolvedEvidenceLink) map[string]any {
+	locations := make([]map[string]any, len(links))
+	for index, link := range links {
+		locations[index] = map[string]any{"link": link.Destination, "line": link.Line, "reason": link.Reason}
+	}
+	return map[string]any{"phase": "evidence_links", "outcome": outcome, "links": locations}
 }
 
 // scanQAReportPaths skips tracked deletions, which have no content to stage.
