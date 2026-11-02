@@ -1,6 +1,0 @@
-copy: git archive HEAD; isolated mutation b
-command: go test -count=1 -timeout 20m -v -run ^TestSpecCheckNeverProbesTheQAGate$ ./internal/cli
-exit: 1
-suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
-FAIL	roundfix/internal/cli	0.450s
-FAIL

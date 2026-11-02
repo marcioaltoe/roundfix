@@ -1,7 +1,0 @@
-('a', './internal/cli', 1, [])
-('a', './internal/daemon', 1, [])
-('b', './internal/cli', 1, [])
-('c', './internal/cli', 1, [])
-('d', './internal/speccheck', 1, [])
-('e', './internal/speccheck', 1, [])
-('f', './internal/speccheck', 1, [])
