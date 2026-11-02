@@ -1,0 +1,4 @@
+command: ['go', 'test', '-count=1', '-timeout', '20m', './skills']
+ok  	roundfix/skills	1.149s
+
+exit: 0

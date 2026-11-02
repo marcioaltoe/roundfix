@@ -1,0 +1,272 @@
+from pathlib import Path
+import json,re,shutil
+root=Path.cwd();sp=root/'docs/specs/0338-the-release-decision-travels-with-the-spec';report=sp/'qa/qa-report-2026-11-02.md';source=Path('/tmp/qa0338-results');evidence=sp/'qa/evidence/2026-11-02-release-decision';evidence.mkdir(parents=True,exist_ok=True)
+for f in source.iterdir():
+ if f.is_file():shutil.copy2(f,evidence/f.name)
+for name in ['tests','cli','sabotage','audit']:shutil.copy2('/tmp/qa0338-'+name+'.py',evidence/('reproduce-'+name+'.py.txt'))
+for name in ['strict','version']:shutil.copy2('/tmp/0338-'+name+'.json',evidence/(name+'.json'))
+shutil.copy2('/tmp/qa0338-close.py',evidence/'report-builder.py.txt')
+rel='evidence/2026-11-02-release-decision/'
+def link(name):return '['+name+']('+rel+name+')'
+def command(name):return '`'+' '.join(json.loads((source/(name+'.json')).read_text())['command'])+'`'
+s=report.read_text()
+s=s.replace('The physical Run checkout shown in Scope','The physical Run checkout shown in Scope')
+s=s.replace('`repository_path` is the physical Run checkout shown in Scope. A temporary\nfixture is an additional repository_path input where applicable.', '`repository_path` refs in the YAML blocks are relative to this Run checkout;\ntemporary fixtures are disposable data created by the recorded reproduction\nscripts, not external repositories. The physical Run checkout is\n`'+str(root)+'`.')
+s=s.replace('## Row evidence','## Static gate\n\n`make build`: exit 0. `./bin/roundfix spec check 0338-the-release-decision-travels-with-the-spec --strict`: exit 0. '+link('strict.json')+' preserves its exact skipped detector list. Repository Verification is the Daemon-supplied `make verify-changed`: pass, exit 0; success diagnostics were removed. It was not rerun.\n\n## Row evidence',1)
+details={}
+details[1]='''Actor: gate operator; surface: repository static gate. The Daemon supplied
+`make verify-changed`, pass, exit 0, at the audited head; diagnostics were
+removed on success. This is a recorded gate fact, not an Agent rerun. The
+fresh build and strict check above independently establish a runnable binary
+and clean authoring precondition.'''
+details[2]='''Actor: maintainer; surfaces: package behavior and CLI boundary. All eleven
+named tests from Requirement 2 passed with `-count=1 -timeout 20m -v`:
+
+- CLI: `TestQueuePullRequestTitleFollowsTheDeliveryType`,
+  `TestQueuePullRequestTitleKeepsTheSlugWhileItFits`,
+  `TestQueueMessagesStayReadableBySquashReaders`,
+  `TestDeliveryPublicationTitleNamesTheSpecNumberForALongSlug`,
+  `TestReleasePlanAnswersApprovalFromTheReleaseCeiling`.
+- Spec: `TestPRDDeliveryTypeReadsTheFrontmatter`,
+  `TestArchiveRecordCarriesThePRDDeliveryType`.
+- Spec Check: `TestPRDTypeFindingNamesTheValue`.
+- Authorization: `TestReleaseCeilingIsReadAndValidated`.
+- Release Plan: `TestAnswerApprovalFollowsEveryCeiling`, `TestMaintenanceOnly`.
+
+Evidence: '''+', '.join(link('named-'+x+'.txt') for x in ['cli','spec','speccheck','authorization','releaseplan'])+'''. The transcripts record each required pass, not merely package exit.
+Archive absent-type bytes, lazy title loading, all four types and 91 UTF-16
+units, supported/unsupported inputs, record field refusals, every-grant and
+every-ceiling checks, breaking/manual refusals, outside-impact rejection,
+no-ceiling bytes, Backlog planning and read-only behavior all pass. A second
+Spec without a ceiling is covered by `every_Spec_grants` and the complete CLI
+ReleasePlan suite (R12). Independent public command confirmation is in R03/R04.'''
+details[3]='''Actor: Spec author; surface: CLI. In a temporary local clone of the audited
+head, commit `9001-fixture` with `type: fix`; run
+`./bin/roundfix spec check 9001-fixture`; then commit `type: docs` and rerun.
+Both exit 1 because this deliberately minimal fixture has other authoring
+findings, as Requirement 3 allows. The fix output contains zero SC-PRD-TYPE;
+the docs output contains exactly one:
+`[error] SC-PRD-TYPE: PRD type "docs" is not one of feat, fix, perf, refactor`.
+The command adds no unrelated finding for the type; stderr is empty. Each
+command uses fresh HOME/TMPDIR, and Git status is unchanged across each read.
+The committed fixture persists between invocations and is removed afterwards.
+`./bin/roundfix` in the fixture is a symlink to the Run-built binary.
+Evidence: '''+link('spec-fix.json')+', '+link('spec-docs.json')+', '+link('reproduce-cli.py.txt')+'.'
+minor=json.loads((source/'release-minor-text.json').read_text())['stdout'];grant=next(x for x in minor.splitlines() if x.startswith('- 0001-x ceiling='))
+details[4]='''Actor: release operator; surface: CLI. Each fixture has tag `v0.1.0`, a
+`docs: plan 0001-x` commit moving a Backlog Entry into the Spec, an approved
+record granting `implement`, `commit`, `push`, `pull_request`, `merge`,
+`release`, and a `feat: deliver 0001-x (#2)` commit deleting the Spec and
+adding its Archive Record and `internal/x.go`. Each public invocation runs
+`./bin/roundfix release plan --format text|json` with fresh HOME/TMPDIR.
+The fixture symlinks `./bin/roundfix` to the exact Run-built binary.
+
+- Minor ceiling, `release_paths: [CHANGELOG.md]`: both formats exit 0,
+  `Decision: ready`, `Proposed version: v0.2.0`,
+  `Release authorization: answered`, JSON `releaseAuthorization.answered: true`.
+  Grant line: `'''+grant+'''`.
+- Patch ceiling: both formats exit 3, `approval_required`,
+  `impact minor is above the patch ceiling of 0001-x`.
+- Additional direct `feat:` change: both formats exit 3, `approval_required`,
+  `sets the impact outside a delivered Spec` with that commit's identity.
+- No ceiling: first repeat both formats on the same repository and prove
+  self-equality. Then compare with its independent copy whose historical
+  record omits only `release`, using a Git replacement to preserve displayed
+  commit identities. Both formats remain byte-identical, exit 3, and contain
+  no authorization text line or JSON key. No normalization is applied.
+
+Every command preserves repository Git status and has empty stderr. Fixture
+skills/Setup Manifest advisories are expected for these minimal repositories:
+the test proves classification and approval, not production release readiness.
+No file, tag, package or release is published by the plan. Temporary repos,
+HOME and TMPDIR are removed. Evidence: '''+', '.join(link('release-'+case+'-'+fmt+'.json') for case in ['minor','patch','direct','no-ceiling'] for fmt in ['text','json'])+', '+link('no-ceiling-comparison-text.txt')+', '+link('no-ceiling-comparison-json.txt')+'.'
+mutations=[
+('title','Force the title prefix to feat, ignoring Delivery Type. The fix/fitting case returns `feat: deliver 0296-example` instead of `fix: deliver 0296-example`; all fix title variants fail.'),
+('archive-type','Remove the Archive Record type mapping. The fix archive case fails its rendered-record byte assertion because `type: fix` is missing.'),
+('operation','Disable the release-operation check while retaining valid Go compilation. `without_release` is incorrectly granted instead of contradictory and its named test fails.'),
+('ceiling','Invert the ceiling comparison. `every_ceiling` incorrectly answers a patch ceiling for minor impact; the CLI `ceiling_patch` reports exit 0 / ready instead of exit 3 / approval_required. Both named tests fail.'),
+('outside-change','Disable condition 5. The CLI `a_direct_feat_commit` becomes ready / exit 0, and the named test fails.'),
+('no-ceiling','Set ReleaseAuthorization for a no-ceiling record whose operations omit release. This leaves the initial historical-output checks reachable, then `no_ceiling` fails specifically at `no ceiling changed text bytes`, proving its full comparison observes the added field.'),
+('backlog','Remove docs/backlog/ from planning paths. The CLI `ceiling_minor` becomes manual_classification_required / exit 3, and the named test fails.')]
+for i,(name,observation) in enumerate(mutations,5):
+ files=sorted(p.name for p in source.glob('sabotage-'+name+'-*.txt'))
+ details[i]='Actor: gate operator; surface: isolated package/CLI negative probe. '+observation+' Each mutation ran in its own `git archive HEAD` copy, with Git initialized and staged, and every `go test` carried `-count=1 -timeout 20m -v`. Expected exit 1 and the named failing subtest were confirmed by inspecting the transcript; none was a compilation failure or a sandbox error. The production checkout was not mutated and the copy was removed. Evidence: '+', '.join(link(f) for f in files)+'.'
+details[12]='''Actor: gate operator; surfaces: backend, CLI and documentation contracts.
+Executed every named test and suite in Tasks 01–04 Verification, without any
+recorder or regeneration flag. Named tests run with verbose pass assertions
+(R02 and Baseline transcript); complete suites additionally run as follows:
+
+'''+ '\n'.join('- '+command(name)+': exit 0; '+link(name+'.txt')+'.' for name in ['suite-spec-speccheck','suite-releaseplan-authorization','suite-cli-releaseplan-followup','suite-baseline','suite-skills','suite-docscontract'])+'''
+
+The Baseline selector also records each named catalog, diagnostic,
+characterization, formatter, compatibility, clause, duplicate-clause and
+module-version test as passed: '''+link('named-baseline.txt')+'''. The complete docscontract suite includes the Setup Manifest and
+release documentation tests. Task 03's Result records the twice-run Managed
+Refresh at its settled commit with `File changes: 0`, verified idempotence and
+identical postimages; current manifest and characterization tests corroborate
+that result. No refresh or generator mutates the checkout during QA.'''
+details[13]='''Actor: guide reader; surface: docs. The executable wording audit asserts
+32 path/phrase groups across docs/user-guide, docs/agents, both copies of
+Roundfix and the three authoring skills, and Standard TypeScript goldens.
+It verifies `<type>: deliver`, SC-PRD-TYPE, the optional Archive Record type,
+every-ceiling approval, never breaking/manual, the generic patch-only rule,
+authorization output/JSON, Backlog planning, manual refactor classification,
+API Contract 11, PRD type, planning-time release questions and Task release
+exclusion/refusal. It compares every file of all four skill mirrors with its
+canonical copy. The historical embedded clause comparison recovers the
+prior guidance when the authorized insertions are removed, keeping clause
+identity/enforcement/replaces. Required skill-version and Behavior Surface
+contracts passed in R12. The actual documented commands are exercised in
+R03/R04, so evidence is behavioral in addition to wording assertions.
+Evidence: '''+link('wording-audit.json')+', '+link('history-audit.json')+', '+link('reproduce-audit.py.txt')+'.'
+details[14]='''Actor: maintainer comparing an adopter report; surface: offline evidence.
+Outside source: Argus, default/gesttione-solutions-argus, message `01a193d4`,
+2026-10-31, roundfix 0.126.0; Spec 0002, PR #10, squash eaa337a. The adopted
+reference `2026-11-01-the-delivery-pull-request-type-follows-the-spec.md`
+quotes the pure fix squashed as feat and the refused patch (approved 0.3.1,
+forced 0.4.0). R02 proves the queue now emits and classifies a fix title;
+R03 proves its PRD declaration is accepted and unsupported docs is diagnosed.
+R16 independently observes fix-delivery impact patch. This compares the
+outside incident's shape with current behavior; it does not claim to rerun
+Argus or verify its production repository. Source and date predate this Spec.
+Evidence: '''+link('named-cli.txt')+', '+link('spec-fix.json')+', '+link('spec-docs.json')+', '+link('fix-classification.txt')+'.'
+details[15]='''Actor: maintainer comparing an adopter request; surface: offline evidence.
+Outside source: Argus, default/gesttione-solutions-argus, message `01a19920`,
+2026-11-01; Spec 0006 record 56eb973, PR #23, then PR #24's separate release
+record. The adopted `2026-11-01-a-spec-authorization-carries-the-release-decision.md`
+quotes the request to carry a ceiling from planning and avoid asking again.
+R04 observes the approved minor ceiling answering the approval, while a
+release operation without a ceiling still asks and preserves its bytes.
+This matches the request without claiming that Argus's old record already
+contained a ceiling. Evidence: '''+link('release-minor-text.json')+', '+link('release-minor-json.json')+', '+link('release-no-ceiling-text.json')+'.'
+details[16]='''Actor: maintainer; surface: offline standards comparison. Outside source:
+Conventional Commits 1.0.0, https://www.conventionalcommits.org/en/v1.0.0/,
+passage quoted in the PRD Acceptance evidence, retrieved by the author on
+2026-11-01: "`fix` type commits should be translated to `PATCH` releases."
+A temporary Go overlay executes the real ClassifyCommit on
+`fix: deliver 9001-fixture (#575)` changing internal/x.go. The output is
+`type=fix impact=patch breaking=false`, exit 0. The probe writes no repository
+source and carries `-count=1 -timeout 20m -v`. Evidence: '''+link('fix-classification.txt')+', '+link('fix-classification.go.txt')+'.'
+details[17]='''Actor: maintainer; surface: offline standards/configuration comparison.
+Outside source: Cocogitto Conventional commits guide,
+https://docs.cocogitto.io/guide/commit, passage quoted in PRD Acceptance
+evidence, retrieved by the author on 2026-11-01. The local cog.toml has no
+commit_types override. Using fresh temporary HOME and disposable fixture Git
+identity, actual `cog verify '<type>: deliver 9001-fixture'` exits 0 for feat,
+fix, perf and refactor. This independently confirms all four accepted types,
+including refactor, which the quoted abbreviated list does not explicitly
+spell out. No commit is created. Evidence: '''+link('cocogitto.json')+'.'
+audit=json.loads((source/'history-audit.json').read_text())
+details[18]='''Actor: scope auditor; surface: local Git history. Run
+`git diff-tree --no-commit-id --name-only -r <commit>` for each of the four
+Task commits listed in the retained authorization audit, then compare actual
+paths with each Task's Context and Recorded paths. All '''+str(audit['unique_changed_paths'])+''' unique changed paths
+are declared. Task 01's `internal/cli/deliver_publication_scope_test.go` is
+accepted explicitly through its Recorded paths. The changed-path classifier
+reads the canonical governed-path regex/exact set and all '''+str(len(audit['governed_paths']))+''' changed Governed
+Paths occur in the authorization's exact paths list. The Daemon's operative
+authority resolutions above are preserved; no duplicate mechanical audit
+was executed. The authorizing revision precedes every Task commit and its
+record was not folded into or changed by any Task.
+
+The diff changes no Makefile, workflow, Go module, project config, skill lock,
+CHANGELOG, version file, dist path, Skill Coverage Map, existing Archive
+Record, other Baseline module, Source Baseline corpus or other skill.
+Every changed QA settlement section remains byte-identical. The glossary
+entry map changes exactly Delivery Type, Release Ceiling and Release Plan;
+PRD and TechSpec each declare both additions, CONTEXT defines both and the
+Release Plan sentence, and no other entry changed. The embedded Baseline
+clauses retain prior text outside the authorized insertions.
+Evidence: '''+link('history-audit.json')+', '+link('glossary-diff.txt')+', '+link('reproduce-audit.py.txt')+'.'
+details[19]='''Actor: reviewer; surface: pre-PR delivery control. Prompt fact: no open Pull
+Request for the Spec target branch. Status is
+`blocked (environment: no open Pull Request)`; no network lookup is attempted.
+Pre-PR controls are recorded individually:
+
+- Approval: approved Spec-contained `_authorization.md`, granted 2026-11-01,
+  authorizes implement/commit/push/pull_request/merge; the Daemon's four
+  operative authorization resolutions are retained above.
+- Checks/status: Daemon `make verify-changed` pass, exit 0, at this audited
+  head; fresh gate build, named/complete suites and CLI evidence passed.
+- Unresolved threads: none, because no Pull Request exists.
+- Merge-Ready acceptance: none exists yet; this control has no equivalent
+  reviewer acceptance, so the row stays blocked and the overall verdict partial.
+- Review-artifact ancestry/candidate: the claimed audited candidate is exactly
+  2dd188547ea89b3c511101f67e507c02fdc29bde; no Review Artifact is claimed.
+
+Unblocking action: the delivery operator opens the Pull Request on the Spec
+target branch, obtains the configured review and Merge-Ready acceptance for
+its actual candidate, and records those controls. The Run branch is never
+pushed and is not a Pull Request branch. This row alone permits a qualifying
+declared partial under the settlement policy.'''
+for i,detail in details.items():
+ pat=r'(### R'+f'{i:02}'+r'\n.*?```\n)\nPending observation\.'
+ s,n=re.subn(pat,lambda m:m[1]+'\n'+detail,s,count=1,flags=re.S);assert n==1,i
+ status='blocked (environment: no open Pull Request)' if i==19 else 'pass'
+ s=s.replace('| R'+f'{i:02}'+' | pending |','| R'+f'{i:02}'+' | '+status+' |')
+s=s.replace('verdict: pending','verdict: partial').replace('status: in-progress','status: closed').replace('rows_blocked_environment: 0','rows_blocked_environment: 1')
+s+='''
+## Findings
+
+None. The eight expected failing test invocations on seven mutated scratch
+copies are successful negative probes, not product failures. The minimal
+Spec fixture's unrelated authoring findings are part of its declared setup.
+The temporary audit harness needed a fixture Git identity for Cocogitto and
+an exact-heading match for the QA settlement comparison; these preparation
+corrections did not change product files or weaken assertions.
+
+## Blocked and skipped
+
+R19 is the sole environment-blocked row: no open Pull Request and no
+Merge-Ready acceptance yet. There are no failed, finding-blocked,
+declared-blocked, carried or skipped QA rows. The seeded Mechanical skips
+remain unchanged above; they describe absent mechanical inputs, not omitted
+functional rows. The PRD declares no Unreachable Acceptance and there is no
+wrongly declared row. Network lookup is prohibited by authorization, but all
+four outside sources were checked from their authored offline quotations,
+so none of those rows is blocked.
+
+## Coverage
+
+All coverage sources appear in row provenance and no other source is claimed:
+Requirement 2 in R02–R04; Requirement 5 in R05–R11; Requirement 6 in R12–R13;
+Requirement 11 in R18; repository Verification in R01; outside-evidence rows
+in R14–R17; Pull Request row in R19. Execution constraints 1, 3, 4, 7–10,
+12 and 13 are recorded in those observations, Static gate and Outcome.
+
+Eighteen rows passed, one is environment-blocked, zero failed, zero are
+finding-blocked or declared-blocked, and zero are skipped. All eleven named
+behavioral tests, the required Baseline selectors and six complete/selected
+suite commands passed. Seven isolated mutations produced eight expected
+failing test invocations. Four outside-evidence comparisons passed. All
+runnable criteria are covered; production release and actual Pull Request
+review remain outside this local gate.
+
+Non-Goals checked: classification still reads commit types; breaking/manual
+plans still ask; release planning stays read-only and the Run performs no
+release; no old record was backfilled; no forge or provider was contacted;
+forbidden tooling and QA settlement files/sections were not changed.
+
+## Outcome
+
+The PRD's Delivery Type now survives archiving and determines the queue's
+pull request title, and approved per-Spec Release Ceilings answer eligible
+release plans while insufficient, breaking, manual and outside-impact cases
+still ask. The local gate passed every runnable criterion and all seven
+sabotages; its qualifying partial reflects only the absent pre-PR
+Merge-Ready acceptance. The existing ADRs, glossary and guides already state
+the reusable rules, so this gate identifies no additional knowledge to promote.
+
+## Archive plan
+
+Pending offline plan observation.
+
+## Final verdict
+
+Qualifying declared partial: 18 passed, 1 environment-blocked (Pull Request
+row), 0 failed, 0 finding-blocked, 0 declared-blocked, 0 skipped. The delivery
+operator must obtain Merge-Ready acceptance for the published candidate;
+local implementation and negative-probe evidence have no open finding.
+'''
+report.write_text(s)
+print('Closed seeded report: partial; 18 passed; one pre-PR environment block.')

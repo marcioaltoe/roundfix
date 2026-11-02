@@ -1,0 +1,5 @@
+command: ['go', 'test', '-count=1', '-timeout', '20m', './internal/spec', './internal/speccheck']
+ok  	roundfix/internal/spec	30.903s
+ok  	roundfix/internal/speccheck	27.955s
+
+exit: 0

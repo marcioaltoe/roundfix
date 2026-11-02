@@ -1,0 +1,1 @@
+{"command": ["go", "test", "-count=1", "-timeout", "20m", "-v", "-run", "^TestReleaseCeilingIsReadAndValidated$", "./internal/authorization"], "exit": 1, "expected_test_failure": true}

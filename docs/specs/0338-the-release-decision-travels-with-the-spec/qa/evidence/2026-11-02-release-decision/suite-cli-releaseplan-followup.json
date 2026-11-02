@@ -1,0 +1,1 @@
+{"command": ["go", "test", "-count=1", "-timeout", "20m", "-run", "ReleasePlan|FollowUp", "./internal/cli"], "exit": 0}

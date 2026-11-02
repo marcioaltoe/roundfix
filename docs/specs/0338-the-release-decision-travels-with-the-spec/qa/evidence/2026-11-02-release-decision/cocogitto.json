@@ -1,0 +1,42 @@
+[
+  {
+    "command": [
+      "cog",
+      "verify",
+      "feat: deliver 9001-fixture"
+    ],
+    "exit": 0,
+    "stdout": "\n",
+    "stderr": "deliver 9001-fixture (not committed) - now\n\tAuthor: QA Fixture\n\tType: feat\n\tScope: none\n\n"
+  },
+  {
+    "command": [
+      "cog",
+      "verify",
+      "fix: deliver 9001-fixture"
+    ],
+    "exit": 0,
+    "stdout": "\n",
+    "stderr": "deliver 9001-fixture (not committed) - now\n\tAuthor: QA Fixture\n\tType: fix\n\tScope: none\n\n"
+  },
+  {
+    "command": [
+      "cog",
+      "verify",
+      "perf: deliver 9001-fixture"
+    ],
+    "exit": 0,
+    "stdout": "\n",
+    "stderr": "deliver 9001-fixture (not committed) - now\n\tAuthor: QA Fixture\n\tType: perf\n\tScope: none\n\n"
+  },
+  {
+    "command": [
+      "cog",
+      "verify",
+      "refactor: deliver 9001-fixture"
+    ],
+    "exit": 0,
+    "stdout": "\n",
+    "stderr": "deliver 9001-fixture (not committed) - now\n\tAuthor: QA Fixture\n\tType: refactor\n\tScope: none\n\n"
+  }
+]

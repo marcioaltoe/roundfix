@@ -1,0 +1,6 @@
+command: ['go', 'test', '-count=1', '-timeout', '20m', './internal/releaseplan', './internal/authorization', './internal/spec']
+ok  	roundfix/internal/releaseplan	0.073s
+ok  	roundfix/internal/authorization	0.650s
+ok  	roundfix/internal/spec	19.549s
+
+exit: 0

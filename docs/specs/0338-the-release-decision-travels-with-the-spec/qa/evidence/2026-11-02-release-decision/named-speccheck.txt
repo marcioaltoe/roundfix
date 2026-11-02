@@ -1,0 +1,38 @@
+command: ['go', 'test', '-count=1', '-timeout', '20m', '-v', '-run', '^TestPRDTypeFindingNamesTheValue$', './internal/speccheck']
+=== RUN   TestPRDTypeFindingNamesTheValue
+=== PAUSE TestPRDTypeFindingNamesTheValue
+=== CONT  TestPRDTypeFindingNamesTheValue
+=== RUN   TestPRDTypeFindingNamesTheValue/absent
+=== PAUSE TestPRDTypeFindingNamesTheValue/absent
+=== RUN   TestPRDTypeFindingNamesTheValue/no_frontmatter
+=== PAUSE TestPRDTypeFindingNamesTheValue/no_frontmatter
+=== RUN   TestPRDTypeFindingNamesTheValue/feat
+=== PAUSE TestPRDTypeFindingNamesTheValue/feat
+=== RUN   TestPRDTypeFindingNamesTheValue/fix
+=== PAUSE TestPRDTypeFindingNamesTheValue/fix
+=== RUN   TestPRDTypeFindingNamesTheValue/perf
+=== PAUSE TestPRDTypeFindingNamesTheValue/perf
+=== RUN   TestPRDTypeFindingNamesTheValue/refactor
+=== PAUSE TestPRDTypeFindingNamesTheValue/refactor
+=== RUN   TestPRDTypeFindingNamesTheValue/docs
+=== PAUSE TestPRDTypeFindingNamesTheValue/docs
+=== CONT  TestPRDTypeFindingNamesTheValue/absent
+=== CONT  TestPRDTypeFindingNamesTheValue/perf
+=== CONT  TestPRDTypeFindingNamesTheValue/feat
+=== CONT  TestPRDTypeFindingNamesTheValue/docs
+=== CONT  TestPRDTypeFindingNamesTheValue/fix
+=== CONT  TestPRDTypeFindingNamesTheValue/refactor
+=== CONT  TestPRDTypeFindingNamesTheValue/no_frontmatter
+--- PASS: TestPRDTypeFindingNamesTheValue (0.00s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/feat (0.11s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/absent (0.11s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/refactor (0.11s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/perf (0.11s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/no_frontmatter (0.11s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/fix (0.11s)
+    --- PASS: TestPRDTypeFindingNamesTheValue/docs (0.14s)
+PASS
+suiteguard: guard cost: measured 2884 paths; fingerprint took 138.792084ms before and 127.058041ms after
+ok  	roundfix/internal/speccheck	0.585s
+
+exit: 0

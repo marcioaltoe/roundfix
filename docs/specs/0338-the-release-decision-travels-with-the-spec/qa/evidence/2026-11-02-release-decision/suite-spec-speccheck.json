@@ -1,0 +1,1 @@
+{"command": ["go", "test", "-count=1", "-timeout", "20m", "./internal/spec", "./internal/speccheck"], "exit": 0}

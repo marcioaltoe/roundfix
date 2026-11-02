@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0338-the-release-decision-travels-with-the-spec
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

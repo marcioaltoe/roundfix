@@ -1,0 +1,68 @@
+import os,subprocess,tempfile,shutil,json,hashlib
+from pathlib import Path
+root=Path.cwd(); out=Path('/tmp/qa0338-results'); binary=root/'bin/roundfix'
+e=os.environ.copy()
+for k in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']:e.pop(k,None)
+e.update(GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_AUTHOR_NAME='QA Fixture',GIT_AUTHOR_EMAIL='qa@example.invalid',GIT_COMMITTER_NAME='QA Fixture',GIT_COMMITTER_EMAIL='qa@example.invalid',GIT_AUTHOR_DATE='2026-11-01T00:00:00Z',GIT_COMMITTER_DATE='2026-11-01T00:00:00Z',GOPROXY='off',GOSUMDB='off')
+def git(r,*args):
+ p=subprocess.run(['git','-c','core.hooksPath=/dev/null',*args],cwd=r,env=e,capture_output=True,text=True)
+ if p.returncode:raise RuntimeError(str(args)+p.stderr)
+ return p.stdout.strip()
+def write(r,name,text):
+ p=r/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+def attach(r):
+ (r/'bin').mkdir(exist_ok=True);(r/'bin/roundfix').unlink(missing_ok=True);(r/'bin/roundfix').symlink_to(binary)
+ with (r/'.git/info/exclude').open('a') as f:f.write('\n/bin/\n')
+def run(r,label,args):
+ with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+  ce=e|{'HOME':h,'TMPDIR':t}
+  before=git(r,'status','--porcelain')
+  p=subprocess.run(['./bin/roundfix',*args],cwd=r,env=ce,capture_output=True,text=True)
+  after=git(r,'status','--porcelain');assert before==after,(before,after)
+  data={'command':['./bin/roundfix',*args],'repository_path':str(r),'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr,'repository_status_unchanged':True}
+  (out/(label+'.json')).write_text(json.dumps(data,indent=2));print(label+': exit '+str(p.returncode),flush=True)
+  return p
+with tempfile.TemporaryDirectory(prefix='qa0338-cli-') as td:
+ base=Path(td);r=base/'spec-clone'
+ p=subprocess.run(['git','clone','--local','--no-hardlinks','--no-checkout',str(root),str(r)],env=e,capture_output=True,text=True);assert p.returncode==0,p.stderr
+ git(r,'checkout','--detach','2dd188547ea89b3c511101f67e507c02fdc29bde');attach(r)
+ prd='---\nspec: 9001-fixture\nstatus: active\nsurfaces: [cli]\ntype: fix\n---\n\n# Fixture\n'
+ write(r,'docs/specs/9001-fixture/_prd.md',prd);git(r,'add','docs/specs/9001-fixture');git(r,'commit','-m','docs: add fixture')
+ p=run(r,'spec-fix',['spec','check','9001-fixture']);assert 'SC-PRD-TYPE' not in p.stdout+p.stderr
+ write(r,'docs/specs/9001-fixture/_prd.md',prd.replace('type: fix','type: docs'));git(r,'add','docs/specs/9001-fixture');git(r,'commit','-m','docs: invalid fixture')
+ p=run(r,'spec-docs',['spec','check','9001-fixture']);assert (p.stdout+p.stderr).count('SC-PRD-TYPE')==1 and '"docs"' in p.stdout+p.stderr
+ for case,ceiling,direct in [('minor','minor',False),('patch','patch',False),('direct','minor',True),('no-ceiling','',False)]:
+  r=base/case;r.mkdir();git(r,'init','-b','main');attach(r)
+  write(r,'README.md','# Release fixture\n');write(r,'docs/backlog/2026-11-01-example.md','intent\n');git(r,'add','-A');git(r,'commit','-m','chore: initial');git(r,'tag','v0.1.0')
+  operations='[implement, commit, push, pull_request, merge, release]'
+  auth='---\nstatus: approved\ngranted: 2026-11-01\naction: deliver x\nconsuming: 0001-x\npaths: []\noperations: '+operations+'\n'
+  if ceiling:auth+='release_ceiling: '+ceiling+'\nrelease_paths: [CHANGELOG.md]\n'
+  auth+='---\n'
+  record='docs/specs/0001-x/_authorization.md';write(r,record,auth);write(r,'docs/specs/0001-x/_prd.md','---\ntype: feat\n---\n# X\n')
+  git(r,'mv','docs/backlog/2026-11-01-example.md','docs/specs/0001-x/reference.md');git(r,'add','-A');git(r,'commit','-m','docs: plan 0001-x');parent=git(r,'rev-parse','HEAD')
+  git(r,'rm','-r','docs/specs/0001-x');write(r,'docs/history/specs/0001-x.md','# X archived\n');write(r,'internal/x.go','package x\n');git(r,'add','-A');git(r,'commit','-m','feat: deliver 0001-x (#2)');delivery=git(r,'rev-parse','HEAD')
+  if direct:
+   write(r,'internal/direct.go','package x\n');git(r,'add','-A');git(r,'commit','-m','feat: direct change')
+  saved={}
+  for fmt in ['text','json']:
+   p=run(r,'release-'+case+'-'+fmt,['release','plan','--format',fmt]);saved[fmt]=p.stdout
+   assert p.returncode==(0 if case=='minor' else 3),p.stdout+p.stderr
+   assert not p.stderr,p.stderr
+   if fmt=='text':
+    assert 'Decision: '+('ready' if case=='minor' else 'approval_required') in p.stdout
+    assert 'Proposed version: v0.2.0' in p.stdout
+    if case=='minor':assert 'Release authorization: answered' in p.stdout and 'paths=CHANGELOG.md' in p.stdout
+    if case=='patch':assert 'impact minor is above the patch ceiling of 0001-x' in p.stdout
+    if case=='direct':assert 'sets the impact outside a delivered Spec' in p.stdout
+   else:
+    obj=json.loads(p.stdout);assert obj['state']==('ready' if case=='minor' else 'approval_required')
+    if ceiling:assert obj['releaseAuthorization']['answered']==(case=='minor')
+  if case=='no-ceiling':
+   for fmt in ['text','json']:
+    p=run(r,'release-no-ceiling-repeat-'+fmt,['release','plan','--format',fmt]);assert p.stdout==saved[fmt];assert 'Release authorization' not in p.stdout and 'releaseAuthorization' not in p.stdout
+   other=base/'no-release';shutil.copytree(r,other,symlinks=True)
+   git(other,'checkout','--detach',parent);write(other,record,auth.replace(operations,'[implement, commit, push, pull_request, merge]'));git(other,'add','-A');git(other,'commit','--amend','--no-edit');replacement=git(other,'rev-parse','HEAD');git(other,'checkout','--detach',delivery);git(other,'replace',parent,replacement)
+   for fmt in ['text','json']:
+    p=run(other,'release-no-release-'+fmt,['release','plan','--format',fmt]);assert p.returncode==3 and p.stdout==saved[fmt]
+    (out/('no-ceiling-comparison-'+fmt+'.txt')).write_text('Same repository repeated: identical bytes.\nHistorical record differs only by release operation, through Git replacement retaining displayed commit IDs.\nWith/without release operation: identical bytes.\nSHA256: '+hashlib.sha256(p.stdout.encode()).hexdigest()+'\n')
+print('CLI fixture assertions passed; temporary repositories, HOME and TMPDIR removed.',flush=True)

@@ -1,0 +1,8 @@
+package releaseplan
+import "testing"
+func TestQA0338FixDeliveryIsPatch(t *testing.T) {
+ t.Parallel()
+ got := ClassifyCommit(Commit{Subject: "fix: deliver 9001-fixture (#575)", ChangedPaths: []string{"internal/x.go"}})
+ t.Logf("type=%s impact=%s breaking=%t", got.ConventionalType, got.AutomaticImpact, got.Breaking)
+ if got.ConventionalType != "fix" || got.AutomaticImpact != ImpactPatch || got.Breaking {t.Fatalf("classification=%+v", got)}
+}

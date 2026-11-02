@@ -1,0 +1,14 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "release",
+    "plan",
+    "--format",
+    "text"
+  ],
+  "repository_path": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0338-cli-jeusewqf/no-release",
+  "exit": 3,
+  "stdout": "Decision: approval_required\nBase: v0.1.0 (c35b6c6b847a)\nTarget: HEAD (e9793a895d6e)\nImpact: minor\nBreaking: false\nProposed version: v0.2.0\nApproval required: yes\nApproval question: Approve the minor increment to v0.2.0?\nNext action: answer the approval question before any release mutation.\nskills: failed: missing: archive-spec, brainstorming, business-analyst, evidence-gate, implement-task, qa-gate, roundfix, setup-context-driven, write-idea, write-prd, write-tasks, write-techspec; Setup Manifest is absent or unreadable; 0 external required; next: complete the skills and guides check in the release runbook before the release Pull Request\nbaseline: action_required: the repository has no Setup Manifest; next: complete the skills and guides check in the release runbook before the release Pull Request\nskill-coverage: not_declared: the repository has no Skill Coverage Map\nDetermining commits:\n- e9793a895d6e feat: deliver 0001-x (#2) [impact=minor, type=feat]\n",
+  "stderr": "",
+  "repository_status_unchanged": true
+}
