@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0341-a-glossary-definition-written-as-a-list-item-counts
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -112,3 +112,83 @@ message `01a19a04`, adopted as
 
 - `_prd.md` → Goals; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Glossary
 - `_techspec.md` → Current behavior 1-5; API Contracts 1-4; Invariants 1-4; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, evidence-gate.
+
+Characterization before implementation: added `glossaryDefinitionFormCases` and
+`TestGlossaryDefinitionFormsAreRead` with only `colon` marked defined.
+`go test -count=1 -timeout 5m -run '^TestGlossaryDefinitionFormsAreRead$' ./internal/speccheck`
+exited 0 (`ok`, 2.361s) against the unchanged reader. All 19 forms exercised
+both completed binding Tasks and undeclared bold coverage.
+
+Implementation evidence:
+
+- Acceptance criterion 1: the shared reader now accepts the seven specified
+  forms and rejects the twelve non-definition rows. The form test checks
+  missing-term locations after completed binding Tasks and bold coverage for
+  every row. The glossary reader's file set, normalization and loop, declaration
+  grammar, bold rule, horizon and binding rule remain unchanged.
+- Acceptance criterion 2: the command agreement test executes `sh` in disposable
+  directories for all 19 rows plus regex-metacharacter, apostrophe, later-mention
+  and quoted-path cases (23 cases total). It resolves `grep` through
+  `testfixture.RequireTool`, controls the child environment and waits for every
+  command. The command reads standard input, quotes literal arguments and escapes
+  the term for the anchored extended expression.
+- Acceptance criterion 3: the finding test asserts the complete missing-term fix,
+  the unbound fix's rendered command, root CONTEXT preference and lexical fallback
+  (including mapped glossaries). It also proves the rendered command binds a
+  Task and produces no `WrapFragileVerification` finding. The spec command guide
+  states all four forms and alternate markers; CONTEXT defines Glossary Definition
+  next to Glossary Declaration with a plain `_Avoid_` line.
+
+Focused checks:
+
+- After widening the reader,
+  `go test -count=1 -timeout 5m -run '^TestGlossaryDefinitionFormsAreRead$' ./internal/speccheck`
+  exited 0 (`ok`, 1.939s).
+- After the final source edit,
+  `go test -count=1 -timeout 5m -run '^TestGlossary' ./internal/speccheck`
+  exited 0 (`ok`, 2.168s), covering existing glossary behavior and all three
+  new regression tests.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^TestGlossary'`
+  exited 0 (`ok`, 0.446s), including defined phrases, accepted ADR links, closed
+  lists, plain Avoid lines and duplicate-rule contracts.
+- A Python assertion confirmed the guide's whitespace-normalized form sentence
+  matches `GlossaryDefinitionForms`, and CONTEXT has the required definition
+  header and plain Avoid line. `git diff --check` exited 0.
+
+Final implementation step, after the last guide edit and this Result update:
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+The sanctioned recorder owns the Behavior Surface Record; it is never hand-edited.
+
+Declared Verification and repository Verification remain for the Daemon. Task
+status, the Task Graph, other Tasks and skills were not edited. No commit, push
+or pull request was made. No follow-up outside this slice was needed.
+
+Verification Feedback repair (attempt 1):
+
+- Inspected the Daemon's `batch-001-attempt-1.log` and
+  `batch-001-attempt-1-settlement-spec-consistency.log`. Both failures traced
+  to the same obsolete Claim Receipt in `_techspec.md` → API Contract 4:
+  the guide sentence quoted there had intentionally been replaced by this Task.
+- Reworded that one TechSpec bullet to reference the accepted definition forms
+  of API Contract 1 without quoting the removed guide passage. This is a
+  consistency repair of the source for this Task's documentation change; no
+  requirement, API, other Task, corpus golden or detector changed.
+- Focused check:
+  `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors)$'`
+  exited 0 (`ok`, 1.967s). The existing corpus golden agrees unchanged and the
+  active corpus reports no errors. `git diff --check` exited 0.
+- The earlier final sanctioned Behavior Surface recorder exited 0 (`ok`,
+  0.486s). Its required command is run again as the final implementation step
+  after this evidence update; no guide source changed during the repair.
+- The Task remains `in_progress`; declared Verification and settlement remain
+  Daemon-owned. No commit, push or pull request was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/_techspec.md`

@@ -1466,6 +1466,10 @@ _Avoid_: Interview transcript, assumed approval, unrecorded clarification
 The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
 _Avoid_: Vocabulary Contract, term list, glossary candidates
 
+**Glossary Definition**:
+A line of the glossary that defines a term: the bolded term at the start of the line followed by a colon or by a spaced em dash, bare or as a top-level list item marked `-`, `*` or `+`. A heading, an indented or ordered list item and bold text inside a sentence define nothing.
+_Avoid_: Glossary Declaration, bold mention, glossary heading
+
 **Glossary Gap**:
 A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
 _Avoid_: Missing term, undocumented token, stale glossary

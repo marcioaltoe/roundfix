@@ -156,9 +156,8 @@ No schema changes.
      `.agents/skills/roundfix/references/spec.md`: a Glossary Definition is
      `GlossaryDefinitionForms`, whitespace-normalized; headings, indented or
      ordered list items and bold inside a sentence define nothing.
-   - `docs/user-guide/commands/spec.md`: "Definitions begin a line with
-     `**Term**:`." becomes the accepted forms, and the `SC-GLOSSARY-MISSING`
-     row names them.
+   - `docs/user-guide/commands/spec.md`: states the accepted definition
+     forms from API Contract 1, and the `SC-GLOSSARY-MISSING` row names them.
    - `CONTEXT.md`: adds **Glossary Definition**.
 
 ### Surface Transcripts

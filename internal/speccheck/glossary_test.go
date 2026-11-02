@@ -4,13 +4,17 @@
 package speccheck
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"roundfix/internal/gittest"
+	"roundfix/internal/spec"
+	"roundfix/internal/testfixture"
 )
 
 const glossaryFixtureSlug = "0200-example"
@@ -281,4 +285,153 @@ func TestGlossaryLegacySpecIsSkipped(t *testing.T) {
 	// A declaration opts even a legacy Spec in.
 	writeReceiptFixture(t, root, glossaryFixtureDir+"/_prd.md", "## Glossary\nNone.\n## Story\n**Legacy Term**\n")
 	glossaryAssert(t, glossaryCheck(t, root, StagePRD), CodeGlossaryUndeclared, 4)
+}
+
+// glossaryDefinitionFormCases covers accepted definitions and nearby prose forms.
+var glossaryDefinitionFormCases = []struct {
+	name, line string
+	defined    bool
+}{
+	{"colon", "**New Term**: d", true},
+	{"dash list colon", "- **New Term**: d", true},
+	{"star list colon", "* **New Term**: d", true},
+	{"plus list colon", "+ **New Term**: d", true},
+	{"em dash", "**New Term** — d", true},
+	{"dash list em dash", "- **New Term** — d", true},
+	{"em dash at line end", "- **New Term** —", true},
+	{"heading", "### New Term", false},
+	{"indented list item", "  - **New Term**: d", false},
+	{"tab indented list item", "\t- **New Term** — d", false},
+	{"ordered list item", "1. **New Term**: d", false},
+	{"ascii hyphen", "- **New Term** - d", false},
+	{"double hyphen", "- **New Term** -- d", false},
+	{"en dash", "- **New Term** – d", false},
+	{"unspaced em dash", "- **New Term**—d", false},
+	{"unspaced list marker", "-**New Term**: d", false},
+	{"bold prose", "- **New Term** is prose", false},
+	{"bold sentence", "- **New Term.** Prose", false},
+	{"inside sentence", "See **New Term**: d", false},
+}
+
+func TestGlossaryDefinitionFormsAreRead(t *testing.T) {
+	t.Parallel()
+	for _, tc := range glossaryDefinitionFormCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("completed binding", func(t *testing.T) {
+				root := glossaryRepo(t, "## Glossary\n- adds: **New Term**\n")
+				writeReceiptFixture(t, root, "CONTEXT.md", tc.line+"\n")
+				glossaryTask(t, root, "completed", "- interface: CONTEXT.md", "**New Term**")
+				result := glossaryCheck(t, root, StageAll)
+				glossaryAssert(t, result, CodeGlossaryUnplanned)
+				if tc.defined {
+					glossaryAssert(t, result, CodeGlossaryMissing)
+				} else {
+					glossaryAssert(t, result, CodeGlossaryMissing, 5)
+				}
+			})
+			t.Run("bold coverage", func(t *testing.T) {
+				root := glossaryRepo(t, "## Glossary\nNone.\n## Story\n**New Term**\n")
+				writeReceiptFixture(t, root, "CONTEXT.md", tc.line+"\n")
+				result := glossaryCheck(t, root, StagePRD)
+				if tc.defined {
+					glossaryAssert(t, result, CodeGlossaryUndeclared)
+				} else {
+					glossaryAssert(t, result, CodeGlossaryUndeclared, 4)
+				}
+			})
+		})
+	}
+}
+
+func TestGlossaryVerificationCommandAgreesWithTheDefinitionReader(t *testing.T) {
+	t.Parallel()
+	grep := testfixture.RequireTool(t, "grep")
+	type commandCase struct {
+		name, term, line, path string
+		defined                bool
+	}
+	var cases []commandCase
+	for _, tc := range glossaryDefinitionFormCases {
+		cases = append(cases, commandCase{tc.name, "New Term", tc.line, "CONTEXT.md", tc.defined})
+	}
+	cases = append(cases,
+		commandCase{"metacharacter term", "New.Term", "**NewXTerm**: cites **New.Term**", "CONTEXT.md", false},
+		commandCase{"apostrophe term", "Owner's Term", "- **Owner's Term** — d", "CONTEXT.md", true},
+		commandCase{"later mention", "New Term", "**Other Term**: cites **New Term**: d", "CONTEXT.md", false},
+		commandCase{"quoted glossary path", "New Term", "**New Term**: d", "owner's glossary/CONTEXT.md", true},
+	)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeReceiptFixture(t, root, tc.path, tc.line+"\n")
+			if tc.path != "CONTEXT.md" {
+				writeReceiptFixture(t, root, "CONTEXT-MAP.md", "[Glossary](<"+tc.path+">)\n")
+			}
+			_, terms, err := glossaryFiles(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := terms[glossaryNormalize(tc.term)]; got != tc.defined {
+				t.Fatalf("reader defined = %v, want %v for %q", got, tc.defined, tc.line)
+			}
+			command := GlossaryVerificationCommand(tc.term, tc.path)
+			cmd := exec.CommandContext(t.Context(), "sh", "-c", command)
+			cmd.Dir = root
+			cmd.Env = []string{"PATH=" + filepath.Dir(grep), "LC_ALL=C", "HOME=" + root, "TMPDIR=" + root}
+			output, err := cmd.CombinedOutput()
+			var exitErr *exec.ExitError
+			if err != nil && (!errors.As(err, &exitErr) || exitErr.ExitCode() != 1) {
+				t.Fatalf("command error: %v; output=%q; command=%q", err, output, command)
+			}
+			if got := err == nil; got != tc.defined {
+				t.Fatalf("command accepted = %v, want %v; output=%q; command=%q", got, tc.defined, output, command)
+			}
+		})
+	}
+}
+
+func TestGlossaryFindingsNameTheDefinitionForms(t *testing.T) {
+	t.Parallel()
+	t.Run("missing", func(t *testing.T) {
+		root := glossaryRepo(t, "## Glossary\n- adds: **New Term**\n")
+		glossaryTask(t, root, "completed", "- interface: CONTEXT.md", "**New Term**")
+		result := glossaryCheck(t, root, StageAll)
+		glossaryAssert(t, result, CodeGlossaryMissing, 5)
+		findings := receiptCodeFindings(result, CodeGlossaryMissing)
+		if want := "Define the declared term in the glossary as " + GlossaryDefinitionForms + "."; findings[0].Fix != want {
+			t.Fatalf("missing fix = %q, want %q", findings[0].Fix, want)
+		}
+	})
+	for _, path := range []string{"CONTEXT.md", "GLOSSARY.md", "a/CONTEXT.md"} {
+		t.Run(path, func(t *testing.T) {
+			root := glossaryRepo(t, "## Glossary\n- adds: **New Term**\n")
+			writeReceiptFixture(t, root, "GLOSSARY.md", "# Glossary\n")
+			writeReceiptFixture(t, root, "CONTEXT-MAP.md", "[A](a/CONTEXT.md)\n[Z](z/GLOSSARY.md)\n")
+			writeReceiptFixture(t, root, "a/CONTEXT.md", "# Glossary\n")
+			writeReceiptFixture(t, root, "z/GLOSSARY.md", "# Glossary\n")
+			if path != "CONTEXT.md" {
+				if err := os.Remove(filepath.Join(root, "CONTEXT.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if path == "a/CONTEXT.md" {
+				if err := os.Remove(filepath.Join(root, "GLOSSARY.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			glossaryTask(t, root, "pending", "- interface: "+path, "no term binding")
+			result := glossaryCheck(t, root, StageAll)
+			glossaryAssert(t, result, CodeGlossaryUnplanned, 5)
+			findings := receiptCodeFindings(result, CodeGlossaryUnplanned)
+			command := GlossaryVerificationCommand("New Term", path)
+			if want := "Add a non-QA Task declaring the glossary under interface: or creates: and naming **New Term** in ## Verification, such as: " + command; findings[0].Fix != want {
+				t.Fatalf("unplanned fix = %q, want %q", findings[0].Fix, want)
+			}
+			if findings := WrapFragileVerification(spec.Task{File: "task_01.md", Verification: []string{command}}); len(findings) != 0 {
+				t.Fatalf("rendered command is wrap-fragile: %#v", findings)
+			}
+			glossaryTask(t, root, "pending", "- interface: "+path, command)
+			glossaryAssert(t, glossaryCheck(t, root, StageAll), CodeGlossaryUnplanned)
+		})
+	}
 }
