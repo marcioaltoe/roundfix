@@ -509,6 +509,49 @@ type: qa
 	}
 }
 
+func TestAuthoredQAVerificationPrintsTheExpectedBlock(t *testing.T) {
+	t.Parallel()
+
+	const slug = "expected-qa-verification"
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", "---\nspec: "+slug+"\nstatus: active\ncreated: 2026-08-31\nsurfaces: [backend]\n---\n\n# QA Verification fixture\n")
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_tasks.md", "---\nschema: spec-tasks/v1\nspec: "+slug+"\nqa: task_01\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n")
+	const taskHeader = "---\ntask: task_01\nspec: " + slug + "\nstatus: pending\ntype: qa\n---\n\n# Task 01: QA gate\n\n"
+	taskPath := "docs/specs/" + slug + "/task_01.md"
+	writeCitationFixtureFile(t, repoRoot, taskPath, taskHeader+"## Verification\n\n- `test -f authored-output` — expected: exit 0\n")
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeQAVerificationAuthored)
+	if len(findings) != 1 {
+		t.Fatalf("authored QA Verification findings = %#v, want one", findings)
+	}
+	want := "## Verification\n\n"
+	for _, command := range spec.DerivedQAVerification(slug) {
+		want += "- `" + command + "`\n"
+	}
+	if findings[0].Expected != want {
+		t.Fatalf("Expected = %q, want %q", findings[0].Expected, want)
+	}
+	if got := speccheck.ExpectedQAVerificationBlock([]string{"first", "second"}); got != "## Verification\n\n- `first`\n- `second`\n" {
+		t.Fatalf("multiple-command block = %q", got)
+	}
+	if got := speccheck.ExpectedQAVerificationBlock(nil); got != "## Verification\n\n" {
+		t.Fatalf("empty block = %q", got)
+	}
+	writeCitationFixtureFile(t, repoRoot, taskPath, taskHeader+findings[0].Expected)
+	result, err = speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks) after replacement: %v", err)
+	}
+	if findings := findingsWithCode(result, speccheck.CodeQAVerificationAuthored); len(findings) != 0 {
+		t.Fatalf("QA Verification findings after copying expected block = %#v, want none", findings)
+	}
+}
+
 func TestDerivedQAVerificationIsAcceptedByTaskStageChecker(t *testing.T) {
 	t.Parallel()
 

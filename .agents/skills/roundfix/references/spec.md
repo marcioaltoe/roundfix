@@ -24,6 +24,13 @@ The authoring-honesty contract includes these stable identifiers:
   invariant and a commit-shaped hexadecimal token together; compare with the
   Delivery Base instead. A gap that runs from the Tasks stage.
 
+- `SC-QA-VERIFICATION-AUTHORED` — a pending QA Task's `## Verification`
+  renders a command other than the one Roundfix derives. An error from the
+  Tasks stage. After its `fix:` line the text report prints `expected block:`
+  and the exact section as a fenced `markdown` block; JSON carries it in the
+  finding's `expected` field, present only on a finding that has one. Replace
+  the whole section with it, unchanged.
+
 These four gaps hold every active Spec, whatever its age. Before an active
 Spec's next Run, add the sections and lines each finding names; the fix of every
 finding names the section or line and the skill rule that requires it.
@@ -293,19 +300,22 @@ a command that passes remains `vacuous`. The Daemon refuses malformed commands
 before opening an Agent Session. If the parser cannot start, the existing
 command probe still runs.
 
-The probe runs only the commands of Tasks a Run would still execute: every
-Task whose status is not `completed`, the rule the Daemon uses to schedule
-Tasks and route its QA gate. A completed Task's commands are not run, because
+The probe runs only the commands of Tasks a Run would still execute, except
+its QA gate. A completed Task's commands are not run, because
 they pass once its work exists and may need preparation the disposable
 checkout lacks. Each is reported as
 `- <task>: not probed — "<command>" (Task completed)`, the clean verdict line
 adds `; not probed (completed Tasks): <n>`, and JSON lists them under
 `verification.notProbed` as `{task, command, reason}` objects with reason
-`completed`, a key present only when the list is not empty. A not-probed
-command never changes the exit code. A vacuous, unknown or malformed command
-of a pending, in-progress or failed Task, or of a pending QA gate, still makes
-the check exit `1`, and the uncommitted-source lines still name every Task
-file, completed ones included.
+`completed`, a key present only when the list is not empty. The QA gate is never probed, whatever its status,
+because the Daemon routes the Task of type `qa` to its QA step and Roundfix
+derives its Verification. A pending gate's command is reported as
+`- <task>: not probed — "<command>" (QA gate)`, the clean verdict line adds
+`; not probed (QA gate): <n>`, and JSON lists it with reason `qa_gate`;
+a completed gate keeps reason `completed`. A not-probed command never changes
+the exit code. A vacuous, unknown or malformed command of a pending,
+in-progress or failed non-QA Task still makes the check exit `1`, and the
+uncommitted-source lines still name every Task file, completed ones included.
 
 After `Verification tree: HEAD`, the text report names each Task Graph or Task
 file listed by Git status as an uncommitted Verification source:

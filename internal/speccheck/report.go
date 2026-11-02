@@ -41,6 +41,9 @@ type Finding struct {
 	Where    []Location `json:"where"`
 	Fix      string     `json:"fix"`
 
+	// Expected holds the exact text the fix asks for when the checker can derive it.
+	Expected string `json:"expected,omitempty"`
+
 	// declaredVocabularySpec is set only for an emitted token selected by the
 	// named Spec's complete Vocabulary Contract. It stays out of the public
 	// report schema: callers use GatePrecondition to classify the finding.
@@ -70,7 +73,8 @@ type VerificationCoverage struct {
 	Ran        bool
 	Executed   int
 	Unexecuted int
-	NotProbed  int
+	NotProbed  int // completed Tasks
+	QAGate     int // pending, in-progress or failed QA gate commands
 }
 
 // PromoteGaps applies the strictness of `spec check --strict` to one result:
@@ -251,6 +255,9 @@ func RenderText(result Result, coverage VerificationCoverage) string {
 			if coverage.NotProbed > 0 {
 				fmt.Fprintf(&report, "; not probed (completed Tasks): %d", coverage.NotProbed)
 			}
+			if coverage.QAGate > 0 {
+				fmt.Fprintf(&report, "; not probed (QA gate): %d", coverage.QAGate)
+			}
 			report.WriteString(".\n")
 		} else {
 			report.WriteString("No findings. Authored Verification commands were not executed.\n")
@@ -274,6 +281,11 @@ func RenderText(result Result, coverage VerificationCoverage) string {
 		report.WriteString("  fix: ")
 		report.WriteString(finding.Fix)
 		report.WriteByte('\n')
+		if finding.Expected != "" {
+			report.WriteString("  expected block:\n```markdown\n")
+			report.WriteString(finding.Expected)
+			report.WriteString("```\n")
+		}
 	}
 	if len(result.Skipped) > 0 {
 		report.WriteString("Skipped:\n")

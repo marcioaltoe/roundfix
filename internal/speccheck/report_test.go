@@ -371,6 +371,53 @@ func TestRenderResultTextAndJSON(t *testing.T) {
 	}
 }
 
+func TestAFindingRendersItsExpectedBlock(t *testing.T) {
+	t.Parallel()
+
+	const expected = "## Verification\n\n- `test -f output`\n"
+	result := speccheck.Result{
+		Slug: "expected-block",
+		Findings: []speccheck.Finding{
+			{Code: "WITH-BLOCK", Severity: speccheck.SeverityError, Summary: "Replace the section", Where: []speccheck.Location{{Path: "task_01.md", Line: 1}}, Fix: "Copy the block.", Expected: expected},
+			{Code: "WITHOUT-BLOCK", Severity: speccheck.SeverityGap, Summary: "Review the declaration", Where: []speccheck.Location{{Path: "task_02.md", Line: 9}}, Fix: "Review the section."},
+		},
+	}
+	want := "Spec expected-block\n" +
+		"[error] WITH-BLOCK: Replace the section\n  at task_01.md:1\n  fix: Copy the block.\n" +
+		"  expected block:\n```markdown\n" + expected + "```\n" +
+		"[gap] WITHOUT-BLOCK: Review the declaration\n  at task_02.md:9\n  fix: Review the section.\n"
+	if got := speccheck.RenderText(result, speccheck.VerificationCoverage{}); got != want {
+		t.Fatalf("RenderText() = %q, want %q", got, want)
+	}
+	data, err := speccheck.RenderJSON(result)
+	if err != nil {
+		t.Fatalf("RenderJSON(): %v", err)
+	}
+	var document struct {
+		Findings []map[string]json.RawMessage `json:"findings"`
+	}
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode report: %v", err)
+	}
+	if len(document.Findings) != 2 {
+		t.Fatalf("JSON findings = %s, want two", data)
+	}
+	var gotExpected string
+	if err := json.Unmarshal(document.Findings[0]["expected"], &gotExpected); err != nil {
+		t.Fatalf("decode expected: %v", err)
+	}
+	if gotExpected != expected {
+		t.Errorf("JSON expected = %q, want %q", gotExpected, expected)
+	}
+	if _, present := document.Findings[1]["expected"]; present {
+		t.Fatalf("finding without block contains expected: %s", data)
+	}
+	const unchanged = `{"code":"WITHOUT-BLOCK","severity":"gap","summary":"Review the declaration","where":[{"path":"task_02.md","line":9}],"fix":"Review the section."}`
+	if !strings.Contains(string(data), unchanged) {
+		t.Fatalf("finding without block changed bytes: %s", data)
+	}
+}
+
 func TestVerdictLineStatesProbeCoverage(t *testing.T) {
 	t.Parallel()
 

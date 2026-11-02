@@ -112,19 +112,22 @@ a command that passes remains `vacuous`. The Daemon refuses malformed commands
 before opening an Agent Session. If the parser cannot start, the existing
 command probe still runs.
 
-The probe runs only the commands of Tasks a Run would still execute: every
-Task whose status is not `completed`, the rule the Daemon uses to schedule
-Tasks and route its QA gate. A completed Task's commands are not run, because
+The probe runs only the commands of Tasks a Run would still execute, except
+its QA gate. A completed Task's commands are not run, because
 they pass once its work exists and may need preparation the disposable
 checkout lacks. Each is reported as
 `- <task>: not probed — "<command>" (Task completed)`, the clean verdict line
 adds `; not probed (completed Tasks): <n>`, and JSON lists them under
 `verification.notProbed` as `{task, command, reason}` objects with reason
-`completed`, a key present only when the list is not empty. A not-probed
-command never changes the exit code. A vacuous, unknown or malformed command
-of a pending, in-progress or failed Task, or of a pending QA gate, still makes
-the check exit `1`, and the uncommitted-source lines still name every Task
-file, completed ones included.
+`completed`, a key present only when the list is not empty. The QA gate is never probed, whatever its status,
+because the Daemon routes the Task of type `qa` to its QA step and Roundfix
+derives its Verification. A pending gate's command is reported as
+`- <task>: not probed — "<command>" (QA gate)`, the clean verdict line adds
+`; not probed (QA gate): <n>`, and JSON lists it with reason `qa_gate`;
+a completed gate keeps reason `completed`. A not-probed command never changes
+the exit code. A vacuous, unknown or malformed command of a pending,
+in-progress or failed non-QA Task still makes the check exit `1`, and the
+uncommitted-source lines still name every Task file, completed ones included.
 
 After `Verification tree: HEAD`, the text report names each Task Graph or Task
 file listed by Git status as an uncommitted Verification source:
@@ -208,6 +211,7 @@ when a source pattern matches it.
 | `SC-COVERAGE-UNREAD` | A Coverage Map lacks its `Deviations from the PRD:` line or has a deviation that names no PRD unit. Runs from the TechSpec stage. |
 | `SC-CONSUMERS-UNPROVEN` | A pending non-QA Task lacks a valid Consumer Declaration, or names a suite no Verification or valid checkpoint runs. Runs from the Tasks stage. |
 | `SC-QA-BYTES-PINNED` | A requirement of a pending QA Task names a byte invariant and a commit-shaped hexadecimal token together; compare with the Delivery Base instead. A gap that runs from the Tasks stage. |
+| `SC-QA-VERIFICATION-AUTHORED` | A pending QA Task's `## Verification` renders a command other than the one Roundfix derives. An error from the Tasks stage. After its `fix:` line the text report prints `expected block:` and the exact section as a fenced `markdown` block; JSON carries it in the finding's `expected` field, present only on a finding that has one. Replace the whole section with it, unchanged. |
 | `SC-WAVE-COLLISION` | Two Tasks that are not completed and that the current Task Graph lets run in one Wave are known to touch a common repository file: a literal operand of a Verification command, a `creates:`, `interface:` or `deletes:` path the tree holds, or a path the Task's newest settlement commit on any branch changed (`prior Run settlement commit`). The summary names each shared path with its source and ends with the one edge that orders the pair, ``add a `needs` edge from Task <later> to Task <earlier>``, where the later Task comes later in graph order; the fix says the same. An error from the Tasks stage. A completed Task never collides; a Task reopened to `pending` counts again. The QA gate's precondition, the Daemon's settlement checks and its pre-dispatch refusal share this rule. At a Task Capacity above 1, `roundfix implement` refuses a Wave Collision before it records a Run, using the committed graph in Preflight Validation. |
 
 A binding Task is a non-QA Task whose Context declares a glossary file under

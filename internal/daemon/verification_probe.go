@@ -48,6 +48,12 @@ func TaskAwaitsWork(task spec.Task) bool {
 	return task.Status != spec.StatusCompleted
 }
 
+// TaskIsQAGate reports whether task is the Spec's authored QA gate, the Task
+// of type qa, which the Daemon routes to its QA step and never probes.
+func TaskIsQAGate(task spec.Task) bool {
+	return task.Type == spec.TaskTypeQA
+}
+
 // ProbeCommands runs commands in order and classifies their behavior against
 // workDir. It owns no Run state or Verification Capacity; outputFor selects
 // only the diagnostic destination for each zero-based command index.

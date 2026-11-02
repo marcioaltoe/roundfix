@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.24
+  version: 0.0.25
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.24
+version: 0.0.25
 ---
 
 # Write Tasks
@@ -312,6 +312,18 @@ When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
 outcome remains ambiguous, split the Task so each slice has one dominant outcome;
 do not encode multiple values and do not defer the classification.
+
+## QA Task Verification
+
+A `type: qa` Task never authors its Verification. Write its Verification
+bullet as a placeholder, run `roundfix spec check <slug> --stage tasks`, and
+replace the whole `## Verification` section with the block the finding prints
+under `expected block:` (JSON: the finding's `expected` field), unchanged.
+The next check reports no `SC-QA-VERIFICATION-AUTHORED`.
+
+What the gate must prove belongs in its Requirements.
+`roundfix spec check --run-verification` reports the command `not probed` with
+reason `qa_gate`, so it needs no failure before the work.
 
 ## Verification paths
 

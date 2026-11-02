@@ -139,6 +139,10 @@ complexity: medium # low | medium | high
 <!-- A red repository gate admits only a Task named in the frozen `_authorization.md` `precondition_repairs` list; the Task or Agent cannot add itself. -->
 <!-- A Task commit keeps an untracked executable file only when its exact path is listed under executables in the Spec's authorization record; every other untracked executable is refused. The list must be on the delivery target before the Run reads it. QA Report and Batch commits never keep an untracked executable. A repository with core.fileMode false records the file as 100644. -->
 
+<!-- A `type: qa` Task never authors its Verification. Write the bullet below as
+     a placeholder, run `roundfix spec check <slug> --stage tasks`, and replace
+     the whole section with the block the finding prints under `expected block:`
+     (JSON: the finding's `expected` field), unchanged. -->
 - `<command>` — expected: ...
 
 ## References

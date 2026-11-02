@@ -157,17 +157,6 @@ func TestSpecCheckLeavesCompletedTasksAlone(t *testing.T) {
 			}
 		})
 	}
-	t.Run("a pending QA gate is still probed", func(t *testing.T) {
-		_, _ = newSpecCheckStatusWorkspace(t, []specCheckStatusSeed{
-			{status: spec.StatusCompleted, commands: []string{"true"}},
-			{status: spec.StatusPending, taskType: spec.TaskTypeQA},
-		})
-		code, output, doc := probeProvenanceCLI(t, "json")
-		want := []specCheckVerificationCommandReport{{Task: "task_02", Command: spec.DerivedQAVerification("clean")[0], Verdict: "honest"}}
-		if code != exitOK || !reflect.DeepEqual(doc.Verification.Commands, want) {
-			t.Fatalf("exit=%d report=%s", code, output)
-		}
-	})
 	t.Run("every Task completed", func(t *testing.T) {
 		_, _ = newSpecCheckStatusWorkspace(t, []specCheckStatusSeed{
 			{status: spec.StatusCompleted, commands: []string{"true"}},
@@ -221,4 +210,72 @@ func TestSpecCheckLeavesCompletedTasksAlone(t *testing.T) {
 			t.Fatalf("exit=%d report=%s", code, output)
 		}
 	})
+}
+
+func TestSpecCheckNeverProbesTheQAGate(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		keepReport bool
+		vacuous    bool
+	}{
+		{name: "a preserved failed QA report beside an honest corrective Task", keepReport: true},
+		{name: "no QA report yet"},
+		{name: "a vacuous corrective Task beside the QA gate still fails", vacuous: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			seeds := []specCheckStatusSeed{
+				{status: spec.StatusCompleted, commands: []string{"true"}},
+				{status: spec.StatusPending, commands: []string{"test -f corrective-output"}},
+				{status: spec.StatusPending, taskType: spec.TaskTypeQA},
+			}
+			wantExit := exitOK
+			wantVerdict := "No findings. Authored Verification commands executed: 1; not probed (completed Tasks): 1; not probed (QA gate): 1."
+			wantLines := "Verification tree: HEAD\n- task_01: not probed — \"true\" (Task completed)\n" +
+				"- task_02: honest — \"test -f corrective-output\" (exited non-zero before work)\n"
+			wantCommands := []specCheckVerificationCommandReport{{Task: "task_02", Command: "test -f corrective-output", Verdict: "honest"}}
+			wantNotProbed := []specCheckVerificationNotProbed{{Task: "task_01", Command: "true", Reason: "completed"}}
+			qaTask := "task_03"
+			if tc.vacuous {
+				seeds = []specCheckStatusSeed{
+					{status: spec.StatusPending, commands: []string{"true"}},
+					{status: spec.StatusPending, taskType: spec.TaskTypeQA},
+				}
+				wantExit = exitRunFailed
+				wantVerdict = "No findings. Authored Verification commands executed: 1; not probed (QA gate): 1."
+				wantLines = "Verification tree: HEAD\n- task_01: vacuous — \"true\" (exited zero before work)\n"
+				wantCommands = []specCheckVerificationCommandReport{{Task: "task_01", Command: "true", Verdict: "vacuous"}}
+				wantNotProbed = nil
+				qaTask = "task_02"
+			}
+			_, repo := newSpecCheckStatusWorkspace(t, seeds)
+			if tc.keepReport {
+				reportPath := "docs/specs/clean/qa/qa-report-2026-10-31.md"
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(repo, reportPath)), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mustWrite(t, filepath.Join(repo, reportPath), "---\nverdict: fail\n---\n\n# Kept failed QA Report\n")
+				gitImplement(t, repo, "add", reportPath)
+				gitImplement(t, repo, "commit", "-m", "test: keep failed QA Report")
+			}
+			qaCommand := spec.DerivedQAVerification("clean")[0]
+			wantLines += fmt.Sprintf("- %s: not probed — %q (QA gate)\n", qaTask, qaCommand)
+			wantNotProbed = append(wantNotProbed, specCheckVerificationNotProbed{Task: qaTask, Command: qaCommand, Reason: "qa_gate"})
+
+			code, output, _ := probeProvenanceCLI(t, "text")
+			if code != wantExit {
+				t.Fatalf("exit=%d, want %d; output=%s", code, wantExit, output)
+			}
+			if !strings.HasPrefix(output, "Spec clean\n"+wantVerdict+"\n") {
+				t.Fatalf("verdict line missing: %s; want=%s", output, wantVerdict)
+			}
+			if _, lines, found := strings.Cut(output, "Verification tree: HEAD\n"); !found || "Verification tree: HEAD\n"+lines != wantLines {
+				t.Fatalf("ordered command lines differ; output=%s; want=%s", output, wantLines)
+			}
+			code, output, doc := probeProvenanceCLI(t, "json")
+			if code != wantExit || !reflect.DeepEqual(doc.Verification.Commands, wantCommands) || !reflect.DeepEqual(doc.Verification.NotProbed, wantNotProbed) {
+				t.Fatalf("JSON exit=%d, want %d; report=%s; want commands=%+v notProbed=%+v", code, wantExit, output, wantCommands, wantNotProbed)
+			}
+		})
+	}
 }
