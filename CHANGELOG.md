@@ -2,6 +2,30 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.129.0] - 2026-11-02
+
+### The release decision travels with the Spec
+
+- **A PRD may declare its Delivery Type** in the frontmatter: `type: feat`, `fix`, `perf` or `refactor`. `roundfix spec check` reports any other value as `SC-PRD-TYPE`. The archive copies the type into the Archive Record, and the Delivery Queue titles the pull request `<type>: deliver …` from it, so a fix Spec ships as a patch. A Spec without a type delivers as `feat: deliver`, as before (reported by argus).
+- **An Archive Record refuses a malformed `type`** (empty, null, a list or an unsupported value) instead of falling back to `feat`.
+- **An approved authorization record that grants `release` can carry `release_ceiling` (`patch`, `minor` or `major`) and `release_paths`.** `roundfix release plan` takes those records as the answer to `approval_required` while the plan stays within every delivered Spec's ceiling and nothing is breaking or classified by hand. It names the records it read in text and in the new `releaseAuthorization` JSON object. Without a ceiling in the range, the plan asks exactly as before (reported by argus).
+- **Backlog Entries are planning evidence** in the release plan, beside `docs/specs/`, `docs/adr/`, `docs/findings/` and `docs/handoffs/`, so a plan commit that files or adopts them no longer needs manual classification.
+- **`write-prd`, `write-techspec` and `write-tasks` fill the type and ask the release question at planning time**, and the Baseline's release and authorization clauses name the Release Ceiling (ADR-0349).
+
+### An approved Baseline update deletes the Retired Skills
+
+- **`roundfix baseline update` deletes each Retired Skill whose copies it proves unedited against `skills-lock.json`**: the `.agents/skills/<skill>` folder, the `.claude/skills/<skill>` link or copy, and the lock entry. The preview lists every deletion and the Plan Digest binds them. An edited, unrecorded or unsafe copy is kept and the preview says why. Nothing outside the Retired Skills is ever deleted: `context7-cli`, `exa-web-search` and a repository's own skills stay. ADR-0350 supersedes ADR-0246 (reported by argus).
+- **The deletion and the lock write go through a root anchored at the repository**, so neither a symlinked `skills-lock.json` nor a parent swapped for a symlink can redirect them outside it.
+- **Correction to 0.127.0:** that release note said `baseline update` removes the Retired Skills from an adopter. Up to 0.128.0 it only listed them under `Skills retired`; deletion starts with this release.
+
+### QA evidence links resolve in the committed tree
+
+- **A QA Report's evidence links must resolve in the committed tree.** Settlement refuses a report that links evidence Git ignores or that is missing, names each link and its state, and gives the QA Agent one repair turn. `spec.RelativeLinks` is the shared reader (ADR-0351) (reported by argus).
+
+### Tests
+
+- The Roundfix skill is at version 0.1.171.
+
 ## [0.128.0] - 2026-11-02
 
 ### The Spec Check leaves the QA gate unprobed and prints its expected Verification
