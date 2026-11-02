@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.129.1] - 2026-11-02
+
+### A glossary definition written as a list item counts
+
+- **The Spec Consistency Check reads a Glossary Definition written as a line that starts with `**Term**:`, `**Term** —`, `- **Term**:` or `- **Term** —`**, where the list marker may also be `*` or `+`. One reader feeds `SC-GLOSSARY-UNDECLARED`, `SC-GLOSSARY-UNPLANNED` and `SC-GLOSSARY-MISSING`, so a list-style glossary no longer reports a defined term as missing or a covered bold phrase as undeclared. A nested or numbered item, an ASCII `-` or `--`, a heading and bold inside a sentence still do not define a term (reported by pantheon).
+- **`SC-GLOSSARY-MISSING` names the accepted forms, and `SC-GLOSSARY-UNPLANNED` prints the line-anchored Verification command** that passes only when the glossary holds such a definition, exact in case.
+- **`write-prd`, `write-tasks` and the Roundfix `spec` reference state the same forms and command**, so a Task's glossary Verification and the check agree.
+
+### Tests
+
+- The Roundfix skill is at version 0.1.172.
+
 ## [0.129.0] - 2026-11-02
 
 ### The release decision travels with the Spec
