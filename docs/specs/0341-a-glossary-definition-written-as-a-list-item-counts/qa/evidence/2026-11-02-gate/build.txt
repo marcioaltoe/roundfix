@@ -1,4 +1,0 @@
-Command: make build
-Exit: 0
-roundfix 0.129.0 (32dbf208-dirty, built 2026-11-02 08:04:40 -0300)
-Dirty identity is caused by the untracked seeded QA directory; tracked product files were clean.

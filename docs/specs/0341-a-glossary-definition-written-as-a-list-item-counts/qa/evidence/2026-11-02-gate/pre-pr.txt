@@ -1,9 +1,0 @@
-{
-  "approval": "Approved Spec authority at d7e1430a9e56793a47913e953a36d70673548184; maintainer cycle AV answers, operations implement/commit/push/pull_request/merge/release. QA child remains forbidden to perform delivery.",
-  "checks": "Daemon make verify-changed pass exit 0 at 32dbf20862018765e1985dc5b4d2c1465daece0c; R02 required suites pass.",
-  "unresolved_threads": "No open Pull Request per QA assignment; no PR review threads exist to inspect.",
-  "merge_ready": "No Review Source Merge-Ready acceptance exists yet. This control has no equivalent observed evidence.",
-  "candidate": "32dbf20862018765e1985dc5b4d2c1465daece0c",
-  "review_artifact_ancestry": "No review artifact yet; audited head is the claimed candidate.",
-  "cause": "no open Pull Request"
-}

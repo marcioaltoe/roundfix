@@ -1,6 +1,0 @@
-Command: go test -count=1 -timeout 20m ./internal/speccheck
-Exit: 0
-stdout:
-ok  	roundfix/internal/speccheck	11.561s
-
-stderr:

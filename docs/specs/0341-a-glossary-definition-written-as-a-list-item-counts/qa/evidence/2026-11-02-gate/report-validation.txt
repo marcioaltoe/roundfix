@@ -1,7 +1,0 @@
-Command: ./bin/roundfix qa-report accept docs/specs/0341-a-glossary-definition-written-as-a-list-item-counts/qa/qa-report-2026-11-02.md
-Exit: 0
-stdout:
-
-stderr:
-
-16 rows; 15 pass; 1 pre-PR environment block. All typed row inputs present; no evidence snapshots authored. All relative evidence links resolve, all files are text, and git check-ignore returned 1 with no ignored paths.
