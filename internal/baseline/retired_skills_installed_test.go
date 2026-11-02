@@ -369,3 +369,38 @@ func writeRetiredSkillTestLock(t *testing.T, repo string, entries map[string]any
 	}
 	writeRetiredSkillTestFile(t, repo, "skills-lock.json", string(data))
 }
+
+func TestDeleteRetiredSkillsRefusesASymlinkedLock(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	hash := externalSkillsLockDigest([]restoreFile{{Path: "SKILL.md", Content: []byte("# installed\n")}})
+	writeRetiredSkillTestFile(t, repo, ".agents/skills/tdd/SKILL.md", "# installed\n")
+	writeRetiredSkillTestLock(t, repo, map[string]any{"tdd": map[string]any{"computedHash": hash}})
+	planned, err := InstalledRetiredSkills(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lockPath := filepath.Join(repo, "skills-lock.json")
+	content, err := os.ReadFile(lockPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside.json")
+	if err := os.WriteFile(outside, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(lockPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, lockPath); err != nil {
+		t.Fatal(err)
+	}
+	deleted, err := DeleteRetiredSkills(t.Context(), repo, planned)
+	if err == nil || len(deleted) != 0 || !strings.Contains(err.Error(), "not a regular") {
+		t.Fatalf("deleted = %+v, %v; want a refusal", deleted, err)
+	}
+	if after, err := os.ReadFile(outside); err != nil || string(after) != string(content) {
+		t.Fatalf("outside file changed: %q, %v", after, err)
+	}
+	assertRestoreFile(t, repo, ".agents/skills/tdd/SKILL.md", "# installed\n")
+}

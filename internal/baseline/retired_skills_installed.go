@@ -128,6 +128,14 @@ func DeleteRetiredSkills(ctx context.Context, repoRoot string, planned []Install
 	if len(deleted) == 0 {
 		return nil, nil
 	}
+	// Every write goes through an os.Root anchored at the repository, so a
+	// symlinked lock file or a parent swapped for a symlink after the plan
+	// cannot redirect the write or the recursive delete outside it.
+	anchored, err := os.OpenRoot(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("open repository for retired skills: %w", err)
+	}
+	defer anchored.Close()
 	lockPath := filepath.Join(repoRoot, skillsLockPath)
 	lock, err := loadSkillsLock(lockPath)
 	if err != nil {
@@ -146,9 +154,12 @@ func DeleteRetiredSkills(ctx context.Context, repoRoot string, planned []Install
 		if err != nil {
 			return nil, fmt.Errorf("encode retired skills lock: %w", err)
 		}
-		info, err := os.Stat(lockPath)
+		info, err := anchored.Lstat(filepath.FromSlash(skillsLockPath))
 		if err != nil {
 			return nil, fmt.Errorf("inspect retired skills lock mode: %w", err)
+		}
+		if !info.Mode().IsRegular() {
+			return nil, fmt.Errorf("refuse to write %s: it is not a regular file", skillsLockPath)
 		}
 		mode = info.Mode().Perm()
 	}
@@ -158,7 +169,7 @@ func DeleteRetiredSkills(ctx context.Context, repoRoot string, planned []Install
 				return nil, fmt.Errorf("delete retired skills: %w", err)
 			}
 			path := entry.Paths[index]
-			if err := os.RemoveAll(filepath.Join(repoRoot, filepath.FromSlash(path))); err != nil {
+			if err := anchored.RemoveAll(filepath.FromSlash(path)); err != nil {
 				return nil, fmt.Errorf("delete retired skill %s: %w", path, err)
 			}
 		}
@@ -167,7 +178,7 @@ func DeleteRetiredSkills(ctx context.Context, repoRoot string, planned []Install
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("write retired skills lock: %w", err)
 		}
-		if err := os.WriteFile(lockPath, data, mode); err != nil {
+		if err := anchored.WriteFile(filepath.FromSlash(skillsLockPath), data, mode); err != nil {
 			return nil, fmt.Errorf("write retired skills lock: %w", err)
 		}
 	}
