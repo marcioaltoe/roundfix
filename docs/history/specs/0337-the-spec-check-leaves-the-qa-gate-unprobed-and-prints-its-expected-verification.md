@@ -30,8 +30,9 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "721"
 ---
 
 # The Spec Check leaves the QA gate unprobed and prints its expected Verification
 
-Spec Check leaves the QA gate unprobed through the shared Daemon predicate and exposes the exact authored-QA Verification replacement in text and JSON. Both reported adopter cases pass through the built CLI, package and documentation checks pass, and all six isolated mutations are detected by their named tests. QA closes as a qualifying partial solely because no Pull Request exists and Merge-Ready acceptance is not yet available; the offline archive preview succeeds with the judge skipped and both adopted reports listed as candidates. The guide, glossary and ADR already preserve the reusable rules, so no additional promotion is proposed.
+Spec Check leaves the QA gate unprobed through the shared Daemon predicate and exposes the exact authored-QA Verification replacement in text and JSON. Both reported adopter cases pass through the built CLI, package and documentation checks pass, and all six isolated mutations are detected by their named tests. QA closes as a qualifying partial solely because no Pull Request exists and Merge-Ready acceptance is not yet available; the offline archive preview succeeds with the judge skipped and both adopted reports listed as candidates.
