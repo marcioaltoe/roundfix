@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.128.0] - 2026-11-02
+
+### The Spec Check leaves the QA gate unprobed and prints its expected Verification
+
+- **`roundfix spec check --run-verification` never probes the QA gate's derived Verification, whatever the Task's status.** It reports the gate as `not probed` with reason `qa_gate`, and the verdict line counts it as `not probed (QA gate)`. The Daemon and the Spec Check read the same predicate. Before, a QA Report kept from an earlier failed Run made the derived command `vacuous`, and a corrective Task with a repeated QA could not pass the strict check (reported by fluxus).
+- **`SC-QA-VERIFICATION-AUTHORED` prints the exact `## Verification` block the QA Task must carry**: after `fix:` in text output and in the finding's new `expected` field in JSON. The `write-tasks` template and skill teach copying it from there (reported by quaestor).
+
+### Tests
+
+- The Roundfix skill is at version 0.1.167.
+- The judge ceiling test writes its spend log for the current month; it failed from 2026-11-01.
+
 ## [0.127.0] - 2026-10-31
 
 ### Runs load the skills the dispatch selects, and the Baseline follows the curated catalog
