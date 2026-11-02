@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0339-an-approved-baseline-update-deletes-the-retired-skills
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -143,3 +143,80 @@ the Argus report of 2026-11-01.
 
 - `_prd.md` → Goals; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior 1-6; API Contracts 1-7; Invariants 1-5; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Implemented the assigned retirement slice. Inspection now proves each disposition
+with the existing safe-tree inspector and lock digest. Deletion validates every
+planned delete entry before removing any path, removes `.claude` before `.agents`,
+and rewrites only the deleted lock entries through the ordered lock helpers,
+preserving the lock mode. Unsafe parent paths are kept as well as unsafe entries.
+The update inspects before confirmation, binds only deletions to the Plan Digest,
+reports deletion-only previews as `plan_ready`, deletes after the skills stage,
+and reports exact deleted and kept dispositions in text and JSON.
+
+Acceptance evidence:
+
+- Approved deletion and preview: `TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills`
+  passes its `text`, `json`, and `yes` subtests. They exercise the adopted
+  temporary repository through the existing command seam, check the preview's
+  state/category/message and its digest against `--no-skills`, check deletion
+  reporting, and confirm the `tdd` folder, link, and lock entry leave.
+  `TestBaselineUpdateRetiredSkillDeletionTargets` also checks the exact JSON
+  digest encoding and an unchanged digest for keep-only entries.
+- Preservation: the same text/JSON apply subtests compare survivor trees with
+  `baselinePlanTestTree`, check every survivor link, and compare the whole lock
+  after removing only `tdd` from its expected data. `design-patterns` is kept
+  as `edited`; `context7-cli`, `exa-web-search`, and `local-only` survive.
+  `TestContext7AndExaAreRequiredByEverySnapshotAndNeverRetired` checks every
+  embedded Setup Snapshot. The disposition test compares the complete six-skill
+  slice including hashes and additionally covers unsafe trees, links, parents,
+  link-only copies, and an edited `.claude` tree.
+- Stale approval: `TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan`
+  edits the planned copy without making another commit, confirms the old digest,
+  and observes exit 3, `action_required`/`approval`, no deletion report, and no
+  further tree change. The baseline deletion test checks refusal before any
+  removal for an edited copy, an out-of-set name, and a later invalid entry.
+  The apply regression also changes `tdd` during the skills stage and observes
+  category `skills` with the required next action, unchanged lock bytes, and a
+  surviving link. Cancellation and selective/orphaned deletion have focused cases.
+- Guide and record: only `### Retired skills` was rewritten, preserving the
+  retired-name list and manual commands for kept copies. It describes the proof,
+  approval, Plan Digest, `plan_ready`, deletion reporting, all three keep reasons,
+  and the Retired Skills boundary. The sanctioned recorder ran after the final
+  guide edit and exited 0; its only generated delta is this guide's fingerprint
+  in `docs/references/behavior-surfaces.json`.
+
+Focused checks (not Daemon Verification):
+
+- Before implementation: `go test -count=1 -timeout 5m -v ./internal/cli -run '^TestBaselineUpdateAppliesAndListsRetiredSkills$'`
+  exited 0, characterizing that the original fixture's copies and lock stay.
+  The new `TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text` then
+  failed on the starting implementation: preview exit 0 and `current` instead
+  of the deletion-only approval state.
+- After the final test edits: `go test -count=1 -timeout 5m ./internal/baseline ./internal/cli -run '^Test(InstalledRetiredSkills|RetiredSkill|DeleteRetiredSkills|Context7AndExa|NoCatalogEntryNamesARetiredSkill|BaselineUpdate.*Retired|BaselineUpdateWithoutSkills)'`
+  exited 0 for both packages.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/cli -run '^TestBaselineUpdatePreviewListsASetupSnapshotDifference$/difference_with_outdated_and_retired_skills$'`
+  exited 0 for the changed combined-preview assertion.
+- Final Windows test cross-compilation: `GOOS=windows go test -c -o <temporary-output> ./internal/baseline`
+  and the equivalent `./internal/cli` command each exited 0. Binaries were
+  written under `/private/tmp`; the declared Windows vet command was not run.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 as the final generated-artifact step after the guide edit.
+- Five temporary `go test -overlay` probes each exited 1 at the intended
+  behavioral assertion: skipping deletion leaves `tdd`; ignoring hash differences
+  marks `design-patterns` deletable; omitting the digest fold allows stale
+  confirmation and produces the `--no-skills` digest; omitting the name guard
+  loses the required refusal; accepting arbitrary link targets loses `unsafe`.
+  The transcripts were inspected, not classified from exit codes alone.
+  Probe overlays and full logs are under
+  `/private/tmp/roundfix-retired-probes-zmy59uxk/`; repository source was not
+  changed for these probes.
+
+The original `status: in_progress` is preserved. No other Task, Task Graph,
+skill, Setup Snapshot, module, repository lock, or tooling configuration was
+edited. Declared Verification and terminal settlement remain Daemon-owned;
+no commit, push, or pull request was made. No follow-up outside this Task's
+slice was implemented.

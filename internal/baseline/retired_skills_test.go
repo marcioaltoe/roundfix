@@ -6,6 +6,7 @@ package baseline
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -82,5 +83,25 @@ func TestTheTypeScriptSnapshotsCarryTheCatalogActivationBundles(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestContext7AndExaAreRequiredByEverySnapshotAndNeverRetired(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"context7-cli", "exa-web-search"} {
+		if slices.Contains(RetiredSkills(), name) {
+			t.Errorf("required skill %s is retired", name)
+		}
+		for _, setup := range readUpstreamSkillDocuments(t, "setups/*.json") {
+			found := false
+			for _, skill := range objectsOrEmpty(setup["skills"]) {
+				if skill["name"] == name {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("Setup Snapshot %s does not require %s", setup["id"], name)
+			}
+		}
 	}
 }
