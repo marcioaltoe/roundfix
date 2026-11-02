@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.26
+  version: 0.0.27
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.26
+version: 0.0.27
 ---
 
 # Write Tasks
@@ -274,7 +274,13 @@ happens, and nothing in it waits for a human.
 
 ### Glossary requirement
 
-For each term the declaration adds or changes, the docs Task, or a dedicated glossary Task when the Spec has none, declares the glossary file, carries a requirement to write the term through domain-modeling, and its Verification checks the bolded term followed by a colon in the glossary on whitespace-normalized text.
+For each term the declaration adds or changes, the docs Task, or a dedicated glossary Task when the Spec has none, declares the glossary file, carries a requirement to write the term through domain-modeling, and its Verification runs the line-anchored command `roundfix spec check` prints for an unbound term. For `<Term>` in `CONTEXT.md`, show the command exactly as:
+
+```sh
+grep -F -- '**<Term>**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*<Term>\*\*(:| —( |$))'
+```
+
+Replace `<Term>` with the exact term, escaping its regular-expression metacharacters, and replace `CONTEXT.md` with the glossary path. The command reads lines, not whitespace-normalized text, because a definition is a line, and it is never more permissive than the check. A Glossary Definition is a line that starts with `**Term**:`, `**Term** —`, `- **Term**:` or `- **Term** —`, where the list marker may also be `*` or `+`.
 
 ### Corrective-Task ceiling
 

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -34,7 +35,20 @@ type glossaryEntry struct {
 var glossaryDeclarationPattern = regexp.MustCompile(`^- (adds|changes|not a term): \*\*([^*]+)\*\*(?: — (.+))?$`)
 var glossaryBoldPattern = regexp.MustCompile(`\*\*([^*]+)\*\*`)
 var glossaryMapLinkPattern = regexp.MustCompile(`\[[^\]]*\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+"[^"\n]*")?\s*\)|(?m)^\s*\[[^\]]+\]:\s*(?:<([^>]+)>|([^\s]+))`)
-var glossaryDefinitionPattern = regexp.MustCompile(`^\*\*([^*]+)\*\*:`)
+
+// A Glossary Definition starts with a bolded term, optionally after a bullet,
+// followed by a colon or a spaced em dash (also allowed at the line end).
+var glossaryDefinitionPattern = regexp.MustCompile(`^(?:[-*+] )?\*\*([^*]+)\*\*(?::| —(?: |$))`)
+
+// GlossaryDefinitionForms names the accepted forms for messages and guides.
+const GlossaryDefinitionForms = "a line that starts with `**Term**:`, `**Term** —`, `- **Term**:` or `- **Term** —`, where the list marker may also be `*` or `+`"
+
+// GlossaryVerificationCommand renders the shell command that passes only
+// when glossary holds a Glossary Definition of term, exact in case.
+func GlossaryVerificationCommand(term, glossary string) string {
+	pattern := `^([-*+] )?\*\*` + regexp.QuoteMeta(term) + `\*\*(:| —( |$))`
+	return "grep -F -- " + shellSingleQuote("**"+term+"**") + " < " + shellQuoteWrapFile(glossary) + " | grep -qE " + shellSingleQuote(pattern)
+}
 
 // GlossaryFindings reads only the glossary detector and the optional Task Graph.
 func GlossaryFindings(specsRoot, repoRoot, slug string) ([]Finding, error) {
@@ -342,9 +356,18 @@ func detectGlossary(result *Result, repoRoot string, artifacts []string, stage S
 			completed = completed && task.Status == spec.StatusCompleted
 		}
 		if bindings == 0 {
-			glossaryFinding(result, CodeGlossaryUnplanned, "Glossary term "+fmt.Sprintf("%q", entry.Term)+" has no binding Task", "Add a non-QA Task declaring the glossary under interface: or creates: and naming **"+entry.Term+"** in ## Verification.", entry.Where)
+			path := "CONTEXT.md"
+			if !files[path] {
+				paths := make([]string, 0, len(files))
+				for file := range files {
+					paths = append(paths, file)
+				}
+				sort.Strings(paths)
+				path = paths[0]
+			}
+			glossaryFinding(result, CodeGlossaryUnplanned, "Glossary term "+fmt.Sprintf("%q", entry.Term)+" has no binding Task", "Add a non-QA Task declaring the glossary under interface: or creates: and naming **"+entry.Term+"** in ## Verification, such as: "+GlossaryVerificationCommand(entry.Term, path), entry.Where)
 		} else if completed && !defined {
-			glossaryFinding(result, CodeGlossaryMissing, "Glossary term "+fmt.Sprintf("%q", entry.Term)+" is missing after its binding Tasks completed", "Define the declared term in the glossary.", entry.Where)
+			glossaryFinding(result, CodeGlossaryMissing, "Glossary term "+fmt.Sprintf("%q", entry.Term)+" is missing after its binding Tasks completed", "Define the declared term in the glossary as "+GlossaryDefinitionForms+".", entry.Where)
 		}
 	}
 	return nil

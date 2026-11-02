@@ -31,3 +31,8 @@ Declaration. Before the horizon, the check skips the declaration requirement;
 an uncommitted PRD or unreadable history follows the horizon contract.
 
 A domain term the Spec introduces is written by one of the Spec's own Tasks, never left for a later Spec.
+
+A Glossary Definition is a line that starts with `**Term**:`, `**Term** —`,
+`- **Term**:` or `- **Term** —`, where the list marker may also be `*` or `+`.
+A heading, an indented or ordered list item and bold text inside a sentence
+define nothing.

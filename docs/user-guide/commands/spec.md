@@ -180,9 +180,14 @@ a non-empty reason.
 
 The glossary is each existing root `CONTEXT.md` and `GLOSSARY.md`, plus existing
 files with either name reached by relative Markdown links in `CONTEXT-MAP.md`
-or `GLOSSARY-MAP.md`. Definitions begin a line with `**Term**:`. Matching folds
-case and collapses whitespace; bold phrases also match a defined term followed
-by `s` or `es`.
+or `GLOSSARY-MAP.md`.
+
+A Glossary Definition is a line that starts with `**Term**:`, `**Term** —`,
+`- **Term**:` or `- **Term** —`, where the list marker may also be `*` or `+`.
+The em dash must be followed by a space or the end of the line. Headings,
+indented or ordered list items and bold text inside a sentence define nothing.
+Matching folds case and collapses whitespace; bold phrases also match a
+defined term followed by `s` or `es`.
 
 The skills rule reads `docs/references/skill-coverage.json`, the Skill Coverage
 Map. Both skills detectors skip repositories without that map and PRDs whose
@@ -206,7 +211,7 @@ when a source pattern matches it.
 | `SC-DECISIONS-UNRECORDED` | A PRD has no `## Decisions` section with a dated answer or the autonomous-route line naming its decision source. A gap from the PRD stage, held for uncommitted PRDs and those whose adding commit is at or after the oldest commit that added `.agents/skills/write-prd/references/clarification-record.md`. Earlier PRDs and repositories without that guide skip it; a missing PRD skips with its path. The check reads shape only. |
 | `SC-GLOSSARY-UNDECLARED` | A required declaration is absent, a declaration line is malformed, or a bold candidate is neither defined nor declared. Runs from the PRD stage, reading only the PRD at `--stage prd` and both artifacts after it. |
 | `SC-GLOSSARY-UNPLANNED` | An added or changed term has no binding Task, or a changed term is not defined (declare it as added). Runs from the Tasks stage with a Task Graph. |
-| `SC-GLOSSARY-MISSING` | Every binding Task has completed but the glossary still lacks the declared term. Runs from the Tasks stage with a Task Graph. |
+| `SC-GLOSSARY-MISSING` | Every binding Task has completed but the glossary still lacks the declared term. The glossary must hold a Glossary Definition of the term in one of the forms above. Runs from the Tasks stage with a Task Graph. |
 | `SC-ABSENCE-UNPROVEN` | A TechSpec has no Absence Evidence declaration or an item lacks its search command or result. Runs from the TechSpec stage. |
 | `SC-ADR-ALTERNATIVES-UNRELATED` | A listed ADR has no line relating the design to that ADR's rejected alternatives. Runs from the TechSpec stage. |
 | `SC-COVERAGE-UNREAD` | A Coverage Map lacks its `Deviations from the PRD:` line or has a deviation that names no PRD unit. Runs from the TechSpec stage. |

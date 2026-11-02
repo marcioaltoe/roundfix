@@ -64,6 +64,11 @@ term, `SC-GLOSSARY-UNPLANNED` for a declared term without a binding Task or a
 changed term missing from the glossary, and `SC-GLOSSARY-MISSING` for a declared
 term still absent after its binding Tasks complete.
 
+A Glossary Definition is a line that starts with `**Term**:`, `**Term** —`,
+`- **Term**:` or `- **Term** —`, where the list marker may also be `*` or `+`.
+A heading, an indented or ordered list item and bold text inside a sentence
+define nothing.
+
 The optional Skills Declaration lives under the PRD's `## Skills` section.
 Each entry is `- unchanged: <surface id> — <reason>` with a known id and a
 non-blank reason. A non-QA Task changing a covered Behavior Surface's source
