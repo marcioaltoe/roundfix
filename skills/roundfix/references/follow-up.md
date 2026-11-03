@@ -14,6 +14,10 @@ The list command reads the sources `ai-memory-messages`,
 it never calls the judge. When the repository's Spec Root is absent, the
 `specs` source is `checked` with count `0` (ADR-0348).
 
+`repository-inbox` reads every file in `docs/_inbox/` except a file or folder
+whose name starts with a dot, such as `.gitkeep`, and everything inside such
+a folder.
+
 When the Release Plan needs a manual classification, the status `release.state`
 is `manual_classification_required` and `release.proposed_version` is empty.
 `release.reason` says how many commits since the base tag need a manual release

@@ -38,7 +38,9 @@ unavailable source does not fail the command.
   it is `missing` with `no --messages file`.
 - `backlog` reads open Backlog Entries.
 - `findings` reads pending or partial Findings.
-- `repository-inbox` reads every file in `docs/_inbox/`.
+- `repository-inbox` reads every file in `docs/_inbox/` except a file or folder
+  whose name starts with a dot, such as `.gitkeep`, and everything inside such
+  a folder.
 - `specs` reads active Specs. When the repository's Spec Root is absent,
   this source is `checked` with count `0` (ADR-0348).
 - `runs` reads active Runs for this Git root; no Run Database is `checked`

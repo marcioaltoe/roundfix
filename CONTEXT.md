@@ -190,7 +190,7 @@ The read-only `roundfix follow-up` command that lists a repository's Follow-up I
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
-One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note that is a file in `docs/_inbox/` outside any file or folder whose name starts with a dot, or an active Spec, with its kind, reference, type, date, title and the project that sent it.
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:

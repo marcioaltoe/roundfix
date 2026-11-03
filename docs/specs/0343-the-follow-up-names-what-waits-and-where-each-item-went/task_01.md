@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0343-the-follow-up-names-what-waits-and-where-each-item-went
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -109,3 +109,67 @@ reported by fluxus.
 
 - `_prd.md` → Sources 1; Goals; Core Features 1 and 7; Success Metric 1; Success Metric 8; Glossary
 - `_techspec.md` → Current behavior 1; API Contract 1; API Contract 9; Invariant 5; Declared breaks; Testing Approach; Build Order 1
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, golang-cli, golang-testing, testing-boss, no-workarounds, systematic-debugging, tech-writer, evidence-gate.
+
+### Starting-tree characterization
+
+Before changing repository code, ran the existing intent and repository-note tests
+with temporary Go overlays that add `docs/_inbox/.gitkeep` to their fixtures:
+
+`go test -overlay /private/tmp/roundfix-0343-characterization-bx043dvm/overlay.json -count=1 -timeout 5m -v ./internal/cli -run '^(TestDeliverPlanListsIntentThatIsNotApprovedToRun|TestFollowUpListsRepositoryNotesAndMessageTitleFallback)$'`
+
+Both readers listed it. The plan printed `inbox\tdocs/_inbox/.gitkeep\t-`.
+The follow-up listed `Kind:note Ref:docs/_inbox/.gitkeep` and its
+`repository-inbox` count increased from 2 to 3; its existing count assertion
+failed as expected (combined command exit 1). The plan test passed. The
+overlays did not alter existing test files in the repository.
+
+### Implementation and focused evidence
+
+- Acceptance criterion 1: added only the dot-name guard to
+  `deliveryPlanIntent`, excluding the walk root and returning `fs.SkipDir`
+  for a hidden folder. The backlog/finding globs, sort and all other
+  production bytes are unchanged. Added the two required public-CLI tests,
+  each starting with `t.Parallel()` and holding `.gitkeep`,
+  `.obsidian/app.json` and `note.md`. Existing tests remain byte-identical.
+- Before the guard, `go test -count=1 -timeout 5m -v ./internal/cli -run
+  'HiddenInboxEntries$'` exited 1: the plan listed all three files and
+  follow-up counted 3 notes. After the guard,
+  `go test -count=1 -timeout 5m -v ./internal/cli -run
+  '^(TestDeliverPlanIgnoresHiddenInboxEntries|TestFollowUpIgnoresHiddenInboxEntries|TestDeliverPlanListsIntentThatIsNotApprovedToRun|TestFollowUpListsRepositoryNotesAndMessageTitleFallback|TestFollowUpListsEveryPendingItemOnce)$'`
+  exited 0 with all five tests passing. The new tests require exactly one
+  inbox row and exactly one note item, both `docs/_inbox/note.md`, and
+  `repository-inbox` state `checked`, count 1.
+- Acceptance criterion 2: the follow-up guides/references describe the file,
+  folder and descendant exclusions; the deliver guide and canonical
+  reference each gain exactly one sentence in their intent-row paragraph.
+  Domain-modeling revised only **Follow-up Item** in `CONTEXT.md` to define
+  the note as a file outside dot-named entries. A focused Python inspection
+  confirmed the required phrase in all seven paths, both references and
+  `SKILL.md` equal their canonical copies, and all existing test bytes are
+  unchanged after removing the two added functions.
+- `make skills-sync` exited 0. Then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exited 0, raising both version fields in both copies from `0.1.172` to
+  `0.1.173` and appending the generated digest record. No mirror or version
+  field was edited by hand.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^TestGlossary'`
+  exited 0. `git diff --check` reported no whitespace errors.
+- As the final implementation regeneration, after every guide edit and the
+  version recorder,
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and regenerated `docs/references/behavior-surfaces.json`.
+
+### Execution boundary
+
+The starting worktree differed only in this Task's Daemon-owned
+`status: in_progress`; it is preserved. The sandbox rejected its symlinked
+writable root, so commands used the physical checkout with scoped escalation.
+No declared Verification command, repository gate, full package suite, commit,
+push or pull request was run. Task settlement and the declared Verification
+remain Daemon-owned. No other Task, manifest, Baseline asset or prohibited
+implementation path was changed. No follow-up work was needed for this slice.
