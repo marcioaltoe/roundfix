@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	roundconfig "roundfix/internal/config"
@@ -48,13 +49,39 @@ func followUpFirstLine(value string) string {
 }
 
 type followUpMarkdown struct {
-	Type        string `yaml:"type"`
-	TypeHint    string `yaml:"type-hint"`
-	Status      string `yaml:"status"`
-	Created     string `yaml:"created"`
-	CreatedAt   string `yaml:"created_at"`
-	Origin      string `yaml:"origin"`
+	Type        string    `yaml:"type"`
+	TypeHint    string    `yaml:"type-hint"`
+	Status      string    `yaml:"status"`
+	Created     string    `yaml:"created"`
+	CreatedAt   string    `yaml:"created_at"`
+	Origin      string    `yaml:"origin"`
+	WaitingOn   yaml.Node `yaml:"waiting_on"`
+	Since       yaml.Node `yaml:"since"`
 	title, text string
+}
+
+// followUpWaiting validates the declaration without making a malformed value
+// a source-reading error. Only a valid pair returns a non-empty waitingOn.
+func followUpWaiting(fields followUpMarkdown) (waitingOn, since, waitingError string) {
+	waitingPresent := fields.WaitingOn.Kind != 0 && fields.WaitingOn.Tag != "!!null"
+	sincePresent := fields.Since.Kind != 0 && fields.Since.Tag != "!!null"
+	if waitingPresent {
+		waitingOn = strings.TrimSpace(fields.WaitingOn.Value)
+		if fields.WaitingOn.Kind != yaml.ScalarNode || waitingOn == "" || strings.ContainsAny(fields.WaitingOn.Value, "\r\n") {
+			return "", "", "waiting_on must be one line of non-empty text"
+		}
+		if !sincePresent {
+			return "", "", "since is missing"
+		}
+		if _, err := time.Parse("2006-01-02", fields.Since.Value); fields.Since.Kind != yaml.ScalarNode || err != nil {
+			return "", "", "since must be a YYYY-MM-DD date"
+		}
+		return waitingOn, fields.Since.Value, ""
+	}
+	if sincePresent {
+		return "", "", "since needs waiting_on"
+	}
+	return "", "", ""
 }
 
 func readFollowUpMarkdown(path string) (followUpMarkdown, error) {
@@ -244,15 +271,25 @@ func followUpInventory(loaded roundconfig.Loaded, namespace, messages, workDir s
 			case "note":
 				date = followUpFilenameDate(intent.Path)
 			}
-			repositoryItems[source] = append(repositoryItems[source], followUpItem{Kind: kind, Ref: intent.Path, Type: typ, Date: date, Title: fields.title, text: fields.text, origin: namespace})
+			item := followUpItem{Kind: kind, Ref: intent.Path, Type: typ, Date: date, Title: fields.title, text: fields.text, origin: namespace}
+			if kind == "backlog" || kind == "finding" {
+				item.WaitingOn, item.Since, item.WaitingError = followUpWaiting(fields)
+			}
+			repositoryItems[source] = append(repositoryItems[source], item)
 		}
 	}
 	for _, name := range []string{"backlog", "findings", "repository-inbox"} {
 		found := repositoryItems[name]
-		sources = append(sources, followUpSourceResult(name, len(found), intentErr))
+		source := followUpSourceResult(name, len(found), intentErr)
 		if intentErr == nil {
+			for _, item := range found {
+				if item.WaitingOn != "" {
+					source.Waiting++
+				}
+			}
 			items = append(items, found...)
 		}
+		sources = append(sources, source)
 	}
 	var specItems []followUpItem
 	_, active, specErr := readFollowUpSpecs(loaded)

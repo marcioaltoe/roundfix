@@ -14,12 +14,13 @@ import (
 )
 
 const followUpUsage = `Usage:
-  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
 
 List this repository's pending work in Follow-up Priority order, or show its status.
 It is read-only: it never writes a file, commits, pushes or prompts.
 Options:
   --status    Show work in progress, pending Specs, the next release and blockers
+  --all       Also list items waiting on someone else, held back by default
   --messages  JSON file of ai-memory messages to list with the pending work
   --format    text (default) or json
 
@@ -28,10 +29,11 @@ configuration or messages file; 1 for an unreadable Run Database.
 `
 
 type followUpSource struct {
-	Name   string `json:"name"`
-	State  string `json:"state"`
-	Count  int    `json:"count"`
-	Detail string `json:"detail"`
+	Name    string `json:"name"`
+	State   string `json:"state"`
+	Count   int    `json:"count"`
+	Detail  string `json:"detail"`
+	Waiting int    `json:"waiting,omitempty"`
 }
 
 type followUpItem struct {
@@ -48,6 +50,9 @@ type followUpItem struct {
 	Basis        string            `json:"basis"`
 	Answers      map[string]string `json:"answers"`
 	Reason       *string           `json:"reason"`
+	WaitingOn    string            `json:"waiting_on,omitempty"`
+	Since        string            `json:"since,omitempty"`
+	WaitingError string            `json:"waiting_error,omitempty"`
 	text         string
 	origin       string
 }
@@ -74,17 +79,19 @@ type followUpDocument struct {
 	Judge      followUpJudge      `json:"judge"`
 	Items      []followUpItem     `json:"items"`
 	InProgress followUpProgress   `json:"in_progress"`
+	all        bool
 }
 
 type followUpRequest struct {
 	messages, format string
-	status           bool
+	status, all      bool
 }
 
 func parseFollowUpCommand(args []string) (followUpRequest, error) {
 	req := followUpRequest{format: "text"}
 	fs := flagSet("follow-up")
 	fs.BoolVar(&req.status, "status", false, "Show status")
+	fs.BoolVar(&req.all, "all", false, "Also list waiting items")
 	fs.StringVar(&req.messages, "messages", "", "Messages file")
 	fs.StringVar(&req.format, "format", "text", "Output format")
 	if err := fs.Parse(args); err != nil {
@@ -104,6 +111,9 @@ func parseFollowUpCommand(args []string) (followUpRequest, error) {
 	})
 	if req.status && messagesSet {
 		return req, fmt.Errorf("--messages applies only to the follow-up list; drop it with --status")
+	}
+	if req.status && req.all {
+		return req, fmt.Errorf("--all applies only to the follow-up list; drop it with --status")
 	}
 	return req, nil
 }
@@ -137,6 +147,17 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	if err != nil {
 		return fail(err, exitPreflight)
 	}
+	doc.all = req.all
+	waiting := []followUpItem{}
+	ranked := []followUpItem{}
+	for _, item := range items {
+		if item.WaitingOn != "" {
+			waiting = append(waiting, item)
+		} else {
+			ranked = append(ranked, item)
+		}
+	}
+	items = ranked
 	doc.Items, doc.Sources = items, sources
 	progress, sources, err := readFollowUpProgress(ctx, loaded, environment)
 	if err != nil {
@@ -211,6 +232,23 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 			}
 		}
 		doc.Items = followUpOrder(items, answers)
+	}
+	if req.all {
+		sort.Slice(waiting, func(i, j int) bool {
+			if waiting[i].Since != waiting[j].Since {
+				return waiting[i].Since < waiting[j].Since
+			}
+			return waiting[i].Ref < waiting[j].Ref
+		})
+		for _, item := range waiting {
+			item.Rank = len(doc.Items) + 1
+			item.Priority, item.PriorityName, item.Basis = 5, "waiting", "waiting"
+			item.Answers, item.Blocks, item.Reason = nil, nil, nil
+			doc.Items = append(doc.Items, item)
+		}
+	}
+	if len(items) == 0 && len(doc.Items) > 0 {
+		doc.Judge.Reason = followUpString("only waiting items")
 	}
 	if len(doc.Items) == 0 && progress.count() == 0 {
 		doc.State = "nothing_to_do"
@@ -321,6 +359,12 @@ func renderFollowUpText(doc followUpDocument) string {
 			if item.Blocks != nil {
 				fmt.Fprintf(&out, " — blocks %s", *item.Blocks)
 			}
+			if item.WaitingOn != "" {
+				fmt.Fprintf(&out, " — waiting on %s since %s", item.WaitingOn, item.Since)
+			}
+			if item.WaitingError != "" {
+				fmt.Fprintf(&out, " — invalid waiting declaration: %s", item.WaitingError)
+			}
 			out.WriteByte('\n')
 		}
 		fmt.Fprintf(&out, "In progress: %d\n", doc.InProgress.count())
@@ -337,21 +381,24 @@ func renderFollowUpText(doc followUpDocument) string {
 		if git.hasChanges() {
 			fmt.Fprintf(&out, "  git %s %s: %d changed path(s), %d unpushed commit(s)\n", git.Branch, git.Head, len(git.ChangedPaths), git.UnpushedCommits)
 		}
-		answered := 0
+		answered, ranked := 0, 0
 		for _, item := range doc.Items {
+			if item.WaitingOn == "" {
+				ranked++
+			}
 			if item.Basis == "judge" {
 				answered++
 			}
 		}
 		switch doc.Judge.State {
 		case "answered", "partial":
-			fmt.Fprintf(&out, "Judge: answered %d of %d item(s) with %s", answered, len(doc.Items), *doc.Judge.Model)
-			if answered < len(doc.Items) {
-				fmt.Fprintf(&out, "; %d ordered by type", len(doc.Items)-answered)
+			fmt.Fprintf(&out, "Judge: answered %d of %d item(s) with %s", answered, ranked, *doc.Judge.Model)
+			if answered < ranked {
+				fmt.Fprintf(&out, "; %d ordered by type", ranked-answered)
 			}
 			out.WriteByte('\n')
 		case "not_asked":
-			out.WriteString("Judge: not asked: no item\n")
+			fmt.Fprintf(&out, "Judge: not asked: %s\n", *doc.Judge.Reason)
 		default:
 			fmt.Fprintf(&out, "Judge: unavailable: %s; ordered by type\n", *doc.Judge.Reason)
 		}
@@ -361,6 +408,12 @@ func renderFollowUpText(doc followUpDocument) string {
 		fmt.Fprintf(&out, "  %s: %s", source.Name, source.State)
 		if source.State == "checked" {
 			fmt.Fprintf(&out, " %d", source.Count)
+		}
+		if source.Waiting > 0 {
+			fmt.Fprintf(&out, ": %d waiting", source.Waiting)
+			if !doc.all {
+				out.WriteString(", held back without --all")
+			}
 		}
 		if source.Detail != "" {
 			fmt.Fprintf(&out, ": %s", source.Detail)

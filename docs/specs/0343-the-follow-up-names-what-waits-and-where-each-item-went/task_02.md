@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0343-the-follow-up-names-what-waits-and-where-each-item-went
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -158,3 +158,87 @@ reported by fluxus, with the maintainer's `--all` answer of 2026-11-03.
 
 - `_prd.md` → Goals; Core Features 2 to 5 and 7; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Success Metric 6; Success Metric 7; Success Metric 8; Glossary; Decisions
 - `_techspec.md` → Current behavior 2 to 5; Interfaces; Data Models; API Contracts 2 to 7 and 9; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Invariants 1 to 4 and 6; Declared breaks; ADR-0353; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, typesafe-ai, evidence-gate.
+
+Implemented this Task's waiting-list slice; Task status and settlement remain
+Daemon-owned. The only pre-existing change at entry was this Task's
+`pending` to `in_progress` status transition, which was preserved.
+
+Acceptance evidence:
+
+- Byte preservation: created `follow_up_waiting_test.go` before changing any
+  production code, ran the starting CLI over a message, an open Backlog
+  Entry, a pending Finding and a visible note, and pinned its literal text
+  and JSON in `TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration`. Only the
+  repository root is substituted; a fixed-date disposable root commit keeps
+  the literal HEAD stable. The characterization passed before production
+  edits and again unchanged in the focused follow-up regression run.
+- Valid declarations: `yaml.Node` fields preserve scalar and non-scalar
+  frontmatter for ordered validation. Only open Backlog Entries and pending
+  or partial Findings are classified as waiting. Their sources count all
+  items and carry their waiting counts. The default list holds them back;
+  `--all` appends them in `since`, then reference order with priority 5 and
+  null judgment fields. `TestFollowUpHoldsBackWaitingItems` and
+  `TestFollowUpAllListsWaitingItemsLast` assert received fake-judge titles
+  with a fixture key, both source counts, omitted ordinary-item fields,
+  ranked answer totals (including a stopped partial judge), only-waiting
+  reports, and notes/Specs remaining ranked.
+- Invalid declarations: `TestFollowUpReportsAnInvalidWaitingDeclaration`
+  exercises both Backlog Entries and Findings for blank, list, map and
+  multiline waits, missing/null dates, impossible/list/map/blank/datetime
+  dates, dates without a wait, validation precedence, and a null pair. Each
+  malformed item remains ranked with the exact error; every source remains
+  checked. Null fields are absent declarations.
+- Surface and written contract: both existing help tests pin Transcript 1
+  and the root synopsis; the three new transcript tests assert all stdout,
+  stderr and exit bytes of Transcripts 2, 3 and 4 over the committed fixture.
+  The guide and canonical reference state the declaration, judge exclusion,
+  suffixes, optional JSON fields in struct order, and status refusal.
+  `CONTEXT.md` defines both new terms and revises Follow-up Command and
+  Follow-up Priority; accepted ADR-0353 records the decision and alternatives.
+
+Focused checks (all exited 0 on the implementation):
+
+- Before production changes: `go test ./internal/cli -run
+  '^TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration$' -count=1`.
+- After the implementation and partial-judge test: `go test ./internal/cli
+  -run '^TestFollowUp' -count=1` (list, status, byte preservation, help,
+  validation, ordering and all transcript cases).
+- `go test -tags docscontract ./internal/cli -run
+  'TestTheFollowUpGuides' -count=1`.
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossary'
+  -count=1`.
+- `go test ./skills -count=1 -run
+  '^(TestAuthorialSkillSync|TestRoundfixSkill.*|TestCheckRepositoryMatchesRealRepository)$'`.
+- `git diff --check`.
+
+Negative checks used temporary Go overlays, never edited repository source,
+and each exited 1 at its intended assertion: sending waiting items to the
+judge made the fake reject `ERP totals differ`; reversing `since` sorting
+failed the ordered-item assertion; ignoring `--all` failed its whole
+transcript; removing `omitempty` from source `waiting` failed the original
+JSON-byte characterization. The probe driver exited 0 after checking all
+four expected failures.
+
+Sanctioned regeneration (all exited 0):
+
+- `make skills-sync` copied the canonical reference.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions -count=1` raised both Roundfix skill version fields
+  from `0.1.173` to `0.1.174` and recorded the digest. No mirror, version or
+  generated record was hand-edited.
+- As the final implementation step, after the last guide edit:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` regenerated
+  `docs/references/behavior-surfaces.json`.
+
+The physical checkout was used because the sandbox executor rejects the
+logical workspace's symlinked writable root. No live provider/network call,
+other Task, Task Graph, status implementation, Baseline asset, or modes or
+deliver reference was changed. Declared Verification and repository
+Verification were not run; they remain the Daemon's responsibility. No
+commit, push or Pull Request was created. No follow-up work was identified.
