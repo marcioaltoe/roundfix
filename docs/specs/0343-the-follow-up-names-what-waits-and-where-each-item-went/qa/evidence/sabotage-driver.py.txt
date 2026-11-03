@@ -1,0 +1,32 @@
+from pathlib import Path
+exec((Path(__file__).parent / 'qa-support.py.txt').read_text())
+import difflib
+hidden='''\t\tif path != inboxRoot && strings.HasPrefix(entry.Name(), ".") {
+\t\t\tif entry.IsDir() {
+\t\t\t\treturn fs.SkipDir
+\t\t\t}
+\t\t\treturn nil
+\t\t}
+'''
+probes=[
+ ('Q09','internal/cli/deliver_plan.go',hidden,'','^(TestDeliverPlanIgnoresHiddenInboxEntries|TestFollowUpIgnoresHiddenInboxEntries)$',['TestDeliverPlanIgnoresHiddenInboxEntries','TestFollowUpIgnoresHiddenInboxEntries'],'.gitkeep'),
+ ('Q10','internal/cli/deliver_plan.go','if path != inboxRoot && strings.HasPrefix(entry.Name(), ".") {','if path != inboxRoot && strings.HasPrefix(entry.Name(), ".") && !entry.IsDir() {','^(TestDeliverPlanIgnoresHiddenInboxEntries|TestFollowUpIgnoresHiddenInboxEntries)$',['TestDeliverPlanIgnoresHiddenInboxEntries','TestFollowUpIgnoresHiddenInboxEntries'],'.obsidian/app.json'),
+ ('Q11','internal/cli/follow_up.go','\titems = ranked\n','\titems = append(ranked, waiting...)\n','^TestFollowUpHoldsBackWaitingItems$',['TestFollowUpHoldsBackWaitingItems'],'ERP totals differ'),
+ ('Q12','internal/cli/follow_up.go','\tif req.all {\n','\tif false && req.all {\n','^TestFollowUpAllListsWaitingItemsLast$',['TestFollowUpAllListsWaitingItemsLast'],'ranked_then_since_then_reference'),
+ ('Q13','internal/cli/follow_up.go','return waiting[i].Since < waiting[j].Since','return waiting[i].Since > waiting[j].Since','^TestFollowUpAllListsWaitingItemsLast$',['TestFollowUpAllListsWaitingItemsLast'],'2026-10-26'),
+ ('Q14','internal/cli/follow_up_inventory.go','return "", "", "since is missing"','return waitingOn, "", ""','^TestFollowUpReportsAnInvalidWaitingDeclaration$/^missing_since$',['TestFollowUpReportsAnInvalidWaitingDeclaration'],'missing_since'),
+ ('Q15','internal/cli/follow_up.go','`json:"waiting,omitempty"`','`json:"waiting"`','^TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration$',['TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration'],'waiting'),
+]
+for row,file,old,new,pattern,tests,witness in probes:
+ with tempfile.TemporaryDirectory(prefix='qa343-'+row.lower()+'-') as d:
+  repo=Path(d);archive('HEAD',repo)
+  # Give archive fixtures staged Git provenance for suite-guard readers.
+  e=cleanenv();e.update(GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1')
+  for args in [['git','init','-q','-b','main'],['git','add','.'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','-qm','test: archived QA fixture']]:
+   p,l=command(args,repo,e);assert p.returncode==0,l
+  f=repo/file;before=f.read_text();assert before.count(old)==1,(row,before.count(old));after=before.replace(old,new,1);f.write_text(after)
+  patch=''.join(difflib.unified_diff(before.splitlines(keepends=True),after.splitlines(keepends=True),fromfile=file,tofile=file+' (sabotaged)'))
+  p,log=command(['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./internal/cli'],repo)
+  good=p.returncode==1 and all('--- FAIL: '+name in p.stdout for name in tests) and witness in p.stdout and '[build failed]' not in p.stdout+p.stderr
+  observe(row,'pass' if good else 'fail','Named tests reject the isolated mutation at the intended input ('+witness+'); test process exit '+str(p.returncode)+'.','sabotage-'+row.lower()+'.txt','Mutation:\n'+patch+'\n'+log+'\nExpected failure confirmed: '+str(good)+'\n')
+  print('\n'.join(line for line in p.stdout.splitlines() if '--- FAIL:' in line or '_test.go:' in line)[:3500],flush=True)

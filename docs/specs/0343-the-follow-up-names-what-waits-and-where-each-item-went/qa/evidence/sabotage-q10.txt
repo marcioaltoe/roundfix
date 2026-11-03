@@ -1,0 +1,34 @@
+Mutation:
+--- internal/cli/deliver_plan.go
++++ internal/cli/deliver_plan.go (sabotaged)
+@@ -308,7 +308,7 @@
+ 		if walkErr != nil {
+ 			return walkErr
+ 		}
+-		if path != inboxRoot && strings.HasPrefix(entry.Name(), ".") {
++		if path != inboxRoot && strings.HasPrefix(entry.Name(), ".") && !entry.IsDir() {
+ 			if entry.IsDir() {
+ 				return fs.SkipDir
+ 			}
+
+command: go test -count=1 -timeout 20m -v -run ^(TestDeliverPlanIgnoresHiddenInboxEntries|TestFollowUpIgnoresHiddenInboxEntries)$ ./internal/cli
+stdout:
+=== RUN   TestDeliverPlanIgnoresHiddenInboxEntries
+=== PAUSE TestDeliverPlanIgnoresHiddenInboxEntries
+=== RUN   TestFollowUpIgnoresHiddenInboxEntries
+=== PAUSE TestFollowUpIgnoresHiddenInboxEntries
+=== CONT  TestDeliverPlanIgnoresHiddenInboxEntries
+=== CONT  TestFollowUpIgnoresHiddenInboxEntries
+    follow_up_test.go:738: repository-inbox source={Name:repository-inbox State:checked Count:2 Detail: Waiting:0}, want checked count 1
+--- FAIL: TestFollowUpIgnoresHiddenInboxEntries (0.06s)
+=== NAME  TestDeliverPlanIgnoresHiddenInboxEntries
+    deliver_plan_test.go:228: inbox rows=["inbox\tdocs/_inbox/.obsidian/app.json\t-" "inbox\tdocs/_inbox/note.md\t-"], want only docs/_inbox/note.md
+--- FAIL: TestDeliverPlanIgnoresHiddenInboxEntries (0.15s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 151.090667ms before and 139.842583ms after
+FAIL	roundfix/internal/cli	0.877s
+FAIL
+stderr:
+exit: 1
+
+Expected failure confirmed: True

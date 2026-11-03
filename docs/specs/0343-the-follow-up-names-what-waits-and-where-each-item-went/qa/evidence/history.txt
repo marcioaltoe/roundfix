@@ -1,0 +1,109 @@
+command: git diff-tree --no-commit-id --name-only -r 0f3fee3dbc0c5d8afd5a2a45a98eaa3270b92a81
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+.agents/skills/roundfix/references/follow-up.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/task_01.md
+docs/user-guide/commands/deliver.md
+docs/user-guide/commands/follow-up.md
+internal/cli/deliver_plan.go
+internal/cli/deliver_plan_test.go
+internal/cli/follow_up_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/roundfix/references/follow-up.md
+skills/testdata/owned-skill-versions.json
+stderr:
+exit: 0
+
+task_01 undeclared paths: []
+task_01: authorization mechanically granted at c2ae462169971e4db7e34004a6b6158996c9182a; governed changed paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', '.agents/skills/roundfix/references/follow-up.md', 'skills/roundfix/SKILL.md']
+command: git diff-tree --no-commit-id --name-only -r 349f916e3acb001b8eb2e733732c7baef1c09c18
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/follow-up.md
+CONTEXT.md
+docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md
+docs/references/behavior-surfaces.json
+docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/task_02.md
+docs/user-guide/commands/follow-up.md
+internal/cli/cli.go
+internal/cli/follow_up.go
+internal/cli/follow_up_inventory.go
+internal/cli/follow_up_status_test.go
+internal/cli/follow_up_test.go
+internal/cli/follow_up_waiting_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/follow-up.md
+skills/testdata/owned-skill-versions.json
+stderr:
+exit: 0
+
+task_02 undeclared paths: []
+task_02: authorization mechanically granted at c2ae462169971e4db7e34004a6b6158996c9182a; governed changed paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/follow-up.md', 'skills/roundfix/SKILL.md']
+command: git diff-tree --no-commit-id --name-only -r 082b7d8f1aa1fdd34b1e5b3ee9a899b6723dc500
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/modes.md
+docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/task_03.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/modes.md
+skills/testdata/owned-skill-versions.json
+stderr:
+exit: 0
+
+task_03 undeclared paths: []
+task_03: authorization mechanically granted at c2ae462169971e4db7e34004a6b6158996c9182a; governed changed paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/modes.md', 'skills/roundfix/SKILL.md']
+.agents/skills/roundfix/SKILL.md: QA settlement unchanged = True
+skills/roundfix/SKILL.md: QA settlement unchanged = True
+Changed glossary terms: ['Follow-up Command', 'Follow-up Item', 'Follow-up Priority', 'Waiting Declaration', 'Waiting Item']
+_prd.md: changes Follow-up Command = True
+_prd.md: changes Follow-up Priority = True
+_prd.md: adds Waiting Item = True
+_prd.md: adds Waiting Declaration = True
+_prd.md: changes Follow-up Item = True
+_techspec.md: changes Follow-up Command = True
+_techspec.md: changes Follow-up Priority = True
+_techspec.md: adds Waiting Item = True
+_techspec.md: adds Waiting Declaration = True
+_techspec.md: changes Follow-up Item = True
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 286f00e2..a587217e 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -186,17 +186,26 @@ The destination-project act that converts one pending Cross-project Message into
+ _Avoid_: Capture, import, synchronization
+ 
+ **Follow-up Command**:
+-The read-only `roundfix follow-up` command that lists a repository's Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
++The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+ _Avoid_: Triage command, dashboard, inbox sync
+ 
+ **Follow-up Item**:
+-One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
++One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note that is a file in `docs/_inbox/` outside any file or folder whose name starts with a dot, or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+ _Avoid_: Work Item, ticket, to-do
+ 
+ **Follow-up Priority**:
+-The order of Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
++The order of ranked Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
++A Waiting Item is in the fifth class `waiting`, outside the four, and follows all ranked items only when `--all` is given, oldest `since` first and then reference ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+ _Avoid_: Jev ranking, severity, score
+ 
++**Waiting Declaration**:
++The optional `waiting_on` and `since` pair on an open Backlog Entry or an unresolved Finding, naming who or what it waits on in one non-empty line and the `YYYY-MM-DD` date the wait began ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
++_Avoid_: Waiting status, free-text wait
++
++**Waiting Item**:
++A Follow-up Item with a valid Waiting Declaration, held back from the default list and counted on its source, listed with `--all` in class `waiting`, and never sent to the judge ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
++_Avoid_: Blocked item, deferred item
++
+ **Task Source**:
+ The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.
+ _Avoid_: Provider, backend, integration
+
+PRD Unreachable Acceptance: None. No declared-blocked criteria.
+Non-goals: forbidden paths untouched; status byte comparisons and notes/Specs tests preserve scope; settlement unchanged.
+Errors: []

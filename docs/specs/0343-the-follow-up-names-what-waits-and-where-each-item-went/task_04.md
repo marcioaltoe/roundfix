@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0343-the-follow-up-names-what-waits-and-where-each-item-went
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

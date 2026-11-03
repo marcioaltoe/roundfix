@@ -1,0 +1,11 @@
+command: ./bin/roundfix spec check 0343-the-follow-up-names-what-waits-and-where-each-item-went --strict
+stdout:
+Spec 0343-the-follow-up-names-what-waits-and-where-each-item-went
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/_techspec.md Vocabulary Contract
+stderr:
+exit: 0

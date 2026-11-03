@@ -1,0 +1,167 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestDeliverPlanIgnoresHiddenInboxEntries|TestFollowUpIgnoresHiddenInboxEntries|TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration|TestFollowUpHoldsBackWaitingItems|TestFollowUpAllListsWaitingItemsLast|TestFollowUpReportsAnInvalidWaitingDeclaration|TestFollowUpHoldsBackWaitingItemsTranscript|TestFollowUpAllListsWaitingItemsTranscript|TestFollowUpStatusRefusesAllTranscript|TestFollowUpListHelpMatchesTranscript|TestFollowUpHelpTranscript)$ ./internal/cli
+stdout:
+=== RUN   TestDeliverPlanIgnoresHiddenInboxEntries
+=== PAUSE TestDeliverPlanIgnoresHiddenInboxEntries
+=== RUN   TestFollowUpHelpTranscript
+=== PAUSE TestFollowUpHelpTranscript
+=== RUN   TestFollowUpListHelpMatchesTranscript
+=== PAUSE TestFollowUpListHelpMatchesTranscript
+=== RUN   TestFollowUpIgnoresHiddenInboxEntries
+=== PAUSE TestFollowUpIgnoresHiddenInboxEntries
+=== RUN   TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== PAUSE TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== RUN   TestFollowUpHoldsBackWaitingItems
+=== PAUSE TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpAllListsWaitingItemsLast
+=== PAUSE TestFollowUpAllListsWaitingItemsLast
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration
+=== RUN   TestFollowUpHoldsBackWaitingItemsTranscript
+=== PAUSE TestFollowUpHoldsBackWaitingItemsTranscript
+=== RUN   TestFollowUpAllListsWaitingItemsTranscript
+=== PAUSE TestFollowUpAllListsWaitingItemsTranscript
+=== RUN   TestFollowUpStatusRefusesAllTranscript
+=== PAUSE TestFollowUpStatusRefusesAllTranscript
+=== CONT  TestDeliverPlanIgnoresHiddenInboxEntries
+=== CONT  TestFollowUpIgnoresHiddenInboxEntries
+=== CONT  TestFollowUpAllListsWaitingItemsLast
+=== CONT  TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== RUN   TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== CONT  TestFollowUpListHelpMatchesTranscript
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== RUN   TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== RUN   TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== CONT  TestFollowUpAllListsWaitingItemsTranscript
+=== CONT  TestFollowUpStatusRefusesAllTranscript
+=== CONT  TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== CONT  TestFollowUpHelpTranscript
+=== CONT  TestFollowUpHoldsBackWaitingItemsTranscript
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== PAUSE TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== RUN   TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== PAUSE TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== RUN   TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== PAUSE TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== CONT  TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+--- PASS: TestFollowUpStatusRefusesAllTranscript (0.10s)
+=== CONT  TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+--- PASS: TestFollowUpListHelpMatchesTranscript (0.11s)
+=== CONT  TestFollowUpHoldsBackWaitingItems/mixed_inventory
+--- PASS: TestFollowUpHelpTranscript (0.11s)
+=== CONT  TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+--- PASS: TestFollowUpIgnoresHiddenInboxEntries (0.19s)
+=== CONT  TestFollowUpHoldsBackWaitingItems/only_waiting_items
+--- PASS: TestFollowUpAllListsWaitingItemsTranscript (0.27s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+--- PASS: TestFollowUpHoldsBackWaitingItemsTranscript (0.28s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+--- PASS: TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration (0.33s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+--- PASS: TestFollowUpAllListsWaitingItemsLast (0.00s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/only_waiting_items (0.31s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference (0.33s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting (0.28s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+--- PASS: TestDeliverPlanIgnoresHiddenInboxEntries (0.46s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+--- PASS: TestFollowUpHoldsBackWaitingItems (0.00s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked (0.20s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/mixed_inventory (0.22s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/only_waiting_items (0.29s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/list
+--- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration (0.00s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/map_date (0.27s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/blank (0.32s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair (0.29s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone (0.29s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on (0.30s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid (0.29s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/datetime (0.28s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order (0.35s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date (0.29s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since (0.28s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/list_date (0.28s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_since (0.27s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date (0.28s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines (0.26s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline (0.27s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/map (0.27s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/list (0.26s)
+PASS
+suiteguard: guard cost: measured 2901 paths; fingerprint took 429.796958ms before and 181.907667ms after
+ok  	roundfix/internal/cli	1.963s
+stderr:
+exit: 0
+
+command: go test -count=1 -timeout 20m -v -tags docscontract -run ^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$ ./internal/cli
+stdout:
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+--- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes (0.00s)
+    --- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md (0.00s)
+    --- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md (0.00s)
+    --- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md (0.00s)
+PASS
+suiteguard: guard cost: measured 2901 paths; fingerprint took 150.798833ms before and 149.257334ms after
+ok  	roundfix/internal/cli	0.720s
+stderr:
+exit: 0

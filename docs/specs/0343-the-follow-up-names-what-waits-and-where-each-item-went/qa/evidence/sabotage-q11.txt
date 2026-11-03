@@ -1,0 +1,42 @@
+Mutation:
+--- internal/cli/follow_up.go
++++ internal/cli/follow_up.go (sabotaged)
+@@ -157,7 +157,7 @@
+ 			ranked = append(ranked, item)
+ 		}
+ 	}
+-	items = ranked
++	items = append(ranked, waiting...)
+ 	doc.Items, doc.Sources = items, sources
+ 	progress, sources, err := readFollowUpProgress(ctx, loaded, environment)
+ 	if err != nil {
+
+command: go test -count=1 -timeout 20m -v -run ^TestFollowUpHoldsBackWaitingItems$ ./internal/cli
+stdout:
+=== RUN   TestFollowUpHoldsBackWaitingItems
+=== PAUSE TestFollowUpHoldsBackWaitingItems
+=== CONT  TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== PAUSE TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== RUN   TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== PAUSE TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== RUN   TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== PAUSE TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== CONT  TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpHoldsBackWaitingItems/only_waiting_items
+    client.go:264: unexpected judge request
+=== NAME  TestFollowUpHoldsBackWaitingItems/mixed_inventory
+    client.go:264: unexpected item "ERP totals differ"
+--- FAIL: TestFollowUpHoldsBackWaitingItems (0.00s)
+    --- FAIL: TestFollowUpHoldsBackWaitingItems/mixed_inventory (0.09s)
+    --- FAIL: TestFollowUpHoldsBackWaitingItems/only_waiting_items (0.09s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked (0.09s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 146.992ms before and 134.904583ms after
+FAIL	roundfix/internal/cli	0.821s
+FAIL
+stderr:
+exit: 1
+
+Expected failure confirmed: True

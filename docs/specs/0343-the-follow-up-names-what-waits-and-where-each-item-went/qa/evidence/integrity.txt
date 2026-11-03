@@ -1,0 +1,41 @@
+Report rows: {'pass': 21, 'blocked (environment: no open Pull Request)': 1}
+Frontmatter: single, closed, partial; auditor identity and staleness retained.
+Typed inputs: 22/22, fixed before execution.
+Local evidence links: 32 resolved and non-ignored.
+Evidence files: UTF-8 text only, no binary content.
+Secret scan: no matches using patterns from internal/secretscan/patterns.go and its letter/digit assignment rule.
+Go test logs: no skipped tests.
+Workspace delta:
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/archive-plan.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/audit-driver.py.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/build.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/compatibility.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/fluxus.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/history.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/outside-fluxus.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/outside-gtd-date.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/outside-gtd-list.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/precondition.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/public-driver.py.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/pull-request.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/qa-support.py.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/required-tests.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-driver.py.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q09.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q10.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q11.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q12.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q13.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q14.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/sabotage-q15.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/task-tests.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/transcript-1.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/transcript-2.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/transcript-3.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/transcript-4.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/version.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/evidence/wording.txt
+?? docs/specs/0343-the-follow-up-names-what-waits-and-where-each-item-went/qa/qa-report-2026-11-03.md
+
+git diff --check: exit 0.
+All launched foreground QA processes exited.

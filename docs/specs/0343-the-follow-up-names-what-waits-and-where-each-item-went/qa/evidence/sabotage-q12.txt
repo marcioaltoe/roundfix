@@ -1,0 +1,44 @@
+Mutation:
+--- internal/cli/follow_up.go
++++ internal/cli/follow_up.go (sabotaged)
+@@ -233,7 +233,7 @@
+ 		}
+ 		doc.Items = followUpOrder(items, answers)
+ 	}
+-	if req.all {
++	if false && req.all {
+ 		sort.Slice(waiting, func(i, j int) bool {
+ 			if waiting[i].Since != waiting[j].Since {
+ 				return waiting[i].Since < waiting[j].Since
+
+command: go test -count=1 -timeout 20m -v -run ^TestFollowUpAllListsWaitingItemsLast$ ./internal/cli
+stdout:
+=== RUN   TestFollowUpAllListsWaitingItemsLast
+=== PAUSE TestFollowUpAllListsWaitingItemsLast
+=== CONT  TestFollowUpAllListsWaitingItemsLast
+=== RUN   TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== RUN   TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== RUN   TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== CONT  TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== CONT  TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== CONT  TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+    follow_up_waiting_test.go:220: report={Schema:roundfix/follow-up/v1 View:follow-up State:nothing_to_do Repository:{Root:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpAllListsWaitingItemsLastonly_waiting_items984172970/001 Namespace:widget} Sources:[{Name:ai-memory-messages State:missing Count:0 Detail:no --messages file Waiting:0} {Name:backlog State:checked Count:0 Detail: Waiting:0} {Name:findings State:checked Count:1 Detail: Waiting:1} {Name:repository-inbox State:checked Count:0 Detail: Waiting:0} {Name:specs State:checked Count:0 Detail: Waiting:0} {Name:runs State:checked Count:0 Detail: Waiting:0} {Name:delivery-queue State:checked Count:0 Detail: Waiting:0} {Name:pull-requests State:checked Count:0 Detail: Waiting:0} {Name:git State:checked Count:0 Detail: Waiting:0}] Judge:{State:not_asked Reason:0x3a614e062a0 Model:<nil> Calls:0 CostUSD:0} Items:[] InProgress:{queue:{GitRoot: OwnerPID:0 OwnerIdentity: Limits:{Deadline:{wall:0 ext:0 loc:<nil>} MaxRetries:0 MaxTokens:0} Items:[]} Runs:[] DeliveryQueue:[] PullRequests:[] Git:{Branch:main Head:78bc69f Upstream: UnpushedCommits:0 ChangedPaths:[]}} all:false} judge titles=[]
+=== NAME  TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+    follow_up_waiting_test.go:164: report={Schema:roundfix/follow-up/v1 View:follow-up State:work_found Repository:{Root:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpAllListsWaitingItemsLastranked_then_since_then_refe2031184369/001 Namespace:widget} Sources:[{Name:ai-memory-messages State:missing Count:0 Detail:no --messages file Waiting:0} {Name:backlog State:checked Count:2 Detail: Waiting:1} {Name:findings State:checked Count:2 Detail: Waiting:2} {Name:repository-inbox State:checked Count:0 Detail: Waiting:0} {Name:specs State:checked Count:0 Detail: Waiting:0} {Name:runs State:checked Count:0 Detail: Waiting:0} {Name:delivery-queue State:checked Count:0 Detail: Waiting:0} {Name:pull-requests State:checked Count:0 Detail: Waiting:0} {Name:git State:checked Count:0 Detail: Waiting:0}] Judge:{State:answered Reason:<nil> Model:0x3a614bf7450 Calls:1 CostUSD:4.2000000000000004e-06} Items:[{Rank:1 Priority:4 PriorityName:other Kind:backlog Ref:docs/backlog/ordinary.md Type:refactor Date: Title:Ordinary RequestedBy:<nil> Blocks:<nil> Basis:judge Answers:map[affects_production:no blocks_other_project:no is_fix:no is_small:no] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:}] InProgress:{queue:{GitRoot: OwnerPID:0 OwnerIdentity: Limits:{Deadline:{wall:0 ext:0 loc:<nil>} MaxRetries:0 MaxTokens:0} Items:[]} Runs:[] DeliveryQueue:[] PullRequests:[] Git:{Branch:main Head:afc8266 Upstream: UnpushedCommits:0 ChangedPaths:[]}} all:false} judge titles=[Ordinary]
+=== NAME  TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+    follow_up_waiting_test.go:203: report={Schema:roundfix/follow-up/v1 View:follow-up State:work_found Repository:{Root:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpAllListsWaitingItemsLastpartial_judge_totals_exclud1547139678/001 Namespace:widget} Sources:[{Name:ai-memory-messages State:checked Count:3 Detail: Waiting:0} {Name:backlog State:checked Count:0 Detail: Waiting:0} {Name:findings State:checked Count:1 Detail: Waiting:1} {Name:repository-inbox State:checked Count:0 Detail: Waiting:0} {Name:specs State:checked Count:0 Detail: Waiting:0} {Name:runs State:checked Count:0 Detail: Waiting:0} {Name:delivery-queue State:checked Count:0 Detail: Waiting:0} {Name:pull-requests State:checked Count:0 Detail: Waiting:0} {Name:git State:checked Count:0 Detail: Waiting:0}] Judge:{State:partial Reason:0x3a6145d2050 Model:0x3a6145d2090 Calls:2 CostUSD:4.2000000000000004e-06} Items:[{Rank:1 Priority:2 PriorityName:health Kind:message Ref:message:one Type:fix Date:2026-10-21 Title:First RequestedBy:<nil> Blocks:<nil> Basis:judge Answers:map[affects_production:no blocks_other_project:no is_fix:yes is_small:no] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:} {Rank:2 Priority:2 PriorityName:health Kind:message Ref:message:two Type:fix Date:2026-10-22 Title:Second RequestedBy:<nil> Blocks:<nil> Basis:type Answers:map[] Reason:0x3a6145d20f0 WaitingOn: Since: WaitingError: text: origin:} {Rank:3 Priority:2 PriorityName:health Kind:message Ref:message:three Type:fix Date:2026-10-23 Title:Third RequestedBy:<nil> Blocks:<nil> Basis:type Answers:map[] Reason:0x3a6145d2100 WaitingOn: Since: WaitingError: text: origin:}] InProgress:{queue:{GitRoot: OwnerPID:0 OwnerIdentity: Limits:{Deadline:{wall:0 ext:0 loc:<nil>} MaxRetries:0 MaxTokens:0} Items:[]} Runs:[] DeliveryQueue:[] PullRequests:[] Git:{Branch:main Head:a1751cc Upstream: UnpushedCommits:0 ChangedPaths:[]}} all:false} calls=2 titles=[First]
+--- FAIL: TestFollowUpAllListsWaitingItemsLast (0.00s)
+    --- FAIL: TestFollowUpAllListsWaitingItemsLast/only_waiting_items (0.09s)
+    --- FAIL: TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting (0.09s)
+    --- FAIL: TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference (0.09s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 135.362ms before and 135.841042ms after
+FAIL	roundfix/internal/cli	0.790s
+FAIL
+stderr:
+exit: 1
+
+Expected failure confirmed: True

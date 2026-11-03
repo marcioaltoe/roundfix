@@ -1,0 +1,30 @@
+from pathlib import Path
+import subprocess, tempfile, os, json, re, shutil, sys, tarfile, io
+ROOT=Path.cwd()
+SLUG="0343-the-follow-up-names-what-waits-and-where-each-item-went"
+SPEC=ROOT/"docs/specs"/SLUG
+EV=SPEC/"qa/evidence"
+REPORT=SPEC/"qa/qa-report-2026-11-03.md"
+KEYS=["ROUNDFIX_OPENROUTER_JUDGE_API_KEY","ROUNDFIX_OPENROUTER_API_KEY","ROUNDFIX_TYPESAFE_API_KEY","TYPESAFE_API_KEY"]
+def cleanenv():
+ e=os.environ.copy()
+ for k in KEYS: e.pop(k,None)
+ e.update(GOPROXY="off",GOSUMDB="off",GOTOOLCHAIN="local")
+ return e
+def observe(row,status,note,filename=None,data=None):
+ if filename and data is not None: (EV/filename).write_text(data)
+ s=REPORT.read_text(); s=re.sub(r"\| "+row+r" \| [^|]+ \|", "| "+row+" | "+status+" |",s,count=1)
+ marker="### "+row+"\n"; start=s.index(marker)+len(marker); stop=s.find("\n### ",start)
+ if stop<0: stop=len(s)
+ s=s[:stop]+"\nObserved: "+note+(" [Evidence](evidence/"+filename+")." if filename else "")+"\n"+s[stop:]
+ REPORT.write_text(s); print(row,status,note,flush=True)
+def command(args,cwd=ROOT,env=None):
+ p=subprocess.run(args,cwd=cwd,env=env or cleanenv(),text=True,capture_output=True)
+ return p,"command: "+" ".join(map(str,args))+"\nstdout:\n"+p.stdout+"stderr:\n"+p.stderr+"exit: "+str(p.returncode)+"\n"
+def public(args,cwd=ROOT,binary=None):
+ with tempfile.TemporaryDirectory(prefix="qa343-home-") as h,tempfile.TemporaryDirectory(prefix="qa343-tmp-") as t:
+  e=cleanenv(); e.update(HOME=h,TMPDIR=t)
+  return command([str(binary or ROOT/"bin/roundfix"),*args],cwd,e)
+def archive(rev,dest):
+ data=subprocess.check_output(["git","archive",rev],cwd=ROOT)
+ with tarfile.open(fileobj=io.BytesIO(data)) as tf: tf.extractall(dest,filter="data")

@@ -1,0 +1,66 @@
+Fixture:
+{
+  "docs/_inbox/.gitkeep": "",
+  "docs/backlog/2026-10-21-export-widget.md": "---\nstatus: open\ntype: feat\ncreated: 2026-10-21\n---\n# Export widget\n",
+  "docs/findings/2026-10-20-erp-totals.md": "---\nstatus: pending\ncreated_at: 2026-10-20\nwaiting_on: ERP vendor support answer\nsince: 2026-10-25\n---\n# ERP totals differ\n",
+  "docs/findings/2026-10-22-broken-import.md": "---\nstatus: pending\ncreated_at: 2026-10-22\n---\n# Broken import\n",
+  "docs/findings/2026-10-23-late-feed.md": "---\nstatus: pending\ncreated_at: 2026-10-23\nwaiting_on: supplier sample data\n---\n# Late feed\n"
+}
+Expected:
+$ roundfix follow-up --help
+stdout:
+Usage:
+  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
+
+List this repository's pending work in Follow-up Priority order, or show its status.
+It is read-only: it never writes a file, commits, pushes or prompts.
+Options:
+  --status    Show work in progress, pending Specs, the next release and blockers
+  --all       Also list items waiting on someone else, held back by default
+  --messages  JSON file of ai-memory messages to list with the pending work
+  --format    text (default) or json
+
+Exits 0 for a report, including one with nothing to do; 2 for invalid usage,
+configuration or messages file; 1 for an unreadable Run Database.
+stderr:
+exit: 0
+Observed:
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0343-the-follow-up-names-what-waits-and-where-each-item-went-71e2649c999f88d9-622d024f-b8c9f3c4/run_20261103T193501Z_fd806be989a1a14b/bin/roundfix follow-up --help
+stdout:
+Usage:
+  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
+
+List this repository's pending work in Follow-up Priority order, or show its status.
+It is read-only: it never writes a file, commits, pushes or prompts.
+Options:
+  --status    Show work in progress, pending Specs, the next release and blockers
+  --all       Also list items waiting on someone else, held back by default
+  --messages  JSON file of ai-memory messages to list with the pending work
+  --format    text (default) or json
+
+Exits 0 for a report, including one with nothing to do; 2 for invalid usage,
+configuration or messages file; 1 for an unreadable Run Database.
+stderr:
+exit: 0
+
+Repeat:
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0343-the-follow-up-names-what-waits-and-where-each-item-went-71e2649c999f88d9-622d024f-b8c9f3c4/run_20261103T193501Z_fd806be989a1a14b/bin/roundfix follow-up --help
+stdout:
+Usage:
+  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
+
+List this repository's pending work in Follow-up Priority order, or show its status.
+It is read-only: it never writes a file, commits, pushes or prompts.
+Options:
+  --status    Show work in progress, pending Specs, the next release and blockers
+  --all       Also list items waiting on someone else, held back by default
+  --messages  JSON file of ai-memory messages to list with the pending work
+  --format    text (default) or json
+
+Exits 0 for a report, including one with nothing to do; 2 for invalid usage,
+configuration or messages file; 1 for an unreadable Run Database.
+stderr:
+exit: 0
+
+match: True
+git status empty: True
