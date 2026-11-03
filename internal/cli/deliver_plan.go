@@ -308,6 +308,12 @@ func deliveryPlanIntent(repoRoot string) ([]deliverPlanIntentItem, error) {
 		if walkErr != nil {
 			return walkErr
 		}
+		if path != inboxRoot && strings.HasPrefix(entry.Name(), ".") {
+			if entry.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
 		if entry.Type().IsRegular() {
 			intent = append(intent, deliverPlanIntentItem{
 				Kind:   "inbox",

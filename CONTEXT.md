@@ -186,16 +186,25 @@ The destination-project act that converts one pending Cross-project Message into
 _Avoid_: Capture, import, synchronization
 
 **Follow-up Command**:
-The read-only `roundfix follow-up` command that lists a repository's Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
-One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note that is a file in `docs/_inbox/` outside any file or folder whose name starts with a dot, or an active Spec, with its kind, reference, type, date, title and the project that sent it.
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:
-The order of Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+The order of ranked Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+A Waiting Item is in the fifth class `waiting`, outside the four, and follows all ranked items only when `--all` is given, oldest `since` first and then reference ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Jev ranking, severity, score
+
+**Waiting Declaration**:
+The optional `waiting_on` and `since` pair on an open Backlog Entry or an unresolved Finding, naming who or what it waits on in one non-empty line and the `YYYY-MM-DD` date the wait began ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+_Avoid_: Waiting status, free-text wait
+
+**Waiting Item**:
+A Follow-up Item with a valid Waiting Declaration, held back from the default list and counted on its source, listed with `--all` in class `waiting`, and never sent to the judge ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+_Avoid_: Blocked item, deferred item
 
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.
