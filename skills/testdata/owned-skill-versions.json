@@ -1051,6 +1051,10 @@
       {
         "version": "0.0.17",
         "digest": "6812400fe4b0bf6bb4f1a4185fdaf6868f0cb992e15cb174ce7138f8c8ae1246"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "3543b05c47bf34edd6782f3bc827ccea8dcd53d269030ec32506b6853d363c28"
       }
     ],
     "write-tasks": [
@@ -1215,6 +1219,10 @@
       {
         "version": "0.0.16",
         "digest": "998b159f1c8359d19f719a72c6d4ba0b99a54ab9a426c2071e855f78ec7db039"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "87b8032639e46968eebbf7245f6ee251082fe17cb2206ba9a1ca74b8e3408b8a"
       }
     ]
   }

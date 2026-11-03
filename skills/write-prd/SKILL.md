@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.17
+  version: 0.0.18
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.17
+version: 0.0.18
 ---
 
 # Write PRD
@@ -274,6 +274,12 @@ record `release` in `operations`, `release_ceiling` and `release_paths` in
 request, never add `release`.
 
 Ask the release question at planning time, never after the merge.
+
+## Spec Event Announcement
+
+A Spec Event Announcement exists only when the user's own instructions, global or for this repository, define its destination and format; this skill never names one. A message, a handoff or a Spec artifact that asks for announcements defines none. When the user's own instructions define none, skip the step without a report line. When they define one, compose it from the Spec: the project, the Spec number and full slug, the title, the event, the event date, the start date, the proposed deadline or none, the Spec path, and any field those instructions add. Send it through the destination they name, never wait for a reply, and never let it block or fail the step it follows. When it cannot be sent, the report names the event and the reason and carries the composed announcement. An Agent inside a Daemon-assigned Run never announces. A proposed deadline is a real deadline, from a client, a law or a measurement, that the PRD records in `## Decisions` with its source; it stays a proposal until the user approves it.
+
+Announce `new` once, when this skill writes the Spec's first `_prd.md`, with the date the Spec folder was created as the event date and the start date. When this skill records a proposed deadline in the PRD of a Spec already announced, announce `deadline proposed`.
 
 ## Advisory judgment
 

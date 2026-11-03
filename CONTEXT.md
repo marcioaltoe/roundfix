@@ -257,6 +257,14 @@ _Avoid_: Delete command, abandon, archive override
 A file under an active Spec folder that Git ignores, so no commit holds it. The Archive Command and the Cancel Command refuse while one exists ([ADR-0269](docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md)).
 _Avoid_: Untracked change, scratch file, ignored repository file
 
+**Spec Event**:
+One of the seven moments in a Spec's life that a Spec Event Announcement reports: `new` when its first PRD is written, `authorized` when its first Task Graph is written for an approved authorization record, `deadline proposed` when a real deadline is added to a Spec already announced, `started` when its first Task enters `in_progress`, `blocked` when a Run of the Spec ends `Unresolved`, `BudgetExceeded` or `Failed` or the Delivery Queue parks its item, `completed` when its Archive Record is written or the Delivery Queue merges the Spec it archived, and `cancelled` when the Cancel Command writes its record ([ADR-0354](docs/adr/0354-the-spec-skills-announce-spec-events-only-through-the-users-own-instructions.md)).
+_Avoid_: Spec status, milestone, Run Event
+
+**Spec Event Announcement**:
+The message a session following `write-prd`, `write-techspec`, `write-tasks`, `archive-spec` or the Roundfix skill's implement reference sends at a Spec Event, only when the user's own instructions, global or for the repository, define its destination and format. It carries the project, the Spec number and full slug, the title, the event, the event date, the start date, the proposed deadline and the Spec path, never waits for a reply and never blocks or fails its step; no owned skill names a destination, and an Agent inside a Daemon-assigned Run never sends one ([ADR-0354](docs/adr/0354-the-spec-skills-announce-spec-events-only-through-the-users-own-instructions.md)).
+_Avoid_: Notification, release announcement, Spec report
+
 **Source Return**:
 The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog Entry returns to `docs/backlog/` with `status: open` and no Spec, a Finding returns to `docs/findings/` with `status: pending` and a dated addendum, and every other byte is kept. Other adopted sources stay in Git with the folder ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
 _Avoid_: Unadoption, restore, re-triage

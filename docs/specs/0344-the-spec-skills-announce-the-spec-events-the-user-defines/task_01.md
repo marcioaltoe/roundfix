@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0344-the-spec-skills-announce-the-spec-events-the-user-defines
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -77,3 +77,25 @@ reported by jarvis, whose events "nova" and "prazo proposto" these are.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1, 2 and 4; Success Metric 3; Success Metric 4; Glossary; Decisions
 - `_techspec.md` → API Contracts 1-3; API Contract 7; Invariants 1-5; Build Order 1
 - ADR-0354
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implemented the glossary entries immediately after **Ignored Spec File**, added the shared Spec Event Announcement paragraph and the route-specific `write-prd`/`write-techspec` paragraphs immediately before `## Advisory judgment`, synchronized both mirrors, and regenerated the owned-skill version record. The `### QA settlement` sections and unrelated skill sections were not changed.
+
+Focused checks:
+
+- `make skills-sync`: passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed (`1 passed in 1 packages`); generated `write-prd` `0.0.18` and `write-techspec` `0.0.17` records.
+- `git diff --check`: passed.
+- Canonical/mirror equality checks: passed for `write-prd` and `write-techspec`.
+- Required heading and glossary-anchor searches: found all expected entries.
+
+Acceptance evidence:
+
+- [x] `CONTEXT.md` has line-anchored **Spec Event** and **Spec Event Announcement** definitions after **Ignored Spec File**.
+- [x] Both canonical skills and mirrors contain the shared paragraph plus their `new` and `deadline proposed` event paragraphs.
+- [x] Mirrors equal canonical files, and the sanctioned owned-skill version recorder passed.
+
+The task's aggregate `## Verification` command was not run; it remains for Daemon Verification. No commit, push, PR, task-status change, or Task Graph edit was made.
