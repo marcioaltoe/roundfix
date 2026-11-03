@@ -549,6 +549,9 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 				}
 			}
 		}
+		if reason == "" && declarations.PrePRReview.Omits(path) {
+			reason = "omit-path"
+		}
 		if reason != "" {
 			omitted = append(omitted, reviewOmittedPath{Path: path, Reason: reason})
 		}
@@ -583,7 +586,11 @@ func appendReviewOmissions(prompt string, omitted []reviewOmittedPath) string {
 	}
 	var out strings.Builder
 	out.WriteString(prompt)
-	fmt.Fprintf(&out, "Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills, %d of archived Spec sources, %d of retired history, %d of generated files.\n", counts["qa-evidence"], counts["upstream-skill"], counts["archived-spec-source"], counts["retired-history"], counts["generated"])
+	fmt.Fprintf(&out, "Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills, %d of archived Spec sources, %d of retired history, %d of generated files", counts["qa-evidence"], counts["upstream-skill"], counts["archived-spec-source"], counts["retired-history"], counts["generated"])
+	if counts["omit-path"] > 0 {
+		fmt.Fprintf(&out, ", %d of pre_pr_review.omit_paths", counts["omit-path"])
+	}
+	out.WriteString(".\n")
 	for _, path := range omitted {
 		fmt.Fprintf(&out, "%s (%s)\n", path.Path, path.Reason)
 	}

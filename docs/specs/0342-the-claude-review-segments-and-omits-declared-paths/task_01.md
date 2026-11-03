@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0342-the-claude-review-segments-and-omits-declared-paths
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -120,3 +120,68 @@ reported by vortex, whose second suggestion asks for this key.
 - `_prd.md` → Goals; Core Feature 1; Success Metric 1; Success Metric 2; Decisions
 - `_techspec.md` → API Contracts 1-3; Invariants 1, 4 and 5; Testing Approach; Build Order 1
 - ADR-0352; ADR-0282
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, agentic-cli-design, systematic-debugging.
+
+Task status remains Daemon-owned. Implementation and focused evidence only;
+declared Verification and repository Verification remain for the Daemon.
+
+Added `PrePRReview.OmitPaths` with list replacement and explicit-empty clearing,
+shape validation before typed decoding, labeled path validation through the
+existing derived-path validator, and exact/directory/whole-path matching.
+Provider selection and its Source are unchanged. Both init templates retain
+their bytes. The scoped diff uses its existing immutable Project Config read
+and assigns `omit-path` only after every existing omission reason. The summary
+adds the new count only when it is nonzero.
+
+The configuration guide documents the key and its base-commit adoption rule,
+and distinguishes review omissions from conflict regeneration. After the last
+source and guide edit, the sanctioned recorder updated only the `config keys`
+and configuration-guide fingerprints in the Behavior Surface Record.
+
+Acceptance evidence:
+
+- Base glob, head-only key, and precedence: the five parallel cases of
+  `TestReviewOmitsConfiguredPathsFromTheBaseCommit` passed. They assert the
+  provider's diff body, omission reason, exact summary, diff byte count, and
+  persisted record. Round 2 still uses the original base even after the head
+  clears its list; a head-only list still omits nothing in round 2. A path
+  matched by both keys retains `generated`.
+- Invalid configuration: `TestPrePRReviewOmitPathsLoadsAndValidates` passed
+  proposal parsing and disk loading, Project/User precedence, empty clearing,
+  provider/Source preservation, exact/glob/directory matching, unsafe paths,
+  malformed patterns, non-list values, and non-string list entries. Refusals
+  retain the config label and key; unsafe/pattern refusals name the entry.
+  Direct `Validate` checks reject the same unsafe and malformed entries.
+- Byte compatibility: the new summary test compares the required literal
+  sentence and the command's whole prompt. The fixed-input whole-prompt
+  SHA-256 was identical before and after production edits:
+  `825ac238f6467063b26ed28c9f2fcfeaea0e2dbde74cbc3f99991e674184f2f4`.
+  The unchanged existing scope and init-template guards passed. A source-byte
+  comparison also confirmed `defaultConfigYAML` is unchanged for both scopes.
+- Guide and record: inspection confirmed the required table row and exact
+  distinction sentence. The sanctioned record command below exited 0 after
+  all implementation and guide edits, checking the record it wrote.
+
+Focused checks (each exited 0 on the final implementation):
+
+```sh
+go test ./internal/config -run '^(TestPrePRReviewOmitPathsLoadsAndValidates|TestDefaultConfigSelectsNoPrePRReviewProvider|TestDefaultConfigScopesReviewSourceToPullRequestFeedback|TestProjectConfigReadsDerivedPathDeclarations|TestDerivedPathDeclarationsRefuseUnsafeEntries)$' -count=1 -timeout 3m -v
+go test ./internal/cli -run '^TestReview(OmitsConfiguredPathsFromTheBaseCommit|OmissionSummaryKeepsItsBytesWithoutOmitPaths|OmitsRetiredHistoryAndGeneratedFiles|ReadsDerivedPathsFromTheBaseCommit|KeepsDeletedArchiveRecordsAndOmissionPrecedence|ScopesRoundTwoDelta|OmitsQAEvidenceAndUpstreamSkills|BlocksOnUnreadableBaseDerivedDeclarations|KeepsTheQAReportInTheDiff)$' -count=1 -timeout 3m -v
+go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
+git diff --check
+```
+
+The first pre-implementation config run failed on the absent field and matcher;
+the first review run rejected the unknown key, while its byte-compatibility
+case passed. During test development, the new round-2 fixture initially named
+an anchor already in its base; validation correctly dismissed that finding.
+The fixture now anchors `src/a.go:1`, which its candidate changes; both affected
+round-2 cases and the final focused review set passed.
+
+No existing test, other Task, Task Graph, skill, ADR, derived-path grammar or
+conflict-regeneration code was changed. No commit, push, or Pull Request was
+created. Follow-up scope (Claude segmentation, size refusals, and the remaining
+review documentation) stays with the later Tasks.
