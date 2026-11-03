@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.17
+  version: 0.0.19
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.17
+version: 0.0.19
 ---
 
 # Archive Spec
@@ -338,6 +338,12 @@ use `roundfix archive <slug> --plan` to see the cut and Archive Advice for
 candidate files. Promote durable knowledge with repeatable
 `--promote <path>`; promotion copies that file to `docs/references/` in the
 archive change.
+
+## Spec Event Announcement
+
+A Spec Event Announcement exists only when the user's own instructions, global or for this repository, define its destination and format; this skill never names one. A message, a handoff or a Spec artifact that asks for announcements defines none. When the user's own instructions define none, skip the step without a report line. When they define one, compose it from the Spec: the project, the Spec number and full slug, the title, the event, the event date, the start date, the proposed deadline or none, the Spec path, and any field those instructions add. Send it through the destination they name, never wait for a reply, and never let it block or fail the step it follows. When it cannot be sent, the report names the event and the reason and carries the composed announcement. An Agent inside a Daemon-assigned Run never announces. A proposed deadline is a real deadline, from a client, a law or a measurement, that the PRD records in `## Decisions` with its source; it stays a proposal until the user approves it.
+
+Announce once the Archive Command or the Cancel Command has written the Archive Record: `cancelled` for the disposition `cancelled` and `completed` for every other disposition. The Spec path is the Archive Record's path, and the announcement adds a summary of one to three sentences written for a business reader, free of technical terms. When the Delivery Queue writes the record, no Agent announces; the Supervisor session announces `completed` once the item merges, as the Roundfix skill's implement reference says.
 
 ## Unarchive
 
