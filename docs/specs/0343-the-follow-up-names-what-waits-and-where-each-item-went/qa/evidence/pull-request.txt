@@ -1,9 +1,0 @@
-Pull Request row.
-Target branch: roundfix/deliver-0343-the-follow-up-names-what-waits-and-where-each-item-went-71e2649c999f88d9
-No open Pull Request: supplied by Daemon.
-Approval: approved authorization at c2ae462169971e4db7e34004a6b6158996c9182a.
-Checks: Daemon make verify-changed pass, exit 0, head 082b7d8f1aa1fdd34b1e5b3ee9a899b6723dc500.
-Unresolved threads: none; no PR exists.
-Merge-Ready acceptance: none yet.
-Review-artifact ancestry: no review artifact exists; audited candidate 082b7d8f1aa1fdd34b1e5b3ee9a899b6723dc500.
-No forge lookup or mutation performed.
