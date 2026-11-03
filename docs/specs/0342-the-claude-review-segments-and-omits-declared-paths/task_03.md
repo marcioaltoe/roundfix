@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0342-the-claude-review-segments-and-omits-declared-paths
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -109,3 +109,33 @@ reported by vortex, whose fourth suggestion asks for this message.
 - `_prd.md` → Goals; Core Feature 3; Core Feature 4; Success Metric 5; Success Metric 6; Decisions
 - `_techspec.md` → API Contracts 6-7; Invariant 6; Declared breaks; Testing Approach; Build Order 3
 - ADR-0352
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+- Acceptance criterion 1: every local byte-bound, Claude budget and segment-limit refusal now uses `reviewSizeRefusal`. File sections are measured from the refused scoped patch and paired positionally with Git's NUL-delimited names using the same diff flags, revisions and literal exclusions. Ranking is descending bytes, then ascending path, capped at three. Round two and Correction Review pass their delta base and patch; segment-planning refusals pass the whole candidate, including when a rewrite's own patch is larger than the candidate patch.
+- Acceptance criterion 1 evidence: `TestReviewSizeRefusalNamesTheLargestFiles` has eleven parallel cases covering both providers' single-commit refusals and segment limits, both round-two bounds, both Correction Review byte bounds, two files, and both providers' oversized rewrites hidden by the range. Each compares the complete stderr line, record reason and exit `2`, with bytes obtained from separate per-path Git diffs. Fixtures include unequal sizes committed out of alphabetical order, equal-size ties, `dados gerados/ação.json`, a larger omitted file and a large round-one-only file excluded from delta diagnostics. No refusal reaches the provider. The oracle preserves earlier sections' newlines and trims only the final section, matching the measured patch's existing Git runner behavior.
+- Acceptance criterion 2: only `ReviewOutcomeBlocked` changes its park blocker: a nonempty trimmed first reason line follows `review-blocked: `; an empty or whitespace-only first line stays bare. Three parallel engine cases exercise two lines, an empty reason and a blank first line; all assert `ParkClassReview`.
+- Acceptance criterion 3: only the five declared existing test functions changed their reason expectations. The task_02 Claude segment test file is unchanged, and its four top-level tests passed in a focused run. No guide, skill, ADR, byte bound, token budget or segment limit changed.
+- Necessary mechanical production adjustment: `review_validation.go` already declared an unrelated `reviewDiffFile` for anchor ranges, colliding with the new type required here. Its four type references now use `reviewAnchorDiffFile`; fields and behavior are unchanged. Focused anchor-index tests passed.
+
+Focused checks (all exited `0`; these are not the Daemon's declared Verification):
+
+1. `rtk proxy go test ./internal/cli ./internal/delivery -run '^TestReview(SizeRefusalNamesTheLargestFiles|BlockedParkCarriesTheReviewReason)$' -count=1 -timeout=5m` — new refusal and park behavior passed. The refusal test subsequently gained the two hidden-rewrite cases, exercised in check 4.
+2. `rtk proxy go test ./internal/cli -run '^(TestReviewCommandRefusesAClaudePromptOverHalfItsWindow|TestReviewCommandKeepsTheCodexDiffByteBound|TestReviewBlocksACandidateNeedingMoreThanFourSegments|TestReviewBlocksAboveTheBoundWithoutAProviderCall|TestReviewSegmentsAClaudeCandidateOverItsBudget|TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments|TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented|TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates)$' -count=1 -timeout=5m` — declared CLI pins and task_02 segment behavior passed.
+3. `rtk proxy go test ./internal/delivery -run '^(TestDeliveryEngineParksDeclaredBlockersAndContinues|TestParkClassesAndNextActions|TestParkClassRequiresAnExactBlockerOrColonPrefix)$' -count=1 -timeout=5m` — the declared engine pin and Park Class checks passed.
+4. `rtk proxy go test ./internal/cli -run '^(TestReviewSizeRefusalNamesTheLargestFiles|TestReviewDiffIndex.*|TestReviewPromptCarriesTheCandidateDiff|TestReviewSessionReadsWithoutWriting|TestReviewBlocksAnOversizedCommitHiddenByItsRange|TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer)$' -count=1 -timeout=5m` — all eleven refusal cases, anchor-index checks, legacy session behavior and existing oversized-range/correction checks passed.
+5. `rtk proxy git diff --check` — no whitespace errors.
+
+Red evidence: before implementation, the new refusal cases reported the old reason without the suffix, and the two-line park case reported bare `review-blocked`. Initial fixture failures were traced to a missing nested directory and an overwritten provider profile missing its required fallback, then corrected in the new test only. A compile check exposed the existing type-name collision described above.
+
+Execution note: the default executor could not start with the configured symlinked writable root. Task-scoped commands ran in the same checkout's physical `/Volumes/Brain-SSD/cache/.roundfix/worktrees/` location with reviewed execution permission. The only pre-existing changed path was this Task file's Daemon-owned status change; it was preserved.
+
+Declared Verification and repository Verification were not run; the Daemon owns both and Task settlement. No commit, push, pull request, Task Graph edit or other Task edit was performed. Documentation and skill updates remain task_04's slice.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/review_validation.go`

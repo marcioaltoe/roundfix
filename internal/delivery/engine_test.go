@@ -419,7 +419,7 @@ func TestDeliveryEngineParksDeclaredBlockersAndContinues(t *testing.T) {
 	}
 
 	queue := readDeliveryQueue(t, ctx, runStore, gitRoot)
-	for index, blocker := range []string{BlockerRunUnresolved, BlockerRunBudgetExceeded, BlockerReviewFindings, BlockerReviewBlocked, BlockerGateFailed, BlockerChecksFailed, BlockerChecksFailed} {
+	for index, blocker := range []string{BlockerRunUnresolved, BlockerRunBudgetExceeded, BlockerReviewFindings, BlockerReviewBlocked + ": review unavailable", BlockerGateFailed, BlockerChecksFailed, BlockerChecksFailed} {
 		if queue.Items[index].Stage != store.DeliveryStageParked || queue.Items[index].Blocker != blocker {
 			t.Fatalf("item %q = %+v, want parked as %q", queue.Items[index].SpecSlug, queue.Items[index], blocker)
 		}

@@ -60,9 +60,9 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 		}
 		if !fit(ownIndex, segmentPrompt(ownIndex, previous, commit, ownDiff, ownOmitted), ownDiff) {
 			if scope.estimatedPromptTokens > 0 {
-				return nil, nil, nil, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", scope.estimatedPromptTokens, len(scope.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens)}
+				return nil, nil, nil, reviewSizeRefusalForDiff(ctx, git, root, base, head, scope.omittedPaths, scope.candidateDiff, fmt.Sprintf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", scope.estimatedPromptTokens, len(scope.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens))
 			}
-			return nil, nil, nil, checkReviewDiffBound(scope.diffBytes, scope.omittedPaths)
+			return nil, nil, nil, checkReviewDiffBound(ctx, git, root, base, head, scope.candidateDiff, scope.omittedPaths)
 		}
 		diff, omitted := ownDiff, ownOmitted
 		if segmentBase != previous {
@@ -85,9 +85,9 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 	}
 	if len(segments) > reviewSegmentLimit {
 		if scope.estimatedPromptTokens > 0 {
-			return nil, nil, nil, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) needs %d review segments; a review allows at most %d", scope.estimatedPromptTokens, len(scope.omittedPaths), len(segments), reviewSegmentLimit)}
+			return nil, nil, nil, reviewSizeRefusalForDiff(ctx, git, root, base, head, scope.omittedPaths, scope.candidateDiff, fmt.Sprintf("review prompt too large: %d estimated tokens after omitting %d path(s) needs %d review segments; a review allows at most %d", scope.estimatedPromptTokens, len(scope.omittedPaths), len(segments), reviewSegmentLimit))
 		}
-		return nil, nil, nil, reviewPrePromptError{fmt.Errorf("review diff too large: %d bytes after omitting %d path(s) needs %d review segments; a review allows at most %d", scope.diffBytes, len(scope.omittedPaths), len(segments), reviewSegmentLimit)}
+		return nil, nil, nil, reviewSizeRefusalForDiff(ctx, git, root, base, head, scope.omittedPaths, scope.candidateDiff, fmt.Sprintf("review diff too large: %d bytes after omitting %d path(s) needs %d review segments; a review allows at most %d", scope.diffBytes, len(scope.omittedPaths), len(segments), reviewSegmentLimit))
 	}
 	if len(segments) == 0 {
 		return nil, nil, nil, fmt.Errorf("review candidate has no first-parent commits")

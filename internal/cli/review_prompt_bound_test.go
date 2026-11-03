@@ -31,6 +31,11 @@ func TestReviewCommandRefusesAClaudePromptOverHalfItsWindow(t *testing.T) {
 			commitScopeFile(t, fixture, "large.txt", strings.Repeat("x", claudeReviewContextTokens))
 			code, record, stderr := fixture.run(t)
 			want := fmt.Sprintf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", record.EstimatedPromptTokens, len(record.OmittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens)
+			measuredBase := record.BaseCommit
+			if record.Lineage != nil && record.Lineage.Round == 2 {
+				measuredBase = record.Lineage.PreviousHead
+			}
+			want += reviewSizeRefusalTestSuffix(t, fixture, measuredBase, record.HeadCommit, record.OmittedPaths)
 			assertBlockedReviewCommand(t, code, record, stderr, want)
 			if record.Reason != want || stderr != "roundfix: review blocked: "+want+"\n" {
 				t.Fatalf("reason=%q stderr=%q", record.Reason, stderr)
@@ -81,6 +86,11 @@ func TestReviewCommandKeepsTheCodexDiffByteBound(t *testing.T) {
 	commitScopeFile(t, fixture, "docs/specs/example/_techspec.md", "Technical context carried in the prompt.\n")
 	code, record, stderr := fixture.run(t)
 	want := fmt.Sprintf("review diff too large: %d bytes after omitting %d path(s) exceeds the review bound of %d bytes", record.DiffBytes, len(record.OmittedPaths), reviewDiffBound)
+	measuredBase := record.BaseCommit
+	if record.Lineage != nil && record.Lineage.Round == 2 {
+		measuredBase = record.Lineage.PreviousHead
+	}
+	want += reviewSizeRefusalTestSuffix(t, fixture, measuredBase, record.HeadCommit, record.OmittedPaths)
 	assertBlockedReviewCommand(t, code, record, stderr, want)
 	if record.Reason != want || record.EstimatedPromptTokens != 0 {
 		t.Fatalf("Codex record=%+v", record)

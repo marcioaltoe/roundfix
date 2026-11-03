@@ -392,7 +392,7 @@ func runReviewSession(
 	if err != nil {
 		return agent.ExecuteResult{}, err
 	}
-	if err := checkReviewDiffBound(len(diff), omitted); err != nil {
+	if err := checkReviewDiffBound(ctx, gitRunner, request.GitRoot, baseCommit, headCommit, diff, omitted); err != nil {
 		return agent.ExecuteResult{}, err
 	}
 	request.Prompt = buildReviewPrompt(baseCommit, headCommit, diff, omitted)
@@ -557,10 +557,7 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 		}
 	}
 	sort.Slice(omitted, func(i, j int) bool { return omitted[i].Path < omitted[j].Path })
-	args := []string{"diff", "--no-ext-diff", "--no-textconv", "--no-color", baseCommit, headCommit, "--"}
-	for _, path := range omitted {
-		args = append(args, ":(exclude,literal)"+path.Path)
-	}
+	args := reviewDiffArgs(baseCommit, headCommit, omitted)
 	diff, err := runner.RunGit(ctx, gitRoot, args...)
 	if err != nil {
 		return "", omitted, fmt.Errorf("compute review candidate diff: %w", err)
@@ -568,9 +565,9 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 	return diff, omitted, nil
 }
 
-func checkReviewDiffBound(diffBytes int, omitted []reviewOmittedPath) error {
-	if diffBytes > reviewDiffBound {
-		return reviewPrePromptError{fmt.Errorf("review diff too large: %d bytes after omitting %d path(s) exceeds the review bound of %d bytes", diffBytes, len(omitted), reviewDiffBound)}
+func checkReviewDiffBound(ctx context.Context, git preflight.GitRunner, root, base, head, diff string, omitted []reviewOmittedPath) error {
+	if len(diff) > reviewDiffBound {
+		return reviewSizeRefusalForDiff(ctx, git, root, base, head, omitted, diff, fmt.Sprintf("review diff too large: %d bytes after omitting %d path(s) exceeds the review bound of %d bytes", len(diff), len(omitted), reviewDiffBound))
 	}
 	return nil
 }
@@ -1362,6 +1359,7 @@ func runConfiguredReviewSession(
 		return agent.ExecuteResult{}, reviewSpecContextResult{}, false, err
 	}
 	scope := reviewSpecContextResult{candidateDiff: diff, diffBytes: len(diff), omittedPaths: omitted}
+	measuredBase, measuredDiff := baseCommit, diff
 	prompt := buildReviewPrompt(baseCommit, headCommit, diff, omitted)
 	if plan.Lineage.Round == 2 {
 		delta, deltaOmitted, deltaErr := reviewScopedDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, specRoots, gitRunner, baseCommit)
@@ -1369,6 +1367,7 @@ func runConfiguredReviewSession(
 			return agent.ExecuteResult{}, scope, false, deltaErr
 		}
 		scope.diffBytes, scope.omittedPaths = len(delta), deltaOmitted
+		measuredBase, measuredDiff = plan.Lineage.PreviousHead, delta
 		if plan.Lineage.Correction {
 			prompt = buildCorrectionReviewPrompt(plan, delta)
 		} else {
@@ -1391,7 +1390,7 @@ func runConfiguredReviewSession(
 				scope.diffBytes += segment.DiffBytes
 			}
 			prompt = prompts[0]
-		} else if err := checkReviewDiffBound(scope.diffBytes, scope.omittedPaths); err != nil {
+		} else if err := checkReviewDiffBound(ctx, gitRunner, gitRoot, measuredBase, headCommit, measuredDiff, scope.omittedPaths); err != nil {
 			return agent.ExecuteResult{}, scope, false, err
 		}
 	}
@@ -1409,7 +1408,7 @@ func runConfiguredReviewSession(
 		specContext.estimatedPromptTokens = estimateReviewPromptTokens(prompt)
 		if specContext.estimatedPromptTokens > claudeReviewPromptBudget {
 			if plan.Lineage.Round != 1 || plan.Lineage.Correction {
-				return agent.ExecuteResult{}, specContext, false, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", specContext.estimatedPromptTokens, len(specContext.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens)}
+				return agent.ExecuteResult{}, specContext, false, reviewSizeRefusalForDiff(ctx, gitRunner, gitRoot, measuredBase, headCommit, specContext.omittedPaths, measuredDiff, fmt.Sprintf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", specContext.estimatedPromptTokens, len(specContext.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens))
 			}
 			fit := func(index int, prompt string, _ string) bool {
 				if index == 1 {

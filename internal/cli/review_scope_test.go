@@ -171,6 +171,11 @@ func TestReviewBlocksAboveTheBoundWithoutAProviderCall(t *testing.T) {
 			commitScopeFile(t, fixture, "huge.txt", strings.Repeat("x", reviewDiffBound)+"\n")
 			code, record, stderr := runLineageReview(t, fixture)
 			want := fmt.Sprintf("review diff too large: %d bytes after omitting 0 path(s) exceeds the review bound of %d bytes", record.DiffBytes, reviewDiffBound)
+			measuredBase := record.BaseCommit
+			if record.Lineage != nil && record.Lineage.Round == 2 {
+				measuredBase = record.Lineage.PreviousHead
+			}
+			want += reviewSizeRefusalTestSuffix(t, fixture, measuredBase, record.HeadCommit, record.OmittedPaths)
 			assertBlockedReviewCommand(t, code, record, stderr, want)
 			if record.Reason != want || record.DiffBytes <= reviewDiffBound {
 				t.Fatalf("record=%+v", record)
