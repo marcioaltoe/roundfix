@@ -306,8 +306,9 @@ adapter or network is reached. New top-level tests call `t.Parallel()` first.
 
 - `internal/config/pre_pr_review_omit_paths_test.go`:
   `TestPrePRReviewOmitPathsLoadsAndValidates` (glob, file, directory entry;
-  Project replaces User; each refusal of API Contract 1),
-  `TestProjectConfigTemplateDescribesOmitPaths`.
+  Project replaces User; each refusal of API Contract 1). Neither `roundfix
+  init` template carries the key: the existing
+  `TestDefaultConfigSelectsNoPrePRReviewProvider` guard keeps its bytes.
 - `internal/cli/review_omit_paths_test.go`:
   `TestReviewOmitsConfiguredPathsFromTheBaseCommit` (base glob omits
   `gen/a_snapshot.json` as `omit-path`, keeps `src/a.go`; a path both a
@@ -349,7 +350,7 @@ the input that makes the mutation observable:
 
 ## Build Order
 
-1. Review Omit Paths: config key, validation, matcher, template line, scoped
+1. Review Omit Paths: config key, validation, matcher (no init template line), scoped
    diff reason and summary clause, with their tests, and the configuration
    guide's key row and Behavior Surface Record.
 2. Claude Review Segments: fit rule, Claude admission, per-segment estimate
