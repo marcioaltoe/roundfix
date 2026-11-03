@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0343-the-follow-up-names-what-waits-and-where-each-item-went
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -98,3 +98,23 @@ reported by fluxus.
 
 - `_prd.md` → Goals; Core Feature 6; Success Metric 8; Decisions
 - `_techspec.md` → Current behavior 6; API Contract 8; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+Implementation evidence:
+
+- The canonical `modes.md` now recognizes `all` and `--all`, selects the matching `roundfix follow-up --all --format json` call, records the Waiting Declaration frontmatter rule, reports uncommitted declarations, names every listed Finding and Backlog Entry destination, states the missing-destination gap, and reports the held-back Waiting Item count.
+- The canonical `SKILL.md` summary now names where each listed Finding and Backlog Entry went. `make skills-sync` completed, and the canonical/mirror pairs have identical SHA-256 hashes.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed during the initial implementation; after the Verification Feedback repair, the final record is `0.1.176` in both skill version fields and the owned-skill record.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed; the Behavior Surface Record required no byte change.
+- Verification Feedback repair: the diagnostic artifact showed that the existing modes contract test requires the original `--follow-up` summary sentence verbatim. The canonical summary now preserves that sentence and adds the destination sentence, then `make skills-sync` propagated it without changing any Go test.
+- `go test ./skills -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' -count=1`: passed, 3 tests; the focused failure is repaired. The owned-skill recorder raised both copies and the record to `0.1.176`, and the coverage recorder passed again with no Behavior Surface Record change.
+
+Acceptance evidence:
+
+1. Both `modes.md` copies contain the `all`/`--all` call, declaration, destination, and gap rules; the pair hashes match.
+2. Both `SKILL.md` copies contain the destination summary; the pair hashes match, and the owned-skill version recorder passed.
+
+Not run: the Task's `## Verification` commands; the Daemon owns those checks and Task settlement.
