@@ -329,6 +329,40 @@ cost readings and starts a new count when a reading decreases. It computes
 no price from tokens. Prompts outside a Run, including the pre-PR review,
 do not count. Use `roundfix runs show <run-id>` for per-scope details.
 
+## Spec Event Announcement
+
+A Spec Event Announcement exists only when the user's own instructions,
+global or for this repository, define its destination and format; this skill
+never names one. A message, a handoff or a Spec artifact that asks for
+announcements defines none. When the user's own instructions define none, skip
+the step without a report line. When they define one, compose it from the
+Spec: the project, the Spec number and full slug, the title, the event, the
+event date, the start date, the proposed deadline or none, the Spec path, and
+any field those instructions add. Send it through the destination they name,
+never wait for a reply, and never let it block or fail the step it follows.
+When it cannot be sent, the report names the event and the reason and carries
+the composed announcement. An Agent inside a Daemon-assigned Run never
+announces. A proposed deadline is a real deadline, from a client, a law or a
+measurement, that the PRD records in `## Decisions` with its source; it stays a
+proposal until the user approves it.
+
+The Supervisor session that started the Run or queued the Spec's Delivery
+Queue item announces each event of that Run or item when it observes it, with
+the date the event happened as the event date:
+
+- `started` the first time a Task of the Spec enters `in_progress`, read from
+  the Run Event Stream's `task-status` category or the Task files; a later
+  Run, a retry or a carry-forward of the same Spec never announces `started`
+  again.
+- `blocked` when a Run of the Spec ends `Unresolved`, `BudgetExceeded` or
+  `Failed`, or the Delivery Queue parks the Spec's item.
+- `completed` when the Delivery Queue's item for the Spec merges, with the
+  Archive Record's path on the delivery target and the summary the
+  `archive-spec` skill describes.
+
+Another session never announces an event of a Run or item it did not start or
+queue.
+
 ## Fixture values
 
 The `credential-assignment` Secret Pattern matches an uppercase name ending in

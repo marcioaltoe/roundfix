@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0344-the-spec-skills-announce-the-spec-events-the-user-defines
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -82,3 +82,18 @@ reported by jarvis, whose events "iniciada" and "bloqueada" these are.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1, 2 and 4; Success Metric 1; Success Metric 3; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contract 6; API Contract 8; Invariants 1-5; Build Order 3
 - ADR-0354
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+Implementation evidence:
+
+- Added the Roundfix implement reference's `## Spec Event Announcement` section between `### Token usage` and `## Fixture values`, carrying the generic API Contract 1 paragraph plus the Supervisor ownership and `started`, `blocked`, and `completed` event rules from API Contract 6.
+- Added the `### Spec Event Announcements` guide section immediately before `### QA report reachability and verdicts`, including the ADR-0354 link and the seven-event owner table from API Contract 8.
+- Ran `rtk make skills-sync` with no output or error; the canonical and mirror implement references now have the same SHA-256 (`f60bad94d8d8925684fae6a459ffc0f1b6944744418ae0890223ed9617c4b0a5`), and the Roundfix `SKILL.md` pair has the same SHA-256 (`aeaf494abe3652ea56b9113cc44450db10ec2be1a2b23c334d66d87d889521f8`).
+- Ran `rtk go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed (1 test package); both Roundfix skill version fields recorded `0.1.177`.
+- Ran the final `rtk go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed (1 test package); `docs/references/behavior-surfaces.json` was re-recorded after the guide edit.
+- Focused checks passed: `rtk git diff --check`; section placement inspection; canonical/mirror hash comparison; and prohibited-name scan for the reference and guide.
+
+Acceptance evidence: the canonical and synced mirror implement references contain the generic announcement paragraph and Supervisor event rules; the guide contains all seven Spec Event owners; the sanctioned sync/version/coverage recorders passed and produced matching skill copies. The task's declared Verification commands were not run because this is a Daemon-assigned turn; the Daemon owns Verification and settlement.
