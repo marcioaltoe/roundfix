@@ -1378,8 +1378,10 @@ func runConfiguredReviewSession(
 	}
 	var segmentPrompts []string
 	if config.PrePRReview.Provider == "codex" || plan.Lineage.Correction {
-		if plan.Lineage.Round == 1 && scope.diffBytes > reviewDiffBound {
-			segments, segmentDiffs, prompts, err := planReviewSegments(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner, scope)
+		if plan.Lineage.Round == 1 && !plan.Lineage.Correction && scope.diffBytes > reviewDiffBound {
+			segments, segmentDiffs, prompts, err := planReviewSegments(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner, scope, func(_ int, _ string, diff string) bool {
+				return len(diff) <= reviewDiffBound
+			})
 			if err != nil {
 				return agent.ExecuteResult{}, scope, false, err
 			}
@@ -1406,7 +1408,28 @@ func runConfiguredReviewSession(
 	if config.PrePRReview.Provider == "claude" {
 		specContext.estimatedPromptTokens = estimateReviewPromptTokens(prompt)
 		if specContext.estimatedPromptTokens > claudeReviewPromptBudget {
-			return agent.ExecuteResult{}, specContext, false, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", specContext.estimatedPromptTokens, len(specContext.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens)}
+			if plan.Lineage.Round != 1 || plan.Lineage.Correction {
+				return agent.ExecuteResult{}, specContext, false, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", specContext.estimatedPromptTokens, len(specContext.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens)}
+			}
+			fit := func(index int, prompt string, _ string) bool {
+				if index == 1 {
+					prompt = appendReviewSpecContexts(prompt, specContext)
+				}
+				return estimateReviewPromptTokens(prompt) <= claudeReviewPromptBudget
+			}
+			segments, segmentDiffs, prompts, err := planReviewSegments(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner, specContext, fit)
+			if err != nil {
+				return agent.ExecuteResult{}, specContext, false, err
+			}
+			prompts[0] = appendReviewSpecContexts(prompts[0], specContext)
+			specContext.diffBytes, specContext.estimatedPromptTokens = 0, 0
+			for i := range segments {
+				segments[i].EstimatedPromptTokens = estimateReviewPromptTokens(prompts[i])
+				specContext.diffBytes += segments[i].DiffBytes
+				specContext.estimatedPromptTokens += segments[i].EstimatedPromptTokens
+			}
+			specContext.segments, specContext.segmentDiffs, segmentPrompts = segments, segmentDiffs, prompts
+			prompt = prompts[0]
 		}
 	}
 	readiness := proveProfileSelections(ctx, config, reviewProfileCategories(), gitRoot, runner)

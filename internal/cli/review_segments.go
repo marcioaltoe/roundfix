@@ -12,10 +12,13 @@ import (
 const reviewSegmentLimit = 4
 
 type reviewSegment struct {
-	Base      string `json:"base"`
-	Head      string `json:"head"`
-	DiffBytes int    `json:"diffBytes"`
+	Base                  string `json:"base"`
+	Head                  string `json:"head"`
+	DiffBytes             int    `json:"diffBytes"`
+	EstimatedPromptTokens int    `json:"estimatedPromptTokens,omitempty"`
 }
+
+type reviewSegmentFit func(index int, prompt string, diff string) bool
 
 type reviewSegmentAnswer struct {
 	result agent.ExecuteResult
@@ -23,7 +26,7 @@ type reviewSegmentAnswer struct {
 	diff   string
 }
 
-func planReviewSegments(ctx context.Context, root, base, head string, specRoots []string, git preflight.GitRunner, scope reviewSpecContextResult) ([]reviewSegment, []string, []string, error) {
+func planReviewSegments(ctx context.Context, root, base, head string, specRoots []string, git preflight.GitRunner, scope reviewSpecContextResult, fit reviewSegmentFit) ([]reviewSegment, []string, []string, error) {
 	commits, err := git.RunGit(ctx, root, "rev-list", "--first-parent", "--reverse", base+".."+head)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("list review candidate commits: %w", err)
@@ -37,6 +40,10 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 		diffs = append(diffs, segmentDiff)
 		prompts = append(prompts, buildReviewPrompt(segmentBase, segmentHead, segmentDiff, segmentOmitted))
 	}
+	segmentPrompt := func(index int, segmentBase, segmentHead, diff string, omitted []reviewOmittedPath) string {
+		// Any admitted total is one digit, so "of 4" has the sent header's length.
+		return reviewSegmentHeader(index, reviewSegmentLimit, segmentBase, segmentHead, base, head) + buildReviewPrompt(segmentBase, segmentHead, diff, omitted)
+	}
 	previous := base
 	for _, commit := range strings.Fields(commits) {
 		// Keep generated declarations pinned to the candidate base, even when
@@ -46,7 +53,15 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		if len(ownDiff) > reviewDiffBound {
+		ownIndex := len(segments) + 1
+		if segmentHead != "" {
+			// A later commit can start a new segment without the first one's context.
+			ownIndex++
+		}
+		if !fit(ownIndex, segmentPrompt(ownIndex, previous, commit, ownDiff, ownOmitted), ownDiff) {
+			if scope.estimatedPromptTokens > 0 {
+				return nil, nil, nil, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", scope.estimatedPromptTokens, len(scope.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens)}
+			}
 			return nil, nil, nil, checkReviewDiffBound(scope.diffBytes, scope.omittedPaths)
 		}
 		diff, omitted := ownDiff, ownOmitted
@@ -56,7 +71,8 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 				return nil, nil, nil, err
 			}
 		}
-		if len(diff) > reviewDiffBound {
+		index := len(segments) + 1
+		if !fit(index, segmentPrompt(index, segmentBase, commit, diff, omitted), diff) {
 			appendSegment()
 			segmentBase = previous
 			diff, omitted = ownDiff, ownOmitted
@@ -68,15 +84,22 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 		appendSegment()
 	}
 	if len(segments) > reviewSegmentLimit {
+		if scope.estimatedPromptTokens > 0 {
+			return nil, nil, nil, reviewPrePromptError{fmt.Errorf("review prompt too large: %d estimated tokens after omitting %d path(s) needs %d review segments; a review allows at most %d", scope.estimatedPromptTokens, len(scope.omittedPaths), len(segments), reviewSegmentLimit)}
+		}
 		return nil, nil, nil, reviewPrePromptError{fmt.Errorf("review diff too large: %d bytes after omitting %d path(s) needs %d review segments; a review allows at most %d", scope.diffBytes, len(scope.omittedPaths), len(segments), reviewSegmentLimit)}
 	}
 	if len(segments) == 0 {
 		return nil, nil, nil, fmt.Errorf("review candidate has no first-parent commits")
 	}
 	for i := range prompts {
-		prompts[i] = fmt.Sprintf("Review Segment %d of %d: commits %s..%s of the candidate %s..%s; answer for this segment only.\n", i+1, len(segments), segments[i].Base, segments[i].Head, base, head) + prompts[i]
+		prompts[i] = reviewSegmentHeader(i+1, len(segments), segments[i].Base, segments[i].Head, base, head) + prompts[i]
 	}
 	return segments, diffs, prompts, nil
+}
+
+func reviewSegmentHeader(index, total int, base, head, candidateBase, candidateHead string) string {
+	return fmt.Sprintf("Review Segment %d of %d: commits %s..%s of the candidate %s..%s; answer for this segment only.\n", index, total, base, head, candidateBase, candidateHead)
 }
 
 func classifyReviewSegmentAnswers(record reviewRecord, answers []reviewSegmentAnswer) (reviewRecord, int) {

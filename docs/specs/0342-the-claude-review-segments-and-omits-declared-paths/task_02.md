@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0342-the-claude-review-segments-and-omits-declared-paths
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -103,3 +103,54 @@ reported by vortex, whose first suggestion asks for Claude segmentation.
 - `_prd.md` → Goals; Core Feature 2; Success Metric 3; Success Metric 4; Decisions
 - `_techspec.md` → Interfaces; Data Models; API Contracts 4-5; Invariants 2 and 3; Testing Approach; Build Order 2
 - ADR-0352; ADR-0227; ADR-0282
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, agentic-cli-design, tech-writer, evidence-gate, systematic-debugging.
+
+- Added `reviewSegmentFit` at both planner admission checks. Codex keeps its
+  byte predicate, segment headers, refusal text and JSON bytes; the new token
+  field is omitted for Codex.
+- Claude round 1 now plans only after the full prompt, including Spec
+  contexts, exceeds its token budget. Planning measures segment headers and
+  rendered contexts on segment 1; later segments omit that context. All
+  prompts use the existing single prepared-session execution path. Each
+  segment records its sent prompt estimate, and the record sums segment
+  estimates and diff bytes.
+- Oversized commits and a fifth Claude segment refuse with the whole
+  unsegmented prompt estimate before readiness or session preparation. Round
+  2 and Correction Review retain their unsegmented refusal paths. No budget,
+  byte bound or segment-limit constant changed.
+
+Focused evidence for the acceptance criteria:
+
+1. Token-based packing and one session: `rtk proxy go test ./internal/cli -run
+   '^TestReview(SegmentsAClaude|BlocksAClaude|KeepsClaudeRoundTwo|KeepsCodexSegmentRecords)'
+   -count=1 -timeout 5m` exited 0 (`ok roundfix/internal/cli 1.680s`). The
+   475,000-byte commits produce exactly `<base>..<c2>` and `<c2>..<c3>`;
+   every sent estimate is within budget and matches persisted segment data,
+   and record totals match the segment sums. Additional cases cover context
+   changing the first boundary, context triggering segmentation, and a later
+   large commit fitting without first-segment context.
+2. Early refusals: the same focused run covers five 700,000-byte commits,
+   one oversized commit, an oversized rewrite hidden by its combined range,
+   and an over-budget round-2 delta made of separately fitting commits. It
+   asserts refusal prefixes on the record and stderr, no segments or answer
+   for commit/round-2 refusals, and unchanged provider-call counters. Round-1
+   refusal estimates are checked against the whole unsegmented prompt.
+3. Unchanged regression tests: `rtk proxy go test ./internal/cli -run
+   '^Test(Review(SegmentsACandidateAboveTheBound|BlocksACandidateNeedingMoreThanFourSegments|SegmentsStopAtTheFirstBlockedAnswer|GreedilyPacksFourSegments|BlocksAnOversizedCommitHiddenByItsRange|CommandRefusesAClaudePromptOverHalfItsWindow|CommandSendsAClaudePromptBeyondTheCodexByteBound|CommandKeepsTheCodexDiffByteBound)|CorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer)$'
+   -count=1 -timeout 5m` exited 0 (`ok roundfix/internal/cli 2.202s`). This
+   includes Correction Review byte refusals for both providers. The new Codex
+   test also checks exact segment JSON and absent token-estimate fields.
+
+Before implementation, the new Claude packing test exited 1: both inputs
+blocked without segments at 749,059 and 771,559 estimated tokens. Inspection
+of the new large-context fixture explained its first-boundary expectation;
+small context is used for the required 475,000-byte case, with large context
+retained in separate boundary cases. `rtk proxy git diff --check` exited 0.
+
+The declared Verification and repository gates were not run; the Daemon owns
+Verification and Task status. No existing test, guide, skill, ADR, Task Graph
+or other Task file was edited. No follow-up implementation was added.
