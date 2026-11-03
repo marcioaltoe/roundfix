@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0344-the-spec-skills-announce-the-spec-events-the-user-defines
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -73,3 +73,29 @@ these are.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1 and 2; Success Metric 1; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contracts 4-5; Invariants 1-5; Build Order 2
 - ADR-0354
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+Implementation:
+
+- Added the generic Spec Event Announcement paragraph and the authorized event paragraph to the canonical write-tasks skill at the required location.
+- Added the generic Spec Event Announcement paragraph and the completed/cancelled event paragraph to the canonical archive-spec skill at the required location.
+- Ran make skills-sync, recorded the generated owned-skill versions, and synchronized the mirrors. The affected skills are now write-tasks 0.0.29 and archive-spec 0.0.19 in both canonical and mirror files.
+
+Focused checks:
+
+- make skills-sync: passed.
+- go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1: passed; recorder output was ok roundfix/skills.
+- Canonical/mirror equality, archive-spec QA settlement preservation against HEAD, git diff --check, and the non-recording owned-skill version test: passed.
+
+Acceptance evidence:
+
+- Both canonical skills and both mirrors contain the generic paragraph and their own event paragraphs at the required insertion points.
+- The archive-spec QA settlement section is byte-identical to its pre-change content.
+- The mirrors equal their canonical copies, and the owned-skill version contract passes.
+
+Not run:
+
+- The Task's declared Verification commands; the Daemon runs them after this handoff.

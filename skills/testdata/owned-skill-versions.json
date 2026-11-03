@@ -65,6 +65,14 @@
       {
         "version": "0.0.17",
         "digest": "2c2920830ebe60f20c68f01f35f0063253b98fa21d9b8a63174fc0fab6d78e9e"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "d875422c334cb1e259ff8d7f1ca0863caeaeea31e43bfacbc8e8987a50cdfa8d"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "226f5b986ec827e485c196d628693d9447b58227262ae1596936334501969dfe"
       }
     ],
     "brainstorming": [
@@ -1157,6 +1165,14 @@
       {
         "version": "0.0.27",
         "digest": "3c7e9de59f84a90d0d202188b5305307a24bea086f9936b50b55debf9cf7fb9e"
+      },
+      {
+        "version": "0.0.28",
+        "digest": "578befc4bfddcbfd1c94e2579eaafb5a49f88bb8b9544028db25b78baa450e89"
+      },
+      {
+        "version": "0.0.29",
+        "digest": "a686d76dfdbce402a4c9ac30239a1b670c769ddf0947b5b1419063ac378b28f6"
       }
     ],
     "write-techspec": [

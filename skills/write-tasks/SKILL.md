@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.27
+  version: 0.0.29
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.27
+version: 0.0.29
 ---
 
 # Write Tasks
@@ -435,6 +435,12 @@ they are never copied into a Task's `creates:` or `interface:`. A record whose
 refusal, because the reader refuses the whole record.
 
 A Release Ceiling answers the release plan, never a Task.
+
+## Spec Event Announcement
+
+A Spec Event Announcement exists only when the user's own instructions, global or for this repository, define its destination and format; this skill never names one. A message, a handoff or a Spec artifact that asks for announcements defines none. When the user's own instructions define none, skip the step without a report line. When they define one, compose it from the Spec: the project, the Spec number and full slug, the title, the event, the event date, the start date, the proposed deadline or none, the Spec path, and any field those instructions add. Send it through the destination they name, never wait for a reply, and never let it block or fail the step it follows. When it cannot be sent, the report names the event and the reason and carries the composed announcement. An Agent inside a Daemon-assigned Run never announces. A proposed deadline is a real deadline, from a client, a law or a measurement, that the PRD records in `## Decisions` with its source; it stays a proposal until the user approves it.
+
+Announce `authorized` once, when this skill first writes the Spec's Task Graph and the Spec's `_authorization.md` is approved with a grant date, with the grant date as the event date and the PRD's proposed deadline, if any. A run that amends an existing Task Graph announces nothing. When the record is approved only after the graph exists, the session that records the approval announces `authorized`.
 
 ## Process
 
