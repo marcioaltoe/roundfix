@@ -38,7 +38,7 @@ without the key and the literal sentence the TechSpec quotes.
 2. MUST verify Success Metrics 1 to 6 and Invariants 1 to 6 by running
    `go test -count=1 -timeout 30m -v` with
    `TestPrePRReviewOmitPathsLoadsAndValidates` and
-   `TestProjectConfigTemplateDescribesOmitPaths` over `./internal/config`;
+   `TestDefaultConfigSelectsNoPrePRReviewProvider` over `./internal/config`;
    `TestReviewOmitsConfiguredPathsFromTheBaseCommit`,
    `TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths`,
    `TestReviewSegmentsAClaudeCandidateOverItsBudget`,

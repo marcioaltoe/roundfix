@@ -35,10 +35,12 @@ reported by vortex, whose second suggestion asks for this key.
    `Validate` calls `validateReviewOmitPaths`. A non-list value is refused
    with `pre_pr_review.omit_paths must be a list of paths` before typed
    decoding, wrapped by the existing `parse config` label.
-3. MUST add to the Project scope of the `roundfix init` template
-   (`defaultConfigYAML`), and only there, the block
-   `pre_pr_review:` / `# Paths the pre-PR review leaves out, read from the Project Config at the review base.` / `omit_paths: []`.
-   The User template keeps its bytes.
+3. MUST NOT add the key to either `roundfix init` template
+   (`defaultConfigYAML`): `TestDefaultConfigSelectsNoPrePRReviewProvider`
+   (`internal/config/review_source_scope_test.go`, #274) keeps every
+   generated config free of `pre_pr_review`, and that guard keeps its bytes.
+   The configuration guide is where the key is described. Both templates
+   keep their bytes.
 4. MUST, in `reviewScopedDiff` (`internal/cli/review.go`), give a changed
    path that no earlier reason claims and that
    `declarations.PrePRReview.Omits` matches the reason `omit-path`, using the
@@ -50,8 +52,7 @@ reported by vortex, whose second suggestion asks for this key.
    when `<o>` is not zero; with no `omit-path` omission the sentence and the
    whole prompt keep their bytes (API Contract 3, Invariants 1 and 5).
 6. MUST create `internal/config/pre_pr_review_omit_paths_test.go` with
-   `TestPrePRReviewOmitPathsLoadsAndValidates` and
-   `TestProjectConfigTemplateDescribesOmitPaths`, and
+   `TestPrePRReviewOmitPathsLoadsAndValidates`, and
    `internal/cli/review_omit_paths_test.go` with
    `TestReviewOmitsConfiguredPathsFromTheBaseCommit` and
    `TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths`, covering the
@@ -79,7 +80,7 @@ reported by vortex, whose second suggestion asks for this key.
 
 ## Subtasks
 
-- [ ] Add the key, its validation, its matcher and the Project template block.
+- [ ] Add the key, its validation and its matcher; leave both init templates unchanged.
 - [ ] Omit matching paths at the base commit with reason `omit-path` and extend the summary only when needed.
 - [ ] Add the config and review tests.
 - [ ] Document the key in the configuration guide and re-record the fingerprints last.
@@ -112,7 +113,7 @@ reported by vortex, whose second suggestion asks for this key.
 
 ## Verification
 
-- `grep -q 'func TestPrePRReviewOmitPathsLoadsAndValidates(' internal/config/pre_pr_review_omit_paths_test.go && grep -q 'func TestReviewOmitsConfiguredPathsFromTheBaseCommit(' internal/cli/review_omit_paths_test.go && grep -q 'func TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths(' internal/cli/review_omit_paths_test.go && go test -count=1 -timeout 20m ./internal/config -run '^(TestPrePRReviewOmitPathsLoadsAndValidates|TestProjectConfigTemplateDescribesOmitPaths)$' && go test -count=1 -timeout 20m ./internal/cli -run '^(TestReviewOmitsConfiguredPathsFromTheBaseCommit|TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths|TestReviewOmitsRetiredHistoryAndGeneratedFiles|TestReviewReadsDerivedPathsFromTheBaseCommit|TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence|TestReviewScopesRoundTwoDelta|TestReviewOmitsQAEvidenceAndUpstreamSkills)$' && tr -s '[:space:]' ' ' < docs/user-guide/configuration.md | grep -qF -- 'but nobody regenerates belongs in' && go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'` — expected: exit 0. Before this Task the new test files do not exist, so the first check fails; afterwards the new tests pass, the existing scope tests still pass unchanged, the configuration guide carries the key and the Behavior Surface Record is current.
+- `grep -q 'func TestPrePRReviewOmitPathsLoadsAndValidates(' internal/config/pre_pr_review_omit_paths_test.go && grep -q 'func TestReviewOmitsConfiguredPathsFromTheBaseCommit(' internal/cli/review_omit_paths_test.go && grep -q 'func TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths(' internal/cli/review_omit_paths_test.go && go test -count=1 -timeout 20m ./internal/config -run '^(TestPrePRReviewOmitPathsLoadsAndValidates|TestDefaultConfigSelectsNoPrePRReviewProvider)$' && go test -count=1 -timeout 20m ./internal/cli -run '^(TestReviewOmitsConfiguredPathsFromTheBaseCommit|TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths|TestReviewOmitsRetiredHistoryAndGeneratedFiles|TestReviewReadsDerivedPathsFromTheBaseCommit|TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence|TestReviewScopesRoundTwoDelta|TestReviewOmitsQAEvidenceAndUpstreamSkills)$' && tr -s '[:space:]' ' ' < docs/user-guide/configuration.md | grep -qF -- 'but nobody regenerates belongs in' && go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'` — expected: exit 0. Before this Task the new test files do not exist, so the first check fails; afterwards the new tests pass, the existing scope tests still pass unchanged, the configuration guide carries the key and the Behavior Surface Record is current.
 
 ## References
 
