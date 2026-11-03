@@ -1,7 +1,0 @@
-QA report integrity: pass
-Rows: 12; pass: 11; environment-blocked: 1; fail/finding-blocked/declared-blocked/skipped/pending: 0
-Typed inputs: 12 of 12 rows; commit_range supplied for history/archived-copy/candidate rows
-Preserved auditor fields, seeded audit table and mechanical skips
-Local evidence links: 21; all targets exist and are not ignored
-QA files: 22; all text; git check-ignore returned 1 (none ignored)
-No Task status, graph or product worktree change; only QA directory untracked

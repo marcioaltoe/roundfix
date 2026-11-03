@@ -1,5 +1,0 @@
-Source: Codex AGENTS.md guide
-URL: https://developers.openai.com/codex/guides/agents-md
-Source passage read/preserved: 2026-11-03, PRD Acceptance evidence
-Quoted passage: Create persistent defaults in your Codex home directory so every repository inherits your working agreements.
-Comparison: global personal defaults match the global scope of the generic paragraph; repository scope is explicit in the same generic paragraph and the PRD source description. Every canonical/mirror surface requires both destination and format from those scopes. Ten surfaces checked. No external access was attempted; the gate validates the preserved passage and makes no claim about later live documentation.
