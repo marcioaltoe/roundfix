@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0342-the-claude-review-segments-and-omits-declared-paths
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -114,3 +114,25 @@ reported by vortex, which will adopt the key from these guides.
 - `_prd.md` → Goals; Core Feature 5; Success Metric 7; Glossary; Decisions
 - `_techspec.md` → API Contracts 1-7; Build Order 4; Glossary
 - ADR-0352; ADR-0227; ADR-0282
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implementation evidence:
+- Updated the review guide and canonical Roundfix review reference with pre_pr_review.omit_paths, omit-path precedence and conditional summary counts, Claude round-1 Review Segments and per-segment estimatedPromptTokens, unchanged single-commit/round-2 refusals, and the API Contract 6 suffix ranked by file-section bytes.
+- Updated the deliver guide and canonical deliver reference with the review-blocked reason suffix and unchanged review Park Class.
+- Revised the Review Segment glossary entry, added Review Omit Path immediately after it with its _Avoid_ line and ADR-0352 citation, and appended the required ADR-0352 amendments to ADR-0227 and ADR-0282.
+- make skills-sync: passed; the canonical Roundfix references were copied to their mirrors.
+- go test ./skills -run TestEveryOwnedSkillVersionIsRecorded -record-skill-versions -count=1: passed, 1 package; both Roundfix skill version fields and the owned-skill record now contain 0.1.173.
+- Mirror comparison with diff -u for the review and deliver references: passed with no differences.
+- go test -count=1 -tags docscontract ./internal/docscontract -run TestTheSkillCoverageMapIsCurrent -record-skill-coverage: passed, 1 package; the Behavior Surface Record was re-recorded last after the guide edits.
+- git diff --check: passed.
+
+Acceptance evidence:
+- Review surfaces: all three review documents contain the omit-path rule, Claude segment sentence, refusal details and “largest files in the diff”; the obsolete “and is never segmented” sentence was removed.
+- Deliver surfaces: all three deliver documents contain the Pre-PR Review Record reason after the colon and state that the Park Class remains review.
+- Glossary, ADR amendments, mirrors, skill versions and Behavior Surface recording are present in the changed tree; no Go file, other Task, _tasks.md, QA settlement section or unrelated Roundfix reference was changed.
+
+Not run:
+- The commands in this Task's ## Verification section and the repository's full Verification, because this Daemon-assigned turn leaves those checks to the Daemon.

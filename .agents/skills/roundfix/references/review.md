@@ -31,18 +31,25 @@ from its head or an intermediate segment head. A base without Project Config
 omits no generated files. An unreadable base configuration blocks with
 `review scope: read derived paths: <error>` before a provider call.
 
+A file matched by an entry in `pre_pr_review.omit_paths` in the Project Config
+at the candidate's base commit is omitted as `omit-path`. Entries use the same
+grammar as `delivery.derived_paths[].paths`; a directory entry ending in `/`
+omits every file beneath it. The key is read from the base commit and never
+from the candidate's head or an intermediate segment head.
+
 Omission precedence is `archived-spec-source`, `qa-evidence`, `upstream-skill`,
-`retired-history`, then `generated`. These rules apply to round one's
+`retired-history`, `generated`, then `omit-path`. These rules apply to round one's
 candidate, round two's delta and the Correction Review delta.
 
 After the diff block, the prompt lists the sorted omitted paths and their
 reasons, introduced by `Omitted from this diff (not reviewed): <q> path(s) of
 QA evidence, <u> of upstream-managed skills, <a> of archived Spec sources, <r>
-of retired history, <g> of generated files.` The record's `omittedPaths`
-is the same sorted array of `{path, reason}`, always present as `[]` when
-empty. `diffBytes` measures the diff text sent in that round, or the measured
-diff when the bound blocks it. Older records without these fields remain
-readable.
+of retired history, <g> of generated files`; only when `<o>` is not zero does
+the summary gain `, <o> of pre_pr_review.omit_paths.` The record's
+`omittedPaths` is the same sorted array of `{path, reason}`, always present as
+`[]` when empty. `diffBytes` measures the diff text sent in that round, or the
+measured diff when the bound blocks it. Older records without these fields
+remain readable.
 
 For `codex` round 1, a scoped candidate diff above 917504 bytes is reviewed
 in at most four Review Segments. A Review Segment is a consecutive
@@ -75,8 +82,23 @@ review bound of 917504 bytes`. A candidate needing more than four segments
 blocks at the same boundary with `review diff too large: <bytes> bytes after
 omitting <n> path(s) needs <k> review segments; a review allows at most 4`.
 Round 2 and the Correction Review are never segmented. A Correction Review
-applies the byte bound with either provider. Claude also retains its token
-budget below and is never segmented. On a runtime failure carrying
+applies the byte bound with either provider. A Claude round-1 prompt above its
+budget is reviewed in at most four Review Segments, each prompt as sent
+estimated within the budget. Each Claude segment records
+`estimatedPromptTokens`; a segmented record's estimate is the sum of its
+segments, and each estimate covers the header, instructions, segment diff,
+omissions and, for the first segment, the Spec contexts. A single commit whose
+segment prompt does not fit keeps the unchanged Claude refusal, and a fifth
+segment refuses with `review prompt too large: <n> estimated tokens after
+omitting <k> path(s) needs <s> review segments; a review allows at most 4`.
+Round-2 and Correction Review Claude prompts above the budget keep their
+unchanged refusal; Correction Review still uses the byte bound. Every size
+refusal keeps its existing text and appends the API Contract 6 suffix,
+containing `; largest files in the diff: <path> (<bytes> bytes)` and
+`; pre_pr_review.omit_paths in the base commit's Project Config leaves
+generated files out of the review`. The suffix ranks the measured diff's file
+sections by bytes descending, with ties by path ascending, and names up to
+three files. On a runtime failure carrying
 `agent.BatchFailureError` stderr, `runtimeStderrTail` records its last 10 lines
 capped at the last 1,024 bytes. The reason text is unchanged; the tail field
 is omitted when empty.

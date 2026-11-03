@@ -382,6 +382,10 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | `authorization` | `unauthorized` |
 | `unclassified` | unknown blockers; resolve the blocker, then retry |
 
+A `review-blocked` park carries the first line of the reason in the Pre-PR
+Review Record after a colon: `review-blocked: <first line>`. Its Park Class
+stays `review`.
+
 An unrecovered Provider System Error parks the item as
 `runtime-infrastructure: <scope_id> hit a provider system error: <detail>`.
 Existing blockers keep their next actions. A queue without parked items adds
